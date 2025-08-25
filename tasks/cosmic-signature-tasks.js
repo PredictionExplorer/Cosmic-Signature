@@ -12,19 +12,13 @@ const { sleepForMilliSeconds, waitForTransactionReceipt } = require("../src/Help
 const { deployContractsAdvanced } = require("../src/ContractDeploymentHelpers.js");
 
 task("deploy-cosmic-signature-contracts", "Deploys Cosmic Signature contracts to a blockchain", async (args, hre) => {
+	console.info(`${nodeOsModule.EOL}deploy-cosmic-signature-contracts task is running.`);
 	const deployConfigFilePath = args.deployconfigfilepath;
 	const deployConfigJsonString = await nodeFsModule.promises.readFile(deployConfigFilePath, "utf8");
 	const deployConfigObject = JSON.parse(deployConfigJsonString);
 	if (deployConfigObject.deployerPrivateKey.length <= 0) {
 		deployConfigObject.deployerPrivateKey = vars.get(`deployerPrivateKey_${hre.network.name}`);
 	}
-	if (nodeFsModule.existsSync(deployConfigObject.reportFilePath)) {
-		throw new Error(`"${deployConfigObject.reportFilePath}" already exists.`);
-	}
-
-	console.info();
-	await hre.run("compile");
-
 	{
 		console.info(`${nodeOsModule.EOL}Using configuration:`);
 		// const deployerPrivateKey = deployConfigObject.deployerPrivateKey;
@@ -32,8 +26,16 @@ task("deploy-cosmic-signature-contracts", "Deploys Cosmic Signature contracts to
 		console.info(deployConfigObject);
 		// deployConfigObject.deployerPrivateKey = deployerPrivateKey;
 	}
+	if (nodeFsModule.existsSync(deployConfigObject.reportFilePath)) {
+		console.error();
+		throw new Error(`"${deployConfigObject.reportFilePath}" already exists.`);
+	}
+
+	console.info();
+	await hre.run("compile");
 
 	const deployerSigner = new hre.ethers.Wallet(deployConfigObject.deployerPrivateKey, hre.ethers.provider);
+	console.info(`${nodeOsModule.EOL}Deploying contracts.`);
 	const contracts =
 		await deployContractsAdvanced(
 			deployerSigner,
@@ -100,9 +102,10 @@ task("deploy-cosmic-signature-contracts", "Deploys Cosmic Signature contracts to
 	} catch (errorObject) {
 		console.info(`${nodeOsModule.EOL}Report:`);
 		console.info(reportJsonString);
+		console.error();
 		throw errorObject;
 	}
-	console.info(`${nodeOsModule.EOL}Report saved to "${deployConfigObject.reportFilePath}"`);
+	console.info(`${nodeOsModule.EOL}Report saved to "${deployConfigObject.reportFilePath}".`);
 
 	if (deployConfigObject.donateEthToCosmicSignatureGame) {
 		const ethDonationAmountInEthAsString = deployConfigObject.ethDonationToCosmicSignatureGameAmountInEth.toFixed(18);
@@ -110,6 +113,8 @@ task("deploy-cosmic-signature-contracts", "Deploys Cosmic Signature contracts to
 		await waitForTransactionReceipt(contracts.cosmicSignatureGameProxy.donateEth({value: ethDonationAmountInWei,}));
 		console.info(`${nodeOsModule.EOL}Donated ${ethDonationAmountInEthAsString} ETH to the ${deployConfigObject.cosmicSignatureGameContractName} proxy contract.`);
 	}
+
+	console.info(`${nodeOsModule.EOL}deploy-cosmic-signature-contracts task is done.`);
 })
 	.addParam("deployconfigfilepath", "Deployment configuration file (JSON) path");
 
@@ -225,10 +230,12 @@ task("upgrade-cosmic-signature-game", "Upgrades the CosmicSignatureGame contract
 	// Issue. This logic will work correct only when upgrading from the initially deployed version.
 	// To support subsequent upgrades, this logic will need revisiting.
 	if (upgradeConfigObject.newCosmicSignatureGameContractVersionNumber != 2) {
+		console.error();
 		throw new Error("We do not support subsequent contract upgrades.");
 	}
 
 	if (nodeFsModule.existsSync(upgradeConfigObject.reportFilePath)) {
+		console.error();
 		throw new Error(`"${upgradeConfigObject.reportFilePath}" already exists.`);
 	}
 
@@ -245,6 +252,7 @@ task("upgrade-cosmic-signature-game", "Upgrades the CosmicSignatureGame contract
 	if (upgradeConfigObject.newInitializerMethodName.length > 0) {
 		upgradeProxyOptions.call = upgradeConfigObject.newInitializerMethodName;
 	}
+	console.info(`${nodeOsModule.EOL}Upgrading ${deployConfigObject.cosmicSignatureGameContractName}.`);
 	const newCosmicSignatureGameProxy =
 		await hre.upgrades.upgradeProxy(cosmicSignatureGameProxy, newCosmicSignatureGameFactory, upgradeProxyOptions);
 	await newCosmicSignatureGameProxy.waitForDeployment();
@@ -266,9 +274,10 @@ task("upgrade-cosmic-signature-game", "Upgrades the CosmicSignatureGame contract
 	} catch (errorObject) {
 		console.info(`${nodeOsModule.EOL}Report:`);
 		console.info(reportJsonString);
+		console.error();
 		throw errorObject;
 	}
-	console.info(`${nodeOsModule.EOL}Report saved to "${upgradeConfigObject.reportFilePath}"`);
+	console.info(`${nodeOsModule.EOL}Done. Report saved to "${upgradeConfigObject.reportFilePath}".`);
 })
 	.addParam("deployconfigfilepath", "Deployment configuration file (JSON) path")
 	.addParam("upgradeconfigfilepath", "Upgrade configuration file (JSON) path");

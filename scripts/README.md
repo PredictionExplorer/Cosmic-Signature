@@ -1,18 +1,17 @@
-### About this document.
+### About This Document
 
-This stuff is old.
+This stuff is old and, for the most part, no longer relevant.
 
-Nick wrote on Slack:
+Nick wrote:
 > Basically , the idea was to test that the integration with RandomWalk works correctly, because this can't be tested with hardhat (no productive contract available). Though you can download the original contract source from Arbitrum MainNet, and deploy it on hardhat localhost and test it, but it is still not the real test. So I wrote these scripts to test that bidding with RandomWalk NFT works. The idea was that Taras would use some of his tokens, and claim all the resources back after confirming contracts work correctly. Then we would drop the test contracts, and deploy the second time, but this time we won't run the tests, so the contracts will be available to play from round 0. Because there will be a launch and advertisement in the media, it is better to make deployment verification on the MainNet before the launch.
 
 **Yuriy's comment:**\
-I have rewritten live blockchain tests, but what's described above is still doable. Although there is no logic that explicitly returns resources to the owner. The logic used to be in the `SelfDestructibleCosmicSignatureGame.finalizeTesting` method. I commented out most of the logic in it, including `selfdestruct`. The owner can get all the resources, most importantly, donated Random Walk NFTs, back from `PrizesWallet`, assuming the owner controls bidder accounts. Besides, bidding with a Random Walk NFT would really not spoil the NFT if the game contract is not to be used in the production.\
-Provided the testing script doesn't crash, it's not even necessary for the owner to make calls to `PrizesWallet`. The testing script itself would do so on behalf of bidder accounts. Then the owner will need to only make calls to `RandomWalkNFT` on behalf of bidder accounts to transfer NFTs back to themselves.
+I have rewritten live blockchain tests. The new tests do support the above, in spite of the fact hat I have eliminated most of the logic that returns resources to the owner. That logic used to be in the `SelfDestructibleCosmicSignatureGame.finalizeTesting` method. I commented out most of it, including `selfdestruct`, which I replaced with a transfer of the whole ETH balance to the owner. The owner can get other resources, most importantly, donated Random Walk NFTs, back from bidder accounts that the owner controls or, if somethibg went wrong while the test was running, from `PrizesWallet`. Besides, bidding with a Random Walk NFT would really not spoil the NFT if the game contract is not to be used in the production.
 
-### ???
+### Introduction
 
 These scripts are used to test the minimal functionality of the contracts after deploying them.
-After running the tests you need to discard the contracts and deploy again because the tests will create dummy bid and claim-prize transactions. Use these scripts to do minimal checking before deploying productive contracts).
+After running the tests you need to discard the contracts and deploy again because the tests will create dummy bid and claim-prize transactions. Use these scripts to do minimal checking before deploying productive contracts.
 
 Note: for running on Arbitrum Sepolia you need to increase gasLimit (twice) by adding this to hardhat.config.js:
 
@@ -20,10 +19,10 @@ Note: for running on Arbitrum Sepolia you need to increase gasLimit (twice) by a
 
 for example:
 
-    sepolia: {
+    arbitrumSepolia: {
         url: `http://[ip_address]:[port]/`,
 <!-- todo-1 I have commented out the use of this environment variable. -->
-        accounts: ((process.env.SEPOLIA_PRIVATE_KEY ?? "").length > 0) ? [process.env.SEPOLIA_PRIVATE_KEY] : [],
+        accounts: ((process.env.ARBITRUM_SEPOLIA_PRIVATE_KEY ?? "").length > 0) ? [process.env.ARBITRUM_SEPOLIA_PRIVATE_KEY] : [],
 <!-- todo-1 Do we really need this `gasMultiplier` thing? -->
         gasMultiplier: 2,
     }
@@ -43,9 +42,9 @@ because eth_estimateGas function produces very low gasLimit values and because A
 
 ##### for Arbitrum Sepolia:
 
-    npx hardhat deploy-cosmic-signature-contracts --deployconfigfilepath ~/deploy-configs/deploy-arbitrum-sepolia.json --network sepolia
+    npx hardhat deploy-cosmic-signature-contracts --deployconfigfilepath ~/deploy-configs/deploy-arbitrum-sepolia.json --network arbitrumSepolia
 
-Note: the main difference between localnet and Sepolia deployment is that for localnet a donation is made for 2 ETH (this is set in the config file, but the deployment process is the same)
+Note: the main difference between localnet and Arbitrum Sepolia deployment is that for localnet a donation is made for 2 ETH (this is set in the config file, but the deployment process is the same)
 
 ### Testing
 

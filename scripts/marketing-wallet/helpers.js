@@ -17,7 +17,13 @@ async function configureMarketingWallet(marketingWallet_, ownerSigner_, treasure
 	await waitForTransactionReceipt(marketingWallet_.connect(ownerSigner_).setTreasurerAddress(treasurerAddress_));
 }
 
+async function payMarketingRewards(marketingWallet_, treasurerSigner_, specs_) {
+	console.info("payManyRewards");
+	await waitForTransactionReceipt(marketingWallet_.connect(treasurerSigner_).payManyRewards(specs_));
+}
+
 module.exports = {
 	validateMarketingWallet,
 	configureMarketingWallet,
+	payMarketingRewards,
 };

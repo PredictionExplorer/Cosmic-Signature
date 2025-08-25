@@ -8,7 +8,6 @@ async function runDeployCosmicSignatureContracts(
 	deployerPrivateKey_,
 	cosmicSignatureGameContractName_,
 	randomWalkNftAddress_,
-	charityAddress_,
 	deployCosmicSignatureContractsConfigurationFilePath_,
 	deployCosmicSignatureContractsReportFilePath_
 ) {
@@ -16,7 +15,7 @@ async function runDeployCosmicSignatureContracts(
 		deployerPrivateKey: deployerPrivateKey_,
 		cosmicSignatureGameContractName: cosmicSignatureGameContractName_,
 		randomWalkNftAddress: randomWalkNftAddress_,
-		charityAddress: charityAddress_,
+		charityAddress: "",
 		transferContractOwnershipToCosmicSignatureDao: false,
 		roundActivationTime: -1e9,
 		donateEthToCosmicSignatureGame: false,

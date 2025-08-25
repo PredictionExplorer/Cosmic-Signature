@@ -13,6 +13,8 @@ async function ensureDurationElapsedSinceRoundActivationIsAtLeast(cosmicSignatur
 	if(roundActivationTimeExcess_ > 0n) {
 		console.info(`Moving bidding round activation time back by ${roundActivationTimeExcess_} seconds.`);
 		await waitForTransactionReceipt(cosmicSignatureGameProxy_.connect(ownerSigner_).setRoundActivationTime(roundActivationTimeMaxLimit_));
+	} else {
+		console.info("It's unnecessary to move bidding round activation time back.");
 	}
 }
 
@@ -80,6 +82,7 @@ async function bidWithEthPlusRandomWalkNft(cosmicSignatureGameProxy_, bidderSign
 	let transactionResponsePromise_ =
 		cosmicSignatureGameProxy_
 			.connect(bidderSigner_)
+			// .bidWithEth.staticCall(...);
 			.bidWithEth(randomWalkNftId_, "bidWithEthPlusRandomWalkNft", {value: nextEthPlusRandomWalkNftBidPrices_[0],});
 	let transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 	for (let nextEthBidPriceIndex_ = nextEthBidPrices_.length; ; ) {
@@ -132,7 +135,7 @@ async function bidWithEthAndDonateNft(cosmicSignatureGameProxy_, prizesWallet_, 
 	donatedNftIndexes_.push(parsedLog_.args.index);
 }
 
-async function bidWithEthPlusRandomWalkNftAndDonateNft(cosmicSignatureGameProxy_, prizesWallet_, bidderSigner_, randomWalkNftId_, donatedNftAddress_, donatedNftId_) {
+async function bidWithEthPlusRandomWalkNftAndDonateNft(cosmicSignatureGameProxy_, prizesWallet_, bidderSigner_, randomWalkNftId_, donatedNftAddress_, donatedNftId_, donatedNftIndexes_) {
 	console.info("bidWithEthPlusRandomWalkNftAndDonateNft");
 	const cosmicSignatureGameProxyBidPlacedTopicHash_ = cosmicSignatureGameProxy_.interface.getEvent("BidPlaced").topicHash;
 	const prizesWalletNftDonatedTopicHash_ = prizesWallet_.interface.getEvent("NftDonated").topicHash;
@@ -173,6 +176,7 @@ async function bidWithEthPlusRandomWalkNftAndDonateNft(cosmicSignatureGameProxy_
 	expect(parsedLog_.args.donorAddress).equal(bidderSigner_.address);
 	expect(parsedLog_.args.nftAddress).equal(donatedNftAddress_);
 	expect(parsedLog_.args.nftId).equal(donatedNftId_);
+	donatedNftIndexes_.push(parsedLog_.args.index);
 }
 
 async function bidWithCstAndDonateToken(cosmicSignatureGameProxy_, prizesWallet_, bidderSigner_, donatedTokenAddress_, donatedTokenAmount_, donatedTokensToClaim_) {

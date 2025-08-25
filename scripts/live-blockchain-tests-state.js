@@ -35,8 +35,6 @@ class State {
 	/** @type {hre.ethers.Wallet} */
 	bidder3Signer;
 	/** @type {hre.ethers.Wallet} */
-	charitySigner;
-	/** @type {hre.ethers.Wallet} */
 	treasurerSigner;
 
 	/** Whether we have just deployed our production contracts. */
@@ -45,6 +43,9 @@ class State {
 	/** @type {object} */
 	contracts;
 	nextRandomWalkNftIndex = 0;
+	donatedTokensToClaim = [];
+	donatedNftIndexes = [];
+	processExitCode = 0;
 
 	constructor() {
 		// Doing nothing.

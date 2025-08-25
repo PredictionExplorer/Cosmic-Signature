@@ -3,17 +3,19 @@
 const configuration =
 	Object.freeze(
 		{
+			// Hardhat configuration.
 			hardhat: {
 				// [Comment-202509132]
 				// If this is empty, Hardhat will choose its default network.
-				// The network/blockchain should be external, not the in-process "hardhat".
-				// By default, Hardhat will choose "hardhat" unless a different default network is specified in the Hardhat config file.
+				// The network/blockchain should be external. The in-process "hardhat" is not intended to be used for this test;
+				// use "localhost" instead. By default, Hardhat will choose "hardhat" unless a different default network is specified
+				// in the Hardhat config file.
 				// The `HARDHAT_MODE_CODE` environment variable should either not be set or be set to "2".
 				// Otherwise the behavior will not necessarily be correct.
 				// [/Comment-202509132]
 				networkName:
 					// "",
-					// "hardhat",
+					// // "hardhat",
 					"localhost",
 
 					// // Issue. This is not well supported, because of Comment-202509215.
@@ -24,7 +26,7 @@ const configuration =
 			},
 
 			// If this is `false` we will not deploy our production (as opposed to testing) contracts.
-			// It's generally safe to always keep this `true` because we would skip the deployment
+			// It's generally safe to always keep this `true` because we would anyway skip the deployment
 			// if the deployment report file already exists. But for a guaranteed avoidance of an accidential unwanted deployment,
 			// set this to `false`.
 			deployCosmicSignatureContracts: true,
@@ -60,7 +62,7 @@ const configuration =
 
 			// Accounts funding with ETH configuration.
 			accountFundingWithEth: {
-				// We will fund each account, except charity, by transfering ETH from the owner account to it.
+				// We will fund each account by transfering ETH from the owner account to it.
 				// We will make each of them balance twice larger than this.
 				// We won't fund any account that already has at least this much.
 				// This value is expressed in ETH. It will be converted to Wei.
@@ -80,21 +82,27 @@ const configuration =
 			configureCosmicSignatureContracts: 1,
 
 			// Configurations to use when configuring newly deployed Cosmic Signature contracts.
-			// todo-0 Should I move these into a child object?
-			prizesWallet: {
-				timeoutDurationToWithdrawPrizes: 7n,
-			},
-			cosmicSignatureGame: {
-				delayDurationBeforeRoundActivation: 4n,
-				// ethDutchAuctionDurationDivisor: ???,
-				ethDutchAuctionDuration: 18n,
-				// cstDutchAuctionDurationDivisor: ???,
-				cstDutchAuctionDuration: 15n,
-				// initialDurationUntilMainPrizeDivisor: ???,
-				initialDurationUntilMainPrize: 7n,
-				// mainPrizeTimeIncrementInMicroSeconds: ???,
-				mainPrizeTimeIncrement: 3n,
-				timeoutDurationToClaimMainPrize: 4n,
+			cosmicSignatureContracts: {
+				prizesWallet: {
+					// [Comment-202509305]
+					// Warning. A too short timeout can potentially result in hackers stealing your asserts.
+					// [/Comment-202509305]
+					timeoutDurationToWithdrawPrizes: 7n,
+				},
+				cosmicSignatureGame: {
+					delayDurationBeforeRoundActivation: 4n,
+					// ethDutchAuctionDurationDivisor: ???,
+					ethDutchAuctionDuration: 18n,
+					// cstDutchAuctionDurationDivisor: ???,
+					cstDutchAuctionDuration: 15n,
+					// initialDurationUntilMainPrizeDivisor: ???,
+					initialDurationUntilMainPrize: 7n,
+					// mainPrizeTimeIncrementInMicroSeconds: ???,
+					mainPrizeTimeIncrement: 3n,
+
+					// Comment-202509305 applies.
+					timeoutDurationToClaimMainPrize: 4n,
+				},
 			},
 
 			donateEthToCosmicSignatureGame: true,
@@ -109,10 +117,16 @@ const configuration =
 				// When we run out of NFTs you have provided we will mint more.
 				randomWalkNftIds:
 					[],
-					// [5n, 0n,],
+					// [5n, 0n, 7n, 9n,],
 
-				numRoundsToPlay: 3,
+				numRoundsToPlay: 2,
 			},
+
+			// Whether to call `PrizesWallet.withdrawEverything`.
+			// Note that if a withdrawal fails you will have to manually withdraw some assets.
+			// This test logic will log them, but it won't remember to withdraw them when you run this test again.
+			// See Comment-202509304 for more info.
+			withdrawEverything: true,
 
 			// [Comment-202509242]
 			// At the end, call `SelfDestructibleCosmicSignatureGame.finalizeTesting`.
@@ -120,6 +134,8 @@ const configuration =
 			// must be "SelfDestructibleCosmicSignatureGame".
 			// [/Comment-202509242]
 			finalizeTesting: true,
+
+			payMarketingRewards: true,
 		}
 	);
 

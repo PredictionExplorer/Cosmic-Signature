@@ -9,6 +9,7 @@ async function donateEthToCosmicSignatureGame(cosmicSignatureGameProxy_, donor1S
 	const amountInWei_ = hre.ethers.parseEther(amountInEth_.toFixed(18));
 	const amount1InWei_ = amountInWei_ / 3n;
 	const amount2InWei_ = amountInWei_ - amount1InWei_;
+	console.info("donateEth");
 	{
 		/** @type {Promise<hre.ethers.TransactionResponse>} */
 		const transactionResponsePromise_ = cosmicSignatureGameProxy_.connect(donor1Signer_).donateEth({value: amount1InWei_,})
@@ -20,6 +21,7 @@ async function donateEthToCosmicSignatureGame(cosmicSignatureGameProxy_, donor1S
 			[roundNum_, donor1Signer_.address, amount1InWei_,]
 		);
 	}
+	console.info("donateEthWithInfo");
 	{
 		const numEthDonationWithInfoRecords_ = await cosmicSignatureGameProxy_.numEthDonationWithInfoRecords();
 		/** @type {Promise<hre.ethers.TransactionResponse>} */
