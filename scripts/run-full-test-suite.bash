@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/bash
 
 # todo-1 This is a legacy script. Is it OK to delete it?
 

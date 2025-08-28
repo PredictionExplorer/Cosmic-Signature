@@ -170,13 +170,14 @@ describe("PrizesWallet-1", function () {
 		// #endregion
 		// #region `prepareNextRound_`
 
-		const prepareNextRound_ = /*async*/ () => {
-			mainPrizeBeneficiaryAddresses_.push(hre.ethers.ZeroAddress);
-			roundTimeoutTimesToWithdrawPrizes_.push(0n);
-			donatedTokens_.push(hre.ethers.ZeroAddress);
-			++ roundNum_;
-			// console.info(`202507165 ${roundNum_}`);
-		};
+		const prepareNextRound_ =
+			/*async*/ () => {
+				mainPrizeBeneficiaryAddresses_.push(hre.ethers.ZeroAddress);
+				roundTimeoutTimesToWithdrawPrizes_.push(0n);
+				donatedTokens_.push(hre.ethers.ZeroAddress);
+				++ roundNum_;
+				// console.info(`202507165 ${roundNum_}`);
+			};
 
 		// #endregion
 		// #region

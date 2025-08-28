@@ -13,7 +13,9 @@ async function validatePrizesWallet(
 }
 
 async function configurePrizesWallet(prizesWallet_, ownerSigner_, timeoutDurationToWithdrawPrizes_) {
-	await waitForTransactionReceipt(prizesWallet_.connect(ownerSigner_).setTimeoutDurationToWithdrawPrizes(timeoutDurationToWithdrawPrizes_));
+	if (timeoutDurationToWithdrawPrizes_ >= 0n) {
+		await waitForTransactionReceipt(prizesWallet_.connect(ownerSigner_).setTimeoutDurationToWithdrawPrizes(timeoutDurationToWithdrawPrizes_));
+	}
 }
 
 async function withdrawEverything(prizesWallet_, bidderSigner_, withdrawEth_, donatedTokensToClaim_, donatedNftIndexes_) {

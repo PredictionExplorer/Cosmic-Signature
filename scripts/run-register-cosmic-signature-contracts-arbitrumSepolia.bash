@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/bash
 
 '/usr/bin/clear'
 

@@ -31,4 +31,6 @@ async function runDeployCosmicSignatureContracts(
 	await hre.run("deploy-cosmic-signature-contracts", deployCosmicSignatureContractsArgs_);
 }
 
-module.exports = { runDeployCosmicSignatureContracts, };
+module.exports = {
+	runDeployCosmicSignatureContracts,
+};

@@ -28,6 +28,8 @@ async function validateCosmicSignatureGameState(
 	expect(await cosmicSignatureGameProxy_.charityAddress()).equal(charityWalletAddress_);
 }
 
+/// Assuming `cosmicSignatureGameProxy_.roundActivationTime` is in the future.
+/// Otherwise contract parameter setters would revert.
 /// Comment-202509065 applies.
 async function configureCosmicSignatureGame(
 	cosmicSignatureGameProxy_,
@@ -39,9 +41,6 @@ async function configureCosmicSignatureGame(
 	mainPrizeTimeIncrement_,
 	timeoutDurationToClaimMainPrize_
 ) {
-	// Assuming `cosmicSignatureGameProxy_.roundActivationTime` is in the future.
-	// Otherwise the contract parameter setters would revert.
-
 	await waitForTransactionReceipt(cosmicSignatureGameProxy_.connect(ownerSigner_).setDelayDurationBeforeRoundActivation(delayDurationBeforeRoundActivation_));
 	const mainPrizeTimeIncrementInMicroSeconds_ = mainPrizeTimeIncrement_ * 10n ** 6n;
 	await waitForTransactionReceipt(cosmicSignatureGameProxy_.connect(ownerSigner_).setMainPrizeTimeIncrementInMicroSeconds(mainPrizeTimeIncrementInMicroSeconds_));
@@ -60,7 +59,9 @@ async function configureCosmicSignatureGame(
 		console.info(`initialDurationUntilMainPrizeDivisor = ${initialDurationUntilMainPrizeDivisor_}`);
 		await waitForTransactionReceipt(cosmicSignatureGameProxy_.connect(ownerSigner_).setInitialDurationUntilMainPrizeDivisor(initialDurationUntilMainPrizeDivisor_));
 	}
-	await waitForTransactionReceipt(cosmicSignatureGameProxy_.connect(ownerSigner_).setTimeoutDurationToClaimMainPrize(timeoutDurationToClaimMainPrize_));
+	if (timeoutDurationToClaimMainPrize_ >= 0n) {
+		await waitForTransactionReceipt(cosmicSignatureGameProxy_.connect(ownerSigner_).setTimeoutDurationToClaimMainPrize(timeoutDurationToClaimMainPrize_));
+	}
 }
 
 module.exports = {

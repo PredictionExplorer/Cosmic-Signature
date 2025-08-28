@@ -1,4 +1,5 @@
 {
+	"deploymentConfigurationFilePath": "../tasks/config/deploy-cosmic-signature-contracts-config-arbitrumOne.json",
 	"newCosmicSignatureGameContractVersionNumber": 2,
 	"newCosmicSignatureGameContractName": "CosmicSignatureGameV2",
 	"newInitializerMethodName": "",

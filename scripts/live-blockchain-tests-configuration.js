@@ -40,24 +40,32 @@ const configuration =
 					// "SpecialCosmicSignatureGame",
 					// "CosmicSignatureGame",
 
-				// If this is empty or zero we will deploy a new Random Walk NFT contract.
+				// If this is empty or zero, we will deploy a new Random Walk NFT contract.
 				// Otherwise we will reuse the already deployed one.
 				randomWalkNftAddress:
 					"",
 					// "0x???",
 
+				// The deploy-cosmic-signature-contracts task config file path.
 				// We will substitute the variables in this file name.
 				// If we run the deploy-cosmic-signature-contracts task, we will create this file at runtime.
 				// If the file already exists we will overwrite it.
 				deployCosmicSignatureContractsConfigurationFilePath: "temp/deploy-cosmic-signature-contracts-config-${networkName}-${cosmicSignatureGameContractName}.json",
 
+				// The deploy-cosmic-signature-contracts task report file path.
 				// We will substitute the variables in this file name.
 				// We will not run the deploy-cosmic-signature-contracts task if this file already exists.
 				// We will load this file regardless of whether we run the task.
 				deployCosmicSignatureContractsReportFilePath: "temp/deploy-cosmic-signature-contracts-report-${networkName}-${cosmicSignatureGameContractName}.json",
 			},
 
-			// The funding of accounts will not happen if this is `false`.
+			// Whether to validate state of newly deployed Cosmic Signature contracts.
+			// 0 = do not validate.
+			// 1 = validate only if we have just deployed them.
+			// 2 = validate unconditionally.
+			validateCosmicSignatureContractStates: 1,
+
+			// The funding of accounts with ETH will not happen if this is `false`.
 			fundAccountsWithEth: true,
 
 			// Accounts funding with ETH configuration.
@@ -69,12 +77,6 @@ const configuration =
 				accountEthBalanceAmountMinLimitInEth: 0.01,
 			},
 
-			// Whether to validate state of newly deployed Cosmic Signature contracts.
-			// 0 = do not validate.
-			// 1 = validate only if we have just deployed them.
-			// 2 = validate unconditionally.
-			validateCosmicSignatureContractStates: 1,
-
 			// Whether to configure newly deployed Cosmic Signature contracts.
 			// 0 = do not configure.
 			// 1 = configure only if we have just deployed them.
@@ -85,12 +87,17 @@ const configuration =
 			cosmicSignatureContracts: {
 				prizesWallet: {
 					// [Comment-202509305]
+					// If this is negative we will not set respective parameter.
 					// Warning. A too short timeout can potentially result in hackers stealing your asserts.
+					// So consider configuring a bigger or better negative value here.
+					// The test will anyway not be delayed by this.
 					// [/Comment-202509305]
-					timeoutDurationToWithdrawPrizes: 7n,
+					timeoutDurationToWithdrawPrizes:
+						// 8n,
+						-1n,
 				},
 				cosmicSignatureGame: {
-					delayDurationBeforeRoundActivation: 4n,
+					delayDurationBeforeRoundActivation: 5n,
 					// ethDutchAuctionDurationDivisor: ???,
 					ethDutchAuctionDuration: 18n,
 					// cstDutchAuctionDurationDivisor: ???,
@@ -101,7 +108,9 @@ const configuration =
 					mainPrizeTimeIncrement: 3n,
 
 					// Comment-202509305 applies.
-					timeoutDurationToClaimMainPrize: 4n,
+					timeoutDurationToClaimMainPrize:
+						// 5n,
+						-1n,
 				},
 			},
 
@@ -109,11 +118,13 @@ const configuration =
 			ethDonationToCosmicSignatureGame: {
 				amountInEth: 0.00000000123,
 			},
+
 			playCosmicSignatureGame: true,
 			cosmicSignatureGamePlaying: {
 				// You have an option to provide zero or more Random Walk NFT IDs.
 				// Each of them will be used for both bidding and donation.
-				// The first one shall be owned by bidder 2, the second by bidder 3, the third again by bidder 2, and so on.
+				// The first NFT shall be owned by bidder 2, the second by bidder 3, the third again by bidder 2, and so on.
+				// 2 NFTs will be used during each bidding round.
 				// When we run out of NFTs you have provided we will mint more.
 				randomWalkNftIds:
 					[],
@@ -122,7 +133,7 @@ const configuration =
 				numRoundsToPlay: 2,
 			},
 
-			// Whether to call `PrizesWallet.withdrawEverything`.
+			// Whether each bidder account needs to call `PrizesWallet.withdrawEverything`.
 			// Note that if a withdrawal fails you will have to manually withdraw some assets.
 			// This test logic will log them, but it won't remember to withdraw them when you run this test again.
 			// See Comment-202509304 for more info.
@@ -139,4 +150,6 @@ const configuration =
 		}
 	);
 
-module.exports = { configuration, };
+module.exports = {
+	configuration,
+};

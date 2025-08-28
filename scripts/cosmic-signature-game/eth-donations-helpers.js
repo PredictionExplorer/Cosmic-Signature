@@ -36,4 +36,6 @@ async function donateEthToCosmicSignatureGame(cosmicSignatureGameProxy_, donor1S
 	}
 }
 
-module.exports = { donateEthToCosmicSignatureGame, };
+module.exports = {
+	donateEthToCosmicSignatureGame,
+};

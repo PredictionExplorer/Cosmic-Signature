@@ -56,7 +56,7 @@ Save some arguments to Hardhat Configuration Variables. If you are dealing with 
 
 - If a proxy and/or implementation contract registration failed with the "already verifified" error, sometimes it also fails to link the proxy with the implementation. If you observe such an error, link them manually on ArbiScan.
 
-- After you deploy to a mainnet or a testnet, you will notice the ".openzeppelin" subfolder under the folder in which your ran the deployment scripts. OpenZeppelin Hardhat Upgrades is said to store important info there. I deployed on Arbitrum Sepolia, deleted the folder, and then tried to upgrade, but it failed. But when I deployed and upgraded on localhost, everything worked without creating the folder. It's said to be possible to force an upgrade without the folder, but I haven't tried it.\
+- After you deploy to a mainnet or a testnet, you will notice the ".openzeppelin" subfolder under the folder in which your ran the deployment scripts. OpenZeppelin Hardhat Upgrades is said to store important info there. I deployed on Arbitrum Sepolia, deleted the folder, and then tried to upgrade. It failed. But when I deployed and upgraded on localhost, everything worked without creating the folder. It's said to be possible to force an upgrade without the folder, but I haven't tried it.\
 So after the deployment, you probably should move the folder to a location outside the project. When you are about to upgrade, move it back, upgrade, and then move it away again.
 
 #### Afterwards

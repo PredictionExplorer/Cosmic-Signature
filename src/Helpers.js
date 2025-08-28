@@ -19,8 +19,9 @@ const { HardhatContext } = require("hardhat/internal/context");
 // #region
 
 // Supported values:
-//    1 to run tests under the "tests" subfolder deterministically and at the maximum speed.
-//    2 to simulate a live blockchain, which is designed for tests under the "scripts" subfolder.
+//    1 to run tests under the "<project>/test" subfolder deterministically and at the maximum speed.
+//    2 to simulate a live blockchain, which is designed for tests under the "<project>/scripts" subfolder.
+//      todo-0 Am I going to move those tests and some other scripts to another folder? Find all: scripts
 const HARDHAT_MODE_CODE = parseIntegerEnvironmentVariable("HARDHAT_MODE_CODE", 0);
 
 switch (HARDHAT_MODE_CODE) {
@@ -296,6 +297,35 @@ async function waitForTransactionReceipt(transactionResponsePromise_) {
 }
 
 // #endregion
+// #region `safeErc1967GetChangedImplementationAddress`
+
+/**
+ * Issue. This kinda smells.
+ * We would probably not need this if `hre.upgrades.erc1967.getImplementationAddress` loaded the storage slot
+ * in the context of the "pending" block.
+ * A more correct solution would be to find and parse respective events.
+ * It would also be helpful to add a timeout to guarantee that we will break the loop eventually.
+ * But keeping it simple.
+ * @param {string} proxyAddress_
+ * @param {string} oldImplementationAddress_
+ */
+async function safeErc1967GetChangedImplementationAddress(proxyAddress_, oldImplementationAddress_) {
+	// Comment-202409255 applies.
+	const hre = HardhatContext.getHardhatContext().environment;
+
+	for (;;) {
+		{
+			const newImplementationAddress_ = await hre.upgrades.erc1967.getImplementationAddress(proxyAddress_);
+			if (newImplementationAddress_ != oldImplementationAddress_) {
+				return newImplementationAddress_;
+			}
+		}
+		console.warn("Warning. We have to wait for the contract implementation address to become known.");
+		await sleepForMilliSeconds(2000);
+	}
+}
+
+// #endregion
 // #region
 
 module.exports = {
@@ -315,6 +345,7 @@ module.exports = {
 	sleepForMilliSeconds,
 	hackApplyGasMultiplierIfNeeded,
 	waitForTransactionReceipt,
+	safeErc1967GetChangedImplementationAddress,
 };
 
 // #endregion

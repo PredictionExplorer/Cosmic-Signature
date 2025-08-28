@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/bash
 
 'node' 'contract-configuration-params-calculator.js'
 if [ $? -ne 0 ]; then

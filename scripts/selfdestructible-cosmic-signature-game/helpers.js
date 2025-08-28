@@ -6,7 +6,7 @@ const hre = require("hardhat");
 const { waitForTransactionReceipt } = require("../../src/Helpers.js");
 
 async function finalizeTestingIfEthBalanceIsNonZero(selfDestructibleCosmicSignatureGameProxy_, selfDestructibleCosmicSignatureGameProxyAddress_, ownerSigner_) {
-	const selfDestructibleCosmicSignatureGameProxyEthBalanceAmount_ = await hre.ethers.provider.getBalance(selfDestructibleCosmicSignatureGameProxyAddress_);
+	const selfDestructibleCosmicSignatureGameProxyEthBalanceAmount_ = await hre.ethers.provider.getBalance(selfDestructibleCosmicSignatureGameProxyAddress_, "pending");
 	console.info(`${nodeOsModule.EOL}SelfDestructibleCosmicSignatureGame proxy ETH balance is ${hre.ethers.formatEther(selfDestructibleCosmicSignatureGameProxyEthBalanceAmount_)} ETH.`);
 	if (selfDestructibleCosmicSignatureGameProxyEthBalanceAmount_ <= 0n) {
 		return;

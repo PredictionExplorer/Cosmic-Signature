@@ -4,8 +4,7 @@
 const hre = require("hardhat");
 const { waitForTransactionReceipt } = require("../../src/Helpers.js");
 
-async function configureRandomWalkNft(randomWalkNft_, bidder1Signer_, bidder2Signer_, bidder3Signer_, prizesWalletAddress_) {
-	await waitForTransactionReceipt(randomWalkNft_.connect(bidder1Signer_).setApprovalForAll(prizesWalletAddress_, true));
+async function configureRandomWalkNft(randomWalkNft_, bidder2Signer_, bidder3Signer_, prizesWalletAddress_) {
 	await waitForTransactionReceipt(randomWalkNft_.connect(bidder2Signer_).setApprovalForAll(prizesWalletAddress_, true));
 	await waitForTransactionReceipt(randomWalkNft_.connect(bidder3Signer_).setApprovalForAll(prizesWalletAddress_, true));
 }

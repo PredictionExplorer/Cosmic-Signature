@@ -14,15 +14,18 @@ async function ensureDurationElapsedSinceRoundActivationIsAtLeast(cosmicSignatur
 		console.info(`Moving bidding round activation time back by ${roundActivationTimeExcess_} seconds.`);
 		await waitForTransactionReceipt(cosmicSignatureGameProxy_.connect(ownerSigner_).setRoundActivationTime(roundActivationTimeMaxLimit_));
 	} else {
-		console.info("It's unnecessary to move bidding round activation time back.");
+		console.info(`It's unnecessary to move bidding round activation time back. Its current value is already before its desired value by ${( - roundActivationTimeExcess_ )} seconds.`);
 	}
 }
 
 async function waitUntilCstDutchAuctionElapsedDurationIsAtLeast(cosmicSignatureGameProxy_, cstDutchAuctionElapsedDurationMinLimit_) {
 	for (;;) {
 		// todo-0 Make sure we call all methods like this in the context of the pending block.
+		// todo-0 Find all: block.timestamp
+		// todo-0 But better call all kinds of getters that way, maybe even something like `getBalance`.
+		// todo-0 So find outside of tests: await
 		let cstDutchAuctionElapsedDuration_ = (await cosmicSignatureGameProxy_.getCstDutchAuctionDurations({blockTag: "pending",}))[1];
-		console.info(`CST Dutch auction elapsed duration is ${cstDutchAuctionElapsedDuration_} seconds.`);
+		console.info(`CST Dutch auction elapsed duration is ${cstDutchAuctionElapsedDuration_} seconds. We want it to be at least ${cstDutchAuctionElapsedDurationMinLimit_} seconds.`);
 		if (cstDutchAuctionElapsedDuration_ >= cstDutchAuctionElapsedDurationMinLimit_) {
 			break;
 		}
@@ -35,6 +38,12 @@ async function bidWithEth(cosmicSignatureGameProxy_, bidderSigner_) {
 	console.info("bidWithEth");
 	const cosmicSignatureGameProxyBidPlacedTopicHash_ = cosmicSignatureGameProxy_.interface.getEvent("BidPlaced").topicHash;
 	const nextEthBidPrices_ = new Array(5);
+
+	// [Comment-202510017]
+	// Issue. We need to request ETH bid prices for a few upcoming seconds only if we are to make the 1st bid in a bidding round.
+	// Otherwise all the prices would be the same.
+	// But keeping it simple.
+	// [/Comment-202510017]
 	for (let nextEthBidPriceIndex_ = nextEthBidPrices_.length; ; ) {
 		-- nextEthBidPriceIndex_;
 
@@ -48,6 +57,7 @@ async function bidWithEth(cosmicSignatureGameProxy_, bidderSigner_) {
 			break;
 		}
 	}
+
 	/** @type {Promise<hre.ethers.TransactionResponse>} */
 	let transactionResponsePromise_ =
 		cosmicSignatureGameProxy_
@@ -58,6 +68,7 @@ async function bidWithEth(cosmicSignatureGameProxy_, bidderSigner_) {
 	let parsedLog_ = cosmicSignatureGameProxy_.interface.parseLog(log_);
 	expect(parsedLog_.args.lastBidderAddress).equal(bidderSigner_.address);
 	expect(parsedLog_.args.paidEthPrice).oneOf(nextEthBidPrices_);
+	expect(parsedLog_.args.paidCstPrice).equals(-1n);
 	expect(parsedLog_.args.randomWalkNftId).equal(-1n);
 	expect(parsedLog_.args.message).equal("bidWithEth");
 }
@@ -66,6 +77,8 @@ async function bidWithEthPlusRandomWalkNft(cosmicSignatureGameProxy_, bidderSign
 	console.info("bidWithEthPlusRandomWalkNft");
 	const cosmicSignatureGameProxyBidPlacedTopicHash_ = cosmicSignatureGameProxy_.interface.getEvent("BidPlaced").topicHash;
 	const nextEthBidPrices_ = new Array(5);
+
+	// Comment-202510017 applies.
 	for (let nextEthBidPriceIndex_ = nextEthBidPrices_.length; ; ) {
 		-- nextEthBidPriceIndex_;
 
@@ -76,13 +89,13 @@ async function bidWithEthPlusRandomWalkNft(cosmicSignatureGameProxy_, bidderSign
 			break;
 		}
 	}
+
 	const nextEthPlusRandomWalkNftBidPrices_ = new Array(nextEthBidPrices_.length);
 	nextEthPlusRandomWalkNftBidPrices_[0] = await cosmicSignatureGameProxy_.getEthPlusRandomWalkNftBidPrice(nextEthBidPrices_[0]);
 	/** @type {Promise<hre.ethers.TransactionResponse>} */
 	let transactionResponsePromise_ =
 		cosmicSignatureGameProxy_
 			.connect(bidderSigner_)
-			// .bidWithEth.staticCall(...);
 			.bidWithEth(randomWalkNftId_, "bidWithEthPlusRandomWalkNft", {value: nextEthPlusRandomWalkNftBidPrices_[0],});
 	let transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 	for (let nextEthBidPriceIndex_ = nextEthBidPrices_.length; ; ) {
@@ -96,6 +109,7 @@ async function bidWithEthPlusRandomWalkNft(cosmicSignatureGameProxy_, bidderSign
 	let parsedLog_ = cosmicSignatureGameProxy_.interface.parseLog(log_);
 	expect(parsedLog_.args.lastBidderAddress).equal(bidderSigner_.address);
 	expect(parsedLog_.args.paidEthPrice).oneOf(nextEthPlusRandomWalkNftBidPrices_);
+	expect(parsedLog_.args.paidCstPrice).equals(-1n);
 	expect(parsedLog_.args.randomWalkNftId).equal(randomWalkNftId_);
 	expect(parsedLog_.args.message).equal("bidWithEthPlusRandomWalkNft");
 }
@@ -105,6 +119,8 @@ async function bidWithEthAndDonateNft(cosmicSignatureGameProxy_, prizesWallet_, 
 	const cosmicSignatureGameProxyBidPlacedTopicHash_ = cosmicSignatureGameProxy_.interface.getEvent("BidPlaced").topicHash;
 	const prizesWalletNftDonatedTopicHash_ = prizesWallet_.interface.getEvent("NftDonated").topicHash;
 	const nextEthBidPrices_ = new Array(5);
+
+	// Comment-202510017 applies.
 	for (let nextEthBidPriceIndex_ = nextEthBidPrices_.length; ; ) {
 		-- nextEthBidPriceIndex_;
 
@@ -115,6 +131,7 @@ async function bidWithEthAndDonateNft(cosmicSignatureGameProxy_, prizesWallet_, 
 			break;
 		}
 	}
+
 	/** @type {Promise<hre.ethers.TransactionResponse>} */
 	let transactionResponsePromise_ =
 		cosmicSignatureGameProxy_
@@ -125,6 +142,7 @@ async function bidWithEthAndDonateNft(cosmicSignatureGameProxy_, prizesWallet_, 
 	let parsedLog_ = cosmicSignatureGameProxy_.interface.parseLog(log_);
 	expect(parsedLog_.args.lastBidderAddress).equal(bidderSigner_.address);
 	expect(parsedLog_.args.paidEthPrice).oneOf(nextEthBidPrices_);
+	expect(parsedLog_.args.paidCstPrice).equals(-1n);
 	expect(parsedLog_.args.randomWalkNftId).equal(-1n);
 	expect(parsedLog_.args.message).equal("bidWithEthAndDonateNft");
 	log_ = transactionReceipt_.logs.find((log_) => (log_.topics.indexOf(prizesWalletNftDonatedTopicHash_) >= 0));
@@ -140,6 +158,8 @@ async function bidWithEthPlusRandomWalkNftAndDonateNft(cosmicSignatureGameProxy_
 	const cosmicSignatureGameProxyBidPlacedTopicHash_ = cosmicSignatureGameProxy_.interface.getEvent("BidPlaced").topicHash;
 	const prizesWalletNftDonatedTopicHash_ = prizesWallet_.interface.getEvent("NftDonated").topicHash;
 	const nextEthBidPrices_ = new Array(5);
+
+	// Comment-202510017 applies.
 	for (let nextEthBidPriceIndex_ = nextEthBidPrices_.length; ; ) {
 		-- nextEthBidPriceIndex_;
 
@@ -150,6 +170,7 @@ async function bidWithEthPlusRandomWalkNftAndDonateNft(cosmicSignatureGameProxy_
 			break;
 		}
 	}
+
 	const nextEthPlusRandomWalkNftBidPrices_ = new Array(nextEthBidPrices_.length);
 	nextEthPlusRandomWalkNftBidPrices_[0] = await cosmicSignatureGameProxy_.getEthPlusRandomWalkNftBidPrice(nextEthBidPrices_[0]);
 	/** @type {Promise<hre.ethers.TransactionResponse>} */
@@ -169,6 +190,7 @@ async function bidWithEthPlusRandomWalkNftAndDonateNft(cosmicSignatureGameProxy_
 	let parsedLog_ = cosmicSignatureGameProxy_.interface.parseLog(log_);
 	expect(parsedLog_.args.lastBidderAddress).equal(bidderSigner_.address);
 	expect(parsedLog_.args.paidEthPrice).oneOf(nextEthPlusRandomWalkNftBidPrices_);
+	expect(parsedLog_.args.paidCstPrice).equals(-1n);
 	expect(parsedLog_.args.randomWalkNftId).equal(randomWalkNftId_);
 	expect(parsedLog_.args.message).equal("bidWithEthPlusRandomWalkNftAndDonateNft");
 	log_ = transactionReceipt_.logs.find((log_) => (log_.topics.indexOf(prizesWalletNftDonatedTopicHash_) >= 0));
@@ -184,6 +206,7 @@ async function bidWithCstAndDonateToken(cosmicSignatureGameProxy_, prizesWallet_
 	const cosmicSignatureGameProxyBidPlacedTopicHash_ = cosmicSignatureGameProxy_.interface.getEvent("BidPlaced").topicHash;
 	const prizesWalletTokenDonatedTopicHash_ = prizesWallet_.interface.getEvent("TokenDonated").topicHash;
 	const nextCstBidPrices_ = new Array(5);
+	const timeStamp1_ = performance.now();
 	for (let nextCstBidPriceIndex_ = nextCstBidPrices_.length; ; ) {
 		-- nextCstBidPriceIndex_;
 
@@ -195,18 +218,22 @@ async function bidWithCstAndDonateToken(cosmicSignatureGameProxy_, prizesWallet_
 			break;
 		}
 	}
-	const timeStamp1_ = performance.now();
+	const timeStamp2_ = performance.now();
 	/** @type {Promise<hre.ethers.TransactionResponse>} */
 	let transactionResponsePromise_ =
 		cosmicSignatureGameProxy_
 			.connect(bidderSigner_)
 			.bidWithCstAndDonateToken(nextCstBidPrices_[0], "bidWithCstAndDonateToken", donatedTokenAddress_, donatedTokenAmount_);
 	let transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
-	const timeStamp2_ = performance.now();
-	console.info(`Took ${(timeStamp2_ - timeStamp1_).toFixed(1)} ms.`);
+	const timeStamp3_ = performance.now();
+	console.info(
+		`${nextCstBidPrices_.length} getNextCstBidPriceAdvanced calls took ${(timeStamp2_ - timeStamp1_).toFixed(1)} ms. ` +
+		`bidWithCstAndDonateToken took ${(timeStamp3_ - timeStamp2_).toFixed(1)} ms.`
+	);
 	let log_ = transactionReceipt_.logs.find((log_) => (log_.topics.indexOf(cosmicSignatureGameProxyBidPlacedTopicHash_) >= 0));
 	let parsedLog_ = cosmicSignatureGameProxy_.interface.parseLog(log_);
 	expect(parsedLog_.args.lastBidderAddress).equal(bidderSigner_.address);
+	expect(parsedLog_.args.paidEthPrice).equals(-1n);
 	expect(parsedLog_.args.paidCstPrice).oneOf(nextCstBidPrices_);
 	expect(parsedLog_.args.randomWalkNftId).equal(-1n);
 	expect(parsedLog_.args.message).equal("bidWithCstAndDonateToken");

@@ -96,7 +96,7 @@ const solidityVersion = "0.8.30";
 // To find out this value, execute:
 //    solc --version
 // Make sure you are executing the executable pointed at by `solidityCompilerPath`.
-// We print it near Comment-202411143.
+// We log it near Comment-202411143.
 //
 // 2025-08 Update.
 // The binary solc long version looks like 0.8.XX+commit.12abcdef.Linux.g++ .
@@ -411,7 +411,7 @@ const hardhatUserConfig = {
 	networks: {
 		hardhat: {
 			// Comment-202501193 relates and/or applies.
-			initialDate: (helpersModule.HARDHAT_MODE_CODE == 1) ? "2025-01-01" : (new Date()).toISOString(),
+			initialDate: (helpersModule.HARDHAT_MODE_CODE == 1) ? "2025-01-01" : undefined,
 
 			// By default, this is `false`.
 			// Comment-202501193 relates and/or applies.
@@ -422,6 +422,7 @@ const hardhatUserConfig = {
 			// [Comment-202507272]
 			// Providing a particular value, rather than "auto", improves Hardhat Network performance.
 			// By default, this value is taken from `blockGasLimit`.
+			// But, as explained in Comment-202510018, the "auto" is not always honored.
 			// We also use this near Comment-202508223.
 			// Comment-202507252 relates.
 			// Comment-202508265 relates and/or applies.
@@ -502,6 +503,7 @@ const hardhatUserConfig = {
 			// accounts: ((process.env.PRIVATE_KEY ?? "").length > 0) ? [process.env.PRIVATE_KEY] : [],
 		},
 		sepolia: {
+			// todo-3 Is this URL for Sepolia or Arbitrum Sepolia?
 			// todo-3 Is this URL still valid? MetaMask uses a different one.
 			url: "http://170.187.142.12:22545/",
 
