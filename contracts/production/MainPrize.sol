@@ -152,6 +152,7 @@ abstract contract MainPrize is
 	// #region `_distributePrizes`
 
 	/// @notice Distributes ETH, CST, and CS NFT prizes to main prize beneficiary and secondary prize winners.
+	/// The prizes are documented in "<project>/docs/cosmic-signature-game-prizes.md".
 	function _distributePrizes() private {
 		// #region
 
