@@ -1,6 +1,6 @@
 ### Cosmic Signature Game Prizes
 
-This document lists all prizes awarded by the `CosmicSignatureGame` contract, and, more specifically, by the `MainPrize._distributePrizes` method at the end of each bidding round.
+This document lists all prizes awarded by the `CosmicSignatureGame` contract, and, more specifically, by the `MainPrize._distributePrizes` method at the end of each bidding round. In addition, there is a CST reward that each bidder gets when placing a bid.
 
 #### Variables
 
@@ -28,6 +28,7 @@ This document lists all prizes awarded by the `CosmicSignatureGame` contract, an
 |  | Cosmic Signature NFT | 0 or 1 | 1 | If nobody placed a CST bid, nobody would get this prize. |
 |  |  |  |  |  |
 | Bidders | ETH | `numRaffleEthPrizesForBidders` | `gameEthBalance * raffleTotalEthPrizeAmountForBiddersPercentage / 100 / numRaffleEthPrizesForBidders` | Bids are picked randomly. |
+|  | CST | 1 per bid | `cstRewardAmountForBidding` | On each bid, the bidder gets rewarded with CST. |
 |  | Cosmic Signature NFT | `numRaffleCosmicSignatureNftsForBidders` | 1 | Bids are picked randomly. |
 |  |  |  |  |  |
 | Random Walk NFT Stakers | Cosmic Signature NFT | 0 or `numRaffleCosmicSignatureNftsForRandomWalkNftStakers` | 1 | Staked RW NFTs are picked randomly. If there are no staked RW NFTs, nobody would get this prize. |
