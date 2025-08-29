@@ -8,11 +8,12 @@
 // [Comment-202409255]
 // Because "hardhat.config.js" imports us, an attempt to import "hardhat" here would throw an error.
 // So we must do things differently here.
+// Issue. A better option could be to add the `hre` parameter to functions that need it.
 // [/Comment-202409255]
 // const hre = require("hardhat");
 const { HardhatContext } = require("hardhat/internal/context");
 
-const { waitForTransactionReceipt } = require("./Helpers.js");
+const { waitForTransactionReceipt, safeErc1967GetChangedImplementationAddress } = require("./Helpers.js");
 
 // #endregion
 // #region `deployContracts`
@@ -78,7 +79,7 @@ const deployContractsAdvanced = async function (
 	await cosmicSignatureGameProxy.waitForDeployment();
 	const cosmicSignatureGameProxyAddress = await cosmicSignatureGameProxy.getAddress();
 
-	const cosmicSignatureGameImplementationAddress = await hre.upgrades.erc1967.getImplementationAddress(cosmicSignatureGameProxyAddress);
+	const cosmicSignatureGameImplementationAddress = await safeErc1967GetChangedImplementationAddress(cosmicSignatureGameProxyAddress, hre.ethers.ZeroAddress);
 	const cosmicSignatureGameImplementation = cosmicSignatureGameFactory.attach(cosmicSignatureGameImplementationAddress);
 
 	const cosmicSignatureTokenFactory = await hre.ethers.getContractFactory("CosmicSignatureToken", deployerSigner);

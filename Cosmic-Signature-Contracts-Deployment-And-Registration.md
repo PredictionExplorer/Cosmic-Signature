@@ -46,9 +46,9 @@ Save some arguments to Hardhat Configuration Variables. If you are dealing with 
 
 - Observe the newly created "scripts/temp/deploy-cosmic-signature-contracts-report-&lt;network_name&gt;.json" file. It contains addresses of all deployed contracts. Save it to a more reliable location, but leave the original in-place, so that other scripts could use it.
 
-- Only if you are delaing with a mainnet or a testnet, execute "scripts/run-register-cosmic-signature-contracts-&lt;network_name&gt;.bash". It will verify and register the source code of the previously deployed Cosmic Signature contracts on ArbiScan.
+- Only if you are dealing with a mainnet or a testnet, execute "scripts/run-register-cosmic-signature-contracts-&lt;network_name&gt;.bash". It will verify and register the source code of the previously deployed Cosmic Signature contracts on ArbiScan.
 
-- Only if you are delaing with a mainnet or a testnet, on ArbiScan, examine the deployed contract addresses. Make sure the evidence of the registration is there, especially that of the game contract proxy and implementation.
+- Only if you are dealing with a mainnet or a testnet, on ArbiScan, examine the deployed contract addresses. Make sure the evidence of the registration is there, especially that of the game contract proxy and implementation.
 
 #### Caveats
 
@@ -56,7 +56,7 @@ Save some arguments to Hardhat Configuration Variables. If you are dealing with 
 
 - If a proxy and/or implementation contract registration failed with the "already verifified" error, sometimes it also fails to link the proxy with the implementation. If you observe such an error, link them manually on ArbiScan.
 
-- After you deploy to a mainnet or a testnet, you will notice the ".openzeppelin" subfolder under the folder in which your ran the deployment scripts. OpenZeppelin Hardhat Upgrades is said to store important info there. I deployed on Arbitrum Sepolia, deleted the folder, and then tried to upgrade, but it failed. But when I deployed and upgraded on localhost, everything worked without creating the folder. It's said to be possible to force an upgrade without the folder, but I haven't tried it.\
+- After you deploy to a mainnet or a testnet, you will notice the ".openzeppelin" subfolder under the folder in which your ran the deployment scripts. OpenZeppelin Hardhat Upgrades is said to store important info there. I deployed on Arbitrum Sepolia, deleted the folder, and then tried to upgrade. It failed. But when I deployed and upgraded on localhost, everything worked without creating the folder. It's said to be possible to force an upgrade without the folder, but I haven't tried it.\
 So after the deployment, you probably should move the folder to a location outside the project. When you are about to upgrade, move it back, upgrade, and then move it away again.
 
 #### Afterwards

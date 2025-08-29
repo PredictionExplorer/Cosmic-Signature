@@ -96,7 +96,7 @@ const solidityVersion = "0.8.30";
 // To find out this value, execute:
 //    solc --version
 // Make sure you are executing the executable pointed at by `solidityCompilerPath`.
-// We print it near Comment-202411143.
+// We log it near Comment-202411143.
 //
 // 2025-08 Update.
 // The binary solc long version looks like 0.8.XX+commit.12abcdef.Linux.g++ .
@@ -411,7 +411,7 @@ const hardhatUserConfig = {
 	networks: {
 		hardhat: {
 			// Comment-202501193 relates and/or applies.
-			initialDate: (helpersModule.HARDHAT_MODE_CODE == 1) ? "2025-01-01" : (new Date()).toISOString(),
+			initialDate: (helpersModule.HARDHAT_MODE_CODE == 1) ? "2025-01-01" : undefined,
 
 			// By default, this is `false`.
 			// Comment-202501193 relates and/or applies.
@@ -422,6 +422,7 @@ const hardhatUserConfig = {
 			// [Comment-202507272]
 			// Providing a particular value, rather than "auto", improves Hardhat Network performance.
 			// By default, this value is taken from `blockGasLimit`.
+			// But, as explained in Comment-202510018, the "auto" is not always honored.
 			// We also use this near Comment-202508223.
 			// Comment-202507252 relates.
 			// Comment-202508265 relates and/or applies.
@@ -430,6 +431,11 @@ const hardhatUserConfig = {
 			// Similar magic numbers exist in multiple places.
 			// [/Comment-202508267]
 			gas: (helpersModule.HARDHAT_MODE_CODE == 1) ? 30_000_000 : "auto",
+
+			// // [Comment-202509209]
+			// // We also use this near Comment-202509185.
+			// // [/Comment-202509209]
+			// gasMultiplier: 1.0,
 
 			// [Comment-202507252]
 			// By default, this is 30_000_000.
@@ -472,38 +478,62 @@ const hardhatUserConfig = {
 				auto: (helpersModule.HARDHAT_MODE_CODE == 1) ? true : false,
 
 				// By default, this is 0.
-				interval: (helpersModule.HARDHAT_MODE_CODE == 1) ? 0 : 10,
+				interval: (helpersModule.HARDHAT_MODE_CODE == 1) ? 0 : 100,
 
 				mempool: {
 					// By default, this is "priority".
 					order: (helpersModule.HARDHAT_MODE_CODE == 1) ? "fifo" : "priority",
 				},
 			},
+
+			// loggingEnabled: false,
 		},
 		localhost: {
 			url: "http://localhost:8545/",
-			// gasMultiplier: 4,
+
+			// Comment-202509209 applies.
+			gasMultiplier: 1.4,
 		},
 		rinkeby: {
 			url: "https://rinkeby.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161",
+
+			// Comment-202509209 applies.
+			gasMultiplier: 1.1,
+
 			// accounts: ((process.env.PRIVATE_KEY ?? "").length > 0) ? [process.env.PRIVATE_KEY] : [],
 		},
 		sepolia: {
+			// todo-3 Is this URL for Sepolia or Arbitrum Sepolia?
+			// todo-3 Is this URL still valid? MetaMask uses a different one.
 			url: "http://170.187.142.12:22545/",
+
+			// Comment-202509209 applies.
+			gasMultiplier: 1.1,
+
 			// accounts: ((process.env.SEPOLIA_PRIVATE_KEY ?? "").length > 0) ? [process.env.SEPOLIA_PRIVATE_KEY] : [],
-			// gasMultiplier: 2,
 		},
 		arbigoerli: {
 			url: "https://goerli-rollup.arbitrum.io/rpc",
+
+			// Comment-202509209 applies.
+			gasMultiplier: 1.1,
+
 			// accounts: ((process.env.PRIVATE_KEY ?? "").length > 0) ? [process.env.PRIVATE_KEY] : [],
 		},
       arbitrumSepolia: {
          url: "https://sepolia-rollup.arbitrum.io/rpc",
+
+			// Comment-202509209 applies.
+			gasMultiplier: 1.1,
+
 			// accounts: ((process.env.ARBITRUM_SEPOLIA_PRIVATE_KEY ?? "").length > 0) ? [process.env.ARBITRUM_SEPOLIA_PRIVATE_KEY] : [],
-			// gasMultiplier: 2,
       },
 		arbitrumOne: {
 			url: "https://arb1.arbitrum.io/rpc",
+
+			// Comment-202509209 applies.
+			gasMultiplier: 1.1,
+
 			// accounts: ((process.env.MAINNET_PRIVATE_KEY ?? "").length > 0) ? [process.env.MAINNET_PRIVATE_KEY] : [],
 		},
 	},

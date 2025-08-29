@@ -5,7 +5,7 @@
 # Comments there apply.
 # [/Comment-202503282]
 
-'/usr/bin/clear'
+# '/usr/bin/clear'
 
 (
 	OutcomeCode=0
@@ -24,13 +24,14 @@
 		fi
 	}
 
-	if [ ${OutcomeCode} -lt 2 ]; then
-		cd '--' '..'
-		if [ $? -ne 0 ]; then
-			read '-r' '-n' '1' '-s' '-p' 'Error 202503273. Press any key to finish.'
-			OutcomeCode=2
-		fi
-	fi
+# todo-0 Delete this.
+	# if [ ${OutcomeCode} -lt 2 ]; then
+	# 	cd '--' '..'
+	# 	if [ $? -ne 0 ]; then
+	# 		read '-r' '-n' '1' '-s' '-p' 'Error 202503273. Press any key to finish.'
+	# 		OutcomeCode=2
+	# 	fi
+	# fi
 
 	export HARDHAT_MODE_CODE='1'
 

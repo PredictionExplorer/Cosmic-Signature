@@ -103,12 +103,12 @@ describe("MainPrize", function () {
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) - 1 - await makeNextBlockTimeDeterministic(300),]);
 		// await hre.ethers.provider.send("evm_mine");
 		// mainEthPrizeAmount_ = await contracts_.cosmicSignatureGameProxy.getMainEthPrizeAmount();
-		// const timeStamp1_ = Date.now();
+		// const timeStamp1_ = performance.now();
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).claimMainPrize()).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "MainPrizeEarlyClaim");
-		// const timeStamp2_ = Date.now();
+		// const timeStamp2_ = performance.now();
 		await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).claimMainPrize());
-		// const timeStamp3_ = Date.now();
-		// console.info(`202508247 ${timeStamp2_ - timeStamp1_} ${timeStamp3_ - timeStamp2_}`);
+		// const timeStamp3_ = performance.now();
+		// console.info(`202508247 ${(timeStamp2_ - timeStamp1_).toFixed(1)} ${(timeStamp3_ - timeStamp2_).toFixed(1)}`);
 		gameBalanceAmount_ = await hre.ethers.provider.getBalance(contracts_.cosmicSignatureGameProxyAddress);
 		mainEthPrizeAmount2_ = await contracts_.cosmicSignatureGameProxy.getMainEthPrizeAmount();
 		mainEthPrizeExpectedAmount_ = (gameBalanceAmount_ * 25n) / 100n;
@@ -140,7 +140,7 @@ describe("MainPrize", function () {
 		await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[2]).claimMainPrize());
 
 		// const timeStamp2_ = performance.now();
-		// console.info(`202506249 ${timeStamp2_ - timeStamp1_}`);
+		// console.info(`202506249 ${(timeStamp2_ - timeStamp1_).toFixed(1)}`);
 	});
 
 	// Issue. This test doesn't test CST prizes.

@@ -1,4 +1,5 @@
 {
+	"deploymentConfigurationFilePath": "../tasks/config/deploy-cosmic-signature-contracts-config-arbitrumSepolia.json",
 	"newCosmicSignatureGameContractVersionNumber": 2,
 	"newCosmicSignatureGameContractName": "CosmicSignatureGameOpenBid",
 	"newInitializerMethodName": "initialize2",

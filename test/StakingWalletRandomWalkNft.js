@@ -245,7 +245,7 @@ describe("StakingWalletRandomWalkNft", function () {
 			// const timeStamp1_ = performance.now();
 			const minNumLuckyStakerPicks_ = Math.min( ... numLuckyStakerPicks_ );
 			// const timeStamp2_ = performance.now();
-			// console.info(`202507263 ${timeStamp2_ - timeStamp1_} ${minNumLuckyStakerPicks_} ${numLuckyStakerPicks_}`);
+			// console.info(`202507263 ${(timeStamp2_ - timeStamp1_).toFixed(1)} ${minNumLuckyStakerPicks_} ${numLuckyStakerPicks_}`);
 			if (minNumLuckyStakerPicks_ <= 0) {
 				throw new Error(`The random picking of stakers is not necessarily random. At least 1 staker has not been picked. ${numLuckyStakerPicks_}`);
 			}

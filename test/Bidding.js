@@ -20,7 +20,7 @@ const { SKIP_LONG_TESTS, loadFixtureDeployContractsForTesting, makeNextBlockTime
 // 			latestTimeStamp_.toString(),
 // 			latestBlock_.number.toString(),
 // 			latestBlock_.timestamp.toString(),
-// 			(latestBlock_.timestamp - Math.floor(latestTimeStamp_ / 1000)).toString()
+// 			(latestBlock_.timestamp - Math.trunc(latestTimeStamp_ / 1000)).toString()
 // 		);
 // 	} else {
 // 		console.info(
@@ -31,7 +31,7 @@ const { SKIP_LONG_TESTS, loadFixtureDeployContractsForTesting, makeNextBlockTime
 // 			(latestBlock_.number - latestBlock.number).toString(),
 // 			latestBlock_.timestamp.toString(),
 // 			(latestBlock_.timestamp - latestBlock.timestamp).toString(),
-// 			(latestBlock_.timestamp - Math.floor(latestTimeStamp_ / 1000)).toString()
+// 			(latestBlock_.timestamp - Math.trunc(latestTimeStamp_ / 1000)).toString()
 // 		);
 // 	}
 // 	latestTimeStamp = latestTimeStamp_;

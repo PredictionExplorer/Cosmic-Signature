@@ -32,7 +32,7 @@ Make sure `deployerPrivateKey_<network_name>` matches the current contract owner
 
 #### One More Thing
 
-- Only if you are delaing with a mainnet or a testnet, move the ".openzeppelin" subfolder to under "scripts/".
+- Only if you are dealing with a mainnet or a testnet, move the ".openzeppelin" subfolder to under "scripts/".
 
 #### Run Scripts
 
@@ -40,9 +40,9 @@ Make sure `deployerPrivateKey_<network_name>` matches the current contract owner
 
 - Observe the newly created "scripts/temp/upgrade-cosmic-signature-game-report-&lt;network_name&gt;.json" file. It contains the newly deployed implementation contract address. Save it to a more reliable location, but leave the original in-place, so that other scripts could use it.
 
-- Only if you are delaing with a mainnet or a testnet, execute "scripts/run-register-upgraded-cosmic-signature-game-&lt;network_name&gt;.bash". It will verify and register the source code of the previously deployed game contract implementation on ArbiScan.
+- Only if you are dealing with a mainnet or a testnet, execute "scripts/run-register-upgraded-cosmic-signature-game-&lt;network_name&gt;.bash". It will verify and register the source code of the previously deployed game contract implementation on ArbiScan.
 
-- Only if you are delaing with a mainnet or a testnet, on ArbiScan, examine the proxy and implementation contract addresses. Make sure the evidence of the re-registration is there.
+- Only if you are dealing with a mainnet or a testnet, on ArbiScan, examine the proxy and implementation contract addresses. Make sure the evidence of the re-registration is there.
 
 #### Caveats
 

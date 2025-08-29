@@ -19,8 +19,9 @@ const { HardhatContext } = require("hardhat/internal/context");
 // #region
 
 // Supported values:
-//    1 to run tests under the "tests" subfolder deterministically and at the maximum speed.
-//    2 to simulate a live blockchain, which is designed for tests under the "scripts" subfolder.
+//    1 to run tests under the "<project>/test" subfolder deterministically and at the maximum speed.
+//    2 to simulate a live blockchain, which is designed for tests under the "<project>/scripts" subfolder.
+//      todo-0 Am I going to move those tests and some other scripts to another folder? Find all: scripts
 const HARDHAT_MODE_CODE = parseIntegerEnvironmentVariable("HARDHAT_MODE_CODE", 0);
 
 switch (HARDHAT_MODE_CODE) {
@@ -217,6 +218,46 @@ function sleepForMilliSeconds(durationInMilliSeconds_) {
 }
 
 // #endregion
+// #region `hackApplyGasMultiplierIfNeeded`
+
+/**
+[Comment-202509185]
+Sometimes (always?) Hardhat forgets to apply the configured `gasMultiplier`.
+This hack fixes that.
+This issue is said to have been fixed in Hardhat 3.
+todo-2 Are they going to fix the issue in Hardhat 2?
+Comment-202508265 relates.
+[/Comment-202509185]
+*/
+function hackApplyGasMultiplierIfNeeded() {
+	// Comment-202409255 applies.
+	const hre = HardhatContext.getHardhatContext().environment;
+
+	// if (hre.network.name != "localhost") {
+	// 	return;
+	// }
+	const gasMultiplier_ = hre.network.config.gasMultiplier;
+	// if (gasMultiplier_ == undefined) {
+	// 	return;
+	// }
+	// if (typeof gasMultiplier_ != "number") {
+	// 	throw new Error("Isn't gasMultiplier supposed to be a number?");
+	// }
+	if (gasMultiplier_ == 1.0) {
+		return;
+	}
+	const originalEstimateGas_ = hre.ethers.provider.estimateGas.bind(hre.ethers.provider);
+
+	// [Comment-202509198]
+	// Hardhat uses similar logic to multiply a gas estimate.
+	// Similar logic exists in multiple places.
+	// [/Comment-202509198]
+	hre.ethers.provider.estimateGas =
+		async (transactionRequest_) =>
+		(BigInt(Math.floor(Number(await originalEstimateGas_(transactionRequest_)) * gasMultiplier_)));
+}
+
+// #endregion
 // #region `waitForTransactionReceipt`
 
 /**
@@ -227,8 +268,61 @@ async function waitForTransactionReceipt(transactionResponsePromise_) {
 	// const timeStamp1_ = performance.now();
 	const transactionReceipt_ = await transactionResponse_.wait();
 	// const timeStamp2_ = performance.now();
-	// console.info(`202508248 ${(timeStamp2_ - timeStamp1_).toFixed(3)}`);
-	return transactionReceipt_
+	// console.info(`202508248 ${(timeStamp2_ - timeStamp1_).toFixed(1)}`);
+
+	// {
+	// 	// Comment-202409255 applies.
+	// 	const hre = HardhatContext.getHardhatContext().environment;
+	// 
+	// 	const transactionBlock_ = await transactionReceipt_.getBlock();
+	// 
+	// 	// Comment-202509198 applies.
+	// 	// const multipliedGasUsed_ = Math.floor(Number(transactionReceipt_.gasUsed) * hre.network.config.gasMultiplier);
+	// 	const originalGasEstimate_ = Math.ceil(Number(transactionResponse_.gasLimit) / hre.network.config.gasMultiplier);
+	// 	const gasUnusedFromOriginalGasEstimate_ = originalGasEstimate_ - Number(transactionReceipt_.gasUsed);
+	// 	const gasUnusedAsFractionOfOriginalGasEstimate_ = gasUnusedFromOriginalGasEstimate_ / originalGasEstimate_;
+	// 
+	// 	console.log(
+	// 		`202509184 ` +
+	// 		`${transactionBlock_.number} ` +
+	// 		`${transactionResponse_.gasLimit} ` +
+	// 		`${originalGasEstimate_} ` +
+	// 		`${transactionReceipt_.gasUsed} ` +
+	// 		`${gasUnusedFromOriginalGasEstimate_} ` +
+	// 		`${gasUnusedAsFractionOfOriginalGasEstimate_.toPrecision(2)}`
+	// 	);
+	// }
+
+	return transactionReceipt_;
+}
+
+// #endregion
+// #region `safeErc1967GetChangedImplementationAddress`
+
+/**
+ * Issue. This kinda smells.
+ * We would probably not need this if `hre.upgrades.erc1967.getImplementationAddress` loaded the storage slot
+ * in the context of the "pending" block.
+ * A more correct solution would be to find and parse respective events.
+ * It would also be helpful to add a timeout to guarantee that we will break the loop eventually.
+ * But keeping it simple.
+ * @param {string} proxyAddress_
+ * @param {string} oldImplementationAddress_
+ */
+async function safeErc1967GetChangedImplementationAddress(proxyAddress_, oldImplementationAddress_) {
+	// Comment-202409255 applies.
+	const hre = HardhatContext.getHardhatContext().environment;
+
+	for (;;) {
+		{
+			const newImplementationAddress_ = await hre.upgrades.erc1967.getImplementationAddress(proxyAddress_);
+			if (newImplementationAddress_ != oldImplementationAddress_) {
+				return newImplementationAddress_;
+			}
+		}
+		console.warn("Warning. We have to wait for the contract implementation address to become known.");
+		await sleepForMilliSeconds(2000);
+	}
 }
 
 // #endregion
@@ -249,7 +343,9 @@ module.exports = {
 	uint32ToPaddedHexString,
 	uint256ToPaddedHexString,
 	sleepForMilliSeconds,
+	hackApplyGasMultiplierIfNeeded,
 	waitForTransactionReceipt,
+	safeErc1967GetChangedImplementationAddress,
 };
 
 // #endregion

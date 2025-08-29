@@ -155,6 +155,7 @@ async function deployContractsForTestingAdvanced(
 /// The `blockGasLimit` parameter is also ignored, but we are happy with its default value.
 /// Comment-202505294 relates.
 /// todo-2 Is that behavior going to change in a future version of Hardhat? To be revisited.
+/// Comment-202509185 relates.
 /// [/Comment-202508265]
 async function hackPrepareHardhatCoverageOnceIfNeeded() {
 	// Comment-202508267 applies.

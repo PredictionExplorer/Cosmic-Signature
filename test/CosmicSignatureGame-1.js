@@ -95,7 +95,7 @@ describe("CosmicSignatureGame-1", function () {
 				await waitForTransactionReceipt(cosmicSignatureNftForSigner5_.setApprovalForAll(contracts_.stakingWalletCosmicSignatureNftAddress, true));
 			}
 			// const timeStamp2_ = performance.now();
-			// console.info((timeStamp2_ - timeStamp1_).toString());
+			// console.info((timeStamp2_ - timeStamp1_).toFixed(1));
 
 			// #endregion
 			// #region
@@ -587,8 +587,8 @@ describe("CosmicSignatureGame-1", function () {
 							);
 							// const timeStamp4_ = performance.now();
 							// console.info(
-							// 	(timeStamp2_ - timeStamp1_).toString(),
-							// 	(timeStamp4_ - timeStamp3_).toString()
+							// 	(timeStamp2_ - timeStamp1_).toFixed(1),
+							// 	(timeStamp4_ - timeStamp3_).toFixed(1)
 							// );
 							tryBreakLoop_ = true;
 						}

@@ -43,7 +43,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 				const cosmicSignatureNftNftMintedParsedLog_ = contracts_.cosmicSignatureNft.interface.parseLog(cosmicSignatureNftNftMintedLog_);
 				nftIds_.push(cosmicSignatureNftNftMintedParsedLog_.args.nftId);
 			}
-			// console.info(Date.now(), nftIds_.length);
+			// console.info(performance.now().toFixed(1), nftIds_.length);
 			if (roundNum_ >= 2n && nftIds_.length >= 10) {
 				break;
 			}
