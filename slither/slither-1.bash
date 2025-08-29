@@ -7,7 +7,7 @@
 
 	if [ ${OutcomeCode} -lt 2 ]; then
 		# [Comment-202409112]
-		# This file name exists in multiple places, including "./slither-manual.odt".
+		# This file name exists in multiple places.
 		# [/Comment-202409112]
 		SlitherOutputFileName='slither-1-output.md'
 
@@ -19,6 +19,8 @@
 	fi
 
 	if [ ${OutcomeCode} -lt 2 ]; then
+		export HARDHAT_MODE_CODE='1'
+
 		# Comment-202503302 applies.
 		'slither' '--filter-paths' '/contracts/tests/|/node_modules/' '--hardhat-artifacts-directory' 'artifacts/production' '--show-ignored-findings' '--checklist' '..' >> "${SlitherOutputFileName}"
 		
