@@ -157,7 +157,14 @@ const { HardhatUserConfig, subtask, } = require("hardhat/config");
 if (ENABLE_HARDHAT_PREPROCESSOR) {
 	require("hardhat-preprocessor");
 }
-require("hardhat-abi-exporter");
+
+// // [Comment-202510064]
+// // I feel that we don't need this.
+// // ABIs of all contracts are anyway created under the "artifacts" folder on compile.
+// // I have deleted the following from the "package.json" file:
+// // "hardhat-abi-exporter": "=2.11.0",
+// // [/Comment-202510064]
+// require("hardhat-abi-exporter");
 
 // // Issue. After I upgraded to Hardhat 2.26.1, this import started to cause all Solidity files recompile
 // // on each Hardhat Test task run. So I have commented it out and deleted the following line from "package.json":
@@ -329,16 +336,17 @@ const hardhatUserConfig = {
 				// },
 			},
 
-			outputSelection: {
-				"*": {
-					"*": [
-						"storageLayout",
-						// "ir",
-						// "irOptimized",
-						// "bytecode",
-					],
-				},
-			},
+			// // The latest Hardhat 2.x ignores this.
+			// outputSelection: {
+			// 	"*": {
+			// 		"*": [
+			// 			"storageLayout",
+			// 			// "ir",
+			// 			// "irOptimized",
+			// 			// "bytecode",
+			// 		],
+			// 	},
+			// },
 		},
 	},
 
@@ -378,32 +386,33 @@ const hardhatUserConfig = {
 	},
 
 	// #endregion
-	// #region
+	// #region //
 
-	abiExporter: {
-		// [Comment-202408024]
-		// This folder name exists in multiple places.
-		// [/Comment-202408024]
-		path: "./abi",
-
-		// runOnCompile: true,
-		clear: true,
-		flat: true,
-
-		// Issue. This list is incomplete.
-		only: [
-			"CosmicSignatureToken",
-			"RandomWalkNFT",
-			"CosmicSignatureNft",
-			"PrizesWallet",
-			"CharityWallet",
-			"CosmicSignatureDao",
-			// "CosmicSignatureGameProxy",
-		],
-
-		spacing: 2,
-		pretty: true,
-	},
+	// // Comment-202510064 applies.
+	// abiExporter: {
+	// 	// [Comment-202408024]
+	// 	// This folder name exists in multiple places.
+	// 	// [/Comment-202408024]
+	// 	path: "./abi",
+	//
+	// 	// runOnCompile: true,
+	// 	clear: true,
+	// 	flat: true,
+	//
+	// 	// Issue. This list is incomplete.
+	// 	only: [
+	// 		"CosmicSignatureToken",
+	// 		"RandomWalkNFT",
+	// 		"CosmicSignatureNft",
+	// 		"PrizesWallet",
+	// 		"CharityWallet",
+	// 		"CosmicSignatureDao",
+	// 		// "CosmicSignatureGameProxy",
+	// 	],
+	//
+	// 	spacing: 2,
+	// 	pretty: true,
+	// },
 
 	// #endregion
 	// #region
@@ -411,6 +420,8 @@ const hardhatUserConfig = {
 	// todo-1 When making changes to the networks, remember to refactor the logic near Comment-202408313.
 	networks: {
 		hardhat: {
+			chainId: 31337,
+
 			// Comment-202501193 relates and/or applies.
 			initialDate: (helpersModule.HARDHAT_MODE_CODE == 1) ? "2025-01-01" : undefined,
 
@@ -490,12 +501,14 @@ const hardhatUserConfig = {
 			// loggingEnabled: false,
 		},
 		localhost: {
+			chainId: 31337,
 			url: "http://localhost:8545/",
 
 			// Comment-202509209 applies.
 			gasMultiplier: 1.4,
 		},
 		rinkeby: {
+			// chainId: ???,
 			url: "https://rinkeby.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161",
 
 			// Comment-202509209 applies.
@@ -504,6 +517,8 @@ const hardhatUserConfig = {
 			// accounts: ((process.env.PRIVATE_KEY ?? "").length > 0) ? [process.env.PRIVATE_KEY] : [],
 		},
 		sepolia: {
+			chainId: 11155111,
+
 			// todo-3 Is this URL for Sepolia or Arbitrum Sepolia?
 			// todo-3 Is this URL still valid? MetaMask uses a different one.
 			url: "http://170.187.142.12:22545/",
@@ -514,6 +529,7 @@ const hardhatUserConfig = {
 			// accounts: ((process.env.SEPOLIA_PRIVATE_KEY ?? "").length > 0) ? [process.env.SEPOLIA_PRIVATE_KEY] : [],
 		},
 		arbigoerli: {
+			// chainId: ???,
 			url: "https://goerli-rollup.arbitrum.io/rpc",
 
 			// Comment-202509209 applies.
@@ -522,6 +538,7 @@ const hardhatUserConfig = {
 			// accounts: ((process.env.PRIVATE_KEY ?? "").length > 0) ? [process.env.PRIVATE_KEY] : [],
 		},
       arbitrumSepolia: {
+			chainId: 421614,
          url: "https://sepolia-rollup.arbitrum.io/rpc",
 
 			// Comment-202509209 applies.
@@ -530,6 +547,7 @@ const hardhatUserConfig = {
 			// accounts: ((process.env.ARBITRUM_SEPOLIA_PRIVATE_KEY ?? "").length > 0) ? [process.env.ARBITRUM_SEPOLIA_PRIVATE_KEY] : [],
       },
 		arbitrumOne: {
+			chainId: 42161,
 			url: "https://arb1.arbitrum.io/rpc",
 
 			// Comment-202509209 applies.

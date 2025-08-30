@@ -10,7 +10,6 @@
 		"@openzeppelin/hardhat-upgrades": "=3.9.1",
 		"eslint": "^9.33.0",
 		"hardhat": "=2.26.3",
-		"hardhat-abi-exporter": "=2.11.0",
 		"hardhat-preprocessor": "=0.1.5",
 		"hardhat-tracer": "=3.2.1",
 		"typescript": "^5.9.2",
