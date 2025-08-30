@@ -74,6 +74,8 @@ const configuration =
 				// We will make each of them balance twice larger than this.
 				// We won't fund any account that already has at least this much.
 				// This value is expressed in ETH. It will be converted to Wei.
+				// To test on the mainnet, this doesn't necessarily need to be that big.
+				// You can reduce this, based on how much ETH is spent on the testnet.
 				accountEthBalanceAmountMinLimitInEth: 0.01,
 			},
 

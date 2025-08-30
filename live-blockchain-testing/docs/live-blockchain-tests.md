@@ -14,39 +14,37 @@ All scripts assume that they are executed from the folder they are located in. S
 
 #### Review And Edit The Configuration File
 
-- The file to edit is "./live-blockchain-tests-configuration.js". You don't need to change most settings, but review them and their comments.
+- The file to edit is "../src/live-blockchain-tests-configuration.js". You don't need to change most settings, but review them and their comments.
 
 - "hardhat/networkName" specifies the blockchain to be used by Hardhat. Start with testing on "localhost".
 
 - In "cosmicSignatureContractsDeployment/randomWalkNftAddress", you have an option to provide an already deployed `RandomWalkNFT` contract address.
 
-- To test on the mainnet, "accountFundingWithEth.accountEthBalanceAmountMinLimitInEth" doesn't necessarily need to be that big. You can reduce it, based on how much ETH is spent on the testnet.
-
 - In "cosmicSignatureGamePlaying/randomWalkNftIds", you have an option to provide a few Random Walk NFTs that you own.
 
 #### Create Hardhat Configuration Variables
 
-- Execute "./generate-random-uint256.bash" and pick one of the generated random numbers. Create a Hardhat configuration variable:\
+- Execute "${workspaceFolder}/scripts/generate-random-uint256.bash" and pick one of the generated random numbers. Create a Hardhat configuration variable:\
 `npx hardhat vars set accountPrivateKeySeed 0x_THE_GENERATED_UINT256_HERE`\
 This will be used to generate private keys of a few accounts.\
 See Comment-202508313 for more info.
 
 #### Try Running The Test (it will fail)
 
-- If you want to run the test on Hardhat Network, in another terminal launch "./hardhat-node.bash".
+- If you are to run the test on Hardhat Network, in another terminal, launch "${workspaceFolder}/scripts/hardhat-node.bash".
 
-- Execute "./live-blockchain-tests.bash".\
+- Execute "../runners/live-blockchain-tests.bash".\
 It will quickly fail because the owner account has no ETH, but before failing it will log important info, including the owner account private key and address.
 
 - Internally, the test uses a few accounts. Their private keys are generated based on the `accountPrivateKeySeed` Hardhat configuration variable that you have created. One of them is nicknamed "owner". That's the one you need to transfer some ETH to.\
-There is a script named "./fund-default-owner-account-with-eth.bash". It transfers some ETH within the Hardhat Network running on localhost. Destination is the owner account whose private key seed exists in the Git repo (insecure). You can copy and modify the script to transfer ETH to your secure owner. But on a public blockchain you will need to manually transfer ETH to the owner account.
+There is a script named "../runners/fund-default-owner-account-with-eth.bash". It transfers some ETH within the Hardhat Network running on localhost. Destination is the owner account whose private key seed exists in the Git repo (insecure). You can copy and modify the script to transfer ETH to your secure owner. But on a public blockchain you will need to manually transfer ETH to the owner account.
 
 #### Run The Test
 
-- Execute "./live-blockchain-tests.bash".\
+- Execute "../runners/live-blockchain-tests.bash".\
 It will run for about a minute.
 
-- The test saves deployed contract addresses to the "./temp/deploy-cosmic-signature-contracts-report-&lt;network_name&gt;-&lt;cosmic_signature_game_contract_name&gt;.json" file. If something goes wrong you might need to use some of those addresses to get your assets back.
+- The test saves deployed contract addresses to the "../output/deploy-cosmic-signature-contracts-report-&lt;network_name&gt;-&lt;cosmic_signature_game_contract_name&gt;.json" file. If something goes wrong you might need to use some of those addresses to get your assets back.
 
 #### Get Your Assets Back
 
@@ -59,7 +57,7 @@ Comment-202509304 relates and/or applies.
 
 #### Caveats
 
-- In "../Cosmic-Signature-Contracts-Deployment-And-Registration.md" see a note about the ".openzeppelin" subfolder. Make sure your test deployments do not get mixed up with your production ones within the same file under the subfolder.
+- In "../../Cosmic-Signature-Contracts-Deployment-And-Registration.md" see a note about the ".openzeppelin" subfolder. Make sure your test deployments do not get mixed up with your production ones within the same file under the subfolder.
 
 #### Afterwards
 
@@ -69,4 +67,4 @@ Comment-202509304 relates and/or applies.
 
 - Move or delete the ".openzeppelin" subfolder.
 
-- Move or delete the files under the "temp" subfolder.
+- Move or delete the files under the "../output" subfolder.
