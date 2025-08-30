@@ -174,7 +174,7 @@ const { TASK_COMPILE_SOLIDITY_GET_SOLC_BUILD, } = require("hardhat/builtin-tasks
 require("@openzeppelin/hardhat-upgrades");
 
 // Comment-202409255 relates.
-require("./tasks/cosmic-signature-tasks.js");
+require("./tasks/src/cosmic-signature-tasks.js");
 
 // #endregion
 // #region

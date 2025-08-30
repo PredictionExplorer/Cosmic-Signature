@@ -112,7 +112,7 @@ describe("CosmicSignatureGame-3", function () {
 		{
 			// The recommended approach.
 			{
-				// /** @type {Promise<hre.ethers.TransactionResponse>} */
+				// /** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 				const transactionResponsePromise_ =
 					hre.upgrades.upgradeProxy(
 						contracts_.cosmicSignatureGameProxy/*.connect(contracts_.signers[5])*/,
@@ -128,7 +128,7 @@ describe("CosmicSignatureGame-3", function () {
 
 			// Our minimalistic unsafe approach.
 			{
-				/** @type {Promise<hre.ethers.TransactionResponse>} */
+				/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 				const transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[5]).upgradeTo(contracts_.signers[0].address);
 				await expect(transactionResponsePromise_).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 			}
@@ -138,7 +138,7 @@ describe("CosmicSignatureGame-3", function () {
 		{
 			// The recommended approach.
 			{
-				// /** @type {Promise<hre.ethers.TransactionResponse>} */
+				// /** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 				const transactionResponsePromise_ =
 					hre.upgrades.upgradeProxy(
 						hre.ethers.ZeroAddress,
@@ -163,7 +163,7 @@ describe("CosmicSignatureGame-3", function () {
 
 			// Our minimalistic unsafe approach.
 			{
-				/** @type {Promise<hre.ethers.TransactionResponse>} */
+				/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 				const transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner).upgradeTo(hre.ethers.ZeroAddress);
 				await expect(transactionResponsePromise_).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "ZeroAddress");
 			}
@@ -175,7 +175,7 @@ describe("CosmicSignatureGame-3", function () {
 		{
 			// The recommended approach.
 			{
-				// /** @type {Promise<hre.ethers.TransactionResponse>} */
+				// /** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 				const transactionResponsePromise_ =
 					hre.upgrades.upgradeProxy(
 						contracts_.cosmicSignatureGameProxy,
@@ -191,7 +191,7 @@ describe("CosmicSignatureGame-3", function () {
 
 			// Our minimalistic unsafe approach.
 			{
-				/** @type {Promise<hre.ethers.TransactionResponse>} */
+				/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 				const transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner).upgradeTo(contracts_.signers[0].address);
 				await expect(transactionResponsePromise_).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "RoundIsActive");
 			}

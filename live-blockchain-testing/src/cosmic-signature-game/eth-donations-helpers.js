@@ -1,8 +1,8 @@
 "use strict";
 
 const hre = require("hardhat");
-const { waitForTransactionReceipt } = require("../../src/Helpers.js");
-const { assertEvent } = require("../../src/ContractTestingHelpers.js");
+const { waitForTransactionReceipt } = require("../../../src/Helpers.js");
+const { assertEvent } = require("../../../src/ContractTestingHelpers.js");
 
 async function donateEthToCosmicSignatureGame(cosmicSignatureGameProxy_, donor1Signer_, donor2Signer_, amountInEth_) {
 	const roundNum_ = await cosmicSignatureGameProxy_.roundNum();
@@ -11,7 +11,7 @@ async function donateEthToCosmicSignatureGame(cosmicSignatureGameProxy_, donor1S
 	const amount2InWei_ = amountInWei_ - amount1InWei_;
 	console.info("donateEth");
 	{
-		/** @type {Promise<hre.ethers.TransactionResponse>} */
+		/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 		const transactionResponsePromise_ = cosmicSignatureGameProxy_.connect(donor1Signer_).donateEth({value: amount1InWei_,})
 		const transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 		assertEvent(
@@ -24,7 +24,7 @@ async function donateEthToCosmicSignatureGame(cosmicSignatureGameProxy_, donor1S
 	console.info("donateEthWithInfo");
 	{
 		const numEthDonationWithInfoRecords_ = await cosmicSignatureGameProxy_.numEthDonationWithInfoRecords();
-		/** @type {Promise<hre.ethers.TransactionResponse>} */
+		/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 		const transactionResponsePromise_ = cosmicSignatureGameProxy_.connect(donor2Signer_).donateEthWithInfo("Donation Info", {value: amount2InWei_,})
 		const transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 		assertEvent(

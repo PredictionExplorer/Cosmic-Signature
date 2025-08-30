@@ -3,13 +3,13 @@
 const nodeOsModule = require("node:os");
 const nodePathModule = require("node:path");
 const nodeFsModule = require("node:fs");
-const { vars, task } = require("hardhat/config.js");
+const { vars, task } = require("hardhat/config");
 
 // Comment-202409255 relates.
-const { waitForTransactionReceipt, safeErc1967GetChangedImplementationAddress } = require("../src/Helpers.js");
+const { waitForTransactionReceipt, safeErc1967GetChangedImplementationAddress } = require("../../src/Helpers.js");
 
 // Comment-202409255 relates.
-const { deployContractsAdvanced } = require("../src/ContractDeploymentHelpers.js");
+const { deployContractsAdvanced } = require("../../src/ContractDeploymentHelpers.js");
 
 task("deploy-cosmic-signature-contracts", "Deploys Cosmic Signature contracts to a blockchain", async (args, hre) => {
 	console.info(`${nodeOsModule.EOL}deploy-cosmic-signature-contracts task is running.${nodeOsModule.EOL}`);

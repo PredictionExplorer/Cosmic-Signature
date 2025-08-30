@@ -1,8 +1,8 @@
 "use strict";
 
 const { expect } = require("chai");
-const hre = require("hardhat");
-const { sleepForMilliSeconds, waitForTransactionReceipt } = require("../../src/Helpers.js");
+// const hre = require("hardhat");
+const { sleepForMilliSeconds, waitForTransactionReceipt } = require("../../../src/Helpers.js");
 
 async function waitUntilMainPrizeTime(cosmicSignatureGameProxy_) {
 	for (;;) {
@@ -20,7 +20,7 @@ async function claimMainPrize(cosmicSignatureGameProxy_, bidderSigner_) {
 	const cosmicSignatureGameProxyMainPrizeClaimedTopicHash_ = cosmicSignatureGameProxy_.interface.getEvent("MainPrizeClaimed").topicHash;
 	let mainEthPrizeAmount_ = await cosmicSignatureGameProxy_.getMainEthPrizeAmount();
 	const timeStamp1_ = performance.now();
-	/** @type {Promise<hre.ethers.TransactionResponse>} */
+	/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 	let transactionResponsePromise_ = cosmicSignatureGameProxy_.connect(bidderSigner_).claimMainPrize();
 	let transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 	const timeStamp2_ = performance.now();
@@ -54,7 +54,7 @@ async function claimMainPrize(cosmicSignatureGameProxy_, bidderSigner_) {
 // async function claim_main_prize(testingAcct, cosmicSignatureGame) {
 // 	let mainEthPrizeAmount = await cosmicSignatureGame.getMainEthPrizeAmount();
 // 	let charityEthDonationAmount = await cosmicSignatureGame.getCharityEthDonationAmount();
-// 	/** @type {Promise<hre.ethers.TransactionResponse>} */
+// 	/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 // 	let transactionResponsePromise = cosmicSignatureGame.connect(testingAcct).claimMainPrize();
 // 	let transactionReceipt = await waitForTransactionReceipt(transactionResponsePromise);
 // 	let topic_sig = cosmicSignatureGame.interface.getEventTopic("MainPrizeClaimed");

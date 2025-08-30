@@ -6,7 +6,7 @@
 // "use strict";
 
 // const hre = require("hardhat");
-// const { deployContractsAdvanced } = require("../../src/ContractDeploymentHelpers.js");
+// const { deployContractsAdvanced } = require("../../../src/ContractDeploymentHelpers.js");
 
 // async function main() {
 // 	const privKey = process.env.PRIVKEY;

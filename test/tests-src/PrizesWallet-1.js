@@ -320,7 +320,7 @@ describe("PrizesWallet-1", function () {
 					}
 				}
 				const prizeWinnerEthBalanceAmountBeforeTransaction_ = await hre.ethers.provider.getBalance(contracts_.signers[prizeWinnerIndex_].address);
-				/** @type {Promise<hre.ethers.TransactionResponse>} */
+				/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 				const transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[prizeWinnerIndex_])["withdrawEth()"]();
 				await expect(transactionResponsePromise_)
 					.emit(newPrizesWallet_, "EthWithdrawn")
@@ -368,7 +368,7 @@ describe("PrizesWallet-1", function () {
 					}
 				}
 				const strangerEthBalanceAmountBeforeTransaction_ = await hre.ethers.provider.getBalance(contracts_.signers[strangerIndex_].address);
-				/** @type {Promise<hre.ethers.TransactionResponse>} */
+				/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 				const transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[strangerIndex_])["withdrawEth(address)"](contracts_.signers[prizeWinnerIndex_].address);
 				const transactionReceipt_ = await tryWaitForTransactionReceipt(transactionResponsePromise_);
 				const transactionBlock_ = await hre.ethers.provider.getBlock("latest");
@@ -439,7 +439,7 @@ describe("PrizesWallet-1", function () {
 					// console.info("202506151");
 					tokenAmount_ = 0n;
 				}
-				/** @type {Promise<hre.ethers.TransactionResponse>} */
+				/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 				const transactionResponsePromise_ =
 					newPrizesWallet_.connect(fakeGame_).donateToken(
 						roundNum_,
@@ -559,7 +559,7 @@ describe("PrizesWallet-1", function () {
 					// #endregion
 					// #region
 
-					/** @type {Promise<hre.ethers.TransactionResponse>} */
+					/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 					const transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[mainPrizeBeneficiaryIndex_]).claimDonatedToken(donationRoundNum_, tokensAddress_[tokenIndex_], donatedTokenAmountToClaim_);
 					const transactionReceipt_ = await tryWaitForTransactionReceipt(transactionResponsePromise_);
 					// if (transactionReceipt_ != undefined) {
@@ -722,7 +722,7 @@ describe("PrizesWallet-1", function () {
 						break;
 					}
 				}
-				/** @type {Promise<hre.ethers.TransactionResponse>} */
+				/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 				const transactionResponsePromise_ =
 					newPrizesWallet_.connect(fakeGame_).donateNft(
 						roundNum_,
@@ -784,7 +784,7 @@ describe("PrizesWallet-1", function () {
 						break;
 					}
 				}
-				/** @type {Promise<hre.ethers.TransactionResponse>} */
+				/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 				const transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[mainPrizeBeneficiaryIndex_]).claimDonatedNft(BigInt(donatedNftIndex_));
 				const transactionReceipt_ = await tryWaitForTransactionReceipt(transactionResponsePromise_);
 				let transactionShouldHaveSucceeded_ = true;

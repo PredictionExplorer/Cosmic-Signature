@@ -177,12 +177,12 @@ describe("CosmicSignatureGame-1", function () {
 
 				// Comment-202505051 applies.
 				// Comment-202505141 applies.
-				/** @type {hre.ethers.Block} */
+				/** @type {import("hardhat").ethers.Block} */
 				let transactionBlock_;
 
 				// Comment-202505051 applies.
 				// A value other than `undefined` indicates that the transaction succeeded.
-				/** @type {hre.ethers.TransactionReceipt} */
+				/** @type {import("hardhat").ethers.TransactionReceipt} */
 				let transactionReceipt_;
 
 				const eventIndexWrapper_ = {value: 0,};
@@ -305,7 +305,7 @@ describe("CosmicSignatureGame-1", function () {
 						// It would be nice to implement this method in `createRandomWalkNftSimulator`, but keeping it simple.
 						const randomWalkNftMintPrice_ = await randomWalkNftForSigner_.getMintPrice();
 
-						/** @type {Promise<hre.ethers.TransactionResponse>} */
+						/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 						const transactionResponsePromise_ = randomWalkNftForSigner_.mint({value: randomWalkNftMintPrice_,});
 						// const transactionResponse_ = await transactionResponsePromise_;
 						transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
@@ -325,7 +325,7 @@ describe("CosmicSignatureGame-1", function () {
 						if (found_) {
 							// console.info("202505107 Staking RW NFT " + randomWalkNftId_.toString() + ".");
 							blockBeforeTransaction_ = latestBlock_;
-							/** @type {Promise<hre.ethers.TransactionResponse>} */
+							/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 							const transactionResponsePromise_ = stakingWalletRandomWalkNftForSigner_.stake(randomWalkNftId_);
 							transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 							latestBlock_ = await transactionReceipt_.getBlock();
@@ -345,7 +345,7 @@ describe("CosmicSignatureGame-1", function () {
 						if (found_) {
 							// console.info("202505108 Staking CS NFT " + cosmicSignatureNftId_.toString() + ".");
 							blockBeforeTransaction_ = latestBlock_;
-							/** @type {Promise<hre.ethers.TransactionResponse>} */
+							/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 							const transactionResponsePromise_ = stakingWalletCosmicSignatureNftForSigner_.stake(cosmicSignatureNftId_);
 							transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 							latestBlock_ = await transactionReceipt_.getBlock();
@@ -367,7 +367,7 @@ describe("CosmicSignatureGame-1", function () {
 						const ethDonationAmount_ = BigInt(Math.max(Number(BigInt.asUintN(53, randomNumber_)) - Number(1n << (53n - 4n)), 0));
 						if ((randomNumber_ & (1n << 128n)) == 0n) {
 							// console.info("202506038 Donating " + hre.ethers.formatEther(ethDonationAmount_) + " ETH.");
-							/** @type {Promise<hre.ethers.TransactionResponse>} */
+							/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 							const transactionResponsePromise_ = cosmicSignatureGameProxyForSigner_.donateEth({value: ethDonationAmount_,});
 							transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 							cosmicSignatureGameProxySimulator_.donateEth(signer_.address, ethDonationAmount_, contracts_, transactionReceipt_, eventIndexWrapper_);
@@ -377,7 +377,7 @@ describe("CosmicSignatureGame-1", function () {
 							// Comment-202505061 applies.
 							generateBidMessage_();
 
-							/** @type {Promise<hre.ethers.TransactionResponse>} */
+							/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 							const transactionResponsePromise_ = cosmicSignatureGameProxyForSigner_.donateEthWithInfo(bidMessage_, {value: ethDonationAmount_,});
 							transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 							cosmicSignatureGameProxySimulator_.donateEthWithInfo(signer_.address, ethDonationAmount_, bidMessage_, contracts_, transactionReceipt_, eventIndexWrapper_);
@@ -433,7 +433,7 @@ describe("CosmicSignatureGame-1", function () {
 						}
 						const signerEthBalanceAmountBeforeTransaction_ = await hre.ethers.provider.getBalance(signer_.address);
 						// console.info("202507209", hre.ethers.formatEther(signerEthBalanceAmountBeforeTransaction_), hre.ethers.formatEther(ethPriceToPayMaxLimit_));
-						/** @type {Promise<hre.ethers.TransactionResponse>} */
+						/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 						const transactionResponsePromise_ =
 							sendEth_ ?
 							signer_.sendTransaction({to: contracts_.cosmicSignatureGameProxyAddress, value: ethPriceToPayMaxLimit_,}) :
@@ -501,7 +501,7 @@ describe("CosmicSignatureGame-1", function () {
 						// Comment-202503162 relates.
 						const cstPriceToPayMaxLimit_ = randomNumber_ % (paidCstPrice_ * 16n + 1n);
 
-						/** @type {Promise<hre.ethers.TransactionResponse>} */
+						/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 						const transactionResponsePromise_ = cosmicSignatureGameProxyForSigner_.bidWithCst(cstPriceToPayMaxLimit_, bidMessage_);
 						transactionReceipt_ = await tryWaitForTransactionReceipt(transactionResponsePromise_);
 						latestBlock_ = await hre.ethers.provider.getBlock("latest");
@@ -551,7 +551,7 @@ describe("CosmicSignatureGame-1", function () {
 						await advanceNextBlockTime_();
 						blockBeforeTransaction_ = latestBlock_;
 						const signerEthBalanceAmountBeforeTransaction_ = await hre.ethers.provider.getBalance(signer_.address);
-						/** @type {Promise<hre.ethers.TransactionResponse>} */
+						/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 						const transactionResponsePromise_ = cosmicSignatureGameProxyForSigner_.claimMainPrize();
 						transactionReceipt_ = await tryWaitForTransactionReceipt(transactionResponsePromise_);
 						latestBlock_ = await hre.ethers.provider.getBlock("latest");
@@ -690,7 +690,7 @@ describe("CosmicSignatureGame-1", function () {
 					// [/Comment-202505117]
 					if (cosmicSignatureGameProxySimulator_.ethDutchAuctionEndingBidPriceDivisor < 10n ** 30n) {
 						const newEthDutchAuctionEndingBidPriceDivisor_ = cosmicSignatureGameProxySimulator_.ethDutchAuctionEndingBidPriceDivisor * 10n;
-						/** @type {Promise<hre.ethers.TransactionResponse>} */
+						/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 						const transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner).setEthDutchAuctionEndingBidPriceDivisor(newEthDutchAuctionEndingBidPriceDivisor_);
 						transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 						latestBlock_ = await transactionReceipt_.getBlock();

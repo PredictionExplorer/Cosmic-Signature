@@ -1,7 +1,7 @@
 "use strict";
 
 const { expect } = require("chai");
-const { waitForTransactionReceipt } = require("../../src/Helpers.js");
+const { waitForTransactionReceipt } = require("../../../src/Helpers.js");
 
 async function validatePrizesWallet(
 	prizesWallet_,

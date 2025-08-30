@@ -2,7 +2,7 @@
 
 const { expect } = require("chai");
 const hre = require("hardhat");
-const { sleepForMilliSeconds, waitForTransactionReceipt } = require("../../src/Helpers.js");
+const { sleepForMilliSeconds, waitForTransactionReceipt } = require("../../../src/Helpers.js");
 
 async function ensureDurationElapsedSinceRoundActivationIsAtLeast(cosmicSignatureGameProxy_, ownerSigner_, durationElapsedSinceRoundActivationMinLimit_) {
 	const roundActivationTime_ = await cosmicSignatureGameProxy_.roundActivationTime();
@@ -58,7 +58,7 @@ async function bidWithEth(cosmicSignatureGameProxy_, bidderSigner_) {
 		}
 	}
 
-	/** @type {Promise<hre.ethers.TransactionResponse>} */
+	/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 	let transactionResponsePromise_ =
 		cosmicSignatureGameProxy_
 			.connect(bidderSigner_)
@@ -92,7 +92,7 @@ async function bidWithEthPlusRandomWalkNft(cosmicSignatureGameProxy_, bidderSign
 
 	const nextEthPlusRandomWalkNftBidPrices_ = new Array(nextEthBidPrices_.length);
 	nextEthPlusRandomWalkNftBidPrices_[0] = await cosmicSignatureGameProxy_.getEthPlusRandomWalkNftBidPrice(nextEthBidPrices_[0]);
-	/** @type {Promise<hre.ethers.TransactionResponse>} */
+	/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 	let transactionResponsePromise_ =
 		cosmicSignatureGameProxy_
 			.connect(bidderSigner_)
@@ -132,7 +132,7 @@ async function bidWithEthAndDonateNft(cosmicSignatureGameProxy_, prizesWallet_, 
 		}
 	}
 
-	/** @type {Promise<hre.ethers.TransactionResponse>} */
+	/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 	let transactionResponsePromise_ =
 		cosmicSignatureGameProxy_
 			.connect(bidderSigner_)
@@ -173,7 +173,7 @@ async function bidWithEthPlusRandomWalkNftAndDonateNft(cosmicSignatureGameProxy_
 
 	const nextEthPlusRandomWalkNftBidPrices_ = new Array(nextEthBidPrices_.length);
 	nextEthPlusRandomWalkNftBidPrices_[0] = await cosmicSignatureGameProxy_.getEthPlusRandomWalkNftBidPrice(nextEthBidPrices_[0]);
-	/** @type {Promise<hre.ethers.TransactionResponse>} */
+	/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 	let transactionResponsePromise_ =
 		cosmicSignatureGameProxy_
 			.connect(bidderSigner_)
@@ -219,7 +219,7 @@ async function bidWithCstAndDonateToken(cosmicSignatureGameProxy_, prizesWallet_
 		}
 	}
 	const timeStamp2_ = performance.now();
-	/** @type {Promise<hre.ethers.TransactionResponse>} */
+	/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 	let transactionResponsePromise_ =
 		cosmicSignatureGameProxy_
 			.connect(bidderSigner_)

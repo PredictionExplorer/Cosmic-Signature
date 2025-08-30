@@ -16,11 +16,11 @@ All scripts assume that they are executed from the folder they are located in. S
 
 - The file to edit is "../src/live-blockchain-tests-configuration.js". You don't need to change most settings, but review them and their comments.
 
-- "hardhat/networkName" specifies the blockchain to be used by Hardhat. Start with testing on "localhost".
+- "hardhat.networkName" specifies the blockchain to be used by Hardhat. Start with testing on "localhost".
 
-- In "cosmicSignatureContractsDeployment/randomWalkNftAddress", you have an option to provide an already deployed `RandomWalkNFT` contract address.
+- In "cosmicSignatureContractsDeployment.randomWalkNftAddress", you have an option to provide an already deployed `RandomWalkNFT` contract address.
 
-- In "cosmicSignatureGamePlaying/randomWalkNftIds", you have an option to provide a few Random Walk NFTs that you own.
+- In "cosmicSignatureGamePlaying.randomWalkNftIds", you have an option to provide a few Random Walk NFTs that you own.
 
 #### Create Hardhat Configuration Variables
 
@@ -57,7 +57,7 @@ Comment-202509304 relates and/or applies.
 
 #### Caveats
 
-- In "../../Cosmic-Signature-Contracts-Deployment-And-Registration.md" see a note about the ".openzeppelin" subfolder. Make sure your test deployments do not get mixed up with your production ones within the same file under the subfolder.
+- In "${workspaceFolder}/tasks/docs/Cosmic-Signature-Contracts-Deployment-And-Registration.md" see a note about the ".openzeppelin" subfolder. Make sure your test deployments do not get mixed up with your production ones within the same file under the subfolder.
 
 #### Afterwards
 

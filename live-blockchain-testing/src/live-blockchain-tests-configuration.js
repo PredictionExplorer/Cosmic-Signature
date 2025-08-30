@@ -50,13 +50,13 @@ const configuration =
 				// We will substitute the variables in this file name.
 				// If we run the deploy-cosmic-signature-contracts task, we will create this file at runtime.
 				// If the file already exists we will overwrite it.
-				deployCosmicSignatureContractsConfigurationFilePath: "temp/deploy-cosmic-signature-contracts-config-${networkName}-${cosmicSignatureGameContractName}.json",
+				deployCosmicSignatureContractsConfigurationFilePath: "../output/deploy-cosmic-signature-contracts-config-${networkName}-${cosmicSignatureGameContractName}.json",
 
 				// The deploy-cosmic-signature-contracts task report file path.
 				// We will substitute the variables in this file name.
 				// We will not run the deploy-cosmic-signature-contracts task if this file already exists.
 				// We will load this file regardless of whether we run the task.
-				deployCosmicSignatureContractsReportFilePath: "temp/deploy-cosmic-signature-contracts-report-${networkName}-${cosmicSignatureGameContractName}.json",
+				deployCosmicSignatureContractsReportFilePath: "../output/deploy-cosmic-signature-contracts-report-${networkName}-${cosmicSignatureGameContractName}.json",
 			},
 
 			// Whether to validate state of newly deployed Cosmic Signature contracts.

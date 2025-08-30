@@ -8,7 +8,7 @@ The following blockchains are supported: Hardhat Network (a local blockchin), Ar
 
 All scripts assume that they are executed from the folder they are located in. So you must `cd` to the script's folder and execute the script like `./my-script.bash`.
 
-You can start Hardhat Network by executing "scripts/hardhat-node.bash".
+You can start Hardhat Network by executing "${workspaceFolder}/scripts/hardhat-node.bash".
 
 #### Create API Keys
 
@@ -25,10 +25,10 @@ You can start Hardhat Network by executing "scripts/hardhat-node.bash".
 
 #### Edit Configuration Files
 
-- "tasks/config/deploy-cosmic-signature-contracts-config-&lt;network_name&gt;.json"\
+- "../config/deploy-cosmic-signature-contracts-config-&lt;network_name&gt;.json"\
 These files are in the Git repo, so don't include sensitive info in them.\
 For a local blockchain, it's OK to set `deployerPrivateKey` to a well known account private key. For a testnet or mainnet, leave it empty, so that it was taken from a Hardhat configuration variable.\
-Set `randomWalkNftAddress` to where the contract has been deployed. If you leave it empty or zero, it will be deployed, which is the right thing to do on a local blockchain.\
+Set `randomWalkNftAddress` to where the contract has been deployed. If you leave it empty or zero, it will be deployed, which is typically the right thing to do on a local blockchain.\
 Set `charityAddress` to your charity address. Or leave it empty or zero and later set it by making a call to `CharityWallet`.
 You probably don't need to change any other arguments.
 
@@ -42,11 +42,11 @@ Save some arguments to Hardhat Configuration Variables. If you are dealing with 
 
 #### Run Scripts
 
-- Execute "scripts/run-deploy-cosmic-signature-contracts-&lt;network_name&gt;.bash". It will deploy Cosmic Signature contracts.
+- Execute "../runners/run-deploy-cosmic-signature-contracts-&lt;network_name&gt;.bash". It will deploy Cosmic Signature contracts.
 
-- Observe the newly created "scripts/temp/deploy-cosmic-signature-contracts-report-&lt;network_name&gt;.json" file. It contains addresses of all deployed contracts. Save it to a more reliable location, but leave the original in-place, so that other scripts could use it.
+- Observe the newly created "../output/deploy-cosmic-signature-contracts-report-&lt;network_name&gt;.json" file. It contains addresses of all deployed contracts. Save it to a more reliable location, but leave the original in-place, so that other scripts could use it.
 
-- Only if you are dealing with a mainnet or a testnet, execute "scripts/run-register-cosmic-signature-contracts-&lt;network_name&gt;.bash". It will verify and register the source code of the previously deployed Cosmic Signature contracts on ArbiScan.
+- Only if you are dealing with a mainnet or a testnet, execute "../runners/run-register-cosmic-signature-contracts-&lt;network_name&gt;.bash". It will verify and register the source code of the previously deployed Cosmic Signature contracts on ArbiScan.
 
 - Only if you are dealing with a mainnet or a testnet, on ArbiScan, examine the deployed contract addresses. Make sure the evidence of the registration is there, especially that of the game contract proxy and implementation.
 

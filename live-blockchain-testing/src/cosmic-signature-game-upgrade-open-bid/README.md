@@ -1,8 +1,7 @@
 ### Note
 
 This document is old, although it's still to some degree correct.
-Here is a modern substitute: "../../Cosmic-Signature-Game-Contract-Upgrade-And-Re-Registration.md".
-<!-- todo-0 Am I going to move that file? -->
+Here is a modern substitute: "${workspaceFolder}/tasks/docs/Cosmic-Signature-Game-Contract-Upgrade-And-Re-Registration.md".
 
 ### "BiddingOpenBid.sol" and "CosmicSignatureGameOpenBid.sol" as an example of `CosmicSignatureGame` upgrade
 

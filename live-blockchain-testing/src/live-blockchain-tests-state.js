@@ -10,7 +10,7 @@ class State {
 	Save one as a Hardhat configuration variable by executing the followintg command:
 	   npx hardhat vars set accountPrivateKeySeed 0x...
 	Substitute the "0x..." with a hard to guess uint256 value.
-	You can execute "generate-random-uint256.bash" to generate one.
+	You can execute "${workspaceFolder}/scripts/generate-random-uint256.bash" to generate one.
 	[/Comment-202508313]
 	@type {bigint}
 	*/

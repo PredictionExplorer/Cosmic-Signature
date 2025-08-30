@@ -54,7 +54,7 @@ describe("Arbitrum", function () {
 			let durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrizeRaw();
 			await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_),]);
 			// await hre.ethers.provider.send("evm_mine");
-			/** @type {Promise<hre.ethers.TransactionResponse>} */
+			/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 			let transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).claimMainPrize();
 			let transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 			let cosmicSignatureGameProxyArbitrumErrorLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.indexOf(cosmicSignatureGameProxyArbitrumErrorTopicHash_) >= 0));

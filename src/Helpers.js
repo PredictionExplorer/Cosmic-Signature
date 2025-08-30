@@ -1,9 +1,3 @@
-// #region Comment
-
-// See also: "../scripts/helpers.js".
-// todo-1 Am I going to delete it?
-
-// #endregion
 // #region
 
 "use strict";
@@ -20,8 +14,7 @@ const { HardhatContext } = require("hardhat/internal/context");
 
 // Supported values:
 //    1 to run tests under the "${workspaceFolder}/test" subfolder deterministically and at the maximum speed.
-//    2 to simulate a live blockchain, which is designed for tests under the "${workspaceFolder}/scripts" subfolder.
-//      todo-0 Am I going to move those tests and some other scripts to another folder? Find all: scripts
+//    2 to simulate a live blockchain, which is designed for tests under the "${workspaceFolder}/live-blockchain-testing" subfolder.
 const HARDHAT_MODE_CODE = parseIntegerEnvironmentVariable("HARDHAT_MODE_CODE", 0);
 
 switch (HARDHAT_MODE_CODE) {
@@ -30,7 +23,7 @@ switch (HARDHAT_MODE_CODE) {
 		break;
 	}
 	default: {
-		throw new Error("The HARDHAT_MODE_CODE environment variable is either not set or is invalid.")
+		throw new Error("The HARDHAT_MODE_CODE environment variable either is not set or is invalid.")
 		// break;
 	}	
 }

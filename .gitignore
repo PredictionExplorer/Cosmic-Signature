@@ -34,6 +34,7 @@ node_modules
 
 # /config.sh
 
-/scripts/temp
+/tasks/output
+/live-blockchain-testing/output
 
 /certora/emv*

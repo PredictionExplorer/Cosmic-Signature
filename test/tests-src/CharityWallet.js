@@ -64,7 +64,7 @@ describe("CharityWallet", function () {
 
 		for ( let brokenEthReceiverEthDepositAcceptanceModeCode_ = 2n; brokenEthReceiverEthDepositAcceptanceModeCode_ >= 0n; -- brokenEthReceiverEthDepositAcceptanceModeCode_ ) {
 			await waitForTransactionReceipt(brokenEthReceiver_.connect(contracts_.signers[5]).setEthDepositAcceptanceModeCode(brokenEthReceiverEthDepositAcceptanceModeCode_));
-			/** @type {Promise<hre.ethers.TransactionResponse>} */
+			/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 			let transactionResponsePromise_ = contracts_.charityWallet.connect(contracts_.signers[1])["send()"]();
 			let transactionResponsePromiseAssertion_ = expect(transactionResponsePromise_);
 			if (brokenEthReceiverEthDepositAcceptanceModeCode_ > 0n) {
@@ -106,7 +106,7 @@ describe("CharityWallet", function () {
 		for ( let maliciousCharityModeCode_ = 3n; maliciousCharityModeCode_ >= 0n; -- maliciousCharityModeCode_ ) {
 			await waitForTransactionReceipt(maliciousCharity_.connect(contracts_.signers[5]).setModeCode(maliciousCharityModeCode_));
 			for ( let counter_ = 0; counter_ <= 1; ++ counter_ ) {
-				/** @type {Promise<hre.ethers.TransactionResponse>} */
+				/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 				let transactionResponsePromise_;
 				if (counter_ <= 0) {
 					transactionResponsePromise_ = contracts_.charityWallet.connect(contracts_.signers[1])["send()"]();

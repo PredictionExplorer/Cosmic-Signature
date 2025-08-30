@@ -3,7 +3,7 @@
 const nodeOsModule = require("node:os");
 // const { expect } = require("chai");
 const hre = require("hardhat");
-const { waitForTransactionReceipt } = require("../../src/Helpers.js");
+const { waitForTransactionReceipt } = require("../../../src/Helpers.js");
 
 async function finalizeTestingIfEthBalanceIsNonZero(selfDestructibleCosmicSignatureGameProxy_, selfDestructibleCosmicSignatureGameProxyAddress_, ownerSigner_) {
 	const selfDestructibleCosmicSignatureGameProxyEthBalanceAmount_ = await hre.ethers.provider.getBalance(selfDestructibleCosmicSignatureGameProxyAddress_, "pending");
@@ -17,7 +17,7 @@ async function finalizeTestingIfEthBalanceIsNonZero(selfDestructibleCosmicSignat
 async function finalizeTesting(selfDestructibleCosmicSignatureGameProxy_, ownerSigner_) {
 	console.info("finalizeTesting");
 	const timeStamp1_ = performance.now();
-	/** @type {Promise<hre.ethers.TransactionResponse>} */
+	/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 	let transactionResponsePromise_ = selfDestructibleCosmicSignatureGameProxy_.connect(ownerSigner_).finalizeTesting();
 	await waitForTransactionReceipt(transactionResponsePromise_);
 	const timeStamp2_ = performance.now();

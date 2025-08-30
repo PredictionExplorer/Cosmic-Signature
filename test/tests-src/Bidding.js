@@ -225,7 +225,7 @@ describe("Bidding", function () {
 					// #endregion
 					// #region
 
-					/** @type {Promise<hre.ethers.TransactionResponse>} */
+					/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 					const transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner).halveEthDutchAuctionEndingBidPrice();
 					const transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 
@@ -629,7 +629,7 @@ describe("Bidding", function () {
 
 		cstDutchAuctionRemainingDuration_ = cstDutchAuctionDuration_ - 1n;
 		nextCstBidExpectedPrice_ = cstDutchAuctionBeginningBidPrice_ * cstDutchAuctionRemainingDuration_ / cstDutchAuctionDuration_;
-		/** @type {Promise<hre.ethers.TransactionResponse>} */
+		/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 		let transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithCst(nextCstBidExpectedPrice_ * 10n, "cst bid");
 		let transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 		let log_ = transactionReceipt_.logs.find((log_) => (log_.topics.indexOf(cosmicSignatureGameProxyBidPlacedTopicHash_) >= 0));
@@ -722,7 +722,7 @@ describe("Bidding", function () {
 
 			// console.info(`202507155 ${maliciousTokenModeCode_}`);
 			await waitForTransactionReceipt(maliciousToken_.connect(contracts_.signers[0]).setModeCode(maliciousTokenModeCode_));
-			/** @type {Promise<hre.ethers.TransactionResponse>} */
+			/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 			let transactionResponsePromise_;
 			randomNumber_ = generateRandomUInt32();
 			const choiceCode_ = randomNumber_ % (( ! ethBidPlaced_ ) ? 2 : 4);

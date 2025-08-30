@@ -1,7 +1,7 @@
 {
-	"deploymentConfigurationFilePath": "../tasks/config/deploy-cosmic-signature-contracts-config-hardhat.json",
+	"deploymentConfigurationFilePath": "../config/deploy-cosmic-signature-contracts-config-hardhat.json",
 	"newCosmicSignatureGameContractVersionNumber": 2,
 	"newCosmicSignatureGameContractName": "CosmicSignatureGameOpenBid",
 	"newInitializerMethodName": "initialize2",
-	"reportFilePath": "temp/upgrade-cosmic-signature-game-report-hardhat.json"
+	"reportFilePath": "../output/upgrade-cosmic-signature-game-report-hardhat.json"
 }

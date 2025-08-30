@@ -4,7 +4,7 @@
 
 // // const { expect } = require("chai");
 // const hre = require("hardhat");
-// const { waitForTransactionReceipt } = require("../../src/Helpers.js");
+// const { waitForTransactionReceipt } = require("../../../src/Helpers.js");
 // const { /*getCosmicSignatureGameContract,*/ getBidderContract } = require("../helpers.js");
 
 // async function main() {
@@ -33,7 +33,7 @@
 // 	let rwalkPrice = await randomWalkNft.getMintPrice();
 //
 // 	// todo-1 We now have a method in JavaScript that mints this. See `mintRandomWalkNft`.
-// 	/** @type {Promise<hre.ethers.TransactionResponse>} */
+// 	/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 // 	let transactionResponsePromise = randomWalkNft.connect(signer0).mint({value: rwalkPrice,});
 //
 // 	let transactionReceipt = await waitForTransactionReceipt(transactionResponsePromise);

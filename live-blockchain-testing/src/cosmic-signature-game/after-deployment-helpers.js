@@ -2,7 +2,7 @@
 
 const nodeOsModule = require("node:os");
 const { expect } = require("chai");
-const { waitForTransactionReceipt } = require("../../src/Helpers.js");
+const { waitForTransactionReceipt } = require("../../../src/Helpers.js");
 
 async function validateCosmicSignatureGameState(
 	cosmicSignatureGameProxy_,
