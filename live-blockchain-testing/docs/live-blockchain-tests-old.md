@@ -41,7 +41,7 @@ because eth_estimateGas function produces very low gasLimit values and because A
 
 ##### for local testnet:
 
-    npx hardhat deploy-cosmic-signature-contracts --deployconfigfilepath ~/deploy-configs/deploy-local.json --network localhost
+    npx hardhat deploy-cosmic-signature-contracts --deployconfigfilepath ~/deploy-configs/deploy-local.json --network hardhat_on_localhost
 
 ##### for Arbitrum Sepolia:
 

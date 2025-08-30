@@ -7,7 +7,7 @@
 
 	if [ ${OutcomeCode} -lt 2 ]; then
 		export HARDHAT_MODE_CODE='2'
-		export HARDHAT_NETWORK='localhost'
+		export HARDHAT_NETWORK='hardhat_on_localhost'
 
 		# Transferring from Hardhat Network's signer 0 to the owner address.
 		# Destination address belongs to the owner account whose private key was generated using the default hardcoded seed.

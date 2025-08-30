@@ -8,15 +8,15 @@ const configuration =
 				// [Comment-202509132]
 				// If this is empty, Hardhat will choose its default network.
 				// The network/blockchain should be external. The in-process "hardhat" is not intended to be used for this test;
-				// use "localhost" instead. By default, Hardhat will choose "hardhat" unless a different default network is specified
-				// in the Hardhat config file.
+				// use "hardhat_on_localhost" instead. By default, Hardhat will choose "hardhat"
+				// unless a different default network is specified in the Hardhat config file.
 				// The `HARDHAT_MODE_CODE` environment variable should either not be set or be set to "2".
 				// Otherwise the behavior will not necessarily be correct.
 				// [/Comment-202509132]
 				networkName:
 					// "",
 					// // "hardhat",
-					"localhost",
+					"hardhat_on_localhost",
 
 					// // Issue. This is not well supported, because of Comment-202509215.
 					// "sepolia",

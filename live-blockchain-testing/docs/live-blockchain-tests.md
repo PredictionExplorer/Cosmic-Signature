@@ -16,7 +16,7 @@ All scripts assume that they are executed from the folder they are located in. S
 
 - The file to edit is "../src/live-blockchain-tests-configuration.js". You don't need to change most settings, but review them and their comments.
 
-- "hardhat.networkName" specifies the blockchain to be used by Hardhat. Start with testing on "localhost".
+- "hardhat.networkName" specifies the blockchain to be used by Hardhat. Start with testing on "hardhat_on_localhost".
 
 - In "cosmicSignatureContractsDeployment.randomWalkNftAddress", you have an option to provide an already deployed `RandomWalkNFT` contract address.
 

@@ -8,7 +8,7 @@
    ```
 
 2. **Install Solidity Compiler**:
-   The project uses Solidity 0.8.30. The hardhat config looks for the compiler in these locations:
+   The project uses Solidity 0.8.30. The Hardhat config looks for the compiler in these locations:
    - `~/.solc-select/artifacts/solc-0.8.30/solc-0.8.30`
    - `~/.local/bin/solc`
    - `/usr/bin/solc`

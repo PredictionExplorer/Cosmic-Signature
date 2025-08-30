@@ -30,7 +30,7 @@ async function main() {
 	// ChatGPT says:
 	// [Quote]
 	// You're hitting a sender-path difference:
-	// - With --network localhost and ethers.getSigners(), the signers are JSON-RPC unlocked accounts on the node.
+	// - With --network hardhat_on_localhost and ethers.getSigners(), the signers are JSON-RPC unlocked accounts on the node.
 	//   When you call sendTransaction, ethers uses eth_sendTransaction (server-side signing). In that mode
 	//   the node fills the gas field and Hardhat Node sets it to its configured default (which is the block gas limit by default).
 	//   No client-side estimation/multiplier happens, so you see gasLimit == blockGasLimit.

@@ -226,7 +226,7 @@ function hackApplyGasMultiplierIfNeeded() {
 	// Comment-202409255 applies.
 	const hre = HardhatContext.getHardhatContext().environment;
 
-	// if (hre.network.name != "localhost") {
+	// if (hre.network.name != "hardhat_on_localhost") {
 	// 	return;
 	// }
 	const gasMultiplier_ = hre.network.config.gasMultiplier;
