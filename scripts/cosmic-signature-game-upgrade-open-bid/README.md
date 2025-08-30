@@ -2,6 +2,7 @@
 
 This document is old, although it's still to some degree correct.
 Here is a modern substitute: "../../Cosmic-Signature-Game-Contract-Upgrade-And-Re-Registration.md".
+<!-- todo-0 Am I going to move that file? -->
 
 ### "BiddingOpenBid.sol" and "CosmicSignatureGameOpenBid.sol" as an example of `CosmicSignatureGame` upgrade
 
