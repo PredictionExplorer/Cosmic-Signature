@@ -4,8 +4,8 @@ const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
-const { waitForTransactionReceipt } = require("../src/Helpers.js");
-const { loadFixtureDeployContractsForTesting } = require("../src/ContractTestingHelpers.js");
+const { waitForTransactionReceipt } = require("../../src/Helpers.js");
+const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
 
 describe("CharityWallet", function () {
 	it("Normal operations", async function () {

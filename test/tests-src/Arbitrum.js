@@ -4,8 +4,8 @@ const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
-const { generateRandomUInt256, waitForTransactionReceipt } = require("../src/Helpers.js");
-const { loadFixtureDeployContractsForTesting, assertEvent } = require("../src/ContractTestingHelpers.js");
+const { generateRandomUInt256, waitForTransactionReceipt } = require("../../src/Helpers.js");
+const { loadFixtureDeployContractsForTesting, assertEvent } = require("../../src/ContractTestingHelpers.js");
 
 describe("Arbitrum", function () {
 	it("Calls to Arbitrum precompile contracts errors", async function () {

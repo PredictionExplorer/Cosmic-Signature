@@ -32,7 +32,7 @@
 	}
 
 	if [ ${OutcomeCode} -lt 2 ]; then
-		cd '--' '..'
+		cd '--' '../..'
 		if [ $? -ne 0 ]; then
 			read '-r' '-n' '1' '-s' '-p' 'Error 202409026. Press any key to finish.'
 			OutcomeCode=2

@@ -4,9 +4,9 @@ const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
-const { generateRandomUInt256, waitForTransactionReceipt } = require("../src/Helpers.js");
-// const { setRoundActivationTimeIfNeeded } = require("../src/ContractDeploymentHelpers.js");
-const { loadFixtureDeployContractsForTesting } = require("../src/ContractTestingHelpers.js");
+const { generateRandomUInt256, waitForTransactionReceipt } = require("../../src/Helpers.js");
+// const { setRoundActivationTimeIfNeeded } = require("../../src/ContractDeploymentHelpers.js");
+const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
 
 describe("SystemManagement", function () {
 	it("Setters while the current bidding round is inactive", async function () {

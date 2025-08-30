@@ -4,8 +4,8 @@ const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
 // const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
-const { waitForTransactionReceipt } = require("../src/Helpers.js");
-const { loadFixtureDeployContractsForTesting } = require("../src/ContractTestingHelpers.js");
+const { waitForTransactionReceipt } = require("../../src/Helpers.js");
+const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
 
 describe("BidStatistics", function () {
 	it("Bid duration accounting: 2 bidders place bids of different durations", async function () {

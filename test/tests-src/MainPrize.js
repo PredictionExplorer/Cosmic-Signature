@@ -5,9 +5,9 @@ const { expect } = require("chai");
 const hre = require("hardhat");
 const { anyUint } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
-const { generateRandomUInt256, waitForTransactionReceipt } = require("../src/Helpers.js");
-const { setRoundActivationTimeIfNeeded } = require("../src/ContractDeploymentHelpers.js");
-const { loadFixtureDeployContractsForTesting, deployContractsForTestingAdvanced, makeNextBlockTimeDeterministic } = require("../src/ContractTestingHelpers.js");
+const { generateRandomUInt256, waitForTransactionReceipt } = require("../../src/Helpers.js");
+const { setRoundActivationTimeIfNeeded } = require("../../src/ContractDeploymentHelpers.js");
+const { loadFixtureDeployContractsForTesting, deployContractsForTestingAdvanced, makeNextBlockTimeDeterministic } = require("../../src/ContractTestingHelpers.js");
 
 describe("MainPrize", function () {
 	it("Test 1", async function () {

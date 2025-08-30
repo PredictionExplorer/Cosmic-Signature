@@ -4,8 +4,8 @@ const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
 // const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
-const { sleepForMilliSeconds, generateRandomUInt32, waitForTransactionReceipt } = require("../src/Helpers.js");
-const { loadFixtureDeployContractsForTesting, makeNextBlockTimeDeterministic } = require("../src/ContractTestingHelpers.js");
+const { sleepForMilliSeconds, generateRandomUInt32, waitForTransactionReceipt } = require("../../src/Helpers.js");
+const { loadFixtureDeployContractsForTesting, makeNextBlockTimeDeterministic } = require("../../src/ContractTestingHelpers.js");
 
 // Comment-202501193 relates and/or applies.
 describe("BlockTimeStamps", function () {

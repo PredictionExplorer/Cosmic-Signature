@@ -9,18 +9,18 @@ const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
-const { generateRandomUInt256, generateRandomUInt256FromSeedWrapper, uint256ToPaddedHexString, waitForTransactionReceipt } = require("../src/Helpers.js");
-const { createFairRandomNumberGenerator } = require("../src/FairRandomNumberGenerator.js");
-const { SKIP_LONG_TESTS, loadFixtureDeployContractsForTesting, tryWaitForTransactionReceipt } = require("../src/ContractTestingHelpers.js");
-const { createCosmicSignatureTokenSimulator, assertCosmicSignatureTokenSimulator } = require("../src/ContractSimulators/CosmicSignatureTokenSimulator.js");
-const { createRandomWalkNftSimulator, assertRandomWalkNftSimulator } = require("../src/ContractSimulators/RandomWalkNftSimulator.js");
-const { createCosmicSignatureNftSimulator, assertCosmicSignatureNftSimulator } = require("../src/ContractSimulators/CosmicSignatureNftSimulator.js");
-const { createPrizesWalletSimulator, assertPrizesWalletSimulator } = require("../src/ContractSimulators/PrizesWalletSimulator.js");
-const { createStakingWalletRandomWalkNftSimulator, assertStakingWalletRandomWalkNftSimulator } = require("../src/ContractSimulators/StakingWalletRandomWalkNftSimulator.js");
-const { createStakingWalletCosmicSignatureNftSimulator, assertStakingWalletCosmicSignatureNftSimulator } = require("../src/ContractSimulators/StakingWalletCosmicSignatureNftSimulator.js");
-// const { createMarketingWalletSimulator, assertMarketingWalletSimulator } = require("../src/ContractSimulators/MarketingWalletSimulator.js");
-const { createCharityWalletSimulator, assertCharityWalletSimulator } = require("../src/ContractSimulators/CharityWalletSimulator.js");
-// const { createCosmicSignatureDaoSimulator, assertCosmicSignatureDaoSimulator } = require("../src/ContractSimulators/CosmicSignatureDaoSimulator.js");
+const { generateRandomUInt256, generateRandomUInt256FromSeedWrapper, uint256ToPaddedHexString, waitForTransactionReceipt } = require("../../src/Helpers.js");
+const { createFairRandomNumberGenerator } = require("../../src/FairRandomNumberGenerator.js");
+const { SKIP_LONG_TESTS, loadFixtureDeployContractsForTesting, tryWaitForTransactionReceipt } = require("../../src/ContractTestingHelpers.js");
+const { createCosmicSignatureTokenSimulator, assertCosmicSignatureTokenSimulator } = require("../src/contract-simulators/CosmicSignatureTokenSimulator.js");
+const { createRandomWalkNftSimulator, assertRandomWalkNftSimulator } = require("../src/contract-simulators/RandomWalkNftSimulator.js");
+const { createCosmicSignatureNftSimulator, assertCosmicSignatureNftSimulator } = require("../src/contract-simulators/CosmicSignatureNftSimulator.js");
+const { createPrizesWalletSimulator, assertPrizesWalletSimulator } = require("../src/contract-simulators/PrizesWalletSimulator.js");
+const { createStakingWalletRandomWalkNftSimulator, assertStakingWalletRandomWalkNftSimulator } = require("../src/contract-simulators/StakingWalletRandomWalkNftSimulator.js");
+const { createStakingWalletCosmicSignatureNftSimulator, assertStakingWalletCosmicSignatureNftSimulator } = require("../src/contract-simulators/StakingWalletCosmicSignatureNftSimulator.js");
+// const { createMarketingWalletSimulator, assertMarketingWalletSimulator } = require("../src/contract-simulators/MarketingWalletSimulator.js");
+const { createCharityWalletSimulator, assertCharityWalletSimulator } = require("../src/contract-simulators/CharityWalletSimulator.js");
+// const { createCosmicSignatureDaoSimulator, assertCosmicSignatureDaoSimulator } = require("../src/contract-simulators/CosmicSignatureDaoSimulator.js");
 const {
 	createCosmicSignatureGameProxySimulator,
 	assertCosmicSignatureGameProxySimulator,
@@ -29,7 +29,7 @@ const {
 	assertCosmicSignatureGameProxySimulatorGetEthDutchAuctionDurations,
 	assertCosmicSignatureGameProxySimulatorGetCstDutchAuctionDurations,
 } =
-	require("../src/ContractSimulators/CosmicSignatureGameProxySimulator.js");
+	require("../src/contract-simulators/CosmicSignatureGameProxySimulator.js");
 
 // #endregion
 // #region `describe`

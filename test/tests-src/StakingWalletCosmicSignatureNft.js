@@ -4,8 +4,8 @@ const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
 const { anyUint } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
-const { shuffleArray, generateRandomUInt32, waitForTransactionReceipt } = require("../src/Helpers.js");
-const { loadFixtureDeployContractsForTesting } = require("../src/ContractTestingHelpers.js");
+const { shuffleArray, generateRandomUInt32, waitForTransactionReceipt } = require("../../src/Helpers.js");
+const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
 
 describe("StakingWalletCosmicSignatureNft", function () {
 	it("Deployment", async function () {

@@ -4,9 +4,9 @@ const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
-const { generateRandomUInt32, generateRandomUInt256, waitForTransactionReceipt } = require("../src/Helpers.js");
-const { setRoundActivationTimeIfNeeded } = require("../src/ContractDeploymentHelpers.js");
-const { SKIP_LONG_TESTS, loadFixtureDeployContractsForTesting, makeNextBlockTimeDeterministic } = require("../src/ContractTestingHelpers.js");
+const { generateRandomUInt32, generateRandomUInt256, waitForTransactionReceipt } = require("../../src/Helpers.js");
+const { setRoundActivationTimeIfNeeded } = require("../../src/ContractDeploymentHelpers.js");
+const { SKIP_LONG_TESTS, loadFixtureDeployContractsForTesting, makeNextBlockTimeDeterministic } = require("../../src/ContractTestingHelpers.js");
 
 // let latestTimeStamp = 0;
 // let latestBlock = undefined;

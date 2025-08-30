@@ -5,7 +5,7 @@
 '/usr/bin/clear'
 
 (
-	cd '--' '..'
+	cd '--' '../..'
 	if [ $? -ne 0 ]; then
 		read '-r' '-n' '1' '-s' '-p' 'Error 202505288. Press any key to finish.'
 	else

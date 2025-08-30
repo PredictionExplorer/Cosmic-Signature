@@ -8,8 +8,8 @@
 const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
-const { generateRandomUInt256, generateRandomUInt256FromSeedWrapper, waitForTransactionReceipt } = require("../src/Helpers.js");
-const { SKIP_LONG_TESTS, loadFixtureDeployContractsForTesting, tryWaitForTransactionReceipt } = require("../src/ContractTestingHelpers.js");
+const { generateRandomUInt256, generateRandomUInt256FromSeedWrapper, waitForTransactionReceipt } = require("../../src/Helpers.js");
+const { SKIP_LONG_TESTS, loadFixtureDeployContractsForTesting, tryWaitForTransactionReceipt } = require("../../src/ContractTestingHelpers.js");
 
 // #endregion
 // #region
