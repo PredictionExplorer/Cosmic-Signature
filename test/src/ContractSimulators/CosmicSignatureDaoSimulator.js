@@ -8,7 +8,7 @@
 // const { expect } = require("chai");
 // const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
-// const { assertAddressIsValid, assertEvent } = require("../ContractTestingHelpers.js");
+// const { assertAddressIsValid, assertEvent } = require("../../../src/ContractTestingHelpers.js");
 
 // #endregion
 // #region // `createCosmicSignatureDaoSimulator`

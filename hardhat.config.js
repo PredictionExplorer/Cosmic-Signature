@@ -281,6 +281,7 @@ const hardhatUserConfig = {
 		// Comment-202503272 relates.
 		cache: "./cache/" + solidityCompilationCacheSubFolderName,
 		artifacts: "./artifacts/" + solidityCompilationCacheSubFolderName,
+		tests: "./test/tests-src",
 	},
 
 	// #endregion

@@ -8,8 +8,8 @@
 const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
-const { generateRandomUInt256FromSeedWrapper } = require("../Helpers.js");
-const { assertEvent } = require("../ContractTestingHelpers.js");
+const { generateRandomUInt256FromSeedWrapper } = require("../../../src/Helpers.js");
+const { assertEvent } = require("../../../src/ContractTestingHelpers.js");
 
 // #endregion
 // #region `createStakingWalletCosmicSignatureNftSimulator`
