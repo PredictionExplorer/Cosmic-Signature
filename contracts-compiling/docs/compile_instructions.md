@@ -65,4 +65,4 @@ Compiled artifacts will be in:
 - Production mode: `./artifacts/production/`
 - Debug mode: `./artifacts/debug-[true/false]-[true/false]/`
 
-ABI files for key contracts are exported to `./abi/` directory. 
+ABI files for all contracts are exported to the `./artifacts/` folder.
