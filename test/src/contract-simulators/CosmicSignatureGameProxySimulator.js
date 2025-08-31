@@ -84,12 +84,12 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 		bidMessageLengthMaxLimit: 280n,
 		cstRewardAmountForBidding: 100n * 10n ** 18n,
 		cstPrizeAmountMultiplier: 10n * 10n ** 18n,
-		chronoWarriorEthPrizeAmountPercentage: 7n,
-		raffleTotalEthPrizeAmountForBiddersPercentage: 5n,
+		chronoWarriorEthPrizeAmountPercentage: 8n,
+		raffleTotalEthPrizeAmountForBiddersPercentage: 4n,
 		numRaffleEthPrizesForBidders: 3n,
 		numRaffleCosmicSignatureNftsForBidders: 5n,
 		numRaffleCosmicSignatureNftsForRandomWalkNftStakers: 4n,
-		cosmicSignatureNftStakingTotalEthRewardAmountPercentage: 10n,
+		cosmicSignatureNftStakingTotalEthRewardAmountPercentage: 6n,
 		initialDurationUntilMainPrizeDivisor: (60n * 60n * 1_000_000n + (24n * 60n * 60n) / 2n) / (24n * 60n * 60n),
 		mainPrizeTime: 0n,
 		mainPrizeTimeIncrementInMicroSeconds: 60n * 60n * 1_000_000n,
@@ -105,7 +105,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 		// marketingWalletSimulator:
 		marketingWalletCstContributionAmount: 300n * 10n ** 18n,
 		charityWalletSimulator: charityWalletSimulator_,
-		charityEthDonationAmountPercentage: 10n,
+		charityEthDonationAmountPercentage: 7n,
 
 		// #endregion
 		// #region `getDurationUntilRoundActivation`
