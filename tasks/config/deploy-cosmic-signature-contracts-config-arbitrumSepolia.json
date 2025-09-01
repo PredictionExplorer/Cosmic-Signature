@@ -7,5 +7,5 @@
 	"roundActivationTime": -1e9,
 	"donateEthToCosmicSignatureGame": false,
 	"ethDonationToCosmicSignatureGameAmountInEth": 0.001,
-	"reportFilePath": "temp/deploy-cosmic-signature-contracts-report-arbitrumSepolia.json"
+	"reportFilePath": "../output/deploy-cosmic-signature-contracts-report-arbitrumSepolia.json"
 }

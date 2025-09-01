@@ -1,7 +1,7 @@
 {
-	"deploymentConfigurationFilePath": "../tasks/config/deploy-cosmic-signature-contracts-config-arbitrumSepolia.json",
+	"deploymentConfigurationFilePath": "../config/deploy-cosmic-signature-contracts-config-arbitrumSepolia.json",
 	"newCosmicSignatureGameContractVersionNumber": 2,
 	"newCosmicSignatureGameContractName": "CosmicSignatureGameOpenBid",
 	"newInitializerMethodName": "initialize2",
-	"reportFilePath": "temp/upgrade-cosmic-signature-game-report-arbitrumSepolia.json"
+	"reportFilePath": "../output/upgrade-cosmic-signature-game-report-arbitrumSepolia.json"
 }

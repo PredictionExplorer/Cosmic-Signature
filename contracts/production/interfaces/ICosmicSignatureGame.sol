@@ -73,7 +73,7 @@ interface ICosmicSignatureGame is
 	/// A little problem, as mentioned above, is that this minimalistic approach skips a bunch of checks.
 	/// So if the new version happens to be incompatible with the old one nobody will tell us about that.
 	/// The good news is that you can validate upgradeable contracts for correctness
-	/// by executing "slither/slither-check-upgradeability-1.bash".
+	/// by executing "${workspaceFolder}/slither/slither-check-upgradeability-1.bash".
 	/// Comment-202503132 relates.
 	/// Comment-202502164 relates.
 	/// [/Comment-202412129]

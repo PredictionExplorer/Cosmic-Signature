@@ -1,6 +1,6 @@
 // [Comment-202505289]
 //
-// To test for Solidity Coverage, it's recommended to execute "test/coverage-1.bash".
+// To test for Solidity Coverage, it's recommended to execute "test/runners/coverage-1.bash".
 // It does most of the following.
 //
 // Execute the following command:

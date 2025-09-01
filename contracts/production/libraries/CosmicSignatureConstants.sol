@@ -106,10 +106,10 @@ library CosmicSignatureConstants {
 	uint256 internal constant DEFAULT_CST_PRIZE_AMOUNT_MULTIPLIER = 10 ether;
 
 	/// @notice Default `chronoWarriorEthPrizeAmountPercentage`.
-	uint256 internal constant DEFAULT_CHRONO_WARRIOR_ETH_PRIZE_AMOUNT_PERCENTAGE = 7;
+	uint256 internal constant DEFAULT_CHRONO_WARRIOR_ETH_PRIZE_AMOUNT_PERCENTAGE = 8;
 
 	/// @notice Default `raffleTotalEthPrizeAmountForBiddersPercentage`.
-	uint256 internal constant DEFAULT_RAFFLE_TOTAL_ETH_PRIZE_AMOUNT_FOR_BIDDERS_PERCENTAGE = 5;
+	uint256 internal constant DEFAULT_RAFFLE_TOTAL_ETH_PRIZE_AMOUNT_FOR_BIDDERS_PERCENTAGE = 4;
 
 	/// @notice Default `numRaffleEthPrizesForBidders`.
 	uint256 internal constant DEFAULT_NUM_RAFFLE_ETH_PRIZES_FOR_BIDDERS = 3;
@@ -121,7 +121,7 @@ library CosmicSignatureConstants {
 	uint256 internal constant DEFAULT_NUM_RAFFLE_COSMIC_SIGNATURE_NFTS_FOR_RANDOMWALK_NFT_STAKERS = 4;
 
 	/// @notice Default `cosmicSignatureNftStakingTotalEthRewardAmountPercentage`.
-	uint256 internal constant DEFAULT_COSMIC_SIGNATURE_NFT_STAKING_TOTAL_ETH_REWARD_AMOUNT_PERCENTAGE = 10;
+	uint256 internal constant DEFAULT_COSMIC_SIGNATURE_NFT_STAKING_TOTAL_ETH_REWARD_AMOUNT_PERCENTAGE = 6;
 
 	// #endregion
 	// #region Main Prize
@@ -192,7 +192,7 @@ library CosmicSignatureConstants {
 	// #region Charity
 
 	/// @notice Default `charityEthDonationAmountPercentage`.
-	uint256 internal constant DEFAULT_CHARITY_ETH_DONATION_AMOUNT_PERCENTAGE = 10;
+	uint256 internal constant DEFAULT_CHARITY_ETH_DONATION_AMOUNT_PERCENTAGE = 7;
 
 	// #endregion
 	// #region DAO

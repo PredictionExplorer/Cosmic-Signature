@@ -29,11 +29,12 @@ node_modules
 /eslint/eslint-1-report.txt
 /eslint/eslint-1-report.bak.txt
 
-# Comment-202408024 applies.
-/abi
+# # Comment-202408024 applies.
+# /abi
 
 # /config.sh
 
-/scripts/temp
+/tasks/output
+/live-blockchain-testing/output
 
 /certora/emv*

@@ -157,7 +157,14 @@ const { HardhatUserConfig, subtask, } = require("hardhat/config");
 if (ENABLE_HARDHAT_PREPROCESSOR) {
 	require("hardhat-preprocessor");
 }
-require("hardhat-abi-exporter");
+
+// // [Comment-202510064]
+// // I feel that we don't need this.
+// // ABIs of all contracts are anyway created under the "artifacts" folder on compile.
+// // I have deleted the following from the "package.json" file:
+// // "hardhat-abi-exporter": "=2.11.0",
+// // [/Comment-202510064]
+// require("hardhat-abi-exporter");
 
 // // Issue. After I upgraded to Hardhat 2.26.1, this import started to cause all Solidity files recompile
 // // on each Hardhat Test task run. So I have commented it out and deleted the following line from "package.json":
@@ -174,7 +181,7 @@ const { TASK_COMPILE_SOLIDITY_GET_SOLC_BUILD, } = require("hardhat/builtin-tasks
 require("@openzeppelin/hardhat-upgrades");
 
 // Comment-202409255 relates.
-require("./tasks/cosmic-signature-tasks.js");
+require("./tasks/src/cosmic-signature-tasks.js");
 
 // #endregion
 // #region
@@ -195,10 +202,8 @@ function populateNetworkIsMainNetOnce(hre) {
 	// [/Comment-202408313]
 	switch (hre.network.name) {
 		case "hardhat":
-		case "localhost":
-		case "rinkeby":
+		case "hardhat_on_localhost":
 		case "sepolia":
-		case "arbigoerli":
 		case "arbitrumSepolia": {
 			networkIsMainNet = false;
 			break;
@@ -281,6 +286,7 @@ const hardhatUserConfig = {
 		// Comment-202503272 relates.
 		cache: "./cache/" + solidityCompilationCacheSubFolderName,
 		artifacts: "./artifacts/" + solidityCompilationCacheSubFolderName,
+		tests: "./test/tests-src",
 	},
 
 	// #endregion
@@ -291,14 +297,14 @@ const hardhatUserConfig = {
 		settings: {
 			// [Comment-202408026]
 			// By default, this is "paris".
-			// See https://hardhat.org/hardhat-runner/docs/config#default-evm-version
+			// See https://v2.hardhat.org/hardhat-runner/docs/config#default-evm-version
 			// But we want this to be the latest with which Arbitrum is compatible.
 			// todo-1 Revisit this.
 			// [/Comment-202408026]
 			evmVersion: "prague",
 
 			// [Comment-202408025]
-			// See https://hardhat.org/hardhat-runner/docs/reference/solidity-support
+			// See https://v2.hardhat.org/hardhat-runner/docs/reference/solidity-support
 			// [/Comment-202408025]
 			// Is this going to become `true` by default in a future Solidity version?
 			// As of the 0.8.30, this is `false` by default.
@@ -318,7 +324,7 @@ const hardhatUserConfig = {
 
 				// details: {
 				// 	yulDetails: {
-				// 		// Hardhat docs at https://hardhat.org/hardhat-runner/docs/reference/solidity-support says that
+				// 		// Hardhat docs at https://v2.hardhat.org/hardhat-runner/docs/reference/solidity-support says that
 				// 		// this setting makes Hardhat "work as well as possible".
 				// 		// Issue. But it appears to increase contract binary size and, possibly, gas use.
 				// 		// So we probably don't need this.
@@ -328,16 +334,17 @@ const hardhatUserConfig = {
 				// },
 			},
 
-			outputSelection: {
-				"*": {
-					"*": [
-						"storageLayout",
-						// "ir",
-						// "irOptimized",
-						// "bytecode",
-					],
-				},
-			},
+			// // The latest Hardhat 2.x ignores this.
+			// outputSelection: {
+			// 	"*": {
+			// 		"*": [
+			// 			"storageLayout",
+			// 			// "ir",
+			// 			// "irOptimized",
+			// 			// "bytecode",
+			// 		],
+			// 	},
+			// },
 		},
 	},
 
@@ -377,32 +384,33 @@ const hardhatUserConfig = {
 	},
 
 	// #endregion
-	// #region
+	// #region //
 
-	abiExporter: {
-		// [Comment-202408024]
-		// This folder name exists in multiple places.
-		// [/Comment-202408024]
-		path: "./abi",
-
-		// runOnCompile: true,
-		clear: true,
-		flat: true,
-
-		// Issue. This list is incomplete.
-		only: [
-			"CosmicSignatureToken",
-			"RandomWalkNFT",
-			"CosmicSignatureNft",
-			"PrizesWallet",
-			"CharityWallet",
-			"CosmicSignatureDao",
-			// "CosmicSignatureGameProxy",
-		],
-
-		spacing: 2,
-		pretty: true,
-	},
+	// // Comment-202510064 applies.
+	// abiExporter: {
+	// 	// [Comment-202408024]
+	// 	// This folder name exists in multiple places.
+	// 	// [/Comment-202408024]
+	// 	path: "./abi",
+	//
+	// 	// runOnCompile: true,
+	// 	clear: true,
+	// 	flat: true,
+	//
+	// 	// Issue. This list is incomplete.
+	// 	only: [
+	// 		"CosmicSignatureToken",
+	// 		"RandomWalkNFT",
+	// 		"CosmicSignatureNft",
+	// 		"PrizesWallet",
+	// 		"CharityWallet",
+	// 		"CosmicSignatureDao",
+	// 		// "CosmicSignatureGameProxy",
+	// 	],
+	//
+	// 	spacing: 2,
+	// 	pretty: true,
+	// },
 
 	// #endregion
 	// #region
@@ -410,6 +418,8 @@ const hardhatUserConfig = {
 	// todo-1 When making changes to the networks, remember to refactor the logic near Comment-202408313.
 	networks: {
 		hardhat: {
+			chainId: 31337,
+
 			// Comment-202501193 relates and/or applies.
 			initialDate: (helpersModule.HARDHAT_MODE_CODE == 1) ? "2025-01-01" : undefined,
 
@@ -488,22 +498,16 @@ const hardhatUserConfig = {
 
 			// loggingEnabled: false,
 		},
-		localhost: {
+		hardhat_on_localhost: {
+			chainId: 31337,
 			url: "http://localhost:8545/",
 
 			// Comment-202509209 applies.
 			gasMultiplier: 1.4,
 		},
-		rinkeby: {
-			url: "https://rinkeby.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161",
-
-			// Comment-202509209 applies.
-			gasMultiplier: 1.1,
-
-			// accounts: ((process.env.PRIVATE_KEY ?? "").length > 0) ? [process.env.PRIVATE_KEY] : [],
-		},
 		sepolia: {
-			// todo-3 Is this URL for Sepolia or Arbitrum Sepolia?
+			chainId: 11155111,
+
 			// todo-3 Is this URL still valid? MetaMask uses a different one.
 			url: "http://170.187.142.12:22545/",
 
@@ -512,23 +516,17 @@ const hardhatUserConfig = {
 
 			// accounts: ((process.env.SEPOLIA_PRIVATE_KEY ?? "").length > 0) ? [process.env.SEPOLIA_PRIVATE_KEY] : [],
 		},
-		arbigoerli: {
-			url: "https://goerli-rollup.arbitrum.io/rpc",
-
-			// Comment-202509209 applies.
-			gasMultiplier: 1.1,
-
-			// accounts: ((process.env.PRIVATE_KEY ?? "").length > 0) ? [process.env.PRIVATE_KEY] : [],
-		},
-      arbitrumSepolia: {
-         url: "https://sepolia-rollup.arbitrum.io/rpc",
+		arbitrumSepolia: {
+			chainId: 421614,
+			url: "https://sepolia-rollup.arbitrum.io/rpc",
 
 			// Comment-202509209 applies.
 			gasMultiplier: 1.1,
 
 			// accounts: ((process.env.ARBITRUM_SEPOLIA_PRIVATE_KEY ?? "").length > 0) ? [process.env.ARBITRUM_SEPOLIA_PRIVATE_KEY] : [],
-      },
+		},
 		arbitrumOne: {
+			chainId: 42161,
 			url: "https://arb1.arbitrum.io/rpc",
 
 			// Comment-202509209 applies.
@@ -547,7 +545,7 @@ const hardhatUserConfig = {
 	},
 
 	// #endregion
-	// #region
+	// #region //
 
 	// // [Comment-202509112]
 	// // We probably can get by without this.
