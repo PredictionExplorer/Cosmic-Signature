@@ -69,6 +69,10 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	mapping(uint256 roundNum => mapping(address bidderAddress => BidderInfo)) public biddersInfo;
 
 	/// @notice Endurance champion is the person who was the last bidder for the longest continuous period of time.
+	/// todo-1 Recheck the Taras'es definition of endurance champion and chrono-warrior in the root readme document.
+	/// todo-1 It could exist there in a few places.
+	/// todo-1 Point at the document.
+	/// todo-1 Review relevant code in the whole project and comments and delegate some comments to the document.
 	/// [Comment-202411075]
 	/// It makes no difference if they bid multiple times in a row. The durations do not get added up.
 	/// [/Comment-202411075]
