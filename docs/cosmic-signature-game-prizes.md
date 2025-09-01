@@ -6,7 +6,7 @@ This document lists all prizes awarded by the `CosmicSignatureGame` contract, an
 
 - `gameEthBalance` -- the `CosmicSignatureGame` contract ETH balance at the end of the bidding round.
 
-- `numBids` -- the total number of bids placed during the bidding round.
+- `numBids` -- the total number of bids placed during the bidding round. It can be obtained by calling the `getTotalNumBids` methid.
 
 - `numStakedCosmicSignatureNfts` -- the total number of staked Cosmic Signature NFTs at the end of the bidding round. It can be zero.
 
