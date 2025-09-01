@@ -19,7 +19,7 @@ prepare1();
 const nodeFsModule = require("node:fs");
 const hre = require("hardhat");
 const { vars } = require("hardhat/config");
-const { generateRandomUInt256, generateAccountPrivateKeyFromSeed, uint256ToPaddedHexString, hackApplyGasMultiplierIfNeeded, waitForTransactionReceipt } = require("../../src/Helpers.js");
+const { generateRandomUInt256, generateAccountPrivateKeyFromSeed, uint256ToPaddedHexString, /*sleepForMilliSeconds,*/ hackApplyGasMultiplierIfNeeded, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { runDeployCosmicSignatureContracts } = require("./cosmic-signature-contracts-deployment/helpers.js");
 const { validateCosmicSignatureToken, configureCosmicSignatureToken } = require("./cosmic-signature-token/helpers.js");
 const { configureRandomWalkNft, mintRandomWalkNft } = require("./random-walk-nft/helpers.js");
@@ -403,6 +403,8 @@ async function tryPlayCosmicSignatureGameIfNeeded() {
 			await ensureDurationElapsedSinceRoundActivationIsAtLeast(state.contracts.cosmicSignatureGameProxy, state.ownerSigner, (configuration.cosmicSignatureContracts.cosmicSignatureGame.ethDutchAuctionDuration * 2n + 3n / 2n) / 3n);
 
 			await bidWithEth(state.contracts.cosmicSignatureGameProxy, state.bidder1Signer);
+			// await sleepForMilliSeconds(2000);
+			// console.log(await state.contracts.cosmicSignatureGameProxy.tryGetCurrentChampions());
 			const randomWalkNft1Id_ = await getRandomWalkNft(state.bidder2Signer);
 			await bidWithEthPlusRandomWalkNft(state.contracts.cosmicSignatureGameProxy, state.bidder2Signer, randomWalkNft1Id_);
 			await bidWithEthAndDonateNft(state.contracts.cosmicSignatureGameProxy, state.contracts.prizesWallet, state.bidder2Signer, state.contracts.randomWalkNftAddress, randomWalkNft1Id_, state.donatedNftIndexes);
