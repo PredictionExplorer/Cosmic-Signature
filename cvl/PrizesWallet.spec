@@ -4,10 +4,18 @@ methods {
     function getDonatedTokenBalanceAmount(uint256, address) external returns (uint256) envfree;
     function roundTimeoutTimesToWithdrawPrizes(uint256) external returns (uint256) envfree;
 	function _.balanceOf(address) external envfree;
-	function game() external returns (address) envfree;
+function game() external returns (address) envfree;
 	function getUserEthBalance(address) external returns (uint256) envfree;
+    function _.transferFrom(address from, address to, uint256 tokenId) external => cvlNftTransferFrom(calledContract,from,to,tokenId) expect void;
+	function _.transfer(address recipient, uint256 amount) external => cvlERC20Transfer(recipient,amount) expect void;
 }
+function cvlNftTransferFrom(address token,address from, address to, uint256 tokenId) {
+    // does not do anything
+}
+function cvlERC20Transfer(address recipient,uint256 amount) {
+	// does nothing
 
+}
 function genericFunctionMatcher(method f, env e, address winner,uint256 round, bool ethWithdrawal, IPrizesWallet.DonatedTokenToClaim erc20List, uint256[] erc721List,address donorAddr, address tokenAddr, uint256 amount, uint256 nftIf, uint256 nftIndex, uint256[] nftIndices, uint256 timeoutVal, IPrizesWallet.EthDeposit[] ethDeposits) {
 
 	require winner != 0;
