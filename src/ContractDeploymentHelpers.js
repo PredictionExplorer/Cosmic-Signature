@@ -70,7 +70,7 @@ const deployContractsAdvanced = async function (
 	const cosmicSignatureGameProxy =
 		await hre.upgrades.deployProxy(
 			cosmicSignatureGameFactory,
-			[deployerSigner.address],
+			[deployerSigner.address,],
 			{
 				kind: "uups"
 			}

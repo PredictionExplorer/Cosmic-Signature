@@ -32,7 +32,7 @@ describe("CosmicSignatureGame-3", function () {
 					call: "initialize2",
 				}
 			);
-		await cosmicSignatureGame2Proxy_.waitForDeployment();
+		// await cosmicSignatureGame2Proxy_.waitForDeployment();
 		expect(await cosmicSignatureGame2Proxy_.getAddress()).equal(contracts_.cosmicSignatureGameProxyAddress);
 		const cosmicSignatureGame2ImplementationAddress_ = await hre.upgrades.erc1967.getImplementationAddress(contracts_.cosmicSignatureGameProxyAddress);
 		expect(cosmicSignatureGame2ImplementationAddress_).not.equal(contracts_.cosmicSignatureGameImplementationAddress);

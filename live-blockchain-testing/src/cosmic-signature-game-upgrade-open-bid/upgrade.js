@@ -31,7 +31,7 @@
 // 				call: "initialize2",
 // 			}
 // 		);
-// 	await cosmicSignatureGame2Proxy.waitForDeployment();
+// 	// await cosmicSignatureGame2Proxy.waitForDeployment();
 // 	// todo-9 Should we call `safeErc1967GetChangedImplementationAddress` instead?
 // 	const cosmicSignatureGame2ImplementationAddress = await hre.upgrades.erc1967.getImplementationAddress(cosmicSignatureGameProxyAddress);
 // 	console.info("Implementation address =", cosmicSignatureGame2ImplementationAddress);

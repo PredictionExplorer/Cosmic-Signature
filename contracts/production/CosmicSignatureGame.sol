@@ -165,15 +165,17 @@ contract CosmicSignatureGame is
 	/// But such kind of feature would violate the principle of trustlessness.
 	/// [/Comment-202412188]
 	function _authorizeUpgrade(address newImplementationAddress_) internal view override
-		onlyOwner
-		_onlyRoundIsInactive
-		_providedAddressIsNonZero(newImplementationAddress_) {
-		// // #enable_asserts // #disable_smtchecker console.log("1 _authorizeUpgrade");
-
 		// [Comment-202503119]
 		// `initialize` is supposed to be already executed.
 		// [/Comment-202503119]
-		// #enable_asserts assert(owner() != address(0));
+		// [Comment-202510114]
+		// Otherwise `owner()` would be zero and therefore this modifier would revert.
+		// [/Comment-202510114]
+		onlyOwner
+
+		_onlyRoundIsInactive
+		_providedAddressIsNonZero(newImplementationAddress_) {
+		// // #enable_asserts // #disable_smtchecker console.log("1 _authorizeUpgrade");
 	}
 
 	// #endregion

@@ -175,13 +175,13 @@ contract CosmicSignatureGameOpenBid is
 
 	/// @dev Comment-202412188 applies.
 	function _authorizeUpgrade(address newImplementationAddress_) internal view override
+		// Comment-202503119 applies.
+		// Comment-202510114 applies.
 		onlyOwner
+
 		_onlyRoundIsInactive
 		_providedAddressIsNonZero(newImplementationAddress_) {
 		// // #enable_asserts // #disable_smtchecker console.log("2 _authorizeUpgrade");
-
-		// Comment-202503119 applies.
-		// #enable_asserts assert(owner() != address(0));
 
 		// `initialize2` is supposed to be already executed.
 		// #enable_asserts assert(timesEthBidPrice > 0);
