@@ -1,4 +1,6 @@
-// SPDX-License-Identifier: CC0-1.0
+// SPDX-License-Identifier: CC0-1.0a
+using ERC20Mock as IERC20;
+using ERC721Mock as IERC721;
 methods {
     function mainPrizeBeneficiaryAddresses(uint256) external returns (address) envfree;
     function getDonatedTokenBalanceAmount(uint256, address) external returns (uint256) envfree;
@@ -6,15 +8,24 @@ methods {
 	function _.balanceOf(address) external envfree;
 function game() external returns (address) envfree;
 	function getUserEthBalance(address) external returns (uint256) envfree;
-    function _.transferFrom(address from, address to, uint256 tokenId) external => cvlNftTransferFrom(calledContract,from,to,tokenId) expect void;
-	function _.transfer(address recipient, uint256 amount) external => cvlERC20Transfer(recipient,amount) expect void;
+    function IERC721.transferFrom(address from, address to, uint256 tokenId) external => cvlNftTransferFrom(calledContract,from,to,tokenId);
+    function IERC20.transferFrom(address from, address to, uint256 amount) external returns (bool) => cvlERC20TransferFrom(calledContract,from,to,amount);
+	function IERC20.transfer(address to, uint256 amount) external returns (bool) => cvlERC20Transfer(to,amount);
+	function DonatedTokenHolder.authorizeDeployerAsMyTokenSpender(address tokenAddress) external => cvlAuthorizeSpender(calledContract, tokenAddress);
 }
 function cvlNftTransferFrom(address token,address from, address to, uint256 tokenId) {
     // does not do anything
 }
-function cvlERC20Transfer(address recipient,uint256 amount) {
+function cvlERC20TransferFrom(address token,address from, address to, uint256 amount) returns (bool)  {
+    // does not do anything
+	return true;
+}
+function cvlERC20Transfer(address to,uint256 amount) returns (bool) {
 	// does nothing
-
+	return true;
+}
+function cvlAuthorizeSpender(address calledcontract, address tokenAddress) {
+	// does nothing 
 }
 function genericFunctionMatcher(method f, env e, address winner,uint256 round, bool ethWithdrawal, IPrizesWallet.DonatedTokenToClaim erc20List, uint256[] erc721List,address donorAddr, address tokenAddr, uint256 amount, uint256 nftIf, uint256 nftIndex, uint256[] nftIndices, uint256 timeoutVal, IPrizesWallet.EthDeposit[] ethDeposits) {
 
