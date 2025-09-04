@@ -1,0 +1,14 @@
+### high-level invariants ("natural language"-expressed)
+	- Only owner can change timeout duration
+	- Only game can send ETH and donated tokens
+	- A round’s timeout is immutable once set at round registration.
+	- Game contract can over-write timeouts and winner address for past rounds
+	- Every deposit adds up balance to winner's account
+	- Withdrawal of expired prizes by anyone is only possible after timeout, otherwise by winner only
+	- Ownership of the ERC721 tokens is held on contract until withdrawal occurs
+	- Ownership of the ERC20 tokens is held on holder contract instantiated per-round
+### fine-grained invariantes (implementation based)
+	- When winner address is set, timeout has non-zero value
+	- roundNum for every winner is updated on every new ETH prize deposited by game contract
+	- after ETH withdrawal roundNum and balance of the winner are zeroed
+	- nextDonatedNftIndex is monotonic and never decreases
