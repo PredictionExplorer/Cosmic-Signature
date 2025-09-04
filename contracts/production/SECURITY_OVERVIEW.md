@@ -1,7 +1,11 @@
 ## Cosmic Signature Contracts — Comprehensive Security Review and Improvement Plan
+
+todo-0 Eventually delete this file.
+
 Version reviewed: Solidity 0.8.30, OZ v5.x, Arbitrum L2
 Scope: production contracts and libraries under `contracts/production`
 Review Date: December 2024
+todo-0 So this audit was made many months ago. We need to repeat it.
 
 ### Executive Summary
 The Cosmic Signature game system demonstrates solid architectural design with good separation of concerns, comprehensive reentrancy protection, and thoughtful custody mechanisms. The codebase shows evidence of security awareness with extensive use of guards, validations, and safe patterns.

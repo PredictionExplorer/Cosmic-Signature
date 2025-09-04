@@ -5,7 +5,11 @@
 // #endregion
 // #region
 
-// Comment-202409255 applies.
+// [Comment-202409255]
+// Because "hardhat.config.js" imports us, an attempt to import "hardhat" here would throw an error.
+// So we must do things differently here.
+// Issue. A better option could be to add the `hre` parameter to functions that need it.
+// [/Comment-202409255]
 // const hre = require("hardhat");
 const { HardhatContext } = require("hardhat/internal/context");
 
@@ -294,11 +298,15 @@ async function waitForTransactionReceipt(transactionResponsePromise_) {
 
 /**
  * Issue. This kinda smells.
- * We would probably not need this if `hre.upgrades.erc1967.getImplementationAddress` loaded the storage slot
+ * We would not necessarily need this if `hre.upgrades.erc1967.getImplementationAddress` loaded the storage slot
  * in the context of the "pending" block.
+ * But one would expect that even doing that from the "latest" block would not require this logic
+ * because that's the block in which the upgrade transaction was mined.
+ * Apparently, the info about the transaction block becomes available with a delay.
  * A more correct solution would be to find and parse respective events.
  * It would also be helpful to add a timeout to guarantee that we will break the loop eventually.
  * But keeping it simple.
+ * Surprisingly, I haven't seen this logging a warning when called after deploying a new contract.
  * @param {string} proxyAddress_
  * @param {string} oldImplementationAddress_
  */

@@ -193,7 +193,10 @@ describe("MainPrize", function () {
 		let durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrizeRaw();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_),]);
 		// await hre.ethers.provider.send("evm_mine");
+		// const timeStamp1_ = performance.now();
 		await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).claimMainPrize());
+		// const timeStamp2_ = performance.now();
+		// console.info((timeStamp2_ - timeStamp1_).toFixed(1));
 		++ roundNum_;
 		const cosmicSignatureNftTotalSupplyBefore_ = await contracts_.cosmicSignatureNft.totalSupply();
 		expect(cosmicSignatureNftTotalSupplyBefore_).equal(numCosmicSignatureNftsToDistribute_);

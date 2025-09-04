@@ -457,7 +457,9 @@ const hardhatUserConfig = {
 			// Comment-202508267 applies.
 			blockGasLimit: 10_000 * 30_000_000,
 
+			// // Comment-202505294 relates.
 			// initialBaseFeePerGas: 1e9,
+			// minGasPrice: 100,
 
 			// [Comment-202501193]
 			// When `HARDHAT_MODE_CODE` is 1, this configures to deterministically mine a block
