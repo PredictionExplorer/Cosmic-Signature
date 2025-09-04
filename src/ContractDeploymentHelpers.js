@@ -5,21 +5,18 @@
 // #endregion
 // #region
 
-// [Comment-202409255]
-// Because "hardhat.config.js" imports us, an attempt to import "hardhat" here would throw an error.
-// So we must do things differently here.
-// Issue. A better option could be to add the `hre` parameter to functions that need it.
-// [/Comment-202409255]
+// Comment-202409255 applies.
 // const hre = require("hardhat");
 const { HardhatContext } = require("hardhat/internal/context");
 
+// Comment-202409255 relates.
 const { waitForTransactionReceipt, safeErc1967GetChangedImplementationAddress } = require("./Helpers.js");
 
 // #endregion
 // #region `deployContracts`
 
 /**
- * @param {import("hardhat").ethers.AbstractSigner} deployerSigner 
+ * @param {import("ethers").Signer} deployerSigner 
  * @param {string} randomWalkNftAddress 
  * @param {string} charityAddress 
  * @param {boolean} transferContractOwnershipToCosmicSignatureDao 
@@ -46,7 +43,7 @@ const deployContracts = async function (
 // #region `deployContractsAdvanced`
 
 /**
- * @param {import("hardhat").ethers.AbstractSigner} deployerSigner 
+ * @param {import("ethers").Signer} deployerSigner 
  * @param {string} cosmicSignatureGameContractName 
  * @param {string} randomWalkNftAddress May be empty or zero.
  * @param {string} charityAddress May be empty or zero.
@@ -65,8 +62,6 @@ const deployContractsAdvanced = async function (
 	const hre = HardhatContext.getHardhatContext().environment;
 
 	const cosmicSignatureGameFactory = await hre.ethers.getContractFactory(cosmicSignatureGameContractName, deployerSigner);
-
-	// Comment-202503132 relates.
 	const cosmicSignatureGameProxy =
 		await hre.upgrades.deployProxy(
 			cosmicSignatureGameFactory,
@@ -75,7 +70,6 @@ const deployContractsAdvanced = async function (
 				kind: "uups"
 			}
 		);
-
 	await cosmicSignatureGameProxy.waitForDeployment();
 	const cosmicSignatureGameProxyAddress = await cosmicSignatureGameProxy.getAddress();
 

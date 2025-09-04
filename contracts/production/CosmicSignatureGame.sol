@@ -7,12 +7,9 @@ pragma solidity 0.8.30;
 // #region
 
 // // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
-import { StorageSlot } from "@openzeppelin/contracts/utils/StorageSlot.sol";
 import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
 import { OwnableUpgradeableWithReservedStorageGaps } from "./OwnableUpgradeableWithReservedStorageGaps.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import { IERC1967 } from "@openzeppelin/contracts/interfaces/IERC1967.sol";
-import { ERC1967Utils } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { AddressValidator } from "./AddressValidator.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
@@ -81,9 +78,7 @@ contract CosmicSignatureGame is
 	// #region `_initialize`
 
 	function _initialize(address ownerAddress_) internal {
-		// [Comment-202501012]
 		// `initialize` is supposed to not be executed yet.
-		// [/Comment-202501012]
 		// #enable_asserts assert(owner() == address(0));
 
 		// todo-1 +++ Order these like in the inheritance list.
@@ -146,16 +141,6 @@ contract CosmicSignatureGame is
 	}
 
 	// #endregion
-	// #region `upgradeTo`
-
-	function upgradeTo(address newImplementationAddress_) external override {
-		// // #enable_asserts // #disable_smtchecker console.log("1 upgradeTo");
-		_authorizeUpgrade(newImplementationAddress_);
-		StorageSlot.getAddressSlot(ERC1967Utils.IMPLEMENTATION_SLOT).value = newImplementationAddress_;
-		emit IERC1967.Upgraded(newImplementationAddress_);
-	}
-
-	// #endregion
 	// #region `_authorizeUpgrade`
 
 	/// @dev
@@ -173,8 +158,8 @@ contract CosmicSignatureGame is
 		// [/Comment-202510114]
 		onlyOwner
 
-		_onlyRoundIsInactive
-		_providedAddressIsNonZero(newImplementationAddress_) {
+		_onlyRoundIsInactive {
+		// _providedAddressIsNonZero(newImplementationAddress_) {
 		// // #enable_asserts // #disable_smtchecker console.log("1 _authorizeUpgrade");
 	}
 

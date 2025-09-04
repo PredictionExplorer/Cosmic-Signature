@@ -5,7 +5,6 @@
 // const hre = require("hardhat");
 // const { getCosmicSignatureGameContract } = require("../helpers.js");
 
-// /// Comment-202412129 relates.
 // async function main() {
 // 	// let privKey = process.env.PRIVKEY;
 // 	// if (privKey == undefined || privKey.length <= 0) {
@@ -39,7 +38,7 @@
 // }
 
 // main()
-// 	.then(() => (process.exit(0)))
+// 	.then(() => { process.exit(0); })
 // 	.catch((errorObject_) => {
 // 		console.error(errorObject_);
 // 		process.exit(1);

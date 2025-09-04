@@ -246,7 +246,7 @@ task("upgrade-cosmic-signature-game", "Upgrades the CosmicSignatureGame contract
 	const cosmicSignatureGameProxy = cosmicSignatureGameFactory.attach(deployCosmicSignatureContractsReportObject.cosmicSignatureGameProxyAddress);
 	const newCosmicSignatureGameFactory =
 		await hre.ethers.getContractFactory(upgradeConfigObject.newCosmicSignatureGameContractName, deployerSigner);
-	const upgradeProxyOptions = { kind: "uups", };
+	const upgradeProxyOptions = {kind: "uups",};
 	if (upgradeConfigObject.newInitializerMethodName.length > 0) {
 		upgradeProxyOptions.call = upgradeConfigObject.newInitializerMethodName;
 	}
@@ -254,7 +254,7 @@ task("upgrade-cosmic-signature-game", "Upgrades the CosmicSignatureGame contract
 	const newCosmicSignatureGameProxy =
 		await hre.upgrades.upgradeProxy(cosmicSignatureGameProxy, newCosmicSignatureGameFactory, upgradeProxyOptions);
 	// await newCosmicSignatureGameProxy.waitForDeployment();
-	console.info("Upgrade success.");
+	console.info("Upgraded.");
 	const reportObject = {
 		newCosmicSignatureGameImplementationAddress: await safeErc1967GetChangedImplementationAddress(deployCosmicSignatureContractsReportObject.cosmicSignatureGameProxyAddress, deployCosmicSignatureContractsReportObject.cosmicSignatureGameImplementationAddress),
 	};
