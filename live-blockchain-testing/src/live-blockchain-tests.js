@@ -19,7 +19,7 @@ prepare1();
 const nodeFsModule = require("node:fs");
 const hre = require("hardhat");
 const { vars } = require("hardhat/config");
-const { generateRandomUInt256, generateAccountPrivateKeyFromSeed, uint256ToPaddedHexString, /*sleepForMilliSeconds,*/ hackApplyGasMultiplierIfNeeded, waitForTransactionReceipt } = require("../../src/Helpers.js");
+const { generateRandomUInt256, generateAccountPrivateKeyFromSeed, uint256ToPaddedHexString, hackApplyGasMultiplierIfNeeded, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { runDeployCosmicSignatureContracts } = require("./cosmic-signature-contracts-deployment/helpers.js");
 const { validateCosmicSignatureToken, configureCosmicSignatureToken } = require("./cosmic-signature-token/helpers.js");
 const { configureRandomWalkNft, mintRandomWalkNft } = require("./random-walk-nft/helpers.js");
@@ -59,7 +59,7 @@ const state = new State();
 
 prepare2();
 main()
-	.then(() => (process.exit(state.outcomeCode)))
+	.then(() => { process.exit(state.outcomeCode); })
 	.catch((errorObject_) => {
 		console.error(errorObject_);
 		process.exit(1);

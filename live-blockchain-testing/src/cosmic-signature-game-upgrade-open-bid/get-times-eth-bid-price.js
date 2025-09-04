@@ -20,7 +20,7 @@
 // }
 
 // main()
-// 	.then(() => (process.exit(0)))
+// 	.then(() => { process.exit(0); })
 // 	.catch((errorObject_) => {
 // 		console.error(errorObject_);
 // 		process.exit(1);

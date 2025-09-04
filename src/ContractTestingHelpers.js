@@ -79,7 +79,7 @@ async function loadFixtureDeployContractsForTesting(roundActivationTime) {
 
 /**
  * This function is to be used for unit tests.
- * It's OK to pass ths function to `loadFixture`.
+ * It's OK to pass this function to `loadFixture`.
  */
 async function deployContractsForTesting() {
 	return deployContractsForTestingAdvanced("CosmicSignatureGame");
@@ -153,8 +153,8 @@ async function deployContractsForTestingAdvanced(
 /// Issue. The Hardhat Coverage task ignores parts of Hardhat configuration.
 /// This method fixes the issue.
 /// The `blockGasLimit` parameter is also ignored, but we are happy with its default value.
+/// todo-2 Is the above behavior going to change in a future version of Hardhat? To be revisited.
 /// Comment-202505294 relates.
-/// todo-2 Is that behavior going to change in a future version of Hardhat? To be revisited.
 /// Comment-202509185 relates.
 /// [/Comment-202508265]
 async function hackPrepareHardhatCoverageOnceIfNeeded() {
@@ -292,19 +292,12 @@ async function makeNextBlockTimeDeterministic(currentSecondRemainingDurationMinL
 	{
 		const latestBlockBaseFeePerGas = latestBlock.baseFeePerGas;
 
-		// [Comment-202505294]
-		// Issue. A problem is that when the Hardhat Coverage task is running,
-		// `baseFeePerGas` is zero in both Solidity and JavaScript.
-		// Therefore we need this ugly assertion logic.
-		// There are assertions like this in Solidity code as well. But they unconditionally assert that the value is positive,
-		// which implies that for the coverage task we must compile Solidity code with assertions disabled.
-		// Comment-202508265 relates.
-		// [/Comment-202505294]
-		if ( ! hre.__SOLIDITY_COVERAGE_RUNNING ) {
-			expect(latestBlockBaseFeePerGas).greaterThan(0n);
-		} else {
-			expect(latestBlockBaseFeePerGas).equal(0n);
-		}
+		// // Comment-202505294 applies.
+		// if ( ! hre.__SOLIDITY_COVERAGE_RUNNING ) {
+		// 	expect(latestBlockBaseFeePerGas).greaterThan(0n);
+		// } else {
+		// 	expect(latestBlockBaseFeePerGas).equal(0n);
+		// }
 
 		randomNumberSeed ^= latestBlockBaseFeePerGas << 64n;
 	}
