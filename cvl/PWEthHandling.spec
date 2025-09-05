@@ -37,7 +37,7 @@ rule balanceChangesCorrectly() {
 	// timestamp can be arbitrary here
 	uint256 timeout1 = registerRoundEnd(eA1, round1, winner);
 
-	assert nativeBalances[currentContract] == c0;
+	assert nativeBalances[currentContract] == c0, "After registerRoundEnd() balance of PrizesWallet is not correct";
 
 	// deposit ETH for winner (by game) with msg.value = amount1
 	env eA2;
@@ -45,15 +45,16 @@ rule balanceChangesCorrectly() {
 	require eA2.msg.value == amount1;
 	depositEth(eA2, round1, winner);
 
-	assert nativeBalances[currentContract] == c0 + amount1;
+	assert nativeBalances[currentContract] == c0 + amount1, "After depositEth() #1 balance of PrizesWallet is not correct";
 
 	// winner withdraws own ETH; make gasprice 0 for exact balance deltas
 	env eA3;
 	require eA3.msg.sender == winner;
+	require eA3.msg.value == 0;
 	withdrawEth(eA3);
 
-	assert nativeBalances[currentContract] == c0;
-	assert nativeBalances[winner] == w0 + amount1;
+	assert nativeBalances[currentContract] == c0 , "After withdrawEth() #1 balance of PrizesWallet is not correct";
+	assert nativeBalances[winner] == w0 + amount1, "After withdrawEth() #1 balance of the winner is not correct";
 
 	// -------------------------------------------------
 	// Case B: third-party withdraw after timeout passes
@@ -73,7 +74,7 @@ rule balanceChangesCorrectly() {
 	require eB2.msg.value == amount2;
 	depositEth(eB2, round2, winner);
 
-	assert nativeBalances[currentContract] == c1 + amount2;
+	assert nativeBalances[currentContract] == c1 + amount2, "After depositEth() #2 balance of PrizesWallet is not correct";
 
 	// advance time to/after timeout and allow non-winner to withdraw on behalf
 	env eB3;
@@ -82,9 +83,10 @@ rule balanceChangesCorrectly() {
 	// set timestamp to meet the require(block.timestamp >= timeout && timeout > 0)
 	// (timeout2 is > 0 by construction in the contract)
 	require eB3.block.timestamp == timeout2;
+	require eB3.msg.value == 0;
 	withdrawEth(eB3, winner);
 
-	assert nativeBalances[currentContract] == c1;
-	assert nativeBalances[other] == o0 + amount2;
+	assert nativeBalances[currentContract] == c1, "After withdrawEth() #2 balance of PrizesWallet is not correct";
+	assert nativeBalances[other] == o0 + amount2, "After withdrawEth() #2 balance of the winner is not correct";
 }
 
