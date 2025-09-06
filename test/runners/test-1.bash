@@ -17,7 +17,7 @@
 			export ENABLE_SMTCHECKER="${3}"
 
 			# todo-1 Uncomment the command line with no arguments.
-			# 'npx' 'hardhat' 'test' '--grep' '^CosmicSignatureDao '
+			# 'npx' 'hardhat' 'test' '--grep' '^PrizesWallet '
 			# 'npx' 'hardhat' 'test' '--grep' '^MainPrize Test 1$'
 			# 'npx' 'hardhat' 'test' '--grep' '(?<!\bLong-term aggressive bidding behaves correctly)$'
 			# 'npx' 'hardhat' 'test' '--grep' '^PrizesWallet-\d |^StakingWalletCosmicSignatureNft |^CharityWallet |^SystemManagement |^BidStatistics |^Bidding |^MainPrize |^CosmicSignatureGame-\d |^BidderContract |^BlockTimeStamps '
@@ -39,10 +39,10 @@
 		fi
 	fi
 
-	export HARDHAT_MODE_CODE='1'
-
 	# todo-1 Comment this out.
 	# export SKIP_LONG_TESTS='true'
+
+	export HARDHAT_MODE_CODE='1'
 
 	# Preprocessor, asserts, no SMTChecker.
 	# Running in this mode first because we enable Hardhat console in this mode.

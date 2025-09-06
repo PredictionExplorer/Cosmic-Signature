@@ -31,7 +31,7 @@ describe("MainPrize", function () {
 		expect(mainPrizeTimeIncrement_).equal(1n * 60n * 60n);
 
 		// If a bidder sends too much ETH, the game would refund the excess.
-		// Keeping in mind that the bidder won't get a too small refund.
+		// Keeping in mind that the game would swallow a too small refund.
 		await makeNextBlockTimeDeterministic();
 		nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPriceAdvanced(1n);
 		await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEth(-1n, "", {value: nextEthBidPrice_ + 10n ** (18n - 2n),}));
@@ -193,7 +193,10 @@ describe("MainPrize", function () {
 		let durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrizeRaw();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_),]);
 		// await hre.ethers.provider.send("evm_mine");
+		// const timeStamp1_ = performance.now();
 		await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).claimMainPrize());
+		// const timeStamp2_ = performance.now();
+		// console.info((timeStamp2_ - timeStamp1_).toFixed(1));
 		++ roundNum_;
 		const cosmicSignatureNftTotalSupplyBefore_ = await contracts_.cosmicSignatureNft.totalSupply();
 		expect(cosmicSignatureNftTotalSupplyBefore_).equal(numCosmicSignatureNftsToDistribute_);

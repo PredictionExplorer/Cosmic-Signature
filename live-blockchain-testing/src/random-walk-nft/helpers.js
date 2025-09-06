@@ -10,7 +10,7 @@ async function configureRandomWalkNft(randomWalkNft_, bidder2Signer_, bidder3Sig
 }
 
 async function mintRandomWalkNft(randomWalkNft_, minterSigner_) {
-	let mintPrice_ = await randomWalkNft_.getMintPrice();
+	let mintPrice_ = await randomWalkNft_.getMintPrice({blockTag: "pending",});
 	/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 	let transactionResponsePromise_ = randomWalkNft_.connect(minterSigner_).mint({value: mintPrice_,});
 	let transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);

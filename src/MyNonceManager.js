@@ -4,7 +4,7 @@ const hre = require("hardhat");
 
 class MyNonceManager extends hre.ethers.NonceManager {
 	/**
-	 * @param {hre.ethers.Signer} signer 
+	 * @param {import("ethers").Signer} signer 
 	 */
 	constructor(signer) {
 		super(signer);
@@ -16,4 +16,6 @@ class MyNonceManager extends hre.ethers.NonceManager {
 	}
 }
 
-module.exports = { MyNonceManager, };
+module.exports = {
+	MyNonceManager,
+};

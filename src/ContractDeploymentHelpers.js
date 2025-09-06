@@ -5,21 +5,18 @@
 // #endregion
 // #region
 
-// [Comment-202409255]
-// Because "hardhat.config.js" imports us, an attempt to import "hardhat" here would throw an error.
-// So we must do things differently here.
-// Issue. A better option could be to add the `hre` parameter to functions that need it.
-// [/Comment-202409255]
+// Comment-202409255 applies.
 // const hre = require("hardhat");
 const { HardhatContext } = require("hardhat/internal/context");
 
-const { waitForTransactionReceipt, safeErc1967GetChangedImplementationAddress } = require("./Helpers.js");
+// Comment-202409255 relates.
+const { HARDHAT_MODE_CODE, getBlockTimeStampByBlockNumber, waitForTransactionReceipt } = require("./Helpers.js");
 
 // #endregion
 // #region `deployContracts`
 
 /**
- * @param {import("hardhat").ethers.AbstractSigner} deployerSigner 
+ * @param {import("ethers").Signer} deployerSigner 
  * @param {string} randomWalkNftAddress 
  * @param {string} charityAddress 
  * @param {boolean} transferContractOwnershipToCosmicSignatureDao 
@@ -46,12 +43,12 @@ const deployContracts = async function (
 // #region `deployContractsAdvanced`
 
 /**
- * @param {import("hardhat").ethers.AbstractSigner} deployerSigner 
+ * @param {import("ethers").Signer} deployerSigner 
  * @param {string} cosmicSignatureGameContractName 
  * @param {string} randomWalkNftAddress May be empty or zero.
  * @param {string} charityAddress May be empty or zero.
  * @param {boolean} transferContractOwnershipToCosmicSignatureDao 
- * @param {bigint} roundActivationTime 
+ * @param {bigint} roundActivationTime See `setRoundActivationTimeIfNeeded`.
  */
 const deployContractsAdvanced = async function (
 	deployerSigner,
@@ -65,21 +62,18 @@ const deployContractsAdvanced = async function (
 	const hre = HardhatContext.getHardhatContext().environment;
 
 	const cosmicSignatureGameFactory = await hre.ethers.getContractFactory(cosmicSignatureGameContractName, deployerSigner);
-
-	// Comment-202503132 relates.
 	const cosmicSignatureGameProxy =
 		await hre.upgrades.deployProxy(
 			cosmicSignatureGameFactory,
-			[deployerSigner.address],
+			[deployerSigner.address,],
 			{
 				kind: "uups"
 			}
 		);
-
 	await cosmicSignatureGameProxy.waitForDeployment();
 	const cosmicSignatureGameProxyAddress = await cosmicSignatureGameProxy.getAddress();
 
-	const cosmicSignatureGameImplementationAddress = await safeErc1967GetChangedImplementationAddress(cosmicSignatureGameProxyAddress, hre.ethers.ZeroAddress);
+	const cosmicSignatureGameImplementationAddress = await hre.upgrades.erc1967.getImplementationAddress(cosmicSignatureGameProxyAddress);
 	const cosmicSignatureGameImplementation = cosmicSignatureGameFactory.attach(cosmicSignatureGameImplementationAddress);
 
 	const cosmicSignatureTokenFactory = await hre.ethers.getContractFactory("CosmicSignatureToken", deployerSigner);
@@ -194,7 +188,8 @@ const deployContractsAdvanced = async function (
  * Possible values:
  *    less than or equal negative 1 billion: do nothing (on deployment, the value hardcoded in the contract will stay unchanged).
  *    greater than or equal 1 billion: use the given value as is.
- *    any other value: use the latest mined block timestamp plus the given value.
+ *    any other value: use the "current" block timestamp plus the given value.
+ * Which block is the "current", we choose near Comment-202510206.
  */
 async function setRoundActivationTimeIfNeeded(cosmicSignatureGameProxy, roundActivationTime) {
 	// [Comment-202507202]
@@ -205,11 +200,12 @@ async function setRoundActivationTimeIfNeeded(cosmicSignatureGameProxy, roundAct
 		// Comment-202507202 applies.
 		if (roundActivationTime < 1_000_000_000n) {
 
-			// Comment-202409255 applies.
-			const hre = HardhatContext.getHardhatContext().environment;
+			// [Comment-202510206/]
+			const currentBlockTag = (HARDHAT_MODE_CODE == 1) ? "latest" : "pending";
 
-			const latestBlock = await hre.ethers.provider.getBlock("latest");
-			roundActivationTime += BigInt(latestBlock.timestamp);
+			const currentBlockTimeStamp = await getBlockTimeStampByBlockNumber(currentBlockTag);
+			// console.info(currentBlockTimeStamp.toString());
+			roundActivationTime += currentBlockTimeStamp;
 		}
 		await waitForTransactionReceipt(cosmicSignatureGameProxy.setRoundActivationTime(roundActivationTime));
 	}

@@ -5,7 +5,6 @@
 // const hre = require("hardhat");
 // const { getCosmicSignatureGameContract } = require("../helpers.js");
 
-// /// Comment-202412129 relates.
 // async function main() {
 // 	// let privKey = process.env.PRIVKEY;
 // 	// if (privKey == undefined || privKey.length <= 0) {
@@ -31,15 +30,15 @@
 // 				call: "initialize2",
 // 			}
 // 		);
-// 	await cosmicSignatureGame2Proxy.waitForDeployment();
+// 	// await cosmicSignatureGame2Proxy.waitForDeployment();
 // 	// todo-9 Should we call `safeErc1967GetChangedImplementationAddress` instead?
 // 	const cosmicSignatureGame2ImplementationAddress = await hre.upgrades.erc1967.getImplementationAddress(cosmicSignatureGameProxyAddress);
 // 	console.info("Implementation address =", cosmicSignatureGame2ImplementationAddress);
-// 	console.info("timesEthBidPrice =", await cosmicSignatureGame2Proxy.timesEthBidPrice());
+// 	console.info("timesEthBidPrice =", await cosmicSignatureGame2Proxy.timesEthBidPrice({blockTag: "pending",}));
 // }
 
 // main()
-// 	.then(() => (process.exit(0)))
+// 	.then(() => { process.exit(0); })
 // 	.catch((errorObject_) => {
 // 		console.error(errorObject_);
 // 		process.exit(1);

@@ -1,7 +1,5 @@
 #!/usr/bin/bash
 
-# Comment-202412129 relates.
-
 '/usr/bin/clear'
 
 (

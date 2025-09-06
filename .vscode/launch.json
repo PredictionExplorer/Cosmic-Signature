@@ -1,6 +1,7 @@
 {
 	"version": "0.2.0",
 	"configurations": [
+		// todo-3 This is missing an environment variable: HARDHAT_MODE_CODE=1
 		{
 			"name": "Debug Hardhat Tests",
 			"type": "node",
@@ -15,7 +16,7 @@
 				"test",
 
 				// // Restricting to a single file.
-				// "test/Bidding.js",
+				// "test/tests-src/Bidding.js",
 
 				// Restricting to a grep pattern.
 				"--grep",

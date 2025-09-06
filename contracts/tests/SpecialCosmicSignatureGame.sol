@@ -11,10 +11,10 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 	/// @dev Issue. Random number related logic in this test contract is kinda lousy, but keeping it simple.
 	RandomNumberHelpers.RandomNumberSeedWrapper private _entropy;
 
-	/// @custom:oz-upgrades-unsafe-allow constructor
-	constructor() CosmicSignatureGame() {
-		// Doing nothing.
-	}
+	// /// @custom:oz-upgrades-unsafe-allow constructor
+	// constructor() CosmicSignatureGame() {
+	// 	// Doing nothing.
+	// }
 
 	/// @dev Comment-202503124 relates and/or applies.
 	function initialize(address ownerAddress_) external override initializer() {

@@ -200,20 +200,7 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 
 	function _withdrawEth() private {
 		EthBalanceInfo storage ethBalanceInfoReference_ = _ethBalancesInfo[uint160(_msgSender())];
-
-		// It's OK if this is zero.
-		uint256 ethBalanceAmountCopy_ = ethBalanceInfoReference_.amount;
-
-		delete ethBalanceInfoReference_.amount;
-		delete ethBalanceInfoReference_.roundNum;
-		emit EthWithdrawn(_msgSender(), _msgSender(), ethBalanceAmountCopy_);
-
-		// Comment-202502043 applies.
-		(bool isSuccess_, ) = _msgSender().call{value: ethBalanceAmountCopy_}("");
-
-		if ( ! isSuccess_ ) {
-			revert CosmicSignatureErrors.FundTransferFailed("ETH withdrawal failed.", _msgSender(), ethBalanceAmountCopy_);
-		}
+		_withdrawEth(_msgSender(), ethBalanceInfoReference_);
 	}
 
 	// #endregion
@@ -232,7 +219,13 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 				block.timestamp
 			)
 		);
+		_withdrawEth(prizeWinnerAddress_, ethBalanceInfoReference_);
+	}
 
+	// #endregion
+	// #region `_withdrawEth`
+
+	function _withdrawEth(address prizeWinnerAddress_, EthBalanceInfo storage ethBalanceInfoReference_) private {
 		// It's OK if this is zero.
 		uint256 ethBalanceAmountCopy_ = ethBalanceInfoReference_.amount;
 

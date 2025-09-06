@@ -53,13 +53,16 @@ abstract contract BiddingOpenBid is
 	// #endregion
 	// #region Events
 
-	/// @dev ToDo-202412164-2 applies.
+	/// @dev
+	/// [ToDo-202412164-3]
+	/// This should be declared in an inherited interface.
+	/// [/ToDo-202412164-3]
 	event TimesEthBidPriceChanged(uint256 newValue);
 
 	// #endregion
 	// #region `setTimesEthBidPrice`
 
-	/// @dev ToDo-202412164-2 applies.
+	/// @dev ToDo-202412164-3 applies.
 	function setTimesEthBidPrice(uint256 newValue_) external onlyOwner {
 		timesEthBidPrice = newValue_;
 		emit TimesEthBidPriceChanged(newValue_);
@@ -163,7 +166,7 @@ abstract contract BiddingOpenBid is
 	// #endregion
 	// #region `bidWithEthAndDonateToken`
 
-	/// @dev ToDo-202412164-2 applies.
+	/// @dev ToDo-202412164-3 applies.
 	function bidWithEthAndDonateToken(int256 randomWalkNftId_, bool isOpenBid_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable /*override*/ nonReentrant /*_onlyRoundIsActive*/ {
 		_bidWithEth(randomWalkNftId_, isOpenBid_, message_);
 		prizesWallet.donateToken(roundNum, _msgSender(), tokenAddress_, amount_);
@@ -179,7 +182,7 @@ abstract contract BiddingOpenBid is
 	// #endregion
 	// #region `bidWithEthAndDonateNft`
 
-	/// @dev ToDo-202412164-2 applies.
+	/// @dev ToDo-202412164-3 applies.
 	function bidWithEthAndDonateNft(int256 randomWalkNftId_, bool isOpenBid_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable /*override*/ nonReentrant /*_onlyRoundIsActive*/ {
 		_bidWithEth(randomWalkNftId_, isOpenBid_, message_);
 		prizesWallet.donateNft(roundNum, _msgSender(), nftAddress_, nftId_);
@@ -195,7 +198,7 @@ abstract contract BiddingOpenBid is
 	// #endregion
 	// #region `bidWithEth`
 
-	/// @dev ToDo-202412164-2 applies.
+	/// @dev ToDo-202412164-3 applies.
 	function bidWithEth(/*bytes memory data_*/ int256 randomWalkNftId_, bool isOpenBid_, string memory message_) external payable /*override*/ nonReentrant /*_onlyRoundIsActive*/ {
 		_bidWithEth(/*data_*/ randomWalkNftId_, isOpenBid_, message_);
 	}
@@ -336,7 +339,7 @@ abstract contract BiddingOpenBid is
 			if (uint256(overpaidEthPrice_) <= ethBidRefundAmountToSwallowMaxLimit_) {
 				// Doing nothing.
 			} else
-			
+
 			// Comment-202506219 applies.
 			{
 				// Comment-202502043 applies.
@@ -410,9 +413,11 @@ abstract contract BiddingOpenBid is
 		unchecked
 		// #enable_smtchecker */
 		{
+			// Comment-202505074 relates.
 			uint256 ethPlusRandomWalkNftBidPrice_ =
 				(ethBidPrice_ + (CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR - 1)) /
 				CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR;
+				
 			// #enable_asserts assert(
 			// #enable_asserts 	( ! ( ethBidPrice_ > 0 &&
 			// #enable_asserts 	      ethBidPrice_ <= type(uint256).max - (CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR - 1)

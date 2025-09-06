@@ -17,15 +17,15 @@ async function validateCosmicSignatureGameState(
 	charityWalletAddress_
 	// cosmicSignatureDaoAddress_
 ) {
-	expect(await cosmicSignatureGameProxy_.owner()).equal(ownerAddress_);
-	expect(await cosmicSignatureGameProxy_.token()).equal(cosmicSignatureTokenAddress_);
-	expect(await cosmicSignatureGameProxy_.randomWalkNft()).equal(randomWalkNftAddress_);
-	expect(await cosmicSignatureGameProxy_.nft()).equal(cosmicSignatureNftAddress_);
-	expect(await cosmicSignatureGameProxy_.prizesWallet()).equal(prizesWalletAddress_);
-	expect(await cosmicSignatureGameProxy_.stakingWalletRandomWalkNft()).equal(stakingWalletRandomWalkNftAddress_);
-	expect(await cosmicSignatureGameProxy_.stakingWalletCosmicSignatureNft()).equal(stakingWalletCosmicSignatureNftAddress_);
-	expect(await cosmicSignatureGameProxy_.marketingWallet()).equal(marketingWalletAddress_);
-	expect(await cosmicSignatureGameProxy_.charityAddress()).equal(charityWalletAddress_);
+	expect(await cosmicSignatureGameProxy_.owner({blockTag: "pending",})).equal(ownerAddress_);
+	expect(await cosmicSignatureGameProxy_.token({blockTag: "pending",})).equal(cosmicSignatureTokenAddress_);
+	expect(await cosmicSignatureGameProxy_.randomWalkNft({blockTag: "pending",})).equal(randomWalkNftAddress_);
+	expect(await cosmicSignatureGameProxy_.nft({blockTag: "pending",})).equal(cosmicSignatureNftAddress_);
+	expect(await cosmicSignatureGameProxy_.prizesWallet({blockTag: "pending",})).equal(prizesWalletAddress_);
+	expect(await cosmicSignatureGameProxy_.stakingWalletRandomWalkNft({blockTag: "pending",})).equal(stakingWalletRandomWalkNftAddress_);
+	expect(await cosmicSignatureGameProxy_.stakingWalletCosmicSignatureNft({blockTag: "pending",})).equal(stakingWalletCosmicSignatureNftAddress_);
+	expect(await cosmicSignatureGameProxy_.marketingWallet({blockTag: "pending",})).equal(marketingWalletAddress_);
+	expect(await cosmicSignatureGameProxy_.charityAddress({blockTag: "pending",})).equal(charityWalletAddress_);
 }
 
 /// Assuming `cosmicSignatureGameProxy_.roundActivationTime` is in the future.

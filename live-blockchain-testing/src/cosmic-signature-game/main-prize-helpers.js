@@ -18,7 +18,7 @@ async function waitUntilMainPrizeTime(cosmicSignatureGameProxy_) {
 async function claimMainPrize(cosmicSignatureGameProxy_, bidderSigner_) {
 	console.info("claimMainPrize");
 	const cosmicSignatureGameProxyMainPrizeClaimedTopicHash_ = cosmicSignatureGameProxy_.interface.getEvent("MainPrizeClaimed").topicHash;
-	let mainEthPrizeAmount_ = await cosmicSignatureGameProxy_.getMainEthPrizeAmount();
+	let mainEthPrizeAmount_ = await cosmicSignatureGameProxy_.getMainEthPrizeAmount({blockTag: "pending",});
 	const timeStamp1_ = performance.now();
 	/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 	let transactionResponsePromise_ = cosmicSignatureGameProxy_.connect(bidderSigner_).claimMainPrize();
@@ -34,17 +34,17 @@ async function claimMainPrize(cosmicSignatureGameProxy_, bidderSigner_) {
 // /// Comment-202509229 applies.
 // async function forward_time_to_main_prize_time() {
 // 	const cosmicSignatureGame = await getCosmicSignatureGameContract();
-// 	let durationUntilMainPrize = await cosmicSignatureGame.getDurationUntilMainPrizeRaw();
+// 	let durationUntilMainPrize = await cosmicSignatureGame.getDurationUntilMainPrizeRaw(/*todo-9 {blockTag: "pending",}*/);
 // 	console.info("Duration until main prize before:", durationUntilMainPrize);
 // 	if (durationUntilMainPrize > 0n) {
 // 		if (durationUntilMainPrize > 1n) {
-// 			await hre.ethers.provider.send("evm_increaseTime", [durationUntilMainPrize.toNumber()]);
+// 			await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize),]);
 // 		}
 // 		await hre.ethers.provider.send("evm_mine");
 //
 // 		// This is supposed to be zero.
 // 		// But this can also be negative.
-// 		durationUntilMainPrize = await cosmicSignatureGame.getDurationUntilMainPrizeRaw();
+// 		durationUntilMainPrize = await cosmicSignatureGame.getDurationUntilMainPrizeRaw(/*todo-9 {blockTag: "pending",}*/);
 //
 // 		console.info("Duration until main prize after:", durationUntilMainPrize);
 // 	}
@@ -52,8 +52,8 @@ async function claimMainPrize(cosmicSignatureGameProxy_, bidderSigner_) {
 
 // /// Comment-202509229 applies.
 // async function claim_main_prize(testingAcct, cosmicSignatureGame) {
-// 	let mainEthPrizeAmount = await cosmicSignatureGame.getMainEthPrizeAmount();
-// 	let charityEthDonationAmount = await cosmicSignatureGame.getCharityEthDonationAmount();
+// 	let mainEthPrizeAmount = await cosmicSignatureGame.getMainEthPrizeAmount({blockTag: "pending",});
+// 	let charityEthDonationAmount = await cosmicSignatureGame.getCharityEthDonationAmount({blockTag: "pending",});
 // 	/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 // 	let transactionResponsePromise = cosmicSignatureGame.connect(testingAcct).claimMainPrize();
 // 	let transactionReceipt = await waitForTransactionReceipt(transactionResponsePromise);
@@ -64,32 +64,32 @@ async function claimMainPrize(cosmicSignatureGameProxy_, bidderSigner_) {
 // 	expect(parsed_log.args.beneficiaryAddress).equal(testingAcct.address);
 // 	expect(parsed_log.args.amount).equal(mainEthPrizeAmount);
 //
-// 	let cosmicSignatureNftAddress = await cosmicSignatureGame.nft();
+// 	const cosmicSignatureNftAddress = await cosmicSignatureGame.nft({blockTag: "pending",});
 //
 // 	// Comment-202502096 applies.
-// 	let cosmicSignatureNft = await hre.ethers.getContractAt("CosmicSignatureNft", cosmicSignatureNftAddress);
+// 	const cosmicSignatureNft = await hre.ethers.getContractAt("CosmicSignatureNft", cosmicSignatureNftAddress);
 //
 // 	topic_sig = cosmicSignatureGame.interface.getEventTopic("RaffleWinnerCosmicSignatureNftAwarded");
 // 	event_logs = transactionReceipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
 // 	for (let i = 0; i < event_logs.length; i++) {
 // 		let parsed_log = cosmicSignatureGame.interface.parseLog(event_logs[i]);
-// 		let ownr = await cosmicSignatureNft.ownerOf(parsed_log.args.prizeCosmicSignatureNftId);
+// 		let ownr = await cosmicSignatureNft.ownerOf(parsed_log.args.prizeCosmicSignatureNftId, {blockTag: "pending",});
 // 		expect(ownr).equal(parsed_log.args.winnerAddress);
 // 	}
 //
-// 	let prizesWalletAddress = await cosmicSignatureGame.prizesWallet();
+// 	const prizesWalletAddress = await cosmicSignatureGame.prizesWallet({blockTag: "pending",});
 //
 // 	// Comment-202502096 applies.
-// 	let prizesWallet = await hre.ethers.getContractAt("PrizesWallet", prizesWalletAddress);
+// 	const prizesWallet = await hre.ethers.getContractAt("PrizesWallet", prizesWalletAddress);
 //
 // 	topic_sig = prizesWallet.interface.getEventTopic("EthReceived");
 // 	event_logs = transactionReceipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
 // 	await claim_raffle_eth(testingAcct, prizesWallet, event_logs);
 //
-// 	let charityWalletAddress = await cosmicSignatureGame.charityAddress();
+// 	const charityWalletAddress = await cosmicSignatureGame.charityAddress({blockTag: "pending",});
 //
 // 	// Comment-202502096 applies.
-// 	let charityWallet = await hre.ethers.getContractAt("CharityWallet", charityWalletAddress);
+// 	const charityWallet = await hre.ethers.getContractAt("CharityWallet", charityWalletAddress);
 //
 // 	topic_sig = charityWallet.interface.getEventTopic("DonationReceived");
 // 	event_logs = transactionReceipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
@@ -107,7 +107,7 @@ async function claimMainPrize(cosmicSignatureGameProxy_, bidderSigner_) {
 // 		let prizeWinnerAddress = wlog.args.prizeWinnerAddress;
 // 		if (prizeWinnerAddress.address == testingAcct.address) {
 // 			if (unique_winners[prizeWinnerAddress] == undefined) {
-// 				await prizesWallet.connect(testingAcct).withdrawEth();
+// 				await waitForTransactionReceipt(prizesWallet.connect(testingAcct).withdrawEth());
 // 				unique_winners[prizeWinnerAddress] = 1;
 // 			}
 // 		}

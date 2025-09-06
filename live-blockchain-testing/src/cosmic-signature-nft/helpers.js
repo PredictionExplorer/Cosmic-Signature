@@ -8,8 +8,8 @@ async function validateCosmicSignatureNft(
 	ownerAddress_,
 	cosmicSignatureGameProxyAddress_
 ) {
-	expect(await cosmicSignatureNft_.owner()).equal(ownerAddress_);
-	expect(await cosmicSignatureNft_.game()).equal(cosmicSignatureGameProxyAddress_);
+	expect(await cosmicSignatureNft_.owner({blockTag: "pending",})).equal(ownerAddress_);
+	expect(await cosmicSignatureNft_.game({blockTag: "pending",})).equal(cosmicSignatureGameProxyAddress_);
 }
 
 module.exports = {

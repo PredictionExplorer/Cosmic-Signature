@@ -148,7 +148,7 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// The returned past price will not necessarily be correct for a timestamp before certain actions or time points.
 	/// For the most up-to-date result, call this method in the context of the "pending" block.
 	/// When deciding on this argument value, take into account that currently, on Arbitrum,
-	/// consequitive blocks can have equal timestamps, which will likely no longer be the case
+	/// consequitive blocks can have equal timestamps, which will not necessarily be the case
 	/// after Arbitrum decentralizes their blockchain.
 	/// Sensible values:
 	///    0 when the result is to be used within the same transaction.
@@ -159,8 +159,9 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	///      while calling this method in the context of the "pending" block.
 	///      Alternatively, it could make sense to pass 1, assuming that human hands aren't that fast.
 	///    1 for testing on Hardhat Network, provided this method is called in the context of the "latest" block
-	///      and the next block timestamp will increase by 1.
+	///      and the next block timestamp in which the next transaction will be mined will increase by 1.
 	///      Comment-202501193 relates.
+	///    0 for testing on Hardhat Network, provided this method is called in the context of the "pending" block.
 	/// [/Comment-202501107]
 	/// @return The next CST bid price, in Wei.
 	/// It can potentially be zero.
