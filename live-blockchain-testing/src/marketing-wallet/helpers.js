@@ -8,9 +8,9 @@ async function validateMarketingWallet(
 	ownerAddress_,
 	cosmicSignatureTokenAddress_
 ) {
-	expect(await marketingWallet_.owner()).equal(ownerAddress_);
-	expect(await marketingWallet_.treasurerAddress()).equal(ownerAddress_);
-	expect(await marketingWallet_.token()).equal(cosmicSignatureTokenAddress_);
+	expect(await marketingWallet_.owner({blockTag: "pending",})).equal(ownerAddress_);
+	expect(await marketingWallet_.treasurerAddress({blockTag: "pending",})).equal(ownerAddress_);
+	expect(await marketingWallet_.token({blockTag: "pending",})).equal(cosmicSignatureTokenAddress_);
 }
 
 async function configureMarketingWallet(marketingWallet_, ownerSigner_, treasurerAddress_) {

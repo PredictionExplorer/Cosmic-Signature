@@ -254,7 +254,11 @@ task("upgrade-cosmic-signature-game", "Upgrades the CosmicSignatureGame contract
 	const newCosmicSignatureGameProxy =
 		await hre.upgrades.upgradeProxy(cosmicSignatureGameProxy, newCosmicSignatureGameFactory, upgradeProxyOptions);
 	// await newCosmicSignatureGameProxy.waitForDeployment();
-	console.info("Upgraded.");
+
+	// Issue. As per Comment-202510208, the transaction is still being mined.
+	// Therefore "probably".
+	console.info("Probably upgraded.");
+
 	const reportObject = {
 		newCosmicSignatureGameImplementationAddress: await safeErc1967GetChangedImplementationAddress(deployCosmicSignatureContractsReportObject.cosmicSignatureGameProxyAddress, deployCosmicSignatureContractsReportObject.cosmicSignatureGameImplementationAddress),
 	};

@@ -215,6 +215,21 @@ function sleepForMilliSeconds(durationInMilliSeconds_) {
 }
 
 // #endregion
+// #region `getBlockTimeStampByBlockNumber`
+
+/**
+ * @param {string} blockNumber_ This may be "pending", "latest", etc.
+ */
+async function getBlockTimeStampByBlockNumber(blockNumber_) {
+	// Comment-202409255 applies.
+	const hre = HardhatContext.getHardhatContext().environment;
+
+	const block_ = await hre.ethers.provider.send("eth_getBlockByNumber", [blockNumber_, false,]);
+	const blockTimeStamp_ = BigInt(block_.timestamp);
+	return blockTimeStamp_;
+}
+
+// #endregion
 // #region `hackApplyGasMultiplierIfNeeded`
 
 /**
@@ -262,11 +277,9 @@ function hackApplyGasMultiplierIfNeeded() {
  */
 async function waitForTransactionReceipt(transactionResponsePromise_) {
 	const transactionResponse_ = await transactionResponsePromise_;
-	// const timeStamp1_ = performance.now();
 	const transactionReceipt_ = await transactionResponse_.wait();
-	// const timeStamp2_ = performance.now();
-	// console.info(`202508248 ${(timeStamp2_ - timeStamp1_).toFixed(1)}`);
 
+	// // Testing.
 	// {
 	// 	// Comment-202409255 applies.
 	// 	const hre = HardhatContext.getHardhatContext().environment;
@@ -279,7 +292,7 @@ async function waitForTransactionReceipt(transactionResponsePromise_) {
 	// 	const gasUnusedFromOriginalGasEstimate_ = originalGasEstimate_ - Number(transactionReceipt_.gasUsed);
 	// 	const gasUnusedAsFractionOfOriginalGasEstimate_ = gasUnusedFromOriginalGasEstimate_ / originalGasEstimate_;
 	// 
-	// 	console.log(
+	// 	console.info(
 	// 		`202509184 ` +
 	// 		`${transactionBlock_.number} ` +
 	// 		`${transactionResponse_.gasLimit} ` +
@@ -297,16 +310,17 @@ async function waitForTransactionReceipt(transactionResponsePromise_) {
 // #region `safeErc1967GetChangedImplementationAddress`
 
 /**
- * Issue. This kinda smells.
- * We would not necessarily need this if `hre.upgrades.erc1967.getImplementationAddress` loaded the storage slot
- * in the context of the "pending" block.
- * But one would expect that even doing that from the "latest" block would not require this logic
- * because that's the block in which the upgrade transaction was mined.
- * Apparently, the info about the transaction block becomes available with a delay.
- * A more correct solution would be to find and parse respective events.
- * It would also be helpful to add a timeout to guarantee that we will break the loop eventually.
- * But keeping it simple.
- * Surprisingly, I haven't seen this logging a warning when called after deploying a new contract.
+ * [Comment-202510208]
+ * Issue. ChatGPT says that `HardhatRuntimeEnvironment.upgrades.upgradeProxy` doesn't wait
+ * for the upgrade transaction to be mined.
+ * So we need this ugly function to reliably get the new implementation contract address.
+ * A more correct solution would be to find and parse the `IERC1967.Upgraded` event.
+ * But we would still have to wait for the transaction and its block to be mined.
+ * It would also be helpful to throw an error if we observe that another block has been mined and/or a timeout expired,
+ * but the implementation contract address has not changed. But if the upgrade transaction is still pending at that point,
+ * it would still likely be mined later.
+ * So keeping it simple for now.
+ * [/Comment-202510208]
  * @param {string} proxyAddress_
  * @param {string} oldImplementationAddress_
  */
@@ -321,7 +335,7 @@ async function safeErc1967GetChangedImplementationAddress(proxyAddress_, oldImpl
 				return newImplementationAddress_;
 			}
 		}
-		console.warn("Warning. We have to wait for the contract implementation address to become known.");
+		console.warn("Warning. We have to wait for the contract upgrade transaction to be mined.");
 		await sleepForMilliSeconds(2000);
 	}
 }
@@ -344,6 +358,7 @@ module.exports = {
 	uint32ToPaddedHexString,
 	uint256ToPaddedHexString,
 	sleepForMilliSeconds,
+	getBlockTimeStampByBlockNumber,
 	hackApplyGasMultiplierIfNeeded,
 	waitForTransactionReceipt,
 	safeErc1967GetChangedImplementationAddress,

@@ -10,7 +10,7 @@
 const { HardhatContext } = require("hardhat/internal/context");
 
 // Comment-202409255 relates.
-const { waitForTransactionReceipt, safeErc1967GetChangedImplementationAddress } = require("./Helpers.js");
+const { HARDHAT_MODE_CODE, getBlockTimeStampByBlockNumber, waitForTransactionReceipt } = require("./Helpers.js");
 
 // #endregion
 // #region `deployContracts`
@@ -48,7 +48,7 @@ const deployContracts = async function (
  * @param {string} randomWalkNftAddress May be empty or zero.
  * @param {string} charityAddress May be empty or zero.
  * @param {boolean} transferContractOwnershipToCosmicSignatureDao 
- * @param {bigint} roundActivationTime 
+ * @param {bigint} roundActivationTime See `setRoundActivationTimeIfNeeded`.
  */
 const deployContractsAdvanced = async function (
 	deployerSigner,
@@ -73,7 +73,7 @@ const deployContractsAdvanced = async function (
 	await cosmicSignatureGameProxy.waitForDeployment();
 	const cosmicSignatureGameProxyAddress = await cosmicSignatureGameProxy.getAddress();
 
-	const cosmicSignatureGameImplementationAddress = await safeErc1967GetChangedImplementationAddress(cosmicSignatureGameProxyAddress, hre.ethers.ZeroAddress);
+	const cosmicSignatureGameImplementationAddress = await hre.upgrades.erc1967.getImplementationAddress(cosmicSignatureGameProxyAddress);
 	const cosmicSignatureGameImplementation = cosmicSignatureGameFactory.attach(cosmicSignatureGameImplementationAddress);
 
 	const cosmicSignatureTokenFactory = await hre.ethers.getContractFactory("CosmicSignatureToken", deployerSigner);
@@ -188,7 +188,8 @@ const deployContractsAdvanced = async function (
  * Possible values:
  *    less than or equal negative 1 billion: do nothing (on deployment, the value hardcoded in the contract will stay unchanged).
  *    greater than or equal 1 billion: use the given value as is.
- *    any other value: use the latest mined block timestamp plus the given value.
+ *    any other value: use the "current" block timestamp plus the given value.
+ * Which block is the "current", we choose near Comment-202510206.
  */
 async function setRoundActivationTimeIfNeeded(cosmicSignatureGameProxy, roundActivationTime) {
 	// [Comment-202507202]
@@ -199,11 +200,12 @@ async function setRoundActivationTimeIfNeeded(cosmicSignatureGameProxy, roundAct
 		// Comment-202507202 applies.
 		if (roundActivationTime < 1_000_000_000n) {
 
-			// Comment-202409255 applies.
-			const hre = HardhatContext.getHardhatContext().environment;
+			// [Comment-202510206/]
+			const currentBlockTag = (HARDHAT_MODE_CODE == 1) ? "latest" : "pending";
 
-			const latestBlock = await hre.ethers.provider.getBlock("latest");
-			roundActivationTime += BigInt(latestBlock.timestamp);
+			const currentBlockTimeStamp = await getBlockTimeStampByBlockNumber(currentBlockTag);
+			// console.info(currentBlockTimeStamp.toString());
+			roundActivationTime += currentBlockTimeStamp;
 		}
 		await waitForTransactionReceipt(cosmicSignatureGameProxy.setRoundActivationTime(roundActivationTime));
 	}

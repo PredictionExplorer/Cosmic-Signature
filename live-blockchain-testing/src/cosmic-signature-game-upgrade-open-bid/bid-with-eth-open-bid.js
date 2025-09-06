@@ -27,7 +27,7 @@
 // 	let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
 // 	let cosmicSignatureGame = await getCosmicSignatureGameContract("CosmicSignatureGameOpenBid");
 //
-// 	let multiplier = await cosmicSignatureGame.timesEthBidPrice()
+// 	let multiplier = await cosmicSignatureGame.timesEthBidPrice({blockTag: "pending",});
 // 	// let bidParams = {message: "open bid test", randomWalkNftId: -1n, isOpenBid: true,};
 // 	// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 // 	let nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice({blockTag: "pending",});

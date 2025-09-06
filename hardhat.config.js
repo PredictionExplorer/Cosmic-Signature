@@ -298,7 +298,7 @@ const hardhatUserConfig = {
 			// [Comment-202408026]
 			// By default, this is "paris".
 			// See https://v2.hardhat.org/hardhat-runner/docs/config#default-evm-version
-			// But we want this to be the latest with which Arbitrum is compatible.
+			// But we want this to be the latest Arbitrum-compatible.
 			// todo-1 Revisit this.
 			// [/Comment-202408026]
 			evmVersion: "prague",
@@ -421,6 +421,7 @@ const hardhatUserConfig = {
 			chainId: 31337,
 
 			// Comment-202501193 relates and/or applies.
+			// We also use this near Comment-202510196.
 			initialDate: (helpersModule.HARDHAT_MODE_CODE == 1) ? "2025-01-01" : undefined,
 
 			// By default, this is `false`.
@@ -450,7 +451,7 @@ const hardhatUserConfig = {
 			// [Comment-202507252]
 			// By default, this is 30_000_000.
 			// When automining is disabled and the `gas` parameter is a fraction of this,
-			// a bigger value allows to mine multiple transactions per block with a single "evm_mine".
+			// a bigger value allows to mine many transactions per block with a single "evm_mine".
 			// Comment-202507272 relates.
 			// Comment-202508265 relates and/or applies.
 			// [/Comment-202507252]
@@ -468,22 +469,26 @@ const hardhatUserConfig = {
 			// Issue 1. So we cannot easily test adjacent blocks with equal timestamps.
 			// 
 			// Issue 2.  Hardhat Network advances the next block timestamp to at least the current system time.
-			// As a result, if `loadFixture` was already called, after it's called again, the next block timestamp can leap by many seconds,
-			// so if we need to use the last block timestamp immediately after calling `loadFixture`,
-			// we typically must mine a dummy block beforehand.
+			// As a result, if `loadFixture` was already called, after it's called again, the next block timestamp can leap by many seconds
+			// from the "latest" block timestamp.
+			// If that's undesirable, these are possible options to prevent that.
+			// (1) Set the next block timestamp to the "latest" block timestamp plus 1.
+			// (2) Mine a dummy block.
+			// (3) For a more deterministic behavior, set the next block timestamp to a constant in the future and mine a dummy block,
+			//     which we do near Comment-202510198.
 			// 
 			// Issue 3. Even if the last block timestamp is ahead of the current system time,
 			// the next block timestamp will be increased by the number of times the system time reached the beginning of a second
 			// since the last block was mined.
-			// Calling the "evm_increaseTime" JSON RPC method will add the passed value to the above value.
+			// Calling the "evm_increaseTime" JSON RPC method will add its argument to the above value.
 			// Additionally, the next block timestamp will be forced to be bigger than the last one by at least 1,
 			// although that functionality can be disabled by the `allowBlocksWithSameTimestamp` parameter.
 			// So to increase the chance of deterministic behavior when the current system time is approaching the beginning of a second,
-			// we must wait until the next second and then subtract 1 or more from the value we are to pass to "evm_increaseTime".
+			// we must wait until the next second and then subtract 1 (or more) from the value we are to pass to "evm_increaseTime".
 			//
-			// Note that the `initialDate` parameter does not change this behavior. It only changes the initial timestamp.
-			// System time passage still drives timestamp increses.
-			// Although a constant `initialDate` makes it possible to more deterministically replay a test.
+			// Note that a constant `initialDate` parameter only makes the behavior more deterministic,
+			// but it does not change the behavior. It only changes the initial timestamp. System time passage
+			// still drives timestamp increses.
 			// [/Comment-202501193]
 			mining: {
 				// By default, this is `true`.

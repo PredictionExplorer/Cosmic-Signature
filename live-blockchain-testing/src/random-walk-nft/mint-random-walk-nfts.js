@@ -9,7 +9,7 @@
 // const numRWalkToMint = 4;
 
 // async function mint_random_walks(testingAcct, cosmicSignatureGame) {
-// 	let randomWalkNftAddress = await cosmicSignatureGame.randomWalkNft();
+// 	let randomWalkNftAddress = await cosmicSignatureGame.randomWalkNft({blockTag: "pending",});
 //
 // 	// Comment-202502096 applies.
 // 	let randomWalkNft = await hre.ethers.getContractAt("RandomWalkNFT", randomWalkNftAddress);

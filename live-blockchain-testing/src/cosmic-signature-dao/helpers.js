@@ -8,8 +8,8 @@ async function validateCosmicSignatureDao(
 	// ownerAddress_,
 	cosmicSignatureTokenAddress_
 ) {
-	// expect(await cosmicSignatureDao_.owner()).equal(ownerAddress_);
-	expect(await cosmicSignatureDao_.token()).equal(cosmicSignatureTokenAddress_);
+	// expect(await cosmicSignatureDao_.owner({blockTag: "pending",})).equal(ownerAddress_);
+	expect(await cosmicSignatureDao_.token({blockTag: "pending",})).equal(cosmicSignatureTokenAddress_);
 }
 
 module.exports = {

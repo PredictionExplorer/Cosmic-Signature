@@ -15,7 +15,7 @@
 // 	// 	process.exit(1);
 // 	// }
 // 	let cosmicSignatureGame = await getCosmicSignatureGameContract("CosmicSignatureGameOpenBid");
-// 	let value = await cosmicSignatureGame.timesEthBidPrice();
+// 	let value = await cosmicSignatureGame.timesEthBidPrice({blockTag: "pending",});
 // 	console.info("timesEthBidPrice =", value);
 // }
 

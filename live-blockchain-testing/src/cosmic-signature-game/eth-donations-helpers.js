@@ -5,7 +5,7 @@ const { waitForTransactionReceipt } = require("../../../src/Helpers.js");
 const { assertEvent } = require("../../../src/ContractTestingHelpers.js");
 
 async function donateEthToCosmicSignatureGame(cosmicSignatureGameProxy_, donor1Signer_, donor2Signer_, amountInEth_) {
-	const roundNum_ = await cosmicSignatureGameProxy_.roundNum();
+	const roundNum_ = await cosmicSignatureGameProxy_.roundNum({blockTag: "pending",});
 	const amountInWei_ = hre.ethers.parseEther(amountInEth_.toFixed(18));
 	const amount1InWei_ = amountInWei_ / 3n;
 	const amount2InWei_ = amountInWei_ - amount1InWei_;
@@ -23,7 +23,7 @@ async function donateEthToCosmicSignatureGame(cosmicSignatureGameProxy_, donor1S
 	}
 	console.info("donateEthWithInfo");
 	{
-		const numEthDonationWithInfoRecords_ = await cosmicSignatureGameProxy_.numEthDonationWithInfoRecords();
+		const numEthDonationWithInfoRecords_ = await cosmicSignatureGameProxy_.numEthDonationWithInfoRecords({blockTag: "pending",});
 		/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 		const transactionResponsePromise_ = cosmicSignatureGameProxy_.connect(donor2Signer_).donateEthWithInfo("Donation Info", {value: amount2InWei_,})
 		const transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);

@@ -14,11 +14,11 @@
 // const { getCosmicSignatureGameContract } = require("../helpers.js");
 
 // async function get_unclaimed_donated_nfts(cosmicSignatureGame) {
-// 	const nextDonatedNftIndex = await cosmicSignatureGame.nextDonatedNftIndex();
+// 	const nextDonatedNftIndex = await cosmicSignatureGame.nextDonatedNftIndex({blockTag: "pending",});
 // 	const numNfts = Number(nextDonatedNftIndex);
 // 	let prizeData = [];
 // 	for (let i = 0; i < numNfts; i++) {
-// 		let record_orig = await cosmicSignatureGame.donatedNfts(i);
+// 		let record_orig = await cosmicSignatureGame.donatedNfts(BigInt(i), {blockTag: "pending",});
 // 		let record = Object.assign({}, record_orig);
 // 		Object.defineProperty(record, "index", {value: i, writable: true,});
 // 		// todo-1 The `claimed` variable no longer exists.
@@ -96,7 +96,7 @@
 // 	let roundToClaim = parseInt(roundNumStr, 10);
 // 	let paramList = build_parameter_list(nfts[roundToClaim]);
 // 	// todo-1 This variable no longer exists. A similar variable exists in `PrizesWallet`.
-// 	let mainPrizeBeneficiaryAddress = await cosmicSignatureGame.winners(roundToClaim);
+// 	let mainPrizeBeneficiaryAddress = await cosmicSignatureGame.winners(roundToClaim, {blockTag: "pending",});
 // 	if (mainPrizeBeneficiaryAddress.toString() != testingAcct.address.toString()) {
 // 		console.info("You aren't the beneficiary of main prize " + roundToClaim.toString() + ", beneficiary is " + mainPrizeBeneficiaryAddress.toString());
 // 		process.exit(1);

@@ -53,24 +53,37 @@ async function loadFixtureDeployContractsForTesting(roundActivationTime) {
 	contracts.ownerSigner.reset();
 	contracts.deployerSigner.reset();
 
-	// Comment-202507202 applies.
-	if (roundActivationTime > -1_000_000_000n && roundActivationTime < 1_000_000_000n) {
+	// [Comment-202510198]
+	// Doing what Comment-202501193, issue 2, option (3) recommends.
+	// [/Comment-202510198]
+	{
+		// [Comment-202510196/]
+		const nextBlockDate = new Date(hre.network.config.initialDate);
+		
+		nextBlockDate.setUTCFullYear(nextBlockDate.getUTCFullYear() + 10);
+		const nextBlockTimeStamp = Math.trunc(nextBlockDate.getTime() / 1000);
+		// console.info(nextBlockTimeStamp);
 
-		// [Comment-202507204]
-		// Making `setRoundActivationTimeIfNeeded` behavior deterministic.
-		// [/Comment-202507204]
-		// Since we call this here, a typical test doesn't need to call this
-		// immediately after `loadFixtureDeployContractsForTesting` returns,
-		// and a quick test doesn't need to call this at all.
-		await makeNextBlockTimeDeterministic();
+		// Issue. Currently, this doesn't fail due to the new timestamp not being in the future from the latest block.
+		// Otherwise we would need a loop adding 10 years and trying on each iteration until succeeded.
+		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [nextBlockTimeStamp,]);
 	}
 
-	// Given the issue 2 in Comment-202501193, mining a dummy block.
+	// // Comment-202507202 applies.
+	// if (roundActivationTime > -1_000_000_000n && roundActivationTime < 1_000_000_000n) {
+	//
+	// 	// Making the timings of immediate calls to the blockchain more deterministic.
+	// 	// Since we call this here, a typical test doesn't need to call this
+	// 	// immediately after `loadFixtureDeployContractsForTesting` returns,
+	// 	// and a quick test doesn't need to call this at all.
+	// 	// But most tests don't need this, so let's not do this.
+	// 	await makeNextBlockTimeDeterministic();
+	// }
+
+	// Comment-202510198 applies.
 	await hre.ethers.provider.send("evm_mine");
 
-	// Comment-202507204 relates.
 	await setRoundActivationTimeIfNeeded(contracts.cosmicSignatureGameProxy.connect(contracts.ownerSigner), roundActivationTime);
-
 	return contracts;
 }
 

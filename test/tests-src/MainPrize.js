@@ -31,7 +31,7 @@ describe("MainPrize", function () {
 		expect(mainPrizeTimeIncrement_).equal(1n * 60n * 60n);
 
 		// If a bidder sends too much ETH, the game would refund the excess.
-		// Keeping in mind that the bidder won't get a too small refund.
+		// Keeping in mind that the game would swallow a too small refund.
 		await makeNextBlockTimeDeterministic();
 		nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPriceAdvanced(1n);
 		await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEth(-1n, "", {value: nextEthBidPrice_ + 10n ** (18n - 2n),}));

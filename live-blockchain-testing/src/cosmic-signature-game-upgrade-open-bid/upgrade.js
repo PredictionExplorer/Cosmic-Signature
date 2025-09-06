@@ -34,7 +34,7 @@
 // 	// todo-9 Should we call `safeErc1967GetChangedImplementationAddress` instead?
 // 	const cosmicSignatureGame2ImplementationAddress = await hre.upgrades.erc1967.getImplementationAddress(cosmicSignatureGameProxyAddress);
 // 	console.info("Implementation address =", cosmicSignatureGame2ImplementationAddress);
-// 	console.info("timesEthBidPrice =", await cosmicSignatureGame2Proxy.timesEthBidPrice());
+// 	console.info("timesEthBidPrice =", await cosmicSignatureGame2Proxy.timesEthBidPrice({blockTag: "pending",}));
 // }
 
 // main()
