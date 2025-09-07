@@ -1,68 +1,57 @@
-# Compiling Cosmic Signature Contracts
+### Compiling Cosmic Signature Contracts
 
-## Prerequisites
+As a matter of fact, you should never need to explicitly compile the contracts. Tasks and scripts in this project will automatically compile changed source code as needed. But if you suspect that for some reason the auto-compile doesn't work well, you can clean compiled artifacts by executing "../runners/clean.bash" and then run other tasks and scripts. In this case it's pretty much guaranteed that the autocompile will do a good job.
 
-1. **Install Node.js dependencies**:
+With that note out of the way, here are a few words about how to explicitly compile the contarcts.
+
+#### Prerequisites
+
+1. Clone the GitHub repo if you haven't already.
+   ```bash
+   git clone https://github.com/PredictionExplorer/Cosmic-Signature.git
+   ```
+
+2. Install Node.js dependencies.
    ```bash
    npm install
    ```
-
-2. **Install Solidity Compiler**:
-   The project uses Solidity 0.8.30. The Hardhat config looks for the compiler in these locations:
-   - `~/.solc-select/artifacts/solc-0.8.30/solc-0.8.30`
-   - `~/.local/bin/solc`
-   - `/usr/bin/solc`
-
-   Install using solc-select:
+   or
    ```bash
-   pip install solc-select
-   solc-select install 0.8.30
-   solc-select use 0.8.30
+   npm ci
    ```
 
-## Compilation Commands
-
-1. **Basic compilation**:
+3. Install the Solidity Compiler.\
+   This Hardhat project uses the binary solc compiler (not solc-js) 0.8.30.\
+   We recommend using solc-select:
    ```bash
-   npx hardhat compile
-   ```
+   pip3 install solc-select
+   solc-select use 0.8.30 --always-install
+   ```   
+   For more info on solc setup and about other solc setup options see Comment-202409011.
 
-2. **Clean and compile**:
-   ```bash
-   npx hardhat clean
-   npx hardhat compile
-   ```
+#### Environment Varibles
 
-3. **Compile with specific settings**:
-   The project supports different compilation modes via environment variables:
-   
-   - **Production mode** (default - optimized):
-     ```bash
-     ENABLE_HARDHAT_PREPROCESSOR=false npx hardhat compile
-     ```
-   
-   - **Debug mode with assertions**:
-     ```bash
-     ENABLE_HARDHAT_PREPROCESSOR=true ENABLE_ASSERTS=true npx hardhat compile
-     ```
-   
-   - **With SMTChecker** (formal verification during compilation):
-     ```bash
-     ENABLE_HARDHAT_PREPROCESSOR=true ENABLE_ASSERTS=true ENABLE_SMTCHECKER=2 npx hardhat compile
-     ```
+This Hardhat project requires that prior to initializing Hardhat the `HARDHAT_MODE_CODE` environment variable was set. Our scripts do it, so you don't need to. See Comment-202510221 for details.
 
-## Important Notes
+Other environment varibles are listed further.
 
-- The project uses Solidity 0.8.30 with optimization enabled
-- EVM version is set to "prague" (latest Arbitrum-compatible)
-- Via-IR is enabled for better optimization
-- Different cache folders are used based on compilation mode
-- The project includes a preprocessor for conditional compilation
+#### Compilation Commands
 
-## Compilation Output
+1. **Basic compilation**.\
+   Execute one of the compile scripts under the "../runners" folder.
 
-Compiled artifacts will be in:
-- Production mode: `./artifacts/production/`
-- Debug mode: `./artifacts/debug-[true/false]-[true/false]/`
+2. **Compilation with parameters**.\
+   Following are optional environment variables that affect the compilation:\
+   `ENABLE_HARDHAT_PREPROCESSOR` enables or disables a preprocessor for conditional compilation.\
+   `ENABLE_ASSERTS`.\
+   `ENABLE_SMTCHECKER`.\
+   They are documented in comments in `${workspaceFolder}/hardhat.config.js`.\
+   The variables (or lack thereof) affect the compiler output folders. Relevant logic is located near Comment-202503272 and Comment-202503302.\
+   To compile with SMTChecker, execute `${workspaceFolder}/smtchecker/compile-1.bash`. (Be sure to review a manual file in the same folder.)\
+   To compile (and immediately run tests) with other sensible combinations of the variables, execute `${workspaceFolder}/test/runners/test-1.bash`.
 
-ABI files for all contracts are exported to the `./artifacts/` folder.
+#### Notes
+
+- ABI files of all contracts are exported to the `${workspaceFolder}/artifacts` folder.
+
+- The Solidity compiler is configured in `${workspaceFolder}/hardhat.config.js`, in the `hardhatUserConfig.solidity` object.

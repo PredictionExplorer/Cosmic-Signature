@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 
 # [Comment-202503282]
-# This code is similar to "test-1.bash".
+# This code is similar to "${workspaceFolder}/test/runners/test-1.bash".
 # Comments there apply.
 # [/Comment-202503282]
 

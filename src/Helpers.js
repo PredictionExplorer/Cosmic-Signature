@@ -16,9 +16,12 @@ const { HardhatContext } = require("hardhat/internal/context");
 // #endregion
 // #region
 
+// [Comment-202510221]
 // Supported values:
-//    1 to run tests under the "${workspaceFolder}/test" subfolder deterministically and at the maximum speed.
-//    2 to simulate a live blockchain, which is designed for tests under the "${workspaceFolder}/live-blockchain-testing" subfolder.
+//    @ 1 to run tests under the "${workspaceFolder}/test" subfolder deterministically and at the maximum speed.
+//      This is the value to set in most cases, especially if no testing will be happening.
+//    @ 2 to simulate a live blockchain, which is designed for tests under the "${workspaceFolder}/live-blockchain-testing" subfolder.
+// [/Comment-202510221]
 const HARDHAT_MODE_CODE = parseIntegerEnvironmentVariable("HARDHAT_MODE_CODE", 0);
 
 switch (HARDHAT_MODE_CODE) {

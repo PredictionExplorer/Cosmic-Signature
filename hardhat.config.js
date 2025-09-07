@@ -55,9 +55,9 @@ const solidityCompilationCacheSubFolderName = ENABLE_HARDHAT_PREPROCESSOR ? ("de
 // #region
 
 // [Comment-202409011]
-// Issue. Hardhat would automatically install solcjs, but solcjs terminates with an error when SMTChecker is enabled.
-// It could be a solcjs bug.
-// So we must tell Hardhat to use the native solc of the given version.
+// Issue. Hardhat would automatically install solc-js, but solc-js terminates with an error when SMTChecker is enabled.
+// It could be a solc-js bug.
+// So we must tell Hardhat to use the binary solc of the given version.
 // Remember to manually install it.
 // One option is to install the solc package globally:
 //    sudo add-apt-repository ppa:ethereum/ethereum
@@ -68,7 +68,7 @@ const solidityCompilationCacheSubFolderName = ENABLE_HARDHAT_PREPROCESSOR ? ("de
 //    solc-select use 0.8.30 --always-install
 // It's OK if afterwards you switch to a different version. As long as the given version remains installed, we will find and use it.
 //
-// Update 1. It turns out that just like solcjs, solc installed with solc-select also fails when SMTChecker is enabled.
+// Update 1. It turns out that just like solc-js, solc installed with solc-select also fails when SMTChecker is enabled.
 // So you must install solc globally.
 // You can still use solc installed with solc-select when you don't need SMTChecker.
 //
@@ -76,7 +76,7 @@ const solidityCompilationCacheSubFolderName = ENABLE_HARDHAT_PREPROCESSOR ? ("de
 // Installing the z3 package fixed that:
 //    sudo apt install z3
 // Now even solc installed with solc-select works. So it's actually unnecessary to install solc globally.
-// todo-3 Test if solcjs works too.
+// todo-3 Test if solc-js works too.
 //
 // Note that Hardhat will not necessarily validate solc of what version it's executing,
 // so it's your responsibility to correctly configure all the relevant parameters that reference this comment.
