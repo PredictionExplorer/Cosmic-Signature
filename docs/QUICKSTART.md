@@ -1,27 +1,18 @@
-# Cosmic Signature - Quick Start Guide
+### Cosmic Signature - Quick Start Guide
 
-## What is This?
+#### What is This?
 
 Cosmic Signature is an NFT gaming project with:
-- **Solidity contracts** in `contracts/production/` - The game logic, tokens, NFTs, wallets
-- **Certora specifications** in `certora/` - Formal verification to prove correctness
+- **Solidity contracts** in `${workspaceFolder}/contracts/production/` - the game logic, tokens, NFTs, wallets.
+- **Certora specifications** in `${workspaceFolder}/certora/` - formal verification to prove correctness.
 
-## Step 1: Compile Contracts
+#### Step 1. Compile Contracts
 
-```bash
-# Install dependencies
-npm install
+todo-0 Nick, your Certora scripts should execute the "hardhat compile" task. Take a look at what I wrote in `contracts-compiling.md`. Then delete this step (and this todo).
 
-# Install Solidity 0.8.30
-pip install solc-select
-solc-select install 0.8.30
-solc-select use 0.8.30
+See `${workspaceFolder}/contracts-compiling/docs/contracts-compiling.md` for details.
 
-# Compile contracts
-npx hardhat compile
-```
-
-## Step 2: Run Certora Verification
+#### Step 2. Run Certora Verification
 
 ```bash
 # Navigate to certora directory
@@ -33,14 +24,14 @@ source .venv/bin/activate
 # Install Certora (if not installed)
 pip install certora-cli
 
-# Set your API key (get from certora.com)
+# Set your API key (get one on certora.com)
 export CERTORAKEY=<your-key>
 
 # Run a verification
 certoraRun ./BiddingMechanicsAllPass.conf
 ```
 
-## Project Structure
+#### Project Structure
 
 ```
 Cosmic-Signature/
@@ -60,7 +51,7 @@ Cosmic-Signature/
 └── hardhat.config.js      # Build configuration
 ```
 
-## Critical Issues Found
+#### Critical Issues Found
 
 The formal verification plan identifies several critical issues:
 
@@ -69,14 +60,14 @@ The formal verification plan identifies several critical issues:
 3. **Missing reentrancy guards** in several contracts
 4. **Unverified upgrade safety** for UUPS pattern
 
-## Verification Coverage
+#### Verification Coverage
 
 - ✅ **Good**: Bidding mechanics, prize claiming
 - ⚠️ **Partial**: Some wallet contracts  
 - ❌ **Missing**: Main game, tokens, NFTs, staking (critical!)
 
-## Need More Details?
+#### For Details, See
 
-- See `compile_instructions.md` for detailed compilation options
-- See `certora_instructions.md` for comprehensive Certora usage
-- See `certora/formal_verification_plan.md` for the full verification roadmap 
+- `${workspaceFolder}/docs/contracts-compiling.md` for detailed compilation options. todo-0 But see a related todo above.
+- `${workspaceFolder}/certora_instructions.md` for comprehensive Certora usage.
+- `${workspaceFolder}/certora/formal_verification_plan.md` for the full verification roadmap.

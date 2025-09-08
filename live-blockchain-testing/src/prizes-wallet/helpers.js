@@ -8,8 +8,8 @@ async function validatePrizesWallet(
 	ownerAddress_,
 	cosmicSignatureGameProxyAddress_
 ) {
-	expect(await prizesWallet_.owner()).equal(ownerAddress_);
-	expect(await prizesWallet_.game()).equal(cosmicSignatureGameProxyAddress_);
+	expect(await prizesWallet_.owner({blockTag: "pending",})).equal(ownerAddress_);
+	expect(await prizesWallet_.game({blockTag: "pending",})).equal(cosmicSignatureGameProxyAddress_);
 }
 
 async function configurePrizesWallet(prizesWallet_, ownerSigner_, timeoutDurationToWithdrawPrizes_) {

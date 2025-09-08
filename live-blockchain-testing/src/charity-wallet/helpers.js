@@ -8,8 +8,8 @@ async function validateCharityWallet(
 	ownerAddress_,
 	charityAddress_
 ) {
-	expect(await charityWallet_.owner()).equal(ownerAddress_);
-	expect(await charityWallet_.charityAddress()).equal(charityAddress_);
+	expect(await charityWallet_.owner({blockTag: "pending",})).equal(ownerAddress_);
+	expect(await charityWallet_.charityAddress({blockTag: "pending",})).equal(charityAddress_);
 }
 
 module.exports = {

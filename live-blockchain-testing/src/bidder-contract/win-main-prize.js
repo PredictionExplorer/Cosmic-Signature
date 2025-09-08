@@ -10,7 +10,7 @@
 // async function main() {
 // 	const [signer0, signer1, signer2,] = await hre.ethers.getSigners();
 // 	const bidderContract = await getBidderContract();
-// 	const cosmicSignatureGameAddress = await bidderContract.cosmicSignatureGame();
+// 	const cosmicSignatureGameAddress = await bidderContract.cosmicSignatureGame({blockTag: "pending",});
 //
 // 	// Comment-202502096 applies.
 // 	const cosmicSignatureGame = await hre.ethers.getContractAt("CosmicSignatureGame", cosmicSignatureGameAddress);
@@ -21,7 +21,7 @@
 // 	await waitForTransactionReceipt(cosmicSignatureGame.connect(signer1).bidWithEth((-1), "signer1 bid", {value: nextEthBidPrice,}));
 // 	nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice({blockTag: "pending",});
 // 	await waitForTransactionReceipt(cosmicSignatureGame.connect(signer2).bidWithEth((-1), "signer2 bid", {value: nextEthBidPrice,}));
-// 	let randomWalkNftAddress = await cosmicSignatureGame.randomWalkNft();
+// 	let randomWalkNftAddress = await cosmicSignatureGame.randomWalkNft({blockTag: "pending",});
 //
 // 	// Comment-202502096 applies.
 // 	let randomWalkNft = await hre.ethers.getContractAt("RandomWalkNFT", randomWalkNftAddress);
@@ -30,7 +30,7 @@
 // 	await waitForTransactionReceipt(randomWalkNft.connect(signer0).setApprovalForAll(cosmicSignatureGame.address, true));
 //
 // 	await waitForTransactionReceipt(randomWalkNft.connect(signer0).setApprovalForAll(bidderContract.address, true));
-// 	let rwalkPrice = await randomWalkNft.getMintPrice();
+// 	let rwalkPrice = await randomWalkNft.getMintPrice({blockTag: "pending",});
 //
 // 	// todo-1 We now have a method in JavaScript that mints this. See `mintRandomWalkNft`.
 // 	/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
@@ -50,7 +50,7 @@
 // 	nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice({blockTag: "pending",});
 // 	await waitForTransactionReceipt(bidderContract.connect(signer0).doBidWithEth({value: nextEthBidPrice,}));
 //
-// 	rwalkPrice = await randomWalkNft.getMintPrice();
+// 	rwalkPrice = await randomWalkNft.getMintPrice({blockTag: "pending",});
 //
 // 	// todo-1 We now have a method in JavaScript that mints this. See `mintRandomWalkNft`.
 // 	transactionResponsePromise = randomWalkNft.connect(signer0).mint({value: rwalkPrice,});
@@ -63,14 +63,14 @@
 // 	await waitForTransactionReceipt(randomWalkNft.connect(signer0).transferFrom(signer0.address, bidderContract.address, nftId));
 // 	await waitForTransactionReceipt(bidderContract.connect(signer0).doBidWithEthPlusRandomWalkNft(nftId));
 //
-// 	let durationUntilMainPrize = await cosmicSignatureGame.getDurationUntilMainPrizeRaw();
-// 	await hre.ethers.provider.send("evm_increaseTime", [durationUntilMainPrize.toNumber()]);
+// 	let durationUntilMainPrize = await cosmicSignatureGame.getDurationUntilMainPrizeRaw(/*todo-9 {blockTag: "pending",}*/);
+// 	await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize),]);
 // 	// await hre.ethers.provider.send("evm_mine");
 // 	await waitForTransactionReceipt(bidderContract.connect(signer0).doClaimMainPrize());
 // }
 
 // main()
-// 	.then(() => (process.exit(0)))
+// 	.then(() => { process.exit(0); })
 // 	.catch((errorObject_) => {
 // 		console.error(errorObject_);
 // 		process.exit(1);

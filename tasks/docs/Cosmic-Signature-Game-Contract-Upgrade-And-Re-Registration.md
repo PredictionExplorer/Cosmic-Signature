@@ -8,6 +8,10 @@ Review "Cosmic-Signature-Contracts-Deployment-And-Registration.md". Assuming you
 
 The same blockchains are supported, except currently involved scripts will not work for Arbitrum One.
 
+#### Validate the deployed and to be deployed contracts
+
+Review, possibly edit, and then execute "${workspaceFolder}/slither/slither-check-upgradeability-1.bash". See a document in the same folder.
+
 #### Create API Keys
 
 See "Cosmic-Signature-Contracts-Deployment-And-Registration.md".

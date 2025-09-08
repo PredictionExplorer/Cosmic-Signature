@@ -19,7 +19,7 @@ prepare1();
 const nodeFsModule = require("node:fs");
 const hre = require("hardhat");
 const { vars } = require("hardhat/config");
-const { generateRandomUInt256, generateAccountPrivateKeyFromSeed, uint256ToPaddedHexString, /*sleepForMilliSeconds,*/ hackApplyGasMultiplierIfNeeded, waitForTransactionReceipt } = require("../../src/Helpers.js");
+const { generateRandomUInt256, generateAccountPrivateKeyFromSeed, uint256ToPaddedHexString, hackApplyGasMultiplierIfNeeded, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { runDeployCosmicSignatureContracts } = require("./cosmic-signature-contracts-deployment/helpers.js");
 const { validateCosmicSignatureToken, configureCosmicSignatureToken } = require("./cosmic-signature-token/helpers.js");
 const { configureRandomWalkNft, mintRandomWalkNft } = require("./random-walk-nft/helpers.js");
@@ -59,7 +59,7 @@ const state = new State();
 
 prepare2();
 main()
-	.then(() => (process.exit(state.outcomeCode)))
+	.then(() => { process.exit(state.outcomeCode); })
 	.catch((errorObject_) => {
 		console.error(errorObject_);
 		process.exit(1);
@@ -69,6 +69,7 @@ main()
 // #region `prepare1`
 
 function prepare1() {
+	// // Testing.
 	// process.on("unhandledRejection", (reason_, promise_) => {
 	// 	console.error("Unhandled rejection from:", promise_, `${nodeOsModule.EOL}Reason:`, reason_);
 	// });
@@ -169,7 +170,6 @@ function createAccountSigner(accountPrivateKeySeedSaltEntry_) {
 // #region `main`
 
 async function main() {
-	// await hre.run("compile");
 	await createCosmicSignatureContracts(await runDeployCosmicSignatureContractsIfNeeded());
 	await validateCosmicSignatureContractStatesIfNeeded();
 	await fundAccountsWithEthIfNeeded();
@@ -380,6 +380,7 @@ async function donateEthToCosmicSignatureGameIfNeeded() {
 // #region `tryPlayCosmicSignatureGameIfNeeded`
 
 async function tryPlayCosmicSignatureGameIfNeeded() {
+	// // Testing.
 	// console.info(`${nodeOsModule.EOL}Test 202510024.`);
 	// await waitForTransactionReceipt(state.contracts.cosmicSignatureGameProxy.connect(state.ownerSigner).setRoundActivationTime(0n));
 	// console.info(Date.now().toString());
@@ -404,7 +405,7 @@ async function tryPlayCosmicSignatureGameIfNeeded() {
 
 			await bidWithEth(state.contracts.cosmicSignatureGameProxy, state.bidder1Signer);
 			// await sleepForMilliSeconds(2000);
-			// console.log(await state.contracts.cosmicSignatureGameProxy.tryGetCurrentChampions());
+			// console.info(await state.contracts.cosmicSignatureGameProxy.tryGetCurrentChampions({blockTag: "pending",}));
 			const randomWalkNft1Id_ = await getRandomWalkNft(state.bidder2Signer);
 			await bidWithEthPlusRandomWalkNft(state.contracts.cosmicSignatureGameProxy, state.bidder2Signer, randomWalkNft1Id_);
 			await bidWithEthAndDonateNft(state.contracts.cosmicSignatureGameProxy, state.contracts.prizesWallet, state.bidder2Signer, state.contracts.randomWalkNftAddress, randomWalkNft1Id_, state.donatedNftIndexes);
@@ -462,7 +463,7 @@ async function tryWithdrawEverythingIfNeeded() {
 
 async function tryWithdrawEverythingToAccountIfNeeded(accountName_, donatedTokensToClaim_, donatedNftIndexes_) {
 	const accountSigner_ = state[accountName_ + "Signer"];
-	const accountEthBalanceAmount_ = (await state.contracts.prizesWallet["getEthBalanceInfo(address)"](accountSigner_.address)).amount;
+	const accountEthBalanceAmount_ = (await state.contracts.prizesWallet["getEthBalanceInfo(address)"](accountSigner_.address, {blockTag: "pending",})).amount;
 	const jsonStringifyHelper_ =
 		(key_, value_) =>
 		((typeof value_ == "bigint") ? ((key_ == "amount") ? hre.ethers.formatEther(value_) : Number(value_)) : value_);

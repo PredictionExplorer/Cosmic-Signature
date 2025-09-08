@@ -8,8 +8,8 @@ async function validateCosmicSignatureToken(
 	// ownerAddress_,
 	cosmicSignatureGameProxyAddress_
 ) {
-	// expect(await cosmicSignatureToken_.owner()).equal(ownerAddress_);
-	expect(await cosmicSignatureToken_.game()).equal(cosmicSignatureGameProxyAddress_);
+	// expect(await cosmicSignatureToken_.owner({blockTag: "pending",})).equal(ownerAddress_);
+	expect(await cosmicSignatureToken_.game({blockTag: "pending",})).equal(cosmicSignatureGameProxyAddress_);
 }
 
 async function configureCosmicSignatureToken(cosmicSignatureToken_, bidder2Signer_, prizesWalletAddress_) {

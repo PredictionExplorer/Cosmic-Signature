@@ -15,12 +15,12 @@
 // 	// 	process.exit(1);
 // 	// }
 // 	let cosmicSignatureGame = await getCosmicSignatureGameContract("CosmicSignatureGameOpenBid");
-// 	let value = await cosmicSignatureGame.timesEthBidPrice();
+// 	let value = await cosmicSignatureGame.timesEthBidPrice({blockTag: "pending",});
 // 	console.info("timesEthBidPrice =", value);
 // }
 
 // main()
-// 	.then(() => (process.exit(0)))
+// 	.then(() => { process.exit(0); })
 // 	.catch((errorObject_) => {
 // 		console.error(errorObject_);
 // 		process.exit(1);

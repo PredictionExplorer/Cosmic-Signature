@@ -1,4 +1,7 @@
 ## Cosmic Signature Contracts — Comprehensive Security Review and Improvement Plan
+
+todo-0 Eventually delete this file.
+
 Version reviewed: Solidity 0.8.30, OZ v5.x, Arbitrum L2
 Scope: production contracts and libraries under `contracts/production`
 Review Date: December 2024

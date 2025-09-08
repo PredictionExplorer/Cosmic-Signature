@@ -1,13 +1,12 @@
 "use strict";
 
 const { expect } = require("chai");
-const hre = require("hardhat");
-const { sleepForMilliSeconds, waitForTransactionReceipt } = require("../../../src/Helpers.js");
+// const hre = require("hardhat");
+const { sleepForMilliSeconds, getBlockTimeStampByBlockNumber, waitForTransactionReceipt } = require("../../../src/Helpers.js");
 
 async function ensureDurationElapsedSinceRoundActivationIsAtLeast(cosmicSignatureGameProxy_, ownerSigner_, durationElapsedSinceRoundActivationMinLimit_) {
-	const roundActivationTime_ = await cosmicSignatureGameProxy_.roundActivationTime();
-	const pendingBlock_ = await hre.ethers.provider.send("eth_getBlockByNumber", ["pending", false]);
-	const pendingBlockTimeStamp_ = BigInt(pendingBlock_.timestamp);
+	const roundActivationTime_ = await cosmicSignatureGameProxy_.roundActivationTime({blockTag: "pending",});
+	const pendingBlockTimeStamp_ = await getBlockTimeStampByBlockNumber("pending");
 	const roundActivationTimeMaxLimit_ = pendingBlockTimeStamp_ - durationElapsedSinceRoundActivationMinLimit_;
 	const roundActivationTimeExcess_ = roundActivationTime_ - roundActivationTimeMaxLimit_;
 	if(roundActivationTimeExcess_ > 0n) {
@@ -20,10 +19,6 @@ async function ensureDurationElapsedSinceRoundActivationIsAtLeast(cosmicSignatur
 
 async function waitUntilCstDutchAuctionElapsedDurationIsAtLeast(cosmicSignatureGameProxy_, cstDutchAuctionElapsedDurationMinLimit_) {
 	for (;;) {
-		// todo-0 Make sure we call all methods like this in the context of the pending block.
-		// todo-0 Find all: block.timestamp
-		// todo-0 But better call all kinds of getters that way, maybe even something like `getBalance`.
-		// todo-0 So find outside of tests: await
 		let cstDutchAuctionElapsedDuration_ = (await cosmicSignatureGameProxy_.getCstDutchAuctionDurations({blockTag: "pending",}))[1];
 		console.info(`CST Dutch auction elapsed duration is ${cstDutchAuctionElapsedDuration_} seconds. We want it to be at least ${cstDutchAuctionElapsedDurationMinLimit_} seconds.`);
 		if (cstDutchAuctionElapsedDuration_ >= cstDutchAuctionElapsedDurationMinLimit_) {
@@ -91,7 +86,7 @@ async function bidWithEthPlusRandomWalkNft(cosmicSignatureGameProxy_, bidderSign
 	}
 
 	const nextEthPlusRandomWalkNftBidPrices_ = new Array(nextEthBidPrices_.length);
-	nextEthPlusRandomWalkNftBidPrices_[0] = await cosmicSignatureGameProxy_.getEthPlusRandomWalkNftBidPrice(nextEthBidPrices_[0]);
+	nextEthPlusRandomWalkNftBidPrices_[0] = await cosmicSignatureGameProxy_.getEthPlusRandomWalkNftBidPrice(nextEthBidPrices_[0], {blockTag: "pending",});
 	/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 	let transactionResponsePromise_ =
 		cosmicSignatureGameProxy_
@@ -100,7 +95,7 @@ async function bidWithEthPlusRandomWalkNft(cosmicSignatureGameProxy_, bidderSign
 	let transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 	for (let nextEthBidPriceIndex_ = nextEthBidPrices_.length; ; ) {
 		-- nextEthBidPriceIndex_;
-		nextEthPlusRandomWalkNftBidPrices_[nextEthBidPriceIndex_] = await cosmicSignatureGameProxy_.getEthPlusRandomWalkNftBidPrice(nextEthBidPrices_[nextEthBidPriceIndex_]);
+		nextEthPlusRandomWalkNftBidPrices_[nextEthBidPriceIndex_] = await cosmicSignatureGameProxy_.getEthPlusRandomWalkNftBidPrice(nextEthBidPrices_[nextEthBidPriceIndex_], {blockTag: "pending",});
 		if (nextEthBidPriceIndex_ <= 1) {
 			break;
 		}
@@ -172,7 +167,7 @@ async function bidWithEthPlusRandomWalkNftAndDonateNft(cosmicSignatureGameProxy_
 	}
 
 	const nextEthPlusRandomWalkNftBidPrices_ = new Array(nextEthBidPrices_.length);
-	nextEthPlusRandomWalkNftBidPrices_[0] = await cosmicSignatureGameProxy_.getEthPlusRandomWalkNftBidPrice(nextEthBidPrices_[0]);
+	nextEthPlusRandomWalkNftBidPrices_[0] = await cosmicSignatureGameProxy_.getEthPlusRandomWalkNftBidPrice(nextEthBidPrices_[0], {blockTag: "pending",});
 	/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 	let transactionResponsePromise_ =
 		cosmicSignatureGameProxy_
@@ -181,7 +176,7 @@ async function bidWithEthPlusRandomWalkNftAndDonateNft(cosmicSignatureGameProxy_
 	let transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 	for (let nextEthBidPriceIndex_ = nextEthBidPrices_.length; ; ) {
 		-- nextEthBidPriceIndex_;
-		nextEthPlusRandomWalkNftBidPrices_[nextEthBidPriceIndex_] = await cosmicSignatureGameProxy_.getEthPlusRandomWalkNftBidPrice(nextEthBidPrices_[nextEthBidPriceIndex_]);
+		nextEthPlusRandomWalkNftBidPrices_[nextEthBidPriceIndex_] = await cosmicSignatureGameProxy_.getEthPlusRandomWalkNftBidPrice(nextEthBidPrices_[nextEthBidPriceIndex_], {blockTag: "pending",});
 		if (nextEthBidPriceIndex_ <= 1) {
 			break;
 		}

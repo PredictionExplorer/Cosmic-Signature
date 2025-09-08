@@ -53,24 +53,37 @@ async function loadFixtureDeployContractsForTesting(roundActivationTime) {
 	contracts.ownerSigner.reset();
 	contracts.deployerSigner.reset();
 
-	// Comment-202507202 applies.
-	if (roundActivationTime > -1_000_000_000n && roundActivationTime < 1_000_000_000n) {
+	// [Comment-202510198]
+	// Doing what Comment-202501193, issue 2, option (3) recommends.
+	// [/Comment-202510198]
+	{
+		// [Comment-202510196/]
+		const nextBlockDate = new Date(hre.network.config.initialDate);
+		
+		nextBlockDate.setUTCFullYear(nextBlockDate.getUTCFullYear() + 10);
+		const nextBlockTimeStamp = Math.trunc(nextBlockDate.getTime() / 1000);
+		// console.info(nextBlockTimeStamp);
 
-		// [Comment-202507204]
-		// Making `setRoundActivationTimeIfNeeded` behavior deterministic.
-		// [/Comment-202507204]
-		// Since we call this here, a typical test doesn't need to call this
-		// immediately after `loadFixtureDeployContractsForTesting` returns,
-		// and a quick test doesn't need to call this at all.
-		await makeNextBlockTimeDeterministic();
+		// Issue. Currently, this doesn't fail due to the new timestamp not being in the future from the latest block.
+		// Otherwise we would need a loop adding 10 years and trying on each iteration until succeeded.
+		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [nextBlockTimeStamp,]);
 	}
 
-	// Given the issue 2 in Comment-202501193, mining a dummy block.
+	// // Comment-202507202 applies.
+	// if (roundActivationTime > -1_000_000_000n && roundActivationTime < 1_000_000_000n) {
+	//
+	// 	// Making the timings of immediate calls to the blockchain more deterministic.
+	// 	// Since we call this here, a typical test doesn't need to call this
+	// 	// immediately after `loadFixtureDeployContractsForTesting` returns,
+	// 	// and a quick test doesn't need to call this at all.
+	// 	// But most tests don't need this, so let's not do this.
+	// 	await makeNextBlockTimeDeterministic();
+	// }
+
+	// Comment-202510198 applies.
 	await hre.ethers.provider.send("evm_mine");
 
-	// Comment-202507204 relates.
 	await setRoundActivationTimeIfNeeded(contracts.cosmicSignatureGameProxy.connect(contracts.ownerSigner), roundActivationTime);
-
 	return contracts;
 }
 
@@ -79,7 +92,7 @@ async function loadFixtureDeployContractsForTesting(roundActivationTime) {
 
 /**
  * This function is to be used for unit tests.
- * It's OK to pass ths function to `loadFixture`.
+ * It's OK to pass this function to `loadFixture`.
  */
 async function deployContractsForTesting() {
 	return deployContractsForTestingAdvanced("CosmicSignatureGame");
@@ -153,8 +166,8 @@ async function deployContractsForTestingAdvanced(
 /// Issue. The Hardhat Coverage task ignores parts of Hardhat configuration.
 /// This method fixes the issue.
 /// The `blockGasLimit` parameter is also ignored, but we are happy with its default value.
+/// todo-2 Is the above behavior going to change in a future version of Hardhat? To be revisited.
 /// Comment-202505294 relates.
-/// todo-2 Is that behavior going to change in a future version of Hardhat? To be revisited.
 /// Comment-202509185 relates.
 /// [/Comment-202508265]
 async function hackPrepareHardhatCoverageOnceIfNeeded() {
@@ -292,19 +305,12 @@ async function makeNextBlockTimeDeterministic(currentSecondRemainingDurationMinL
 	{
 		const latestBlockBaseFeePerGas = latestBlock.baseFeePerGas;
 
-		// [Comment-202505294]
-		// Issue. A problem is that when the Hardhat Coverage task is running,
-		// `baseFeePerGas` is zero in both Solidity and JavaScript.
-		// Therefore we need this ugly assertion logic.
-		// There are assertions like this in Solidity code as well. But they unconditionally assert that the value is positive,
-		// which implies that for the coverage task we must compile Solidity code with assertions disabled.
-		// Comment-202508265 relates.
-		// [/Comment-202505294]
-		if ( ! hre.__SOLIDITY_COVERAGE_RUNNING ) {
-			expect(latestBlockBaseFeePerGas).greaterThan(0n);
-		} else {
-			expect(latestBlockBaseFeePerGas).equal(0n);
-		}
+		// // Comment-202505294 applies.
+		// if ( ! hre.__SOLIDITY_COVERAGE_RUNNING ) {
+		// 	expect(latestBlockBaseFeePerGas).greaterThan(0n);
+		// } else {
+		// 	expect(latestBlockBaseFeePerGas).equal(0n);
+		// }
 
 		randomNumberSeed ^= latestBlockBaseFeePerGas << 64n;
 	}

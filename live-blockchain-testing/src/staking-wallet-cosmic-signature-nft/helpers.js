@@ -9,9 +9,9 @@ async function validateStakingWalletCosmicSignatureNft(
 	cosmicSignatureNftAddress_,
 	cosmicSignatureGameProxyAddress_
 ) {
-	expect(await stakingWalletCosmicSignatureNft_.owner()).equal(ownerAddress_);
-	expect(await stakingWalletCosmicSignatureNft_.nft()).equal(cosmicSignatureNftAddress_);
-	expect(await stakingWalletCosmicSignatureNft_.game()).equal(cosmicSignatureGameProxyAddress_);
+	expect(await stakingWalletCosmicSignatureNft_.owner({blockTag: "pending",})).equal(ownerAddress_);
+	expect(await stakingWalletCosmicSignatureNft_.nft({blockTag: "pending",})).equal(cosmicSignatureNftAddress_);
+	expect(await stakingWalletCosmicSignatureNft_.game({blockTag: "pending",})).equal(cosmicSignatureGameProxyAddress_);
 }
 
 module.exports = {

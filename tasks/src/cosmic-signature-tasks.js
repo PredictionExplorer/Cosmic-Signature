@@ -246,15 +246,19 @@ task("upgrade-cosmic-signature-game", "Upgrades the CosmicSignatureGame contract
 	const cosmicSignatureGameProxy = cosmicSignatureGameFactory.attach(deployCosmicSignatureContractsReportObject.cosmicSignatureGameProxyAddress);
 	const newCosmicSignatureGameFactory =
 		await hre.ethers.getContractFactory(upgradeConfigObject.newCosmicSignatureGameContractName, deployerSigner);
-	const upgradeProxyOptions = { kind: "uups", };
+	const upgradeProxyOptions = {kind: "uups",};
 	if (upgradeConfigObject.newInitializerMethodName.length > 0) {
 		upgradeProxyOptions.call = upgradeConfigObject.newInitializerMethodName;
 	}
 	console.info(`Upgrading ${deployConfigObject.cosmicSignatureGameContractName} to ${upgradeConfigObject.newCosmicSignatureGameContractName}.`);
 	const newCosmicSignatureGameProxy =
 		await hre.upgrades.upgradeProxy(cosmicSignatureGameProxy, newCosmicSignatureGameFactory, upgradeProxyOptions);
-	await newCosmicSignatureGameProxy.waitForDeployment();
-	console.info("Upgrade success.");
+	// await newCosmicSignatureGameProxy.waitForDeployment();
+
+	// Issue. As per Comment-202510208, the transaction is still being mined.
+	// Therefore "probably".
+	console.info("Probably upgraded.");
+
 	const reportObject = {
 		newCosmicSignatureGameImplementationAddress: await safeErc1967GetChangedImplementationAddress(deployCosmicSignatureContractsReportObject.cosmicSignatureGameProxyAddress, deployCosmicSignatureContractsReportObject.cosmicSignatureGameImplementationAddress),
 	};

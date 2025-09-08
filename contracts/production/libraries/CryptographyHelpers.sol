@@ -12,6 +12,7 @@ library CryptographyHelpers {
 		// // Indeed, `abi.encodePacked` returns data that 32 bytes long, so it's probably as efficient as it can be.
 		// hashSum_ = uint256(keccak256(abi.encodePacked(value_)));
 
+		// This is more efficient.
 		assembly {
 			mstore(0x00, value_)
 			hashSum_ := keccak256(0x00, 0x20)

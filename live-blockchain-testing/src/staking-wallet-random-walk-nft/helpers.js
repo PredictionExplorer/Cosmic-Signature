@@ -8,8 +8,8 @@ async function validateStakingWalletRandomWalkNft(
 	// ownerAddress_,
 	randomWalkNftAddress_
 ) {
-	// expect(await stakingWalletRandomWalkNft_.owner()).equal(ownerAddress_);
-	expect(await stakingWalletRandomWalkNft_.randomWalkNft()).equal(randomWalkNftAddress_);
+	// expect(await stakingWalletRandomWalkNft_.owner({blockTag: "pending",})).equal(ownerAddress_);
+	expect(await stakingWalletRandomWalkNft_.randomWalkNft({blockTag: "pending",})).equal(randomWalkNftAddress_);
 }
 
 module.exports = {
