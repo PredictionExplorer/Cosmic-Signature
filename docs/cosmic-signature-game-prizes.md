@@ -1,12 +1,16 @@
 ### Cosmic Signature Game Prizes
 
+#### Overview
+
 This document lists all prizes awarded by the `CosmicSignatureGame` contract, and, more specifically, by the `MainPrize._distributePrizes` method at the end of each bidding round. In addition, there is a CST reward that each bidder gets when placing a bid.
+
+Not listed here are donations made to the `CosmicSignatureGame` contract in the form of ETH, ERC-20 token amounts, ERC-721 NFTs.
 
 #### Variables
 
 - `gameEthBalance` -- the `CosmicSignatureGame` contract ETH balance at the end of the bidding round.
 
-- `numBids` -- the total number of bids placed during the bidding round. It can be obtained by calling the `getTotalNumBids` methid.
+- `totalNumBids` -- the total number of bids placed during the bidding round. It can be obtained by calling the `getTotalNumBids` methid.
 
 - `numStakedCosmicSignatureNfts` -- the total number of staked Cosmic Signature NFTs at the end of the bidding round. It can be zero.
 
@@ -19,12 +23,12 @@ This document lists all prizes awarded by the `CosmicSignatureGame` contract, an
 | Main Prize Winner | Main ETH Prize | 1 | `gameEthBalance * mainEthPrizeAmountPercentage / 100` |  |
 |  | Cosmic Signature NFT | 1 | 1 |  |
 |  |  |  |  |  |
-| Endurance Champion | CST | 1 | `numBids * cstPrizeAmountMultiplier` |  |
+| Endurance Champion | CST | 1 | `totalNumBids * cstPrizeAmountMultiplier` |  |
 |  | Cosmic Signature NFT | 1 | 1 |  |
 |  |  |  |  |  |
 | Chrono-Warrior | ETH | 1 | `gameEthBalance * chronoWarriorEthPrizeAmountPercentage / 100` |  |
 |  |  |  |  |  |
-| Last CST Bidder | CST | 0 or 1 | `numBids * cstPrizeAmountMultiplier` | If nobody placed a CST bid, nobody would get this prize. |
+| Last CST Bidder | CST | 0 or 1 | `totalNumBids * cstPrizeAmountMultiplier` | If nobody placed a CST bid, nobody would get this prize. |
 |  | Cosmic Signature NFT | 0 or 1 | 1 | If nobody placed a CST bid, nobody would get this prize. |
 |  |  |  |  |  |
 | Bidders | ETH | `numRaffleEthPrizesForBidders` | `gameEthBalance * raffleTotalEthPrizeAmountForBiddersPercentage / 100 / numRaffleEthPrizesForBidders` | Bids are picked randomly. |
