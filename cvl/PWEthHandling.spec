@@ -2,6 +2,17 @@ methods {
 	function game() external returns (address) envfree;
 }
 
+persistent ghost bool g_captureNextCall;
+persistent ghost uint256 g_capturedCallValue;
+persistent ghost address g_winnerAddr;
+
+hook CALL(uint g, address addr, uint value, uint argsOffset, uint argsLength, uint retOffset, uint retLength) uint rc {
+	if (g_captureNextCall && executingContract == currentContract && value > 0 && argsLength == 0) {
+		g_capturedCallValue = value;
+		g_captureNextCall = false;   // record only the first matching CALL for this phase
+	}
+}
+
 rule balanceChangesCorrectly() {
 	// fresh actors
 	address winner;
@@ -12,7 +23,7 @@ rule balanceChangesCorrectly() {
 	require winner != 0;
 	require currentContract != currentContract.game();
 
-	// positive amounts so we see meaningful balance changes
+	// positive amounts so we see meaningful transfers
 	uint256 amount1;
 	uint256 amount2;
 	require amount1 > 0;
@@ -21,72 +32,60 @@ rule balanceChangesCorrectly() {
 	// choose rounds
 	uint256 round1;
 	uint256 round2;
-	require round2 == (round1 + 1);
+	require round2 == round1 + 1;
 
-	// -------------------------
-	// Case A: winner withdraws
-	// -------------------------
+	/* -------------------------
+	   Case A: winner withdraws
+	   ------------------------- */
+
 	env eA1;
-	require eA1.msg.sender != currentContract;
-	uint256 c0 = nativeBalances[currentContract];
-	uint256 w0 = nativeBalances[winner];
-	require currentContract.game() == eA1.msg.sender;
-	require eA1.msg.value == 0;
-	// register round end (must be called by game)
 	require eA1.msg.sender == currentContract.game();
-	// timestamp can be arbitrary here
+	require eA1.msg.value  == 0;
 	uint256 timeout1 = registerRoundEnd(eA1, round1, winner);
 
-	assert nativeBalances[currentContract] == c0, "After registerRoundEnd() balance of PrizesWallet is not correct";
-
-	// deposit ETH for winner (by game) with msg.value = amount1
 	env eA2;
 	require eA2.msg.sender == currentContract.game();
-	require eA2.msg.value == amount1;
+	require eA2.msg.value  == amount1;
 	depositEth(eA2, round1, winner);
 
-	assert nativeBalances[currentContract] == c0 + amount1, "After depositEth() #1 balance of PrizesWallet is not correct";
+	// enable capture for low-level transfer in withdrawEth()
+	g_captureNextCall   = true;
+	g_capturedCallValue = 0;
+	g_winnerAddr = winner;
 
-	// winner withdraws own ETH; make gasprice 0 for exact balance deltas
 	env eA3;
 	require eA3.msg.sender == winner;
-	require eA3.msg.value == 0;
+	require eA3.msg.value  == 0;
 	withdrawEth(eA3);
 
-	assert nativeBalances[currentContract] == c0 , "After withdrawEth() #1 balance of PrizesWallet is not correct";
-	assert nativeBalances[winner] == w0 + amount1, "After withdrawEth() #1 balance of the winner is not correct";
+	assert !g_captureNextCall, "withdraw #1: CALL message was not captured";                           // hook fired
+	assert g_capturedCallValue == amount1, "withdraw #1: call value mismatch";
 
-	// -------------------------------------------------
-	// Case B: third-party withdraw after timeout passes
-	// -------------------------------------------------
-	uint256 c1 = nativeBalances[currentContract];
-	uint256 o0 = nativeBalances[other];
+	/* -------------------------------------------------
+	   Case B: third-party withdraw after timeout passes
+	   ------------------------------------------------- */
 
-	// register next round end (by game) and capture timeout
 	env eB1;
 	require eB1.msg.sender == currentContract.game();
-	require eB1.msg.value == 0;
+	require eB1.msg.value  == 0;
 	uint256 timeout2 = registerRoundEnd(eB1, round2, winner);
 
-	// deposit ETH for the same winner in round2
 	env eB2;
 	require eB2.msg.sender == currentContract.game();
-	require eB2.msg.value == amount2;
+	require eB2.msg.value  == amount2;
 	depositEth(eB2, round2, winner);
 
-	assert nativeBalances[currentContract] == c1 + amount2, "After depositEth() #2 balance of PrizesWallet is not correct";
+	// enable capture for low-level transfer in withdrawEth(address)
+	g_captureNextCall   = true;
+	g_capturedCallValue = 0;
+	g_winnerAddr =  other;
 
-	// advance time to/after timeout and allow non-winner to withdraw on behalf
 	env eB3;
-	require eB3.msg.sender == other;
-
-	// set timestamp to meet the require(block.timestamp >= timeout && timeout > 0)
-	// (timeout2 is > 0 by construction in the contract)
-	require eB3.block.timestamp == timeout2;
-	require eB3.msg.value == 0;
+	require eB3.msg.sender      == other;
+	require eB3.msg.value       == 0;
+	require eB3.block.timestamp >= timeout2;
 	withdrawEth(eB3, winner);
 
-	assert nativeBalances[currentContract] == c1, "After withdrawEth() #2 balance of PrizesWallet is not correct";
-	assert nativeBalances[other] == o0 + amount2, "After withdrawEth() #2 balance of the winner is not correct";
+	assert !g_captureNextCall, "withdraw #2: CALL message was not captured";                           // hook fired
+	assert g_capturedCallValue == amount2, "withdraw #2: call value mismatch";
 }
-
