@@ -3,7 +3,7 @@ pragma solidity 0.8.30;
 
 import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
 
-/// @title Secondary (Non-Main) Prizes.
+/// @title Secondary, a.k.a. Special (Non-Main) Prizes.
 interface ISecondaryPrizes is ICosmicSignatureGameStorage {
 	/// @notice Emitted when the last CST bidder receives their prize.
 	/// @param roundNum The current bidding round number.

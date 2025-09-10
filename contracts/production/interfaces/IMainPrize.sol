@@ -7,7 +7,7 @@ import { IMainPrizeBase } from "./IMainPrizeBase.sol";
 import { IBidStatistics } from "./IBidStatistics.sol";
 import { ISecondaryPrizes } from "./ISecondaryPrizes.sol";
 
-/// @notice Supports claiming and paying bidding round main prize, as well as distributing other (secondary) prizes.
+/// @notice This contract supports claiming bidding round main prize.
 interface IMainPrize is
 	ICosmicSignatureGameStorage,
 	IBiddingBase,
@@ -39,8 +39,9 @@ interface IMainPrize is
 	);
 
 	/// @notice Claims the current bidding round main prize.
-	/// This method distributes main and secondary prizes and updates the Game contract state to start another bidding round.
-	/// Only the last bidder is permitted to call this method when the main prize time comes,
+	/// This method distributes main and secondary, a.k.a. special (non-main) prizes
+	/// and updates the Game contract state to start another bidding round.
+	/// Only the last bidder is permitted to call this method after `mainPrizeTime` comes,
 	/// but after a timeout expires anybody is welcomed to.
 	function claimMainPrize() external;
 

@@ -204,7 +204,12 @@ contract CosmicSignatureToken is
 	// #endregion
 	// #region `CLOCK_MODE`
 
-	/// @notice Comment-202501123 relates and/or applies.
+	/// @notice
+	/// [Comment-202510243]
+	/// These methods instruct the OpenZeppelin `Governor` contract to express durations in seconds.
+	/// By default, it would use block numbers.
+	/// Comment-202501123 relates and/or applies.
+	/// [/Comment-202510243]
 	// solhint-disable-next-line func-name-mixedcase
 	function CLOCK_MODE() public pure override returns (string memory) {
 		return "mode=timestamp";
@@ -213,7 +218,7 @@ contract CosmicSignatureToken is
 	// #endregion
 	// #region `clock`
 
-	/// @notice Comment-202501123 relates and/or applies.
+	/// @notice Comment-202510243 applies.
 	function clock() public view override returns (uint48) {
 		return uint48(block.timestamp);
 	}

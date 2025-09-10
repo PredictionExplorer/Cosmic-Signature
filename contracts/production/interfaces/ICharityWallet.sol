@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.30;
 
-/// @title Charitable Donations Management.
+/// @title Charity Wallet.
 /// @author The Cosmic Signature Development Team.
-/// @notice A contract implementing this interface collects ETH donations
-/// and lets anybody to periodically transfer accumulated donations to a designated charity.
-/// @dev As noted in Comment-202409273, this contract is designed to be transparent.
-/// It allows anyone to trigger a donated funds transfer.
+/// @notice A contract implementing this interface holds an ETH balance to be donated to charity.
+/// `CosmicSignatureGame` deposits some ETH to this wallet at the end of each bidding round.
+/// As noted in Comment-202409273, this contract lets anybody to periodically transfer accumulated donations
+/// to the designated charity.
 interface ICharityWallet {
 	/// @notice Emitted when `charityAddress` is changed.
 	/// @param newValue The new value.
@@ -28,7 +28,7 @@ interface ICharityWallet {
 	// /// @dev I have eliminated this event and instead using `CosmicSignatureEvents.FundsTransferredToCharity`.
 	// event DonationSent(address indexed charityAddress, uint256 amount);
 
-	/// @notice Allows the contract to receive ETH donations.
+	/// @notice Receives ETH to be donated to charity.
 	/// It's OK if `msg.value` is zero.
 	receive() external payable;
 
@@ -38,7 +38,7 @@ interface ICharityWallet {
 	/// It may be zero -- to give the contract owner an option to temporarily suspend charity donations.
 	function setCharityAddress(address newValue_) external;
 
-	/// @notice Sends all accumulated ETH donations to the designated charity.
+	/// @notice Sends the whole ETH balance to the designated charity.
 	/// It's OK if it's zero.
 	/// [Comment-202502035]
 	/// Expected to be called approximately once a month, but frequency may vary.

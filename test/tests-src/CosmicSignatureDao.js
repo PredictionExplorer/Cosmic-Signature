@@ -57,6 +57,7 @@ describe("CosmicSignatureDao", function () {
 			}
 		}
 
+		// These values are returned by methods near Comment-202510243.
 		const clockMode_ = await contracts_.cosmicSignatureDao.CLOCK_MODE();
 		expect(clockMode_).equal("mode=timestamp");
 		const clock_ = await contracts_.cosmicSignatureToken.clock();

@@ -47,11 +47,11 @@ interface IStakingWalletRandomWalkNft is IStakingWalletNftBase {
 	/// It's OK if it's empty.
 	function unstakeMany(uint256[] calldata stakeActionIds_) external;
 
-	/// @notice Randomly picks zero or more NFTs and then their owner addresses, based on the provided random number seed.
+	/// @notice Randomly picks zero or more NFTs and returns their owner addresses.
 	/// @param numStakerAddresses_ The number of random staker addresses to pick and return.
 	/// It's OK if it's zero.
-	/// @param randomNumberSeed_ Random number seed.
-	/// @return Selected NFT staker addresses, or an empty array if there are no staked NFTs.
+	/// @param randomNumberSeed_ Random number seed to use for random picks.
+	/// @return Picked NFT staker addresses, or an empty array if there are no staked NFTs.
 	/// The returned array can contain duplicates.
 	/// @dev This method is named "if possible" because it does nothing when there are no staked NFTs.
 	function pickRandomStakerAddressesIfPossible(uint256 numStakerAddresses_, uint256 randomNumberSeed_) external view returns (address[] memory);

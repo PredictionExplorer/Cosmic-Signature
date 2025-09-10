@@ -3,6 +3,7 @@ pragma solidity 0.8.30;
 
 import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
 
+/// @notice This contract is responsible for updating and getting game playing statistics.
 interface IBidStatistics is ICosmicSignatureGameStorage {
 	/// @return The total number of bids in the given bidding round.
 	/// If an argument is invalid the return value is indeterminate.

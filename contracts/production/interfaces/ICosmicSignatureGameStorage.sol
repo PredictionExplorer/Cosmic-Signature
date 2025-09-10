@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity 0.8.30;
 
+/// @notice This contract contains all state variables that `CosmicSignatureGame` and the contracts that it inherits access.
 interface ICosmicSignatureGameStorage {
 	/// @notice Details about an ETH donation with additional info made to the Game.
 	/// @dev Comment-202503111 relates and/or applies.

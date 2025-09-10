@@ -313,7 +313,8 @@ const hardhatUserConfig = {
 			// Comment-202408025 applies.
 			optimizer: {
 				enabled: true,
-				
+
+				// todo-0 Maybe make this 400.
 				// // Issue. A big value here causes excessive inlining, which results in the game contract size
 				// // exceeding the max allowed limit, especially when modifiers are used.
 				// // I have observed that when I decorated a method with the `nonReentrant` modifier,
