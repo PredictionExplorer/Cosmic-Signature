@@ -58,7 +58,7 @@ interface ICosmicSignatureToken is IERC20, IERC20Permit, IAddressValidator {
 		int256 value;
 	}
 
-	/// @notice Mints a new token amount and assigns it to the given account.
+	/// @notice Mints a token amount and assigns it to the given account.
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
 	/// @param account_ The address that will receive the newly minted token amount.
 	/// @param value_ The token amount to mint.

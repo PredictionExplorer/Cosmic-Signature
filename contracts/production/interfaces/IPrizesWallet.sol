@@ -92,7 +92,7 @@ interface IPrizesWallet is IAddressValidator {
 	event TimeoutDurationToWithdrawPrizesChanged(uint256 newValue);
 
 	/// @notice Emitted when an ETH prize is received for a prize winner.
-	/// This is used only for secondary (non-main) prizes.
+	/// This is used only for secondary prizes.
 	/// @param roundNum The current bidding round number.
 	/// @param prizeWinnerAddress Prize winner address.
 	/// @param amount ETH amount.
@@ -186,7 +186,8 @@ interface IPrizesWallet is IAddressValidator {
 	/// Comment-202502076 relates.
 	function registerRoundEndAndDepositEthMany(uint256 roundNum_, address mainPrizeBeneficiaryAddress_, EthDeposit[] calldata ethDeposits_) external payable returns (uint256);
 
-	/// @notice `CosmicSignatureGame` calls this method on main prize claim.
+	/// @notice Registers the end of a bidding round.
+	/// `CosmicSignatureGame` calls this method on main prize claim.
 	/// Actually, see Comment-202502076.
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
 	/// @param roundNum_ The current bidding round number.
@@ -213,7 +214,7 @@ interface IPrizesWallet is IAddressValidator {
 	) external;
 
 	/// @notice Receives an ETH prize for a prize winner.
-	/// This is used only for secondary (non-main) prizes.
+	/// This is used only for secondary prizes.
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
 	/// It's OK if `msg.value` is zero.
 	/// @param roundNum_ The current bidding round number.
@@ -272,7 +273,7 @@ interface IPrizesWallet is IAddressValidator {
 	/// @param tokenAddress_ Comment-202502248 applies.
 	function getDonatedTokenBalanceAmount(uint256 roundNum_, IERC20 tokenAddress_) external view returns (uint256);
 
-	/// @notice This method allows anybody to donate an NFT.
+	/// @notice This method allows anybody to donate an ERC-721 NFT.
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
 	/// Comment-202503153 relates.
 	/// @param roundNum_ The current bidding round number.
@@ -283,7 +284,7 @@ interface IPrizesWallet is IAddressValidator {
 	/// @dev Comment-202411288 applies.
 	function donateNft(uint256 roundNum_, address donorAddress_, IERC721 nftAddress_, uint256 nftId_) external;
 
-	/// @notice Claims a donated NFT.
+	/// @notice Claims a donated ERC-721 NFT.
 	/// Comment-202411289 applies.
 	/// @param index_ `donatedNfts` item index.
 	function claimDonatedNft(uint256 index_) external;

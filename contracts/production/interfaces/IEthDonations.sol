@@ -3,9 +3,11 @@ pragma solidity 0.8.30;
 
 import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
 
-/// @notice ETH donations to the Game contract serve the following purposes:
-/// 1. Allow the project founders to seed the Game with some money.
-/// 2. Allow people to advertise things.
+/// @notice Anybody can make an ETH donation to the `CosmicSignatureGame` contract without placing a bid,
+/// with or without providing a message.
+/// ETH donations to the Game contract serve the following purposes:
+///    1. Allow the project founders to seed the Game with some money.
+///    2. Allow people to advertise things.
 interface IEthDonations is ICosmicSignatureGameStorage {
 	/// @notice Emitted when someone donates ETH.
 	/// @param roundNum The current bidding round number.

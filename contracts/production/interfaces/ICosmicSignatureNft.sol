@@ -4,13 +4,12 @@ pragma solidity 0.8.30;
 import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 import { IAddressValidator } from "./IAddressValidator.sol";
 
-/// @title The Cosmic Signature Ecosystem NFT.
+/// @title The Official ERC-721 NFT for the Cosmic Signature Ecosystem.
 /// @author The Cosmic Signature Development Team.
 /// @notice A contract implementing this interaface implements the Cosmic Signature NFT with unique features
 /// for the Cosmic Signature ecosystem, in particular, custom minting and metadata management.
 /// @dev Issue. It could make sense to derive this contract from `ERC721Permit`,
 /// but OpenZeppelin doesn't include such a contract.
-/// Issue. See https://github.com/protofire/solhint/blob/develop/docs/rules/gas-consumption/gas-multitoken1155.md .
 /// 
 /// todo-1 +++ Review https://wizard.openzeppelin.com/#erc721
 /// 

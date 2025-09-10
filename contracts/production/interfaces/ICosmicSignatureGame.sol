@@ -38,7 +38,7 @@ interface ICosmicSignatureGame is
 	// /// @dev It appears that we don't need this.
 	// fallback() external payable;
 
-	/// @notice Initializes this upgradeable contract.
+	/// @notice Initializes this upgradeable contract's state variables.
 	/// This method is called on the proxy contract right after deployment of both the proxy and the implementation contracts.
 	/// @param ownerAddress_ Contract owner address.
 	/// It could make sense to eliminate this parameter and use `_msgSender()` instead, but let's leave it alone.

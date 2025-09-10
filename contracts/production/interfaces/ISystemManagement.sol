@@ -13,6 +13,8 @@ import { IBiddingBase } from "./IBiddingBase.sol";
 
 /// @title Cosmic Signature Game Configuration Management.
 /// @author The Cosmic Signature Development Team.
+/// @notice This contract contains `CosmicSignatureGame` configurable parameter setters to be called only by the owner.
+/// With some exceptions, a typical setter requires that the current bidding round wasn't active yet.
 interface ISystemManagement is
 	IAddressValidator,
 	ICosmicSignatureGameStorage,
@@ -31,11 +33,13 @@ interface ISystemManagement is
 
 	/// @notice Sets `ethDutchAuctionDurationDivisor`.
 	/// Only the contract owner is permitted to call this method.
+	/// See also: `halveEthDutchAuctionEndingBidPrice`.
 	/// @param newValue_ The new value.
 	function setEthDutchAuctionDurationDivisor(uint256 newValue_) external;
 
 	/// @notice Sets `ethDutchAuctionEndingBidPriceDivisor`.
 	/// Only the contract owner is permitted to call this method.
+	/// See also: `halveEthDutchAuctionEndingBidPrice`.
 	/// @param newValue_ The new value.
 	function setEthDutchAuctionEndingBidPriceDivisor(uint256 newValue_) external;
 
