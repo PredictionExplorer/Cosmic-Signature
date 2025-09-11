@@ -4,7 +4,9 @@
 
 This document lists all prizes awarded by the `CosmicSignatureGame` contract, and, more specifically, by the `MainPrize._distributePrizes` method at the end of each bidding round. In addition, there is a CST reward that each bidder gets when placing a bid.
 
-Not listed here are donations made to the `CosmicSignatureGame` contract in the form of ETH, ERC-20 token amounts, ERC-721 NFTs.
+Additional prizes not listed below are:
+- ETH donations made to the `CosmicSignatureGame` contract. They are shared by all winners in the current and further bidding rounds.
+- ERC-20 token amount and ERC-721 NFT donations. They are claimable by the current bidding round main prize winner.
 
 #### Variables
 
