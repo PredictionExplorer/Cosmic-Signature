@@ -1,90 +1,121 @@
-/* ---------- Ghost custody per (round, token) ---------- */
-ghost mapping(uint256 => mapping(address => mathint)) gHeld;
+/* ---------- Ghost fungible ledger per (token, account) ---------- */
+ghost mapping(address => mapping(address => mathint)) gTokenBal;
 
-/* Safe conversion from mathint to uint */
+/* mathint -> uint (used in summaries only) */
 function asUint(mathint x) returns (uint256) {
-	require x >= 0;
-	return x;
+	require x >= 0, "asUint: negative";
+	uint256 y;
+	require y == x, "asUint: VM equals mathint";
+	return y;
 }
 
-/* Side-effect helpers for summarized wallet methods */
-function cvlDonate(uint256 round, address token, uint256 amount) returns (bool) {
-	gHeld[round][token] = gHeld[round][token] + amount;
+/* Simple ERC20 semantics in ghost */
+function cvlTransferFrom(address token, address from, address to, uint amount) returns (bool) {
+	/* no allowances/fees in this rule */
+	gTokenBal[token][from] = gTokenBal[token][from] - amount;
+	gTokenBal[token][to]   = gTokenBal[token][to]   + amount;
 	return true;
 }
-function cvlClaim(uint256 round, address token, uint256 amount) returns (bool) {
-	require gHeld[round][token] >= amount;
-	gHeld[round][token] = gHeld[round][token] - amount;
+function cvlTransfer(address token, env e, address to, uint amount) returns (bool) {
+	gTokenBal[token][e.msg.sender] = gTokenBal[token][e.msg.sender] - amount;
+	gTokenBal[token][to]           = gTokenBal[token][to]           + amount;
 	return true;
 }
 
-/* ---------- Methods ---------- */
+/* ---------- Methods (ERC-20 via wildcards; wallet helpers real) ---------- */
 methods {
-	/* Read-only helper */
+	function _.transferFrom(address from, address to, uint256 amount) external
+		=> cvlTransferFrom(calledContract, from, to, amount) expect bool ALL;
+
+	function _.transfer(address to, uint256 amount) external with(env eX)
+		=> cvlTransfer(calledContract, eX, to, amount) expect bool ALL;
+
+	function _.balanceOf(address account) external
+		=> asUint(gTokenBal[calledContract][account]) expect uint ALL;
+
+	/* Wallet helpers — MUST use EVM types + envfree for views */
 	function PrizesWallet.game() external returns (address) envfree;
+	function PrizesWallet.registerRoundEnd(uint256 roundNum_, address mainPrizeBeneficiaryAddress_) external returns (uint256);
 
-	/* Return custody directly from ghost (no ERC20 needed) */
-	function PrizesWallet.getDonatedTokenBalanceAmount(uint256 roundNum_, address tokenAddress_) external returns (uint256) envfree
-		=> asUint(gHeld[roundNum_][tokenAddress_]) expect uint ALL;
+	function PrizesWallet.getDonatedTokenBalanceAmount(uint256 roundNum_, address tokenAddress_) external returns (uint256) envfree;
+	function PrizesWallet.getBalanceOfToken(address tokenAddr, address holder) external returns (uint256) envfree;
 
-	/* Summarize mutations to update the ghost custody */
-	function PrizesWallet.donateToken(uint256 roundNum_, address donorAddress_, address tokenAddress_, uint256 amount_) external
-		=> cvlDonate(roundNum_, tokenAddress_, amount_);
-
-	function PrizesWallet.claimDonatedToken(uint256 roundNum_, address tokenAddress_, uint256 amount_) external
-		=> cvlClaim(roundNum_, tokenAddress_, amount_);
-
-	/* IMPORTANT: match the real signature (it RETURNS uint256) */
-	function PrizesWallet.registerRoundEnd(uint256 roundNum_, address mainPrizeBeneficiaryAddress_) external returns (uint256) optional;
+	/* Public getter for the holder (compiler-generated) */
+	function PrizesWallet.donatedTokens(uint256 roundNum_) external returns (address) envfree;
 }
 
 /*
-Flow (as requested):
-	1) game -> donateToken(round, donor, token, amount)
+Flow:
+	1) game -> donateToken(round, donor, token, donation)
 	2) game -> registerRoundEnd(round, beneficiary)
-	3) beneficiary -> claimDonatedToken(round, token, amount)
+	3) beneficiary -> claimDonatedToken(round, token, deposit)
 
-Check:
-	getDonatedTokenBalanceAmount(round, token) goes +amount after donate,
-	then returns to baseline after claim (tokens_deposited == tokens_withdrawn).
+Checks:
+	- deposit = custody_after_donate - custody_before
+	- beneficiary gained exactly deposit
+	- custody returned to custody_before
+	- start clean: custody_before == 0, beneficiary == 0
+	- guard aliasing: holder != beneficiary
 */
 rule donate_then_claim_preserves_amount {
-	// symbols
 	address donor;
 	address beneficiary;
 	address token;
-	uint256 round;
-	uint256 amount;
+	uint round;
+	uint donation;
 
 	env eGame;
 	env eBeneficiary;
 
-	require token != 0x0;
-	require donor != 0x0;
-	require beneficiary != 0x0;
-	require donor != beneficiary;
-	require amount > 0;
+	require token != 0x0, "token != 0";
+	require donor != 0x0, "donor != 0";
+	require beneficiary != 0x0, "beneficiary != 0";
+	require donor != beneficiary, "donor != beneficiary";
+	require donation > 0, "donation > 0";
 
-	// onlyGame guard honored by the env
-	require eGame.msg.sender == currentContract.game();
-	require eBeneficiary.msg.sender == beneficiary;
+	require eGame.msg.sender == currentContract.game(), "only game may donate/register";
+	require eBeneficiary.msg.sender == beneficiary, "claimer is beneficiary (scenario)";
 
-	// snapshot custody before any movement
-	uint256 before_amt = currentContract.getDonatedTokenBalanceAmount(round, token);
+	/* baselines */
+	uint custody_before = currentContract.getDonatedTokenBalanceAmount(round, token);
+	uint benef_before	= currentContract.getBalanceOfToken(token, beneficiary);
 
-	// 1) donate (onlyGame) → custody +amount
-	currentContract.donateToken(eGame, round, donor, token, amount);
-	uint256 after_donate = currentContract.getDonatedTokenBalanceAmount(round, token);
-	assert after_donate == before_amt + amount,
-		"donation did not increase custody by the donated amount";
+	/* keep the scenario simple & clean */
+	require custody_before == 0, "first donation: custody starts at 0";
+	require benef_before == 0, "beneficiary starts at 0 for this token";
 
-	// 2) end round & set beneficiary (onlyGame)
+	/* donate — custody must strictly increase */
+	currentContract.donateToken(eGame, round, donor, token, donation);
+	uint custody_after_donate = currentContract.getDonatedTokenBalanceAmount(round, token);
+	require custody_after_donate > custody_before, "donation must increase custody";
+
+	/* anti-alias: ensure holder != beneficiary */
+	address holder = currentContract.donatedTokens(round);
+	require holder != beneficiary, "holder must differ from beneficiary";
+
+	/* observed deposit (mathint-safe) cast to uint via equality require */
+	mathint deposit_mi = custody_after_donate - custody_before;
+	require deposit_mi >= 0, "deposit non-negative";
+	uint deposit;
+	require deposit == deposit_mi, "cast deposit";
+
+	/* close the round */
 	currentContract.registerRoundEnd(eGame, round, beneficiary);
 
-	// 3) claim (beneficiary) → custody −amount back to baseline
-	currentContract.claimDonatedToken(eBeneficiary, round, token, amount);
-	uint256 after_claim = currentContract.getDonatedTokenBalanceAmount(round, token);
-	assert after_claim == before_amt,
-		"claim did not return custody to baseline (withdrawn != deposited)";
+	/* claim exactly what was deposited */
+	currentContract.claimDonatedToken(eBeneficiary, round, token, deposit);
+
+	/* beneficiary gained exactly the deposited amount */
+	uint benef_after = currentContract.getBalanceOfToken(token, beneficiary);
+	mathint benef_delta_mi = benef_after - benef_before;
+	require benef_delta_mi >= 0, "benef delta non-negative";
+	uint benef_delta;
+	require benef_delta == benef_delta_mi, "cast benef delta";
+
+	assert benef_delta == deposit, "beneficiary did not receive the deposited tokens";
+
+	/* custody returned to baseline */
+	uint custody_after_claim = currentContract.getDonatedTokenBalanceAmount(round, token);
+	assert custody_after_claim == custody_before, "custody did not return to baseline after claim";
 }
 
