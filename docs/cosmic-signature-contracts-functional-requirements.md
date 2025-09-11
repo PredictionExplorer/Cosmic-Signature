@@ -48,11 +48,13 @@ todo-0 Review the old Nick's document again.
 
 - `RandomWalkNFT`. It's an ERC-721 NFT contract that has already been deployed. Its symbol is RWLK. It can be considered a third party contract that is not a part of this project, but it plays an important role.
 
-### Variables
+### State Variables
 
 - `roundActivationTime`. 
 
 - `mainPrizeTime`. 
+
+- `charityAddress`. This variable exists in `CharityWallet`. The same named variable exists in `CosmicSignatureGameStorage` and actually points at our own `CharityWallet`.
 
 ### Bidding Rounds
 
@@ -98,6 +100,10 @@ When someone places a bid of any type, a configurable amount of CST is minted fo
 
 When someone places the first bid in a round, `mainPrizeTime` gets calculated as `block.timestamp` plus a configurable duration. When another bid is placed, `mainPrizeTime` gets calculated as `max(mainPrizeTime, block.timestamp)` plus a shorter configurable duration.
 
+### Exponential Duration Increase
+
+At the end of each round, the following configurable durations automatically increase exponentially by a configurable fraction: ETH and CST Dutch auction durations; initial duration until main prize (used to calculate `mainPrizeTime` on the first bid in a round); `mainPrizeTime` increment (by how much `mainPrizeTime` gets extended on each non-first bid in a round).
+
 ### Bidding Mechanics
 
 - Bidding is allowed only if the current round is in the active mode.
@@ -133,15 +139,15 @@ All prizes are listed in "./cosmic-signature-game-prizes.md".
 
 - Winners are required to withdraw their prizes held in `PrizesWallet`. They are given a configurable timeout window to do so.
 
-### Cosmic Signature NFT Staking
+### Random Number Generation
 
-todo-0 Write more
+Some prize winners are picked randomly. We have done our best to generate high quality random numbers without using an oracle. We have found 2 Arbitrum precompile methods that return different values after each transaction. We use them besides some other lower quality sources of randomness to generate random numbers. Therefore it's practically impossible to develop a script that sends transaction requests in such a way that it knows what random number will be generated. Additionally, this game does not provide a significant profit incentive to attempt developing such a script.
 
-### Random Walk NFT Staking
+### Cosmic Signature and Random Walk NFT Staking
 
-At the end of each round, a configurable number of staked RW NFTs get picked randomly and new CS NFTs get minted for their stakers.
+NFTs from both NFT contracts can be staked. Stakers receive designated prizes/rewards, as specified in "./cosmic-signature-game-prizes.md".
 
-todo-0 Write more
+An NFT may be staked only once. Once unstaked, the same NFT may no longer be staked again.
 
 ### Actions Logic
 
@@ -169,6 +175,8 @@ todo-0 Write more
 - If the current bidding round is inactive: revert.
 
 - Update `mainPrizeTime`.
+
+- todo-0 mention refund. mention the too small value non-refund logic.
 
 #### A user places a CST bid.
 
