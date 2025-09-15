@@ -6,7 +6,7 @@ pragma solidity 0.8.30;
 // #endregion
 // #region
 
-import { Panic as OpenZeppelinPanic } from "@openzeppelin/contracts/utils/Panic.sol";
+// import { Panic as OpenZeppelinPanic } from "@openzeppelin/contracts/utils/Panic.sol";
 import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
 import { OwnableUpgradeableWithReservedStorageGaps } from "./OwnableUpgradeableWithReservedStorageGaps.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
@@ -111,27 +111,24 @@ abstract contract MainPrize is
 			// Comment-202411169 relates.
 			// #enable_asserts assert(lastBidderAddress != address(0));
 
-			require(
-				block.timestamp >= mainPrizeTime,
-				CosmicSignatureErrors.MainPrizeEarlyClaim("Not enough time has elapsed.", mainPrizeTime, block.timestamp)
-			);
+			if ( ! (block.timestamp >= mainPrizeTime) ) {
+				revert CosmicSignatureErrors.MainPrizeEarlyClaim("Not enough time has elapsed.", mainPrizeTime, block.timestamp);
+			}
 		} else {
 			// Comment-202411169 relates.
-			require(
-				lastBidderAddress != address(0),
-				CosmicSignatureErrors.NoBidsPlacedInCurrentRound("There have been no bids in the current bidding round yet.")
-			);
+			if ( ! (lastBidderAddress != address(0)) ) {
+				revert CosmicSignatureErrors.NoBidsPlacedInCurrentRound("There have been no bids in the current bidding round yet.");
+			}
 
 			int256 durationUntilOperationIsPermitted_ = getDurationUntilMainPrizeRaw() + int256(timeoutDurationToClaimMainPrize);
-			require(
-				durationUntilOperationIsPermitted_ <= int256(0),
-				CosmicSignatureErrors.MainPrizeClaimDenied(
+			if ( ! (durationUntilOperationIsPermitted_ <= int256(0)) ) {
+				revert CosmicSignatureErrors.MainPrizeClaimDenied(
 					"Only the last bidder is permitted to claim the bidding round main prize before a timeout expires.",
 					lastBidderAddress,
 					_msgSender(),
 					uint256(durationUntilOperationIsPermitted_)
-				)
-			);
+				);
+			}
 		}
 
 		// Comment-202411169 applies.
@@ -148,7 +145,9 @@ abstract contract MainPrize is
 				raffleTotalEthPrizeAmountForBiddersPercentage +
 				cosmicSignatureNftStakingTotalEthRewardAmountPercentage +
 				charityEthDonationAmountPercentage;
-			require(totalPercentage_ <= 100, "Percentage sum exceeds 100");
+			if ( ! (totalPercentage_ <= 100) ) {
+				revert CosmicSignatureErrors.InvalidOperationInCurrentState("Percentage sum exceeds 100");
+			}
 		}
 
 		_updateChampionsIfNeeded();
@@ -418,7 +417,9 @@ abstract contract MainPrize is
 				// #endregion
 				// #region CST for Marketing Wallet.
 
-				require(marketingWallet != address(0), "Marketing wallet not set");
+				if ( ! (marketingWallet != address(0)) ) {
+					revert CosmicSignatureErrors.ZeroAddress("Marketing wallet not set");
+				}
 				cosmicSignatureTokenMintSpecs_[0].account = marketingWallet;
 				cosmicSignatureTokenMintSpecs_[0].value = marketingWalletCstContributionAmount;
 
@@ -429,7 +430,9 @@ abstract contract MainPrize is
 					for (uint256 i_ = cosmicSignatureTokenMintSpecs_.length; i_ > 0; ) {
 						-- i_;
 						ICosmicSignatureToken.MintSpec memory spec_ = cosmicSignatureTokenMintSpecs_[i_];
-						require(spec_.account != address(0), "CST mint to zero");
+						if ( ! (spec_.account != address(0)) ) {
+							revert CosmicSignatureErrors.ZeroAddress("CST mint to zero");
+						}
 					}
 				}
 				token.mintMany(cosmicSignatureTokenMintSpecs_);
@@ -553,7 +556,7 @@ abstract contract MainPrize is
 
 					try stakingWalletCosmicSignatureNft.deposit{value: cosmicSignatureNftStakingTotalEthRewardAmount_}(roundNum) {
 						// Doing nothing.
-					} catch Panic(uint256 errorCode_) {
+					} catch Panic(uint256 /*errorCode_*/) {
 						// Comment-202410161 relates.
 						// Regardless of panic type, keep claim non-blocking by rerouting staking reward to charity.
 						charityEthDonationAmount_ += cosmicSignatureNftStakingTotalEthRewardAmount_;
@@ -582,12 +585,17 @@ abstract contract MainPrize is
 					// But if I did, this would be a wrong place for this validation.
 					// #enable_asserts assert(charityAddress != address(0));
 
-					// Comment-202502043 applies.
-					(bool isSuccess_, ) = charityAddress.call{value: charityEthDonationAmount_}("");
-
-					if (isSuccess_) {
-						emit CosmicSignatureEvents.FundsTransferredToCharity(charityAddress, charityEthDonationAmount_);
+					// Protect against misconfiguration: do not burn funds to address(0).
+					if (charityAddress != address(0)) {
+						// Comment-202502043 applies.
+						(bool isSuccess_, ) = charityAddress.call{value: charityEthDonationAmount_}("");
+						if (isSuccess_) {
+							emit CosmicSignatureEvents.FundsTransferredToCharity(charityAddress, charityEthDonationAmount_);
+						} else {
+							emit CosmicSignatureEvents.FundTransferFailed("ETH transfer to charity failed.", charityAddress, charityEthDonationAmount_);
+						}
 					} else {
+						// Keep funds in the game contract until a valid charity is set.
 						emit CosmicSignatureEvents.FundTransferFailed("ETH transfer to charity failed.", charityAddress, charityEthDonationAmount_);
 					}
 				}
@@ -646,7 +654,7 @@ abstract contract MainPrize is
 		// todo-1 +++ We do need to reset this, right?
 		prevEnduranceChampionDuration = 0;
 		chronoWarriorAddress = address(0);
-		chronoWarriorDuration = uint256(int256(-1));
+		chronoWarriorDuration = 0;
 		++ roundNum;
 
 		// // [Comment-202501307]
@@ -664,7 +672,7 @@ abstract contract MainPrize is
 	// #endregion
 	// #region `getMainEthPrizeAmount`
 
-	function getMainEthPrizeAmount() public view override returns (uint256) {
+	function getMainEthPrizeAmount() external view override returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -676,7 +684,7 @@ abstract contract MainPrize is
 	// #endregion
 	// #region `getCharityEthDonationAmount`
 
-	function getCharityEthDonationAmount() public view override returns (uint256) {
+	function getCharityEthDonationAmount() external view override returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */

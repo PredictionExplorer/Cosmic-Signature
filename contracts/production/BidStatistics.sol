@@ -72,18 +72,18 @@ abstract contract BidStatistics is CosmicSignatureGameStorage, IBidStatistics {
 	/// @notice Updates the chrono-warrior info if needed.
 	function _updateChronoWarriorIfNeeded(uint256 chronoEndTimeStamp_) internal {
 		// #enable_asserts assert(enduranceChampionAddress != address(0));
-		// #enable_asserts assert(int256(chronoWarriorDuration) >= -1);
-		// #enable_asserts assert((chronoWarriorAddress == address(0)) == (int256(chronoWarriorDuration) < int256(0)));
+		// #enable_asserts assert(chronoWarriorDuration >= 0);
+		// #enable_asserts assert((chronoWarriorAddress == address(0)) == (chronoWarriorDuration == 0));
 
 		uint256 chronoStartTimeStamp_ = enduranceChampionStartTimeStamp + prevEnduranceChampionDuration;
 		uint256 chronoDuration_ = chronoEndTimeStamp_ - chronoStartTimeStamp_;
-		if (int256(chronoDuration_) > int256(chronoWarriorDuration)) {
+		if (chronoDuration_ > chronoWarriorDuration) {
 			chronoWarriorAddress = enduranceChampionAddress;
 			chronoWarriorDuration = chronoDuration_;
 		}
 
 		// #enable_asserts assert(chronoWarriorAddress != address(0));
-		// #enable_asserts assert(int256(chronoWarriorDuration) >= int256(0));
+		// #enable_asserts assert(chronoWarriorDuration >= 0);
 	}
 
 	// #endregion
@@ -151,7 +151,7 @@ abstract contract BidStatistics is CosmicSignatureGameStorage, IBidStatistics {
 					uint256 chronoEndTimeStamp_ = lastBidTimeStampCopy_ + enduranceChampionDuration_;
 					uint256 chronoStartTimeStamp_ = enduranceChampionStartTimeStamp_ + prevEnduranceChampionDuration_;
 					uint256 chronoDuration_ = chronoEndTimeStamp_ - chronoStartTimeStamp_;
-					if (int256(chronoDuration_) > int256(chronoWarriorDuration_)) {
+					if (chronoDuration_ > chronoWarriorDuration_) {
 						chronoWarriorAddress_ = enduranceChampionAddress_;
 						chronoWarriorDuration_ = chronoDuration_;
 					}
@@ -175,7 +175,7 @@ abstract contract BidStatistics is CosmicSignatureGameStorage, IBidStatistics {
 				uint256 chronoEndTimeStamp_ = block.timestamp;
 				uint256 chronoStartTimeStamp_ = enduranceChampionStartTimeStamp_ + prevEnduranceChampionDuration_;
 				uint256 chronoDuration_ = chronoEndTimeStamp_ - chronoStartTimeStamp_;
-				if (int256(chronoDuration_) > int256(chronoWarriorDuration_)) {
+				if (chronoDuration_ > chronoWarriorDuration_) {
 					chronoWarriorAddress_ = enduranceChampionAddress_;
 					chronoWarriorDuration_ = chronoDuration_;
 				}

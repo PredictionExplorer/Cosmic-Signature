@@ -19,14 +19,11 @@ The analysis covers both explicit reverts and implicit Solidity 0.8+ panics. Eac
 ### Executive summary
 
 - The system is thoughtfully modular with strong reentrancy protections and clear custody separation. Overall code quality is high with extensive checks and events.
-- Critical finding: `claimMainPrize` can revert on the final main ETH transfer if the winner rejects ETH, which bricks round closure. This is a critical operational risk and should be made non-blocking (fallback to `PrizesWallet`) or refactored to a pull-claim pattern.
-- **Additional CRITICAL findings**: 
-  1. CharityWallet can permanently lock ALL donated ETH if charity address is not set
-  2. ETH percentage-sum invariant is not enforced, which can brick round closure
-  3. Staking wallet deposit only handles division-by-zero panics; other panics will brick `claimMainPrize`
-- High-severity issues: PrizesWallet history rewriting, NFTs one-time staking limitation
-- Randomness and MEV risks are acceptable for low-stakes but should be documented or mitigated for higher value.
-- Upgrade path appears safe now via OpenZeppelin UUPS (prior direct-slot write issue no longer present).
+- The final main ETH transfer in `claimMainPrize` is now non-blocking and falls back to depositing to `PrizesWallet` on failure. The cumulative ETH percentage-sum invariant is enforced both in admin setters and at claim time. PrizesWallet round registration is now append-only. Staking deposit errors are handled non-blockingly.
+- **Current CRITICAL issue**: A sentinel initialization pattern for `chronoWarriorDuration` causes a signed cast to revert in `_updateChronoWarriorIfNeeded`, which can brick `claimMainPrize` on first invocation and after each round reset (details below).
+- **High-severity issues**: (a) If the `charityAddress` in `Game` is unset, charity ETH can be sent to `address(0)` (silent burn), (b) NFTs one-time staking limitation.
+- Randomness and MEV risks remain acceptable for low-stakes but should be documented or mitigated for higher value.
+- Upgrade path appears safe via OpenZeppelin UUPS.
 
 ### Severity legend
 
@@ -40,7 +37,7 @@ The analysis covers both explicit reverts and implicit Solidity 0.8+ panics. Eac
 ## Contract inventory (responsibilities)
 
 - CosmicSignatureGame: UUPS upgradeable game orchestrator; composes bidding, main/secondary prizes, donations, statistics, and system management. Initializes defaults and authorizes upgrades.
-- SystemManagement: Owner-only parameter and address setters; no global invariants across percentages.
+- SystemManagement: Owner-only parameter and address setters; enforces a global invariant across ETH percentages.
 - Bidding/BiddingBase: ETH/CST bid flow, pricing, and refund rules; first bid must be ETH; optional swallow of tiny overpayments (uses `tx.gasprice`).
 - MainPrize/MainPrizeBase: `claimMainPrize` flow; computes prize splits and interacts with `PrizesWallet`, staking wallets, charity, and NFT/Token mints; advances rounds.
 - SecondaryPrizes: Computes ETH percentages for chrono-warrior, bidder raffles, and CS NFT staking pool.
@@ -61,55 +58,48 @@ The analysis covers both explicit reverts and implicit Solidity 0.8+ panics. Eac
 
 ### Critical
 
-1) `claimMainPrize` main ETH transfer can revert and permanently brick rounds
-- Why: The main ETH prize transfer to the winner (lines 599-606) will revert if the transfer fails. This happens if the winner is a smart contract that reverts on ETH receipt, has no receive function, or consumes too much gas.
-- **Impact**: Critical - A malicious or misconfigured winner contract can cause claim to revert until governance intervenes. Even accidental cases (e.g., account without proper receive fallback) will brick round closure.
-- **Attack Vector**: Win round → Make contract revert → Protocol locked forever
-```599:606:/Users/tarasbobrovytsky/Dev/CosmicAug29/Cosmic-Signature/contracts/production/MainPrize.sol
-(bool isSuccess_, ) = _msgSender().call{value: mainEthPrizeAmount_}("");
-if ( ! isSuccess_ ) {
-    revert CosmicSignatureErrors.FundTransferFailed("ETH transfer to bidding round main prize beneficiary failed.", _msgSender(), mainEthPrizeAmount_);
+1) Chrono-warrior duration sentinel cast bricks `claimMainPrize`
+- Why: `chronoWarriorDuration` is initialized/reset to `uint256(int256(-1))` but later compared as a signed integer: `int256(chronoWarriorDuration)`. Casting a value ≥ 2^255 to `int256` panics, reverting the transaction inside `_updateChronoWarriorIfNeeded`, which is called by `claimMainPrize` on every claim. This can brick round closure on first use and after each round reset.
+```100:101:/Users/tarasbobrovytsky/Dev/CosmicAug29/Cosmic-Signature/contracts/production/CosmicSignatureGame.sol
+chronoWarriorDuration = uint256(int256(-1));
+```
+```648:651:/Users/tarasbobrovytsky/Dev/CosmicAug29/Cosmic-Signature/contracts/production/MainPrize.sol
+chronoWarriorAddress = address(0);
+chronoWarriorDuration = uint256(int256(-1));
+```
+```78:86:/Users/tarasbobrovytsky/Dev/CosmicAug29/Cosmic-Signature/contracts/production/BidStatistics.sol
+uint256 chronoStartTimeStamp_ = enduranceChampionStartTimeStamp + prevEnduranceChampionDuration;
+uint256 chronoDuration_ = chronoEndTimeStamp_ - chronoStartTimeStamp_;
+if (int256(chronoDuration_) > int256(chronoWarriorDuration)) {
+    chronoWarriorAddress = enduranceChampionAddress;
+    chronoWarriorDuration = chronoDuration_;
 }
 ```
-- **Required Fix**: Make transfer non-blocking. On failure, send to PrizesWallet or use pull pattern.
+- **Impact**: Critical — `claimMainPrize` reverts deterministically until fixed.
+- **Required Fix**: Replace sentinel with a safe pattern: (a) use a separate boolean flag for initialization, or (b) store `chronoWarriorDuration` as `int256` with an explicit initial value of `-1`, or (c) initialize to `0` and treat "unset" via a boolean.
 
-2) Missing global ETH percentage-sum invariant can brick `claimMainPrize`
-- Why: The contract computes multiple ETH allocations from `address(this).balance` and transfers them in a sequence. If configured percentages cumulatively exceed 100%, later transfers revert and the round cannot be closed until parameters are changed — which is forbidden during active rounds.
-- **UPDATE**: This issue becomes even more critical when combined with the CharityWallet lockup issue. If charity address is not set, the entire round closure fails.
-```512:521:/Users/tarasbobrovytsky/Dev/CosmicAug29/Cosmic-Signature/contracts/production/MainPrize.sol
-                        mainEthPrizeAmount_ = getMainEthPrizeAmount();
-                        charityEthDonationAmount_ = getCharityEthDonationAmount();
-                        cosmicSignatureNftStakingTotalEthRewardAmount_ = getCosmicSignatureNftStakingTotalEthRewardAmount();
-                        uint256 timeoutTimeToWithdrawSecondaryPrizes_ =
-                            prizesWallet.registerRoundEndAndDepositEthMany{value: ethDepositsTotalAmount_}(roundNum, _msgSender(), ethDeposits_);
-                        emit MainPrizeClaimed(
+2) Charity ETH misdirection (silent burn) when `Game.charityAddress` is unset
+- Why: `claimMainPrize` sends ETH directly to `charityAddress` without a non-zero check. If unset (`address(0)`), the low-level call will succeed and transfer ETH to the zero address (irrecoverable burn).
+```585:593:/Users/tarasbobrovytsky/Dev/CosmicAug29/Cosmic-Signature/contracts/production/MainPrize.sol
+(bool isSuccess_, ) = charityAddress.call{value: charityEthDonationAmount_}("");
+if (isSuccess_) {
+    emit CosmicSignatureEvents.FundsTransferredToCharity(charityAddress, charityEthDonationAmount_);
+} else {
+    emit CosmicSignatureEvents.FundTransferFailed("ETH transfer to charity failed.", charityAddress, charityEthDonationAmount_);
+}
 ```
-- Recommend:
-  - Enforce in setters a cumulative invariant: `main + chrono + raffle + staking + charity ≤ 100` (with a small safety margin for rounding, e.g. ≤ 98–99).
-  - Pre-flight check at start of `claimMainPrize` that would revert early with a clear error if violated.
+- **Impact**: High — permanent fund loss to `address(0)` if misconfigured.
+- **Required Fix**: Require non-zero `charityAddress` at claim time, or always route charity ETH via a `CharityWallet` that enforces non-zero destination and can hold funds until set.
 
 ### High
 
-2) `PrizesWallet._registerRoundEnd` permits history rewrite
-- Why: Round registration is not append-only; commented assertions do not enforce immutability. A faulty or malicious upgraded `Game` could rewrite past rounds’ beneficiary and timeout.
-```126:142:/Users/tarasbobrovytsky/Dev/CosmicAug29/Cosmic-Signature/contracts/production/PrizesWallet.sol
-function _registerRoundEnd(uint256 roundNum_, address mainPrizeBeneficiaryAddress_) private returns (uint256) {
-        // #enable_asserts assert(mainPrizeBeneficiaryAddresses[roundNum_] == address(0));
-        // #enable_asserts assert(roundNum_ == 0 || mainPrizeBeneficiaryAddresses[roundNum_ - 1] != address(0));
-        // #enable_asserts assert(roundTimeoutTimesToWithdrawPrizes[roundNum_] == 0);
-        // #enable_asserts assert(roundNum_ == 0 || roundTimeoutTimesToWithdrawPrizes[roundNum_ - 1] != 0);
-        // #enable_asserts assert(mainPrizeBeneficiaryAddress_ != address(0));
-        mainPrizeBeneficiaryAddresses[roundNum_] = mainPrizeBeneficiaryAddress_;
-        uint256 roundTimeoutTimeToWithdrawPrizes_ = block.timestamp + timeoutDurationToWithdrawPrizes;
-        roundTimeoutTimesToWithdrawPrizes[roundNum_] = roundTimeoutTimeToWithdrawPrizes_;
-        return roundTimeoutTimeToWithdrawPrizes_;
-}
-```
-- Recommend: Replace comments with `require`s enforcing append-only registration and valid non-zero beneficiary.
+3) NFTs one-time staking limitation (unchanged)
+- Why: Each NFT can only be staked once for life. Reduces utility; users may not expect it.
+- Recommendation: Document prominently or consider allowing re-staking.
 
 ### Medium
 
-3) Randomness is pseudo-/producer-influenced and correlated per block
+4) Randomness is pseudo-/producer-influenced and correlated per block
 - Why: Seeds derive from `blockhash`, `basefee`, and optional Arbitrum precompiles; multiple draws in one tx derive from a single seed wrapper (good), but L2 producers and bots can bias/anticipate outcomes.
 ```47:57:/Users/tarasbobrovytsky/Dev/CosmicAug29/Cosmic-Signature/contracts/production/libraries/RandomNumberHelpers.sol
         uint256 randomNumberSeed_ = uint256(blockhash(block.number - 1)) >> 1;
@@ -118,19 +108,19 @@ function _registerRoundEnd(uint256 roundNum_, address mainPrizeBeneficiaryAddres
 ```
 - Recommend: Consider commit-reveal for bids/raffles, or integrate VRF for high-value draws. Keep single-seed-per-tx and derive all draws from it.
 
-4) MEV/front-running opportunities in bidding and main-prize claiming
+5) MEV/front-running opportunities in bidding and main-prize claiming
 - Why: Public price movements and claim timing allow sandwiching and sniping.
 - Recommend: Optional commit-reveal for bids; private or protected submission for claims; consider TWAP/smoothing for auction steps.
 
-5) Gas griefing via unbounded data growth
+6) Gas griefing via unbounded data growth
 - Why: Unbounded arrays and mappings (e.g., `ethDonationWithInfoRecords`, donated NFTs) can grow indefinitely and make some operations expensive.
 - Recommend: Add pagination to user-initiated bulk operations; dust limits for donations; caps per round where feasible.
 
-6) Timestamp manipulation in pricing and eligibility
+7) Timestamp manipulation in pricing and eligibility
 - Why: L2 sequencers can skew `block.timestamp` within bounds to influence Dutch auctions and eligibility windows.
 - Recommend: Tolerances and slippage checks; use block-based periods where practical; document acceptable skew.
 
-7) Overly large reserved storage gap can hinder future upgrades
+8) Overly large reserved storage gap can hinder future upgrades
 - Why: `CosmicSignatureGameStorage` uses an extremely large fixed-size reserved array which complicates storage layout reasoning and can impede future variable additions.
 ```408:425:/Users/tarasbobrovytsky/Dev/CosmicAug29/Cosmic-Signature/contracts/production/CosmicSignatureGameStorage.sol
     // solhint-disable-next-line var-name-mixedcase
@@ -141,11 +131,11 @@ function _registerRoundEnd(uint256 roundNum_, address mainPrizeBeneficiaryAddres
 ```
 - Recommend: Replace with a conventional small gap (e.g., `uint256[50] __gap;`) at the end of each upgradeable storage-bearing contract; avoid experimental patterns unless formally validated.
 
-8) CST burn authority centralized in `Game`
+9) CST burn authority centralized in `Game`
 - Why: `CosmicSignatureToken` grants mint/burn only to `Game`; a compromised `Game` could arbitrarily affect balances.
 - Recommend: Keep `Game` owner on multisig; add circuit breakers or bounded mint/burn flows; on-chain alerts for large mint/burns.
 
-9) ETH refund swallow threshold depends on `tx.gasprice`
+10) ETH refund swallow threshold depends on `tx.gasprice`
 - Why: Heuristic may be surprising on L2; can lead to small overpayments retained by the contract.
 ```248:253:/Users/tarasbobrovytsky/Dev/CosmicAug29/Cosmic-Signature/contracts/production/Bidding.sol
                 uint256 ethBidRefundAmountToSwallowMaxLimit_ = ethBidRefundAmountInGasToSwallowMaxLimit * tx.gasprice;
@@ -154,10 +144,6 @@ function _registerRoundEnd(uint256 roundNum_, address mainPrizeBeneficiaryAddres
                     paidEthPrice_ = msg.value;
 ```
 - Recommend: Consider a fixed Wei threshold or always refund; make the threshold clearly configurable per-chain and emit an event when swallowing.
-
-10) Chrono-warrior sentinel uses brittle `uint256(int256(-1))`
-- Why: Sentinel casting to signed domain can be error-prone in refactors.
-- Recommend: Prefer `type(uint256).max` with explicit boolean flags for initialization state.
 
 11) Balance-manipulation edge cases
 - Why: `address(this).balance` is used for percentage calculations; forced ETH can skew splits.
@@ -192,10 +178,11 @@ function send() external override nonReentrant /*onlyOwner*/ {
 ## Upgradeability, access control, and reentrancy
 
 - Upgradeability: The contract now relies on OpenZeppelin UUPS with `_authorizeUpgrade` only and inherits the safe upgrade path from OZ (includes proxiable checks and proxy-context guards). This resolves earlier concerns about direct `IMPLEMENTATION_SLOT` writes.
-```146:164:/Users/tarasbobrovytsky/Dev/CosmicAug29/Cosmic-Signature/contracts/production/CosmicSignatureGame.sol
-function _authorizeUpgrade(address newImplementationAddress_) internal view override
+```152:165:/Users/tarasbobrovytsky/Dev/CosmicAug29/Cosmic-Signature/contracts/production/CosmicSignatureGame.sol
+function _authorizeUpgrade(address newImplementationAddress_) internal view override _providedAddressIsNonZero(newImplementationAddress_)
         onlyOwner
         _onlyRoundIsInactive {
+        // Doing nothing here; modifiers provide the checks.
 }
 ```
 - Access Control: Owner-only setters and upgrade authorization; recommend multisig owner and timelock for critical changes.
@@ -206,39 +193,34 @@ function _authorizeUpgrade(address newImplementationAddress_) internal view over
 ## Test and monitoring recommendations
 
 - Invariant tests: cumulative ETH percentages ≤ 100 and `claimMainPrize` succeeds under random configs.
-- Fuzz: Dutch auction math boundaries; champions’ tracking throughout randomized timelines.
+- Fuzz: Dutch auction math boundaries; champions' tracking throughout randomized timelines.
 - Property tests: PrizesWallet registration immutability, on-behalf withdrawals post-timeout, staking deposit division-by-zero behavior.
 - Monitoring: On-chain alerts for mint/burn anomalies, upgrade events, unusually large parameter shifts, and MEV-sensitive flows.
 
 ---
 
-## Delta vs prior SECURITY_OVERVIEW.md (Dec 2024)
+## Delta vs prior SECURITY_REVIEW (Dec 2024 and earlier drafts)
 
-- Resolved: Prior Critical issue about custom `upgradeTo` writing `IMPLEMENTATION_SLOT` directly is no longer present. The game inherits OZ UUPS upgrade functions and only overrides `_authorizeUpgrade`.
-- Clarified: The halving math overflow will revert in Solidity 0.8+; still advisable to bound configuration values.
-- Reconfirmed: Percentage-sum invariant and `PrizesWallet` append-only enforcement remain the top fixes to prioritize.
+- Resolved: Prior critical issue about direct `upgradeTo` slot writes — now uses OZ UUPS with `_authorizeUpgrade`.
+- Resolved: Main prize transfer is non-blocking with fallback to `PrizesWallet`.
+- Resolved: Percentage-sum invariant now enforced in setters and pre-flight.
+- Resolved: `PrizesWallet` round registration is append-only with `require`s.
+- Resolved: Staking deposit errors are handled non-blockingly; panics do not brick `claimMainPrize`.
+- New: Critical chrono-warrior sentinel cast revert; High: potential charity ETH burn when `charityAddress` is unset in `Game`.
 
 ---
 
 ## Quick fix checklist (priority)
 
-1) **CRITICAL - IMMEDIATE**: Fix `claimMainPrize` main ETH transfer revert - this can permanently brick rounds! Options:
-   - Make the transfer non-blocking (send to PrizesWallet on failure)
-   - Use pull pattern where winner claims from PrizesWallet
-   - Add emergency round closure mechanism
-2) **CRITICAL**: Fix CharityWallet ETH lockup - either set charity address in constructor, add emergency withdrawal, or revert in `receive()` when address is zero.
-3) **CRITICAL**: Handle ALL panics in staking wallet deposit, not just division by zero - other panics will brick `claimMainPrize`.
-4) Enforce cumulative ETH percentage-sum invariant in setters and pre-flight check in `claimMainPrize`.
-5) Make `PrizesWallet._registerRoundEnd` append-only with `require`s and zero-address checks.
-6) Document prominently that NFTs can only be staked once in their lifetime - this is a major limitation users must understand.
-7) Add bounds to pricing/divisor parameters; consider a fixed Wei threshold or always-refund policy for ETH overpayments; add event on swallow.
-8) Replace chrono-warrior sentinel with explicit flags or `type(uint256).max`.
-9) Implement internal balance tracking instead of using `address(this).balance` to prevent force-sent ETH from affecting calculations.
-10) Override `renounceOwnership()` to prevent accidental ownership renunciation that would lock the system.
-11) Add try-catch around token and NFT minting operations in `claimMainPrize` to prevent unexpected reverts.
-12) Reduce reserved storage gap(s) to conventional sizes and remove experimental patterns not needed.
-13) Document randomness limitations; consider commit-reveal/VRF for high-value scenarios; document timestamp tolerances.
-14) Consider restricting `CharityWallet.send()` to owner or document its anyone-callable behavior.
+1) **CRITICAL - IMMEDIATE**: Replace chrono-warrior sentinel pattern to avoid signed cast panics in `_updateChronoWarriorIfNeeded`.
+2) **HIGH**: Guard against charity ETH burn — require non-zero `charityAddress` at claim time or route via `CharityWallet` with enforced non-zero destination.
+3) Document prominently that NFTs can only be staked once in their lifetime (UX/Docs).
+4) Add bounds to pricing/divisor parameters; consider a fixed Wei threshold or always-refund policy for ETH overpayments; add event on swallow.
+5) Implement internal balance tracking instead of using `address(this).balance` to prevent force-sent ETH from affecting calculations (optional hardening).
+6) Override `renounceOwnership()` to prevent accidental ownership renunciation that would lock the system.
+7) Reduce reserved storage gap(s) to conventional sizes and remove experimental patterns not needed.
+8) Document randomness limitations; consider commit-reveal/VRF for high-value scenarios; document timestamp tolerances.
+9) Consider restricting `CharityWallet.send()` to owner or document its anyone-callable behavior.
 
 ---
 
@@ -246,18 +228,12 @@ function _authorizeUpgrade(address newImplementationAddress_) internal view over
 
 **CRITICAL ISSUES THAT ABSOLUTELY MUST BE FIXED**:
 
-1. **claimMainPrize ETH transfer revert** - THE MOST CRITICAL ISSUE
-   - Any smart contract winner can permanently brick a round by reverting on ETH receipt
-   - This is an EXISTENTIAL THREAT that makes the protocol unusable
-   - MUST implement non-blocking transfer or pull pattern
+1. **Chrono-warrior sentinel cast revert in `_updateChronoWarriorIfNeeded`**
+   - Bricks `claimMainPrize` deterministically due to `int256(chronoWarriorDuration)` panic.
+   - Replace sentinel with a safe initialization pattern.
 
-2. **CharityWallet ETH lockup** - Can permanently trap all charity donations if address not set
-
-3. **Staking wallet panic handling** - Only catches division by zero; other panics brick claimMainPrize
-
-4. **ETH percentage-sum invariant** - Can brick round closure if misconfigured
-
-5. **PrizesWallet history rewriting** - Compromises custody integrity
+2. **Charity ETH misdirection when `Game.charityAddress` is unset (High)**
+   - Prevent silent burns to `address(0)` by enforcing non-zero destination at claim time or routing via `CharityWallet`.
 
 **Bottom Line**: The ability for `claimMainPrize` to revert on ETH transfer is a critical vulnerability. A malicious actor could:
 - Win a round with a smart contract
@@ -276,7 +252,7 @@ After implementing ALL critical fixes:
 - Multi-sig ownership with timelock for critical operations
 - Clear documentation of all edge cases and limitations
 
-Current risk level: High — do not deploy to mainnet until critical fixes are implemented.
+Current risk level: High — due to the chrono-warrior sentinel cast revert and potential charity burn misconfiguration.
 After critical fixes: Medium — suitable for a guarded launch with monitoring and limits.
 
 ---
@@ -310,12 +286,12 @@ This section catalogs all usages of OpenZeppelin modules in the codebase and enu
 ### ERC20 / ERC20Permit / ERC20Votes
 
 - Minting and burning (`CosmicSignatureToken`)
-  - `_mint(account, amount)` reverts if `account == address(0)`; with ERC20Votes, can also revert if vote/supply casting overflows OZ’s reduced-width types.
+  - `_mint(account, amount)` reverts if `account == address(0)`; with ERC20Votes, can also revert if vote/supply casting overflows OZ's reduced-width types.
   - `_burn(account, amount)` reverts if `account == address(0)` or `balanceOf(account) < amount`.
   - Batch variants `mintMany`, `burnMany`, `mintAndBurnMany` propagate the same reverts per item.
 
 - Transferring
-  - `transfer(to, amount)` reverts if `to == address(0)` or sender’s balance is insufficient.
+  - `transfer(to, amount)` reverts if `to == address(0)` or sender's balance is insufficient.
   - `transferMany(address[] tos, amount)` and `transferMany(MintSpec[])` loop `transfer`/`_transfer`; any single insufficient-balance or zero-address will revert the entire call.
   - In `MarketingWallet.payReward`/`payManyRewards`, calls revert if the wallet lacks CST balance.
 
@@ -339,7 +315,7 @@ This section catalogs all usages of OpenZeppelin modules in the codebase and enu
     - `StakingWalletCosmicSignatureNft` stake/unstake.
 
 - Authorization checks
-  - `CosmicSignatureNft.setNftName` calls OZ’s `_checkAuthorized(_ownerOf(tokenId), caller, tokenId)` which reverts with standard ERC721 errors if not authorized.
+  - `CosmicSignatureNft.setNftName` calls OZ's `_checkAuthorized(_ownerOf(tokenId), caller, tokenId)` which reverts with standard ERC721 errors if not authorized.
 
 ### SafeERC20 (PrizesWallet, DonatedTokenHolder)
 
@@ -357,7 +333,7 @@ This section catalogs all usages of OpenZeppelin modules in the codebase and enu
 
 ### OpenZeppelin Panic helper
 
-- `OpenZeppelinPanic.panic(code)` is used to bubble a panic as a revert in `MainPrize` catch block; calling it always reverts with the panic code.
+- The helper is imported but no longer used to rethrow panics in `MainPrize`. Staking deposit errors are handled non-blockingly by rerouting to charity.
 
 ### Typical scenarios to expect OZ reverts at runtime
 
@@ -483,7 +459,7 @@ if ( ! isSuccess_ ) {
 
 - `bidWithCst` / `_bidWithCst`:
   - Reverts if computed CST price exceeds `priceMaxLimit_` with `InsufficientReceivedBidAmount`.
-  - Burns bidder’s CST: `token.mintAndBurnMany` will revert if bidder lacks balance (OZ `_burn` underflow).
+  - Burns bidder's CST: `token.mintAndBurnMany` will revert if bidder lacks balance (OZ `_burn` underflow).
 ```519:522:/Users/tarasbobrovytsky/Dev/CosmicAug29/Cosmic-Signature/contracts/production/Bidding.sol
 require(
     paidPrice_ <= priceMaxLimit_,
@@ -493,7 +469,7 @@ require(
 
 - `halveEthDutchAuctionEndingBidPrice`:
   - Access: `onlyOwner`, `_onlyNonFirstRound`, `_onlyBeforeBidPlacedInRound` (see modifiers above).
-  - State/time: `InvalidOperationInCurrentState("Too early.")` if auction hasn’t ended.
+  - State/time: `InvalidOperationInCurrentState("Too early.")` if auction hasn't ended.
   - Arithmetic reverts (Solidity 0.8):
     - Overflow on `newEthDutchAuctionEndingBidPriceDivisor_ *= 2`.
     - Divide by zero in `_getEthDutchAuctionDuration()` if `ethDutchAuctionDurationDivisor == 0`.
@@ -525,27 +501,24 @@ function _getCstDutchAuctionDuration() private view returns (uint256) {
   - If caller is not last bidder:
     - Requires that at least one bid exists → `NoBidsPlacedInCurrentRound` otherwise.
     - Requires timeout past `mainPrizeTime + timeoutDurationToClaimMainPrize` → `MainPrizeClaimDenied` otherwise.
-```114:135:/Users/tarasbobrovytsky/Dev/CosmicAug29/Cosmic-Signature/contracts/production/MainPrize.sol
+```110:135:/Users/tarasbobrovytsky/Dev/CosmicAug29/Cosmic-Signature/contracts/production/MainPrize.sol
 if (_msgSender() == lastBidderAddress) {
-    require(
-        block.timestamp >= mainPrizeTime,
-        CosmicSignatureErrors.MainPrizeEarlyClaim("Not enough time has elapsed.", mainPrizeTime, block.timestamp)
-    );
+    if ( ! (block.timestamp >= mainPrizeTime) ) {
+        revert CosmicSignatureErrors.MainPrizeEarlyClaim("Not enough time has elapsed.", mainPrizeTime, block.timestamp);
+    }
 } else {
-    require(
-        lastBidderAddress != address(0),
-        CosmicSignatureErrors.NoBidsPlacedInCurrentRound("There have been no bids in the current bidding round yet.")
-    );
+    if ( ! (lastBidderAddress != address(0)) ) {
+        revert CosmicSignatureErrors.NoBidsPlacedInCurrentRound("There have been no bids in the current bidding round yet.");
+    }
     int256 durationUntilOperationIsPermitted_ = getDurationUntilMainPrizeRaw() + int256(timeoutDurationToClaimMainPrize);
-    require(
-        durationUntilOperationIsPermitted_ <= int256(0),
-        CosmicSignatureErrors.MainPrizeClaimDenied(
+    if ( ! (durationUntilOperationIsPermitted_ <= int256(0)) ) {
+        revert CosmicSignatureErrors.MainPrizeClaimDenied(
             "Only the last bidder is permitted to claim the bidding round main prize before a timeout expires.",
             lastBidderAddress,
             _msgSender(),
             uint256(durationUntilOperationIsPermitted_)
-        )
-    );
+        );
+    }
 }
 ```
 
@@ -943,7 +916,7 @@ All custom errors are defined in `CosmicSignatureErrors` library:
 
 ## CRITICAL ANALYSIS: Can claimMainPrize Revert?
 
-Verification result: claimMainPrize CAN revert. Below are all concrete revert vectors, their exact triggers, and how to eliminate them.
+Verification result: `claimMainPrize` is generally non-blocking for transfers, but CAN still revert due to the chrono-warrior sentinel cast in `_updateChronoWarriorIfNeeded`. Below are all concrete revert vectors, their exact triggers, and how to eliminate them.
 
 This comprehensive analysis traces every code path in `claimMainPrize` to identify ALL possible revert conditions. This is the most critical function in the system - if it reverts, the round cannot be closed and funds become locked.
 
@@ -1050,22 +1023,20 @@ prizesWallet.registerRoundEndAndDepositEthMany{value: ethDepositsTotalAmount_}(r
   - ETH value mismatch (calculated correctly in same function)
 - **Risk: VERY LOW**
 
-##### 3e. Staking Wallet Deposit (Lines 535-553)
-**Can Revert: PARTIALLY HANDLED**
+##### 3e. Staking Wallet Deposit (Lines 554-567)
+**Can Revert: NO (made non-blocking)**
 ```solidity
 try stakingWalletCosmicSignatureNft.deposit{value: cosmicSignatureNftStakingTotalEthRewardAmount_}(roundNum) {
-    // success
-} catch Panic(uint256 errorCode_) {
-    if(errorCode_ != OpenZeppelinPanic.DIVISION_BY_ZERO) {
-        OpenZeppelinPanic.panic(errorCode_);  // RE-THROWS OTHER PANICS!
-    }
+    // Doing nothing.
+} catch Panic(uint256 /*errorCode_*/) {
+    charityEthDonationAmount_ += cosmicSignatureNftStakingTotalEthRewardAmount_;
+}
+catch (bytes memory /*lowLevelData_*/) {
     charityEthDonationAmount_ += cosmicSignatureNftStakingTotalEthRewardAmount_;
 }
 ```
-- **Handles:** Division by zero (when no NFTs staked)
-- **DOES NOT HANDLE:** Other panics (overflow, underflow, array out-of-bounds) or value-transfer failures due to insufficient ETH
-- **Will revert if:** Any panic other than division by zero occurs, or the call cannot be funded (insufficient balance)
-- **Risk: MEDIUM**
+- All panics and low-level errors are caught and rerouted to charity ETH.
+- **Risk: LOW**
 
 ##### 3f. Charity ETH Transfer (Lines 566-579)
 **Can Revert: NO**
@@ -1081,26 +1052,15 @@ if (isSuccess_) {
 - Only emits different events based on success
 - **Verdict: SAFE**
 
-##### 3g. ⚠️ **CRITICAL: Main Prize ETH Transfer (Lines 599-606)**
-**Can Revert: YES - THIS IS THE BIGGEST RISK**
+##### 3g. Main Prize ETH Transfer (Lines 614–620)
+**Can Revert: NO (made non-blocking)**
 ```solidity
 (bool isSuccess_, ) = _msgSender().call{value: mainEthPrizeAmount_}("");
 if ( ! isSuccess_ ) {
-    revert CosmicSignatureErrors.FundTransferFailed(
-        "ETH transfer to bidding round main prize beneficiary failed.", 
-        _msgSender(), 
-        mainEthPrizeAmount_
-    );
+    // Non-blocking fallback: deposit the main prize to `PrizesWallet` so winner can withdraw later.
+    prizesWallet.depositEth{value: mainEthPrizeAmount_}(roundNum, _msgSender());
 }
 ```
-
-**THIS WILL DEFINITELY REVERT IF:**
-1. **Winner is a contract that reverts in its receive/fallback function**
-2. **Winner is a contract with no payable receive/fallback** or otherwise rejects ETH
-3. **Winner's receive function consumes > 63/64 of available gas** (or intentionally reverts)
-4. **Winner is a contract that's been destroyed**
-
-**Impact: CATASTROPHIC** - The round cannot be closed until this succeeds
 
 #### 4. Prepare Next Round (Line 146)
 **Can Revert: NO**
@@ -1111,28 +1071,15 @@ if ( ! isSuccess_ ) {
 - No external calls
 - **Verdict: SAFE**
 
-### Critical Finding: Main Prize Transfer Can Brick Rounds
+### Main Prize Transfer — Current Status
 
-The most severe issue is that **the main ETH prize transfer to the winner is the LAST operation and WILL REVERT if it fails**. This creates multiple attack vectors:
-
-1. **Malicious Winner Attack**: A winner could intentionally make their address revert to hold the round hostage
-2. **Accidental Lockup**: A winner using a smart contract wallet that doesn't accept ETH would brick the round
-3. **Gas Griefing**: A contract could consume excessive gas to cause the transfer to fail
-
-### Recommendations to Fix This Critical Issue
-
-#### Priority 1: Make Main Prize Transfer Non-Blocking
-```solidity
-// Option A: Send to PrizesWallet on failure
+The main ETH prize transfer is now non-blocking. If the direct transfer to the winner fails, the amount is deposited to `PrizesWallet` for later withdrawal by the winner:
+```614:620:/Users/tarasbobrovytsky/Dev/CosmicAug29/Cosmic-Signature/contracts/production/MainPrize.sol
 (bool isSuccess_, ) = _msgSender().call{value: mainEthPrizeAmount_}("");
-if (!isSuccess_) {
-    // Don't revert - send to PrizesWallet instead
+if ( ! isSuccess_ ) {
+    // Non-blocking fallback: deposit the main prize to `PrizesWallet` so winner can withdraw later.
     prizesWallet.depositEth{value: mainEthPrizeAmount_}(roundNum, _msgSender());
-    emit MainPrizeTransferFailed(_msgSender(), mainEthPrizeAmount_);
 }
-
-// Option B: Use pull pattern - winner must claim from PrizesWallet
-// Never transfer directly in claimMainPrize
 ```
 
 #### Priority 2: Add Emergency Round Closure

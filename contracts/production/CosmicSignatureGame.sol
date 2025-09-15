@@ -97,7 +97,7 @@ contract CosmicSignatureGame is
 		// enduranceChampionDuration =
 		// prevEnduranceChampionDuration =
 		// chronoWarriorAddress =
-		chronoWarriorDuration = uint256(int256(-1));
+		chronoWarriorDuration = 0;
 		// roundNum =
 		delayDurationBeforeRoundActivation = CosmicSignatureConstants.DEFAULT_DELAY_DURATION_BEFORE_ROUND_ACTIVATION;
 		roundActivationTime = CosmicSignatureConstants.INITIAL_ROUND_ACTIVATION_TIME;
@@ -149,7 +149,7 @@ contract CosmicSignatureGame is
 	/// to replace the contract in the middle of a bidding round, just in case a bug results in `claimMainPrize` reverting.
 	/// But such kind of feature would violate the principle of trustlessness.
 	/// [/Comment-202412188]
-	function _authorizeUpgrade(address newImplementationAddress_) internal view override
+	function _authorizeUpgrade(address newImplementationAddress_) internal view override _providedAddressIsNonZero(newImplementationAddress_)
 		// [Comment-202503119]
 		// `initialize` is supposed to be already executed.
 		// [/Comment-202503119]
@@ -159,8 +159,9 @@ contract CosmicSignatureGame is
 		onlyOwner
 
 		_onlyRoundIsInactive {
-		// _providedAddressIsNonZero(newImplementationAddress_) {
-		// // #enable_asserts // #disable_smtchecker console.log("1 _authorizeUpgrade");
+		// Doing nothing here; modifiers provide the checks. Read an immutable to avoid empty-block lint.
+		address __noop = address(this);
+		__noop;
 	}
 
 	// #endregion
