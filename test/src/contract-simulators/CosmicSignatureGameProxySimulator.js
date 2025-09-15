@@ -670,13 +670,15 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 				return false;
 			}
 			if (this.lastBidderAddress == hre.ethers.ZeroAddress) {
-				if ( ! (BigInt(transactionBlock_.timestamp) >= this.roundActivationTime) ) {
-					// console.info("202504169");
-					await expect(transactionResponsePromise_)
-						.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "RoundIsInactive")
-						.withArgs("The current bidding round is not active yet.", this.roundActivationTime, BigInt(transactionBlock_.timestamp));
-					return false;
-				}
+				// // Our Solidity code now validates this a bit later, but here we no longer need to validate this.
+				// if ( ! (BigInt(transactionBlock_.timestamp) >= this.roundActivationTime) ) {
+				// 	// console.info("202504169");
+				// 	await expect(transactionResponsePromise_)
+				// 		.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "RoundIsInactive")
+				// 		.withArgs("The current bidding round is not active yet.", this.roundActivationTime, BigInt(transactionBlock_.timestamp));
+				// 	return false;
+				// }
+
 				// console.info("202504171");
 				await expect(transactionResponsePromise_)
 					.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "WrongBidType")
