@@ -631,11 +631,11 @@ abstract contract BiddingOpenBid is
 		// The first bid of the current bidding round?
 		if (lastBidderAddress == address(0)) {
 
-			// Comment-202411169 relates.
-			_checkRoundIsActive();
-
 			// Comment-202501044 applies.
 			require(msg.value > 0, CosmicSignatureErrors.WrongBidType("The first bid in a bidding round shall be ETH."));
+
+			// Comment-202411169 relates.
+			_checkRoundIsActive();
 
 			cstDutchAuctionBeginningTimeStamp = block.timestamp;
 			mainPrizeTime = block.timestamp + getInitialDurationUntilMainPrize();
@@ -650,10 +650,10 @@ abstract contract BiddingOpenBid is
 		// lastBidType = bidType_;
 		lastBidderAddress = _msgSender();
 		BidderAddresses storage bidderAddressesReference_ = bidderAddresses[roundNum];
-		uint256 numBids_ = bidderAddressesReference_.numItems;
-		bidderAddressesReference_.items[numBids_] = _msgSender();
-		++ numBids_;
-		bidderAddressesReference_.numItems = numBids_;
+		uint256 totalNumBids_ = bidderAddressesReference_.numItems;
+		bidderAddressesReference_.items[totalNumBids_] = _msgSender();
+		++ totalNumBids_;
+		bidderAddressesReference_.numItems = totalNumBids_;
 		biddersInfo[roundNum][_msgSender()].lastBidTimeStamp = block.timestamp;
 	}
 
