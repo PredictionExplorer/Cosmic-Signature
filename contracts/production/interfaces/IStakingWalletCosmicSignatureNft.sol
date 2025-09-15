@@ -5,8 +5,8 @@ import { IStakingWalletNftBase } from "./IStakingWalletNftBase.sol";
 
 /// @title Staking Wallet for Cosmic Signature NFTs.
 /// @author The Cosmic Signature Development Team.
-/// @notice A contract implementing this interface allows users to stake their Cosmic Signature NFTs and earn rewards.
-/// Supports Cosmic Signature NFT staking and unstaking, as well as staking reward deposits and distribution.
+/// @notice It holds ETH to be distributed to stakers.
+/// It tracks the cumulative amount of ETH rewards earned by each staked NFT and pays it to the staker on NFT unstake.
 interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 	/// @notice Emitted when an NFT is staked.
 	/// @param stakeActionId Stake action ID.

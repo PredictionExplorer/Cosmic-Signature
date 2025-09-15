@@ -23,8 +23,8 @@
 		# export ENABLE_SMTCHECKER='???'
 
 		# todo-1 Uncomment the command line with no arguments.
-		# 'npx' 'hardhat' 'coverage' '--testfiles' 'test/MainPrize.js'
-		# 'npx' 'hardhat' 'coverage' '--testfiles' 'test/{PrizesWallet-?.js,StakingWalletCosmicSignatureNft.js,SystemManagement.js,BidStatistics.js,Bidding.js,MainPrize.js,CosmicSignatureGame-?.js,BidderContract.js,BlockTimeStamps.js}'
+		# 'npx' 'hardhat' 'coverage' '--testfiles' 'test/tests-src/MainPrize.js'
+		# 'npx' 'hardhat' 'coverage' '--testfiles' 'test/tests-src/{PrizesWallet-?.js,StakingWalletCosmicSignatureNft.js,SystemManagement.js,BidStatistics.js,Bidding.js,MainPrize.js,CosmicSignatureGame-?.js,BidderContract.js,BlockTimeStamps.js}'
 		'npx' 'hardhat' 'coverage'
 
 		if [ $? -ne 0 ]; then

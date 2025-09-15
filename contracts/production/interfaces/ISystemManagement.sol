@@ -13,8 +13,7 @@ import { IBiddingBase } from "./IBiddingBase.sol";
 
 /// @title Cosmic Signature Game Configuration Management.
 /// @author The Cosmic Signature Development Team.
-/// @notice This contract contains `CosmicSignatureGame` configurable parameter setters to be called only by the owner.
-/// With some exceptions, a typical setter requires that the current bidding round wasn't active yet.
+/// @notice This contract contains `CosmicSignatureGame` configurable parameter setters to be called only by the contract owner.
 interface ISystemManagement is
 	IAddressValidator,
 	ICosmicSignatureGameStorage,
