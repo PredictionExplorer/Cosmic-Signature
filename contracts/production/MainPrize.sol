@@ -140,6 +140,17 @@ abstract contract MainPrize is
 		// #endregion
 		// #region
 
+		// Pre-flight: enforce ETH percentage invariant to avoid over-allocation.
+		{
+			uint256 totalPercentage_ =
+				mainEthPrizeAmountPercentage +
+				chronoWarriorEthPrizeAmountPercentage +
+				raffleTotalEthPrizeAmountForBiddersPercentage +
+				cosmicSignatureNftStakingTotalEthRewardAmountPercentage +
+				charityEthDonationAmountPercentage;
+			require(totalPercentage_ <= 100, "Percentage sum exceeds 100");
+		}
+
 		_updateChampionsIfNeeded();
 		_updateChronoWarriorIfNeeded(block.timestamp);
 		_distributePrizes();
@@ -407,12 +418,20 @@ abstract contract MainPrize is
 				// #endregion
 				// #region CST for Marketing Wallet.
 
+				require(marketingWallet != address(0), "Marketing wallet not set");
 				cosmicSignatureTokenMintSpecs_[0].account = marketingWallet;
 				cosmicSignatureTokenMintSpecs_[0].value = marketingWalletCstContributionAmount;
 
 				// #endregion
 				// #region Minting CSTs.
 
+				{
+					for (uint256 i_ = cosmicSignatureTokenMintSpecs_.length; i_ > 0; ) {
+						-- i_;
+						ICosmicSignatureToken.MintSpec memory spec_ = cosmicSignatureTokenMintSpecs_[i_];
+						require(spec_.account != address(0), "CST mint to zero");
+					}
+				}
 				token.mintMany(cosmicSignatureTokenMintSpecs_);
 
 				// #endregion
@@ -536,20 +555,15 @@ abstract contract MainPrize is
 						// Doing nothing.
 					} catch Panic(uint256 errorCode_) {
 						// Comment-202410161 relates.
-						if(errorCode_ != OpenZeppelinPanic.DIVISION_BY_ZERO) {
-
-							// todo-1 +++ Investigate under what conditions we can possibly reach this point.
-							// todo-1 +++ The same applies to other external calls and internal logic that can result in a failure to claim the main prize.
-							// todo-1 +++ Discussed at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1734565291159669
-							// todo-1 +++ We are probably good.
-
-							OpenZeppelinPanic.panic(errorCode_);
-						}
+						// Regardless of panic type, keep claim non-blocking by rerouting staking reward to charity.
 						charityEthDonationAmount_ += cosmicSignatureNftStakingTotalEthRewardAmount_;
-
 						// [Comment-202504262]
 						// One might want to reset `cosmicSignatureNftStakingTotalEthRewardAmount_` to zero here, but it's unnecessary.
 						// [/Comment-202504262]
+					}
+					catch (bytes memory /*lowLevelData_*/) {
+						// Any other error: keep non-blocking by rerouting to charity.
+						charityEthDonationAmount_ += cosmicSignatureNftStakingTotalEthRewardAmount_;
 					}
 
 					// #endregion
@@ -599,9 +613,9 @@ abstract contract MainPrize is
 		{
 			// Comment-202502043 applies.
 			(bool isSuccess_, ) = _msgSender().call{value: mainEthPrizeAmount_}("");
-
 			if ( ! isSuccess_ ) {
-				revert CosmicSignatureErrors.FundTransferFailed("ETH transfer to bidding round main prize beneficiary failed.", _msgSender(), mainEthPrizeAmount_);
+				// Non-blocking fallback: deposit the main prize to `PrizesWallet` so winner can withdraw later.
+				prizesWallet.depositEth{value: mainEthPrizeAmount_}(roundNum, _msgSender());
 			}
 		}
 

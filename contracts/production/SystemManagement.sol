@@ -73,11 +73,13 @@ abstract contract SystemManagement is
 
 	function setChronoWarriorEthPrizeAmountPercentage(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
 		chronoWarriorEthPrizeAmountPercentage = newValue_;
+		_enforcePercentagesInvariant();
 		emit ChronoWarriorEthPrizeAmountPercentageChanged(newValue_);
 	}
 
 	function setRaffleTotalEthPrizeAmountForBiddersPercentage(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
 		raffleTotalEthPrizeAmountForBiddersPercentage = newValue_;
+		_enforcePercentagesInvariant();
 		emit RaffleTotalEthPrizeAmountForBiddersPercentageChanged(newValue_);
 	}
 
@@ -98,6 +100,7 @@ abstract contract SystemManagement is
 
 	function setCosmicSignatureNftStakingTotalEthRewardAmountPercentage(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
 		cosmicSignatureNftStakingTotalEthRewardAmountPercentage = newValue_;
+		_enforcePercentagesInvariant();
 		emit CosmicSignatureNftStakingTotalEthRewardAmountPercentageChanged(newValue_);
 	}
 
@@ -123,6 +126,7 @@ abstract contract SystemManagement is
 
 	function setMainEthPrizeAmountPercentage(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
 		mainEthPrizeAmountPercentage = newValue_;
+		_enforcePercentagesInvariant();
 		emit MainEthPrizeAmountPercentageChanged(newValue_);
 	}
 
@@ -197,6 +201,23 @@ abstract contract SystemManagement is
 
 	function setCharityEthDonationAmountPercentage(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
 		charityEthDonationAmountPercentage = newValue_;
+		_enforcePercentagesInvariant();
 		emit CharityEthDonationAmountPercentageChanged(newValue_);
 	}
+
+	// #region `_enforcePercentagesInvariant`
+
+	/// @notice Ensures that ETH percentage configuration sums to at most 100.
+	/// @dev Prevents over-allocation that could cause end-of-round transfers to fail.
+	function _enforcePercentagesInvariant() internal view {
+		uint256 totalPercentage_ =
+			mainEthPrizeAmountPercentage +
+			chronoWarriorEthPrizeAmountPercentage +
+			raffleTotalEthPrizeAmountForBiddersPercentage +
+			cosmicSignatureNftStakingTotalEthRewardAmountPercentage +
+			charityEthDonationAmountPercentage;
+		require(totalPercentage_ <= 100, "Percentage sum exceeds 100");
+	}
+
+	// #endregion
 }
