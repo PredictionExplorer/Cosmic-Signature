@@ -27,7 +27,7 @@
 			// "skipFiles": ["<node_internals>/**" ],
 
 			// // Optional: if you want to debug only one test file.
-			// "args": ["test/MySpec.js"],
+			// "args": ["test/tests-src/MySpec.js"],
 		},
 	],
 }

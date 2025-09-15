@@ -5,7 +5,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @title Donated ERC-20 Token Holder.
 /// @author The Cosmic Signature Development Team.
-/// @notice A contract implementing this interface acts as an account holding all ERC-20 token balances
+/// @notice This contract acts as an account holding all third party ERC-20 token balances
 /// donated during a particular bidding round.
 /// @dev `PrizesWallet` is a wrong contract to hold danated tokens, because marginal cases would be possible
 /// allowing main prize winners of different bidding rounds to steal parts of each other's donated tokens.

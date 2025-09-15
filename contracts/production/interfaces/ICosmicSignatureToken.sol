@@ -7,9 +7,7 @@ import { IAddressValidator } from "./IAddressValidator.sol";
 
 /// @title The Official ERC-20 Token for the Cosmic Signature Ecosystem.
 /// @author The Cosmic Signature Development Team.
-/// @notice A contract implementing this interface implements the CosmicSignatureToken (CST) --
-/// an ERC20 token with additional features.
-/// This contract includes minting, burning, permit, and voting capabilities.
+/// @notice This contract includes minting, burning, permit, and voting capabilities.
 /// @dev
 /// [Comment-202412033]
 /// The total supply of this token is quite limited, and therefore it's guaranteed to remain

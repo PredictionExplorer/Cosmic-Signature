@@ -15,10 +15,12 @@ import { IMainPrize } from "./IMainPrize.sol";
 
 /// @title The Cosmic Signature Game.
 /// @author The Cosmic Signature Development Team.
-/// @notice A contract implementing this interface implements the main functionality of the Cosmic Signature Game.
-/// @dev Issue. This contract is upgradeable. So it could make sense for it to support a self-destruction after a successful upgrade.
-/// Note that `SelfDestructibleCosmicSignatureGame`, which is to be used only for testing, supports a `selfdestruct`.
-/// (Actually, as per Comment-202509241, I have now eliminated that `selfdestruct`.)
+/// @notice This contract implements the main functionality of the Cosmic Signature Game.
+/// This contract is upgradeable.
+/// @dev Issue. It could make sense for this upgradeable contract to support a self-destruction of the implementation contract
+/// after a successful upgrade.
+/// Note that `SelfDestructibleCosmicSignatureGame`, which is to be used only for testing, used to support a `selfdestruct`,
+/// but, according to Comment-202509241, I have now eliminated that feature.
 /// I have also implemented a self-destructability in a non-upgradeable contract prototype
 /// at "https://github.com/PredictionExplorer/big-contract-prototype".
 /// But I have no plans to implement the self-destruction feature in the production code.

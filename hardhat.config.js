@@ -150,6 +150,8 @@ console.warn(`Warning. Make sure "${solidityCompilerPath}" version is "${solidit
 // #endregion
 // #region
 
+// const nodeOsModule = require("node:os");
+
 // This imports a bunch of other packages. Don't import them here.
 require("@nomicfoundation/hardhat-toolbox");
 
@@ -567,6 +569,7 @@ const hardhatUserConfig = {
 
 	mocha: {
 		parallel: true,
+		// jobs: nodeOsModule.availableParallelism(),
 		timeout: 2 * 60 * 60 * 1000,
 
 		// Comment-202508265 relates and/or applies.

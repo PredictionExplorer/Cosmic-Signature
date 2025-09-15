@@ -8,7 +8,7 @@ import { DonatedTokenHolder } from "../DonatedTokenHolder.sol";
 
 /// @title A wallet to hold the Cosmic Signature Game prizes and donations.
 /// @author The Cosmic Signature Development Team.
-/// @notice A contract implementing this interface supports depositing ETH, donating ERC-20 tokens and ERC-721 NFTs,
+/// @notice This contract supports depositing ETH, donating third party ERC-20 token amounts and ERC-721 NFTs,
 /// and allows prize winners (and after a timeout anybody) to withdraw their prizes.
 ///
 /// @dev It's OK if the same NFT is donated and claimed multiple times.
@@ -42,7 +42,7 @@ interface IPrizesWallet is IAddressValidator {
 		// /// [Comment-202501243]
 		// /// Donated token amount.
 		// /// It's OK if it's zero.
-		// /// But higher levels of our software should prohibit zero donations.
+		// /// But higher levels of our software should prohibit and hide zero donations.
 		// /// [/Comment-202501243]
 		// uint256 amount;
 
@@ -238,7 +238,7 @@ interface IPrizesWallet is IAddressValidator {
 	/// @param prizeWinnerAddress_ Prize winner address.
 	function getEthBalanceInfo(address prizeWinnerAddress_) external view returns (EthBalanceInfo memory);
 
-	/// @notice This method allows anybody to make an ERC-20 token donation.
+	/// @notice Deposits a donated ERC-20 token amount.
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
 	/// Comment-202503151 relates.
 	/// @param roundNum_ The current bidding round number.
@@ -273,7 +273,7 @@ interface IPrizesWallet is IAddressValidator {
 	/// @param tokenAddress_ Comment-202502248 applies.
 	function getDonatedTokenBalanceAmount(uint256 roundNum_, IERC20 tokenAddress_) external view returns (uint256);
 
-	/// @notice This method allows anybody to donate an ERC-721 NFT.
+	/// @notice Deposits a donated ERC-721 NFT.
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
 	/// Comment-202503153 relates.
 	/// @param roundNum_ The current bidding round number.

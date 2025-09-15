@@ -45,7 +45,7 @@ abstract contract MainPrizeBase is CosmicSignatureGameStorage, IMainPrizeBase {
 	}
 
 	/// @notice Extends `mainPrizeTime`.
-	/// This method is called on each bid.
+	/// This method is called on each bid, except the first one in a bidding round.
 	function _extendMainPrizeTime() internal {
 		// #enable_smtchecker /*
 		unchecked

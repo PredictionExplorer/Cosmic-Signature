@@ -3,7 +3,7 @@ pragma solidity 0.8.30;
 
 import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
 
-/// @notice This contract is responsible for updating and getting game playing statistics.
+/// @notice This contract supports updating and getting game playing statistics, including Endurance Champion and Chrono-Warrior.
 interface IBidStatistics is ICosmicSignatureGameStorage {
 	/// @return The total number of bids in the given bidding round.
 	/// If an argument is invalid the return value is indeterminate.
@@ -26,8 +26,10 @@ interface IBidStatistics is ICosmicSignatureGameStorage {
 	// /// [/Comment-202503141]
 	// function tryGetCurrentEnduranceChampion() external view returns (address, uint256);
 
-	/// @notice Calculates and returns the current Endurance Champion and Crono-Warrior info.
-	/// The result changes over time, even if the contract state doesn't change.
+	/// @notice Calculates and returns the current real-time Endurance Champion and Crono-Warrior info.
+	/// Provided the first bid has been placed in the current bidding round, the result changes over time,
+	/// even if the contract state does not change,
+	/// provided the first bid in a bidding round has been placed.
 	/// If there are no bids in the current bidding round, all return values will be zeros.
 	/// @dev
 	/// [Comment-202412135]

@@ -6,8 +6,7 @@ import { IAddressValidator } from "./IAddressValidator.sol";
 
 /// @title The Official ERC-721 NFT for the Cosmic Signature Ecosystem.
 /// @author The Cosmic Signature Development Team.
-/// @notice A contract implementing this interaface implements the Cosmic Signature NFT with unique features
-/// for the Cosmic Signature ecosystem, in particular, custom minting and metadata management.
+/// @notice This contract has unique features, in particular, custom minting and metadata management.
 /// @dev Issue. It could make sense to derive this contract from `ERC721Permit`,
 /// but OpenZeppelin doesn't include such a contract.
 /// 

@@ -151,8 +151,6 @@ abstract contract MainPrize is
 	// #endregion
 	// #region `_distributePrizes`
 
-	/// @notice Distributes ETH, CST, and CS NFT prizes to main prize beneficiary and secondary prize winners.
-	/// The prizes are documented in "${workspaceFolder}/docs/cosmic-signature-game-prizes.md".
 	function _distributePrizes() private {
 		// #region
 
@@ -611,8 +609,6 @@ abstract contract MainPrize is
 	// #endregion
 	// #region `_prepareNextRound`
 
-	/// @notice Updates state variables for the next bidding round.
-	/// This method is called after the main prize has been claimed.
 	function _prepareNextRound() private {
 		// todo-1 +++ Consider to not reset some variables.
 
