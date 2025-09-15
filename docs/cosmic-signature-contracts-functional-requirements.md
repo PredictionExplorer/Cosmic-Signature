@@ -1,6 +1,8 @@
-todo-0 Review the old Nick's document again.
-
 ## Cosmic Signature Contracts: Functional Requirements
+
+### About This Document
+
+This document goes a little bit beyond purely functional requirements. It's intended to provide important details to the auditor.
 
 ### Glossary
 
@@ -8,7 +10,7 @@ todo-0 Review the old Nick's document again.
 
 ### Contracts
 
-- `CosmicSignatureGame`. This is our main Game contract. Its main part (not inherited) is responsible for upgrading the contract. Besides, it inherits functionality from multiple abstract contracts listed below.
+- `CosmicSignatureGame`. This is our main Game contract. Its main part (not inherited) is responsible for upgrading the contract. It inherits OpenZeppelin's `UUPSUpgradeable`. Besides, it inherits multiple abstract contracts listed below.
 
 - `CosmicSignatureGame is CosmicSignatureGameStorage`. This contract contains all state variables that `CosmicSignatureGame` and the contracts that it inherits access.
 
@@ -16,49 +18,49 @@ todo-0 Review the old Nick's document again.
 
 - `CosmicSignatureGame is MainPrizeBase`. This contract contains a few simple methods.
 
-- `CosmicSignatureGame is SystemManagement`. This contract contains `CosmicSignatureGame` configurable parameter setters to be called only by the owner. With some exceptions, a typical setter requires that the current bidding round wasn't active yet.
+- `CosmicSignatureGame is SystemManagement`. This contract contains `CosmicSignatureGame` configurable parameter setters to be called only by the contract owner. With some exceptions, a typical setter requires that the current bidding round wasn't active yet.
 
-- `CosmicSignatureGame is EthDonations`. Anybody can make an ETH donation to the `CosmicSignatureGame` contract without placing a bid, with or without providing a message.
+- `CosmicSignatureGame is EthDonations`. Processes ETH donations made to `CosmicSignatureGame`.
 
-- `CosmicSignatureGame is BidStatistics`. This contract is responsible for updating and getting game playing statistics.
+- `CosmicSignatureGame is BidStatistics`. This contract supports updating and getting game playing statistics, including Endurance Champion and Chrono-Warrior.
 
-- `CosmicSignatureGame is Bidding`. This contract is responsible for bid price formation, processing arriving bids, processing donated assets that accompany the bids.
+- `CosmicSignatureGame is Bidding`. This contract supports bid price formation, processing arriving bids, as well as donated third party ERC-20 token amounts and ERC-721 NFTs that accompany the bids.
 
-- `CosmicSignatureGame is SecondaryPrizes`. Secondary, a.k.a. Special (Non-Main) Prizes. This contract contains a few simple methods.
+- `CosmicSignatureGame is SecondaryPrizes`. Secondary Prizes. This contract contains a few simple methods.
 
 - `CosmicSignatureGame is MainPrize`. This contract supports claiming bidding round main prize.
 
-- `CosmicSignatureToken`. The Official ERC-20 Token for the Cosmic Signature Ecosystem. Its symbol is CST.
+- `CosmicSignatureToken`. The Official ERC-20 Token for the Cosmic Signature Ecosystem. Its symbol is CST. It's used by our DAO for voting power. Only the `CosmicSignatureGame` contract is permitted to mint and burn token amounts (although a token holder also has an option to burn own funds).
 
-- `CosmicSignatureNft`. The Official ERC-721 NFT for the Cosmic Signature Ecosystem. Its symbol is CSN.
+- `RandomWalkNFT`. It's an ERC-721 NFT contract that has already been deployed. Its symbol is RWLK. It can be considered a third party contract that is not a part of this project, but it plays an important role. This contract does not need to be audited.
 
-- `PrizesWallet`. A wallet to hold the Cosmic Signature Game prizes and donations. It supports depositing ETH, donating ERC-20 tokens and ERC-721 NFTs, and allows prize winners (and after a timeout anybody) to withdraw their prizes.
+- `CosmicSignatureNft`. The Official ERC-721 NFT for the Cosmic Signature Ecosystem. Its symbol is CSN. Only the `CosmicSignatureGame` contract is permitted to mint new NFTs.
 
-- `DonatedTokenHolder`. This contract acts as an account holding all ERC-20 token balances donated during a particular bidding round.
+- `PrizesWallet`. A wallet to hold the Cosmic Signature Game prizes and donations. It supports depositing ETH, donating third party ERC-20 token amounts and ERC-721 NFTs, and allows prize winners (and after a timeout anybody) to withdraw their prizes.
 
-- `StakingWalletRandomWalkNft`. Staking Wallet for Random Walk NFTs.
+- `DonatedTokenHolder`. This contract acts as an account holding all third party ERC-20 token balances donated during a particular bidding round.
 
-- `StakingWalletCosmicSignatureNft`. Staking Wallet for Cosmic Signature NFTs.
+- `StakingWalletRandomWalkNft`. Staking Wallet for Random Walk NFTs. Supports random picking of staked NFTs.
 
-- `MarketingWallet`. This wallet holds a CST balance and facilitates its distribution to fund marketing activities.
+- `StakingWalletCosmicSignatureNft`. Staking Wallet for Cosmic Signature NFTs. It holds ETH to be distributed to stakers. It tracks the cumulative amount of ETH rewards earned by each staked NFT and pays it to the staker on NFT unstake.
 
-- `CharityWallet`. This contract holds an ETH balance to be donated to charity.
+- `MarketingWallet`. This wallet holds CST funds and facilitates their distribution to fund marketing activities. The `CosmicSignatureGame` contract mints a configurable CST amount for this wallet at the end of each bidding round. Only the appointed by the DAO treasurer is permitted to transfer funds out of this wallet.
 
-- `CosmicSignatureDao`. This contract implements the governance mechanism for the Cosmic Signature ecosystem.
+- `CharityWallet`. This contract holds an ETH balance to be donated to charity. The DAO decides which charity to donate the funds to. `CosmicSignatureGame` deposits a configurable percentage of its ETH to this wallet at the end of each bidding round. As noted in Comment-202409273, this contract lets anybody to periodically transfer accumulated donations to the designated charity.
 
-- `RandomWalkNFT`. It's an ERC-721 NFT contract that has already been deployed. Its symbol is RWLK. It can be considered a third party contract that is not a part of this project, but it plays an important role.
+- `CosmicSignatureDao`. This contract implements the governance mechanism for the Cosmic Signature ecosystem. `${workspaceFolder}/test/tests-src/CosmicSignatureDao.js` shows what our DAO can be used for.
 
 ### Variables
 
 - `roundActivationTime`. The current bidding round activation time. Starting at this point in time, people will be allowed to place bids.
 
-- `mainPrizeTime`. The time when the last bidder will be granted the premission to claim the main prize.
+- `mainPrizeTime`. The time when the last bidder will be granted the premission to claim main prize.
 
-- `charityAddress`. This variable exists in `CharityWallet`. The same named variable exists in `CosmicSignatureGameStorage` and actually points at our own `CharityWallet`.
+- `charityAddress`. This variable exists in `CharityWallet`, where it contains the address to donate ETH to. The same named variable exists in `CosmicSignatureGameStorage`, where it actually points at our own `CharityWallet`. See Comment-202411078 for details.
 
 ### Bidding Rounds
 
-Each point in time is located within a bidding round, or simply round. Each round has a sequential number, starting with zero. Round zero begins the moment the contracts get deployed. A round begins in the inactive mode. When the current block timestamp reaches `roundActivationTime`, the round becomes active. The active mode is divided into 2 parts: before and after a bid is placed.
+Each point in time is located within a bidding round, or simply round. Each round has a sequential number, starting with zero. Round zero begins the moment the contract gets deployed. A round begins in the inactive mode. When `block.timestamp` reaches `roundActivationTime`, the round becomes active. The active mode/stage is divided into 2 substages: before and after a bid is placed.
 
 So a round has 3 stages: (1) inactive; (2) active before a bid; (3) active after a bid.
 
@@ -68,9 +70,9 @@ Users are allowed to place bids during the active stage.
 
 When a bid is placed, `mainPrizeTime` gets updated (the logic is described in a separate section). 
 
-When the current block timestamp reaches `mainPrizeTime`, the last bidder is granted the right to claim main prize. But if they do not claim it by the time the current block timestamp reaches `mainPrizeTime` plus a configurble timeout, the main prize becomes available to claim by anybody.
+When `block.timestamp` reaches `mainPrizeTime`, the last bidder is granted the right to claim main prize. But if they do not do so by the time `block.timestamp` reaches `mainPrizeTime` plus a configurble timeout, main prize becomes available to claim by anybody.
 
-When main prize gets claimed, the caller is declared the round's main prize winner and receive main ETH prize, other winners are selected and awarded with their prizes, the current round ends and the next one begins in the inactive mode by changing `roundActivationTime` to `block.timestamp` plus a configurable duration.
+When main prize gets claimed, the caller is declared the round's main prize winner and receives main ETH prize, other winners are selected and awarded with their prizes, the current round ends and the next one begins in the inactive mode by changing `roundActivationTime` to `block.timestamp` plus a configurable duration.
 
 ### Bid Types
 
@@ -82,22 +84,24 @@ ETH bid is broken down into 2 subtypes: with and without a Random Walk NFT.
 The `CosmicSignatureGame` contract dictates bid prices. Bidders have no control over that. However it's still under their control when to bid, which affects the prices.
 
 Round zero **ETH bid price** equals a hardcoded constant. It does not change.\
-In any round, ETH bid price of the second and further bids increases exponentially as the previous bid paid price plus a configurable fraction of it. (It does not change over time.)\
-Beginning with round 1, the first bid starting ETH bid price equals 2x of the first bid paid price in the previous round. Startting at `roundActivationTime` and over a configurable duration, the price declines linearly from the maximum to the minimum. The minimum is a configurable fraction of the first bid paid price in the previous round. If the price reaches its minimum and nobody bid yet it will stay at its minimum indefinitely. That's a Dutch auction.
+In any round, ETH bid price of the second and further bids increases exponentially as the previous bid paid price plus a configurable fraction of it. (The price does not change over time.)\
+Starting with round 1, the first bid beginning ETH bid price equals 2x of the first bid paid price in the previous round. Beginning at `roundActivationTime` and over a configurable duration, the price declines linearly from the maximum to the minimum. The minimum is a configurable fraction of the first bid paid price in the previous round. If bid price reaches its minimum and nobody bid yet it will stay at its minimum indefinitely (but the `halveEthDutchAuctionEndingBidPrice` method gives the contract owner an option to lower it further). That's a Dutch auction.
 
 If an ETH bid is accompanied by a Random Walk NFT, the bid price becomes a half of its normal value.
 
 Every **CST bid price** is formed using a Dutch auction. The first CST Dutch auction in a given round begins when a user places the first ETH bid.\
-The starting CST bid price of round zero equals a configurable minimum. Then over a configurable duration it declines lineraly down to zero. As soon as someone places a bid, the new starting price is calculated as 2x of the paid price, but no lower than the same configurable minimum. After each bid the Dutch auction repeats.\
-The starting CST bid price of the first bid in a nonzero round equals starting price of the second bid in the previous round.
+The beginning CST bid price of round zero equals a configurable beginning minimum. Then over a configurable duration it declines lineraly down to zero. As soon as someone places a bid, the new beginning price is calculated as 2x of the paid price, but no lower than the same configurable beginning minimum. After each bid the Dutch auction repeats.\
+The beginning CST bid price of the first bid in a nonzero round equals beginning price of the second bid in the previous round.
 
-Again, a **Dutch auction** is used for: (1) the first ETH bid price in a nonzero round; (2) each CST bid price.
+Again, a Dutch auction is used for: (1) the first ETH bid price in a nonzero round; (2) each CST bid price, but with at least a floor beginning price. Round zero first ETH bid price is a constant. Any round non-first ETH bid price increases exponentially.
 
 ### Bid Monetary Effects
 
-When placing an ETH bid, the current ETH bid price gets transferred from the bidder to the Game contract.\
-When placing a CST bid, the current CST bid price gets burned from the bidder's CST balance.\
-When someone places a bid of any type, a configurable amount of CST is minted for the bidder.
+- When placing an ETH bid, the current ETH bid price gets transferred from the bidder to the Game contract.
+
+- When placing a CST bid, the current CST bid price gets burned from the bidder's CST balance.
+
+- When someone places a bid of any type, a configurable CST amount is minted for the bidder.
 
 ### `mainPrizeTime` Update Logic
 
@@ -110,28 +114,36 @@ When another bid is placed, `mainPrizeTime` gets calculated as `max(mainPrizeTim
 
 - The first bid in a round is required to be ETH.
 
-- Each bid changes bid price, as described in a separate section.
-
 - Each bid changes `mainPrizeTime`, as described in a separate section.
 
-- A given Random Walk NFT may be used only once for bidding.
+- Each bid changes bid price, as described in a separate section.
+
+- A given Random Walk NFT may be used for bidding only once.
 
 ### Endurance Champion and Chrono-Warrior
 
-Those winners are defined in `${workspaceFolder}/README.md`. Use the following reg-ex pattern to find the right text (case insensitive, not whole word):
+These winners/champions are defined in `${workspaceFolder}/README.md`. Use the following reg-ex pattern to find the right text (case sensitive, not whole word):
 ```regex
-\b(?:ec|cw)\b|endurance|chrono
+\bECs?\b|(?:ew|ld|rev)EC|\bCW\b|ENDURANCE|[Ee]ndurance|CHRONO|[Cc]hrono
 ```
+
+There are designated storage variables to store the current Endurance Champion and Chrono-Warrior. They are updated on each bid, except the first bid in a round, and then last time on main prize claim. The variables actually contain outdated values. Provided the first bid has been placed in the current bidding round, the actual real-time values specifying who the champions are and their durations change over time, even if the contract state does not change. Relevant logic is implemented in the `BidStatistics` contract.
+
+### Donating Assets
+
+- Anybody can make an ETH donation to the `CosmicSignatureGame` contract without placing a bid, with or without providing a message.
+
+- A bid may include a third party ERC-20 token amount or ERC-721 NFT donation. The donated asset will be transferred to `PrizesWallet`.
 
 ### Prizes
 
-Prizes are distributed among multiple winners at the end of each round. Some winners get picked based on chance and others deterministically. Supported prize types are ETH, newly minted CST token amount, newly minted CSN NFT. The way the Game is configured, distributes only a half of its ETH balance to winners. Besides, as noted above, each bidder gets rewarded with CST the moment they place a bid. In addition, our Game supports ETH donations that add to the Game contract balance and ERC-20 token and ERC-721 NFT donations that will be awarded to the current bidding round main prize winner.
+Most prizes are awarded to multiple winners at the end of each round. Some winners get picked randomly and others deterministically. The way the Game is configured, distributes only a half of its ETH balance to winners.
 
 All prizes are listed in "./cosmic-signature-game-prizes.md".
 
 ### Prize Transfer Reversals
 
-One of the prizes is a charitable donation ETH to be transferred to `CosmicSignatureGameStorage.charityAddress`. If the transfer reverts we will not revert the main prize claim. In fact, one might argue that this feature is unnecessary because the ETH transfer goes to our own `CharityWallet`, which cannot, realistically, revert. But we have no plans to refactor this.
+One of the prizes is a charitable donation ETH to be transferred to `CosmicSignatureGameStorage.charityAddress`. (It's not really a prize to be awarded to someone, but we can consider it a prize.) If the transfer reverts we will not revert the main prize claim. In fact, one might argue that this feature is unnecessary because the ETH transfer goes to our own `CharityWallet`, which cannot, realistically, revert. But we have no plans to refactor this. See Comment-202411078, Comment-202411077 for details.
 
 ### Withdrawing Prizes
 
@@ -139,9 +151,9 @@ One of the prizes is a charitable donation ETH to be transferred to `CosmicSigna
 
 - Other (secondary) ETH prizes are transferred to `PrizesWallet`. Even main prize winner can get their secondary ETH prizes this way.
 
-- Donated ERC-20 token amounts and ERC-721 NFTs are transferred to `PrizesWallet`. They are claimable by main prize winner.
+- Donated third party ERC-20 token amounts and ERC-721 NFTs are transferred to `PrizesWallet`. They are claimable by main prize winner.
 
-- CST and CSN prizes are minted by respective token contracts to the winner address. There is nothing to withdraw in this case.
+- CST and CSN prizes are minted to the winner addresses by making calls to respective token contracts. There is nothing to withdraw in this case.
 
 - Winners are required to withdraw/claim their prizes held in `PrizesWallet`. They are given a configurable timeout window after the round end to do so before anybody is allowed to withdraw/claim unclaimed prizes.
 
@@ -157,15 +169,9 @@ At the end of each round, the following configurable durations automatically inc
 
 NFTs from both our NFT contracts can be staked. Stakers receive designated prizes/rewards, as specified in "./cosmic-signature-game-prizes.md".
 
-An NFT may be staked only once. Once unstaked, the same NFT may no longer be staked again.
+An NFT may be staked only once. Once unstaked, the same NFT may not be staked again.
 
 ### Actions Logic
-
-#### Contract owner upgrades the `CosmicSignatureGame` contract.
-
-- If the caller is not contract owner: revert.
-
-- If the current bidding round is active: revert.
 
 #### A user places an ETH bid.
 
@@ -189,9 +195,11 @@ An NFT may be staked only once. Once unstaked, the same NFT may no longer be sta
 
 - Mint a configurable CST amount for the user.
 
+- If this is not the first bid in the current bidding round: update Endurance Champion and Chrono-Warrior.
+
 - Update `mainPrizeTime`.
 
-- If the user sent us more ETH than required: send the excess back to them. But don't do it if the refund amount is less than or equal than what it would cost to transfer it.
+- If the user sent us more ETH than required: transfer the excess back to them. But don't do it if the refund amount is less than or equal than what it would cost to transfer it.
 
 #### A user places a CST bid.
 
@@ -201,7 +209,7 @@ An NFT may be staked only once. Once unstaked, the same NFT may no longer be sta
 
 - If the provided message is too long: revert.
 
-- If no bid placed in the current round yet: revert. (An ETH bid shall happen first. So provided it happened, we know that the current bidding round is active.)
+- If no bid placed in the current bidding round yet: revert. (An ETH bid shall happen first. So provided it happened, we know that the current bidding round is active, therefore it's unnecessary to check that.)
 
 - Calculate the current CST bid price.
 
@@ -211,7 +219,30 @@ An NFT may be staked only once. Once unstaked, the same NFT may no longer be sta
 
 - Mint a configurable CST amount for the user.
 
+- Update Endurance Champion and Chrono-Warrior. (We have already checked that this is not the first bid in the current bidding round, so it's unnecessary to check that again.)
+
 - Update `mainPrizeTime`.
 
+#### A user claims the current bidding round main prize.
 
-#### TODO-0 More actions. Start with copying from listed methods in the old document.
+- If the caller is the last bidder:
+
+	- Note that at this point we know that someone has already placed a bid in the current round. So it's unnecessary to check that.
+
+	- If `block.timestamp < mainPrizeTime`: revert.
+
+- Else:
+
+	- If no bid placed in the current round yet: revert.
+
+	- Note that at this point we know that someone who is not the last bidder is trying to claim main prize. They do actually have a chance to succeed.
+
+	- If timeout to claim main prize has not expired yet, that's if `block.timestamp < mainPrizeTime + timeout`: revert.
+
+- Update Endurance Champion and Chrono-Warrior.
+
+- Distribute prizes. All prizes distributed on main prize claim, or, in other words, at the end of a round, are listed in "./cosmic-signature-game-prizes.md".
+
+- Update contract state to begin the next round, which includes:
+
+	- `roundActivationTime = block.timestamp` plus a configurable duration.
