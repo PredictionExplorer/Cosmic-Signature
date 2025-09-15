@@ -185,7 +185,6 @@ library CosmicSignatureConstants {
 	// #region Marketing
 
 	/// @notice Default `marketingWalletCstContributionAmount`.
-	/// @dev todo-1 +++ Is this amount OK? Asked at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1735494696736999?thread_ts=1731872794.061669&cid=C02EDDE5UF8
 	uint256 internal constant DEFAULT_MARKETING_WALLET_CST_CONTRIBUTION_AMOUNT = 300 ether;
 
 	// #endregion
