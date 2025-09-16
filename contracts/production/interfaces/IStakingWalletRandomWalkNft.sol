@@ -5,8 +5,7 @@ import { IStakingWalletNftBase } from "./IStakingWalletNftBase.sol";
 
 /// @title Staking Wallet for Random Walk NFTs.
 /// @author The Cosmic Signature Development Team.
-/// @notice A contract implementing this interface allows users to stake their Random Walk NFTs and win prizes.
-/// Supports Random Walk NFT staking and unstaking, as well as random staker selection.
+/// @notice Supports random picking of staked NFTs.
 interface IStakingWalletRandomWalkNft is IStakingWalletNftBase {
 	/// @notice Emitted when an NFT is staked.
 	/// @param stakeActionId Stake action ID.

@@ -292,7 +292,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Comment-202411064 applies.
 	uint256 public initialDurationUntilMainPrizeDivisor;
 
-	/// @notice The time when the last bidder will be granted the premission to claim the main prize.
+	/// @notice The time when the last bidder will be granted the premission to claim main prize.
 	/// Comment-202501022 applies.
 	/// [Comment-202412152]
 	/// On each bid, we increase this based on `mainPrizeTimeIncrementInMicroSeconds`.

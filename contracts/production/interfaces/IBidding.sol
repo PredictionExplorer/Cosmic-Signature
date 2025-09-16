@@ -8,8 +8,8 @@ import { IBiddingBase } from "./IBiddingBase.sol";
 import { IMainPrizeBase } from "./IMainPrizeBase.sol";
 import { IBidStatistics } from "./IBidStatistics.sol";
 
-/// @notice This contract is responsible for bid price formation, processing arriving bids,
-/// processing donated assets that accompany the bids.
+/// @notice This contract supports bid price formation, processing arriving bids,
+/// as well as donated third party ERC-20 token amounts and ERC-721 NFTs that accompany the bids.
 interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase, IBidStatistics {
 	/// @notice Emitted when the first bid is placed in a bidding round.
 	/// @param roundNum The current bidding round number.
@@ -82,7 +82,7 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// A Random Walk NFT may be used for bidding only once.
 	/// Pass a negative value to not use a Random Walk NFT.
 	/// Comment-202412036 applies.
-	/// @param message_
+	/// @param message_ .
 	/// [Comment-202503155]
 	/// The bidder's message.
 	/// It may be empty.
@@ -145,7 +145,7 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// @notice Calculates the current price that a bidder is required to pay to place a CST bid.
 	/// The price decreases linearly over the Dutch auction duration.
 	/// See also: `getNextCstBidPrice`.
-	/// @param currentTimeOffset_
+	/// @param currentTimeOffset_ .
 	/// [Comment-202501107]
 	/// An offset to add to `block.timestamp`. It allows to find out what the price will be in the future or was in the past.
 	/// The returned past price will not necessarily be correct for a timestamp before certain actions or time points.

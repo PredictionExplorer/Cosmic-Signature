@@ -39,8 +39,9 @@ interface IMainPrize is
 	);
 
 	/// @notice Claims the current bidding round main prize.
-	/// This method distributes main and secondary, a.k.a. special (non-main) prizes
-	/// and updates the Game contract state to start another bidding round.
+	/// This method distributes main and secondary prizes
+	/// and updates the Game contract state to begin another bidding round.
+	/// The prizes are documented in "${workspaceFolder}/docs/cosmic-signature-game-prizes.md".
 	/// Only the last bidder is permitted to call this method after `mainPrizeTime` comes,
 	/// but after a timeout expires anybody is welcomed to.
 	function claimMainPrize() external;

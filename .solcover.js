@@ -9,9 +9,9 @@
 // 
 // To test only specific 1 or more test files:
 //
-// 'npx' 'hardhat' 'coverage' '--testfiles' 'test/MyTest1.js'
+// 'npx' 'hardhat' 'coverage' '--testfiles' 'test/tests-src/MyTest1.js'
 //
-// 'npx' 'hardhat' 'coverage' '--testfiles' 'test/{MyTest1.js,MyTest2.js}'
+// 'npx' 'hardhat' 'coverage' '--testfiles' 'test/tests-src/{MyTest1.js,MyTest2.js}'
 //
 // To test only specific tests, specify a reg-exp pattern that matches their titles near Comment-202505171.
 // 

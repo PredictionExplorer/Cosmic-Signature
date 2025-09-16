@@ -185,7 +185,6 @@ library CosmicSignatureConstants {
 	// #region Marketing
 
 	/// @notice Default `marketingWalletCstContributionAmount`.
-	/// @dev todo-1 +++ Is this amount OK? Asked at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1735494696736999?thread_ts=1731872794.061669&cid=C02EDDE5UF8
 	uint256 internal constant DEFAULT_MARKETING_WALLET_CST_CONTRIBUTION_AMOUNT = 300 ether;
 
 	// #endregion
@@ -237,7 +236,7 @@ library CosmicSignatureConstants {
 
 	/// @notice This is equivalent to the midnight of 9000-01-01.
 	/// @dev JavaScript  code to calculate this.
-	///		const n = (new Date(9000, 1 - 1, 1)).getTime() / 1000;
+	///		const n = /*Math.trunc*/((new Date(9000, 1 - 1, 1)).getTime() / 1000);
 	///		console.log(n);
 	///		const d = new Date(n * 1000);
 	///		console.log(d);

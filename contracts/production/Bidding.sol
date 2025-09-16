@@ -260,6 +260,7 @@ abstract contract Bidding is
 					// 	// [/Comment-202505074]
 					// 	ethBidPrice_ *= CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR;
 					// }
+					// todo-1 Can I delete commented code above? Review `BiddingOpenBid` too.
 				}
 			}
 		} else {
@@ -673,14 +674,14 @@ abstract contract Bidding is
 		// The first bid of the current bidding round?
 		if (lastBidderAddress == address(0)) {
 
-			// Comment-202411169 relates.
-			_checkRoundIsActive();
-
 			// [Comment-202501044]
 			// It's probably more efficient to validate this here than to validate `lastBidderAddress` near Comment-202501045.
 			// This logic assumes that ETH bid price is guaranteed to be a nonzero, as specified in Comment-202503162.
 			// [/Comment-202501044]
 			require(msg.value > 0, CosmicSignatureErrors.WrongBidType("The first bid in a bidding round shall be ETH."));
+
+			// Comment-202411169 relates.
+			_checkRoundIsActive();
 
 			cstDutchAuctionBeginningTimeStamp = block.timestamp;
 			mainPrizeTime = block.timestamp + getInitialDurationUntilMainPrize();
@@ -698,10 +699,10 @@ abstract contract Bidding is
 		// lastBidType = bidType_;
 		lastBidderAddress = _msgSender();
 		BidderAddresses storage bidderAddressesReference_ = bidderAddresses[roundNum];
-		uint256 numBids_ = bidderAddressesReference_.numItems;
-		bidderAddressesReference_.items[numBids_] = _msgSender();
-		++ numBids_;
-		bidderAddressesReference_.numItems = numBids_;
+		uint256 totalNumBids_ = bidderAddressesReference_.numItems;
+		bidderAddressesReference_.items[totalNumBids_] = _msgSender();
+		++ totalNumBids_;
+		bidderAddressesReference_.numItems = totalNumBids_;
 		biddersInfo[roundNum][_msgSender()].lastBidTimeStamp = block.timestamp;
 	}
 
