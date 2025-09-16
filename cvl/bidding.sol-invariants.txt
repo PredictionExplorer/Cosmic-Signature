@@ -1,0 +1,61 @@
+This is the list of invariants for the following functions:
+- bidWithEthAndDonateToken()
+- bidWithEthAndDonateNft()
+- bidWithEth()
+- bidWithCstAndDonateToken()
+- bidWithCstAndDonateNft()
+- bidWithCst()
+
+Invariants
+	- While the round is active, the round number does not change
+	- First bid in a round cannot be made with CST (first bid must be ETH)
+	- System constants never change during a bid call (delayDurationBeforeRoundActivation, ethDutchAuctionDurationDivisor, ethDutchAuctionEndingBidPriceDivisor, ethBidPriceIncreaseDivisor, ethBidRefundAmountInGasToSwallowMaxLimit, cstDutchAuctionDurationDivisor, cstDutchAuctionBeginningBidPriceMinLimit, bidMessageLengthMaxLimit, cstRewardAmountForBidding, cstPrizeAmountMultiplier, initialDurationUntilMainPrizeDivisor, mainPrizeTimeIncrementInMicroSeconds, mainPrizeTimeIncrementIncreaseDivisor, timeoutDurationToClaimMainPrize, mainEthPrizeAmountPercentage)
+	- System contract addresses and fixed recipients never change during a bid call (token, randomWalkNft, nft, prizesWallet, stakingWalletRandomWalkNft, stakingWalletCosmicSignatureNft, marketingWallet, charityAddress; also marketingWalletCstContributionAmount, charityEthDonationAmountPercentage)
+	- Past rounds are immutable: bidderAddresses[r] and biddersInfo[r][*] never change for r != current round
+	- In the current round, entries already written in bidderAddresses[round].items[0..numItems-1] never change (append-only log)
+	 - For any address other than the bidder, biddersInfo[round][addr].{totalSpentEthAmount,totalSpentCstAmount,lastBidTimeStamp} does not change as a result of someone else’s bid
+	- RandomWalk NFT single-use is permanent: once usedRandomWalkNfts[id] is set, it can never be cleared or reused
+	- On ETH bids, the bidder’s totalSpentCstAmount is unchanged
+	- On CST bids, the bidder’s totalSpentEthAmount is unchanged
+	- Donation variants do not mutate CosmicSignatureGame state during the donation step (they only make an external call to prizesWallet)
+	- mainPrizeTime never decreases as a result of a bid (it is either initialized on the first bid or extended on later bids)
+	
+Deltas
+	- First bid in a round must be ETH and requires msg.value > 0
+	- Bidding is only allowed when the round is active (checked on first bid of the round)
+	- First bid in a round initializes timers:
+		cstDutchAuctionBeginningTimeStamp ← now
+		mainPrizeTime ← now + getInitialDurationUntilMainPrize()
+	- Non-first bid extends the main prize time by getMainPrizeTimeIncrement()
+	- ETH Dutch auction anchors:
+		- On the first ETH bid of the round, ethDutchAuctionBeginningBidPrice ← ethBidPrice * ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER
+		- After every ETH bid, nextEthBidPrice ← ethBidPrice + floor(ethBidPrice / ethBidPriceIncreaseDivisor) + 1
+	CST Dutch auction anchors:
+		- On every CST bid, cstDutchAuctionBeginningTimeStamp ← now
+		- On every CST bid, cstDutchAuctionBeginningBidPrice ← max(paidCstPrice * CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, cstDutchAuctionBeginningBidPriceMinLimit)
+		- On the first CST bid of the round (i.e., when lastCstBidderAddress was zero), nextRoundFirstCstDutchAuctionBeginningBidPrice ← cstDutchAuctionBeginningBidPrice
+	- CST bid slippage guard: paidCstPrice must be ≤ priceMaxLimit_ or the call reverts
+	- ETH price and overpayment handling:
+		- paidEthPrice = getNextEthBidPriceAdvanced(0), optionally discounted via getEthPlusRandomWalkNftBidPrice when a RandomWalk NFT is supplied
+		- If msg.value < paidEthPrice → revert
+		- If overpayment ≤ ethBidRefundAmountInGasToSwallowMaxLimit * tx.gasprice → the excess is swallowed (effective paid = msg.value)
+		- Otherwise, the excess is refunded to the bidder
+	- RandomWalk NFT usage on ETH bids with an NFT:
+		- Require usedRandomWalkNfts[id] == 0 and randomWalkNft.ownerOf(id) == bidder
+		- Mark usedRandomWalkNfts[id] = 1
+	- Per-bid accounting and tail writes:
+		- Append bidder address at bidderAddresses[round].items[numItems] and increment numItems by 1
+		- Update lastBidderAddress ← bidder
+		- Update biddersInfo[round][bidder].lastBidTimeStamp ← now
+		- Increase biddersInfo[round][bidder].totalSpentEthAmount by paidEthPrice (ETH path)
+		- Increase biddersInfo[round][bidder].totalSpentCstAmount by paidCstPrice (CST path)
+		- On CST bids: burn exactly paidCstPrice from bidder
+	- CST/ETH reward on every successful bid: mint cstRewardAmountForBidding CST to the bidder
+	- Champions and clock on non-first bids:
+		- Update endurance/chrono champions if needed
+		- Extend the main prize time (as above)
+	- Donation variants:
+		- After a successful bid, call prizesWallet.donateToken/donateNft with (roundNum, bidder, asset, amount/id)
+	- Events:
+		- On the first bid of the round, emit FirstBidPlacedInRound(roundNum, now)
+		- On every successful bid, emit BidPlaced with the round number, bidder, paidEthPrice or paidCstPrice (the other set to −1), randomWalkNftId (or −1), message, and the post-update mainPrizeTime
