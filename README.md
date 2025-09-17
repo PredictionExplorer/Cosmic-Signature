@@ -1,49 +1,49 @@
 # Cosmic Signature
 
-**Cosmic Signature** is an on-chain, last-bidder-wins game built on **Arbitrum**.  
-Players compete by placing bids with **ETH** or **Cosmic Signature Token (CST)**, extending the round deadline. When the timer expires, the last bidder wins the **main prize**. Along the way, participants earn **special prizes**, including **Cosmic Signature NFTs (CSN)**, ETH shares, and CST rewards.  
+**Cosmic Signature** is an on-chain, last-bidder-wins game built on **Arbitrum**.
+Players compete by placing bids with **ETH** or **Cosmic Signature Token (CST)**, extending the round deadline. When the timer expires, the last bidder wins the **main prize**. Along the way, participants earn **special prizes**, including **Cosmic Signature NFTs (COSIG)**, ETH, and CST rewards.
 
 The ecosystem includes staking, donations, charity allocations, and DAO governance to create a complete, community-driven game economy.
 
 ---
 
 ## Table of Contents
-1. [Overview](#overview)  
-2. [Key Features](#key-features)  
-3. [Contract Modules](#contract-modules)  
-4. [Prizes](#prizes)  
-5. [Architecture & Flow](#architecture--flow)  
-6. [Installation & Development](#installation--development)  
-7. [Configuration & Constants](#configuration--constants)  
-8. [Deployment & Upgrades](#deployment--upgrades)  
-9. [Security Notes](#security-notes)  
-10. [License](#license)  
+1. [Overview](#overview)
+2. [Key Features](#key-features)
+3. [Contract Modules](#contract-modules)
+4. [Prizes](#prizes)
+5. [Architecture & Flow](#architecture--flow)
+6. [Installation & Development](#installation--development)
+7. [Configuration & Constants](#configuration--constants)
+8. [Deployment & Upgrades](#deployment--upgrades)
+9. [Security Notes](#security-notes)
+10. [License](#license)
 
 ---
 
 ## Overview
-- **Network:** Arbitrum (testnet: Arbitrum Sepolia, mainnet: Arbitrum One).  
-- **Game type:** Last-bidder-wins auction with Dutch auction pricing.  
-- **Bidding assets:** ETH and CST.  
-- **NFT integration:** Random Walk NFT (discount bidding), Cosmic Signature NFT (ecosystem rewards).  
-- **Governance:** CST token powers the DAO.  
+- **Network:** Arbitrum (testnet: Arbitrum Sepolia, mainnet: Arbitrum One).
+- **Game type:** Last-bidder-wins auction with Dutch auction pricing.
+- **Bidding assets:** ETH and CST.
+- **NFT integration:** Random Walk NFT (discount bidding), Cosmic Signature NFT (ecosystem rewards).
+- **Governance:** CST token powers the DAO.
 - **Charity & Marketing:** Automatic ETH and CST allocations to dedicated wallets.
 
 ---
 
 ## Key Features
-- **Rounds:**  
-  Each round has 3 stages: inactive, active before first bid, and active after first bid.  
-- **Bidding mechanics:**  
-  - ETH starts as a Dutch auction, then increases incrementally.  
-  - CST always follows a Dutch auction, restarting after each bid.  
-  - Random Walk NFT halves ETH bid cost (one-time use per NFT).  
-- **Prizes:** ETH, CST, and NFTs awarded to multiple winners at round end.  
-- **Staking:**  
-  - CSN staking: ETH reward distribution.  
-  - RW staking: raffle eligibility for CSN prizes.  
-- **DAO governance:** CST holders vote on key ecosystem decisions.  
-- **Charity & marketing:** Funds automatically allocated each round.  
+- **Rounds:**
+  Each round has 3 stages: inactive, active before first bid, and active after first bid.
+- **Bidding mechanics:**
+  - ETH starts as a Dutch auction, then increases incrementally.
+  - CST always follows a Dutch auction, restarting after each bid.
+  - Random Walk NFT halves ETH bid cost (one-time use per NFT).
+- **Prizes:** ETH, CST, and NFTs awarded to multiple winners at round end.
+- **Staking:**
+  - COSIG staking: ETH reward distribution.
+  - RWLK staking: raffle eligibility for COSIG prizes.
+- **DAO governance:** CST holders vote on key ecosystem decisions.
+- **Charity & marketing:** Funds automatically allocated each round.
 
 ---
 
@@ -53,14 +53,14 @@ The ecosystem includes staking, donations, charity allocations, and DAO governan
 | **CosmicSignatureGame** | Core game logic: bidding, deadlines, main prize claims, prize distribution. |
 | **Bidding, BidStatistics, SecondaryPrizes, MainPrize** | Submodules handling bid pricing, statistics, and prize mechanics. |
 | **CosmicSignatureToken (CST)** | ERC-20 token; minted by the game for rewards and DAO voting power. |
-| **CosmicSignatureNft (CSN)** | ERC-721 NFT; official NFT minted as rewards. |
+| **CosmicSignatureNft (COSIG)** | ERC-721 NFT; official NFT minted as rewards. |
 | **RandomWalkNFT (RWLK)** | External ERC-721 NFT (not part of repo); used for discounted ETH bids. |
 | **PrizesWallet** | Custody of secondary prizes and donations with withdrawal timeouts. |
 | **CharityWallet** | Holds ETH allocations for donation to DAO-approved charity. |
 | **MarketingWallet** | Holds CST allocations for marketing initiatives. |
 | **CosmicSignatureDao** | Governance contract powered by CST. |
-| **StakingWalletCosmicSignatureNft** | ETH reward distribution to CSN stakers. |
-| **StakingWalletRandomWalkNft** | Staking with random CSN raffle eligibility. |
+| **StakingWalletCosmicSignatureNft** | ETH reward distribution to COSIG stakers. |
+| **StakingWalletRandomWalkNft** | Staking with random COSIG raffle eligibility. |
 | **SystemManagement** | Owner-only configuration and system parameter updates. |
 
 ---
@@ -68,56 +68,56 @@ The ecosystem includes staking, donations, charity allocations, and DAO governan
 ## Prizes
 At round end, prizes are distributed as follows:
 
-- **Main Prize Winner**  
-  - ETH share (main prize percentage)  
-  - 1× CSN NFT  
+- **Main Prize Winner**
+  - ETH share (main prize percentage)
+  - 1× COSIG
 
-- **Endurance Champion**  
-  - CST bonus (`totalNumBids * multiplier`)  
-  - 1× CSN NFT  
+- **Endurance Champion**
+  - CST bonus (`totalNumBids * multiplier`)
+  - 1× COSIG
 
-- **Chrono-Warrior**  
-  - ETH share (chrono prize percentage)  
+- **Chrono-Warrior**
+  - ETH share (chrono prize percentage)
 
-- **Last CST Bidder**  
-  - CST bonus  
-  - 1× CSN NFT  
+- **Last CST Bidder**
+  - CST bonus
+  - 1× COSIG
 
-- **Bidders (raffles)**  
-  - ETH raffle prizes  
-  - Randomly awarded CSN NFTs  
-  - CST rewards per bid  
+- **Bidders (raffles)**
+  - ETH raffle prizes
+  - Randomly awarded Cosmic Signature NFTs
+  - CST rewards per bid
 
-- **Stakers**  
-  - RW NFT stakers: raffle for CSN NFTs  
-  - CSN stakers: ETH reward share  
+- **Stakers**
+  - RW NFT stakers: raffle for Cosmic Signature NFTs
+  - COSIG stakers: ETH reward share
 
-- **Ecosystem**  
-  - Marketing Wallet: CST allocation  
-  - Charity Wallet: ETH allocation  
+- **Ecosystem**
+  - Marketing Wallet: CST allocation
+  - Charity Wallet: ETH allocation
 
 ---
 
 ## Architecture & Flow
-1. **Round starts inactive**.  
-2. At `roundActivationTime`, bidding opens. First bid must be ETH.  
-3. Each new bid:  
-   - Updates prices (Dutch auction or incremental).  
-   - Updates `mainPrizeTime`.  
-   - Rewards bidder with CST.  
-   - May update Endurance Champion & Chrono-Warrior stats.  
-4. When `mainPrizeTime` passes:  
-   - Last bidder can claim the main prize.  
-   - If unclaimed after timeout, anyone can claim.  
-5. Claiming ends the round: prizes distributed, next round initialized.  
+1. **Round starts inactive**.
+2. At `roundActivationTime`, bidding opens. First bid must be ETH.
+3. Each new bid:
+   - Updates prices (Dutch auction or incremental).
+   - Updates `mainPrizeTime`.
+   - Rewards bidder with CST.
+   - May update Endurance Champion & Chrono-Warrior stats.
+4. When `mainPrizeTime` passes:
+   - Last bidder can claim the main prize.
+   - If unclaimed after timeout, anyone can claim.
+5. Claiming ends the round: prizes distributed, next round initialized.
 
 ---
 
 ## Installation & Development
 ### Prerequisites
-- Node.js v18+  
-- npm  
-- Git  
+- Node.js v18+
+- npm
+- Git
 
 ### Setup
 ```bash
@@ -184,5 +184,4 @@ Scripts for deployment and registration are located in:
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
-
+CC0 1.0 — see [LICENSE](LICENSE).
