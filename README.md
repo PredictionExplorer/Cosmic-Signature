@@ -1,113 +1,188 @@
-## Cosmic Signature
+# Cosmic Signature
 
-On-chain, last‑bidder‑wins game on Arbitrum. Bid with ETH or CST, extend the deadline, and if the deadline passes while you’re last, you win the round. Along the way, players earn special prizes (including NFTs), and CSN stakers share ETH rewards.
+**Cosmic Signature** is an on-chain, last-bidder-wins game built on **Arbitrum**.  
+Players compete by placing bids with **ETH** or **Cosmic Signature Token (CST)**, extending the round deadline. When the timer expires, the last bidder wins the **main prize**. Along the way, participants earn **special prizes**, including **Cosmic Signature NFTs (CSN)**, ETH shares, and CST rewards.  
 
-### How it works
+The ecosystem includes staking, donations, charity allocations, and DAO governance to create a complete, community-driven game economy.
 
-- **Rounds and deadline**: Each round becomes active at `roundActivationTime`. The first bid must be in ETH and starts the deadline and pricing. Every subsequent bid extends the deadline. When the deadline arrives, the last bidder has the right to claim the main prize. After a timeout, anyone may claim on their behalf.
-- **Bid price mechanics**:
-  - Before the first ETH bid, ETH price follows a Dutch auction from a start price down to a floor.
-  - After the first ETH bid, the next ETH price increases slightly after each bid.
-  - CST bids are allowed only after the first ETH bid; CST price follows its own Dutch auction down to zero.
-- **RandomWalk NFT discount**: Bidding with a RandomWalk NFT halves the ETH price (50% discount). Each RandomWalk NFT can be used once ever for bidding.
-- **Prizes**:
-  - **Main ETH prize**: sent directly to the winner when the main prize is claimed.
-  - **Special prizes (aka secondary)**: ETH for Chrono‑Warrior and raffle winners; CSN NFTs for the winner, Endurance Champion, last CST bidder (if any), random bidders, and random RandomWalk stakers; CST rewards per bid plus round‑end CST bonuses.
-- **Custody and withdrawals**: Special ETH prizes and donated assets are escrowed in `PrizesWallet` with a per‑round withdrawal timeout. Winners can withdraw any time; after the timeout, anyone can withdraw to themselves.
-- **Staking**: CSN stakers receive a share of ETH deposited by the game at round end. If there are no stakers, that share is routed to the Charity Wallet.
+---
 
-### Champions (at a glance)
+## Table of Contents
+1. [Overview](#overview)  
+2. [Key Features](#key-features)  
+3. [Contract Modules](#contract-modules)  
+4. [Prizes](#prizes)  
+5. [Architecture & Flow](#architecture--flow)  
+6. [Installation & Development](#installation--development)  
+7. [Configuration & Constants](#configuration--constants)  
+8. [Deployment & Upgrades](#deployment--upgrades)  
+9. [Security Notes](#security-notes)  
+10. [License](#license)  
 
-- **Endurance Champion (EC)**: address that held “last bidder” for the single longest continuous interval in the round.
-- **Chrono‑Warrior (CW)**: address with the best “chrono” streak derived from EC updates across the round, finalized at round end.
+---
 
-Both EC and CW receive special prizes.
+## Overview
+- **Network:** Arbitrum (testnet: Arbitrum Sepolia, mainnet: Arbitrum One).  
+- **Game type:** Last-bidder-wins auction with Dutch auction pricing.  
+- **Bidding assets:** ETH and CST.  
+- **NFT integration:** Random Walk NFT (discount bidding), Cosmic Signature NFT (ecosystem rewards).  
+- **Governance:** CST token powers the DAO.  
+- **Charity & Marketing:** Automatic ETH and CST allocations to dedicated wallets.
 
-### Quick start (developers)
+---
 
-Prerequisites: Node 18+, npm, git
+## Key Features
+- **Rounds:**  
+  Each round has 3 stages: inactive, active before first bid, and active after first bid.  
+- **Bidding mechanics:**  
+  - ETH starts as a Dutch auction, then increases incrementally.  
+  - CST always follows a Dutch auction, restarting after each bid.  
+  - Random Walk NFT halves ETH bid cost (one-time use per NFT).  
+- **Prizes:** ETH, CST, and NFTs awarded to multiple winners at round end.  
+- **Staking:**  
+  - CSN staking: ETH reward distribution.  
+  - RW staking: raffle eligibility for CSN prizes.  
+- **DAO governance:** CST holders vote on key ecosystem decisions.  
+- **Charity & marketing:** Funds automatically allocated each round.  
 
-1) Install deps
+---
+
+## Contract Modules
+| Contract | Description |
+|----------|-------------|
+| **CosmicSignatureGame** | Core game logic: bidding, deadlines, main prize claims, prize distribution. |
+| **Bidding, BidStatistics, SecondaryPrizes, MainPrize** | Submodules handling bid pricing, statistics, and prize mechanics. |
+| **CosmicSignatureToken (CST)** | ERC-20 token; minted by the game for rewards and DAO voting power. |
+| **CosmicSignatureNft (CSN)** | ERC-721 NFT; official NFT minted as rewards. |
+| **RandomWalkNFT (RWLK)** | External ERC-721 NFT (not part of repo); used for discounted ETH bids. |
+| **PrizesWallet** | Custody of secondary prizes and donations with withdrawal timeouts. |
+| **CharityWallet** | Holds ETH allocations for donation to DAO-approved charity. |
+| **MarketingWallet** | Holds CST allocations for marketing initiatives. |
+| **CosmicSignatureDao** | Governance contract powered by CST. |
+| **StakingWalletCosmicSignatureNft** | ETH reward distribution to CSN stakers. |
+| **StakingWalletRandomWalkNft** | Staking with random CSN raffle eligibility. |
+| **SystemManagement** | Owner-only configuration and system parameter updates. |
+
+---
+
+## Prizes
+At round end, prizes are distributed as follows:
+
+- **Main Prize Winner**  
+  - ETH share (main prize percentage)  
+  - 1× CSN NFT  
+
+- **Endurance Champion**  
+  - CST bonus (`totalNumBids * multiplier`)  
+  - 1× CSN NFT  
+
+- **Chrono-Warrior**  
+  - ETH share (chrono prize percentage)  
+
+- **Last CST Bidder**  
+  - CST bonus  
+  - 1× CSN NFT  
+
+- **Bidders (raffles)**  
+  - ETH raffle prizes  
+  - Randomly awarded CSN NFTs  
+  - CST rewards per bid  
+
+- **Stakers**  
+  - RW NFT stakers: raffle for CSN NFTs  
+  - CSN stakers: ETH reward share  
+
+- **Ecosystem**  
+  - Marketing Wallet: CST allocation  
+  - Charity Wallet: ETH allocation  
+
+---
+
+## Architecture & Flow
+1. **Round starts inactive**.  
+2. At `roundActivationTime`, bidding opens. First bid must be ETH.  
+3. Each new bid:  
+   - Updates prices (Dutch auction or incremental).  
+   - Updates `mainPrizeTime`.  
+   - Rewards bidder with CST.  
+   - May update Endurance Champion & Chrono-Warrior stats.  
+4. When `mainPrizeTime` passes:  
+   - Last bidder can claim the main prize.  
+   - If unclaimed after timeout, anyone can claim.  
+5. Claiming ends the round: prizes distributed, next round initialized.  
+
+---
+
+## Installation & Development
+### Prerequisites
+- Node.js v18+  
+- npm  
+- Git  
+
+### Setup
 ```bash
+git clone <this-repo>
+cd cosmic-signature
 npm install
-```
+````
 
-2) Compile contracts
+### Compile
+
 ```bash
 npx hardhat compile
-# or use helper scripts
-bash contracts-compiling/runners/compile.bash
 ```
 
-3) Run a local node (optional)
+### Run Tests
+
+```bash
+npx hardhat test
+```
+
+### Local Development Node
+
 ```bash
 bash scripts/hardhat-node.bash
 ```
 
-4) Run tests
-```bash
-npx hardhat test
-# or
-bash test/runners/test-1.bash
-```
+---
 
-5) Deploy (runners)
-```bash
-# Local Hardhat (connected to localhost node)
-bash tasks/runners/run-deploy-cosmic-signature-contracts-hardhat_on_localhost.bash
+## Configuration & Constants
 
-# Arbitrum Sepolia (testnet)
-bash tasks/runners/run-deploy-cosmic-signature-contracts-arbitrumSepolia.bash
-```
+* **Deployment config files:** `tasks/config/deploy-cosmic-signature-contracts-<network>.json`
+* Key parameters:
 
-6) Live‑chain checks (optional)
-```bash
-bash live-blockchain-testing/runners/live-blockchain-tests.bash
-```
+  * `roundActivationTime` – round start time
+  * `mainPrizeTime` – deadline to claim prize
+  * Bid pricing fractions, Dutch auction durations
+  * Prize distribution percentages (main, chrono, charity, stakers, etc.)
 
-### Key contracts (production)
+Constants and formulas are documented in **contract-configuration-params-calculation/**.
 
-- `contracts/production/CosmicSignatureGame.sol` — main game (bidding, deadlines, prizes, round flow)
-- `contracts/production/PrizesWallet.sol` — custody and withdrawal timeouts for special prizes and donations
-- `contracts/production/CosmicSignatureToken.sol` — CST (ERC20)
-- `contracts/production/CosmicSignatureNft.sol` — CSN (ERC721)
-- `contracts/production/StakingWalletCosmicSignatureNft.sol` — CSN staking with per‑NFT reward share
-- `contracts/production/StakingWalletRandomWalkNft.sol` — RandomWalk staking for CSN raffles
+---
 
-### Documentation
+## Deployment & Upgrades
 
-- Game prizes and flow: `docs/cosmic-signature-game-prizes.md`
-- Functional requirements: `docs/functional-requirements.md`
-- Quick start notes: `docs/QUICKSTART.md`
-- Formal verification specs and plan: `certora/` (see `formal_verification_plan.md`)
-- Config parameter guidance: `contract-configuration-params-calculation/`
+* **Deployment instructions:** [Cosmic-Signature-Contracts-Deployment-And-Registration.md](tasks/docs/Cosmic-Signature-Contracts-Deployment-And-Registration.md)
+* **Upgrade instructions:** [Cosmic-Signature-Game-Contract-Upgrade-And-Re-Registration.md](tasks/docs/Cosmic-Signature-Game-Contract-Upgrade-And-Re-Registration.md)
 
-### Integration tips
+Scripts for deployment and registration are located in:
 
-- Read prices from on‑chain helpers: `getNextEthBidPrice`, `getEthPlusRandomWalkNftBidPrice`, `getNextCstBidPrice`.
-- Add a small buffer to ETH you send to avoid race conditions between reading price and sending a transaction.
-- For events, listen to `BidPlaced`, `MainPrizeClaimed`, and champion updates.
+* `tasks/runners/` (e.g. `run-deploy-cosmic-signature-contracts-arbitrumSepolia.bash`)
+* Reports with deployed addresses are written to `output/`.
 
-### Security notes
+---
 
-- Access control: owner‑only admin; auxiliary contracts gate game‑only entry points.
-- Reentrancy protection on external state‑changing functions; ETH transfers checked explicitly.
-- Charity transfers are best‑effort; failures are logged without reverting.
-- This repo includes static analysis and verification:
-  - Slither helpers: `slither/`
-  - Solhint helpers: `solhint/`
-  - Certora specs: `certora/`
+## Security Notes
 
-Review and test thoroughly before mainnet deployments.
+* **Access control:** Owner-only for sensitive system management.
+* **Reentrancy protection:** Applied to external state-changing functions.
+* **Prize custody:** Secondary prizes escrowed in `PrizesWallet` until claimed.
+* **Charity transfers:** Best-effort, non-blocking (won’t revert prize claim if charity transfer fails).
+* **Randomness:** Multiple Arbitrum precompiles + fallback sources for unpredictable random numbers.
 
-### Project structure (selected)
+---
 
-- `contracts/production/` — game, wallets, tokens, NFTs
-- `contracts/tests/` — test scaffolding contracts
-- `tasks/` — deployment/upgrade runners and docs
-- `live-blockchain-testing/` — scripts and docs for on‑chain testing
-- `docs/` — design docs and integration notes
+## License
 
-### License
+MIT — see [LICENSE](LICENSE).
 
-MIT — see `LICENSE`.
