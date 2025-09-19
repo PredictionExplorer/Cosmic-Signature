@@ -111,27 +111,25 @@ abstract contract MainPrize is
 			// Comment-202411169 relates.
 			// #enable_asserts assert(lastBidderAddress != address(0));
 
-			require(
-				block.timestamp >= mainPrizeTime,
-				CosmicSignatureErrors.MainPrizeEarlyClaim("Not enough time has elapsed.", mainPrizeTime, block.timestamp)
-			);
+			if ( ! (block.timestamp >= mainPrizeTime) ) {
+				revert CosmicSignatureErrors.MainPrizeEarlyClaim("Not enough time has elapsed.", mainPrizeTime, block.timestamp);
+			}
 		} else {
 			// Comment-202411169 relates.
-			require(
-				lastBidderAddress != address(0),
-				CosmicSignatureErrors.NoBidsPlacedInCurrentRound("There have been no bids in the current bidding round yet.")
-			);
+			if ( ! (lastBidderAddress != address(0)) ) {
+				revert CosmicSignatureErrors.NoBidsPlacedInCurrentRound("There have been no bids in the current bidding round yet.");
+			}
 
 			int256 durationUntilOperationIsPermitted_ = getDurationUntilMainPrizeRaw() + int256(timeoutDurationToClaimMainPrize);
-			require(
-				durationUntilOperationIsPermitted_ <= int256(0),
-				CosmicSignatureErrors.MainPrizeClaimDenied(
-					"Only the last bidder is permitted to claim the bidding round main prize before a timeout expires.",
-					lastBidderAddress,
-					_msgSender(),
-					uint256(durationUntilOperationIsPermitted_)
-				)
-			);
+			if ( ! (durationUntilOperationIsPermitted_ <= int256(0)) ) {
+				revert
+					CosmicSignatureErrors.MainPrizeClaimDenied(
+						"Only the last bidder is permitted to claim the bidding round main prize before a timeout expires.",
+						lastBidderAddress,
+						_msgSender(),
+						uint256(durationUntilOperationIsPermitted_)
+					);
+			}
 		}
 
 		// Comment-202411169 applies.
