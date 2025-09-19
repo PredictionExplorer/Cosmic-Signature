@@ -41,10 +41,10 @@ serve the same purpose as numbeted comments.
 The last digit, 1 in this case, is a ToDo priority.
 We recommend using the following priorities:
 - 0: to do immediately.
-- 1: to to very soon, before the next release.
+- 1: to do very soon, before the next release.
 - 2: to do soon after the next release.
 - 3: to do some day, low priority.
-- 4: rarely used for doing something not any time soon, such as to fix a timestamp overflow in 100 years.
+- 4: rarely used for a not-any-time-soon to do, such as to do something about a timestamp overflow in 100 years.
 - 9: a todo in commented code that would need to be done if the code is ever uncommented.
 
 We use the same priorities in non-numbeted todos as well:
