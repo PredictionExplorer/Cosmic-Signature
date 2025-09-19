@@ -56,7 +56,7 @@ library CosmicSignatureConstants {
 
 	/// @notice Default `ethDutchAuctionEndingBidPriceDivisor`.
 	/// Comment-202501063 applies.
-	uint256 internal constant DEFAULT_ETH_DUTCH_AUCTION_ENDING_BID_PRICE_DIVISOR = 10 * ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
+	uint256 internal constant DEFAULT_ETH_DUTCH_AUCTION_ENDING_BID_PRICE_DIVISOR = 100 * ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
 
 	/// @notice Default `ethBidPriceIncreaseDivisor`.
 	uint256 internal constant DEFAULT_ETH_BID_PRICE_INCREASE_DIVISOR = 100;
@@ -202,7 +202,7 @@ library CosmicSignatureConstants {
 	/// OpenZeppelin logic acts as if this value was greater by 1.
 	/// That could be because of Comment-202508043.
 	/// [/Comment-202508041]
-	uint48 internal constant DAO_DEFAULT_VOTING_DELAY = 1 days;
+	uint48 internal constant DAO_DEFAULT_VOTING_DELAY = 2 days;
 
 	/// @notice Default `CosmicSignatureDao.votingPeriod()`.
 	/// @dev OpenZeppelin recommends to set voting period to 1 week. In our code, it used to be set to 30 days,
@@ -212,9 +212,9 @@ library CosmicSignatureConstants {
 	// See `DEFAULT_CST_REWARD_AMOUNT_FOR_BIDDING`.
 
 	/// @notice Default `CosmicSignatureDao.quorum()`.
-	/// @dev I changed this from the recommended 4% to 2% -- to increase the chance that there will be a sufficient quorum.
+	/// @dev I've reduced this from the recommended 4% -- to increase the chance that there will be a sufficient quorum.
 	/// Another reason is because the marketing wallet holds some tokens, and it's not going to vote.
-	uint256 internal constant DAO_DEFAULT_VOTES_QUORUM_PERCENTAGE = 2;
+	uint256 internal constant DAO_DEFAULT_VOTES_QUORUM_PERCENTAGE = 3;
 
 	// #endregion
 	// #region Time
