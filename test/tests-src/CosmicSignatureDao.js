@@ -27,13 +27,13 @@ describe("CosmicSignatureDao", function () {
 
 		const latestBlock_ = await hre.ethers.provider.getBlock("latest");
 		let votingDelay_ = await contracts_.cosmicSignatureDao.votingDelay();
-		expect(votingDelay_).equal(24n * 60n * 60n);
+		expect(votingDelay_).equal(2n * 24n * 60n * 60n);
 		let votingPeriod_ = await contracts_.cosmicSignatureDao.votingPeriod();
 		expect(votingPeriod_).equal(2n * 7n * 24n * 60n * 60n);
 		let proposalThreshold_ = await contracts_.cosmicSignatureDao.proposalThreshold();
 		expect(proposalThreshold_).equal(100n * 10n ** 18n);
 		let quorumNumerator_ = await contracts_.cosmicSignatureDao.quorumNumerator();
-		expect(quorumNumerator_).equal(2n);
+		expect(quorumNumerator_).equal(3n);
 		const quorumDenominator_ = await contracts_.cosmicSignatureDao.quorumDenominator();
 		expect(quorumDenominator_).equal(100n);
 

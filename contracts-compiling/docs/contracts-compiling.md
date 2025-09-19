@@ -2,7 +2,7 @@
 
 As a matter of fact, you should never need to explicitly compile the contracts. Tasks and scripts in this project will automatically compile changed source code as needed. But if you suspect that for some reason the auto-compile doesn't work well, you can clean compiled artifacts by executing `../runners/clean.bash` and then run other tasks and scripts. In this case it's pretty much guaranteed that the autocompile will do a good job.
 
-With that note out of the way, here are a few words about how to explicitly compile the contarcts.
+With that note out of the way, here are a few words about explicitly compiling the contarcts.
 
 #### Prerequisites
 

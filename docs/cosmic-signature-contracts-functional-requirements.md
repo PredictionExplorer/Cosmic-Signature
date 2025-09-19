@@ -126,6 +126,7 @@ These winners/champions are defined in `${workspaceFolder}/README.md`. Use the f
 ```regex
 \bECs?\b|(?:ew|ld|rev)EC|\bCW\b|ENDURANCE|[Ee]ndurance|CHRONO|[Cc]hrono
 ```
+todo-0 Make sure the above pattern is correct.
 
 There are designated storage variables to store the current Endurance Champion and Chrono-Warrior. They are updated on each bid, except the first bid in a round, and then last time on main prize claim. The variables actually contain outdated values. Provided the first bid has been placed in the current bidding round, the actual real-time values specifying who the champions are and their durations change over time, even if the contract state does not change. Relevant logic is implemented in the `BidStatistics` contract.
 
@@ -170,6 +171,57 @@ At the end of each round, the following configurable durations automatically inc
 NFTs from both our NFT contracts can be staked. Stakers receive designated prizes/rewards, as specified in "./cosmic-signature-game-prizes.md".
 
 An NFT may be staked only once. Once unstaked, the same NFT may not be staked again.
+
+### Asset Types and Their Flows
+
+#### ETH
+
+- At any time, a user can donate ETH to the Game contract.\
+A user also can force-send ETH to the Game contract by `selfdestruct`ing a contract, which would result in the same outcome as a donation, except a respective event won't be emitted.
+
+- While a round is active, a user can place an ETH bid. The current ETH bid price, or a half of it if an RWLK was provided, is transferred to the Game contract.
+
+- At the end of each round, a half of the Game contract ETH balance is awarded to various beneficiaries: main prize winner gets paid directly to their address; CSN staking awards are transferred to `StakingWalletCosmicSignatureNft`; ETH to be donated to charity is tansferred to `CharityWallet`; other winners' ETH prizes, including any secondary prizes won by main prize winner, are transferred to `PrizesWallet`.
+
+- At any time, a user can withdraw their ETH balance from `PrizesWallet`. After a timeout, anybody is allowed to withdraw unclaimed assets from there.
+
+- At any time, a user can transfer ETH from `CharityWallet` to the charity.
+
+- At any time, a staker can unstake their CSN and get their staking ETH rewards.
+
+#### Cosmic Signature Token (Symbol = "CST")
+
+- While a round is active, a user can place a CST bid. The current CST bid price gets burned.
+
+- When a user places a bid of any type, they get rewarded with a configurable amount of CST.
+
+- At the end of a round, various amounts of CST are minted for various beneficiaries, including `MarketingWallet`.
+
+- The treasurer uses CST in `MarketingWallet` to fund marketing activities, such as rewarding people for marketing the project on social media.
+
+- CST is used by our DAO for voting power.
+
+#### Random Walk NFT (Symbol = "RWLK")
+
+- While a round is active, an RWLK can be provided with an ETH bid, which halves ETH price the bidder is required to pay. An RWLK is allowed to be used for bidding only once.
+
+- At any time, an RWLK can be staked. An RWLK is allowed to be staked only once.
+
+- At any time, a staker can unstake their RWLK.
+
+#### Cosmic Signature NFT (Symbol = "CSN")
+
+- At the end of a round, a number of CSNs are minted for various beneficiaries.
+
+- At any time, a CSN can be staked. A CSN is allowed to be staked only once.
+
+- At any time, a staker can unstake their CSN and get their staking ETH rewards.
+
+#### Third party ERC-20 token amount and ERC-721 NFT
+
+- When a bidding round is active, one or the other asset can be provided/donated together with a bid of any type. The donated asset is transferred to `PrizesWallet`.
+
+- At any time, a particular round main prize winner can claim the ERC-20s and ERC-721s donated during the round and held in `PrizesWallet`. After a timeout, anybody is allowed to withdraw unclaimed assets from there.
 
 ### Actions Logic
 
