@@ -26,13 +26,13 @@
 // 	// Comment-202502096 applies.
 // 	let randomWalkNft = await hre.ethers.getContractAt("RandomWalkNFT", randomWalkNftAddress);
 //
-// 	// todo-1 Isn't this supposed to approve `prizesWallet`?
+// 	// todo-9 Isn't this supposed to approve `prizesWallet`?
 // 	await waitForTransactionReceipt(randomWalkNft.connect(signer0).setApprovalForAll(cosmicSignatureGame.address, true));
 //
 // 	await waitForTransactionReceipt(randomWalkNft.connect(signer0).setApprovalForAll(bidderContract.address, true));
 // 	let rwalkPrice = await randomWalkNft.getMintPrice({blockTag: "pending",});
 //
-// 	// todo-1 We now have a method in JavaScript that mints this. See `mintRandomWalkNft`.
+// 	// todo-9 We now have the `mintRandomWalkNft` function that wraps this call.
 // 	/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 // 	let transactionResponsePromise = randomWalkNft.connect(signer0).mint({value: rwalkPrice,});
 //
@@ -44,7 +44,7 @@
 // 	console.info(`nftId = ${nftId}`);
 // 	await waitForTransactionReceipt(randomWalkNft.connect(signer0).transferFrom(signer0.address, bidderContract.address, nftId));
 // 	nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice({blockTag: "pending",});
-// 	// todo-1 This no longer calls nftAddress_.setApprovalForAll(address(prizesWallet_), true);
+// 	// todo-9 This no longer calls `nftAddress_.setApprovalForAll(address(prizesWallet_), true);`.
 // 	await waitForTransactionReceipt(bidderContract.connect(signer0).doBidWithEthAndDonateNft(randomWalkNftAddress, nftId, {value: nextEthBidPrice,}));
 //
 // 	nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice({blockTag: "pending",});
@@ -52,7 +52,7 @@
 //
 // 	rwalkPrice = await randomWalkNft.getMintPrice({blockTag: "pending",});
 //
-// 	// todo-1 We now have a method in JavaScript that mints this. See `mintRandomWalkNft`.
+// 	// todo-9 We now have the `mintRandomWalkNft` function that wraps this call.
 // 	transactionResponsePromise = randomWalkNft.connect(signer0).mint({value: rwalkPrice,});
 //
 // 	transactionReceipt = await waitForTransactionReceipt(transactionResponsePromise);

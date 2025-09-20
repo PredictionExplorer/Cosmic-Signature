@@ -166,7 +166,7 @@ async function deployContractsForTestingAdvanced(
 /// Issue. The Hardhat Coverage task ignores parts of Hardhat configuration.
 /// This method fixes the issue.
 /// The `blockGasLimit` parameter is also ignored, but we are happy with its default value.
-/// todo-2 Is the above behavior going to change in a future version of Hardhat? To be revisited.
+/// todo-3 Is the above behavior going to change in a future version of Hardhat 2.x? Unlikely.
 /// Comment-202505294 relates.
 /// Comment-202509185 relates.
 /// [/Comment-202508265]

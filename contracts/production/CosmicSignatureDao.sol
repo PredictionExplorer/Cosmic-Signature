@@ -20,7 +20,6 @@ import { ICosmicSignatureDao } from "./interfaces/ICosmicSignatureDao.sol";
 // #endregion
 // #region
 
-/// @dev todo-1 +++ Compare this code to what we had before I joined the project. Done on Feb 24 2025.
 contract CosmicSignatureDao is
 	Governor,
 	GovernorSettings,

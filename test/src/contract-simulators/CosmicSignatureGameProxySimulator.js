@@ -498,13 +498,6 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 					// console.info("202505145", hre.ethers.formatEther(overpaidEthPrice_), hre.ethers.formatEther(ethBidRefundAmountToSwallowMaxLimit_));
 					overpaidEthPrice_ = 0n;
 					paidEthPrice_ = value_;
-					// ethBidPrice_ = value_;
-					// if (randomWalkNftId_ < 0n) {
-					// 	console.info("202505094", hre.ethers.formatEther(ethBidPrice_), hre.ethers.formatEther(paidEthPrice_));
-					// } else {
-					// 	ethBidPrice_ *= this.RANDOMWALK_NFT_BID_PRICE_DIVISOR;
-					// 	console.info("202505095", hre.ethers.formatEther(ethBidPrice_), hre.ethers.formatEther(paidEthPrice_));
-					// }
 				} else {
 					// console.info("202505087", hre.ethers.formatEther(overpaidEthPrice_), hre.ethers.formatEther(ethBidRefundAmountToSwallowMaxLimit_));
 				}

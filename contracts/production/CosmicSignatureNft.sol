@@ -18,8 +18,6 @@ import { ICosmicSignatureNft } from "./interfaces/ICosmicSignatureNft.sol";
 // #endregion
 // #region
 
-/// @dev
-/// todo-1 +++ Review again what can possibly fail here and cause a transaction reversal.
 contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICosmicSignatureNft {
 	// #region State
 

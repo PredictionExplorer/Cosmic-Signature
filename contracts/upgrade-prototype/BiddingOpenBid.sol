@@ -413,11 +413,9 @@ abstract contract BiddingOpenBid is
 		unchecked
 		// #enable_smtchecker */
 		{
-			// Comment-202505074 relates.
 			uint256 ethPlusRandomWalkNftBidPrice_ =
 				(ethBidPrice_ + (CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR - 1)) /
 				CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR;
-				
 			// #enable_asserts assert(
 			// #enable_asserts 	( ! ( ethBidPrice_ > 0 &&
 			// #enable_asserts 	      ethBidPrice_ <= type(uint256).max - (CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR - 1)

@@ -48,7 +48,6 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// Comments there apply.
 	/// [/Comment-202503147]
 	/// See also: `ICosmicSignatureGame.fallback`, `IEthDonations.donateEth`.
-	/// todo-1 +++ Do we have a test for this?
 	receive() external payable;
 
 	/// @notice This method gives the contract owner an option to encourage people to bid when the ETH Dutch auction has ended,
@@ -104,7 +103,6 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// `getEthPlusRandomWalkNftBidPrice` is guaranteed to return a nonzero, provided it's passed a nonzero.
 	/// A CST bid price can potentially be zero.
 	/// That said, given that we mint a nonzero CST reward for each bid, it's unlikely that the CST bid price will fall below that.
-	/// todo-1 +++ Develop a test that makes ETH prices minimal.
 	/// [/Comment-202503162]
 	function getNextEthBidPriceAdvanced(int256 currentTimeOffset_) external view returns (uint256);
 

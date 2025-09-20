@@ -9,10 +9,6 @@ import { ICosmicSignatureToken } from "./ICosmicSignatureToken.sol";
 /// @notice This wallet holds CST funds and facilitates their distribution to fund marketing activities,
 /// such as rewarding people for marketing the project on social media.
 /// The `CosmicSignatureGame` contract mints a configurable CST amount for this wallet at the end of each bidding round.
-///
-/// @dev todo-1 +++ Taras dislikes the idea to eliminate this contract.
-///
-/// todo-1 +++ Develop a test in which the DAO changes `MarketingWallet.treasurerAddress`.
 interface IMarketingWallet is IAddressValidator {
 	/// @notice Emitted when `treasurerAddress` is changed.
 	/// @param newValue The new value.

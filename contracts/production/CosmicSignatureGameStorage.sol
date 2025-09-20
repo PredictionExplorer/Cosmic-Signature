@@ -23,9 +23,6 @@ import { ICosmicSignatureGameStorage } from "./interfaces/ICosmicSignatureGameSt
 /// todo-1 +++ Otherwise a collision can create a vulnerability.
 /// todo-1 +++ Really, `mapping`s and dynamic arrays (including strings) are evil. Avoid them!
 /// todo-1 --- Write a better todo near each `mapping` and dynamic array to eliminate them and/or review the code.
-///
-/// todo-1 +++ Think of what params are currently not configurable, but might need to be configurable, such as `nextEthBidPrice`.
-/// todo-1 +++ Consider making some params non-configurable.
 abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #region System Management
 
@@ -69,12 +66,13 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	mapping(uint256 roundNum => mapping(address bidderAddress => BidderInfo)) public biddersInfo;
 
 	/// @notice Endurance champion is the person who was the last bidder for the longest continuous period of time.
-	/// todo-1 Recheck the Taras'es definition of endurance champion and chrono-warrior in the root readme document.
-	/// todo-1 It could exist there in a few places.
-	/// todo-1 The readme sometimes uses terms EC and CW.
-	/// todo-1 Point at the document.
-	/// todo-1 Reg-ex to search for in the readme: case insensitive: \b(?:EC|CW)\b|Endurance|Chrono
-	/// todo-1 Review relevant code and comments in the whole project and delegate some comments to the document.
+	/// todo-0 Recheck the Taras'es definition of endurance champion and chrono-warrior in the root readme document.
+	/// todo-0 It could exist there in a few places.
+	/// todo-0 The readme sometimes uses terms EC and CW.
+	/// todo-0 Point at the document.
+	/// todo-0 Reg-ex to search for in the readme: case insensitive: \b(?:EC|CW)\b|Endurance|Chrono
+	/// todo-0 Review relevant code and comments in the whole project and delegate some comments to the document.
+	/// todo-0 >>> They have now deleted all that. I have asked them to bring it back.
 	/// [Comment-202411075]
 	/// It makes no difference if they bid multiple times in a row. The durations do not get added up.
 	/// [/Comment-202411075]
@@ -119,7 +117,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// @notice Delay duration from when the main prize gets claimed until the next bidding round activates.
 	/// [Comment-202411064]
 	/// This is a configurable parameter.
-	/// todo-1 +++ Review where this comment is referenced. Done on Mar 9.
+	/// todo-1 +++ Review where this comment is referenced. Done on Mar 9 2025.
 	/// [/Comment-202411064]
 	/// [Comment-202412312]
 	/// We do not automatically increase this.
@@ -129,7 +127,6 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [Comment-202503106]
 	/// We allow the contract owner to change this even if the current bidding round is active.
 	/// Comment-202411236 relates.
-	/// todo-1 The backend and frontend must expect that `delayDurationBeforeRoundActivation` changes any time.
 	/// [/Comment-202503106]
 	/// Comment-202503092 applies.
 	uint256 public delayDurationBeforeRoundActivation;
@@ -147,7 +144,6 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// change some parameters, and then restore this.
 	/// Comment-202508105 relates.
 	/// Comment-202503106 relates.
-	/// todo-1 The backend and frontend must expect that `roundActivationTime` changes any time.
 	/// [/Comment-202411236]
 	/// [Comment-202503092]
 	/// Conceptually, every point in time is within a bidding round, which number or index is specified by `roundNum`.
@@ -370,12 +366,6 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	/// @notice At the end of each bidding round, we mint this CST amount for `marketingWallet`.
 	/// Comment-202411064 applies.
-	/// @dev
-	/// todo-1 Ask Taras if he is eventually going to set this to zero.
-	/// todo-1 Asked at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1735320400279989?thread_ts=1731872794.061669&cid=C02EDDE5UF8
-	/// todo-1 If so, before making the mint call check that this is a nonzero.
-	/// todo-1 But maybe this should not be zero because the DAO will keep doing something.
-	/// todo-1 Besides, rounds will keep getting longer.
 	uint256 public marketingWalletCstContributionAmount;
 
 	// #endregion

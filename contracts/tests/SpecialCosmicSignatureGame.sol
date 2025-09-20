@@ -25,7 +25,7 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 	function mintCosmicSignatureNft(address nftOwnerAddress_) external {
 		_prepareEntropyOnce();
 		unchecked { ++ _entropy.value; }
-		// todo-2 Should we make a high level call here? Comment-202502043 relates.
+		// todo-3 Should we make a high level call here? Comment-202502043 relates.
 		(bool isSuccess_, ) = address(nft).call(abi.encodeWithSelector(ICosmicSignatureNft.mint.selector, roundNum, nftOwnerAddress_, _entropy.value));
 		if ( ! isSuccess_ ) {
 			assembly {

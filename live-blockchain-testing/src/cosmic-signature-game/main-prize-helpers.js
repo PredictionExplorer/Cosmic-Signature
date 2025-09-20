@@ -60,7 +60,7 @@ async function claimMainPrize(cosmicSignatureGameProxy_, bidderSigner_) {
 // 	let topic_sig = cosmicSignatureGame.interface.getEventTopic("MainPrizeClaimed");
 // 	let event_logs = transactionReceipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
 // 	let parsed_log = cosmicSignatureGame.interface.parseLog(event_logs[0]);
-// 	// todo-1 Assert other args passed to the event.
+// 	// todo-9 Assert other args passed to the event.
 // 	expect(parsed_log.args.beneficiaryAddress).equal(testingAcct.address);
 // 	expect(parsed_log.args.amount).equal(mainEthPrizeAmount);
 //
@@ -98,8 +98,8 @@ async function claimMainPrize(cosmicSignatureGameProxy_, bidderSigner_) {
 // }
 
 // /// Comment-202509229 applies.
-// /// todo-1 Now Chrono-Warrior also gets ETH.
-// /// todo-1 So maybe this function name should not include "raffle".
+// /// todo-9 Now Chrono-Warrior also gets ETH.
+// /// todo-9 So maybe this function name should not include "raffle".
 // async function claim_raffle_eth(testingAcct, prizesWallet, event_logs) {
 // 	const unique_winners = {};
 // 	for (let i = 0; i < event_logs.length; i++) {

@@ -11,10 +11,6 @@ import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/O
 /// `UUPSUpgradeable`, use storage slots at hardcoded positions.
 /// Therefore we do not need contracts like this.
 /// Altough I have no immeiate plans to eliminate this one.
-///
-/// todo-1 +++ An alternative Ownable contract:
-/// todo-1 +++ https://docs.openzeppelin.com/contracts/5.x/api/access#Ownable2Step
-/// todo-1 +++ But we probably don't need it.
 abstract contract OwnableUpgradeableWithReservedStorageGaps is OwnableUpgradeable {
 	/// @dev Comment-202412142 applies.
 	// solhint-disable-next-line var-name-mixedcase

@@ -31,7 +31,6 @@ library CosmicSignatureEvents {
 	// #region Monetary Transfers
 
 	/// @notice This is similar to `CosmicSignatureErrors.FundTransferFailed`.
-	/// @dev todo-1 +++ Make sure we use this. Otherwie comment this out.
 	event FundTransferFailed(string errStr, address indexed destinationAddress, uint256 amount);
 
 	// #endregion

@@ -16,8 +16,6 @@ import { IRandomWalkNFT } from "./interfaces/IRandomWalkNFT.sol";
 /// [/Comment-202409149]
 ///
 /// Issue. There is a little vulnerability here, described in Comment-202503253.
-///
-/// todo-1 +++ Review again what can possibly fail here and cause a transaction reversal.
 contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 	// #region State
 

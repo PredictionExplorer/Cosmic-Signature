@@ -12,8 +12,8 @@ This new business logic contract allows bidding with no upper limit. After bid i
 
 `BidParams` struct is modified by adding boolean flag to indicate the bid is going to be unrestricted in price (isOpenBid = true):
 
-    // todo-1 This structure no longer exists.
-    // todo-1 These variables are now the `bidWithEth` method parameters.
+    // todo-3 This structure no longer exists.
+    // todo-3 These variables are now the `bidWithEth` method parameters.
     struct BidParams {
         string message;
         int256 randomWalkNftId;
@@ -24,13 +24,13 @@ The bidder now sends transaction for any amount in `msg.value`, that is multiple
 
 The call to the `bidWithEth` method must now be done in a new way:
 
-    // todo-1 This structure no longer exists.
-    // todo-1 These variables are now the `bidWithEth` method parameters.
+    // todo-3 This structure no longer exists.
+    // todo-3 These variables are now the `bidWithEth` method parameters.
     let bidParams = {message: "bid test", randomWalkNftId: -1n, isOpenBid: true,};
     let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
     let nextEthBidPrice = await cosmicSignatureGameProxy.getNextEthBidPrice({blockTag: "pending",});
-    // todo-1 Revisit this `gasLimit` thing.
-    // todo-1 It appears that we need to call `waitForTransactionReceipt` here.
+    // todo-3 Revisit this `gasLimit` thing. Avoid providing it explicitly.
+    // todo-3 It appears that we need to call `waitForTransactionReceipt` here.
     await cosmicSignatureGameProxy.connect(testingAcct).bidWithEth(params, {value: nextEthBidPrice * multiplier, gasLimit: 30_000_000,});
 
 In this example the `multiplier` variable is the `timesEthBidPrice` state variable (discussed above) which was read from the contract prior to execution of this code.
