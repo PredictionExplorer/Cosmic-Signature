@@ -29,7 +29,7 @@
 // 	let privKey = process.env.PRIVKEY;
 // 	if (privKey == undefined || privKey.length <= 0) {
 // 		console.info(
-// 			// todo-1 "scripts/deploy.js" no longer exists.
+// 			// todo-9 "scripts/deploy.js" no longer exists.
 // 			"Please provide private key on the command line as ENVIRONMENT variable 'PRIVKEY', example : PRIVKEY=\"0x21982349...\" npx hardhat run scripts/deploy.js",
 // 		);
 // 		process.exit(1);

@@ -13,31 +13,10 @@ import { IAddressValidator } from "./IAddressValidator.sol";
 /// The total supply of this token is quite limited, and therefore it's guaranteed to remain
 /// many orders of magnitude below the point of overflow.
 /// Comment-202507302 relates.
-/// todo-1 Describe in a user manual under what conditions CSTs are minted and burned.
-/// todo-1 There is already a readme file describing it.
 /// [/Comment-202412033]
-///
-/// todo-1 Document in a user manual that to bid with CST, bidders don't need to approve any allowance,
-/// todo-1 meaning to call `CosmicSignatureToken.approve`.
-/// todo-1 Will this apply to trading on our exchange as well? Maybe not because it could be a security concern.
-/// todo-1 But we are not going to develop an exchange.
-///
-/// todo-1 +++ Research modern features that we might need to implement.
 ///
 /// todo-1 +++ Make sure this contract is Uniswap and other similar exchanges compliant.
 /// todo-1 Test manually that we can trade this on Uniswap and the others.
-///
-/// todo-1 Review again what can possibly fail here and cause a transaction reversal.
-/// todo-1 Assuming it's OK, but there is a lot of code there that is hard to comprehend.
-/// todo-1 Let's see what SMTChecker says.
-/// todo-1 To the auditor: We assume that OpenZeppelin's ERC20 nd ERC721 implementations
-/// todo-1 aren't supposed to revert under surprising circumstances.
-/// todo-1 They will revert only in expected and well understood cases, such as total supply overflow
-/// todo-1 or burning a bigger amount than the given account holds.
-/// todo-1 It's difficult for us to confirm the above assumption by reviewing all code in complex contracts, such as ERC20Votes,
-/// todo-1 but you probably already know.
-/// todo-1 Note that we are aware that ERC20Votes allows fewer than 256 bits to hold token amounts, which is not a problem,
-/// todo-1 given Comment-202412033.
 interface ICosmicSignatureToken is IERC20, IERC20Permit, IAddressValidator {
 	/// @dev Comment-202501144 relates.
 	struct MintSpec {

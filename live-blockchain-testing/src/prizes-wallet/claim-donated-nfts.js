@@ -1,6 +1,6 @@
 // // Comment-202509229 applies.
 
-// // todo-1 This is now broken because I have moved NFT donations to `PrizesWallet`.
+// // todo-9 This is now broken because I have moved NFT donations to `PrizesWallet`.
 
 // // Helps building transaction to get back donated Random Walk NFTs used in bid+donate calls
 // // Two run modes:
@@ -21,12 +21,12 @@
 // 		let record_orig = await cosmicSignatureGame.donatedNfts(BigInt(i), {blockTag: "pending",});
 // 		let record = Object.assign({}, record_orig);
 // 		Object.defineProperty(record, "index", {value: i, writable: true,});
-// 		// todo-1 The `claimed` variable no longer exists.
+// 		// todo-9 The `claimed` variable no longer exists.
 // 		if (record.claimed) {
 // 			continue;
 // 		}
 // 		let prizeArr = prizeData[record.roundNum];
-// 		// todo-1 Why would it be `undefined`?
+// 		// todo-9 Why would it be `undefined`?
 // 		if (prizeArr == undefined) {
 // 			prizeArr = new Array();
 // 		}
@@ -95,7 +95,7 @@
 // 	}
 // 	let roundToClaim = parseInt(roundNumStr, 10);
 // 	let paramList = build_parameter_list(nfts[roundToClaim]);
-// 	// todo-1 This variable no longer exists. A similar variable exists in `PrizesWallet`.
+// 	// todo-9 `cosmicSignatureGame.winners` no longer exists. A similar variable exists in `PrizesWallet`.
 // 	let mainPrizeBeneficiaryAddress = await cosmicSignatureGame.winners(roundToClaim, {blockTag: "pending",});
 // 	if (mainPrizeBeneficiaryAddress.toString() != testingAcct.address.toString()) {
 // 		console.info("You aren't the beneficiary of main prize " + roundToClaim.toString() + ", beneficiary is " + mainPrizeBeneficiaryAddress.toString());

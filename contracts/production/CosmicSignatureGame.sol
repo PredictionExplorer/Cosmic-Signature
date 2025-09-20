@@ -81,7 +81,6 @@ contract CosmicSignatureGame is
 		// `initialize` is supposed to not be executed yet.
 		// #enable_asserts assert(owner() == address(0));
 
-		// todo-1 +++ Order these like in the inheritance list.
 		__ReentrancyGuardTransient_init();
 		__Ownable_init(ownerAddress_);
 		__UUPSUpgradeable_init();

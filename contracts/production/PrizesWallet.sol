@@ -129,7 +129,6 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 		// so that a potentially malicious upgraded Game contract could not rewrite history.
 		// The same applies to the `assert` near Comment-202411252.
 		// But then all `_onlyGame` methods in all our contracts will have to be reviewed and possibly uglified.
-		// To be discussed with the auditor.
 		// [/ToDo-202507148-1]
 		// #enable_asserts assert(mainPrizeBeneficiaryAddresses[roundNum_] == address(0));
 		// #enable_asserts assert(roundNum_ == 0 || mainPrizeBeneficiaryAddresses[roundNum_ - 1] != address(0));
@@ -274,9 +273,6 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 		emit TokenDonated(roundNum_, donorAddress_, tokenAddress_, amount_);
 
 		// Comment-202502242 applies.
-		// todo-1 Document in a user manual that they need to authorize `PrizesWallet` to transfer this token amount.
-		// todo-1 Our web site really should provide an easy way to authorize that.
-		// todo-1 Find other places where we call similar methods, like staking wallets, and document that too.
 		SafeERC20.safeTransferFrom(tokenAddress_, donorAddress_, address(newDonatedTokenCopy_.holder), amount_);
 	}
 
@@ -384,9 +380,6 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 		// [Comment-202502245]
 		// This would revert if `nftAddress_` is zero or there is no ERC-721-compatible contract there.
 		// [/Comment-202502245]
-		// todo-1 Document in a user manual that they need to authorize `PrizesWallet` to transfer this NFT.
-		// todo-1 Our web site really should provide an easy way to authorize that.
-		// todo-1 Find other places where we call similar methods, like staking wallets, and document that too.
 		nftAddress_.transferFrom(donorAddress_, address(this), nftId_);
 	}
 

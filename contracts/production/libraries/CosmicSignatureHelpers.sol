@@ -2,17 +2,6 @@
 pragma solidity 0.8.30;
 
 library CosmicSignatureHelpers {
-	// #region // Data Types
-
-	// todo-1 Can I delete this?
-	// /// @dev It appears that this was a bad idea.
-	// /// It's probably more efficient to use `uint256` and avoid using `bool`.
-	// struct BooleanWithPadding {
-	// 	bool value;
-	// 	uint248 padding;
-	// }
-
-	// #endregion
 	// #region `transferEthTo`
 
 	/// @dev Issue. In some places where we transfer ETH by calling `address.call`,

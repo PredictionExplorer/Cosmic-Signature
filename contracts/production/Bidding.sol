@@ -250,17 +250,6 @@ abstract contract Bidding is
 				if (uint256(overpaidEthPrice_) <= ethBidRefundAmountToSwallowMaxLimit_) {
 					overpaidEthPrice_ = int256(0);
 					paidEthPrice_ = msg.value;
-					// ethBidPrice_ = msg.value;
-					// if (randomWalkNftId_ >= int256(0)) {
-					// 	// [Comment-202505074]
-					// 	// It could make sense to subtract something like `CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR - 1` from this
-					// 	// to make this formula closer to the opposite of `getEthPlusRandomWalkNftBidPrice`,
-					// 	// but it's unnecessary to spend gas on that.
-					// 	// Comment-202503162 relates and/or applies.
-					// 	// [/Comment-202505074]
-					// 	ethBidPrice_ *= CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR;
-					// }
-					// todo-1 Can I delete commented code above? Review `BiddingOpenBid` too.
 				}
 			}
 		} else {
@@ -320,8 +309,6 @@ abstract contract Bidding is
 
 		// [Comment-202501061]
 		// This formula ensures that the result increases.
-		// todo-1 Everywhere we use formulas that add 1, make sure the web site uses the same formulas.
-		// todo-1 For example, it offers to increase bid price by 1% or 2%.
 		// [/Comment-202501061]
 		nextEthBidPrice = ethBidPrice_ + ethBidPrice_ / ethBidPriceIncreaseDivisor + 1;
 
@@ -433,11 +420,9 @@ abstract contract Bidding is
 		unchecked
 		// #enable_smtchecker */
 		{
-			// Comment-202505074 relates.
 			uint256 ethPlusRandomWalkNftBidPrice_ =
 				(ethBidPrice_ + (CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR - 1)) /
 				CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR;
-
 			// #enable_asserts assert(
 			// #enable_asserts 	( ! ( ethBidPrice_ > 0 &&
 			// #enable_asserts 	      ethBidPrice_ <= type(uint256).max - (CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR - 1)

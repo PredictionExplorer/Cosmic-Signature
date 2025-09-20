@@ -205,12 +205,6 @@ library CosmicSignatureErrors {
 	error NftHasAlreadyBeenStaked(string errStr, uint256 nftId);
 
 	// todo-1 +++ Keep commented.
-	// /// @notice Thrown when attempting to claim a staking reward for an NFT that hasn't been unstaked.
-	// /// @param errStr Description of the error.
-	// /// @param stakeActionId NFT stake action ID.
-	// error NftNotUnstaked(string errStr, uint256 stakeActionId);
-
-	// todo-1 +++ Keep commented.
 	// /// @notice Thrown when attempting to unstake an already unstaked NFT.
 	// /// @param errStr Description of the error.
 	// /// @param stakeActionId NFT stake action ID.
