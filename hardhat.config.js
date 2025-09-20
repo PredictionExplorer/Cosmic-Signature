@@ -85,9 +85,9 @@ const solidityCompilationCacheSubFolderName = ENABLE_HARDHAT_PREPROCESSOR ? ("de
 // [/Comment-202409011]
 
 // Comment-202409011 applies.
-// [ToDo-202409098-1]
+// [ToDo-202409098-2]
 // When changing this, remember to revisit the configuration near Comment-202411136, Comment-202408026, Comment-202408025.
-// [/ToDo-202409098-1]
+// [/ToDo-202409098-2]
 const solidityVersion = "0.8.30";
 
 // Comment-202409011 applies.
@@ -301,7 +301,6 @@ const hardhatUserConfig = {
 			// By default, this is "paris".
 			// See https://v2.hardhat.org/hardhat-runner/docs/config#default-evm-version
 			// But we want this to be the latest Arbitrum-compatible.
-			// todo-1 Revisit this.
 			// [/Comment-202408026]
 			evmVersion: "prague",
 
@@ -316,14 +315,10 @@ const hardhatUserConfig = {
 			optimizer: {
 				enabled: true,
 
-				// todo-0 Maybe make this 400.
-				// // Issue. A big value here causes excessive inlining, which results in the game contract size
-				// // exceeding the max allowed limit, especially when modifiers are used.
-				// // I have observed that when I decorated a method with the `nonReentrant` modifier,
-				// // the contract bytecode size has increased by about 2200 bytes.
-				// // Converting modifiers into methods appears to help, but the effect could be random.
-				// // So let's not configure this.
-				// runs: 20_000,
+				// By default, this is 200.
+				// A big value here can cause excessive inlining, which can results in the Game contract bytecode size
+				// exceeding the max allowed limit.
+				runs: /* 20_000, */ 400,
 
 				// details: {
 				// 	yulDetails: {
@@ -418,7 +413,7 @@ const hardhatUserConfig = {
 	// #endregion
 	// #region
 
-	// todo-1 When making changes to the networks, remember to refactor the logic near Comment-202408313.
+	// todo-2 When making changes to the networks, remember to refactor the logic near Comment-202408313.
 	networks: {
 		hardhat: {
 			chainId: 31337,
