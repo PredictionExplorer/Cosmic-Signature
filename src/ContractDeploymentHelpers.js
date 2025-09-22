@@ -112,15 +112,18 @@ const deployContractsAdvanced = async function (
 	await stakingWalletCosmicSignatureNft.waitForDeployment();
 	const stakingWalletCosmicSignatureNftAddress = await stakingWalletCosmicSignatureNft.getAddress();
 
-	const marketingWalletFactory = await hre.ethers.getContractFactory("MarketingWallet", deployerSigner);
-	const marketingWallet = await marketingWalletFactory.deploy(cosmicSignatureTokenAddress);
-	await marketingWallet.waitForDeployment();
-	const marketingWalletAddress = await marketingWallet.getAddress();
-
 	const cosmicSignatureDaoFactory = await hre.ethers.getContractFactory("CosmicSignatureDao", deployerSigner);
 	const cosmicSignatureDao = await cosmicSignatureDaoFactory.deploy(cosmicSignatureTokenAddress);
 	await cosmicSignatureDao.waitForDeployment();
 	const cosmicSignatureDaoAddress = await cosmicSignatureDao.getAddress();
+
+	const marketingWalletFactory = await hre.ethers.getContractFactory("MarketingWallet", deployerSigner);
+	const marketingWallet = await marketingWalletFactory.deploy(cosmicSignatureTokenAddress);
+	await marketingWallet.waitForDeployment();
+	const marketingWalletAddress = await marketingWallet.getAddress();
+	if (transferContractOwnershipToCosmicSignatureDao) {
+		await waitForTransactionReceipt(marketingWallet.transferOwnership(cosmicSignatureDaoAddress));
+	}
 
 	const charityWalletFactory = await hre.ethers.getContractFactory("CharityWallet", deployerSigner);
 	const charityWallet = await charityWalletFactory.deploy();
@@ -130,7 +133,6 @@ const deployContractsAdvanced = async function (
 		await waitForTransactionReceipt(charityWallet.setCharityAddress(charityAddress));
 	}
 	if (transferContractOwnershipToCosmicSignatureDao) {
-		// It appears that it makes no sense to perform this kind of ownership transfer for any other contracts.
 		await waitForTransactionReceipt(charityWallet.transferOwnership(cosmicSignatureDaoAddress));
 	}
 
