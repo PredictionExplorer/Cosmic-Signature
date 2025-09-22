@@ -23,9 +23,9 @@ Because some tests are driven by random numbers, occasionally you can observe so
 
 #### Benevolent Owner
 
-We assume that the contract owner is not malicious. One implication is that we assume that they will not upgrade the Game contract to one doing anything malicious, such as stealing assets held in `PrizesWallet`.
+We assume that the contract owner is not malicious. One implication is that we assume that they will not upgrade the Game contract to one doing anything malicious, such as stealing assets held in `PrizesWallet`. ToDo-202507148-1 relates.
 
 #### Other Important Notes
 
-There are some comments in the project that are intended to be read by the auditor. To find them, perform a global search for `audit` (not whole word, case insensitive).
-todo-0 Find those.
+There may be some comments in the project that are intended to be read by the auditor. To find them, perform a global search for `audit` (not whole word, case insensitive).
+todo-0 Find those. Not much left.

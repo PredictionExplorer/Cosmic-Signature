@@ -1,8 +1,8 @@
 #!/usr/bin/bash
 
-# todo-1 This is a legacy script. Is it OK to delete it?
+# todo-3 This is a legacy script. Is it OK to delete it?
 
-# todo-1 Some day, someone should implement better error handling in this script.
+# todo-3 This script needs a better error handling.
 
 #### This script should be used for testing, prior that you have to run Hardhat task to deploy the contracts
 #### before using this script set CosmicSignatureGame contract address in bash, for example:  export CG_ADDR=0x0198D1d2385f7808caEC700743e197921e8D75b5

@@ -34,8 +34,6 @@ const {
 // #endregion
 // #region `describe`
 
-// todo-1 +++ Make sure we use `await` to call `async` functions.
-// todo-1 +++ Make sure all branches have been tested.
 describe("CosmicSignatureGame-1", function () {
 	// #region
 
@@ -129,7 +127,6 @@ describe("CosmicSignatureGame-1", function () {
 			await assertContractSimulators_();
 
 			// Remember to re-query this after every block mining.
-			// todo-1 +++ See above.
 			let latestBlock_ = await hre.ethers.provider.getBlock("latest");
 
 			// This is not `bigint`.

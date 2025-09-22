@@ -94,7 +94,6 @@ describe("PrizesWallet-1", function () {
 		}
 
 		// We will not use `contracts_.prizesWallet`.
-		// todo-1 +++ See above.
 		const newPrizesWallet_ = await contracts_.prizesWalletFactory.deploy(fakeGame_.address);
 		await newPrizesWallet_.waitForDeployment();
 		const newPrizesWalletAddress_ = await newPrizesWallet_.getAddress();

@@ -11,7 +11,7 @@ Execute the following commands:
 
 	cd <this-folder>
 		
-	# todo-1 There is no such thing as runtime and maintenance modes any more. Now `roundActivationTime` plays that role.
+	# todo-3 There is no such thing as runtime and maintenance modes any more. Now `roundActivationTime` plays that role.
 	# (previously set switchToRuntimeMode=false and donateEthToCosmicSignatureGame=false to get maintenance mode with no transactions)
 	npx hardhat deploy-cosmic-signature-contracts --deployconfigfilepath deploy-local.json --network hardhat_on_localhost
 
@@ -20,7 +20,7 @@ Execute the following commands:
 
 	# The new `CosmicSignatureGame` contract uses new state variable, `timesEthBidPrice`, the default value is set at "upgrade.js" but
 	# you can change it running this script (note: only in maintenance mode!)) :
-	# todo-1 There is no such thing as runtime and maintenance modes any more. Now `roundActivationTime` plays that role.
+	# todo-3 There is no such thing as runtime and maintenance modes any more. Now `roundActivationTime` plays that role.
 	COSMIC_SIGNATURE_GAME_ADDRESS=0x5FbDB2315678afecb367f032d93F642f64180aa3 PRIVKEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80  npx hardhat run ./set-times-eth-bid-price.js --network hardhat_on_localhost
 
 	# Now we can use new bidding feature (bid can be as high as you want but bigger than current `nextEthBidPrice * timesEthBidPrice`).

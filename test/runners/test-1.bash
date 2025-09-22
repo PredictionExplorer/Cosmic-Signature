@@ -16,7 +16,7 @@
 			export ENABLE_ASSERTS="${2}"
 			export ENABLE_SMTCHECKER="${3}"
 
-			# todo-1 Uncomment the command line with no arguments.
+			# todo-1 +++ Uncomment the command line with no arguments.
 			# 'npx' 'hardhat' 'test' '--grep' '^PrizesWallet '
 			# 'npx' 'hardhat' 'test' '--grep' '^MainPrize Test 1$'
 			# 'npx' 'hardhat' 'test' '--grep' '(?<!\bLong-term aggressive bidding behaves correctly)$'
@@ -39,7 +39,7 @@
 		fi
 	fi
 
-	# todo-1 Comment this out.
+	# todo-1 +++ Comment this out.
 	# export SKIP_LONG_TESTS='true'
 
 	export HARDHAT_MODE_CODE='1'

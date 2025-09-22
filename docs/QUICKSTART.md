@@ -8,7 +8,7 @@ Cosmic Signature is an NFT gaming project with:
 
 #### Step 1. Compile Contracts
 
-todo-0 Nick, your Certora scripts should execute the "hardhat compile" task. Take a look at what I wrote in `contracts-compiling.md`. Then delete this step (and this todo).
+todo-1 Nick, your Certora scripts should execute the "hardhat compile" task. Take a look at what I wrote in `contracts-compiling.md`. Then delete this step (and this todo).
 
 See `${workspaceFolder}/contracts-compiling/docs/contracts-compiling.md` for details.
 
@@ -68,6 +68,6 @@ The formal verification plan identifies several critical issues:
 
 #### For Details, See
 
-- `${workspaceFolder}/docs/contracts-compiling.md` for detailed compilation options. todo-0 But see a related todo above.
+- `${workspaceFolder}/docs/contracts-compiling.md` for detailed compilation options. todo-1 But see a related todo above.
 - `${workspaceFolder}/certora_instructions.md` for comprehensive Certora usage.
 - `${workspaceFolder}/certora/formal_verification_plan.md` for the full verification roadmap.

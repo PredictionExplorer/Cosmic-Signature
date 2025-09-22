@@ -608,8 +608,6 @@ abstract contract MainPrize is
 	// #region `_prepareNextRound`
 
 	function _prepareNextRound() private {
-		// todo-1 +++ Consider to not reset some variables.
-
 		// lastBidType = BidType.ETH;
 		lastBidderAddress = address(0);
 		lastCstBidderAddress = address(0);
@@ -623,7 +621,6 @@ abstract contract MainPrize is
 		// // Comment-202501308 applies.
 		// enduranceChampionDuration = 0;
 
-		// todo-1 +++ We do need to reset this, right?
 		prevEnduranceChampionDuration = 0;
 		chronoWarriorAddress = address(0);
 		chronoWarriorDuration = uint256(int256(-1));
