@@ -512,9 +512,9 @@ const hardhatUserConfig = {
 		},
 		sepolia: {
 			chainId: 11155111,
-
-			// todo-3 Is this URL still valid? MetaMask uses a different one.
-			url: "http://170.187.142.12:22545/",
+			url:
+				// "http://170.187.142.12:22545/",
+				"https://ethereum-sepolia.publicnode.com",
 
 			// Comment-202509209 applies.
 			gasMultiplier: 1.1,
