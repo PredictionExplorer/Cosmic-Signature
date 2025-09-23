@@ -202,18 +202,20 @@ library CosmicSignatureConstants {
 	/// OpenZeppelin logic acts as if this value was greater by 1.
 	/// That could be because of Comment-202508043.
 	/// [/Comment-202508041]
-	uint48 internal constant DAO_DEFAULT_VOTING_DELAY = 2 days;
+	uint48 internal constant DAO_DEFAULT_VOTING_DELAY =
+		// 1 minutes;
+		2 days;
 
 	/// @notice Default `CosmicSignatureDao.votingPeriod()`.
-	/// @dev OpenZeppelin recommends to set voting period to 1 week. In our code, it used to be set to 30 days,
-	/// which seems to be unnecessarily long. So I have reduced it to 2 weeks. Taras is OK with that.
-	uint32 internal constant DAO_DEFAULT_VOTING_PERIOD = 2 weeks;
+	uint32 internal constant DAO_DEFAULT_VOTING_PERIOD =
+		// 3 minutes;
+		2 weeks;
 
 	// See `DEFAULT_CST_REWARD_AMOUNT_FOR_BIDDING`.
 
 	/// @notice Default `CosmicSignatureDao.quorum()`.
 	/// @dev I've reduced this from the recommended 4% -- to increase the chance that there will be a sufficient quorum.
-	/// Another reason is because the marketing wallet holds some tokens, and it's not going to vote.
+	/// Another reason is because marketing wallet holds some CST amount, and it's not supposed to vote.
 	uint256 internal constant DAO_DEFAULT_VOTES_QUORUM_PERCENTAGE = 3;
 
 	// #endregion
