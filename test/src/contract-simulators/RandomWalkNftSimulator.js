@@ -22,7 +22,7 @@ const { assertAddressIsValid, assertEvent } = require("../../../src/ContractTest
 
 		/// For each NFT ID, stores an object that contains: `ownerAddress`.
 		/// Each item index equals respective NFT ID.
-		nftsInfo: [],
+		nftsMetaData: [],
 
 		// #endregion
 		// #region `assertNftIdIsValid`
@@ -43,7 +43,7 @@ const { assertAddressIsValid, assertEvent } = require("../../../src/ContractTest
 		// #region `totalSupply`
 
 		totalSupply: function() {
-			return BigInt(this.nftsInfo.length);
+			return BigInt(this.nftsMetaData.length);
 		},
 
 		// #endregion
@@ -51,7 +51,7 @@ const { assertAddressIsValid, assertEvent } = require("../../../src/ContractTest
 
 		ownerOf: function(nftId_) {
 			this.assertNftIdIsValid(nftId_);
-			return this.nftsInfo[Number(nftId_)].ownerAddress;
+			return this.nftsMetaData[Number(nftId_)].ownerAddress;
 		},
 
 		// #endregion
@@ -60,7 +60,7 @@ const { assertAddressIsValid, assertEvent } = require("../../../src/ContractTest
 		transferFrom: function(from_, to_, nftId_, contracts_, transactionReceipt_, eventIndexWrapper_) {
 			expect(from_).equal(this.ownerOf(nftId_));
 			assertAddressIsValid(to_);
-			this.nftsInfo[Number(nftId_)].ownerAddress = to_;
+			this.nftsMetaData[Number(nftId_)].ownerAddress = to_;
 			assertEvent(
 				transactionReceipt_.logs[eventIndexWrapper_.value],
 				contracts_.randomWalkNft,
@@ -76,7 +76,7 @@ const { assertAddressIsValid, assertEvent } = require("../../../src/ContractTest
 		mint: function(callerAddress_, contracts_, transactionReceipt_, eventIndexWrapper_) {
 			assertAddressIsValid(callerAddress_);
 			const nftId_ = this.totalSupply();
-			this.nftsInfo.push({ownerAddress: callerAddress_,});
+			this.nftsMetaData.push({ownerAddress: callerAddress_,});
 			assertEvent(
 				transactionReceipt_.logs[eventIndexWrapper_.value],
 				contracts_.randomWalkNft,
@@ -108,26 +108,26 @@ const { assertAddressIsValid, assertEvent } = require("../../../src/ContractTest
 
 async function assertRandomWalkNftSimulator(randomWalkNftSimulator_, contracts_, randomNumberSeedWrapper_) {
 	expect(await contracts_.randomWalkNft.totalSupply()).equal(randomWalkNftSimulator_.totalSupply());
-	await assertRandomRandomWalkNftInfoIfPossible(randomWalkNftSimulator_, contracts_, randomNumberSeedWrapper_);
+	await assertRandomRandomWalkNftMetaDataIfPossible(randomWalkNftSimulator_, contracts_, randomNumberSeedWrapper_);
 }
 
 // #endregion
-// #region `assertRandomRandomWalkNftInfoIfPossible`
+// #region `assertRandomRandomWalkNftMetaDataIfPossible`
 
-async function assertRandomRandomWalkNftInfoIfPossible(randomWalkNftSimulator_, contracts_, randomNumberSeedWrapper_) {
+async function assertRandomRandomWalkNftMetaDataIfPossible(randomWalkNftSimulator_, contracts_, randomNumberSeedWrapper_) {
 	const nftTotalSupplyCopy_ = randomWalkNftSimulator_.totalSupply()
 	if (nftTotalSupplyCopy_ == 0n) {
 		return;
 	}
 	const randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 	const nftId_ = randomNumber_ % nftTotalSupplyCopy_;
-	await assertRandomWalkNftInfo(randomWalkNftSimulator_, contracts_, nftId_);
+	await assertRandomWalkNftMetaData(randomWalkNftSimulator_, contracts_, nftId_);
 }
 
 // #endregion
-// #region `assertRandomWalkNftInfo`
+// #region `assertRandomWalkNftMetaData`
 
-async function assertRandomWalkNftInfo(randomWalkNftSimulator_, contracts_, nftId_) {
+async function assertRandomWalkNftMetaData(randomWalkNftSimulator_, contracts_, nftId_) {
 	expect(await contracts_.randomWalkNft.ownerOf(nftId_)).equal(randomWalkNftSimulator_.ownerOf(nftId_));
 }
 

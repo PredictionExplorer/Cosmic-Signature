@@ -102,7 +102,7 @@ library CosmicSignatureErrors {
 	error MainPrizeClaimDenied(string errStr, address lastBidderAddress, address beneficiaryAddress, uint256 durationUntilOperationIsPermitted);
 
 	// #endregion
-	// #region Cosmic Signature NFT
+	// #region // Cosmic Signature NFT
 
 	// /// @notice Thrown when the caller is not authorized to manage or spend an NFT.
 	// /// See also: `CallerIsNotNftOwner`.
@@ -112,12 +112,12 @@ library CosmicSignatureErrors {
 	// /// which can throw the `IERC721Errors.ERC721InsufficientApproval` error.
 	// error CallerIsNotAuthorizedToManageNft(string errStr, uint256 nftId);
 
-	/// @notice Thrown when the provided NFT name length exceeds the maximum allowed.
-	/// See also: `TooLongBidMessage`.
-	/// @param errStr Description of the error.
-	/// @param nftNameLength The NFT name length.
-	/// Comment-202409143 relates.
-	error TooLongNftName(string errStr, uint256 nftNameLength);
+	// /// @notice Thrown when the provided NFT name length exceeds the maximum allowed.
+	// /// See also: `TooLongBidMessage`.
+	// /// @param errStr Description of the error.
+	// /// @param nftNameLength The NFT name length.
+	// /// Comment-202409143 relates.
+	// error TooLongNftName(string errStr, uint256 nftNameLength);
 
 	// #endregion
 	// #region Prizes Wallet
