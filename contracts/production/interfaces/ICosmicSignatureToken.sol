@@ -8,15 +8,12 @@ import { IAddressValidator } from "./IAddressValidator.sol";
 /// @title The Official ERC-20 Token for the Cosmic Signature Ecosystem.
 /// @author The Cosmic Signature Development Team.
 /// @notice This contract includes minting, burning, permit, and voting capabilities.
-/// @dev
+/// @dev Comment-202511039 applies.
 /// [Comment-202412033]
 /// The total supply of this token is quite limited, and therefore it's guaranteed to remain
 /// many orders of magnitude below the point of overflow.
 /// Comment-202507302 relates.
 /// [/Comment-202412033]
-///
-/// todo-1 +++ Make sure this contract is Uniswap and other similar exchanges compliant.
-/// todo-1 Test manually that we can trade this on Uniswap and the others.
 interface ICosmicSignatureToken is IERC20, IERC20Permit, IAddressValidator {
 	/// @dev Comment-202501144 relates.
 	struct MintSpec {

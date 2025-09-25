@@ -533,12 +533,6 @@ abstract contract MainPrize is
 					} catch Panic(uint256 errorCode_) {
 						// Comment-202410161 relates.
 						if(errorCode_ != OpenZeppelinPanic.DIVISION_BY_ZERO) {
-
-							// todo-1 +++ Investigate under what conditions we can possibly reach this point.
-							// todo-1 +++ The same applies to other external calls and internal logic that can result in a failure to claim the main prize.
-							// todo-1 +++ Discussed at https://predictionexplorer.slack.com/archives/C02EDDE5UF8/p1734565291159669
-							// todo-1 +++ We are probably good.
-
 							OpenZeppelinPanic.panic(errorCode_);
 						}
 						charityEthDonationAmount_ += cosmicSignatureNftStakingTotalEthRewardAmount_;

@@ -81,8 +81,6 @@ library CosmicSignatureConstants {
 
 	/// @notice Default `cstDutchAuctionDurationDivisor`.
 	/// Comment-202508288 relates.
-	/// todo-1 +++ Rename any "Auction" to "Dutch Auction".
-	/// todo-1 +++ (?<!dutch)(?<!dutch[\-_ ])Auction
 	uint256 internal constant DEFAULT_CST_DUTCH_AUCTION_DURATION_DIVISOR = (INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND + ((1 days) / 2) / 2) / ((1 days) / 2);
 
 	/// @notice Comment-202411066 relates.
