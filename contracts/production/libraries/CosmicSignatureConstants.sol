@@ -156,13 +156,14 @@ library CosmicSignatureConstants {
 	// #endregion
 	// #region Cosmic Signature NFT
 
-	/// @notice Cosmic Signature NFT name length max limit.
-	/// Comment-202409143 applies.
-	uint256 internal constant COSMIC_SIGNATURE_NFT_NFT_NAME_LENGTH_MAX_LIMIT = 32;
+	// /// @notice Cosmic Signature NFT name length max limit.
+	// /// Comment-202409143 applies.
+	// uint256 internal constant COSMIC_SIGNATURE_NFT_NFT_NAME_LENGTH_MAX_LIMIT = 32;
 
 	/// @notice Default `CosmicSignatureNft.nftBaseUri`.
 	/// @dev todo-1 Hardcode a valid value here.
-	string internal constant COSMIC_SIGNATURE_NFT_DEFAULT_NFT_BASE_URI = "TBD";
+	/// @dev todo-1 It should be HTTPS.
+	string internal constant COSMIC_SIGNATURE_NFT_DEFAULT_NFT_BASE_URI = "http://161.129.67.58/cg/metadata/";
 
 	/// @notice Default `CosmicSignatureNft.nftGenerationScriptUri`.
 	/// @dev todo-1 Hardcode a valid value here.

@@ -32,8 +32,8 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 	/// Comment-202411064 applies.
 	string public nftGenerationScriptUri = CosmicSignatureConstants.COSMIC_SIGNATURE_NFT_DEFAULT_NFT_GENERATION_SCRIPT_URI;
 
-	/// @notice For each NFT index (which equals NFT ID), contains NFT details.
-	NftInfo[1 << 64] private _nftsInfo;
+	/// @notice For each NFT index (which equals NFT ID), contains NFT metadata.
+	NftMetaData[1 << 64] private _nftsMetaData;
 
 	// #endregion
 	// #region `constructor`
@@ -125,46 +125,53 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 		_mint(nftOwnerAddress_, nftId_);
 
 		uint256 nftSeed_ = RandomNumberHelpers.generateRandomNumber(randomNumberSeed_);
-		_nftsInfo[nftId_].seed = nftSeed_;
+		_nftsMetaData[nftId_].seed = nftSeed_;
 		emit NftMinted(roundNum_, nftOwnerAddress_, nftSeed_, nftId_);
 		return nftId_;
 	}
 
 	// #endregion
-	// #region `getNftInfo`
+	// #region `getNftMetaData`
 
-	function getNftInfo(uint256 nftId_) external view override returns (NftInfo memory) {
-		return _nftsInfo[nftId_];
+	function getNftMetaData(uint256 nftId_) external view override returns (NftMetaData memory) {
+		return _nftsMetaData[nftId_];
 	}
 
 	// #endregion
-	// #region `setNftName`
+	// #region // `setNftName`
 
-	function setNftName(uint256 nftId_, string calldata nftName_) external override {
-		// require(
-		// 	_isAuthorized(_ownerOf(nftId_), _msgSender(), nftId_),
-		// 	CosmicSignatureErrors.CallerIsNotAuthorizedToManageNft("The caller is not authorized to manage this NFT.", nftId_)
-		// );
-		_checkAuthorized(_ownerOf(nftId_), _msgSender(), nftId_);
-		if (bytes(nftName_).length > CosmicSignatureConstants.COSMIC_SIGNATURE_NFT_NFT_NAME_LENGTH_MAX_LIMIT) {
-			revert CosmicSignatureErrors.TooLongNftName("NFT name is too long.", bytes(nftName_).length);
-		}
-		_nftsInfo[nftId_].name = nftName_;
-		emit NftNameChanged(nftId_, nftName_);
-	}
+	// function setNftName(uint256 nftId_, string calldata nftName_) external override {
+	// 	// require(
+	// 	// 	_isAuthorized(_ownerOf(nftId_), _msgSender(), nftId_),
+	// 	// 	CosmicSignatureErrors.CallerIsNotAuthorizedToManageNft("The caller is not authorized to manage this NFT.", nftId_)
+	// 	// );
+	// 	_checkAuthorized(_ownerOf(nftId_), _msgSender(), nftId_);
+	// 	if (bytes(nftName_).length > CosmicSignatureConstants.COSMIC_SIGNATURE_NFT_NFT_NAME_LENGTH_MAX_LIMIT) {
+	// 		revert CosmicSignatureErrors.TooLongNftName("NFT name is too long.", bytes(nftName_).length);
+	// 	}
+	// 	_nftsMetaData[nftId_].name = nftName_;
+	// 	emit NftNameChanged(nftId_, nftName_);
+	// }
 
 	// #endregion
-	// #region `getNftName`
+	// #region // `getNftName`
 
-	function getNftName(uint256 nftId_) external view override returns (string memory) {
-		return _nftsInfo[nftId_].name;
-	}
+	// function getNftName(uint256 nftId_) external view override returns (string memory) {
+	// 	return _nftsMetaData[nftId_].name;
+	// }
 
 	// #endregion
 	// #region `getNftSeed`
 
 	function getNftSeed(uint256 nftId_) external view override returns (uint256) {
-		return _nftsInfo[nftId_].seed;
+		return _nftsMetaData[nftId_].seed;
+	}
+
+	// #endregion
+	// #region `checkCallerIsAuthorizedFor`
+
+	function checkCallerIsAuthorizedFor(uint256 nftId_) external view override {
+		_checkAuthorized(_ownerOf(nftId_), _msgSender(), nftId_);
 	}
 
 	// #endregion
