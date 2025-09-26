@@ -1,7 +1,7 @@
 # Cosmic Signature
 
 **Cosmic Signature** is an on-chain, last-bidder-wins game built on **Arbitrum**.
-Players compete by placing bids with **ETH** or **Cosmic Signature Token (CST)**, extending the round deadline. When the timer expires, the last bidder wins the **main prize**. Along the way, participants earn **special prizes**, including **Cosmic Signature NFTs (COSIG)**, ETH, and CST rewards.
+Players compete by placing bids with **ETH** or **Cosmic Signature Token (CST)**, extending the round deadline. When the timer expires, the last bidder wins the **main prize**. Along the way, participants earn **special prizes**, including **Cosmic Signature NFTs **, ETH, and CST rewards.
 
 The ecosystem includes staking, donations, charity allocations, and DAO governance to create a complete, community-driven game economy.
 
@@ -23,7 +23,7 @@ The ecosystem includes staking, donations, charity allocations, and DAO governan
 
 ## Overview
 - **Network:** Arbitrum (testnet: Arbitrum Sepolia, mainnet: Arbitrum One).
-- **Game type:** Last-bidder-wins auction with Dutch auction pricing.
+- **Game type:** Last-bidder-wins auction with token asset generation.
 - **Bidding assets:** ETH and CST.
 - **NFT integration:** Random Walk NFT (discount bidding), Cosmic Signature NFT (ecosystem rewards).
 - **Governance:** CST token powers the DAO.
@@ -40,8 +40,8 @@ The ecosystem includes staking, donations, charity allocations, and DAO governan
   - Random Walk NFT halves ETH bid cost (one-time use per NFT).
 - **Prizes:** ETH, CST, and NFTs awarded to multiple winners at round end.
 - **Staking:**
-  - COSIG staking: ETH reward distribution.
-  - RWLK staking: raffle eligibility for COSIG prizes.
+  - CosmicSignature NFT staking: ETH reward distribution.
+  - RWLK staking: raffle eligibility for CosmicSignature NFT prizes.
 - **DAO governance:** CST holders vote on key ecosystem decisions.
 - **Charity & marketing:** Funds automatically allocated each round.
 
@@ -53,14 +53,14 @@ The ecosystem includes staking, donations, charity allocations, and DAO governan
 | **CosmicSignatureGame** | Core game logic: bidding, deadlines, main prize claims, prize distribution. |
 | **Bidding, BidStatistics, SecondaryPrizes, MainPrize** | Submodules handling bid pricing, statistics, and prize mechanics. |
 | **CosmicSignatureToken (CST)** | ERC-20 token; minted by the game for rewards and DAO voting power. |
-| **CosmicSignatureNft (COSIG)** | ERC-721 NFT; official NFT minted as rewards. |
+| **CosmicSignatureNft (CSN)** | ERC-721 NFT; official NFT minted as rewards. |
 | **RandomWalkNFT (RWLK)** | External ERC-721 NFT (not part of repo); used for discounted ETH bids. |
 | **PrizesWallet** | Custody of secondary prizes and donations with withdrawal timeouts. |
 | **CharityWallet** | Holds ETH allocations for donation to DAO-approved charity. |
 | **MarketingWallet** | Holds CST allocations for marketing initiatives. |
 | **CosmicSignatureDao** | Governance contract powered by CST. |
-| **StakingWalletCosmicSignatureNft** | ETH reward distribution to COSIG stakers. |
-| **StakingWalletRandomWalkNft** | Staking with random COSIG raffle eligibility. |
+| **StakingWalletCosmicSignatureNft** | ETH reward distribution to NFT stakers. |
+| **StakingWalletRandomWalkNft** | Staking with random NFT raffle eligibility. |
 | **SystemManagement** | Owner-only configuration and system parameter updates. |
 
 ---
@@ -70,18 +70,18 @@ At round end, prizes are distributed as follows:
 
 - **Main Prize Winner**
   - ETH share (main prize percentage)
-  - 1× COSIG
+  - 1× CosmicSignature NFT 
 
 - **Endurance Champion**
   - CST bonus (`totalNumBids * multiplier`)
-  - 1× COSIG
+  - 1× CosmicSignature NFT 
 
 - **Chrono-Warrior**
   - ETH share (chrono prize percentage)
 
 - **Last CST Bidder**
   - CST bonus
-  - 1× COSIG
+  - 1× CosmicSignature NFT 
 
 - **Bidders (raffles)**
   - ETH raffle prizes
@@ -90,12 +90,13 @@ At round end, prizes are distributed as follows:
 
 - **Stakers**
   - RW NFT stakers: raffle for Cosmic Signature NFTs
-  - COSIG stakers: ETH reward share
+  - CosmicSignature NFT stakers: ETH reward share
 
 - **Ecosystem**
   - Marketing Wallet: CST allocation
   - Charity Wallet: ETH allocation
 
+   Definition and examples of Chrono-Warrior & Endurance Champion are located [here](docs/endurance-chrono-README.md)
 ---
 
 ## Architecture & Flow
@@ -122,8 +123,8 @@ At round end, prizes are distributed as follows:
 ### Setup
 ```bash
 git clone <this-repo>
-cd cosmic-signature
-npm install
+cd CosmicSignature
+npm ci
 ````
 
 ### Compile
