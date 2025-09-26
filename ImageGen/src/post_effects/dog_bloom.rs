@@ -28,10 +28,6 @@ impl DogBloom {
 }
 
 impl PostEffect for DogBloom {
-    fn name(&self) -> &str {
-        "DoG Bloom"
-    }
-
     fn is_enabled(&self) -> bool {
         self.enabled
     }

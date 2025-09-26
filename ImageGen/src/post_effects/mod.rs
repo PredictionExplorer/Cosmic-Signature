@@ -4,6 +4,7 @@
 //! in a composable, modular fashion.
 
 use std::error::Error;
+#[cfg(test)]
 use std::fmt;
 
 /// Type alias for pixel buffers used throughout the pipeline.
@@ -12,20 +13,20 @@ pub type PixelBuffer = Vec<(f64, f64, f64, f64)>;
 
 /// Error type for post-processing pipeline failures.
 #[derive(Debug)]
-#[allow(dead_code)]
+#[cfg(test)]
 pub struct PostEffectError {
-    #[allow(dead_code)]
     effect_name: String,
-    #[allow(dead_code)]
     message: String,
 }
 
+#[cfg(test)]
 impl fmt::Display for PostEffectError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "PostEffect '{}' error: {}", self.effect_name, self.message)
     }
 }
 
+#[cfg(test)]
 impl Error for PostEffectError {}
 
 /// Trait for implementing post-processing effects.
@@ -33,10 +34,6 @@ impl Error for PostEffectError {}
 /// Each effect transforms an input buffer and returns a new buffer.
 /// Effects should be stateless and safe to call multiple times.
 pub trait PostEffect: Send + Sync {
-    /// Returns the human-readable name of this effect.
-    #[allow(dead_code)]
-    fn name(&self) -> &str;
-
     /// Process the input buffer and return the result.
     ///
     /// # Arguments
@@ -100,13 +97,13 @@ impl PostEffectChain {
     }
 
     /// Returns the number of effects in the chain.
-    #[allow(dead_code)]
+    #[cfg(test)]
     pub fn len(&self) -> usize {
         self.effects.len()
     }
 
     /// Returns true if the chain has no effects.
-    #[allow(dead_code)]
+    #[cfg(test)]
     pub fn is_empty(&self) -> bool {
         self.effects.is_empty()
     }
@@ -148,10 +145,6 @@ mod tests {
     }
 
     impl PostEffect for AddEffect {
-        fn name(&self) -> &str {
-            "Add Effect"
-        }
-
         fn is_enabled(&self) -> bool {
             self.enabled
         }

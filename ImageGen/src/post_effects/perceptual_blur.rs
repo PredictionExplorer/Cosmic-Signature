@@ -46,10 +46,6 @@ impl PerceptualBlur {
 }
 
 impl PostEffect for PerceptualBlur {
-    fn name(&self) -> &str {
-        "Perceptual Blur (OKLab)"
-    }
-
     fn is_enabled(&self) -> bool {
         self.enabled
     }

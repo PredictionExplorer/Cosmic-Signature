@@ -1,7 +1,6 @@
 //! Line drawing, plot functions, and primitive rendering
 
 use super::color::OklabColor;
-use super::constants;
 use crate::spectrum::NUM_BINS;
 use crate::utils::build_gaussian_kernel;
 use rayon::prelude::*;
@@ -83,20 +82,6 @@ impl GaussianBlurContext {
     }
 }
 
-/// Plot context for efficient pixel plotting
-struct PlotContext {
-    width_i32: i32,
-    height_i32: i32,
-    width_usize: usize,
-}
-
-impl PlotContext {
-    #[inline]
-    fn new(width: u32, height: u32) -> Self {
-        Self { width_i32: width as i32, height_i32: height as i32, width_usize: width as usize }
-    }
-}
-
 /// Apply 2D Gaussian blur to RGBA buffer in parallel
 pub fn parallel_blur_2d_rgba(
     buffer: &mut [(f64, f64, f64, f64)],
@@ -168,195 +153,10 @@ fn rfpart(x: f32) -> f32 {
     1.0 - fpart(x)
 }
 
-/// Plot a single pixel with anti-aliasing coverage
-fn plot(
-    accum: &mut [(f64, f64, f64, f64)],
-    ctx: &PlotContext,
-    x: i32,
-    y: i32,
-    alpha: f32, // alpha here is the anti-aliasing coverage (0..1)
-    color_l: f64,
-    color_a: f64,
-    color_b: f64,
-    base_alpha: f64, // base_alpha is the line segment's alpha
-    hdr_scale: f64,
-) {
-    // Fast bounds check
-    if x < 0 || x >= ctx.width_i32 || y < 0 || y >= ctx.height_i32 {
-        return;
-    }
-
-    // Early exit for low alpha
-    let src_alpha = alpha as f64 * base_alpha * hdr_scale;
-    if src_alpha < constants::ALPHA_THRESHOLD {
-        return;
-    }
-
-    // Single index calculation
-    let idx = y as usize * ctx.width_usize + x as usize;
-
-    // Direct access (bounds already checked)
-    let pixel = &mut accum[idx];
-
-    // Optimized compositing with premultiplied alpha
-    pixel.0 += color_l * src_alpha;
-    pixel.1 += color_a * src_alpha;
-    pixel.2 += color_b * src_alpha;
-    pixel.3 += src_alpha;
-}
-
 /// Linear interpolation
 #[inline]
 fn lerp(a: f64, b: f64, t: f32) -> f64 {
     a + (b - a) * t as f64
-}
-
-/// Draw anti-aliased line segment with alpha using Wu's algorithm
-pub fn draw_line_segment_aa_alpha(
-    accum: &mut [(f64, f64, f64, f64)],
-    width: u32,
-    height: u32,
-    mut x0: f32,
-    mut y0: f32,
-    mut x1: f32,
-    mut y1: f32,
-    col0: OklabColor,
-    col1: OklabColor,
-    alpha0: f64,
-    alpha1: f64,
-    hdr_scale: f64,
-) {
-    let ctx = PlotContext::new(width, height);
-
-    let dx = (x1 - x0).abs();
-    let dy = (y1 - y0).abs();
-
-    // Wu's algorithm works best for non-steep lines
-    let steep = dy > dx;
-
-    if steep {
-        // Swap x and y coordinates
-        (x0, y0) = (y0, x0);
-        (x1, y1) = (y1, x1);
-    }
-
-    if x0 > x1 {
-        // Swap endpoints
-        (x0, x1) = (x1, x0);
-        (y0, y1) = (y1, y0);
-    }
-
-    let dx = x1 - x0;
-    let dy = y1 - y0;
-    let gradient = if dx == 0.0 { 1.0 } else { dy / dx };
-
-    // Handle first endpoint
-    let xend = x0.round();
-    let yend = y0 + gradient * (xend - x0);
-    let xgap = rfpart(x0 + 0.5);
-    let xpxl1 = xend as i32;
-    let ypxl1 = ipart(yend);
-
-    // Plot first endpoint pixels
-    let (l0, a0, b0) = col0;
-    if steep {
-        plot(&mut *accum, &ctx, ypxl1, xpxl1, rfpart(yend) * xgap, l0, a0, b0, alpha0, hdr_scale);
-        plot(
-            &mut *accum,
-            &ctx,
-            ypxl1 + 1,
-            xpxl1,
-            fpart(yend) * xgap,
-            l0,
-            a0,
-            b0,
-            alpha0,
-            hdr_scale,
-        );
-    } else {
-        plot(&mut *accum, &ctx, xpxl1, ypxl1, rfpart(yend) * xgap, l0, a0, b0, alpha0, hdr_scale);
-        plot(
-            &mut *accum,
-            &ctx,
-            xpxl1,
-            ypxl1 + 1,
-            fpart(yend) * xgap,
-            l0,
-            a0,
-            b0,
-            alpha0,
-            hdr_scale,
-        );
-    }
-
-    let mut intery = yend + gradient;
-
-    // Handle second endpoint
-    let xend = x1.round();
-    let yend = y1 + gradient * (xend - x1);
-    let xgap = fpart(x1 + 0.5);
-    let xpxl2 = xend as i32;
-    let ypxl2 = ipart(yend);
-
-    // Plot second endpoint pixels
-    let (l1, a1, b1) = col1;
-    if steep {
-        plot(&mut *accum, &ctx, ypxl2, xpxl2, rfpart(yend) * xgap, l1, a1, b1, alpha1, hdr_scale);
-        plot(
-            &mut *accum,
-            &ctx,
-            ypxl2 + 1,
-            xpxl2,
-            fpart(yend) * xgap,
-            l1,
-            a1,
-            b1,
-            alpha1,
-            hdr_scale,
-        );
-    } else {
-        plot(&mut *accum, &ctx, xpxl2, ypxl2, rfpart(yend) * xgap, l1, a1, b1, alpha1, hdr_scale);
-        plot(
-            &mut *accum,
-            &ctx,
-            xpxl2,
-            ypxl2 + 1,
-            fpart(yend) * xgap,
-            l1,
-            a1,
-            b1,
-            alpha1,
-            hdr_scale,
-        );
-    }
-
-    // Draw line between endpoints
-    let total_pixels = (xpxl2 - xpxl1 - 1).max(0);
-    if total_pixels > 0 {
-        for x in (xpxl1 + 1)..xpxl2 {
-            // Calculate interpolation parameter
-            let t = (x - xpxl1) as f32 / (xpxl2 - xpxl1) as f32;
-
-            // Interpolate color
-            let l = lerp(l0, l1, t);
-            let a = lerp(a0, a1, t);
-            let b = lerp(b0, b1, t);
-            let alpha = lerp(alpha0, alpha1, t);
-
-            let y = ipart(intery);
-            let frac = fpart(intery);
-
-            if steep {
-                plot(&mut *accum, &ctx, y, x, rfpart(intery), l, a, b, alpha, hdr_scale);
-                plot(&mut *accum, &ctx, y + 1, x, frac, l, a, b, alpha, hdr_scale);
-            } else {
-                plot(&mut *accum, &ctx, x, y, rfpart(intery), l, a, b, alpha, hdr_scale);
-                plot(&mut *accum, &ctx, x, y + 1, frac, l, a, b, alpha, hdr_scale);
-            }
-
-            intery += gradient;
-        }
-    }
 }
 
 /// Plot a spectral pixel with anti-aliasing coverage

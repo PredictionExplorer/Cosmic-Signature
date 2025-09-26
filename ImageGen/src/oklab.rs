@@ -112,45 +112,6 @@ pub fn oklab_to_linear_srgb_batch(pixels: &[(f64, f64, f64, f64)]) -> Vec<(f64, 
         .collect()
 }
 
-/// Performs "over" compositing in OKLab space with premultiplied alpha.
-///
-/// This function implements the Porter-Duff "over" operator for OKLab colors.
-/// Both source and destination colors should already be in OKLab space.
-///
-/// # Arguments
-/// * `src_l`, `src_a`, `src_b` - Source color in OKLab (unpremultiplied)
-/// * `src_alpha` - Source alpha value
-/// * `dst_l`, `dst_a`, `dst_b` - Destination color in OKLab (premultiplied)
-/// * `dst_alpha` - Destination alpha value
-///
-/// # Returns
-/// * `(L, a, b, alpha)` - Composited color in OKLab (premultiplied)
-#[inline]
-#[allow(dead_code)]
-pub fn oklab_over_composite(
-    src_l: f64,
-    src_a: f64,
-    src_b: f64,
-    src_alpha: f64,
-    dst_l: f64,
-    dst_a: f64,
-    dst_b: f64,
-    dst_alpha: f64,
-) -> (f64, f64, f64, f64) {
-    // Premultiply source
-    let src_l_pre = src_l * src_alpha;
-    let src_a_pre = src_a * src_alpha;
-    let src_b_pre = src_b * src_alpha;
-
-    // Over formula: src + dst * (1 - src_alpha)
-    let out_l = src_l_pre + dst_l * (1.0 - src_alpha);
-    let out_a = src_a_pre + dst_a * (1.0 - src_alpha);
-    let out_b = src_b_pre + dst_b * (1.0 - src_alpha);
-    let out_alpha = src_alpha + dst_alpha * (1.0 - src_alpha);
-
-    (out_l, out_a, out_b, out_alpha)
-}
-
 impl GamutMapMode {
     /// Map an RGB color that may be outside the [0, 1] gamut to valid range.
     ///

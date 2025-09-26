@@ -10,35 +10,7 @@ use rayon::prelude::*;
 use std::error::Error;
 use std::f64::consts::TAU;
 
-#[allow(dead_code)]
-#[derive(Clone, Copy, Debug)]
-pub enum ToneMappingStyle {
-    Cinematic,
-    Linear,
-    HighKey,
-}
 
-impl ToneMappingStyle {
-    #[allow(dead_code)]
-    fn apply(&self, channel: f64) -> f64 {
-        match self {
-            ToneMappingStyle::Cinematic => {
-                let x = channel.max(0.0);
-                let a = 2.51;
-                let b = 0.03;
-                let c = 2.43;
-                let d = 0.59;
-                let e = 0.14;
-                ((x * (a * x + b)) / (x * (c * x + d) + e)).clamp(0.0, 1.0)
-            }
-            ToneMappingStyle::Linear => channel.clamp(0.0, 1.0),
-            ToneMappingStyle::HighKey => {
-                let x = channel.clamp(0.0, 2.0);
-                (x / (x + 1.2)).powf(0.85).clamp(0.0, 1.0)
-            }
-        }
-    }
-}
 
 fn luminance(r: f64, g: f64, b: f64) -> f64 {
     0.2126 * r + 0.7152 * g + 0.0722 * b
@@ -54,22 +26,16 @@ fn remap_tone_curve(lum: f64, strength: f64) -> f64 {
 }
 
 #[derive(Clone, Debug)]
-#[allow(dead_code)]
 pub struct ColorGradeParams {
     pub strength: f64,
     pub vignette_strength: f64,
     pub vignette_softness: f64,
-    pub warmth_shift: f64,
     pub vibrance: f64,
     pub clarity_strength: f64,
     pub clarity_radius: usize,
     pub tone_curve: f64,
     pub shadow_tint: [f64; 3],
     pub highlight_tint: [f64; 3],
-    pub tone_mapping: ToneMappingStyle,
-    pub color_lift: [f64; 3],
-    pub color_gamma: [f64; 3],
-    pub color_gain: [f64; 3],
 }
 
 impl Default for ColorGradeParams {
@@ -78,17 +44,12 @@ impl Default for ColorGradeParams {
             strength: constants::DEFAULT_COLOR_GRADE_STRENGTH,
             vignette_strength: constants::DEFAULT_COLOR_GRADE_VIGNETTE,
             vignette_softness: constants::DEFAULT_COLOR_GRADE_VIGNETTE_SOFTNESS,
-            warmth_shift: constants::DEFAULT_COLOR_GRADE_WARMTH,
             vibrance: constants::DEFAULT_COLOR_GRADE_VIBRANCE,
             clarity_strength: constants::DEFAULT_COLOR_GRADE_CLARITY,
             clarity_radius: constants::DEFAULT_COLOR_GRADE_CLARITY_RADIUS,
             tone_curve: constants::DEFAULT_COLOR_GRADE_TONE_CURVE,
             shadow_tint: constants::DEFAULT_COLOR_GRADE_SHADOW_TINT,
             highlight_tint: constants::DEFAULT_COLOR_GRADE_HIGHLIGHT_TINT,
-            tone_mapping: ToneMappingStyle::Cinematic,
-            color_lift: constants::DEFAULT_COLOR_GRADE_LIFT,
-            color_gamma: constants::DEFAULT_COLOR_GRADE_GAMMA,
-            color_gain: constants::DEFAULT_COLOR_GRADE_GAIN,
         }
     }
 }
@@ -200,10 +161,6 @@ impl Default for CinematicColorGrade {
 }
 
 impl PostEffect for CinematicColorGrade {
-    fn name(&self) -> &str {
-        "Cinematic Color Grade"
-    }
-
     fn is_enabled(&self) -> bool {
         self.enabled && self.params.strength > 0.0
     }

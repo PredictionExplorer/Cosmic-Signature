@@ -7,7 +7,6 @@ use super::constants;
 use super::context::PixelBuffer;
 use super::drawing::parallel_blur_2d_rgba;
 use super::error::{RenderError, Result};
-use crate::oklab;
 use crate::post_effects::{
     AutoExposure, ChampleveConfig, CinematicColorGrade, ColorGradeParams, DogBloom, GaussianBloom,
     PerceptualBlur, PerceptualBlurConfig, PostEffect, PostEffectChain, aether::AetherConfig,
@@ -37,24 +36,22 @@ pub struct EffectConfig {
 
 /// Per-frame parameters that may vary
 #[derive(Clone, Debug)]
-#[allow(dead_code)]
 pub struct FrameParams {
-    pub frame_number: usize,
-    pub density: Option<f64>,
+    pub _frame_number: usize,
+    pub _density: Option<f64>,
 }
 
 /// Persistent effect chain builder
 pub struct EffectChainBuilder {
     chain: PostEffectChain,
-    #[allow(dead_code)]
-    config: EffectConfig,
+    _config: EffectConfig,
 }
 
 impl EffectChainBuilder {
     /// Create a new effect chain builder with given configuration
     pub fn new(config: EffectConfig) -> Self {
         let chain = Self::build_chain(&config);
-        Self { chain, config }
+        Self { chain, _config: config }
     }
 
     /// Build the effect chain based on configuration
@@ -234,79 +231,6 @@ impl MipPyramid {
         pyramid
     }
 
-    #[allow(dead_code)]
-    pub fn upsample_bilinear(
-        &self,
-        level: usize,
-        target_w: usize,
-        target_h: usize,
-    ) -> Vec<(f64, f64, f64, f64)> {
-        let src = &self.levels[level];
-        let src_w = self.widths[level];
-        let src_h = self.heights[level];
-        let mut result = vec![(0.0, 0.0, 0.0, 0.0); target_w * target_h];
-
-        result.par_iter_mut().enumerate().for_each(|(idx, pixel)| {
-            let x = idx % target_w;
-            let y = idx / target_w;
-
-            // Map to source coordinates
-            let sx = (x as f64 * src_w as f64 / target_w as f64).min((src_w - 1) as f64);
-            let sy = (y as f64 * src_h as f64 / target_h as f64).min((src_h - 1) as f64);
-
-            let x0 = sx.floor() as usize;
-            let y0 = sy.floor() as usize;
-            let x1 = (x0 + 1).min(src_w - 1);
-            let y1 = (y0 + 1).min(src_h - 1);
-
-            let fx = sx - x0 as f64;
-            let fy = sy - y0 as f64;
-
-            // Get source pixels
-            let p00 = src[y0 * src_w + x0];
-            let p01 = src[y0 * src_w + x1];
-            let p10 = src[y1 * src_w + x0];
-            let p11 = src[y1 * src_w + x1];
-
-            // Proper premultiplied alpha interpolation
-            // First interpolate premultiplied colors normally
-            let top = (
-                p00.0 * (1.0 - fx) + p01.0 * fx,
-                p00.1 * (1.0 - fx) + p01.1 * fx,
-                p00.2 * (1.0 - fx) + p01.2 * fx,
-                p00.3 * (1.0 - fx) + p01.3 * fx,
-            );
-
-            let bottom = (
-                p10.0 * (1.0 - fx) + p11.0 * fx,
-                p10.1 * (1.0 - fx) + p11.1 * fx,
-                p10.2 * (1.0 - fx) + p11.2 * fx,
-                p10.3 * (1.0 - fx) + p11.3 * fx,
-            );
-
-            *pixel = (
-                top.0 * (1.0 - fy) + bottom.0 * fy,
-                top.1 * (1.0 - fy) + bottom.1 * fy,
-                top.2 * (1.0 - fy) + bottom.2 * fy,
-                top.3 * (1.0 - fy) + bottom.3 * fy,
-            );
-
-            // Renormalize if needed for very low alpha to avoid color bleeding
-            if pixel.3 > 0.0 && pixel.3 < 0.01 {
-                let scale = pixel.3
-                    / (p00.3 * (1.0 - fx) * (1.0 - fy)
-                        + p01.3 * fx * (1.0 - fy)
-                        + p10.3 * (1.0 - fx) * fy
-                        + p11.3 * fx * fy)
-                        .max(1e-10);
-                pixel.0 *= scale;
-                pixel.1 *= scale;
-                pixel.2 *= scale;
-            }
-        });
-
-        result
-    }
 }
 
 /// Standalone bilinear upsampling function for arbitrary data
@@ -461,25 +385,6 @@ pub(crate) fn convert_spd_buffer_to_rgba(
     });
 }
 
-/// Convert accumulation buffer from OKLab to RGB color space
-pub(crate) fn convert_accum_buffer_to_rgb(
-    buffer: &[(f64, f64, f64, f64)],
-) -> Vec<(f64, f64, f64, f64)> {
-    buffer
-        .par_iter()
-        .map(|&(l, a, b, alpha)| {
-            if alpha > 0.0 {
-                // Divide by alpha to get actual OKLab values
-                let (r, g, b_val) = oklab::oklab_to_linear_srgb(l / alpha, a / alpha, b / alpha);
-                // Keep premultiplied alpha
-                (r * alpha, g * alpha, b_val * alpha, alpha)
-            } else {
-                (0.0, 0.0, 0.0, 0.0)
-            }
-        })
-        .collect()
-}
-
 struct ChampleveFinish {
     config: ChampleveConfig,
 }
@@ -491,10 +396,6 @@ impl ChampleveFinish {
 }
 
 impl PostEffect for ChampleveFinish {
-    fn name(&self) -> &str {
-        "Champleve Iridescence"
-    }
-
     fn process(
         &self,
         input: &PixelBuffer,
@@ -518,10 +419,6 @@ impl AetherFinish {
 }
 
 impl PostEffect for AetherFinish {
-    fn name(&self) -> &str {
-        "Woven Aether"
-    }
-
     fn process(
         &self,
         input: &PixelBuffer,

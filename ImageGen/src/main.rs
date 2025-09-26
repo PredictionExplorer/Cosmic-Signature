@@ -265,7 +265,6 @@ fn main() -> std::result::Result<(), Box<dyn Error>> {
 
     // Create render configuration
     let render_config = render::RenderConfig {
-        alpha_compress: args.alpha_compress,
         hdr_scale: if args.hdr_mode == "auto" { args.hdr_scale } else { 1.0 },
     };
 

@@ -53,13 +53,13 @@ impl Default for VideoEncodingOptions {
 
 impl VideoEncodingOptions {
     /// Create options optimized for high quality archival
-    #[allow(dead_code)]
+    #[cfg(test)]
     pub fn high_quality() -> Self {
         Self { preset: "slow".to_string(), crf: 15, ..Default::default() }
     }
 
     /// Create options optimized for web streaming
-    #[allow(dead_code)]
+    #[cfg(test)]
     pub fn web_optimized() -> Self {
         Self {
             bitrate: "10M".to_string(),
@@ -71,7 +71,7 @@ impl VideoEncodingOptions {
     }
 
     /// Create options for fast preview generation
-    #[allow(dead_code)]
+    #[cfg(test)]
     pub fn fast_preview() -> Self {
         Self {
             bitrate: "5M".to_string(),

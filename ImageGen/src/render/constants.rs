@@ -4,8 +4,6 @@
 //! color space conversions, and video encoding. Each constant is documented
 //! with its purpose and typical usage range.
 
-#![allow(dead_code)]
-
 // ========== Color Generation Constants ==========
 
 /// Degrees in a full rotation
@@ -56,9 +54,6 @@ pub const OKLAB_LIGHTNESS_WAVE_AMPLITUDE: f64 = 0.22;
 /// Default HDR scale factor when HDR mode is disabled
 pub const DEFAULT_HDR_SCALE: f64 = 1.0;
 
-/// Alpha threshold for skipping pixels (below this is considered transparent)
-pub const ALPHA_EPSILON: f64 = 1e-6;
-
 /// Bilinear interpolation averaging factor (1/4 for 4 samples)
 pub const BILINEAR_AVG_FACTOR: f64 = 0.25;
 
@@ -74,12 +69,6 @@ pub const GAUSSIAN_SIGMA_MIN: f64 = 1.0;
 /// Factor for two-sigma-squared calculation in Gaussian
 pub const GAUSSIAN_TWO_FACTOR: f64 = 2.0;
 
-/// Default HDR scale multiplier for line alpha
-pub const DEFAULT_HDR_SCALE_LINE: f64 = 0.15;
-
-/// Alpha threshold below which pixels are skipped (for performance)
-pub const ALPHA_THRESHOLD: f64 = 1e-6;
-
 /// Default strength for the cinematic color grading effect (0-1)
 pub const DEFAULT_COLOR_GRADE_STRENGTH: f64 = 0.48;
 
@@ -88,9 +77,6 @@ pub const DEFAULT_COLOR_GRADE_VIGNETTE: f64 = 0.45;
 
 /// Default vignette softness exponent (> 1.0)
 pub const DEFAULT_COLOR_GRADE_VIGNETTE_SOFTNESS: f64 = 2.6;
-
-/// Default warmth shift applied during color grading
-pub const DEFAULT_COLOR_GRADE_WARMTH: f64 = 0.024;
 
 /// Default vibrance boost applied during color grading
 pub const DEFAULT_COLOR_GRADE_VIBRANCE: f64 = 1.12;
@@ -109,15 +95,6 @@ pub const DEFAULT_COLOR_GRADE_SHADOW_TINT: [f64; 3] = [-0.08, -0.02, 0.16];
 
 /// Default warm tint added to highlights during color grading (linear RGB deltas)
 pub const DEFAULT_COLOR_GRADE_HIGHLIGHT_TINT: [f64; 3] = [0.11, 0.05, -0.03];
-
-/// Default lift adjustment applied before grading (per channel)
-pub const DEFAULT_COLOR_GRADE_LIFT: [f64; 3] = [0.012, 0.006, -0.005];
-
-/// Default gamma adjustment per channel for filmic grade
-pub const DEFAULT_COLOR_GRADE_GAMMA: [f64; 3] = [0.90, 0.94, 1.03];
-
-/// Default gain adjustment per channel to balance highlights
-pub const DEFAULT_COLOR_GRADE_GAIN: [f64; 3] = [1.2, 1.08, 0.94];
 
 /// Default cell density for the champlevé effect (cells per normalized unit)
 pub const DEFAULT_CHAMPLEVE_CELL_DENSITY: f64 = 55.0;
@@ -200,21 +177,13 @@ pub const DEFAULT_DT: f64 = 0.001;
 /// Kinetic energy factor (1/2 in KE = 1/2 * m * v²)
 pub const KINETIC_ENERGY_FACTOR: f64 = 0.5;
 
-/// Default perceptual blur strength
-pub const DEFAULT_PERCEPTUAL_BLUR_STRENGTH: f64 = 0.5;
-
 // ========== Mathematical Constants ==========
 
 /// Two times PI (full circle in radians)
 pub const TWO_PI: f64 = 2.0 * std::f64::consts::PI;
-
-/// Small epsilon for floating point comparisons
-pub const FLOAT_EPSILON: f64 = 1e-6;
 
 // ========== Progress Reporting Constants ==========
 
 /// Percentage conversion factor
 pub const PERCENT_FACTOR: f64 = 100.0;
 
-/// Progress update interval (update every N frames)
-pub const PROGRESS_UPDATE_INTERVAL: usize = 100;

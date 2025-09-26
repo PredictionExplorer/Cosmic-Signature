@@ -61,21 +61,6 @@ pub static BIN_RGB: Lazy<[(f64, f64, f64); NUM_BINS]> = Lazy::new(|| {
     arr
 });
 
-/// Sub-pixel shift for each wavelength bin to create "prismatic" fringes.
-/// Computed along a golden-angle spiral inside one pixel (≤ ±0.35 px).
-#[allow(dead_code)]
-pub static BIN_SHIFT: Lazy<[(f32, f32); NUM_BINS]> = Lazy::new(|| {
-    let golden = std::f32::consts::PI * (3.0 - 5.0_f32.sqrt()); // ≈2.39996
-    let mut arr = [(0.0, 0.0); NUM_BINS];
-    let base = 1.5_f32; // stronger dispersion
-    for i in 0..NUM_BINS {
-        let radius = base * (i as f32 + 1.0) / NUM_BINS as f32;
-        let angle = (i as f32) * golden;
-        arr[i] = (radius * angle.cos(), radius * angle.sin());
-    }
-    arr
-});
-
 /// Per-bin tone-mapping strength k_b used in `energy' = 1 - exp(-k_b * e)`.
 /// 
 /// Optimized for the new wavelength mapping to ensure all colors are vibrant:
@@ -112,60 +97,6 @@ pub static BIN_TONE: Lazy<[f64; NUM_BINS]> = Lazy::new(|| {
     }
     arr
 });
-
-/// Convert an OKLab color to its closest wavelength bin based on hue.
-/// 
-/// This function uses the same perceptually uniform wavelength mapping
-/// as the spectral rendering pipeline to ensure color consistency.
-#[inline]
-#[allow(dead_code)]
-pub fn oklab_to_bin(col: &(f64, f64, f64)) -> usize {
-    let (_l, a, b) = *col;
-
-    // Calculate hue angle in degrees (0 to 360)
-    let hue_rad = b.atan2(a);
-    let mut hue_deg = hue_rad.to_degrees();
-    if hue_deg < 0.0 {
-        hue_deg += 360.0;
-    }
-    
-    // Map hue to wavelength using the same perceptually uniform distribution
-    // as used in the spectral rendering pipeline
-    let wavelength = if hue_deg < 30.0 {
-        // Red to red-orange (0-30°) -> 700-650nm
-        700.0 - (hue_deg / 30.0) * 50.0
-    } else if hue_deg < 60.0 {
-        // Red-orange to orange (30-60°) -> 650-620nm
-        650.0 - ((hue_deg - 30.0) / 30.0) * 30.0
-    } else if hue_deg < 90.0 {
-        // Orange to yellow (60-90°) -> 620-570nm
-        620.0 - ((hue_deg - 60.0) / 30.0) * 50.0
-    } else if hue_deg < 150.0 {
-        // Yellow to green (90-150°) -> 570-510nm
-        570.0 - ((hue_deg - 90.0) / 60.0) * 60.0
-    } else if hue_deg < 210.0 {
-        // Green to cyan (150-210°) -> 510-485nm
-        510.0 - ((hue_deg - 150.0) / 60.0) * 25.0
-    } else if hue_deg < 270.0 {
-        // Cyan to blue (210-270°) -> 485-450nm
-        485.0 - ((hue_deg - 210.0) / 60.0) * 35.0
-    } else if hue_deg < 330.0 {
-        // Blue to violet (270-330°) -> 450-380nm
-        450.0 - ((hue_deg - 270.0) / 60.0) * 70.0
-    } else {
-        // Violet to red (330-360°) -> 380-700nm (wrap around)
-        380.0 + ((hue_deg - 330.0) / 30.0) * 320.0
-    };
-    
-    // Ensure wavelength is within valid bounds
-    let wavelength = wavelength.clamp(LAMBDA_START, LAMBDA_END);
-    
-    // Convert wavelength to bin index
-    let bin_f = (wavelength - LAMBDA_START) / ((LAMBDA_END - LAMBDA_START) / NUM_BINS as f64);
-    let bin = (bin_f.floor() as usize).min(NUM_BINS - 1);
-    
-    bin
-}
 
 /// Convert an SPD sample (per-bin energy) to linear-sRGB premultiplied RGBA.
 /// Alpha equals total energy (capped at 1.0) so downstream blending treats it
