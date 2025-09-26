@@ -95,40 +95,40 @@ function cvlPWClaim(uint256 round, address token, uint256 amount, address to) {
 }
 
 /* ================================ Methods ================================= */
-/* --- ERC-20: wildcard summaries --- */
+/* --- ERC-20: typed summaries matching ABI (NO 'expect' for typed) --- */
 methods {
-	function ERC20Mock.transfer(address to, uint256 amount) external with(env e)
-		=> cvlErc20Transfer(calledContract, e.msg.sender, to, amount) expect bool;
+	function ERC20Mock.transfer(address to, uint256 amount) external returns (bool) with(env e)
+		=> cvlErc20Transfer(calledContract, e.msg.sender, to, amount);
 
-	function ERC20Mock.transferFrom(address from, address to, uint256 amount) external with(env e)
-		=> cvlErc20TransferFrom(calledContract, e.msg.sender, from, to, amount) expect bool;
+	function ERC20Mock.transferFrom(address from, address to, uint256 amount) external returns (bool) with(env e)
+		=> cvlErc20TransferFrom(calledContract, e.msg.sender, from, to, amount);
 
-	function ERC20Mock.approve(address spender, uint256 amount) external with(env e)
-		=> cvlErc20Approve(calledContract, e.msg.sender, spender, amount) expect bool;
+	function ERC20Mock.approve(address spender, uint256 amount) external returns (bool) with(env e)
+		=> cvlErc20Approve(calledContract, e.msg.sender, spender, amount);
 
 	function ERC20Mock.mint(address to, uint256 amount) external with(env e)
-		=> cvlErc20Mint(calledContract, to, amount) expect void;
+		=> cvlErc20Mint(calledContract, to, amount);
 
-	function ERC20Mock.balanceOf(address account) external
-		=> cvlErc20BalanceOf(calledContract, account) expect uint256;
+	function ERC20Mock.balanceOf(address account) external returns (uint256)
+		=> cvlErc20BalanceOf(calledContract, account);
 
-	function ERC20Mock.allowance(address owner, address spender) external
-		=> cvlErc20AllowanceOf(calledContract, owner, spender) expect uint256;
+	function ERC20Mock.allowance(address owner, address spender) external returns (uint256)
+		=> cvlErc20AllowanceOf(calledContract, owner, spender);
 
-	function ERC20Mock.totalSupply() external
-		=> cvlErc20TotalOf(calledContract) expect uint256;
+	function ERC20Mock.totalSupply() external returns (uint256)
+		=> cvlErc20TotalOf(calledContract);
 }
 
-/* --- ERC-721: wildcard summaries --- */
+/* --- ERC-721: typed summaries matching ABI (NO 'expect' for typed) --- */
 methods {
 	function ERC721Mock.transferFrom(address from, address to, uint256 tokenId) external with(env e)
-		=> cvlNftTransferFrom(calledContract, from, to, tokenId, e.msg.sender) expect void;
+		=> cvlNftTransferFrom(calledContract, from, to, tokenId, e.msg.sender);
 
 	function ERC721Mock.safeTransferFrom(address from, address to, uint256 tokenId) external with(env e)
-		=> cvlNftTransferFrom(calledContract, from, to, tokenId, e.msg.sender) expect void;
+		=> cvlNftTransferFrom(calledContract, from, to, tokenId, e.msg.sender);
 
-	function ERC721Mock.ownerOf(uint256 tokenId) external
-		=> gOwner721[calledContract][tokenId] expect address;
+	function ERC721Mock.ownerOf(uint256 tokenId) external returns (address)
+		=> gOwner721[calledContract][tokenId];
 }
 
 /* --- PrizesWallet API: wildcard summaries (timing-agnostic) --- */
