@@ -161,7 +161,7 @@ library CosmicSignatureConstants {
 	/// @notice Default `CosmicSignatureNft.nftBaseUri`.
 	/// @dev todo-1 Hardcode a valid value here.
 	/// @dev todo-1 It should be HTTPS.
-	string internal constant COSMIC_SIGNATURE_NFT_DEFAULT_NFT_BASE_URI = "http://161.129.67.58/cg/metadata/";
+	string internal constant COSMIC_SIGNATURE_NFT_DEFAULT_NFT_BASE_URI = "http://nfts.cosmicsignature.com/cg/metadata/";
 
 	/// @notice Default `CosmicSignatureNft.nftGenerationScriptUri`.
 	/// @dev todo-1 Hardcode a valid value here.
