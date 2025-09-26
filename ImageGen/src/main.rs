@@ -40,7 +40,7 @@ struct Args {
     #[arg(long)]
     num_sims: Option<usize>,
 
-    #[arg(long, default_value_t = 1_000_000)]
+    #[arg(long, default_value_t = 1_500_000)]
     num_steps_sim: usize,
 
     #[arg(long, default_value_t = 300.0)]
@@ -55,10 +55,10 @@ struct Args {
     #[arg(long, default_value_t = 300.0)]
     max_mass: f64,
 
-    #[arg(long, default_value_t = 1.0)]
+    #[arg(long, default_value_t = 0.75)]
     chaos_weight: f64,
 
-    #[arg(long, default_value_t = 8.5)]
+    #[arg(long, default_value_t = 11.0)]
     equil_weight: f64,
 
     #[arg(long, default_value_t = 1920)]
@@ -68,18 +68,18 @@ struct Args {
     height: u32,
 
     /// Lower percentile for clamping
-    #[arg(long, default_value_t = 0.005)]
+    #[arg(long, default_value_t = 0.010)]
     clip_black: f64,
 
     /// Upper percentile for clamping
-    #[arg(long, default_value_t = 0.995)]
+    #[arg(long, default_value_t = 0.990)]
     clip_white: f64,
 
     #[arg(long, default_value_t = false)]
     special: bool,
 
     /// Denominator for alpha used in drawing lines
-    #[arg(long, default_value_t = 10_000_000)]
+    #[arg(long, default_value_t = 15_000_000)]
     alpha_denom: usize,
 
     /// If body's energy in COM frame is above this, treat as escaping
@@ -103,11 +103,11 @@ struct Args {
     drift_scale: f64,
 
     /// Fraction of the orbit to traverse when using elliptical drift (0-1)
-    #[arg(long, default_value_t = 0.25)]
+    #[arg(long, default_value_t = 0.18)]
     drift_arc_fraction: f64,
 
     /// Orbit eccentricity when using elliptical drift (0-0.95)
-    #[arg(long, default_value_t = 0.2)]
+    #[arg(long, default_value_t = 0.15)]
     drift_orbit_eccentricity: f64,
 
     /// Profile tag to append to output filenames
@@ -119,15 +119,15 @@ struct Args {
     bloom_mode: String,
 
     /// DoG bloom strength (0.1-1.0)
-    #[arg(long, default_value_t = 0.35)]
+    #[arg(long, default_value_t = 0.32)]
     dog_strength: f64,
 
     /// DoG inner sigma in pixels
-    #[arg(long, default_value_t = 6.0)]
+    #[arg(long, default_value_t = 7.0)]
     dog_sigma: f64,
 
     /// DoG outer/inner sigma ratio
-    #[arg(long, default_value_t = 2.5)]
+    #[arg(long, default_value_t = 2.8)]
     dog_ratio: f64,
 
     /// HDR mode: off or auto
@@ -135,7 +135,7 @@ struct Args {
     hdr_mode: String,
 
     /// HDR scale multiplier for line alpha
-    #[arg(long, default_value_t = 0.15)]
+    #[arg(long, default_value_t = 0.12)]
     hdr_scale: f64,
 
     /// Enable perceptual blur in OKLab space: off or on
@@ -147,7 +147,7 @@ struct Args {
     perceptual_blur_radius: Option<usize>,
 
     /// Perceptual blur strength (0.0-1.0)
-    #[arg(long, default_value_t = 0.5)]
+    #[arg(long, default_value_t = 0.65)]
     perceptual_blur_strength: f64,
 
     /// Gamut mapping mode for perceptual blur: clamp, preserve-hue, soft-clip
@@ -196,7 +196,7 @@ fn main() -> std::result::Result<(), Box<dyn Error>> {
             if args.special {
                 100_000
             } else {
-                5_000
+                30_000
             }
         }
     };
@@ -281,17 +281,17 @@ fn main() -> std::result::Result<(), Box<dyn Error>> {
     info!("STAGE 5/7: PASS 1 => building global histogram...");
     let (blur_radius_px, blur_strength, blur_core_brightness) = if args.special {
         (
-            // stronger blur for special mode
-            (0.02 * width.min(height) as f64).round() as usize,
+            // stronger blur for special mode, optimized for 1080p
+            (0.025 * std::cmp::min(args.width, args.height) as f64).round() as usize,
             10.0, // boosted blur strength
             10.0, // core brightness = equal to strength for brighter lines
         )
     } else {
         (
-            // stronger default blur
-            (0.012 * width.min(height) as f64).round() as usize,
-            8.0, // boosted blur strength
-            8.0, // core brightness = equal to strength for brighter lines
+            // museum-grade blur settings optimized for 1080p viewing
+            (0.018 * std::cmp::min(args.width, args.height) as f64).round() as usize,
+            9.0, // boosted blur strength
+            9.0, // core brightness = equal to strength for brighter lines
         )
     };
 

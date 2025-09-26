@@ -12,8 +12,11 @@ pub type PixelBuffer = Vec<(f64, f64, f64, f64)>;
 
 /// Error type for post-processing pipeline failures.
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct PostEffectError {
+    #[allow(dead_code)]
     effect_name: String,
+    #[allow(dead_code)]
     message: String,
 }
 

@@ -1,0 +1,14 @@
+# Rust toolchain configuration
+# This file ensures consistent Rust versions across all development environments
+# to avoid "works on my machine" issues.
+
+[toolchain]
+# Using Rust 1.90.0 to match the project's minimum requirements
+# This version supports edition 2024 and provides stability for our requirements
+channel = "1.90.0"
+components = [
+    "rustfmt",    # Code formatting
+    "clippy",     # Linting
+    "rust-src",   # Source code for better IDE support
+]
+profile = "default"
