@@ -237,9 +237,9 @@ library CosmicSignatureConstants {
 	/// @notice This is equivalent to the midnight of 9000-01-01.
 	/// @dev JavaScript  code to calculate this.
 	///		const n = /*Math.trunc*/((new Date(9000, 1 - 1, 1)).getTime() / 1000);
-	///		console.log(n);
+	///		console.info(n);
 	///		const d = new Date(n * 1000);
-	///		console.log(d);
+	///		console.info(d);
 	uint256 internal constant TIMESTAMP_9000_01_01 = 221_845_392_000;
 
 	// #endregion
