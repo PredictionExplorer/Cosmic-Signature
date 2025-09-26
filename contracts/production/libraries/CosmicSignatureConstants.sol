@@ -184,7 +184,7 @@ library CosmicSignatureConstants {
 	// #region Marketing
 
 	/// @notice Default `marketingWalletCstContributionAmount`.
-	uint256 internal constant DEFAULT_MARKETING_WALLET_CST_CONTRIBUTION_AMOUNT = 300 ether;
+	uint256 internal constant DEFAULT_MARKETING_WALLET_CST_CONTRIBUTION_AMOUNT = 1000 ether;
 
 	// #endregion
 	// #region Charity
