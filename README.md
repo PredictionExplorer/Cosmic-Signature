@@ -123,7 +123,7 @@ At round end, prizes are distributed as follows:
 ### Setup
 ```bash
 git clone <this-repo>
-cd CosmicSignature
+cd Cosmic-Signature
 npm ci
 ````
 
