@@ -40,7 +40,7 @@ abstract contract BidStatistics is CosmicSignatureGameStorage, IBidStatistics {
 	// #endregion
 	// #region `_updateChampionsIfNeeded`
 
-	/// @notice Updates the Endurance Champion and Chrono-Warrior info if needed.
+	/// @notice Updates Endurance Champion and Chrono-Warrior info if needed.
 	function _updateChampionsIfNeeded() internal {
 		// if (lastBidderAddress == address(0)) return;
 		// #enable_asserts assert(lastBidderAddress != address(0));
@@ -69,7 +69,7 @@ abstract contract BidStatistics is CosmicSignatureGameStorage, IBidStatistics {
 	// #endregion
 	// #region `_updateChronoWarriorIfNeeded`
 
-	/// @notice Updates the chrono-warrior info if needed.
+	/// @notice Updates Chrono-Warrior info if needed.
 	function _updateChronoWarriorIfNeeded(uint256 chronoEndTimeStamp_) internal {
 		// #enable_asserts assert(enduranceChampionAddress != address(0));
 		// #enable_asserts assert(int256(chronoWarriorDuration) >= -1);

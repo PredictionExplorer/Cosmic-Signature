@@ -17,7 +17,7 @@ interface ISecondaryPrizes is ICosmicSignatureGameStorage {
 		uint256 indexed prizeCosmicSignatureNftId
 	);
 
-	/// @notice Emitted when the Endurance Champion receives their prize.
+	/// @notice Emitted when Endurance Champion receives their prize.
 	/// @param roundNum The current bidding round number.
 	/// @param enduranceChampionAddress Endurance Champion address.
 	/// @param cstPrizeAmount The amount of the Cosmic Signature Token minted and awarded.

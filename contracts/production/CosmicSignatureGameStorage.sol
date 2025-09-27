@@ -65,17 +65,13 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// @dev Comment-202411098 applies.
 	mapping(uint256 roundNum => mapping(address bidderAddress => BidderInfo)) public biddersInfo;
 
-	/// @notice Endurance champion is the person who was the last bidder for the longest continuous period of time.
-	/// todo-0 Recheck the Taras'es definition of endurance champion and chrono-warrior in the root readme document.
-	/// todo-0 It could exist there in a few places.
-	/// todo-0 The readme sometimes uses terms EC and CW.
-	/// todo-0 Point at the document.
-	/// todo-0 Reg-ex to search for in the readme: case insensitive: \b(?:EC|CW)\b|Endurance|Chrono
-	/// todo-0 Review relevant code and comments in the whole project and delegate some comments to the document.
-	/// todo-0 >>> They have now deleted all that. I have asked them to bring it back.
-	/// [Comment-202411075]
+	/// @notice Endurance Champion is the participant who remained the last bidder for the longest single continuous duration
+	/// during the bidding round.
 	/// It makes no difference if they bid multiple times in a row. The durations do not get added up.
-	/// [/Comment-202411075]
+	/// [Comment-202511053]
+	/// See `${workspaceFolder}/docs/endurance-chrono-README.md` for details and possibly better definitions
+	/// of Endurance Champion and Chrono-Warrior.
+	/// [/Comment-202511053]
 	/// Comment-202501308 relates.
 	/// @dev
 	/// [Comment-202411099]
@@ -95,8 +91,9 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	uint256 public prevEnduranceChampionDuration;
 
-	/// @notice Chrono-warrior is the person who was the endurance champion for the longest continuous period of time.
-	/// Comment-202411075 applies.
+	/// @notice Chrono-Warrior is the participant who remained Endurance Champion for the longest continuous duration
+	/// during the bidding round.
+	/// Comment-202511053 applies.
 	/// Comment-202503074 relates.
 	/// @dev Comment-202411099 applies.
 	address public chronoWarriorAddress;
@@ -256,7 +253,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Comment-202411064 applies.
 	uint256 public cstPrizeAmountMultiplier;
 
-	/// @notice The percentage of ETH in the Game contract account to be paid to Crono-Warrior.
+	/// @notice The percentage of ETH in the Game contract account to be paid to Chrono-Warrior.
 	/// Comment-202411064 applies.
 	uint256 public chronoWarriorEthPrizeAmountPercentage;
 
