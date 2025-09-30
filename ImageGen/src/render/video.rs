@@ -170,18 +170,21 @@ pub fn create_video_from_frames_singlepass(
     let mut child = cmd
         .stdin(Stdio::piped())
         .stdout(Stdio::null())
-        .stderr(Stdio::piped())
+        .stderr(Stdio::inherit()) 
         .spawn()
         .map_err(RenderError::VideoEncoding)?;
 
     // Write frames to FFmpeg's stdin
-    if let Some(stdin) = child.stdin.as_mut() {
-        if let Err(e) = frames_iter(stdin) {
-            // Kill the FFmpeg process if frame writing fails
+    if let Some(mut stdin) = child.stdin.take() {
+        if let Err(e) = frames_iter(&mut stdin) {
+            let _ = stdin.flush();
             let _ = child.kill();
-            return Err(RenderError::VideoEncoding(std::io::Error::other(e.to_string())));
-        }
-    }
+		return Err(RenderError::VideoEncoding(std::io::Error::other(e.to_string())));
+	}
+	// Ensure stdin is closed so ffmpeg sees EOF
+	let _ = stdin.flush();
+	drop(stdin);
+}
 
     // Wait for FFmpeg to complete
     let output = child.wait_with_output().map_err(RenderError::VideoEncoding)?;
