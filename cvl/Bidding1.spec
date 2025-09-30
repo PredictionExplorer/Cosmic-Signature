@@ -138,6 +138,7 @@ methods {
 
 	function _.claimDonatedToken(uint256 roundNum_, address tokenAddress_, uint256 amount_) external with(env e)
 		=> cvlPWClaim(roundNum_, tokenAddress_, amount_, e.msg.sender) expect void;
+	function roundActivationTime() external returns (uint256) envfree;
 }
 
 /* =================== lastBidderAddress Delta (parametric rule) =========== */
@@ -180,6 +181,10 @@ function genericFunctionInitializer(method f, env e) {
 
 	require e.msg.sender != 0;
 	require currentContract != e.msg.sender;
+	if (isBidSelector(to_bytes4(f.selector))) {
+		require e.block.timestamp >= currentContract.roundActivationTime(),
+			"assume round is active";
+	}
 }
 function genericFunctionMatcher(method f, env e) returns bool {
 	calldataarg args;
