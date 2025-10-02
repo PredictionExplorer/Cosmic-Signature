@@ -20,7 +20,7 @@ const { assertAddressIsValid, assertEvent } = require("../../../src/ContractTest
 	const cosmicSignatureNftSimulator_ = {
 		// #region Data
 
-		/// For each NFT ID, stores an object that contains: `ownerAddress`, /* `name`, */ `seed`.
+		/// For each NFT ID, stores an object that contains: `ownerAddress`, `name`, `seed`.
 		/// Each item index equals respective NFT ID.
 		nftsMetaData: [],
 
@@ -55,28 +55,28 @@ const { assertAddressIsValid, assertEvent } = require("../../../src/ContractTest
 		},
 
 		// #endregion
-		// #region // `getNftName`
+		// #region `setNftName`
 
-		// getNftName: function(nftId_) {
-		// 	this.assertNftIdIsValid(nftId_);
-		// 	return this.nftsMetaData[Number(nftId_)].name;
-		// },
+		setNftName: function(nftId_, nftName_, contracts_, transactionReceipt_, eventIndexWrapper_) {
+			this.assertNftIdIsValid(nftId_);
+			expect(typeof nftName_).equal("string");
+			this.nftsMetaData[Number(nftId_)].name = nftName_;
+			assertEvent(
+				transactionReceipt_.logs[eventIndexWrapper_.value],
+				contracts_.cosmicSignatureNft,
+				"NftNameChanged",
+				[nftId_, nftName_,]
+			);
+			++ eventIndexWrapper_.value;
+		},
 
 		// #endregion
-		// #region // `setNftName`
+		// #region `getNftName`
 
-		// setNftName: function(nftId_, nftName_, contracts_, transactionReceipt_, eventIndexWrapper_) {
-		// 	this.assertNftIdIsValid(nftId_);
-		// 	expect(typeof nftName_).equal("string");
-		// 	this.nftsMetaData[Number(nftId_)].name = nftName_;
-		// 	assertEvent(
-		// 		transactionReceipt_.logs[eventIndexWrapper_.value],
-		// 		contracts_.cosmicSignatureNft,
-		// 		"NftNameChanged",
-		// 		[nftId_, nftName_,]
-		// 	);
-		// 	++ eventIndexWrapper_.value;
-		// },
+		getNftName: function(nftId_) {
+			this.assertNftIdIsValid(nftId_);
+			return this.nftsMetaData[Number(nftId_)].name;
+		},
 
 		// #endregion
 		// #region `getNftSeed`
@@ -111,7 +111,7 @@ const { assertAddressIsValid, assertEvent } = require("../../../src/ContractTest
 			assertAddressIsValid(nftOwnerAddress_);
 			const nftSeed_ = generateRandomUInt256FromSeed(randomNumberSeed_);
 			const nftId_ = this.totalSupply();
-			this.nftsMetaData.push({ownerAddress: nftOwnerAddress_, /* name: "", */ seed: nftSeed_,});
+			this.nftsMetaData.push({ownerAddress: nftOwnerAddress_, name: "", seed: nftSeed_,});
 			assertEvent(
 				transactionReceipt_.logs[eventIndexWrapper_.value],
 				contracts_.cosmicSignatureNft,
@@ -182,7 +182,7 @@ async function assertRandomCosmicSignatureNftMetaDataIfPossible(cosmicSignatureN
 
 async function assertCosmicSignatureNftMetaData(cosmicSignatureNftSimulator_, contracts_, nftId_) {
 	expect(await contracts_.cosmicSignatureNft.ownerOf(nftId_)).equal(cosmicSignatureNftSimulator_.ownerOf(nftId_));
-	// expect(await contracts_.cosmicSignatureNft.getNftName(nftId_)).equal(cosmicSignatureNftSimulator_.getNftName(nftId_));
+	expect(await contracts_.cosmicSignatureNft.getNftName(nftId_)).equal(cosmicSignatureNftSimulator_.getNftName(nftId_));
 	expect(await contracts_.cosmicSignatureNft.getNftSeed(nftId_)).equal(cosmicSignatureNftSimulator_.getNftSeed(nftId_));
 }
 

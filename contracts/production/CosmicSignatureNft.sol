@@ -138,27 +138,27 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 	}
 
 	// #endregion
-	// #region // `setNftName`
+	// #region `setNftName`
 
-	// function setNftName(uint256 nftId_, string calldata nftName_) external override {
-	// 	// require(
-	// 	// 	_isAuthorized(_ownerOf(nftId_), _msgSender(), nftId_),
-	// 	// 	CosmicSignatureErrors.CallerIsNotAuthorizedToManageNft("The caller is not authorized to manage this NFT.", nftId_)
-	// 	// );
-	// 	_checkAuthorized(_ownerOf(nftId_), _msgSender(), nftId_);
-	// 	if (bytes(nftName_).length > CosmicSignatureConstants.COSMIC_SIGNATURE_NFT_NFT_NAME_LENGTH_MAX_LIMIT) {
-	// 		revert CosmicSignatureErrors.TooLongNftName("NFT name is too long.", bytes(nftName_).length);
-	// 	}
-	// 	_nftsMetaData[nftId_].name = nftName_;
-	// 	emit NftNameChanged(nftId_, nftName_);
-	// }
+	function setNftName(uint256 nftId_, string calldata nftName_) external override {
+		// require(
+		// 	_isAuthorized(_ownerOf(nftId_), _msgSender(), nftId_),
+		// 	CosmicSignatureErrors.CallerIsNotAuthorizedToManageNft("The caller is not authorized to manage this NFT.", nftId_)
+		// );
+		checkCallerIsAuthorizedFor(nftId_);
+		if (bytes(nftName_).length > CosmicSignatureConstants.COSMIC_SIGNATURE_NFT_NFT_NAME_LENGTH_MAX_LIMIT) {
+			revert CosmicSignatureErrors.TooLongNftName("NFT name is too long.", bytes(nftName_).length);
+		}
+		_nftsMetaData[nftId_].name = nftName_;
+		emit NftNameChanged(nftId_, nftName_);
+	}
 
 	// #endregion
-	// #region // `getNftName`
+	// #region `getNftName`
 
-	// function getNftName(uint256 nftId_) external view override returns (string memory) {
-	// 	return _nftsMetaData[nftId_].name;
-	// }
+	function getNftName(uint256 nftId_) external view override returns (string memory) {
+		return _nftsMetaData[nftId_].name;
+	}
 
 	// #endregion
 	// #region `getNftSeed`
@@ -170,7 +170,7 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 	// #endregion
 	// #region `checkCallerIsAuthorizedFor`
 
-	function checkCallerIsAuthorizedFor(uint256 nftId_) external view override {
+	function checkCallerIsAuthorizedFor(uint256 nftId_) public view override {
 		_checkAuthorized(_ownerOf(nftId_), _msgSender(), nftId_);
 	}
 

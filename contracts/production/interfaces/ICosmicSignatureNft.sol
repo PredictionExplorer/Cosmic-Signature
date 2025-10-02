@@ -16,10 +16,10 @@ import { IAddressValidator } from "./IAddressValidator.sol";
 interface ICosmicSignatureNft is IERC721Enumerable, IAddressValidator {
 	/// @notice Details about a Cosmic Signature NFT.
 	struct NftMetaData {
-		// /// @notice The custom name set for the NFT.
-		// /// It's not required to provide one.
-		// /// If the user doesn't provide a name for the NFT, this value will stay empty.
-		// string name;
+		/// @notice The custom name set for the NFT.
+		/// It's not required to provide one.
+		/// If the user doesn't provide a name for the NFT, this value will stay empty.
+		string name;
 
 		/// @notice A unique seed generated for the NFT.
 		/// @dev One might prefer this parameter to be a byte-array or `bytes32`, but for now it's simpler to treat it as a number,
@@ -58,11 +58,11 @@ interface ICosmicSignatureNft is IERC721Enumerable, IAddressValidator {
 	/// @param nftId The newly minted NFT ID.
 	event NftMinted(uint256 indexed roundNum, address indexed nftOwnerAddress, uint256 nftSeed, uint256 indexed nftId);
 
-	// /// @notice Emitted when an NFT name is set for the first time or changed.
-	// /// @param nftId NFT ID.
-	// /// @param nftName The custom name set for the NFT.
-	// /// It may be empty.
-	// event NftNameChanged(uint256 indexed nftId, string nftName);
+	/// @notice Emitted when an NFT name is set for the first time or changed.
+	/// @param nftId NFT ID.
+	/// @param nftName The custom name set for the NFT.
+	/// It may be empty.
+	event NftNameChanged(uint256 indexed nftId, string nftName);
 
 	/// @notice Sets `nftBaseUri`.
 	/// Only the contract owner is permitted to call this method.
@@ -102,16 +102,16 @@ interface ICosmicSignatureNft is IERC721Enumerable, IAddressValidator {
 	/// It shall be less than `totalSupply()`. Otherwise the return value is indeterminate.
 	function getNftMetaData(uint256 nftId_) external view returns (NftMetaData memory);
 
-	// /// @notice Allows the given NFT owner or authorized caller to set a custom name for an NFT.
-	// /// @param nftId_ NFT ID.
-	// /// It shall be less than `totalSupply()`. Otherwise the transaction would revert.
-	// /// @param nftName_ The custom name to set for the NFT.
-	// /// It may be empty.
-	// function setNftName(uint256 nftId_, string calldata nftName_) external;
+	/// @notice Allows the given NFT owner or authorized caller to set a custom name for an NFT.
+	/// @param nftId_ NFT ID.
+	/// It shall be less than `totalSupply()`. Otherwise the transaction would revert.
+	/// @param nftName_ The custom name to set for the NFT.
+	/// It may be empty.
+	function setNftName(uint256 nftId_, string calldata nftName_) external;
 
-	// /// @param nftId_ NFT ID.
-	// /// It shall be less than `totalSupply()`. Otherwise the return value is indeterminate.
-	// function getNftName(uint256 nftId_) external view returns (string memory);
+	/// @param nftId_ NFT ID.
+	/// It shall be less than `totalSupply()`. Otherwise the return value is indeterminate.
+	function getNftName(uint256 nftId_) external view returns (string memory);
 
 	/// @param nftId_ NFT ID.
 	/// It shall be less than `totalSupply()`. Otherwise the return value is indeterminate.
