@@ -1,7 +1,7 @@
 {
 	"version": "0.2.0",
 	"configurations": [
-		// todo-3 This is missing this environment variable: HARDHAT_MODE_CODE=1
+		// Issue. This does not set the `HARDHAT_MODE_CODE` environment variable, so a warning will be logged to the console.
 		{
 			"name": "Debug Hardhat Tests",
 			"type": "node",

@@ -73,4 +73,6 @@ The rest of this document lists prizes from groups 1 and 2.
 
 #### Notes
 
+- Prize Count often equals the number of winners, each getting 1 prize of the given type, but if Prize Count is greater than 1, a winner can get multiple prizes of the given type, which would reduce the number of winners.
+
 - In a division result, any fractional part is truncated. Therefore, for example, 299 / 100 equals 2.

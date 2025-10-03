@@ -11,7 +11,7 @@ const configuration =
 				// use "hardhat_on_localhost" instead. By default, Hardhat will choose "hardhat"
 				// unless a different default network is specified in the Hardhat config file.
 				// The `HARDHAT_MODE_CODE` environment variable should either not be set or be set to "2".
-				// Otherwise the behavior will not necessarily be correct.
+				// Otherwise (if it's set to 1) the behavior will not necessarily be correct.
 				// [/Comment-202509132]
 				networkName:
 					// "",
