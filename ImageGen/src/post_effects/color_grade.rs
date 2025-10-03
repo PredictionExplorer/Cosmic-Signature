@@ -40,13 +40,24 @@ pub struct ColorGradeParams {
 
 impl Default for ColorGradeParams {
     fn default() -> Self {
+        // Default for ~1080p resolution
+        Self::from_resolution(1920, 1080)
+    }
+}
+
+impl ColorGradeParams {
+    /// Create parameters scaled for the given resolution.
+    /// This ensures the clarity effect looks consistent across different resolutions.
+    pub fn from_resolution(width: usize, height: usize) -> Self {
+        let min_dim = width.min(height) as f64;
         Self {
             strength: constants::DEFAULT_COLOR_GRADE_STRENGTH,
             vignette_strength: constants::DEFAULT_COLOR_GRADE_VIGNETTE,
             vignette_softness: constants::DEFAULT_COLOR_GRADE_VIGNETTE_SOFTNESS,
             vibrance: constants::DEFAULT_COLOR_GRADE_VIBRANCE,
             clarity_strength: constants::DEFAULT_COLOR_GRADE_CLARITY,
-            clarity_radius: constants::DEFAULT_COLOR_GRADE_CLARITY_RADIUS,
+            // Scale clarity radius: 3px @ 1080p, 6px @ 4K
+            clarity_radius: (0.0028 * min_dim).round().max(1.0) as usize,
             tone_curve: constants::DEFAULT_COLOR_GRADE_TONE_CURVE,
             shadow_tint: constants::DEFAULT_COLOR_GRADE_SHADOW_TINT,
             highlight_tint: constants::DEFAULT_COLOR_GRADE_HIGHLIGHT_TINT,

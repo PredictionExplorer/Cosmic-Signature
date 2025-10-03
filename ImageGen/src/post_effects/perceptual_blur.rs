@@ -24,7 +24,22 @@ pub struct PerceptualBlurConfig {
 
 impl Default for PerceptualBlurConfig {
     fn default() -> Self {
-        Self { radius: 10, strength: 0.5, gamut_mode: GamutMapMode::default() }
+        // Default for ~1080p resolution
+        Self::from_resolution(1920, 1080)
+    }
+}
+
+impl PerceptualBlurConfig {
+    /// Create configuration scaled for the given resolution.
+    /// This ensures the effect looks consistent across different resolutions.
+    pub fn from_resolution(width: usize, height: usize) -> Self {
+        let min_dim = width.min(height) as f64;
+        Self {
+            // Scale radius: 10px @ 1080p, 20px @ 4K
+            radius: (0.0093 * min_dim).round() as usize,
+            strength: 0.5,
+            gamut_mode: GamutMapMode::default(),
+        }
     }
 }
 

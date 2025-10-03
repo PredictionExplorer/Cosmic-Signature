@@ -8,9 +8,10 @@ use super::context::PixelBuffer;
 use super::drawing::parallel_blur_2d_rgba;
 use super::error::{RenderError, Result};
 use crate::post_effects::{
-    AutoExposure, ChampleveConfig, CinematicColorGrade, ColorGradeParams, DogBloom, GaussianBloom,
-    PerceptualBlur, PerceptualBlurConfig, PostEffect, PostEffectChain, aether::AetherConfig,
-    apply_aether_weave, apply_champleve_iridescence,
+    AutoExposure, ChampleveConfig, ChromaticBloom, ChromaticBloomConfig, CinematicColorGrade,
+    ColorGradeParams, DogBloom, GaussianBloom, GradientMap, GradientMapConfig,
+    PerceptualBlur, PerceptualBlurConfig, PostEffect,
+    PostEffectChain, aether::AetherConfig, apply_aether_weave, apply_champleve_iridescence,
 };
 use crate::spectrum::{NUM_BINS, spd_to_rgba};
 use rayon::prelude::*;
@@ -32,6 +33,10 @@ pub struct EffectConfig {
     pub champleve_config: ChampleveConfig,
     pub aether_enabled: bool,
     pub aether_config: AetherConfig,
+    pub chromatic_bloom_enabled: bool,
+    pub chromatic_bloom_config: ChromaticBloomConfig,
+    pub gradient_map_enabled: bool,
+    pub gradient_map_config: GradientMapConfig,
 }
 
 /// Per-frame parameters that may vary
@@ -77,6 +82,11 @@ impl EffectChainBuilder {
             _ => {}
         }
 
+        // Add chromatic bloom for special mode
+        if config.chromatic_bloom_enabled {
+            chain.add(Box::new(ChromaticBloom::new(config.chromatic_bloom_config.clone())));
+        }
+
         // Add perceptual blur if enabled
         if config.perceptual_blur_enabled {
             if let Some(blur_config) = &config.perceptual_blur_config {
@@ -87,6 +97,11 @@ impl EffectChainBuilder {
         // Add HDR/auto-exposure
         if config.hdr_mode == "auto" {
             chain.add(Box::new(AutoExposure::default()));
+        }
+
+        // Add gradient mapping for luxury palettes
+        if config.gradient_map_enabled {
+            chain.add(Box::new(GradientMap::new(config.gradient_map_config.clone())));
         }
 
         if config.color_grade_enabled && config.color_grade_params.strength > 0.0 {

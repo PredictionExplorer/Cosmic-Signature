@@ -947,6 +947,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "42f5e15c9953c5e4ccceeb2e7382a716482c34515315f7b03532b8b4e8393d2d"
 
 [[package]]
+name = "opensimplex2"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c137abadf4cb52f65fed1a249f91674b78377810b069d4f70e6b990f884a2573"
+
+[[package]]
 name = "palette"
 version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1502,6 +1508,7 @@ dependencies = [
  "image",
  "nalgebra 0.34.1",
  "once_cell",
+ "opensimplex2",
  "palette",
  "rayon",
  "rustfft",

@@ -1,308 +1,324 @@
+#!/usr/bin/env python3
+"""
+Three Body Problem Simulation Batch Runner
+
+Runs multiple three-body simulations with different parameter combinations.
+Each simulation is executed twice: once in standard mode and once in special mode.
+"""
+
 import subprocess
 import os
-import random
-import time
-import hashlib # For seed generation
-from concurrent.futures import ThreadPoolExecutor
-import concurrent.futures
+import hashlib
 import argparse
 import itertools
+from pathlib import Path
+
 
 # ===================== Configuration =====================
+
 CONFIG = {
     'program_path': './target/release/three_body_problem',
-    'max_concurrent': 1,  # Always single-threaded as requested
-    'max_random_sleep': 0,  # No sleep needed for single-threaded
-    # --- Seed Generation Config ---
-    'base_seed_string': "cosmic_signature00", # Base string for seed generation
-    'num_seeds_per_combo': 6,               # Seeds per parameter combination (adjusted for ~500 total jobs)
-    'seed_hex_bytes': 6,                    # How many bytes of the hash to use (6 bytes = 48 bits)
-    # --- Drift Test Matrix ---
-    'drift_scales': [0.5, 1.5, 3.0, 5.0, 8.0],  # Drift scales between 0 and 10
-    'drift_arc_fractions': [0.1, 0.2, 0.4, 0.7],  # Reasonable arc fraction values
-    'drift_orbit_eccentricities': [0.1, 0.3, 0.5, 0.8],  # Eccentricity values (0 = circle, 1 = parabola)
-    'drift_mode': 'elliptical',                 # Only test elliptical drift mode
-    'use_test_matrix': True                # Whether to use the test matrix or single config
+    'num_sims': 5000,  # Fixed number of simulations per run
+
+    # Seed generation
+    'base_seed_string': 'cosmic_signature2',
+    'seed_hex_bytes': 6,  # 48 bits
+    'num_seeds_per_combo': 5,  # Reduced for broader parameter coverage
+
+    # Drift parameter test matrix (optimized for visual variety ~200 runs)
+    # Scale: Controls camera movement magnitude (subtle to dramatic)
+    'drift_scales': [0.5, 1.5, 3.5, 6.0],
+
+    # Arc fraction: How much of orbit traversed (0=static, 1=full circle)
+    # 0.15=subtle sweep, 0.35=moderate pan, 0.65=dramatic arc
+    'drift_arc_fractions': [0.15, 0.35],
+
+    # Eccentricity: Orbit shape (0=circle, 1=parabola)
+    # 0.1=smooth circular, 0.45=balanced ellipse, 0.8=dramatic elongation
+    'drift_orbit_eccentricities': [0.1, 0.45],
+
+    'drift_mode': 'elliptical',
 }
 
-def run_command(cmd):
-    """
-    Helper function to run a single simulation command.
-    Prints output in real-time.
-    Includes an optional random sleep.
-    """
-    max_sleep = CONFIG.get('max_random_sleep', 0)
-    if max_sleep > 0:
-        sleep_duration = random.uniform(0, max_sleep)
-        print(f"PID {os.getpid()}: Sleeping for {sleep_duration:.2f} seconds before running {' '.join(cmd)}")
-        time.sleep(sleep_duration)
 
-    print(f"PID {os.getpid()}: Running command: {' '.join(cmd)}")
-    try:
-        # Use Popen to run the command and stream output
-        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1, universal_newlines=True)
-
-        # Read and print stdout line by line
-        if process.stdout:
-            for line in process.stdout:
-                print(f"[stdout] {line.strip()}", flush=True)
-
-        # Read and print stderr line by line after stdout is exhausted
-        # Or you could potentially read them concurrently with threads/select if needed
-        stderr_output = ""
-        if process.stderr:
-            stderr_output = process.stderr.read()
-            if stderr_output:
-                print(f"[stderr] {stderr_output.strip()}", flush=True)
-
-        process.wait() # Wait for the process to complete
-
-        if process.returncode == 0:
-            print(f"PID {os.getpid()}: Command finished successfully: {' '.join(cmd)}")
-        else:
-            print(f"PID {os.getpid()}: Command failed with return code {process.returncode}: {' '.join(cmd)}")
-            # Stderr was already printed if it existed
-
-    except KeyboardInterrupt:
-        print(f"PID {os.getpid()}: Command interrupted by user: {' '.join(cmd)}")
-        # Let the main thread handle the interrupt
-        raise
-    except Exception as e:
-        print(f"PID {os.getpid()}: An unexpected error occurred running {' '.join(cmd)}: {e}")
-
-def generate_hex_seed(input_string, num_bytes):
-    """Generates a hex seed string from an input string using SHA-256."""
+def generate_hex_seed(input_string: str, num_bytes: int) -> str:
+    """Generate a hex seed string from input using SHA-256."""
     hasher = hashlib.sha256()
     hasher.update(input_string.encode('utf-8'))
     hash_bytes = hasher.digest()
     seed_bytes = hash_bytes[:num_bytes]
     return "0x" + seed_bytes.hex()
 
+
+def run_simulation(command: list[str], description: str) -> bool:
+    """
+    Execute a single simulation command.
+
+    Args:
+        command: Command and arguments to execute
+        description: Human-readable description of the job
+
+    Returns:
+        True if successful, False otherwise
+    """
+    print(f"\n{'='*60}")
+    print(f"Running: {description}")
+    print(f"Command: {' '.join(command)}")
+    print('='*60)
+
+    try:
+        result = subprocess.run(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            check=False
+        )
+
+        # Print output
+        if result.stdout:
+            print(result.stdout)
+
+        if result.returncode == 0:
+            print(f"✓ Completed: {description}")
+            return True
+        else:
+            print(f"✗ Failed (exit code {result.returncode}): {description}")
+            return False
+
+    except KeyboardInterrupt:
+        print(f"\n⚠ Interrupted: {description}")
+        raise
+    except Exception as e:
+        print(f"✗ Error: {description}\n  {e}")
+        return False
+
+
+def build_command(
+    program_path: str,
+    seed: str,
+    filename: str,
+    num_sims: int,
+    drift_config: dict,
+    special: bool = False,
+    test_frame: bool = False
+) -> list[str]:
+    """
+    Build the command line for a simulation run.
+
+    Args:
+        program_path: Path to the executable
+        seed: Hex seed string
+        filename: Base output filename
+        num_sims: Number of simulations
+        drift_config: Drift parameters dictionary
+        special: Whether to enable special mode
+        test_frame: Whether to enable test frame mode (render first frame only)
+
+    Returns:
+        Command as list of strings
+    """
+    command = [
+        program_path,
+        '--seed', seed,
+        '--file-name', filename,
+        '--num-sims', str(num_sims),
+        '--drift-mode', drift_config['mode'],
+        '--drift-scale', str(drift_config['scale']),
+        '--drift-arc-fraction', str(drift_config['arc_fraction']),
+        '--drift-orbit-eccentricity', str(drift_config['orbit_eccentricity']),
+    ]
+
+    if special:
+        command.append('--special')
+
+    if test_frame:
+        command.append('--test-frame')
+
+    return command
+
+
 def main():
-    # Parse command line arguments
-    parser = argparse.ArgumentParser(description='Run multiple three-body simulations with different parameter combinations')
-    parser.add_argument('--single-config', action='store_true',
-                        help='Run single configuration instead of test matrix')
-    parser.add_argument('--drift-mode', choices=['linear'],
-                        help='Drift mode for single config (only linear supported)')
-    parser.add_argument('--drift-scale', type=float,
-                        help='Scale of drift motion for single config')
-    parser.add_argument('--drift-arc-fraction', type=float,
-                        help='Arc fraction for single config')
-    parser.add_argument('--drift-orbit-eccentricity', type=float,
-                        help='Orbit eccentricity for single config')
-    parser.add_argument('--num-seeds', type=int,
-                        default=CONFIG.get('num_seeds_per_combo', 6),
-                        help='Number of seeds per configuration (default: 6)')
-    parser.add_argument('--total-jobs', type=int,
-                        help='Override total number of jobs to run (will adjust seeds per combo)')
+    parser = argparse.ArgumentParser(
+        description='Run three-body simulations with parameter sweep',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  %(prog)s                    # Run full parameter matrix
+  %(prog)s --num-seeds 3      # Run with 3 seeds per combination
+  %(prog)s --skip-existing    # Skip files that already exist
+        """
+    )
+
+    parser.add_argument(
+        '--num-seeds',
+        type=int,
+        default=CONFIG['num_seeds_per_combo'],
+        help='Number of seeds per parameter combination (default: %(default)s)'
+    )
+    parser.add_argument(
+        '--skip-existing',
+        action='store_true',
+        help='Skip simulations where output files already exist'
+    )
+    parser.add_argument(
+        '--no-shuffle',
+        action='store_true',
+        help='Run jobs in deterministic order instead of shuffled'
+    )
+    parser.add_argument(
+        '--dry-run',
+        action='store_true',
+        help='Print commands without executing'
+    )
+    parser.add_argument(
+        '--test-frame',
+        action='store_true',
+        help='Test mode: render only first frame (no video, much faster)'
+    )
+
     args = parser.parse_args()
 
-    # Always use single-threaded execution
-    CONFIG['max_concurrent'] = 1
-    CONFIG['num_seeds_per_combo'] = args.num_seeds
+    # Ensure output directories exist
+    Path('pics').mkdir(exist_ok=True)
+    Path('vids').mkdir(exist_ok=True)
 
-    if args.single_config:
-        CONFIG['use_test_matrix'] = False
-        # For single config, use provided drift settings or defaults
-        CONFIG['single_drift_mode'] = args.drift_mode or 'linear'
-        CONFIG['single_drift_scale'] = args.drift_scale if args.drift_scale is not None else 1.5
-        CONFIG['single_drift_arc_fraction'] = args.drift_arc_fraction if args.drift_arc_fraction is not None else 0.2
-        CONFIG['single_drift_orbit_eccentricity'] = args.drift_orbit_eccentricity if args.drift_orbit_eccentricity is not None else 0.3
-
-    # Get config values
-    max_workers = CONFIG['max_concurrent']
-    base_string = CONFIG['base_seed_string']
-    seed_bytes_len = CONFIG['seed_hex_bytes']
-    num_seeds = CONFIG['num_seeds_per_combo']
-
-    # Generate drift configurations
+    # Build parameter matrix
     drift_configs = []
-    if CONFIG['use_test_matrix']:
-        # Generate all combinations of parameters
-        for scale, arc_frac, eccen in itertools.product(
-            CONFIG['drift_scales'],
-            CONFIG['drift_arc_fractions'],
-            CONFIG['drift_orbit_eccentricities']
-        ):
-            drift_configs.append({
-                'mode': CONFIG['drift_mode'],
-                'scale': scale,
-                'arc_fraction': arc_frac,
-                'orbit_eccentricity': eccen,
-                'enabled': True
-            })
-
-        # Adjust seeds per combo if total-jobs specified
-        if args.total_jobs:
-            num_seeds = max(1, args.total_jobs // len(drift_configs))
-            CONFIG['num_seeds_per_combo'] = num_seeds
-            print(f"Adjusted to {num_seeds} seeds per combination to reach ~{args.total_jobs} total jobs")
-
-        total_jobs = num_seeds * len(drift_configs)
-        print(f"Running test matrix with {len(drift_configs)} parameter combinations:")
-        print(f"  - Drift scales: {CONFIG['drift_scales']}")
-        print(f"  - Arc fractions: {CONFIG['drift_arc_fractions']}")
-        print(f"  - Orbit eccentricities: {CONFIG['drift_orbit_eccentricities']}")
-        print(f"Will generate {num_seeds} random seeds per combination")
-        print(f"Total runs: {num_seeds} × {len(drift_configs)} = {total_jobs}")
-    else:
-        # Single configuration
-        mode = CONFIG.get('single_drift_mode', 'linear')
-        scale = CONFIG.get('single_drift_scale', 1.5)
-        arc_fraction = CONFIG.get('single_drift_arc_fraction', 0.2)
-        orbit_eccentricity = CONFIG.get('single_drift_orbit_eccentricity', 0.3)
+    for scale, arc_frac, eccen in itertools.product(
+        CONFIG['drift_scales'],
+        CONFIG['drift_arc_fractions'],
+        CONFIG['drift_orbit_eccentricities']
+    ):
         drift_configs.append({
-            'mode': mode,
+            'mode': CONFIG['drift_mode'],
             'scale': scale,
-            'arc_fraction': arc_fraction,
-            'orbit_eccentricity': orbit_eccentricity,
-            'enabled': True
+            'arc_fraction': arc_frac,
+            'orbit_eccentricity': eccen,
         })
 
-        print(f"Running single configuration:")
-        print(f"  - Mode: {mode}")
-        print(f"  - Scale: {scale}")
-        print(f"  - Arc fraction: {arc_fraction}")
-        print(f"  - Orbit eccentricity: {orbit_eccentricity}")
-        print(f"Using {num_seeds} different seeds")
+    # Summary
+    total_combinations = len(drift_configs) * args.num_seeds
+    total_runs = total_combinations * 2  # Each run done twice (standard + special)
 
-        # Rust program now saves PNGs to 'pics/' and videos to 'vids/'
-    pics_dir = "pics"
-    print(f"\nOutput PNGs will be saved in ./{pics_dir}/")
-    print(f"Using max {max_workers} concurrent workers\n")
+    print("\n" + "="*60)
+    print("Three Body Problem Batch Runner")
+    print("="*60)
+    print(f"Parameter combinations: {len(drift_configs)}")
+    print(f"Seeds per combination: {args.num_seeds}")
+    print(f"Simulations per run: {CONFIG['num_sims']}")
+    print(f"Total unique configs: {total_combinations}")
+    print(f"Total runs (×2 for special mode): {total_runs}")
+    print(f"Test frame mode: {'ENABLED (first frame only)' if args.test_frame else 'DISABLED (full video)'}")
+    print(f"\nDrift parameter ranges:")
+    print(f"  Scales: {CONFIG['drift_scales']}")
+    print(f"  Arc fractions: {CONFIG['drift_arc_fractions']}")
+    print(f"  Eccentricities: {CONFIG['drift_orbit_eccentricities']}")
+    print("="*60 + "\n")
 
-    # Generate all job configurations first
-    # Iterate through seeds first, then drift configs for each combination
-    all_jobs = []
+    # Generate all jobs
+    jobs = []
 
-    for seed_idx in range(num_seeds):
+    for seed_idx in range(args.num_seeds):
         for drift_config in drift_configs:
-            # Format drift info for filename - include all parameters
-            drift_str = f"s{drift_config['scale']}_af{drift_config['arc_fraction']}_oe{drift_config['orbit_eccentricity']}"
+            # Generate seed (same for both standard and special runs)
+            input_seed_str = f"{CONFIG['base_seed_string']}_{seed_idx}"
+            hex_seed = generate_hex_seed(input_seed_str, CONFIG['seed_hex_bytes'])
+            seed_suffix = hex_seed[2:][:8]  # First 8 hex chars
 
-            job_info = {
-                'drift_config': drift_config,
-                'drift_str': drift_str,
-                'seed_idx': seed_idx,
-                'base_string': base_string,
-                'seed_bytes_len': seed_bytes_len,
-                'pics_dir': pics_dir
-            }
-            all_jobs.append(job_info)
+            # Build drift parameter string for filename
+            drift_str = (
+                f"s{drift_config['scale']}_"
+                f"af{drift_config['arc_fraction']}_"
+                f"oe{drift_config['orbit_eccentricity']}"
+            )
 
-    # Randomize the order of all jobs
-    random.shuffle(all_jobs)
-    print(f"Randomized order of {len(all_jobs)} total jobs\n")
+            # Create two jobs: standard and special
+            for special_mode in [True, False]:
+                mode_suffix = "special" if special_mode else "standard"
+                filename = f"{seed_suffix}_{drift_str}_{mode_suffix}"
 
-    # Prepare jobs to run (filter out existing ones first)
-    jobs_to_run = []
-    skipped_count = 0
+                # Check if output already exists
+                output_path = Path('pics') / f"{filename}.png"
+                if args.skip_existing and output_path.exists():
+                    print(f"Skipping (exists): {filename}")
+                    continue
 
-    for job in all_jobs:
-        drift_config = job['drift_config']
-        drift_str = job['drift_str']
-        seed_idx = job['seed_idx']
-
-        # 1. Generate the input string for hashing - DO NOT include drift config
-        # This ensures the same seed is used across all drift settings
-        input_seed_str = f"{base_string}_{seed_idx}"
-
-        # 2. Generate the actual hex seed using the hash
-        hex_seed = generate_hex_seed(input_seed_str, job['seed_bytes_len'])
-
-        # 3. Derive filename including drift settings
-        seed_suffix = hex_seed[2:][:8] # Use first 8 chars of hex seed
-        output_file_base = f"{seed_suffix}_{drift_str}"
-
-        # Check existence in the 'pics' directory
-        output_png_path = os.path.join(job['pics_dir'], f"{output_file_base}.png")
-
-        # 4. Check if the output PNG already exists
-        if os.path.exists(output_png_path):
-            print(f"Skipping: {output_file_base} (already exists)")
-            skipped_count += 1
-            continue # Skip this iteration
-
-        # 5. Construct the command
-        command = [
-            CONFIG['program_path'],
-            '--seed', hex_seed,
-            # Pass ONLY the base filename - Rust handles the directory
-            '--file-name', output_file_base,
-            # Add drift mode and all parameters
-            '--drift-mode', drift_config['mode'],
-            '--drift-scale', str(drift_config['scale']),
-            '--drift-arc-fraction', str(drift_config['arc_fraction']),
-            '--drift-orbit-eccentricity', str(drift_config['orbit_eccentricity'])
-        ]
-
-        jobs_to_run.append({
-            'command': command,
-            'output_file_base': output_file_base,
-            'hex_seed': hex_seed
-        })
-
-    print(f"\nSkipped {skipped_count} existing files")
-    print(f"Will run {len(jobs_to_run)} jobs sequentially (single-threaded)\n")
-
-    # Run jobs sequentially (single-threaded as requested)
-    run_counter = 0
-    active_futures = {}
-    job_index = 0
-
-    with ThreadPoolExecutor(max_workers=1) as executor:
-        # Submit initial batch of jobs
-        while len(active_futures) < max_workers and job_index < len(jobs_to_run):
-            job = jobs_to_run[job_index]
-            jobs_remaining = len(jobs_to_run) - job_index
-            print(f"[Submitting] {job['output_file_base']} (seed {job['hex_seed']}) | Jobs remaining: {jobs_remaining}")
-            future = executor.submit(run_command, job['command'])
-            active_futures[future] = job
-            job_index += 1
-            run_counter += 1
-
-        # Process jobs as they complete and submit new ones
-        try:
-            while active_futures:
-                # Wait for at least one job to complete
-                done, pending = concurrent.futures.wait(
-                    active_futures.keys(),
-                    return_when=concurrent.futures.FIRST_COMPLETED
+                # Build command
+                command = build_command(
+                    CONFIG['program_path'],
+                    hex_seed,
+                    filename,
+                    CONFIG['num_sims'],
+                    drift_config,
+                    special_mode,
+                    args.test_frame
                 )
 
-                # Process completed jobs
-                for future in done:
-                    job = active_futures.pop(future)
-                    try:
-                        future.result()  # This will raise exception if job failed
-                        print(f"[Completed] {job['output_file_base']} | Active jobs: {len(active_futures)}")
-                    except Exception as e:
-                        print(f"[Failed] {job['output_file_base']} raised an exception: {e} | Active jobs: {len(active_futures)}")
+                # Create job description
+                description = (
+                    f"seed={seed_suffix} "
+                    f"scale={drift_config['scale']} "
+                    f"af={drift_config['arc_fraction']} "
+                    f"oe={drift_config['orbit_eccentricity']} "
+                    f"[{mode_suffix.upper()}]"
+                )
 
-                    # Submit a new job if available
-                    if job_index < len(jobs_to_run):
-                        new_job = jobs_to_run[job_index]
-                        jobs_remaining = len(jobs_to_run) - job_index
-                        print(f"[Submitting] {new_job['output_file_base']} (seed {new_job['hex_seed']}) | Jobs remaining: {jobs_remaining}")
-                        new_future = executor.submit(run_command, new_job['command'])
-                        active_futures[new_future] = new_job
-                        job_index += 1
-                        run_counter += 1
+                jobs.append({
+                    'command': command,
+                    'description': description,
+                    'filename': filename
+                })
 
-        except KeyboardInterrupt:
-            print("\nCaught KeyboardInterrupt, stopping...")
-            # Cancel all pending futures
-            for future in active_futures:
-                future.cancel()
-            executor.shutdown(wait=False, cancel_futures=True)
+    # Shuffle jobs for better distribution (unless disabled)
+    if not args.no_shuffle:
+        import random
+        random.shuffle(jobs)
+        print(f"Shuffled {len(jobs)} jobs for randomized execution order\n")
+    else:
+        print(f"Running {len(jobs)} jobs in deterministic order\n")
 
-    print(f"\nCompleted! Processed {run_counter} unique configurations.")
-    print("Check the 'pics/' directory for results.")
-    print("Filenames include seed and all parameters: seed_s<scale>_af<arc_fraction>_oe<orbit_eccentricity>.png")
+    if args.dry_run:
+        print("DRY RUN - Commands that would be executed:\n")
+        for i, job in enumerate(jobs, 1):
+            print(f"{i}. {' '.join(job['command'])}")
+        return
+
+    # Execute jobs sequentially
+    successful = 0
+    failed = 0
+
+    try:
+        for i, job in enumerate(jobs, 1):
+            print(f"\n[Job {i}/{len(jobs)}]")
+
+            success = run_simulation(job['command'], job['description'])
+
+            if success:
+                successful += 1
+            else:
+                failed += 1
+
+    except KeyboardInterrupt:
+        print("\n\n⚠ Batch run interrupted by user")
+
+    # Summary
+    print("\n" + "="*60)
+    print("Batch Run Complete")
+    print("="*60)
+    print(f"Successful: {successful}")
+    print(f"Failed: {failed}")
+    print(f"Total: {successful + failed}")
+    if args.test_frame:
+        print(f"\nOutput files in: ./pics/ (test frames only, no videos)")
+    else:
+        print(f"\nOutput files in: ./pics/ and ./vids/")
+    print("="*60 + "\n")
+
 
 if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print("\nScript terminated by user.")
+        print("\n\nScript terminated by user.")
+        exit(130)

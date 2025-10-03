@@ -20,10 +20,17 @@ pub struct AetherConfig {
     pub iridescence_frequency: f64,
     pub caustic_strength: f64,
     pub caustic_softness: f64,
+    pub luxury_mode: bool,
 }
 
 impl Default for AetherConfig {
     fn default() -> Self {
+        Self::new(true)
+    }
+}
+
+impl AetherConfig {
+    pub fn new(luxury_mode: bool) -> Self {
         Self {
             filament_density: constants::DEFAULT_AETHER_FILAMENT_DENSITY,
             flow_alignment: constants::DEFAULT_AETHER_FLOW_ALIGNMENT,
@@ -33,6 +40,7 @@ impl Default for AetherConfig {
             iridescence_frequency: constants::DEFAULT_AETHER_IRIDESCENCE_FREQUENCY,
             caustic_strength: constants::DEFAULT_AETHER_CAUSTIC_STRENGTH,
             caustic_softness: constants::DEFAULT_AETHER_CAUSTIC_SOFTNESS,
+            luxury_mode,
         }
     }
 }
@@ -121,9 +129,18 @@ pub fn apply_aether_weave(
         let mut final_g = sg + scatter_lum + caustic_bleed;
         let mut final_b = sb + scatter_lum + caustic_bleed;
 
-        final_r += spectral;
-        final_g -= spectral * 0.3;
-        final_b -= spectral;
+        if config.luxury_mode {
+            // Luxury mode: purple/magenta iridescence
+            final_r += spectral;
+            final_g -= spectral * 0.3;
+            final_b -= spectral;
+        } else {
+            // Non-luxury mode: rainbow iridescence based on position
+            let hue_shift = (u * 2.1 + v * 3.4 + flow_dir).sin() * 6.28318; // Full hue range
+            final_r += (hue_shift).cos() * spectral;
+            final_g += (hue_shift + 2.09439).cos() * spectral; // +120°
+            final_b += (hue_shift + 4.18879).cos() * spectral; // +240°
+        }
 
         *pixel = (final_r.max(0.0) * a, final_g.max(0.0) * a, final_b.max(0.0) * a, a);
     });

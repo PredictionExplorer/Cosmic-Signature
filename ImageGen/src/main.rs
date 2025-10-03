@@ -40,7 +40,7 @@ struct Args {
     #[arg(long)]
     num_sims: Option<usize>,
 
-    #[arg(long, default_value_t = 1_500_000)]
+    #[arg(long, default_value_t = 1_000_000)]
     num_steps_sim: usize,
 
     #[arg(long, default_value_t = 300.0)]
@@ -77,6 +77,10 @@ struct Args {
 
     #[arg(long, default_value_t = false)]
     special: bool,
+
+    /// Test mode: render only the first frame as PNG and exit (skips video generation)
+    #[arg(long, default_value_t = false)]
+    test_frame: bool,
 
     /// Denominator for alpha used in drawing lines
     #[arg(long, default_value_t = 15_000_000)]
@@ -122,9 +126,9 @@ struct Args {
     #[arg(long, default_value_t = 0.32)]
     dog_strength: f64,
 
-    /// DoG inner sigma in pixels
-    #[arg(long, default_value_t = 7.0)]
-    dog_sigma: f64,
+    /// DoG inner sigma in pixels (auto-scales with resolution if not specified)
+    #[arg(long)]
+    dog_sigma: Option<f64>,
 
     /// DoG outer/inner sigma ratio
     #[arg(long, default_value_t = 2.8)]
@@ -211,6 +215,15 @@ fn main() -> std::result::Result<(), Box<dyn Error>> {
     // Convert hex seed
     let hex_seed = if args.seed.starts_with("0x") { &args.seed[2..] } else { &args.seed };
     let seed_bytes = hex::decode(hex_seed).expect("invalid hex seed");
+    
+    // Derive noise seed for nebula clouds from first 4 bytes of simulation seed
+    let noise_seed = i32::from_le_bytes([
+        seed_bytes.get(0).copied().unwrap_or(0),
+        seed_bytes.get(1).copied().unwrap_or(0),
+        seed_bytes.get(2).copied().unwrap_or(0),
+        seed_bytes.get(3).copied().unwrap_or(0),
+    ]);
+    
     let mut rng = Sha3RandomByteStream::new(
         &seed_bytes,
         args.min_mass,
@@ -280,17 +293,17 @@ fn main() -> std::result::Result<(), Box<dyn Error>> {
     info!("STAGE 5/7: PASS 1 => building global histogram...");
     let (blur_radius_px, blur_strength, blur_core_brightness) = if args.special {
         (
-            // stronger blur for special mode, optimized for 1080p
-            (0.025 * std::cmp::min(args.width, args.height) as f64).round() as usize,
-            10.0, // boosted blur strength
-            10.0, // core brightness = equal to strength for brighter lines
+            // Much stronger blur for special mode, optimized for 1080p
+            (0.032 * std::cmp::min(args.width, args.height) as f64).round() as usize,
+            12.0, // significantly boosted blur strength
+            12.0, // core brightness = equal to strength for brighter lines
         )
     } else {
         (
-            // museum-grade blur settings optimized for 1080p viewing
-            (0.018 * std::cmp::min(args.width, args.height) as f64).round() as usize,
-            9.0, // boosted blur strength
-            9.0, // core brightness = equal to strength for brighter lines
+            // lighter blur settings for standard mode
+            (0.014 * std::cmp::min(args.width, args.height) as f64).round() as usize,
+            7.0, // moderate blur strength
+            7.0, // core brightness = equal to strength for brighter lines
         )
     };
 
@@ -302,9 +315,13 @@ fn main() -> std::result::Result<(), Box<dyn Error>> {
     let mut all_g = Vec::new();
     let mut all_b = Vec::new();
 
-    // Create DoG bloom config
+    // Create DoG bloom config with resolution-aware sigma
+    let dog_sigma = args.dog_sigma.unwrap_or_else(|| {
+        // Default: 0.0065 of min dimension = 7px @ 1080p, 14px @ 4K
+        0.0065 * std::cmp::min(args.width, args.height) as f64
+    });
     let dog_config = render::DogBloomConfig {
-        inner_sigma: args.dog_sigma,
+        inner_sigma: dog_sigma,
         outer_ratio: args.dog_ratio,
         strength: args.dog_strength,
         threshold: 0.01,
@@ -344,6 +361,8 @@ fn main() -> std::result::Result<(), Box<dyn Error>> {
         &args.hdr_mode,
         perceptual_blur_enabled,
         perceptual_blur_config.as_ref(),
+        args.special,
+        noise_seed,
         &render_config,
     );
 
@@ -365,9 +384,6 @@ fn main() -> std::result::Result<(), Box<dyn Error>> {
     drop(all_g);
     drop(all_b);
 
-    // 7) pass 2 => final frames => feed into ffmpeg
-    info!("STAGE 7/7: PASS 2 => final frames => FFmpeg...");
-
     // Generate filename with optional profile tag
     let base_filename = if args.profile_tag.is_empty() {
         args.file_name.clone()
@@ -375,8 +391,52 @@ fn main() -> std::result::Result<(), Box<dyn Error>> {
         format!("{}_{}", args.file_name, args.profile_tag)
     };
 
-    let output_vid = format!("vids/{}.mp4", base_filename);
     let output_png = format!("pics/{}.png", base_filename);
+
+    // Check if test frame mode is enabled
+    if args.test_frame {
+        // TEST FRAME MODE: Render only the first frame and save as PNG
+        info!("STAGE 7/7: TEST FRAME MODE => rendering first frame only...");
+        
+        let test_frame = render::render_single_frame_spectral(
+            &positions,
+            &colors,
+            &body_alphas,
+            width,
+            height,
+            blur_radius_px,
+            blur_strength,
+            blur_core_brightness,
+            black_r,
+            white_r,
+            black_g,
+            white_g,
+            black_b,
+            white_b,
+            &args.bloom_mode,
+            &dog_config,
+            &args.hdr_mode,
+            perceptual_blur_enabled,
+            perceptual_blur_config.as_ref(),
+            args.special,
+            noise_seed,
+            &render_config,
+        )?;
+        
+        info!("Saving test frame to: {}", output_png);
+        save_image_as_png(&test_frame, &output_png)?;
+        
+        info!("✓ Test frame saved successfully!");
+        info!(
+            "Best orbit => Weighted Borda = {:.3}\nTest complete!",
+            best_info.total_score_weighted
+        );
+        return Ok(());
+    }
+
+    // NORMAL MODE: Render full video
+    info!("STAGE 7/7: PASS 2 => final frames => video...");
+    let output_vid = format!("vids/{}.mp4", base_filename);
     let mut last_frame_png: Option<ImageBuffer<Rgb<u8>, Vec<u8>>> = None;
 
     // Create video encoding options with default settings
@@ -408,6 +468,8 @@ fn main() -> std::result::Result<(), Box<dyn Error>> {
                 &args.hdr_mode,
                 perceptual_blur_enabled,
                 perceptual_blur_config.as_ref(),
+                args.special,
+                noise_seed,
                 |buf_8bit| {
                     out.write_all(buf_8bit).map_err(render::error::RenderError::VideoEncoding)?;
                     Ok(())

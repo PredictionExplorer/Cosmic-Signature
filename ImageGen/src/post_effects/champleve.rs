@@ -26,6 +26,12 @@ pub struct ChampleveConfig {
 
 impl Default for ChampleveConfig {
     fn default() -> Self {
+        Self::new(true)
+    }
+}
+
+impl ChampleveConfig {
+    pub fn new(_special_mode: bool) -> Self {
         Self {
             cell_density: constants::DEFAULT_CHAMPLEVE_CELL_DENSITY,
             flow_alignment: constants::DEFAULT_CHAMPLEVE_FLOW_ALIGNMENT,

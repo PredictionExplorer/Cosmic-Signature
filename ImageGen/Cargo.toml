@@ -20,6 +20,7 @@ clap     = { version = "4.5.48", features = ["derive"] }
 hex      = "0.4.3"
 image    = "0.25.8"
 nalgebra = "0.34.1"
+opensimplex2 = "1.1.0"
 palette  = "0.7.6"
 rayon    = "1.11.0"
 rustfft  = "6.4.1"

@@ -118,20 +118,26 @@ impl Default for PostEffectChain {
 // Re-export effect implementations
 pub mod aether;
 pub mod champleve;
+pub mod chromatic_bloom;
 pub mod color_grade;
 pub mod dog_bloom;
 pub mod exposure;
 pub mod gaussian_bloom;
+pub mod gradient_map;
+pub mod nebula_clouds;
 pub mod perceptual_blur;
 pub mod utils;
 
 // Export all public types
 pub use aether::{AetherConfig, apply_aether_weave};
 pub use champleve::{ChampleveConfig, apply_champleve_iridescence};
+pub use chromatic_bloom::{ChromaticBloom, ChromaticBloomConfig};
 pub use color_grade::{CinematicColorGrade, ColorGradeParams};
 pub use dog_bloom::DogBloom;
 pub use exposure::AutoExposure;
 pub use gaussian_bloom::GaussianBloom;
+pub use gradient_map::{GradientMap, GradientMapConfig, LuxuryPalette};
+pub use nebula_clouds::{NebulaClouds, NebulaCloudConfig};
 pub use perceptual_blur::{PerceptualBlur, PerceptualBlurConfig};
 
 #[cfg(test)]

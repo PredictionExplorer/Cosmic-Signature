@@ -210,7 +210,166 @@ fn plot_spec(
 }
 
 /// Draw anti-aliased line segment for spectral rendering
+#[allow(dead_code)]
 pub fn draw_line_segment_aa_spectral(
+    accum: &mut [[f64; NUM_BINS]],
+    width: u32,
+    height: u32,
+    x0: f32,
+    y0: f32,
+    x1: f32,
+    y1: f32,
+    col0: OklabColor,
+    col1: OklabColor,
+    alpha0: f64,
+    alpha1: f64,
+    hdr_scale: f64,
+) {
+    draw_line_segment_aa_spectral_with_dispersion(
+        accum, width, height, x0, y0, x1, y1, col0, col1, alpha0, alpha1, hdr_scale, false,
+    );
+}
+
+/// Draw anti-aliased line segment for spectral rendering with optional dispersion
+pub fn draw_line_segment_aa_spectral_with_dispersion(
+    accum: &mut [[f64; NUM_BINS]],
+    width: u32,
+    height: u32,
+    x0: f32,
+    y0: f32,
+    x1: f32,
+    y1: f32,
+    col0: OklabColor,
+    col1: OklabColor,
+    alpha0: f64,
+    alpha1: f64,
+    hdr_scale: f64,
+    enable_dispersion: bool,
+) {
+    // If dispersion is disabled, use the original single-pass rendering
+    if !enable_dispersion {
+        draw_line_segment_aa_spectral_internal(
+            accum, width, height, x0, y0, x1, y1, col0, col1, alpha0, alpha1, hdr_scale,
+        );
+        return;
+    }
+
+    // With dispersion enabled, we draw the line multiple times with wavelength-dependent offsets
+    // Calculate perpendicular direction for dispersion
+    let dx = x1 - x0;
+    let dy = y1 - y0;
+    let len = (dx * dx + dy * dy).sqrt();
+    
+    if len < 0.001 {
+        // Line too short, just draw normally
+        draw_line_segment_aa_spectral_internal(
+            accum, width, height, x0, y0, x1, y1, col0, col1, alpha0, alpha1, hdr_scale,
+        );
+        return;
+    }
+    
+    // Perpendicular unit vector (rotated 90 degrees)
+    let perp_x = -dy / len;
+    let perp_y = dx / len;
+    
+    // Convert colors to wavelengths to find the center bins
+    let (_l0, a0, b0) = col0;
+    let (_l1, a1, b1) = col1;
+    let wavelength0 = oklab_hue_to_wavelength(a0, b0);
+    let wavelength1 = oklab_hue_to_wavelength(a1, b1);
+    
+    const LAMBDA_START: f64 = 380.0;
+    const LAMBDA_END: f64 = 700.0;
+    const LAMBDA_RANGE: f64 = LAMBDA_END - LAMBDA_START;
+    const BIN_WIDTH: f64 = LAMBDA_RANGE / NUM_BINS as f64;
+    
+    let center_bin0 = ((wavelength0 - LAMBDA_START) / BIN_WIDTH).round() as isize;
+    let center_bin1 = ((wavelength1 - LAMBDA_START) / BIN_WIDTH).round() as isize;
+    
+    use crate::render::constants::{SPECTRAL_DISPERSION_BINS, SPECTRAL_DISPERSION_STRENGTH};
+    let dispersion_range = SPECTRAL_DISPERSION_BINS as isize;
+    
+    // Draw multiple passes, one for each wavelength bin with spatial offset
+    for bin_offset in -dispersion_range..=dispersion_range {
+        // Calculate offset distance based on bin offset (creates rainbow spread)
+        let offset_dist = bin_offset as f32 * SPECTRAL_DISPERSION_STRENGTH as f32;
+        
+        // Offset the line perpendicular to its direction
+        let offset_x = perp_x * offset_dist;
+        let offset_y = perp_y * offset_dist;
+        
+        // Create modified wavelengths for this dispersed pass
+        let bin0 = (center_bin0 + bin_offset).clamp(0, (NUM_BINS - 1) as isize) as usize;
+        let bin1 = (center_bin1 + bin_offset).clamp(0, (NUM_BINS - 1) as isize) as usize;
+        
+        // Convert bins back to wavelengths
+        let disp_wavelength0 = LAMBDA_START + (bin0 as f64 + 0.5) * BIN_WIDTH;
+        let disp_wavelength1 = LAMBDA_START + (bin1 as f64 + 0.5) * BIN_WIDTH;
+        
+        // Create new colors by preserving lightness but using dispersed wavelengths
+        // We reconstruct OkLab from wavelength (approximate reverse)
+        let disp_col0 = wavelength_to_oklab(disp_wavelength0, col0.0);
+        let disp_col1 = wavelength_to_oklab(disp_wavelength1, col1.0);
+        
+        // Reduce alpha for dispersed copies to maintain total energy
+        let dispersion_alpha_factor = 1.0 / (2.0 * dispersion_range as f64 + 1.0);
+        
+        // Draw the offset line
+        draw_line_segment_aa_spectral_internal(
+            accum,
+            width,
+            height,
+            x0 + offset_x,
+            y0 + offset_y,
+            x1 + offset_x,
+            y1 + offset_y,
+            disp_col0,
+            disp_col1,
+            alpha0 * dispersion_alpha_factor,
+            alpha1 * dispersion_alpha_factor,
+            hdr_scale,
+        );
+    }
+}
+
+/// Helper to convert wavelength back to approximate OkLab (preserving lightness)
+#[inline]
+fn wavelength_to_oklab(wavelength: f64, lightness: f64) -> OklabColor {
+    // Map wavelength to hue angle (reverse of oklab_hue_to_wavelength, approximate)
+    let hue_deg = if wavelength >= 650.0 {
+        // Red region: 650-700nm -> 0-30°
+        (700.0 - wavelength) / 50.0 * 30.0
+    } else if wavelength >= 620.0 {
+        // Orange region: 620-650nm -> 30-60°
+        30.0 + (650.0 - wavelength) / 30.0 * 30.0
+    } else if wavelength >= 570.0 {
+        // Yellow region: 570-620nm -> 60-90°
+        60.0 + (620.0 - wavelength) / 50.0 * 30.0
+    } else if wavelength >= 510.0 {
+        // Green region: 510-570nm -> 90-150°
+        90.0 + (570.0 - wavelength) / 60.0 * 60.0
+    } else if wavelength >= 485.0 {
+        // Cyan region: 485-510nm -> 150-210°
+        150.0 + (510.0 - wavelength) / 25.0 * 60.0
+    } else if wavelength >= 450.0 {
+        // Blue region: 450-485nm -> 210-270°
+        210.0 + (485.0 - wavelength) / 35.0 * 60.0
+    } else {
+        // Violet region: 380-450nm -> 270-330°
+        270.0 + (450.0 - wavelength) / 70.0 * 60.0
+    };
+    
+    // Convert hue angle to OkLab a,b components
+    let hue_rad = hue_deg.to_radians();
+    let chroma = 0.15; // Fixed moderate chroma for dispersion
+    let a = chroma * hue_rad.cos();
+    let b = chroma * hue_rad.sin();
+    
+    (lightness, a, b)
+}
+
+/// Internal implementation of spectral line drawing (original logic)
+fn draw_line_segment_aa_spectral_internal(
     accum: &mut [[f64; NUM_BINS]],
     width: u32,
     height: u32,
