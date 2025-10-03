@@ -1,6 +1,6 @@
 ### Compiling Cosmic Signature Contracts
 
-As a matter of fact, you should never need to explicitly compile the contracts. Tasks and scripts in this project will automatically compile changed source code as needed. But if you suspect that for some reason the auto-compile doesn't work well, you can clean compiled artifacts by executing `../runners/clean.bash` and then run other tasks and scripts. In this case it's pretty much guaranteed that the autocompile will do a good job.
+As a matter of fact, you should never need to explicitly compile the contracts. Tasks and scripts in this project will automatically compile changed source code as needed. But if you suspect that for some reason the auto-compile doesn't work well, you can delete compiled artifacts by executing `../runners/clean.bash` and then run other tasks and scripts. In this case it's pretty much guaranteed that the autocompile will do a good job, and if somehow it does not, you will see errors.
 
 With that note out of the way, here are a few words about explicitly compiling the contarcts.
 
@@ -13,11 +13,11 @@ With that note out of the way, here are a few words about explicitly compiling t
 
 2. Install Node.js dependencies.
    ```bash
-   npm install
+   npm ci
    ```
    or
    ```bash
-   npm ci
+   npm install
    ```
 
 3. Install the Solidity Compiler.\
@@ -31,7 +31,7 @@ With that note out of the way, here are a few words about explicitly compiling t
 
 #### Environment Varibles
 
-This Hardhat project requires that prior to initializing Hardhat the `HARDHAT_MODE_CODE` environment variable was set. Our scripts do it, so you don't need to. See Comment-202510221 for details.
+We recommend that prior to initializing Hardhat the `HARDHAT_MODE_CODE` environment variable was set. Our scripts already do it, so you rarely if ever need to. See Comment-202510221 for details.
 
 Other environment varibles are listed further.
 

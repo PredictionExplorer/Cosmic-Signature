@@ -19,18 +19,17 @@ interface IBidStatistics is ICosmicSignatureGameStorage {
 	/// @dev Comment-202503162 relates and/or applies.
 	function getBidderTotalSpentAmounts(uint256 roundNum_, address bidderAddress_) external view returns (uint256, uint256);
 
-	// /// @return The current Endurance Champion address and duration.
+	// /// @return The current real-time Endurance Champion address and duration.
 	// /// @dev
 	// /// [Comment-202503141]
 	// /// This method has been replaced with `tryGetCurrentChampions`.
 	// /// [/Comment-202503141]
 	// function tryGetCurrentEnduranceChampion() external view returns (address, uint256);
 
-	/// @notice Calculates and returns the current real-time Endurance Champion and Crono-Warrior info.
+	/// @notice Calculates and returns the current real-time Endurance Champion and Chrono-Warrior info.
 	/// Provided the first bid has been placed in the current bidding round, the result changes over time,
-	/// even if the contract state does not change,
-	/// provided the first bid in a bidding round has been placed.
-	/// If there are no bids in the current bidding round, all return values will be zeros.
+	/// even if the contract state does not change.
+	/// If there were no bids in the current bidding round, all return values will be zeros.
 	/// @dev
 	/// [Comment-202412135]
 	/// This method is intended to be called only off-chain.

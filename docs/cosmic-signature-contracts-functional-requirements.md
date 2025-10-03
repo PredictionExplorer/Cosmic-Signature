@@ -122,11 +122,7 @@ When another bid is placed, `mainPrizeTime` gets calculated as `max(mainPrizeTim
 
 ### Endurance Champion and Chrono-Warrior
 
-These winners/champions are defined in `${workspaceFolder}/README.md`. Use the following reg-ex pattern to find the right text (case sensitive, not whole word):
-```regex
-\bECs?\b|(?:ew|ld|rev)EC|\bCW\b|ENDURANCE|[Ee]ndurance|CHRONO|[Cc]hrono
-```
-todo-0 Make sure the above pattern is correct.
+These winners/champions are defined in `${workspaceFolder}/docs/endurance-chrono-README.md`.
 
 There are designated storage variables to store the current Endurance Champion and Chrono-Warrior. They are updated on each bid, except the first bid in a round, and then last time on main prize claim. The variables actually contain outdated values. Provided the first bid has been placed in the current bidding round, the actual real-time values specifying who the champions are and their durations change over time, even if the contract state does not change. Relevant logic is implemented in the `BidStatistics` contract.
 

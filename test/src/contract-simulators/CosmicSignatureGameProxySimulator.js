@@ -103,7 +103,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 		stakingWalletRandomWalkNftSimulator: stakingWalletRandomWalkNftSimulator_,
 		stakingWalletCosmicSignatureNftSimulator: stakingWalletCosmicSignatureNftSimulator_,
 		// marketingWalletSimulator:
-		marketingWalletCstContributionAmount: 300n * 10n ** 18n,
+		marketingWalletCstContributionAmount: 1000n * 10n ** 18n,
 		charityWalletSimulator: charityWalletSimulator_,
 		charityEthDonationAmountPercentage: 7n,
 

@@ -8,7 +8,8 @@ import { IAddressValidator } from "./IAddressValidator.sol";
 /// @author The Cosmic Signature Development Team.
 /// @notice This contract implements the governance mechanism for the Cosmic Signature ecosystem.
 /// It extends various OpenZeppelin Governor modules to create a comprehensive DAO.
-/// @dev It appears that we don't need to inherit `GovernorTimelockControl`.
+/// @dev Comment-202511039 applies.
+/// It appears that we don't need to inherit `GovernorTimelockControl`.
 interface ICosmicSignatureDao is IGovernor, IAddressValidator {
 	// Empty.
 }

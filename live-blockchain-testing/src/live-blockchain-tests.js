@@ -82,11 +82,10 @@ function prepare1() {
 	// Regardless, let's leave it alone.
 	// [/Comment-202509244]
 	{
-		let hardhatModeCodeAsString_ = process.env.HARDHAT_MODE_CODE ?? "";
+		let hardhatModeCodeAsString_ = process.env["HARDHAT_MODE_CODE"] ?? "";
 		if (hardhatModeCodeAsString_.length <= 0) {
 			hardhatModeCodeAsString_ = "2";
-			process.env.HARDHAT_MODE_CODE = hardhatModeCodeAsString_;
-			console.info(`${nodeOsModule.EOL}HARDHAT_MODE_CODE = "${hardhatModeCodeAsString_}"`);
+			process.env["HARDHAT_MODE_CODE"] = hardhatModeCodeAsString_;
 		} else {
 			console.warn(`${nodeOsModule.EOL}Warning. The HARDHAT_MODE_CODE environment variable is already set to "${hardhatModeCodeAsString_}". Is it intentional?`);
 		}

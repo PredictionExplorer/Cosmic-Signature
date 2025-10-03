@@ -113,7 +113,7 @@ describe("BidStatistics", function () {
 		//    Signer 0 places the 1st bid of 1000 seconds long.
 		//    Signer 1 places the 2nd bid of 2000 seconds long.
 		//    Signer 2 places the 3d bid of 5000 seconds long.
-		//    The 5000 seconds bid is the longest, therefore signer 2 is the Endurance Champion.
+		//    The 5000 seconds bid is the longest, therefore signer 2 is Endurance Champion.
 		
 		const contracts_ = await loadFixtureDeployContractsForTesting(100_000_000_000n);
 

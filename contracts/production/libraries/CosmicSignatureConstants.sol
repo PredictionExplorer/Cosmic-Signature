@@ -81,8 +81,6 @@ library CosmicSignatureConstants {
 
 	/// @notice Default `cstDutchAuctionDurationDivisor`.
 	/// Comment-202508288 relates.
-	/// todo-1 +++ Rename any "Auction" to "Dutch Auction".
-	/// todo-1 +++ (?<!dutch)(?<!dutch[\-_ ])Auction
 	uint256 internal constant DEFAULT_CST_DUTCH_AUCTION_DURATION_DIVISOR = (INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND + ((1 days) / 2) / 2) / ((1 days) / 2);
 
 	/// @notice Comment-202411066 relates.
@@ -161,8 +159,8 @@ library CosmicSignatureConstants {
 	uint256 internal constant COSMIC_SIGNATURE_NFT_NFT_NAME_LENGTH_MAX_LIMIT = 32;
 
 	/// @notice Default `CosmicSignatureNft.nftBaseUri`.
-	/// @dev todo-1 Hardcode a valid value here.
-	string internal constant COSMIC_SIGNATURE_NFT_DEFAULT_NFT_BASE_URI = "TBD";
+	/// @dev todo-1 Hardcode a valid value here. Done, but recheck again that it's correct.
+	string internal constant COSMIC_SIGNATURE_NFT_DEFAULT_NFT_BASE_URI = "https://nfts.cosmicsignature.com/cg/metadata/";
 
 	/// @notice Default `CosmicSignatureNft.nftGenerationScriptUri`.
 	/// @dev todo-1 Hardcode a valid value here.
@@ -185,7 +183,7 @@ library CosmicSignatureConstants {
 	// #region Marketing
 
 	/// @notice Default `marketingWalletCstContributionAmount`.
-	uint256 internal constant DEFAULT_MARKETING_WALLET_CST_CONTRIBUTION_AMOUNT = 300 ether;
+	uint256 internal constant DEFAULT_MARKETING_WALLET_CST_CONTRIBUTION_AMOUNT = 1000 ether;
 
 	// #endregion
 	// #region Charity
@@ -239,9 +237,9 @@ library CosmicSignatureConstants {
 	/// @notice This is equivalent to the midnight of 9000-01-01.
 	/// @dev JavaScript  code to calculate this.
 	///		const n = /*Math.trunc*/((new Date(9000, 1 - 1, 1)).getTime() / 1000);
-	///		console.log(n);
+	///		console.info(n);
 	///		const d = new Date(n * 1000);
-	///		console.log(d);
+	///		console.info(d);
 	uint256 internal constant TIMESTAMP_9000_01_01 = 221_845_392_000;
 
 	// #endregion

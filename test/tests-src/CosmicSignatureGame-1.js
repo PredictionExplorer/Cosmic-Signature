@@ -85,16 +85,26 @@ describe("CosmicSignatureGame-1", function () {
 			// #endregion
 			// #region
 
-			// const timeStamp1_ = performance.now();
-			for (const signer5_ of contracts_.signers) {
-				const randomWalkNftForSigner5_ = contracts_.randomWalkNft.connect(signer5_);
-				await waitForTransactionReceipt(randomWalkNftForSigner5_.setApprovalForAll(contracts_.stakingWalletRandomWalkNftAddress, true));
-				const cosmicSignatureNftForSigner5_ = contracts_.cosmicSignatureNft.connect(signer5_);
-				await waitForTransactionReceipt(cosmicSignatureNftForSigner5_.setApprovalForAll(contracts_.stakingWalletCosmicSignatureNftAddress, true));
+			{
+				// const timeStamp1_ = performance.now();
+				for (const signer5_ of contracts_.signers) {
+					{
+						const signer5BalanceAmount_ = await hre.ethers.provider.getBalance(signer5_.address);
+						await hre.ethers.provider.send("hardhat_setBalance", [signer5_.address, "0x" + (signer5BalanceAmount_ * 2n).toString(16),]);
+					}
+					{
+						const randomWalkNftForSigner5_ = contracts_.randomWalkNft.connect(signer5_);
+						await waitForTransactionReceipt(randomWalkNftForSigner5_.setApprovalForAll(contracts_.stakingWalletRandomWalkNftAddress, true));
+					}
+					{
+						const cosmicSignatureNftForSigner5_ = contracts_.cosmicSignatureNft.connect(signer5_);
+						await waitForTransactionReceipt(cosmicSignatureNftForSigner5_.setApprovalForAll(contracts_.stakingWalletCosmicSignatureNftAddress, true));
+					}
+				}
+				// const timeStamp2_ = performance.now();
+				// console.info((timeStamp2_ - timeStamp1_).toFixed(1));
 			}
-			// const timeStamp2_ = performance.now();
-			// console.info((timeStamp2_ - timeStamp1_).toFixed(1));
-
+			
 			// #endregion
 			// #region
 

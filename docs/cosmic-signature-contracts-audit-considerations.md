@@ -28,4 +28,4 @@ We assume that the contract owner is not malicious. One implication is that we a
 #### Other Important Notes
 
 There may be some comments in the project that are intended to be read by the auditor. To find them, perform a global search for `audit` (not whole word, case insensitive).
-todo-0 Find those. Not much left.
+todo-1 Find those. Actually I have deleted most, if not all of them.

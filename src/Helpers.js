@@ -19,18 +19,25 @@ const { HardhatContext } = require("hardhat/internal/context");
 // [Comment-202510221]
 // Supported values:
 //    @ 1 to run tests under the "${workspaceFolder}/test" subfolder deterministically and at the maximum speed.
-//      This is the value to set in most cases, especially if no testing will be happening.
-//    @ 2 to simulate a live blockchain, which is designed for tests under the "${workspaceFolder}/live-blockchain-testing" subfolder.
+//      This is the value to set in most cases, especially if no blockchain calls will be made.
+//    @ 2 to simulate a live blockchain, which is designed for tests
+//      under the "${workspaceFolder}/live-blockchain-testing" subfolder.
 // [/Comment-202510221]
-const HARDHAT_MODE_CODE = parseIntegerEnvironmentVariable("HARDHAT_MODE_CODE", 0);
+let HARDHAT_MODE_CODE = parseIntegerEnvironmentVariable("HARDHAT_MODE_CODE", Number.NEGATIVE_INFINITY);
 
 switch (HARDHAT_MODE_CODE) {
 	case 1:
 	case 2: {
+		console.info(`HARDHAT_MODE_CODE = ${HARDHAT_MODE_CODE}`);
+		break;
+	}
+	case Number.NEGATIVE_INFINITY: {
+		console.warn("Warning. The HARDHAT_MODE_CODE environment variable is not set. Assuming it equals 1.");
+		HARDHAT_MODE_CODE = 1;
 		break;
 	}
 	default: {
-		throw new Error("The HARDHAT_MODE_CODE environment variable either is not set or is invalid.")
+		throw new Error(`Invalid HARDHAT_MODE_CODE: ${HARDHAT_MODE_CODE}.`)
 		// break;
 	}	
 }
@@ -240,7 +247,7 @@ async function getBlockTimeStampByBlockNumber(blockNumber_) {
 Sometimes (always?) Hardhat forgets to apply the configured `gasMultiplier`.
 This hack fixes that.
 This issue is said to have been fixed in Hardhat 3.
-todo-3 Are they going to fix the issue in Hardhat 2? Unlikely.
+todo-3 Are they going to fix the issue in Hardhat 2.x? Unlikely.
 Comment-202508265 relates.
 [/Comment-202509185]
 */

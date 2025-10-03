@@ -47,7 +47,7 @@ We recommend using the following priorities:
 - 4: rarely used for a not-any-time-soon to do, such as to do something about a timestamp overflow in 100 years.
 - 9: a todo in commented code that would need to be done if the code is ever uncommented.
 
-We use the same priorities in non-numbeted todos as well:
+We use the same priorities for non-numbeted todos as well:
 ```
 // ToDo-0 Do this and that ASAP.
 ```

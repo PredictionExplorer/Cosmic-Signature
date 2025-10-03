@@ -7,19 +7,15 @@ import { IAddressValidator } from "./IAddressValidator.sol";
 /// @title The Official ERC-721 NFT for the Cosmic Signature Ecosystem.
 /// @author The Cosmic Signature Development Team.
 /// @notice This contract has unique features, in particular, custom minting and metadata management.
-/// @dev Issue. It could make sense to derive this contract from `ERC721Permit`,
+/// @dev
+/// [Comment-202511039]
+/// A contract like this can be generated at https://wizard.openzeppelin.com/ .
+/// [/Comment-202511039]
+/// Issue. It could make sense to derive this contract from `ERC721Permit`,
 /// but OpenZeppelin doesn't include such a contract.
-/// 
-/// todo-1 +++ Review https://wizard.openzeppelin.com/#erc721
-/// 
-/// todo-1 +++ Research modern features that we might need to implement.
-/// 
-/// todo-1 +++ Ask ChatGPT:
-/// todo-1 +++ How to make an ERC-721 contract compatible with NFT marketplaces?
-/// todo-1 Test manually that we can trade this on OpenSea and the others.
 interface ICosmicSignatureNft is IERC721Enumerable, IAddressValidator {
 	/// @notice Details about a Cosmic Signature NFT.
-	struct NftInfo {
+	struct NftMetaData {
 		/// @notice The custom name set for the NFT.
 		/// It's not required to provide one.
 		/// If the user doesn't provide a name for the NFT, this value will stay empty.
@@ -104,7 +100,7 @@ interface ICosmicSignatureNft is IERC721Enumerable, IAddressValidator {
 
 	/// @param nftId_ NFT ID.
 	/// It shall be less than `totalSupply()`. Otherwise the return value is indeterminate.
-	function getNftInfo(uint256 nftId_) external view returns (NftInfo memory);
+	function getNftMetaData(uint256 nftId_) external view returns (NftMetaData memory);
 
 	/// @notice Allows the given NFT owner or authorized caller to set a custom name for an NFT.
 	/// @param nftId_ NFT ID.
@@ -120,4 +116,10 @@ interface ICosmicSignatureNft is IERC721Enumerable, IAddressValidator {
 	/// @param nftId_ NFT ID.
 	/// It shall be less than `totalSupply()`. Otherwise the return value is indeterminate.
 	function getNftSeed(uint256 nftId_) external view returns (uint256);
+
+	/// @notice Checks if the caller is authorized to manage the given NFT.
+	/// If not authorized, the call would revert.
+	/// @param nftId_ NFT ID.
+	/// It shall be less than `totalSupply()`. Otherwise the call would revert.
+	function checkCallerIsAuthorizedFor(uint256 nftId_) external view;
 }
