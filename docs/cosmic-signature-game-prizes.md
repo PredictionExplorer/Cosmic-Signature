@@ -60,9 +60,11 @@ The rest of this document lists prizes from groups 1 and 2.
 |  | CST | 1 | `cstPrizeAmount` |  |
 |  | Cosmic Signature NFT | 1 | 1 |  |
 |  |  |  |  |  |
-| Bidders | ETH | `numRaffleEthPrizesForBidders` | `gameEthBalance * raffleTotalEthPrizeAmountForBiddersPercentage / 100 / numRaffleEthPrizesForBidders` | Bids are picked randomly. |
-|  | CST | 1 per bid | `cstRewardAmountForBidding` | On each bid, the bidder gets CST. |
-|  | CST | `numRaffleCosmicSignatureNftsForBidders` | `cstPrizeAmount` | Bids are picked randomly. Each winner gets both CST and CS NFT. |
+| Bidders | CST | 1 per bid | `cstRewardAmountForBidding` | On each bid, the bidder gets CST. |
+|  |  |  |  |  |
+| Bidders Picked Via ETH Prize Raffle | ETH | `numRaffleEthPrizesForBidders` | `gameEthBalance * raffleTotalEthPrizeAmountForBiddersPercentage / 100 / numRaffleEthPrizesForBidders` | Bids are picked randomly. |
+|  |  |  |  |  |
+| Bidders Picked Via CST And CS NFT Prize Raffle | CST | `numRaffleCosmicSignatureNftsForBidders` | `cstPrizeAmount` | Bids are picked randomly. Each winner gets both CST and CS NFT. |
 |  | Cosmic Signature NFT | `numRaffleCosmicSignatureNftsForBidders` | 1 | Bids are picked randomly. Each winner gets both CST and CS NFT. |
 |  |  |  |  |  |
 | Random Walk NFT Stakers | CST | 0 or `numRaffleCosmicSignatureNftsForRandomWalkNftStakers` | `cstPrizeAmount` | Staked RW NFTs are picked randomly. Each winner gets both CST and CS NFT. If there are no staked RW NFTs, nobody would get this prize. |
