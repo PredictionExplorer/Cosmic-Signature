@@ -7,6 +7,8 @@ use tracing_subscriber::EnvFilter;
 
 mod analysis;
 mod drift;
+mod drift_config;
+mod generation_log;
 mod oklab;
 mod post_effects;
 mod render;
@@ -15,6 +17,8 @@ mod spectrum;
 mod utils;
 
 use drift::*;
+use drift_config::*;
+use generation_log::*;
 use render::constants;
 use render::*;
 use sim::*;
@@ -103,16 +107,19 @@ struct Args {
     drift_mode: String,
 
     /// Scale of drift motion (relative to system size)
-    #[arg(long, default_value_t = 1.0)]
-    drift_scale: f64,
+    /// If not specified, will be randomly generated based on mode
+    #[arg(long)]
+    drift_scale: Option<f64>,
 
     /// Fraction of the orbit to traverse when using elliptical drift (0-1)
-    #[arg(long, default_value_t = 0.18)]
-    drift_arc_fraction: f64,
+    /// If not specified, will be randomly generated based on mode
+    #[arg(long)]
+    drift_arc_fraction: Option<f64>,
 
     /// Orbit eccentricity when using elliptical drift (0-0.95)
-    #[arg(long, default_value_t = 0.15)]
-    drift_orbit_eccentricity: f64,
+    /// If not specified, will be randomly generated based on mode
+    #[arg(long)]
+    drift_orbit_eccentricity: Option<f64>,
 
     /// Profile tag to append to output filenames
     #[arg(long, default_value = "")]
@@ -233,6 +240,7 @@ fn main() -> std::result::Result<(), Box<dyn Error>> {
     );
 
     // 1) Borda selection
+    info!("STAGE 1/7: Borda search over {} random orbits...", num_sims);
     let (best_bodies, best_info) = sim::select_best_trajectory(
         &mut rng,
         num_sims,
@@ -248,27 +256,39 @@ fn main() -> std::result::Result<(), Box<dyn Error>> {
     let mut positions = sim_result.positions;
     info!("   => Done.");
 
-    // 2.5) Apply drift transformation if enabled (default)
-    if !args.no_drift {
-        info!("STAGE 2.5/7: Applying {} drift...", args.drift_mode);
-
-        // Create and apply drift using the existing RNG
-        let num_steps = positions[0].len();
-        let drift_params = DriftParameters::new(
+    // 2.5) Resolve and apply drift transformation
+    let drift_config = if !args.no_drift {
+        info!("STAGE 2.5/7: Resolving drift configuration...");
+        
+        // Resolve drift parameters (either from args or generate random)
+        let resolved = resolve_drift_config(
             args.drift_scale,
             args.drift_arc_fraction,
             args.drift_orbit_eccentricity,
+            &mut rng,
+            args.special,
         );
+        
+        info!("Applying {} drift...", args.drift_mode);
+        let num_steps = positions[0].len();
+        let drift_params = resolved.to_drift_parameters();
+        
         if drift_params.arc_fraction == 0.0 && args.drift_mode.to_lowercase().starts_with("ell") {
             warn!("Elliptical drift requested with zero arc fraction; skipping motion");
         }
+        
         let mut drift_transform =
             parse_drift_mode(&args.drift_mode, &mut rng, drift_params, num_steps);
         let dt = constants::DEFAULT_DT; // Same dt as used in simulation
         drift_transform.apply(&mut positions, dt);
 
-        info!("   => Drift applied with scale {}", args.drift_scale);
-    }
+        info!("   => Drift applied successfully");
+        
+        Some(resolved)
+    } else {
+        info!("STAGE 2.5/7: Drift disabled (--no-drift flag)");
+        None
+    };
 
     // 3) Generate color sequences
     info!("STAGE 3/7: Generating color sequences + alpha...");
@@ -499,5 +519,98 @@ fn main() -> std::result::Result<(), Box<dyn Error>> {
         "Done! Best orbit => Weighted Borda = {:.3}\nHave a nice day!",
         best_info.total_score_weighted
     );
+    
+    // Log generation parameters for reproducibility
+    log_generation_parameters(
+        &args,
+        &base_filename,
+        &hex_seed.to_string(),
+        &drift_config,
+        num_sims,
+        &best_info,
+    );
+    
     Ok(())
+}
+
+/// Helper function to log generation parameters
+fn log_generation_parameters(
+    args: &Args,
+    file_name: &str,
+    seed: &str,
+    drift_config: &Option<ResolvedDriftConfig>,
+    num_sims: usize,
+    best_info: &sim::TrajectoryResult,
+) {
+    let logger = GenerationLogger::new();
+    
+    let mut record = GenerationRecord::new(
+        file_name.to_string(),
+        format!("0x{}", seed),
+        args.special,
+    );
+    
+    // Populate render configuration
+    record.render_config = LoggedRenderConfig {
+        width: args.width,
+        height: args.height,
+        clip_black: args.clip_black,
+        clip_white: args.clip_white,
+        alpha_denom: args.alpha_denom,
+        alpha_compress: args.alpha_compress,
+        bloom_mode: args.bloom_mode.clone(),
+        dog_strength: args.dog_strength,
+        dog_sigma: args.dog_sigma,
+        dog_ratio: args.dog_ratio,
+        hdr_mode: args.hdr_mode.clone(),
+        hdr_scale: args.hdr_scale,
+        perceptual_blur: args.perceptual_blur.clone(),
+        perceptual_blur_radius: args.perceptual_blur_radius,
+        perceptual_blur_strength: args.perceptual_blur_strength,
+        perceptual_gamut_mode: args.perceptual_gamut_mode.clone(),
+    };
+    
+    // Populate drift configuration
+    record.drift_config = if let Some(drift) = drift_config {
+        generation_log::DriftConfig {
+            enabled: true,
+            mode: args.drift_mode.clone(),
+            scale: drift.scale,
+            arc_fraction: drift.arc_fraction,
+            orbit_eccentricity: drift.orbit_eccentricity,
+            randomized: drift.was_randomized,
+        }
+    } else {
+        generation_log::DriftConfig {
+            enabled: false,
+            mode: "none".to_string(),
+            scale: 0.0,
+            arc_fraction: 0.0,
+            orbit_eccentricity: 0.0,
+            randomized: false,
+        }
+    };
+    
+    // Populate simulation configuration
+    record.simulation_config = SimulationConfig {
+        num_sims,
+        num_steps_sim: args.num_steps_sim,
+        location: args.location,
+        velocity: args.velocity,
+        min_mass: args.min_mass,
+        max_mass: args.max_mass,
+        chaos_weight: args.chaos_weight,
+        equil_weight: args.equil_weight,
+        escape_threshold: args.escape_threshold,
+    };
+    
+    // Populate orbit information
+    record.orbit_info = OrbitInfo {
+        selected_index: 0, // Not available in TrajectoryResult
+        weighted_score: best_info.total_score_weighted,
+        total_candidates: num_sims,
+        discarded_count: 0, // Not available in TrajectoryResult
+    };
+    
+    logger.log_generation(record);
 }

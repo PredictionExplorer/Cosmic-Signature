@@ -424,7 +424,7 @@ pub fn pass_1_build_histogram_spectral(
         perceptual_blur_enabled,
         perceptual_blur_config: perceptual_blur_config.cloned(),
         color_grade_enabled: true,
-        color_grade_params: ColorGradeParams::from_resolution(width as usize, height as usize),
+        color_grade_params: ColorGradeParams::from_resolution_and_mode(width as usize, height as usize, special_mode),
         champleve_enabled: true,  // Always enabled
         champleve_config: ChampleveConfig::new(special_mode),
         aether_enabled: true,  // Always enabled
@@ -664,7 +664,7 @@ pub fn pass_2_write_frames_spectral(
         perceptual_blur_enabled,
         perceptual_blur_config: perceptual_blur_config.cloned(),
         color_grade_enabled: true,
-        color_grade_params: ColorGradeParams::from_resolution(width as usize, height as usize),
+        color_grade_params: ColorGradeParams::from_resolution_and_mode(width as usize, height as usize, special_mode),
         champleve_enabled: true,  // Always enabled
         champleve_config: ChampleveConfig::new(special_mode),
         aether_enabled: true,  // Always enabled
@@ -898,7 +898,7 @@ pub fn render_single_frame_spectral(
         perceptual_blur_enabled,
         perceptual_blur_config: perceptual_blur_config.cloned(),
         color_grade_enabled: true,
-        color_grade_params: ColorGradeParams::from_resolution(width as usize, height as usize),
+        color_grade_params: ColorGradeParams::from_resolution_and_mode(width as usize, height as usize, special_mode),
         champleve_enabled: true,
         champleve_config: ChampleveConfig::new(special_mode),
         aether_enabled: true,

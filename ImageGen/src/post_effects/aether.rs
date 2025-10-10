@@ -31,16 +31,32 @@ impl Default for AetherConfig {
 
 impl AetherConfig {
     pub fn new(luxury_mode: bool) -> Self {
-        Self {
-            filament_density: constants::DEFAULT_AETHER_FILAMENT_DENSITY,
-            flow_alignment: constants::DEFAULT_AETHER_FLOW_ALIGNMENT,
-            scattering_strength: constants::DEFAULT_AETHER_SCATTERING_STRENGTH,
-            scattering_falloff: constants::DEFAULT_AETHER_SCATTERING_FALLOFF,
-            iridescence_amplitude: constants::DEFAULT_AETHER_IRIDESCENCE_AMPLITUDE,
-            iridescence_frequency: constants::DEFAULT_AETHER_IRIDESCENCE_FREQUENCY,
-            caustic_strength: constants::DEFAULT_AETHER_CAUSTIC_STRENGTH,
-            caustic_softness: constants::DEFAULT_AETHER_CAUSTIC_SOFTNESS,
-            luxury_mode,
+        if luxury_mode {
+            // Full aether effect for special mode
+            Self {
+                filament_density: constants::DEFAULT_AETHER_FILAMENT_DENSITY,
+                flow_alignment: constants::DEFAULT_AETHER_FLOW_ALIGNMENT,
+                scattering_strength: constants::DEFAULT_AETHER_SCATTERING_STRENGTH,
+                scattering_falloff: constants::DEFAULT_AETHER_SCATTERING_FALLOFF,
+                iridescence_amplitude: constants::DEFAULT_AETHER_IRIDESCENCE_AMPLITUDE,
+                iridescence_frequency: constants::DEFAULT_AETHER_IRIDESCENCE_FREQUENCY,
+                caustic_strength: constants::DEFAULT_AETHER_CAUSTIC_STRENGTH,
+                caustic_softness: constants::DEFAULT_AETHER_CAUSTIC_SOFTNESS,
+                luxury_mode,
+            }
+        } else {
+            // Reduced effect for standard mode - subtle enhancement without overwhelming original colors
+            Self {
+                filament_density: constants::DEFAULT_AETHER_FILAMENT_DENSITY,
+                flow_alignment: constants::DEFAULT_AETHER_FLOW_ALIGNMENT * 0.4,
+                scattering_strength: constants::DEFAULT_AETHER_SCATTERING_STRENGTH * 0.3,
+                scattering_falloff: constants::DEFAULT_AETHER_SCATTERING_FALLOFF,
+                iridescence_amplitude: constants::DEFAULT_AETHER_IRIDESCENCE_AMPLITUDE * 0.4, // Reduced for more natural look
+                iridescence_frequency: constants::DEFAULT_AETHER_IRIDESCENCE_FREQUENCY,
+                caustic_strength: constants::DEFAULT_AETHER_CAUSTIC_STRENGTH * 0.3,
+                caustic_softness: constants::DEFAULT_AETHER_CAUSTIC_SOFTNESS,
+                luxury_mode,
+            }
         }
     }
 }

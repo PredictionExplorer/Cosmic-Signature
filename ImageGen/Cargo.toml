@@ -16,19 +16,22 @@ path = "src/main.rs"
 warnings = "deny"
 
 [dependencies]
+chrono   = "0.4.42"
 clap     = { version = "4.5.48", features = ["derive"] }
 hex      = "0.4.3"
 image    = "0.25.8"
 nalgebra = "0.34.1"
+once_cell = "1.21.3"
 opensimplex2 = "1.1.0"
 palette  = "0.7.6"
 rayon    = "1.11.0"
 rustfft  = "6.4.1"
+serde    = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.145"
 sha3     = "0.10.8"
-statrs   = "0.18.0"
-once_cell = "1.21.3"
 smallvec = "1.15.1"
-thiserror = "2.0.16"
+statrs   = "0.18.0"
+thiserror = "2.0.17"
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
 

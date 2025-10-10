@@ -31,18 +31,35 @@ impl Default for ChampleveConfig {
 }
 
 impl ChampleveConfig {
-    pub fn new(_special_mode: bool) -> Self {
-        Self {
-            cell_density: constants::DEFAULT_CHAMPLEVE_CELL_DENSITY,
-            flow_alignment: constants::DEFAULT_CHAMPLEVE_FLOW_ALIGNMENT,
-            interference_amplitude: constants::DEFAULT_CHAMPLEVE_INTERFERENCE_AMPLITUDE,
-            interference_frequency: constants::DEFAULT_CHAMPLEVE_INTERFERENCE_FREQUENCY,
-            rim_intensity: constants::DEFAULT_CHAMPLEVE_RIM_INTENSITY,
-            rim_warmth: constants::DEFAULT_CHAMPLEVE_RIM_WARMTH,
-            rim_sharpness: constants::DEFAULT_CHAMPLEVE_RIM_SHARPNESS,
-            interior_lift: constants::DEFAULT_CHAMPLEVE_INTERIOR_LIFT,
-            anisotropy: constants::DEFAULT_CHAMPLEVE_ANISOTROPY,
-            cell_softness: constants::DEFAULT_CHAMPLEVE_CELL_SOFTNESS,
+    pub fn new(special_mode: bool) -> Self {
+        if special_mode {
+            // Full luxury champlevé effect for special mode
+            Self {
+                cell_density: constants::DEFAULT_CHAMPLEVE_CELL_DENSITY,
+                flow_alignment: constants::DEFAULT_CHAMPLEVE_FLOW_ALIGNMENT,
+                interference_amplitude: constants::DEFAULT_CHAMPLEVE_INTERFERENCE_AMPLITUDE,
+                interference_frequency: constants::DEFAULT_CHAMPLEVE_INTERFERENCE_FREQUENCY,
+                rim_intensity: constants::DEFAULT_CHAMPLEVE_RIM_INTENSITY,
+                rim_warmth: constants::DEFAULT_CHAMPLEVE_RIM_WARMTH,
+                rim_sharpness: constants::DEFAULT_CHAMPLEVE_RIM_SHARPNESS,
+                interior_lift: constants::DEFAULT_CHAMPLEVE_INTERIOR_LIFT,
+                anisotropy: constants::DEFAULT_CHAMPLEVE_ANISOTROPY,
+                cell_softness: constants::DEFAULT_CHAMPLEVE_CELL_SOFTNESS,
+            }
+        } else {
+            // Minimal effect for standard mode - greatly reduced to avoid color bias
+            Self {
+                cell_density: constants::DEFAULT_CHAMPLEVE_CELL_DENSITY,
+                flow_alignment: constants::DEFAULT_CHAMPLEVE_FLOW_ALIGNMENT * 0.3,
+                interference_amplitude: constants::DEFAULT_CHAMPLEVE_INTERFERENCE_AMPLITUDE * 0.15, // Greatly reduced
+                interference_frequency: constants::DEFAULT_CHAMPLEVE_INTERFERENCE_FREQUENCY,
+                rim_intensity: constants::DEFAULT_CHAMPLEVE_RIM_INTENSITY * 0.2, // Greatly reduced
+                rim_warmth: constants::DEFAULT_CHAMPLEVE_RIM_WARMTH * 0.1, // Greatly reduced warm tint
+                rim_sharpness: constants::DEFAULT_CHAMPLEVE_RIM_SHARPNESS,
+                interior_lift: constants::DEFAULT_CHAMPLEVE_INTERIOR_LIFT * 0.3, // Reduced
+                anisotropy: constants::DEFAULT_CHAMPLEVE_ANISOTROPY * 0.2, // Greatly reduced
+                cell_softness: constants::DEFAULT_CHAMPLEVE_CELL_SOFTNESS,
+            }
         }
     }
 }

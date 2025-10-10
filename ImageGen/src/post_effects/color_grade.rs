@@ -36,6 +36,7 @@ pub struct ColorGradeParams {
     pub tone_curve: f64,
     pub shadow_tint: [f64; 3],
     pub highlight_tint: [f64; 3],
+    pub palette_wave_strength: f64, // New parameter to control palette wave
 }
 
 impl Default for ColorGradeParams {
@@ -49,18 +50,43 @@ impl ColorGradeParams {
     /// Create parameters scaled for the given resolution.
     /// This ensures the clarity effect looks consistent across different resolutions.
     pub fn from_resolution(width: usize, height: usize) -> Self {
+        Self::from_resolution_and_mode(width, height, false)
+    }
+
+    /// Create parameters with special mode flag to control color biasing
+    pub fn from_resolution_and_mode(width: usize, height: usize, special_mode: bool) -> Self {
         let min_dim = width.min(height) as f64;
-        Self {
-            strength: constants::DEFAULT_COLOR_GRADE_STRENGTH,
-            vignette_strength: constants::DEFAULT_COLOR_GRADE_VIGNETTE,
-            vignette_softness: constants::DEFAULT_COLOR_GRADE_VIGNETTE_SOFTNESS,
-            vibrance: constants::DEFAULT_COLOR_GRADE_VIBRANCE,
-            clarity_strength: constants::DEFAULT_COLOR_GRADE_CLARITY,
-            // Scale clarity radius: 3px @ 1080p, 6px @ 4K
-            clarity_radius: (0.0028 * min_dim).round().max(1.0) as usize,
-            tone_curve: constants::DEFAULT_COLOR_GRADE_TONE_CURVE,
-            shadow_tint: constants::DEFAULT_COLOR_GRADE_SHADOW_TINT,
-            highlight_tint: constants::DEFAULT_COLOR_GRADE_HIGHLIGHT_TINT,
+        
+        if special_mode {
+            // Full cinematic grading for special mode
+            Self {
+                strength: constants::DEFAULT_COLOR_GRADE_STRENGTH,
+                vignette_strength: constants::DEFAULT_COLOR_GRADE_VIGNETTE,
+                vignette_softness: constants::DEFAULT_COLOR_GRADE_VIGNETTE_SOFTNESS,
+                vibrance: constants::DEFAULT_COLOR_GRADE_VIBRANCE,
+                clarity_strength: constants::DEFAULT_COLOR_GRADE_CLARITY,
+                clarity_radius: (0.0028 * min_dim).round().max(1.0) as usize,
+                tone_curve: constants::DEFAULT_COLOR_GRADE_TONE_CURVE,
+                shadow_tint: constants::DEFAULT_COLOR_GRADE_SHADOW_TINT,
+                highlight_tint: constants::DEFAULT_COLOR_GRADE_HIGHLIGHT_TINT,
+                palette_wave_strength: 1.0, // Full palette wave
+            }
+        } else {
+            // Neutral color grading for standard mode - avoids red/warm bias
+            Self {
+                strength: constants::DEFAULT_COLOR_GRADE_STRENGTH * 0.5, // Reduced overall strength
+                vignette_strength: constants::DEFAULT_COLOR_GRADE_VIGNETTE * 0.6,
+                vignette_softness: constants::DEFAULT_COLOR_GRADE_VIGNETTE_SOFTNESS,
+                vibrance: constants::DEFAULT_COLOR_GRADE_VIBRANCE * 0.8, // Slightly reduced
+                clarity_strength: constants::DEFAULT_COLOR_GRADE_CLARITY * 0.7,
+                clarity_radius: (0.0028 * min_dim).round().max(1.0) as usize,
+                tone_curve: constants::DEFAULT_COLOR_GRADE_TONE_CURVE * 0.7,
+                // Neutral shadow tint - no warm bias
+                shadow_tint: [-0.04, -0.01, 0.08], // Reduced from original
+                // Neutral highlight tint - no red/yellow bias
+                highlight_tint: [0.03, 0.02, 0.0], // Greatly reduced from original
+                palette_wave_strength: 0.0, // Disable palette wave to prevent red bias
+            }
         }
     }
 }
@@ -128,10 +154,11 @@ impl CinematicColorGrade {
         }
 
         // Palette sway introduces gentle complementary shifts for added drama
+        // This is disabled in standard mode (palette_wave_strength = 0.0) to prevent red bias
         let palette_wave = (clarity_detail * 5.0 + vignette_factor * TAU).sin();
-        vibrant[0] += palette_wave * 0.06;
-        vibrant[1] += palette_wave * -0.02;
-        vibrant[2] += palette_wave * -0.07;
+        vibrant[0] += palette_wave * 0.06 * self.params.palette_wave_strength;
+        vibrant[1] += palette_wave * -0.02 * self.params.palette_wave_strength;
+        vibrant[2] += palette_wave * -0.07 * self.params.palette_wave_strength;
 
         let tone = remap_tone_curve(lum_clarity, self.params.tone_curve);
         let current_tone = luminance(vibrant[0], vibrant[1], vibrant[2]).max(1e-6);

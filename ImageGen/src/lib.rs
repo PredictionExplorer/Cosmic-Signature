@@ -4,6 +4,8 @@
 
 pub mod analysis;
 pub mod drift;
+pub mod drift_config;
+pub mod generation_log;
 pub mod oklab;
 pub mod post_effects;
 pub mod render;
