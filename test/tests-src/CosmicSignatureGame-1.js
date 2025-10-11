@@ -303,7 +303,7 @@ describe("CosmicSignatureGame-1", function () {
 				// #region
 
 				switch (fairRandomNumber1_) {
-					// #region Minting a Random Walk NFT.
+					// #region Minting A Random Walk NFT
 
 					case 0: {
 						// console.info("202505106");
@@ -325,7 +325,7 @@ describe("CosmicSignatureGame-1", function () {
 					}
 
 					// #endregion
-					// #region Trying to find and if found staking a Random Walk NFT.
+					// #region Trying To Find And If Found Staking A Random Walk NFT
 
 					case 1: {
 						const found_ = tryFindUnusedRandomWalkNft_(true);
@@ -345,7 +345,7 @@ describe("CosmicSignatureGame-1", function () {
 					}
 
 					// #endregion
-					// #region Trying to find and if found staking a Cosmic Signature NFT.
+					// #region Trying To Find And If Found Staking A Cosmic Signature NFT
 
 					case 2: {
 						const found_ = tryFindUnusedCosmicSignatureNft_();
