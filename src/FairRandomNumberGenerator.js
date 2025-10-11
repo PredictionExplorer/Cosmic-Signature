@@ -39,7 +39,7 @@ function createFairRandomNumberGenerator(n_, k_, randomNumberSeedWrapper_) {
 	// #region Data
 
 	/// Each candidate's pick count.
-	const _counts = Array(n_).fill(0);
+	const _counts = (new Array(n_)).fill(0);
 
 	/// The sum of counts.
 	let _totalCount = 0;
