@@ -248,10 +248,10 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #endregion
 	// #region Secondary Prizes
 
-	/// @notice The last CST bidder and Endurance Champion CST prize amount multiplier.
-	/// It multiplies the number of bids in the current bidding round.
+	/// @notice CST prize amount used to award: Main Prize Winner; the Last CST Bidder; Endurance Champion;
+	/// Chrono-Warrior; a bidder who won CST and Cosmic Signature NFT raffle; a Random Walk NFT staker.
 	/// Comment-202411064 applies.
-	uint256 public cstPrizeAmountMultiplier;
+	uint256 public cstPrizeAmount;
 
 	/// @notice The percentage of ETH in the Game contract account to be paid to Chrono-Warrior.
 	/// Comment-202411064 applies.
@@ -266,10 +266,12 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	uint256 public numRaffleEthPrizesForBidders;
 
 	/// @notice The number of raffle Cosmic Signature NFTs to be minted and distributed to bidders.
+	/// The same winners will also receive newly minted CST prizes.
 	/// Comment-202411064 applies.
 	uint256 public numRaffleCosmicSignatureNftsForBidders;
 
 	/// @notice The number of raffle Cosmic Signature NFTs to be minted and distributed to random Random Walk NFT stakers.
+	/// The same winners will also receive newly minted CST prizes.
 	/// Comment-202411064 applies.
 	uint256 public numRaffleCosmicSignatureNftsForRandomWalkNftStakers;
 

@@ -73,10 +73,10 @@ interface ISystemManagement is
 	/// @param newValue_ The new value.
 	function setCstRewardAmountForBidding(uint256 newValue_) external;
 
-	/// @notice Sets `cstPrizeAmountMultiplier`.
+	/// @notice Sets `cstPrizeAmount`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	function setCstPrizeAmountMultiplier(uint256 newValue_) external;
+	function setCstPrizeAmount(uint256 newValue_) external;
 
 	/// @notice Sets `chronoWarriorEthPrizeAmountPercentage`.
 	/// Only the contract owner is permitted to call this method.

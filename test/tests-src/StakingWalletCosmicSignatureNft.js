@@ -367,7 +367,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(999n);
 
 		const stakingWalletCosmicSignatureNftNftStakedTopicHash_ = contracts_.stakingWalletCosmicSignatureNft.interface.getEvent("NftStaked").topicHash;
-		const cosmicSignatureGameProxyRaffleWinnerCosmicSignatureNftAwardedTopicHash_ = contracts_.cosmicSignatureGameProxy.interface.getEvent("RaffleWinnerCosmicSignatureNftAwarded").topicHash;
+		const cosmicSignatureGameProxyRaffleWinnerPrizePaidTopicHash_ = contracts_.cosmicSignatureGameProxy.interface.getEvent("RaffleWinnerPrizePaid").topicHash;
 
 		for ( let signerIndex_ = 1; signerIndex_ <= 4; ++ signerIndex_ ) {
 			await waitForTransactionReceipt(contracts_.cosmicSignatureNft.connect(contracts_.signers[signerIndex_]).setApprovalForAll(contracts_.stakingWalletCosmicSignatureNftAddress, true));
@@ -429,11 +429,11 @@ describe("StakingWalletCosmicSignatureNft", function () {
 		transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 
 		// Issue. These are really not all events that show newly minted and awarded CS NFTs.
-		let cosmicSignatureGameProxyRaffleWinnerCosmicSignatureNftAwardedLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.indexOf(cosmicSignatureGameProxyRaffleWinnerCosmicSignatureNftAwardedTopicHash_) >= 0));
+		let cosmicSignatureGameProxyRaffleWinnerPrizePaidLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.indexOf(cosmicSignatureGameProxyRaffleWinnerPrizePaidTopicHash_) >= 0));
 
 		// Asserting that the the extra NFTs have not been staked.
-		for ( let raffleNftIndex_ = 0; raffleNftIndex_ < cosmicSignatureGameProxyRaffleWinnerCosmicSignatureNftAwardedLogs_.length; ++ raffleNftIndex_ ) {
-			parsedLog_ = contracts_.cosmicSignatureGameProxy.interface.parseLog(cosmicSignatureGameProxyRaffleWinnerCosmicSignatureNftAwardedLogs_[raffleNftIndex_]);
+		for ( let raffleNftIndex_ = 0; raffleNftIndex_ < cosmicSignatureGameProxyRaffleWinnerPrizePaidLogs_.length; ++ raffleNftIndex_ ) {
+			parsedLog_ = contracts_.cosmicSignatureGameProxy.interface.parseLog(cosmicSignatureGameProxyRaffleWinnerPrizePaidLogs_[raffleNftIndex_]);
 			const nftWasUsed_ = await contracts_.stakingWalletCosmicSignatureNft.usedNfts(parsedLog_.args.prizeCosmicSignatureNftId);
 			expect(nftWasUsed_).equal(0n);
 		}

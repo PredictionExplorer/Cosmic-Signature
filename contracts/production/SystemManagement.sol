@@ -66,9 +66,9 @@ abstract contract SystemManagement is
 		emit CstRewardAmountForBiddingChanged(newValue_);
 	}
 
-	function setCstPrizeAmountMultiplier(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
-		cstPrizeAmountMultiplier = newValue_;
-		emit CstPrizeAmountMultiplierChanged(newValue_);
+	function setCstPrizeAmount(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
+		cstPrizeAmount = newValue_;
+		emit CstPrizeAmountChanged(newValue_);
 	}
 
 	function setChronoWarriorEthPrizeAmountPercentage(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {

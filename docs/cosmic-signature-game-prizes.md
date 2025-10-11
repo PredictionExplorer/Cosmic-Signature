@@ -24,7 +24,7 @@ This document lists all prizes awarded by our game.
 
 3. Additional prizes that do not belong to the above groups.
 
-#### Additional Prizes (Group 3)
+#### Group 3 Prizes
 
 - ETH donations made to the `CosmicSignatureGame` contract. They will be shared by all winners in the current and future bidding rounds.
 
@@ -70,11 +70,36 @@ The rest of this document lists prizes from groups 1 and 2.
 | Random Walk NFT Stakers | CST | 0 or `numRaffleCosmicSignatureNftsForRandomWalkNftStakers` | `cstPrizeAmount` | Staked RW NFTs are picked randomly. Each winner gets both CST and CS NFT. If there are no staked RW NFTs, nobody would get this prize. |
 |  | Cosmic Signature NFT | 0 or `numRaffleCosmicSignatureNftsForRandomWalkNftStakers` | 1 | Staked RW NFTs are picked randomly. Each winner gets both CST and CS NFT. If there are no staked RW NFTs, nobody would get this prize. |
 |  |  |  |  |  |
-| Cosmic Signature NFT Stakers | ETH | `numStakedCosmicSignatureNfts` | `gameEthBalance * cosmicSignatureNftStakingTotalEthRewardAmountPercentage / 100 / numStakedCosmicSignatureNfts` | The same amount is awarded per staked CS NFT.  If there are no staked CS NFTs, this prize would be transferred to Charity Wallet. |
+| Cosmic Signature NFT Stakers | ETH | `numStakedCosmicSignatureNfts` | `gameEthBalance * cosmicSignatureNftStakingTotalEthRewardAmountPercentage / 100 / numStakedCosmicSignatureNfts` | The same amount is awarded per staked CS NFT.  If there are no staked CS NFTs, nobody would get this prize. |
 |  |  |  |  |  |
-| Marketing Wallet | CST | 1 | `marketingWalletCstContributionAmount` |  |
+| `MarketingWallet` | CST | 1 | `marketingWalletCstContributionAmount` |  |
 |  |  |  |  |  |
-| Charity Wallet | ETH | 1 | `gameEthBalance * charityEthDonationAmountPercentage / 100` |  |
+| `CharityWallet` | ETH | 1 | `gameEthBalance * charityEthDonationAmountPercentage / 100` |  |
+
+#### Group 2 Prizes -- an Alternative View
+
+- ETH Transferred Directly To The Winner
+	- Main Prize Winner (Last Bidder)
+	- `CharityWallet`
+
+- ETH Transferred To `PrizesWallet`
+	- Chrono-Warrior
+	- Bidders Picked Via ETH Prize Raffle
+
+- ETH Transferred To `StakingWalletCosmicSignatureNft`
+	- CS NFT Stakers (not guaranteed to exist)
+
+- CST
+	- All CS NFT Winners (see below)
+	- `MarketingWallet`
+
+- CS NFT
+	- Main Prize Winner (Last Bidder)
+	- Last CST Bidder (not guaranteed to exist)
+	- Endurance Champion
+	- Chrono-Warrior
+	- Bidders Picked Via CST And CS NFT Prize Raffle
+	- RW NFT Stakers (not guaranteed to exist)
 
 #### Notes
 

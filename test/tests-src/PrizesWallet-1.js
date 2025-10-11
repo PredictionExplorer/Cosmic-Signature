@@ -113,7 +113,7 @@ describe("PrizesWallet-1", function () {
 		}
 
 		// #endregion
-		// #region Simulated ERC-20 Token Contracts State.
+		// #region Simulated ERC-20 Token Contracts State
 
 		// This array contains `numTokens_` items, an item for each ERC-20 token contract.
 		// Each item is an object in which each property key is an address as `string`
@@ -134,7 +134,7 @@ describe("PrizesWallet-1", function () {
 		}
 
 		// #endregion
-		// #region Simulated NFT Contracts State.
+		// #region Simulated NFT Contracts State
 
 		const allNfts_ = [];
 		for (let nftContractIndex_ = numNftContracts_; ( -- nftContractIndex_ ) >= 0; ) {
@@ -142,7 +142,7 @@ describe("PrizesWallet-1", function () {
 		}
 
 		// #endregion
-		// #region Simulated `PrizesWallet` State.
+		// #region Simulated `PrizesWallet` State
 
 		let ethBalanceAmount_ = 0n;
 
@@ -163,7 +163,7 @@ describe("PrizesWallet-1", function () {
 		const donatedNfts_ = [];
 
 		// #endregion
-		// #region Simulated `CosmicSignatureGame` State.
+		// #region Simulated `CosmicSignatureGame` State
 
 		let roundNum_ = -1n;
 
@@ -215,7 +215,7 @@ describe("PrizesWallet-1", function () {
 			// #region
 
 			if ((choice1Code_ -= 2) < 0) {
-				// #region Minting an ERC-20 token amount.
+				// #region Minting An ERC-20 Token Amount
 
 				// console.info("202506104");
 				randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
@@ -241,7 +241,7 @@ describe("PrizesWallet-1", function () {
 
 				// #endregion
 			} else if ((choice1Code_ -= 1) < 0) {
-				// #region Minting an NFT.
+				// #region Minting An NFT
 
 				// console.info("202506141");
 				randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
@@ -285,9 +285,9 @@ describe("PrizesWallet-1", function () {
 					// console.info("202506146");
 					ethAmount_ = 0n;
 				}
-				await expect(newPrizesWallet_.connect(fakeGame_).depositEth(roundNum_, contracts_.signers[prizeWinnerIndex_].address, {value: ethAmount_,}))
+				await expect(newPrizesWallet_.connect(fakeGame_).depositEth(roundNum_, 132n, contracts_.signers[prizeWinnerIndex_].address, {value: ethAmount_,}))
 					.emit(newPrizesWallet_, "EthReceived")
-					.withArgs(roundNum_, contracts_.signers[prizeWinnerIndex_].address, ethAmount_);
+					.withArgs(roundNum_, 132n, contracts_.signers[prizeWinnerIndex_].address, ethAmount_);
 				ethBalanceAmount_ += ethAmount_;
 				ethBalancesInfo_[prizeWinnerIndex_].roundNum = roundNum_;
 				ethBalancesInfo_[prizeWinnerIndex_].amount += ethAmount_;

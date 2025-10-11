@@ -14,7 +14,7 @@ interface IMainPrize is
 	IMainPrizeBase,
 	IBidStatistics,
 	ISecondaryPrizes {
-	/// @notice Emitted when the main prize is claimed.
+	/// @notice Emitted when main prize gets claimed.
 	/// This event indicates that the bidding round has ended.
 	/// @param roundNum The current bidding round number.
 	/// @param beneficiaryAddress The address receiving the prize.
@@ -27,6 +27,7 @@ interface IMainPrize is
 	/// [/Comment-202411254]
 	/// @param ethPrizeAmount Main ETH prize amount.
 	/// It can potentially be zero.
+	/// @param cstPrizeAmount The amount of the Cosmic Signature Token minted and awarded.
 	/// @param prizeCosmicSignatureNftId The ID of the Cosmic Signature NFT minted and awarded.
 	/// @param timeoutTimeToWithdrawSecondaryPrizes The ended bidding round's timeout time to withdraw prizes
 	/// from `PrizesWallet`.
@@ -34,6 +35,7 @@ interface IMainPrize is
 		uint256 indexed roundNum,
 		address indexed beneficiaryAddress,
 		uint256 ethPrizeAmount,
+		uint256 cstPrizeAmount,
 		uint256 indexed prizeCosmicSignatureNftId,
 		uint256 timeoutTimeToWithdrawSecondaryPrizes
 	);

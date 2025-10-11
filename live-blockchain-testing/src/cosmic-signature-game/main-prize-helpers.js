@@ -60,7 +60,7 @@ async function claimMainPrize(cosmicSignatureGameProxy_, bidderSigner_) {
 // 	let topic_sig = cosmicSignatureGame.interface.getEventTopic("MainPrizeClaimed");
 // 	let event_logs = transactionReceipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
 // 	let parsed_log = cosmicSignatureGame.interface.parseLog(event_logs[0]);
-// 	// todo-9 Assert other args passed to the event.
+// 	// todo-9 Should we assert other args passed to the event?
 // 	expect(parsed_log.args.beneficiaryAddress).equal(testingAcct.address);
 // 	expect(parsed_log.args.amount).equal(mainEthPrizeAmount);
 //
@@ -69,7 +69,7 @@ async function claimMainPrize(cosmicSignatureGameProxy_, bidderSigner_) {
 // 	// Comment-202502096 applies.
 // 	const cosmicSignatureNft = await hre.ethers.getContractAt("CosmicSignatureNft", cosmicSignatureNftAddress);
 //
-// 	topic_sig = cosmicSignatureGame.interface.getEventTopic("RaffleWinnerCosmicSignatureNftAwarded");
+// 	topic_sig = cosmicSignatureGame.interface.getEventTopic("RaffleWinnerPrizePaid");
 // 	event_logs = transactionReceipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
 // 	for (let i = 0; i < event_logs.length; i++) {
 // 		let parsed_log = cosmicSignatureGame.interface.parseLog(event_logs[i]);

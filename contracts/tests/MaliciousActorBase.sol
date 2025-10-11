@@ -63,7 +63,7 @@ abstract contract MaliciousActorBase {
 				uint256[] memory donatedNftIndexes_;
 				prizesWallet.withdrawEverything(false, donatedTokensToClaim_, donatedNftIndexes_);
 			} else if (modeCode == 104) {
-				prizesWallet.depositEth{value: 1 wei}(0, address(this));
+				prizesWallet.depositEth{value: 1 wei}(0, 0, address(this));
 			} else if (modeCode == 105) {
 				prizesWallet.withdrawEth();
 			} else if (modeCode == 106) {

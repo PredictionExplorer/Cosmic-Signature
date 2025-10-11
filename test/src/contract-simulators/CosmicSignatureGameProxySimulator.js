@@ -83,12 +83,12 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 
 		bidMessageLengthMaxLimit: 280n,
 		cstRewardAmountForBidding: 100n * 10n ** 18n,
-		cstPrizeAmountMultiplier: 10n * 10n ** 18n,
+		cstPrizeAmount: 1_000n * 10n ** 18n,
 		chronoWarriorEthPrizeAmountPercentage: 8n,
 		raffleTotalEthPrizeAmountForBiddersPercentage: 4n,
 		numRaffleEthPrizesForBidders: 3n,
-		numRaffleCosmicSignatureNftsForBidders: 5n,
-		numRaffleCosmicSignatureNftsForRandomWalkNftStakers: 4n,
+		numRaffleCosmicSignatureNftsForBidders: 10n,
+		numRaffleCosmicSignatureNftsForRandomWalkNftStakers: 10n,
 		cosmicSignatureNftStakingTotalEthRewardAmountPercentage: 6n,
 		initialDurationUntilMainPrizeDivisor: (60n * 60n * 1_000_000n + (24n * 60n * 60n) / 2n) / (24n * 60n * 60n),
 		mainPrizeTime: 0n,
@@ -103,7 +103,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 		stakingWalletRandomWalkNftSimulator: stakingWalletRandomWalkNftSimulator_,
 		stakingWalletCosmicSignatureNftSimulator: stakingWalletCosmicSignatureNftSimulator_,
 		// marketingWalletSimulator:
-		marketingWalletCstContributionAmount: 1000n * 10n ** 18n,
+		marketingWalletCstContributionAmount: 3_000n * 10n ** 18n,
 		charityWalletSimulator: charityWalletSimulator_,
 		charityEthDonationAmountPercentage: 7n,
 
@@ -866,23 +866,22 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 		// #region `claimMainPrize`
 		
 		/// Assuming that `canClaimMainPrize` returned `true`.
-		claimMainPrize: async function(blockBeforeTransaction_, transactionBlock_, callerAddress_, bidderEthBalanceAmountBeforeTransaction_, contracts_, transactionReceipt_, eventIndexWrapper_/*, blockchainPropertyGetter_*/) {
+		claimMainPrize: async function(blockBeforeTransaction_, transactionBlock_, callerAddress_, bidderEthBalanceAmountBeforeTransaction_, contracts_, transactionReceipt_, eventIndexWrapper_ /* , blockchainPropertyGetter_ */) {
 			// console.info((callerAddress_ == this.lastBidderAddress) ? "202505138 The last bidder claims the main prize." : "202505139 Someone else claims the main prize.");
 			this._updateChampionsIfNeeded(transactionBlock_);
 			this._updateChronoWarriorIfNeeded(BigInt(transactionBlock_.timestamp));
-			await this._distributePrizes(blockBeforeTransaction_, transactionBlock_, callerAddress_, bidderEthBalanceAmountBeforeTransaction_, contracts_, transactionReceipt_, eventIndexWrapper_/*, blockchainPropertyGetter_*/);
+			await this._distributePrizes(blockBeforeTransaction_, transactionBlock_, callerAddress_, bidderEthBalanceAmountBeforeTransaction_, contracts_, transactionReceipt_, eventIndexWrapper_ /* , blockchainPropertyGetter_ */);
 			this._prepareNextRound(transactionBlock_, contracts_, transactionReceipt_, eventIndexWrapper_);
 		},
 
 		// #endregion
 		// #region `_distributePrizes`
-		
-		_distributePrizes: async function(blockBeforeTransaction_, transactionBlock_, callerAddress_, bidderEthBalanceAmountBeforeTransaction_, contracts_, transactionReceipt_, eventIndexWrapper_/*, blockchainPropertyGetter_*/) {
+
+		_distributePrizes: async function(blockBeforeTransaction_, transactionBlock_, callerAddress_, bidderEthBalanceAmountBeforeTransaction_, contracts_, transactionReceipt_, eventIndexWrapper_ /* , blockchainPropertyGetter_ */) {
 			// #region
 
 			// assertAddressIsValid(callerAddress_);
 			expect(callerAddress_).not.equal(hre.ethers.ZeroAddress);
-
 			expect(typeof bidderEthBalanceAmountBeforeTransaction_).equal("bigint");
 
 			// If this was zero the transaction would have failed.
@@ -891,7 +890,14 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 			// #endregion
 			// #region
 
-			let mainEthPrizeAmount_;
+			// [Comment-202504265]
+			// This random number is named "blockchain based" -- to distinquish it from truly random numbers.
+			// [/Comment-202504265]
+			const blockchainBasedRandomNumberSeedWrapper_ = {value: /*await*/ generateRandomUInt256Seed(blockBeforeTransaction_, transactionBlock_ /* , blockchainPropertyGetter_ */),};
+
+			let timeoutTimeToWithdrawSecondaryPrizes_;
+			const mainEthPrizeAmount_ = this.getMainEthPrizeAmount();
+			const chronoWarriorEthPrizeAmount_ = this.getChronoWarriorEthPrizeAmount();
 
 			// #endregion
 			// #region
@@ -899,12 +905,9 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 			{
 				// #region
 
-				// [Comment-202504265]
-				// This random number is named "blockchain based" -- to distinquish it from truly random numbers.
-				// [/Comment-202504265]
-				const blockchainBasedRandomNumberSeedWrapper_ = {/*value: 0n,*/};
-
-				let mainPrizeBeneficiaryCosmicSignatureNftId_;
+				const charityEthDonationAmount_ = this.getCharityEthDonationAmount();
+				const cosmicSignatureNftStakingTotalEthRewardAmount_ = this.getCosmicSignatureNftStakingTotalEthRewardAmount();
+				const raffleTotalEthPrizeAmountForBidders_ = this.getRaffleTotalEthPrizeAmountForBidders();
 
 				// #endregion
 				// #region
@@ -912,345 +915,293 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 				{
 					// #region
 
-					let cosmicSignatureTokenMintSpecs_;
+					let ethDepositIndex_ = Number(this.numRaffleEthPrizesForBidders);
+					const ethDeposits_ = new Array(ethDepositIndex_ + 1);
+					let ethDepositsTotalAmount_ = 0n;
+
+					// #endregion
+					// #region ETH For Chrono-Warrior
+
+					ethDeposits_[ethDepositIndex_] =
+						{ prizeWinnerAddress: this.chronoWarriorAddress,
+						  amount: chronoWarriorEthPrizeAmount_,
+						};
+					ethDepositsTotalAmount_ += chronoWarriorEthPrizeAmount_;
+
+					// #endregion
+					// #region ETH For Random Bidders
+
+					{
+						const raffleEthPrizeAmountForBidder_ = raffleTotalEthPrizeAmountForBidders_ / BigInt(ethDepositIndex_);
+						ethDepositsTotalAmount_ += raffleEthPrizeAmountForBidder_ * BigInt(ethDepositIndex_);
+						do {
+							// Comment-202504265 applies.
+							const blockchainBasedRandomNumber_ = generateRandomUInt256FromSeedWrapper(blockchainBasedRandomNumberSeedWrapper_);
+
+							const raffleWinnerAddress_ = this.bidderAddresses[Number(blockchainBasedRandomNumber_ % this.getTotalNumBids())];
+							-- ethDepositIndex_;
+							ethDeposits_[ethDepositIndex_] = {prizeWinnerAddress: raffleWinnerAddress_, amount: raffleEthPrizeAmountForBidder_,};
+							assertEvent(
+								transactionReceipt_.logs[eventIndexWrapper_.value],
+								contracts_.cosmicSignatureGameProxy,
+								"RaffleWinnerBidderEthPrizeAllocated",
+								[this.roundNum, BigInt(ethDepositIndex_), raffleWinnerAddress_, raffleEthPrizeAmountForBidder_,]
+							);
+							++ eventIndexWrapper_.value;
+						} while (ethDepositIndex_ > 0);
+					}
 
 					// #endregion
 					// #region
 
-					{
-						// #region
-
-						let cosmicSignatureNftOwnerAddresses_;
-						const cosmicSignatureNftOwnerRandomWalkNftStakerAddressIndex_ = 0;
-						let cosmicSignatureNftOwnerLastCstBidderAddressIndex_;
-						let cosmicSignatureNftOwnerMainPrizeBeneficiaryAddressIndex_;
-						let cosmicSignatureNftOwnerEnduranceChampionAddressIndex_;
-						let cosmicSignatureNftOwnerBidderAddressIndex_;
-				
-						// #endregion
-						// #region
-
-						blockchainBasedRandomNumberSeedWrapper_.value = /*await*/ generateRandomUInt256Seed(blockBeforeTransaction_, transactionBlock_/*, blockchainPropertyGetter_*/);
-
-						// #endregion
-						// #region CS NFTs for random Random Walk NFT stakers.
-
-						{
-							// Comment-202504265 applies.
-							const blockchainBasedRandomNumberSeed_ = blockchainBasedRandomNumberSeedWrapper_.value ^ 0x7c6eeb003d4a6dc5ebf549935c6ffb814ba1f060f1af8a0b11c2aa94a8e716e4n;
-
-							const luckyStakerAddresses_ =
-								this.stakingWalletRandomWalkNftSimulator.pickRandomStakerAddressesIfPossible(
-									this.numRaffleCosmicSignatureNftsForRandomWalkNftStakers,
-									blockchainBasedRandomNumberSeed_
-								);
-							let cosmicSignatureNftIndex_ = cosmicSignatureNftOwnerRandomWalkNftStakerAddressIndex_ + luckyStakerAddresses_.length;
-							cosmicSignatureNftOwnerLastCstBidderAddressIndex_ = cosmicSignatureNftIndex_;
-							if (this.lastCstBidderAddress != hre.ethers.ZeroAddress) {
-								++ cosmicSignatureNftIndex_;
-							}
-							cosmicSignatureNftOwnerMainPrizeBeneficiaryAddressIndex_ = cosmicSignatureNftIndex_;
-							++ cosmicSignatureNftIndex_;
-							cosmicSignatureNftOwnerEnduranceChampionAddressIndex_ = cosmicSignatureNftIndex_;
-							++ cosmicSignatureNftIndex_;
-							cosmicSignatureNftOwnerBidderAddressIndex_ = cosmicSignatureNftIndex_;
-							const numCosmicSignatureNfts_ = cosmicSignatureNftIndex_ + Number(this.numRaffleCosmicSignatureNftsForBidders);
-							cosmicSignatureNftOwnerAddresses_ = new Array(numCosmicSignatureNfts_);
-							for (let luckyStakerIndex_ = luckyStakerAddresses_.length; ( -- luckyStakerIndex_ ) >= 0; ) {
-								const luckyStakerAddress_ = luckyStakerAddresses_[luckyStakerIndex_];
-								// console.info("202504295", luckyStakerAddress_);
-								cosmicSignatureNftOwnerAddresses_[cosmicSignatureNftOwnerRandomWalkNftStakerAddressIndex_ + luckyStakerIndex_] = luckyStakerAddress_;
-							}
-						}
-
-						// #endregion
-						// #region
-
-						const cstPrizeAmount_ = this.getTotalNumBids() * this.cstPrizeAmountMultiplier;
-
-						// #endregion
-						// #region CST and CS NFT for the last CST bidder.
-
-						if (this.lastCstBidderAddress != hre.ethers.ZeroAddress) {
-							// console.info("202505102");
-							cosmicSignatureNftOwnerAddresses_[cosmicSignatureNftOwnerLastCstBidderAddressIndex_] = this.lastCstBidderAddress;
-							cosmicSignatureTokenMintSpecs_ = Array(3);
-							cosmicSignatureTokenMintSpecs_[2] = {account: this.lastCstBidderAddress, value: cstPrizeAmount_,};
-						} else {
-							// console.info("202505103");
-							cosmicSignatureTokenMintSpecs_ = Array(2);
-						}
-	
-						// #endregion
-						// #region CS NFT for the Main Prize Beneficiary.
-
-						cosmicSignatureNftOwnerAddresses_[cosmicSignatureNftOwnerMainPrizeBeneficiaryAddressIndex_] = callerAddress_;
-
-						// #endregion
-						// #region CST and CS NFT for Endurance Champion.
-
-						cosmicSignatureNftOwnerAddresses_[cosmicSignatureNftOwnerEnduranceChampionAddressIndex_] = this.enduranceChampionAddress;
-						cosmicSignatureTokenMintSpecs_[1] = {account: this.enduranceChampionAddress, value: cstPrizeAmount_,};
-
-						// #endregion
-						// #region CS NFTs for random bidders.
-
-						{
-							let cosmicSignatureNftIndex_ = cosmicSignatureNftOwnerAddresses_.length;
-							do {
-								// Comment-202504265 applies.
-								const blockchainBasedRandomNumber_ = generateRandomUInt256FromSeedWrapper(blockchainBasedRandomNumberSeedWrapper_);
-
-								const raffleWinnerAddress_ = this.bidderAddresses[Number(blockchainBasedRandomNumber_ % this.getTotalNumBids())];
-								-- cosmicSignatureNftIndex_;
-								cosmicSignatureNftOwnerAddresses_[cosmicSignatureNftIndex_] = raffleWinnerAddress_;
-							} while (cosmicSignatureNftIndex_ > cosmicSignatureNftOwnerBidderAddressIndex_);
-						}
-
-						// #endregion
-						// #region
-
-						let firstCosmicSignatureNftId_;
-
-						// #endregion
-						// #region Minting CS NFTs.
-
-						{
-							// Comment-202504265 applies.
-							const blockchainBasedRandomNumberSeed_ = blockchainBasedRandomNumberSeedWrapper_.value ^ 0x2a8612ecb5cb17da87f8befda0480288e2d053de55d9d7d4dc4899077cf5aedan;
-
-							firstCosmicSignatureNftId_ = this.cosmicSignatureNftSimulator.mintMany(this.roundNum, cosmicSignatureNftOwnerAddresses_, blockchainBasedRandomNumberSeed_, contracts_, transactionReceipt_, eventIndexWrapper_);
-						}
-
-						// #endregion
-						// #region Processing CS NFTs.
-
-						{
-							// #region
-
-							let cosmicSignatureNftIndex_ = cosmicSignatureNftOwnerAddresses_.length;
-							let cosmicSignatureNftId_ = firstCosmicSignatureNftId_ + BigInt(cosmicSignatureNftIndex_);
-	
-							// #endregion
-							// #region CS NFTs for random bidders.
-
-							{
-								let winnerIndex_ = cosmicSignatureNftIndex_ - cosmicSignatureNftOwnerBidderAddressIndex_;
-								do {
-									-- winnerIndex_;
-									-- cosmicSignatureNftId_;
-									-- cosmicSignatureNftIndex_;
-									const raffleWinnerAddress_ = cosmicSignatureNftOwnerAddresses_[cosmicSignatureNftIndex_];
-									assertEvent(
-										transactionReceipt_.logs[eventIndexWrapper_.value],
-										contracts_.cosmicSignatureGameProxy,
-										"RaffleWinnerCosmicSignatureNftAwarded",
-										[this.roundNum, false, BigInt(winnerIndex_), raffleWinnerAddress_, cosmicSignatureNftId_,]
-									);
-									++ eventIndexWrapper_.value;
-								} while (winnerIndex_ > 0);
-							}
-
-							// #endregion
-							// #region CST and CS NFT for Endurance Champion.
-
-							-- cosmicSignatureNftIndex_;
-							-- cosmicSignatureNftId_;
-							assertEvent(
-								transactionReceipt_.logs[eventIndexWrapper_.value],
-								contracts_.cosmicSignatureGameProxy,
-								"EnduranceChampionPrizePaid",
-								[this.roundNum, cosmicSignatureTokenMintSpecs_[1].account, cstPrizeAmount_, cosmicSignatureNftId_,]
-							);
-							++ eventIndexWrapper_.value;
-
-							// #endregion
-							// #region CS NFT for the Main Prize Beneficiary.
-
-							-- cosmicSignatureNftIndex_;
-							-- cosmicSignatureNftId_;
-							mainPrizeBeneficiaryCosmicSignatureNftId_ = cosmicSignatureNftId_;
-
-							// #endregion
-							// #region CST and CS NFT for the last CST bidder.
-
-							if (cosmicSignatureTokenMintSpecs_.length > 2) {
-								-- cosmicSignatureNftIndex_;
-								-- cosmicSignatureNftId_;
-								assertEvent(
-									transactionReceipt_.logs[eventIndexWrapper_.value],
-									contracts_.cosmicSignatureGameProxy,
-									"LastCstBidderPrizePaid",
-									[this.roundNum, cosmicSignatureTokenMintSpecs_[2].account, cstPrizeAmount_, cosmicSignatureNftId_,]
-								);
-								++ eventIndexWrapper_.value;
-							}
-
-							// #endregion
-							// #region CS NFTs for random Random Walk NFT stakers.
-
-							while (cosmicSignatureNftIndex_ > 0) {
-								-- cosmicSignatureNftId_;
-								-- cosmicSignatureNftIndex_;
-								const luckyStakerAddress_ = cosmicSignatureNftOwnerAddresses_[cosmicSignatureNftIndex_];
-								assertEvent(
-									transactionReceipt_.logs[eventIndexWrapper_.value],
-									contracts_.cosmicSignatureGameProxy,
-									"RaffleWinnerCosmicSignatureNftAwarded",
-									[this.roundNum, true, BigInt(cosmicSignatureNftIndex_), luckyStakerAddress_, cosmicSignatureNftId_,]
-								);
-								++ eventIndexWrapper_.value;
-							}
-
-							// #endregion
-						}
-
-						// #endregion
-					}
-
-					// #endregion
-					// #region CST for Marketing Wallet.
-
-					cosmicSignatureTokenMintSpecs_[0] = {account: contracts_.marketingWalletAddress, value: this.marketingWalletCstContributionAmount,};
-
-					// #endregion
-					// #region Minting CSTs.
-
-					this.cosmicSignatureTokenSimulator.mintMany(cosmicSignatureTokenMintSpecs_, contracts_, transactionReceipt_, eventIndexWrapper_);
+					this.depositEthToPrizesWalletMany(ethDepositsTotalAmount_, ethDeposits_, contracts_, transactionReceipt_, eventIndexWrapper_);
+					timeoutTimeToWithdrawSecondaryPrizes_ = this.prizesWalletSimulator.registerRoundEnd(transactionBlock_);
 
 					// #endregion
 				}
 
 				// #endregion
+				// #region ETH For CS NFT Stakers
+
+				this.tryDepositEthToStakingWalletCosmicSignatureNft(cosmicSignatureNftStakingTotalEthRewardAmount_, contracts_, transactionReceipt_, eventIndexWrapper_);
+
+				// #endregion
+				// #region ETH For Charity
+
+				this.depositEthToCharityWallet(charityEthDonationAmount_, contracts_, transactionReceipt_, eventIndexWrapper_);
+				assertEvent(
+					transactionReceipt_.logs[eventIndexWrapper_.value],
+					contracts_.cosmicSignatureGameProxy,
+					"FundsTransferredToCharity",
+					[contracts_.charityWalletAddress, charityEthDonationAmount_,]
+				);
+				++ eventIndexWrapper_.value;
+
+				// #endregion
+			}
+
+			// #endregion
+			// #region Main ETH Prize For Main Prize Beneficiary
+
+			{
+				this.ethBalanceAmount -= mainEthPrizeAmount_;
+				// expect(this.ethBalanceAmount).greaterThanOrEqual(0n);
+				const transactionFeeInEth_ = transactionReceipt_.fee;
+				expect(transactionFeeInEth_).greaterThan(0n);
+				const bidderEthBalanceAmountAfterTransaction_ = await hre.ethers.provider.getBalance(callerAddress_);
+				expect(bidderEthBalanceAmountAfterTransaction_).equal(bidderEthBalanceAmountBeforeTransaction_ - transactionFeeInEth_ + mainEthPrizeAmount_);
+			}
+
+			// #endregion
+			// #region
+
+			{
 				// #region
+
+				let cosmicSignatureTokenMintSpecIndex_ = (this.lastCstBidderAddress != hre.ethers.ZeroAddress) ? (4 + 1 - 1) : (4 - 1);
+				cosmicSignatureTokenMintSpecIndex_ += Number(this.numRaffleCosmicSignatureNftsForBidders);
+				const luckyStakerAddresses_ =
+					this.stakingWalletRandomWalkNftSimulator.pickRandomStakerAddressesIfPossible(
+						this.numRaffleCosmicSignatureNftsForRandomWalkNftStakers,
+						blockchainBasedRandomNumberSeedWrapper_.value ^ 0x7c6eeb003d4a6dc5ebf549935c6ffb814ba1f060f1af8a0b11c2aa94a8e716e4n
+					);
+				cosmicSignatureTokenMintSpecIndex_ += luckyStakerAddresses_.length;
+				const cosmicSignatureNftOwnerAddresses_ = new Array(cosmicSignatureTokenMintSpecIndex_);
+				const cosmicSignatureTokenMintSpecs_ = new Array(cosmicSignatureTokenMintSpecIndex_ + 1);
+
+				// #endregion
+				// #region Preparing To Mint CSTs And CS NFTs
+
+				{
+					// #region CST For `MarketingWallet`
+
+					cosmicSignatureTokenMintSpecs_[cosmicSignatureTokenMintSpecIndex_] = {account: contracts_.marketingWalletAddress, value: this.marketingWalletCstContributionAmount,};
+
+					// #endregion
+					// #region CSTs, CS NFTs For Random RW NFT Stakers
+
+					for (let luckyStakerIndex_ = luckyStakerAddresses_.length; ( -- luckyStakerIndex_ ) >= 0; ) {
+						const luckyStakerAddress_ = luckyStakerAddresses_[luckyStakerIndex_];
+						// console.info("202504295", luckyStakerAddress_);
+						-- cosmicSignatureTokenMintSpecIndex_;
+						cosmicSignatureTokenMintSpecs_[cosmicSignatureTokenMintSpecIndex_] = {account: luckyStakerAddress_, value: this.cstPrizeAmount,};
+						cosmicSignatureNftOwnerAddresses_[cosmicSignatureTokenMintSpecIndex_] = luckyStakerAddress_;
+					}
+
+					// #endregion
+					// #region CSTs, CS NFTs For Random Bidders
+
+					for (let raffleWinnerIndex_ = Number(this.numRaffleCosmicSignatureNftsForBidders); ; ) {
+						// Comment-202504265 applies.
+						const blockchainBasedRandomNumber_ = generateRandomUInt256FromSeedWrapper(blockchainBasedRandomNumberSeedWrapper_);
+
+						const raffleWinnerAddress_ = this.bidderAddresses[Number(blockchainBasedRandomNumber_ % this.getTotalNumBids())];
+						-- cosmicSignatureTokenMintSpecIndex_;
+						cosmicSignatureTokenMintSpecs_[cosmicSignatureTokenMintSpecIndex_] = {account: raffleWinnerAddress_, value: this.cstPrizeAmount,};
+						cosmicSignatureNftOwnerAddresses_[cosmicSignatureTokenMintSpecIndex_] = raffleWinnerAddress_;
+						if (( -- raffleWinnerIndex_ ) <= 0) {
+							break;
+						}
+					}
+
+					// #endregion
+					// #region CST, CS NFT For Chrono-Warrior
+
+					-- cosmicSignatureTokenMintSpecIndex_;
+					cosmicSignatureTokenMintSpecs_[cosmicSignatureTokenMintSpecIndex_] = {account: this.chronoWarriorAddress, value: this.cstPrizeAmount,};
+					cosmicSignatureNftOwnerAddresses_[cosmicSignatureTokenMintSpecIndex_] = this.chronoWarriorAddress;
+
+					// #endregion
+					// #region CST, CS NFT For Endurance Champion
+
+					-- cosmicSignatureTokenMintSpecIndex_;
+					cosmicSignatureTokenMintSpecs_[cosmicSignatureTokenMintSpecIndex_] = {account: this.enduranceChampionAddress, value: this.cstPrizeAmount,};
+					cosmicSignatureNftOwnerAddresses_[cosmicSignatureTokenMintSpecIndex_] = this.enduranceChampionAddress;
+
+					// #endregion
+					// #region CST, CS NFT For The Last CST Bidder
+
+					if (cosmicSignatureTokenMintSpecIndex_ > 1) {
+						cosmicSignatureTokenMintSpecs_[1] = {account: this.lastCstBidderAddress, value: this.cstPrizeAmount,};
+						cosmicSignatureNftOwnerAddresses_[1] = this.lastCstBidderAddress;
+					}
+
+					// #endregion
+					// #region CST, CS NFT For Main Prize Beneficiary
+
+					cosmicSignatureTokenMintSpecs_[0] = {account: callerAddress_, value: this.cstPrizeAmount,};
+					cosmicSignatureNftOwnerAddresses_[0] = callerAddress_;
+
+					// #endregion
+				}
+
+				// #endregion
+				// #region Minting CSTs And CS NFTs
+
+				this.cosmicSignatureTokenSimulator.mintMany(cosmicSignatureTokenMintSpecs_, contracts_, transactionReceipt_, eventIndexWrapper_);
+				const firstCosmicSignatureNftId_ =
+					this.cosmicSignatureNftSimulator.mintMany(
+						this.roundNum,
+						cosmicSignatureNftOwnerAddresses_,
+						blockchainBasedRandomNumberSeedWrapper_.value ^ 0x2a8612ecb5cb17da87f8befda0480288e2d053de55d9d7d4dc4899077cf5aedan,
+						contracts_,
+						transactionReceipt_,
+						eventIndexWrapper_
+					);
+
+				// #endregion
+				// #region Processing CS NFTs, Emitting Events, Etc.
 
 				{
 					// #region
 
-					let charityEthDonationAmount_;
+					cosmicSignatureTokenMintSpecIndex_ = cosmicSignatureNftOwnerAddresses_.length;
+					let cosmicSignatureNftId_ = firstCosmicSignatureNftId_ + BigInt(cosmicSignatureTokenMintSpecIndex_);
 
 					// #endregion
-					// #region
+					// #region CSTs, CS NFTs For Random RW NFT Stakers
 
-					{
-						// #region
-
-						let cosmicSignatureNftStakingTotalEthRewardAmount_;
-
-						// #endregion
-						// #region
-
-						{
-							// #region
-
-							let ethDepositIndex_ = Number(this.numRaffleEthPrizesForBidders);
-							const ethDeposits_ = new Array(ethDepositIndex_ + 1);
-							let ethDepositsTotalAmount_ = 0n;
-
-							// #endregion
-							// #region ETH for Chrono-Warrior.
-
-							{
-								const chronoWarriorEthPrizeAmount_ = this.getChronoWarriorEthPrizeAmount();
-								ethDeposits_[ethDepositIndex_] =
-									{ prizeWinnerAddress: this.chronoWarriorAddress,
-									  amount: chronoWarriorEthPrizeAmount_,
-									};
-								ethDepositsTotalAmount_ += chronoWarriorEthPrizeAmount_;
-								assertEvent(
-									transactionReceipt_.logs[eventIndexWrapper_.value],
-									contracts_.cosmicSignatureGameProxy,
-									"ChronoWarriorEthPrizeAllocated",
-									[this.roundNum, this.chronoWarriorAddress, chronoWarriorEthPrizeAmount_,]
-								);
-								++ eventIndexWrapper_.value;
-							}
-
-							// #endregion
-							// #region ETH for random bidders.
-
-							{
-								const raffleTotalEthPrizeAmountForBidders_ = this.getRaffleTotalEthPrizeAmountForBidders();
-								const raffleEthPrizeAmountForBidder_ = raffleTotalEthPrizeAmountForBidders_ / BigInt(ethDepositIndex_);
-								ethDepositsTotalAmount_ += raffleEthPrizeAmountForBidder_ * BigInt(ethDepositIndex_);
-								do {
-									-- ethDepositIndex_;
-
-									// Comment-202504265 applies.
-									const blockchainBasedRandomNumber_ = generateRandomUInt256FromSeedWrapper(blockchainBasedRandomNumberSeedWrapper_);
-
-									const raffleWinnerAddress_ = this.bidderAddresses[Number(blockchainBasedRandomNumber_ % this.getTotalNumBids())];
-									ethDeposits_[ethDepositIndex_] = {prizeWinnerAddress: raffleWinnerAddress_, amount: raffleEthPrizeAmountForBidder_,};
-									assertEvent(
-										transactionReceipt_.logs[eventIndexWrapper_.value],
-										contracts_.cosmicSignatureGameProxy,
-										"RaffleWinnerBidderEthPrizeAllocated",
-										[this.roundNum, BigInt(ethDepositIndex_), raffleWinnerAddress_, raffleEthPrizeAmountForBidder_,]
-									);
-									++ eventIndexWrapper_.value;
-								} while (ethDepositIndex_ > 0);
-							}
-
-							// #endregion
-							// #region
-
-							mainEthPrizeAmount_ = this.getMainEthPrizeAmount();
-							charityEthDonationAmount_ = this.getCharityEthDonationAmount();
-							cosmicSignatureNftStakingTotalEthRewardAmount_ = this.getCosmicSignatureNftStakingTotalEthRewardAmount();
-							this.depositEthToPrizesWalletMany(ethDepositsTotalAmount_, ethDeposits_, contracts_, transactionReceipt_, eventIndexWrapper_);
-							const timeoutTimeToWithdrawSecondaryPrizes_ = this.prizesWalletSimulator.registerRoundEnd(transactionBlock_);
-							assertEvent(
-								transactionReceipt_.logs[eventIndexWrapper_.value],
-								contracts_.cosmicSignatureGameProxy,
-								"MainPrizeClaimed",
-								[this.roundNum, callerAddress_, mainEthPrizeAmount_, mainPrizeBeneficiaryCosmicSignatureNftId_, timeoutTimeToWithdrawSecondaryPrizes_,]
-							);
-							++ eventIndexWrapper_.value;
-
-							// #endregion
-						}
-
-						// #endregion
-						// #region ETH for Cosmic Signature NFT stakers.
-
-						if (this.tryDepositEthToStakingWalletCosmicSignatureNft(cosmicSignatureNftStakingTotalEthRewardAmount_, contracts_, transactionReceipt_, eventIndexWrapper_)) {
-							// Doing nothing.
-						} else {
-							charityEthDonationAmount_ += cosmicSignatureNftStakingTotalEthRewardAmount_;
-
-							// Comment-202504262 applies.
-						}
-
-						// #endregion
+					for (let luckyStakerIndex_ = luckyStakerAddresses_.length; ( -- luckyStakerIndex_ ) >= 0; ) {
+						-- cosmicSignatureTokenMintSpecIndex_;
+						const cosmicSignatureTokenMintSpec_ = cosmicSignatureTokenMintSpecs_[cosmicSignatureTokenMintSpecIndex_];
+						const luckyStakerAddress_ = cosmicSignatureTokenMintSpec_.account;
+						-- cosmicSignatureNftId_;
+						assertEvent(
+							transactionReceipt_.logs[eventIndexWrapper_.value],
+							contracts_.cosmicSignatureGameProxy,
+							"RaffleWinnerPrizePaid",
+							[this.roundNum, true, BigInt(luckyStakerIndex_), luckyStakerAddress_, cosmicSignatureTokenMintSpec_.value, cosmicSignatureNftId_,]
+						);
+						++ eventIndexWrapper_.value;
 					}
 
 					// #endregion
-					// #region ETH for charity.
+					// #region CSTs, CS NFTs For Random Bidders
 
-					this.depositEthToCharityWallet(charityEthDonationAmount_, contracts_, transactionReceipt_, eventIndexWrapper_);
-					assertEvent(
-						transactionReceipt_.logs[eventIndexWrapper_.value],
-						contracts_.cosmicSignatureGameProxy,
-						"FundsTransferredToCharity",
-						[contracts_.charityWalletAddress, charityEthDonationAmount_,]
-					);
-					++ eventIndexWrapper_.value;
+					for (let raffleWinnerIndex_ = this.numRaffleCosmicSignatureNftsForBidders; ; ) {
+						-- cosmicSignatureTokenMintSpecIndex_;
+						const cosmicSignatureTokenMintSpec_ = cosmicSignatureTokenMintSpecs_[cosmicSignatureTokenMintSpecIndex_];
+						const raffleWinnerAddress_ = cosmicSignatureTokenMintSpec_.account;
+						-- raffleWinnerIndex_;
+						-- cosmicSignatureNftId_;
+						assertEvent(
+							transactionReceipt_.logs[eventIndexWrapper_.value],
+							contracts_.cosmicSignatureGameProxy,
+							"RaffleWinnerPrizePaid",
+							[this.roundNum, false, raffleWinnerIndex_, raffleWinnerAddress_, cosmicSignatureTokenMintSpec_.value, cosmicSignatureNftId_,]
+						);
+						++ eventIndexWrapper_.value;
+						if (raffleWinnerIndex_ <= 0n) {
+							break;
+						}
+					}
+
+					// #endregion
+					// #region ETH, CST, CS NFT For Chrono-Warrior
+
+					{
+						-- cosmicSignatureTokenMintSpecIndex_;
+						const cosmicSignatureTokenMintSpec_ = cosmicSignatureTokenMintSpecs_[cosmicSignatureTokenMintSpecIndex_];
+						-- cosmicSignatureNftId_;
+						assertEvent(
+							transactionReceipt_.logs[eventIndexWrapper_.value],
+							contracts_.cosmicSignatureGameProxy,
+							"ChronoWarriorPrizePaid",
+							[this.roundNum, this.numRaffleEthPrizesForBidders, cosmicSignatureTokenMintSpec_.account, chronoWarriorEthPrizeAmount_, cosmicSignatureTokenMintSpec_.value, cosmicSignatureNftId_,]
+						);
+						++ eventIndexWrapper_.value;
+					}
+
+					// #endregion
+					// #region CST, CS NFT For Endurance Champion
+
+					{
+						-- cosmicSignatureTokenMintSpecIndex_;
+						const cosmicSignatureTokenMintSpec_ = cosmicSignatureTokenMintSpecs_[cosmicSignatureTokenMintSpecIndex_];
+						-- cosmicSignatureNftId_;
+						assertEvent(
+							transactionReceipt_.logs[eventIndexWrapper_.value],
+							contracts_.cosmicSignatureGameProxy,
+							"EnduranceChampionPrizePaid",
+							[this.roundNum, cosmicSignatureTokenMintSpec_.account, cosmicSignatureTokenMintSpec_.value, cosmicSignatureNftId_,]
+						);
+						++ eventIndexWrapper_.value;
+					}
+
+					// #endregion
+					// #region CST, CS NFT For The Last CST Bidder
+
+					if (cosmicSignatureTokenMintSpecIndex_ > 1) {
+						const cosmicSignatureTokenMintSpec_ = cosmicSignatureTokenMintSpecs_[1];
+						-- cosmicSignatureNftId_;
+						assertEvent(
+							transactionReceipt_.logs[eventIndexWrapper_.value],
+							contracts_.cosmicSignatureGameProxy,
+							"LastCstBidderPrizePaid",
+							[this.roundNum, cosmicSignatureTokenMintSpec_.account, cosmicSignatureTokenMintSpec_.value, cosmicSignatureNftId_,]
+						);
+						++ eventIndexWrapper_.value;
+					}
+					
+					// #endregion
+					// #region ETH, CST, CS NFT For Main Prize Beneficiary
+
+					{
+						const cosmicSignatureTokenMintSpec_ = cosmicSignatureTokenMintSpecs_[0];
+						assertEvent(
+							transactionReceipt_.logs[eventIndexWrapper_.value],
+							contracts_.cosmicSignatureGameProxy,
+							"MainPrizeClaimed",
+							[this.roundNum, callerAddress_, mainEthPrizeAmount_, cosmicSignatureTokenMintSpec_.value, firstCosmicSignatureNftId_, timeoutTimeToWithdrawSecondaryPrizes_,]
+						);
+						++ eventIndexWrapper_.value;
+					}
 
 					// #endregion
 				}
 
 				// #endregion
 			}
-
-			// #endregion
-			// #region Main ETH prize for main prize beneficiary.
-
-			this.ethBalanceAmount -= mainEthPrizeAmount_;
-			// expect(this.ethBalanceAmount).greaterThanOrEqual(0n);
-			const bidderEthBalanceAmountAfterTransaction_ = await hre.ethers.provider.getBalance(callerAddress_);
-			const transactionFeeInEth_ = transactionReceipt_.fee;
-			expect(transactionFeeInEth_).greaterThan(0n);
-			expect(bidderEthBalanceAmountAfterTransaction_).equal(bidderEthBalanceAmountBeforeTransaction_ - transactionFeeInEth_ + mainEthPrizeAmount_);
 
 			// #endregion
 		},
@@ -1373,7 +1324,7 @@ async function assertCosmicSignatureGameProxySimulator(cosmicSignatureGameProxyS
 	await assertCosmicSignatureGameProxySimulatorRandomRandomWalkNftIfPossible(cosmicSignatureGameProxySimulator_, contracts_, randomNumberSeedWrapper_);
 	expect(await contracts_.cosmicSignatureGameProxy.bidMessageLengthMaxLimit()).equal(cosmicSignatureGameProxySimulator_.bidMessageLengthMaxLimit);
 	expect(await contracts_.cosmicSignatureGameProxy.cstRewardAmountForBidding()).equal(cosmicSignatureGameProxySimulator_.cstRewardAmountForBidding);
-	expect(await contracts_.cosmicSignatureGameProxy.cstPrizeAmountMultiplier()).equal(cosmicSignatureGameProxySimulator_.cstPrizeAmountMultiplier);
+	expect(await contracts_.cosmicSignatureGameProxy.cstPrizeAmount()).equal(cosmicSignatureGameProxySimulator_.cstPrizeAmount);
 	expect(await contracts_.cosmicSignatureGameProxy.chronoWarriorEthPrizeAmountPercentage()).equal(cosmicSignatureGameProxySimulator_.chronoWarriorEthPrizeAmountPercentage);
 	expect(await contracts_.cosmicSignatureGameProxy.raffleTotalEthPrizeAmountForBiddersPercentage()).equal(cosmicSignatureGameProxySimulator_.raffleTotalEthPrizeAmountForBiddersPercentage);
 	expect(await contracts_.cosmicSignatureGameProxy.numRaffleEthPrizesForBidders()).equal(cosmicSignatureGameProxySimulator_.numRaffleEthPrizesForBidders);
