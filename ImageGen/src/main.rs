@@ -170,6 +170,68 @@ struct Args {
     /// Set log level (trace, debug, info, warn, error)
     #[arg(long, default_value = "info")]
     log_level: String,
+
+    // ==== Effect Control Flags (All effects enabled by default) ====
+    
+    /// Disable ALL post-processing effects (show pure spectral rendering + basic bloom)
+    #[arg(long, default_value_t = false)]
+    disable_all_effects: bool,
+
+    /// Disable bloom effect (Gaussian/DoG glow)
+    #[arg(long, default_value_t = false)]
+    disable_bloom: bool,
+
+    /// Disable glow enhancement (tight sparkle on bright areas)
+    #[arg(long, default_value_t = false)]
+    disable_glow: bool,
+
+    /// Disable chromatic bloom (prismatic color separation)
+    #[arg(long, default_value_t = false)]
+    disable_chromatic_bloom: bool,
+
+    /// Disable perceptual blur (OKLab space smoothing)
+    #[arg(long, default_value_t = false)]
+    disable_perceptual_blur: bool,
+
+    /// Disable micro-contrast enhancement (detail clarity boost)
+    #[arg(long, default_value_t = false)]
+    disable_micro_contrast: bool,
+
+    /// Disable gradient mapping (luxury color palettes)
+    #[arg(long, default_value_t = false)]
+    disable_gradient_map: bool,
+
+    /// Disable cinematic color grading (film-like look)
+    #[arg(long, default_value_t = false)]
+    disable_color_grade: bool,
+
+    /// Disable champlevé effect (Voronoi cells + metallic rims)
+    #[arg(long, default_value_t = false)]
+    disable_champleve: bool,
+
+    /// Disable aether effect (woven filaments + volumetric flow)
+    #[arg(long, default_value_t = false)]
+    disable_aether: bool,
+
+    /// Disable opalescence (gem-like iridescent shimmer)
+    #[arg(long, default_value_t = false)]
+    disable_opalescence: bool,
+
+    /// Disable edge luminance enhancement (form refinement)
+    #[arg(long, default_value_t = false)]
+    disable_edge_luminance: bool,
+
+    /// Disable atmospheric depth (spatial perspective + fog)
+    #[arg(long, default_value_t = false)]
+    disable_atmospheric_depth: bool,
+
+    /// Disable fine texture overlay (canvas/surface quality)
+    #[arg(long, default_value_t = false)]
+    disable_fine_texture: bool,
+
+    /// Disable temporal smoothing (video frame blending)
+    #[arg(long, default_value_t = false)]
+    disable_temporal_smoothing: bool,
 }
 
 fn setup_logging(json: bool, level: &str) {

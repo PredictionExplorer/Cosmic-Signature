@@ -38,7 +38,6 @@ use self::effects::{
 };
 use self::error::{RenderError, Result};
 use self::histogram::HistogramData;
-use crate::post_effects::{AetherConfig, ChampleveConfig, ColorGradeParams};
 
 // Re-export core types and functions for public API compatibility
 pub use color::{OklabColor, generate_body_color_sequences};
@@ -305,6 +304,113 @@ fn composite_buffers(
 }
 
 
+/// Build effect configuration for rendering
+/// 
+/// Creates a consistent EffectConfig across all rendering passes (histogram, render, single-frame).
+/// Handles both standard and special modes with appropriate effect strengths.
+#[allow(clippy::too_many_arguments)] // Helper function consolidates rendering parameters
+fn build_effect_config(
+    width: usize,
+    height: usize,
+    bloom_mode: &str,
+    blur_radius_px: usize,
+    blur_strength: f64,
+    blur_core_brightness: f64,
+    dog_config: &DogBloomConfig,
+    hdr_mode: &str,
+    perceptual_blur_enabled: bool,
+    perceptual_blur_config: Option<&PerceptualBlurConfig>,
+    special_mode: bool,
+) -> EffectConfig {
+    use crate::post_effects::{
+        AetherConfig, AtmosphericDepthConfig, ChampleveConfig, ColorGradeParams,
+        EdgeLuminanceConfig, FineTextureConfig, GlowEnhancementConfig,
+        MicroContrastConfig, OpalescenceConfig,
+    };
+
+    // Determine gradient map settings (only enabled in special mode with palette)
+    let gradient_map_enabled = special_mode;
+    let gradient_map_config = if special_mode {
+        GradientMapConfig {
+            palette: LuxuryPalette::GoldPurple,
+            strength: 0.85,
+            hue_preservation: 0.15,
+        }
+    } else {
+        GradientMapConfig {
+            palette: LuxuryPalette::GoldPurple,
+            strength: 0.0,
+            hue_preservation: 1.0,
+        }
+    };
+
+    EffectConfig {
+        // Core bloom and blur
+        bloom_mode: bloom_mode.to_string(),
+        blur_radius_px,
+        blur_strength,
+        blur_core_brightness,
+        dog_config: dog_config.clone(),
+        hdr_mode: hdr_mode.to_string(),
+        perceptual_blur_enabled,
+        perceptual_blur_config: perceptual_blur_config.cloned(),
+        
+        // Color manipulation
+        color_grade_enabled: true,
+        color_grade_params: ColorGradeParams::from_resolution_and_mode(width, height, special_mode),
+        gradient_map_enabled, // Only when actually needed
+        gradient_map_config,
+        
+        // Material and iridescence (always enabled, scaled by mode)
+        champleve_enabled: true,
+        champleve_config: ChampleveConfig::new(special_mode),
+        aether_enabled: true,
+        aether_config: AetherConfig::new(special_mode),
+        chromatic_bloom_enabled: true,
+        chromatic_bloom_config: ChromaticBloomConfig::from_resolution(width, height),
+        opalescence_enabled: true, // NOW ENABLED IN BOTH MODES
+        opalescence_config: if special_mode {
+            OpalescenceConfig::special_mode(width, height)
+        } else {
+            OpalescenceConfig::standard_mode(width, height)
+        },
+        
+        // Detail and clarity (NEW - enabled in both modes)
+        edge_luminance_enabled: true, // NOW ENABLED IN BOTH MODES
+        edge_luminance_config: if special_mode {
+            EdgeLuminanceConfig::special_mode()
+        } else {
+            EdgeLuminanceConfig::standard_mode()
+        },
+        micro_contrast_enabled: true, // NEW - enabled in both modes
+        micro_contrast_config: if special_mode {
+            MicroContrastConfig::special_mode()
+        } else {
+            MicroContrastConfig::standard_mode()
+        },
+        glow_enhancement_enabled: true, // NEW - enabled in both modes
+        glow_enhancement_config: if special_mode {
+            GlowEnhancementConfig::special_mode(width, height)
+        } else {
+            GlowEnhancementConfig::standard_mode(width, height)
+        },
+        
+        // Atmospheric and surface (NEW - enabled in both modes)
+        atmospheric_depth_enabled: true, // NOW ENABLED IN BOTH MODES
+        atmospheric_depth_config: if special_mode {
+            AtmosphericDepthConfig::special_mode()
+        } else {
+            AtmosphericDepthConfig::standard_mode()
+        },
+        fine_texture_enabled: true, // NOW ENABLED IN BOTH MODES
+        fine_texture_config: if special_mode {
+            FineTextureConfig::special_mode_canvas(width, height)
+        } else {
+            FineTextureConfig::standard_mode(width, height)
+        },
+    }
+}
+
 /// Apply energy density wavelength shift to spectral buffer
 /// Hot regions (high energy) shift toward red, cool regions stay blue
 fn apply_energy_density_shift(accum_spd: &mut [[f64; NUM_BINS]], special_mode: bool) {
@@ -371,41 +477,20 @@ pub fn pass_1_build_histogram_spectral(
     let mut accum_spd = vec![[0.0f64; NUM_BINS]; ctx.pixel_count()];
     let mut accum_rgba = vec![(0.0, 0.0, 0.0, 0.0); ctx.pixel_count()];
 
-    // Create persistent effect chain
-    use crate::post_effects::{AetherConfig, ChampleveConfig, ColorGradeParams};
-    
-    let effect_config = EffectConfig {
-        bloom_mode: bloom_mode.to_string(),
+    // Build effect configuration using helper function (DRY principle)
+    let effect_config = build_effect_config(
+        width as usize,
+        height as usize,
+        bloom_mode,
         blur_radius_px,
         blur_strength,
         blur_core_brightness,
-        dog_config: dog_config.clone(),
-        hdr_mode: hdr_mode.to_string(),
+        dog_config,
+        hdr_mode,
         perceptual_blur_enabled,
-        perceptual_blur_config: perceptual_blur_config.cloned(),
-        color_grade_enabled: true,
-        color_grade_params: ColorGradeParams::from_resolution_and_mode(width as usize, height as usize, special_mode),
-        champleve_enabled: true,  // Always enabled
-        champleve_config: ChampleveConfig::new(special_mode),
-        aether_enabled: true,  // Always enabled
-        aether_config: AetherConfig::new(special_mode),
-        chromatic_bloom_enabled: true,  // Always enabled
-        chromatic_bloom_config: ChromaticBloomConfig::from_resolution(width as usize, height as usize),
-        gradient_map_enabled: true,  // Always enabled
-        gradient_map_config: if special_mode {
-            GradientMapConfig {
-                palette: LuxuryPalette::GoldPurple,
-                strength: 0.85,
-                hue_preservation: 0.15,
-            }
-        } else {
-            GradientMapConfig {
-                palette: LuxuryPalette::GoldPurple,
-                strength: 0.0,  // No palette applied
-                hue_preservation: 1.0,  // Keep original colors
-            }
-        },
-    };
+        perceptual_blur_config,
+        special_mode,
+    );
     let effect_chain = EffectChainBuilder::new(effect_config);
     
     // Create nebula configuration (rendered separately, not in effect chain)
@@ -550,39 +635,20 @@ pub fn pass_2_write_frames_spectral(
     let mut accum_spd = vec![[0.0f64; NUM_BINS]; ctx.pixel_count()];
     let mut accum_rgba = vec![(0.0, 0.0, 0.0, 0.0); ctx.pixel_count()];
 
-    // Create persistent effect chain
-    let effect_config = EffectConfig {
-        bloom_mode: bloom_mode.to_string(),
+    // Build effect configuration using helper function (DRY principle)
+    let effect_config = build_effect_config(
+        width as usize,
+        height as usize,
+        bloom_mode,
         blur_radius_px,
         blur_strength,
         blur_core_brightness,
-        dog_config: dog_config.clone(),
-        hdr_mode: hdr_mode.to_string(),
+        dog_config,
+        hdr_mode,
         perceptual_blur_enabled,
-        perceptual_blur_config: perceptual_blur_config.cloned(),
-        color_grade_enabled: true,
-        color_grade_params: ColorGradeParams::from_resolution_and_mode(width as usize, height as usize, special_mode),
-        champleve_enabled: true,  // Always enabled
-        champleve_config: ChampleveConfig::new(special_mode),
-        aether_enabled: true,  // Always enabled
-        aether_config: AetherConfig::new(special_mode),
-        chromatic_bloom_enabled: true,  // Always enabled
-        chromatic_bloom_config: ChromaticBloomConfig::from_resolution(width as usize, height as usize),
-        gradient_map_enabled: true,  // Always enabled
-        gradient_map_config: if special_mode {
-            GradientMapConfig {
-                palette: LuxuryPalette::GoldPurple,
-                strength: 0.85,
-                hue_preservation: 0.15,
-            }
-        } else {
-            GradientMapConfig {
-                palette: LuxuryPalette::GoldPurple,
-                strength: 0.0,  // No palette applied
-                hue_preservation: 1.0,  // Keep original colors
-            }
-        },
-    };
+        perceptual_blur_config,
+        special_mode,
+    );
     let effect_chain = EffectChainBuilder::new(effect_config);
     
     // Create nebula configuration (rendered separately, not in effect chain)
@@ -728,39 +794,20 @@ pub fn render_single_frame_spectral(
     let mut accum_spd = vec![[0.0f64; NUM_BINS]; ctx.pixel_count()];
     let mut accum_rgba = vec![(0.0, 0.0, 0.0, 0.0); ctx.pixel_count()];
 
-    // Create effect chain (same as normal rendering)
-    let effect_config = EffectConfig {
-        bloom_mode: bloom_mode.to_string(),
+    // Build effect configuration using helper function (DRY principle)
+    let effect_config = build_effect_config(
+        width as usize,
+        height as usize,
+        bloom_mode,
         blur_radius_px,
         blur_strength,
         blur_core_brightness,
-        dog_config: dog_config.clone(),
-        hdr_mode: hdr_mode.to_string(),
+        dog_config,
+        hdr_mode,
         perceptual_blur_enabled,
-        perceptual_blur_config: perceptual_blur_config.cloned(),
-        color_grade_enabled: true,
-        color_grade_params: ColorGradeParams::from_resolution_and_mode(width as usize, height as usize, special_mode),
-        champleve_enabled: true,
-        champleve_config: ChampleveConfig::new(special_mode),
-        aether_enabled: true,
-        aether_config: AetherConfig::new(special_mode),
-        chromatic_bloom_enabled: true,
-        chromatic_bloom_config: ChromaticBloomConfig::from_resolution(width as usize, height as usize),
-        gradient_map_enabled: true,
-        gradient_map_config: if special_mode {
-            GradientMapConfig {
-                palette: LuxuryPalette::GoldPurple,
-                strength: 0.85,
-                hue_preservation: 0.15,
-            }
-        } else {
-            GradientMapConfig {
-                palette: LuxuryPalette::GoldPurple,
-                strength: 0.0,
-                hue_preservation: 1.0,
-            }
-        },
-    };
+        perceptual_blur_config,
+        special_mode,
+    );
     let effect_chain = EffectChainBuilder::new(effect_config);
     
     // Create nebula configuration

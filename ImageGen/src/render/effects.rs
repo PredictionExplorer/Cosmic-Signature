@@ -9,16 +9,29 @@ use super::drawing::parallel_blur_2d_rgba;
 use super::error::{RenderError, Result};
 use crate::post_effects::{
     AutoExposure, ChampleveConfig, ChromaticBloom, ChromaticBloomConfig, CinematicColorGrade,
-    ColorGradeParams, DogBloom, GaussianBloom, GradientMap, GradientMapConfig,
+    ColorGradeParams, DogBloom, GaussianBloom, GlowEnhancement, GlowEnhancementConfig,
+    GradientMap, GradientMapConfig, MicroContrast, MicroContrastConfig,
     PerceptualBlur, PerceptualBlurConfig, PostEffect,
     PostEffectChain, aether::AetherConfig, apply_aether_weave, apply_champleve_iridescence,
+    AtmosphericDepth, AtmosphericDepthConfig, EdgeLuminance, EdgeLuminanceConfig,
+    FineTexture, FineTextureConfig, Opalescence, OpalescenceConfig,
 };
 use crate::spectrum::{NUM_BINS, spd_to_rgba};
 use rayon::prelude::*;
 
 /// Configuration for effect chain creation
+/// 
+/// Controls which effects are enabled and their parameters. Effects are applied
+/// in a carefully ordered sequence for optimal visual quality:
+/// 1. Bloom effects (diffuse glow)
+/// 2. Tone mapping and blur
+/// 3. Color manipulation (palettes, grading)
+/// 4. Material effects (iridescence, structure)
+/// 5. Detail enhancement (edges, contrast)
+/// 6. Atmospheric effects (depth, texture)
 #[derive(Clone, Debug)]
 pub struct EffectConfig {
+    // Core bloom and blur effects
     pub bloom_mode: String,
     pub blur_radius_px: usize,
     pub blur_strength: f64,
@@ -27,16 +40,36 @@ pub struct EffectConfig {
     pub hdr_mode: String,
     pub perceptual_blur_enabled: bool,
     pub perceptual_blur_config: Option<PerceptualBlurConfig>,
+    
+    // Color manipulation effects
     pub color_grade_enabled: bool,
     pub color_grade_params: ColorGradeParams,
+    pub gradient_map_enabled: bool,
+    pub gradient_map_config: GradientMapConfig,
+    
+    // Material and iridescence effects
     pub champleve_enabled: bool,
     pub champleve_config: ChampleveConfig,
     pub aether_enabled: bool,
     pub aether_config: AetherConfig,
     pub chromatic_bloom_enabled: bool,
     pub chromatic_bloom_config: ChromaticBloomConfig,
-    pub gradient_map_enabled: bool,
-    pub gradient_map_config: GradientMapConfig,
+    pub opalescence_enabled: bool,
+    pub opalescence_config: OpalescenceConfig,
+    
+    // Detail and clarity effects
+    pub edge_luminance_enabled: bool,
+    pub edge_luminance_config: EdgeLuminanceConfig,
+    pub micro_contrast_enabled: bool,
+    pub micro_contrast_config: MicroContrastConfig,
+    pub glow_enhancement_enabled: bool,
+    pub glow_enhancement_config: GlowEnhancementConfig,
+    
+    // Atmospheric and surface effects
+    pub atmospheric_depth_enabled: bool,
+    pub atmospheric_depth_config: AtmosphericDepthConfig,
+    pub fine_texture_enabled: bool,
+    pub fine_texture_config: FineTextureConfig,
 }
 
 /// Per-frame parameters that may vary
@@ -60,19 +93,31 @@ impl EffectChainBuilder {
     }
 
     /// Build the effect chain based on configuration
+    /// 
+    /// Effects are applied in a carefully optimized order:
+    /// 1. Bloom effects (diffuse and tight glow)
+    /// 2. Tone mapping and perceptual smoothing
+    /// 3. Detail enhancement (contrast, clarity)
+    /// 4. Color manipulation (palettes, grading)
+    /// 5. Material properties (iridescence layers)
+    /// 6. Form refinement (edges)
+    /// 7. Atmospheric effects (depth, texture)
     fn build_chain(config: &EffectConfig) -> PostEffectChain {
         let mut chain = PostEffectChain::new();
 
-        // Add blur effect
+        // ===== PHASE 1: BLOOM & GLOW =====
+        // Base lighting effects that work on bright areas
+        
+        // 1a. Traditional bloom (large diffuse glow)
         if config.blur_radius_px > 0 {
             chain.add(Box::new(GaussianBloom::new(
                 config.blur_radius_px,
                 config.blur_strength,
                 config.blur_core_brightness,
-            )))
+            )));
         }
 
-        // Add bloom effect
+        // 1b. DoG bloom (edge-detected glow, mutually exclusive with Gaussian)
         match config.bloom_mode.as_str() {
             "dog" => chain.add(Box::new(DogBloom::new(
                 config.dog_config.clone(),
@@ -82,38 +127,88 @@ impl EffectChainBuilder {
             _ => {}
         }
 
-        // Add chromatic bloom for special mode
+        // 1c. Glow enhancement (tight sparkle on very bright areas) [NEW]
+        if config.glow_enhancement_enabled {
+            chain.add(Box::new(GlowEnhancement::new(config.glow_enhancement_config.clone())));
+        }
+
+        // 1d. Chromatic bloom (prismatic color separation)
         if config.chromatic_bloom_enabled {
             chain.add(Box::new(ChromaticBloom::new(config.chromatic_bloom_config.clone())));
         }
 
-        // Add perceptual blur if enabled
+        // ===== PHASE 2: TONE MAPPING & BLUR =====
+        // Perceptual processing for smooth, natural appearance
+        
+        // 2a. Perceptual blur (OKLab space smoothing)
         if config.perceptual_blur_enabled && config.perceptual_blur_config.is_some() {
-            // We know this is Some due to the check above
             let blur_config = config.perceptual_blur_config.as_ref().unwrap();
             chain.add(Box::new(PerceptualBlur::new(blur_config.clone())));
         }
 
-        // Add HDR/auto-exposure
+        // 2b. Auto-exposure (HDR tone mapping)
         if config.hdr_mode == "auto" {
             chain.add(Box::new(AutoExposure::default()));
         }
 
-        // Add gradient mapping for luxury palettes
+        // ===== PHASE 3: DETAIL ENHANCEMENT =====
+        // Clarity and definition improvements
+        
+        // 3. Micro-contrast (local contrast enhancement for detail clarity) [NEW]
+        if config.micro_contrast_enabled {
+            chain.add(Box::new(MicroContrast::new(config.micro_contrast_config.clone())));
+        }
+
+        // ===== PHASE 4: COLOR MANIPULATION =====
+        // Artistic color transformations
+        
+        // 4a. Gradient mapping (luxury color palettes)
         if config.gradient_map_enabled {
             chain.add(Box::new(GradientMap::new(config.gradient_map_config.clone())));
         }
 
+        // 4b. Cinematic color grading (film-like look)
         if config.color_grade_enabled && config.color_grade_params.strength > 0.0 {
             chain.add(Box::new(CinematicColorGrade::new(config.color_grade_params.clone())));
         }
 
+        // ===== PHASE 5: MATERIAL PROPERTIES =====
+        // Iridescence and material quality (layered for depth)
+        
+        // 5a. Opalescence (base gem-like shimmer layer) [MOVED EARLIER]
+        if config.opalescence_enabled {
+            chain.add(Box::new(Opalescence::new(config.opalescence_config.clone())));
+        }
+
+        // 5b. Champlevé (structure layer: Voronoi cells + metallic rims)
         if config.champleve_enabled {
             chain.add(Box::new(ChampleveFinish::new(config.champleve_config.clone())));
         }
 
+        // 5c. Aether (flow layer: woven filaments + volumetric scattering)
         if config.aether_enabled {
             chain.add(Box::new(AetherFinish::new(config.aether_config.clone())));
+        }
+
+        // ===== PHASE 6: FORM REFINEMENT =====
+        // Edge and shape definition
+        
+        // 6. Edge luminance (selective edge brightening for refined forms)
+        if config.edge_luminance_enabled {
+            chain.add(Box::new(EdgeLuminance::new(config.edge_luminance_config.clone())));
+        }
+
+        // ===== PHASE 7: ATMOSPHERIC & SURFACE =====
+        // Final spatial and material qualities
+        
+        // 7a. Atmospheric depth (spatial perspective + fog)
+        if config.atmospheric_depth_enabled {
+            chain.add(Box::new(AtmosphericDepth::new(config.atmospheric_depth_config.clone())));
+        }
+
+        // 7b. Fine texture (surface quality: canvas, linen, etc. - preserves all prior work)
+        if config.fine_texture_enabled {
+            chain.add(Box::new(FineTexture::new(config.fine_texture_config.clone())));
         }
 
         chain

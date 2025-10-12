@@ -8,8 +8,10 @@
 use super::effects::{EffectChainBuilder, EffectConfig};
 use super::types::{BloomConfig, BlurConfig, Resolution};
 use crate::post_effects::{
-    AetherConfig, ChampleveConfig, ChromaticBloomConfig, ColorGradeParams,
-    GradientMapConfig, LuxuryPalette, NebulaCloudConfig, PerceptualBlurConfig,
+    AetherConfig, AtmosphericDepthConfig, ChampleveConfig, ChromaticBloomConfig,
+    ColorGradeParams, EdgeLuminanceConfig, FineTextureConfig, GlowEnhancementConfig,
+    GradientMapConfig, LuxuryPalette, MicroContrastConfig, NebulaCloudConfig,
+    OpalescenceConfig, PerceptualBlurConfig,
 };
 
 /// Builder for creating consistent effect chains across all rendering passes
@@ -99,7 +101,7 @@ impl EffectPipelineBuilder {
                 self.resolution.width as usize,
                 self.resolution.height as usize,
             ),
-            gradient_map_enabled: true,
+            gradient_map_enabled: self.special_mode, // Only enabled when needed (efficiency fix)
             gradient_map_config: if self.special_mode {
                 GradientMapConfig {
                     palette: LuxuryPalette::GoldPurple,
@@ -112,6 +114,62 @@ impl EffectPipelineBuilder {
                     strength: 0.0,
                     hue_preservation: 1.0,
                 }
+            },
+            // Museum-quality enhancement effects (enabled in BOTH modes)
+            opalescence_enabled: true, // Changed: now enabled in both modes
+            opalescence_config: if self.special_mode {
+                OpalescenceConfig::special_mode(
+                    self.resolution.width as usize,
+                    self.resolution.height as usize,
+                )
+            } else {
+                OpalescenceConfig::standard_mode(
+                    self.resolution.width as usize,
+                    self.resolution.height as usize,
+                )
+            },
+            atmospheric_depth_enabled: true, // Changed: now enabled in both modes
+            atmospheric_depth_config: if self.special_mode {
+                AtmosphericDepthConfig::special_mode()
+            } else {
+                AtmosphericDepthConfig::standard_mode()
+            },
+            fine_texture_enabled: true, // Changed: now enabled in both modes
+            fine_texture_config: if self.special_mode {
+                FineTextureConfig::special_mode_canvas(
+                    self.resolution.width as usize,
+                    self.resolution.height as usize,
+                )
+            } else {
+                FineTextureConfig::standard_mode(
+                    self.resolution.width as usize,
+                    self.resolution.height as usize,
+                )
+            },
+            edge_luminance_enabled: true, // Changed: now enabled in both modes
+            edge_luminance_config: if self.special_mode {
+                EdgeLuminanceConfig::special_mode()
+            } else {
+                EdgeLuminanceConfig::standard_mode()
+            },
+            // New detail and clarity effects (enabled in BOTH modes)
+            micro_contrast_enabled: true,
+            micro_contrast_config: if self.special_mode {
+                MicroContrastConfig::special_mode()
+            } else {
+                MicroContrastConfig::standard_mode()
+            },
+            glow_enhancement_enabled: true,
+            glow_enhancement_config: if self.special_mode {
+                GlowEnhancementConfig::special_mode(
+                    self.resolution.width as usize,
+                    self.resolution.height as usize,
+                )
+            } else {
+                GlowEnhancementConfig::standard_mode(
+                    self.resolution.width as usize,
+                    self.resolution.height as usize,
+                )
             },
         };
         

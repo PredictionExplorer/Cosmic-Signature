@@ -117,28 +117,43 @@ impl Default for PostEffectChain {
 
 // Re-export effect implementations
 pub mod aether;
+pub mod atmospheric_depth;
 pub mod champleve;
 pub mod chromatic_bloom;
 pub mod color_grade;
 pub mod dog_bloom;
+pub mod edge_luminance;
 pub mod exposure;
+pub mod fine_texture;
 pub mod gaussian_bloom;
+pub mod glow_enhancement;
 pub mod gradient_map;
+pub mod micro_contrast;
 pub mod nebula_clouds;
+pub mod opalescence;
 pub mod perceptual_blur;
+pub mod temporal_smoothing;
 pub mod utils;
 
 // Export all public types
 pub use aether::{AetherConfig, apply_aether_weave};
+pub use atmospheric_depth::{AtmosphericDepth, AtmosphericDepthConfig};
 pub use champleve::{ChampleveConfig, apply_champleve_iridescence};
 pub use chromatic_bloom::{ChromaticBloom, ChromaticBloomConfig};
 pub use color_grade::{CinematicColorGrade, ColorGradeParams};
 pub use dog_bloom::DogBloom;
+pub use edge_luminance::{EdgeLuminance, EdgeLuminanceConfig};
 pub use exposure::AutoExposure;
+pub use fine_texture::{FineTexture, FineTextureConfig};
 pub use gaussian_bloom::GaussianBloom;
+pub use glow_enhancement::{GlowEnhancement, GlowEnhancementConfig};
 pub use gradient_map::{GradientMap, GradientMapConfig, LuxuryPalette};
+pub use micro_contrast::{MicroContrast, MicroContrastConfig};
 pub use nebula_clouds::{NebulaClouds, NebulaCloudConfig};
+pub use opalescence::{Opalescence, OpalescenceConfig};
 pub use perceptual_blur::{PerceptualBlur, PerceptualBlurConfig};
+#[allow(unused_imports)] // Temporal smoothing requires special video integration (stateful effect)
+pub use temporal_smoothing::{TemporalSmoothing, TemporalSmoothingConfig};
 
 #[cfg(test)]
 mod tests {
