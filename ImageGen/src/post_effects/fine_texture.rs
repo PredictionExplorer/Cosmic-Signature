@@ -14,16 +14,9 @@ use std::error::Error;
 
 /// Type of fine art texture
 #[derive(Clone, Debug)]
-#[allow(dead_code)]
 pub enum TextureType {
     /// Canvas weave pattern (like oil painting canvas)
     Canvas,
-    /// Handmade paper grain (like watercolor paper)
-    Paper,
-    /// Brushed metal surface variation
-    Metal,
-    /// Fine linen texture
-    Linen,
     /// Subtle film grain
     FilmGrain,
 }
@@ -62,34 +55,6 @@ impl FineTextureConfig {
             contrast: 0.35,
             anisotropy: 0.25,
             angle: 45.0,
-        }
-    }
-
-    /// Linen texture for special mode (elegant, organic) - available as alternative
-    #[allow(dead_code)]
-    pub fn special_mode_linen(width: usize, height: usize) -> Self {
-        let base_scale = (width as f64 * height as f64).sqrt();
-        Self {
-            texture_type: TextureType::Linen,
-            strength: 0.10,
-            scale: base_scale * 0.0015,
-            contrast: 0.40,
-            anisotropy: 0.35,
-            angle: 30.0,
-        }
-    }
-
-    /// Metallic texture for special mode (luminous, reflective) - available as alternative
-    #[allow(dead_code)]
-    pub fn special_mode_metal(width: usize, height: usize) -> Self {
-        let base_scale = (width as f64 * height as f64).sqrt();
-        Self {
-            texture_type: TextureType::Metal,
-            strength: 0.08,
-            scale: base_scale * 0.0012,
-            contrast: 0.50,
-            anisotropy: 0.60,
-            angle: 0.0,
         }
     }
 
@@ -172,60 +137,6 @@ impl FineTexture {
         weave + grain
     }
 
-    /// Paper grain (organic, fibrous texture)
-    fn paper_pattern(&self, x: f64, y: f64) -> f64 {
-        let scale = 1.0 / self.config.scale;
-        
-        // Multiple octaves of noise for organic fiber texture
-        let mut value = 0.0;
-        let mut amplitude = 1.0;
-        let mut frequency = 1.0;
-        
-        for _ in 0..4 {
-            value += self.value_noise(x * scale * frequency, y * scale * frequency) * amplitude;
-            amplitude *= 0.5;
-            frequency *= 2.3;
-        }
-        
-        value * 0.5
-    }
-
-    /// Brushed metal texture (directional with micro-variations)
-    fn metal_pattern(&self, x: f64, y: f64, angle: f64) -> f64 {
-        let scale = 1.0 / self.config.scale;
-        let angle_rad = angle.to_radians();
-        
-        // Rotate coordinates for brushed direction
-        let rx = x * angle_rad.cos() - y * angle_rad.sin();
-        let ry = x * angle_rad.sin() + y * angle_rad.cos();
-        
-        // Strong directional pattern
-        let brushed = self.value_noise(rx * scale * 0.3, ry * scale * 25.0);
-        
-        // Micro-scratches
-        let scratches = self.value_noise(rx * scale * 50.0, ry * scale * 50.0) * 0.3;
-        
-        // Overall metallic variation
-        let variation = self.value_noise(x * scale * 2.0, y * scale * 2.0) * 0.2;
-        
-        brushed * 0.6 + scratches + variation
-    }
-
-    /// Linen texture (organic weave with natural variation)
-    fn linen_pattern(&self, x: f64, y: f64) -> f64 {
-        let scale = 1.0 / self.config.scale;
-        
-        // Organic weave
-        let h_thread = (y * scale * 6.0 + self.value_noise(x * scale, y * scale * 2.0)).sin();
-        let v_thread = (x * scale * 6.0 + self.value_noise(x * scale * 2.0, y * scale)).sin();
-        let weave = (h_thread + v_thread) * 0.4;
-        
-        // Natural fiber variations
-        let fibers = self.value_noise(x * scale * 15.0, y * scale * 15.0) * 0.4;
-        
-        weave + fibers
-    }
-
     /// Film grain (fine random texture)
     fn film_grain_pattern(&self, x: f64, y: f64) -> f64 {
         let scale = 1.0 / self.config.scale;
@@ -243,9 +154,6 @@ impl FineTexture {
     fn get_texture_value(&self, x: f64, y: f64) -> f64 {
         let raw_value = match self.config.texture_type {
             TextureType::Canvas => self.canvas_pattern(x, y),
-            TextureType::Paper => self.paper_pattern(x, y),
-            TextureType::Metal => self.metal_pattern(x, y, self.config.angle),
-            TextureType::Linen => self.linen_pattern(x, y),
             TextureType::FilmGrain => self.film_grain_pattern(x, y),
         };
 
@@ -355,9 +263,6 @@ mod tests {
     fn test_all_texture_types() {
         let types = [
             TextureType::Canvas,
-            TextureType::Paper,
-            TextureType::Metal,
-            TextureType::Linen,
             TextureType::FilmGrain,
         ];
 

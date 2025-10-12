@@ -41,23 +41,6 @@ pub fn bin_to_wavelength(bin: usize) -> f64 {
     LAMBDA_START + (bin as f64 + 0.5) * BIN_WIDTH
 }
 
-/// Get left and right bins with interpolation weight for a given wavelength
-///
-/// # Arguments
-/// * `wavelength` - Wavelength in nanometers
-///
-/// # Returns
-/// Tuple of (left_bin, right_bin, right_weight) where right_weight is in [0, 1]
-#[inline]
-#[allow(dead_code)] // Utility function for future spectral interpolation features
-pub fn wavelength_to_bins_interpolated(wavelength: f64) -> (usize, usize, f64) {
-    let bin_f = wavelength_to_bin(wavelength);
-    let bin_left = (bin_f.floor() as usize).min(NUM_BINS - 1);
-    let bin_right = (bin_left + 1).min(NUM_BINS - 1);
-    let weight_right = bin_f.fract();
-    (bin_left, bin_right, weight_right)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -85,24 +68,6 @@ mod tests {
         let w1 = bin_to_wavelength(1);
         let spacing = w1 - w0;
         assert!((spacing - BIN_WIDTH).abs() < 1e-10);
-    }
-
-    #[test]
-    fn test_wavelength_to_bins_interpolated() {
-        // Test exact bin center
-        let (left, right, _weight) = wavelength_to_bins_interpolated(bin_to_wavelength(5));
-        assert!(left <= 5 && right >= 5);
-        
-        // Test boundaries - at minimum wavelength
-        let (left, right, weight) = wavelength_to_bins_interpolated(LAMBDA_START);
-        assert_eq!(left, 0);
-        assert!(right <= 1); // Right can be 0 or 1 depending on clamping
-        assert!(weight < 0.1); // Weight should be near 0 at the boundary
-        
-        // Test at maximum wavelength
-        let (left, right, _) = wavelength_to_bins_interpolated(LAMBDA_END);
-        assert_eq!(left, NUM_BINS - 1);
-        assert_eq!(right, NUM_BINS - 1);
     }
 
     #[test]

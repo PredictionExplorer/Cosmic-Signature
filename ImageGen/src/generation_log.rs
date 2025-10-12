@@ -184,12 +184,6 @@ impl GenerationLogger {
         Self { log_file_path: LOG_FILE_PATH.to_string() }
     }
     
-    /// Create a new generation logger with a custom path
-    #[allow(dead_code)]
-    pub fn with_path(path: String) -> Self {
-        Self { log_file_path: path }
-    }
-    
     /// Load all existing records from the log file
     fn load_records(&self) -> Vec<GenerationRecord> {
         let path = Path::new(&self.log_file_path);
@@ -253,21 +247,6 @@ impl GenerationLogger {
             }
         }
     }
-    
-    /// Find a record by file name
-    #[allow(dead_code)]
-    pub fn find_by_filename(&self, file_name: &str) -> Option<GenerationRecord> {
-        let records = self.load_records();
-        records.into_iter().find(|r| r.file_name == file_name)
-    }
-    
-    /// Get the most recent N records
-    #[allow(dead_code)]
-    pub fn get_recent(&self, count: usize) -> Vec<GenerationRecord> {
-        let records = self.load_records();
-        let start = records.len().saturating_sub(count);
-        records[start..].to_vec()
-    }
 }
 
 impl Default for GenerationLogger {
@@ -275,36 +254,3 @@ impl Default for GenerationLogger {
         Self::new()
     }
 }
-
-/// Helper to pretty-print a generation record
-#[allow(dead_code)]
-pub fn print_record(record: &GenerationRecord) {
-    println!("\n=== Generation Record ===");
-    println!("Timestamp: {}", record.timestamp);
-    println!("File: {}", record.file_name);
-    println!("Seed: {}", record.seed);
-    println!("Special Mode: {}", record.special_mode);
-    println!("\n--- Render Settings ---");
-    println!("  Resolution: {}x{}", record.render_config.width, record.render_config.height);
-    println!("  Bloom: {}", record.render_config.bloom_mode);
-    println!("  HDR: {}", record.render_config.hdr_mode);
-    println!("\n--- Drift Settings ---");
-    println!("  Enabled: {}", record.drift_config.enabled);
-    if record.drift_config.enabled {
-        println!("  Mode: {}", record.drift_config.mode);
-        println!("  Scale: {:.3}", record.drift_config.scale);
-        println!("  Arc Fraction: {:.3}", record.drift_config.arc_fraction);
-        println!("  Eccentricity: {:.3}", record.drift_config.orbit_eccentricity);
-        println!("  Randomized: {}", record.drift_config.randomized);
-    }
-    println!("\n--- Simulation Settings ---");
-    println!("  Num Simulations: {}", record.simulation_config.num_sims);
-    println!("  Num Steps: {}", record.simulation_config.num_steps_sim);
-    println!("\n--- Orbit Selection ---");
-    println!("  Selected Index: {}", record.orbit_info.selected_index);
-    println!("  Weighted Score: {:.3}", record.orbit_info.weighted_score);
-    println!("  Total Candidates: {}", record.orbit_info.total_candidates);
-    println!("  Discarded: {}", record.orbit_info.discarded_count);
-    println!("========================\n");
-}
-

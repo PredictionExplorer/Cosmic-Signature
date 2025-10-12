@@ -89,15 +89,6 @@ impl NebulaClouds {
         Self { config, enabled }
     }
 
-    /// Create disabled nebula clouds (for standard mode)
-    #[allow(dead_code)]
-    pub fn disabled() -> Self {
-        Self {
-            config: NebulaCloudConfig::default(),
-            enabled: false,
-        }
-    }
-
     /// Evaluate multi-octave noise at given position and time
     /// Uses noise3_ImproveXY which is optimized for time-varied animations
     /// Returns value in [0, 1] range

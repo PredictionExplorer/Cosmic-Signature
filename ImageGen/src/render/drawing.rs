@@ -221,28 +221,6 @@ fn plot_spec(
     }
 }
 
-/// Draw anti-aliased line segment for spectral rendering
-#[allow(dead_code)]
-#[allow(clippy::too_many_arguments)] // Low-level drawing primitive requires all parameters
-pub fn draw_line_segment_aa_spectral(
-    accum: &mut [[f64; NUM_BINS]],
-    width: u32,
-    height: u32,
-    x0: f32,
-    y0: f32,
-    x1: f32,
-    y1: f32,
-    col0: OklabColor,
-    col1: OklabColor,
-    alpha0: f64,
-    alpha1: f64,
-    hdr_scale: f64,
-) {
-    draw_line_segment_aa_spectral_with_dispersion(
-        accum, width, height, x0, y0, x1, y1, col0, col1, alpha0, alpha1, hdr_scale, false,
-    );
-}
-
 /// Draw anti-aliased line segment for spectral rendering with optional dispersion
 #[allow(clippy::too_many_arguments)] // Low-level drawing primitive requires all parameters
 pub fn draw_line_segment_aa_spectral_with_dispersion(

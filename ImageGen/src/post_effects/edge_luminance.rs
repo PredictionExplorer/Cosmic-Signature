@@ -17,9 +17,6 @@ pub struct EdgeLuminanceConfig {
     pub threshold: f64,
     /// Brightness boost for detected edges
     pub brightness_boost: f64,
-    /// Radius for edge detection (larger = smoother edges) - reserved for future enhancements
-    #[allow(dead_code)]
-    pub radius: usize,
     /// Apply enhancement only to bright edges (vs all edges)
     pub bright_edges_only: bool,
     /// Minimum luminance for edge to be enhanced (if bright_edges_only)
@@ -39,7 +36,6 @@ impl EdgeLuminanceConfig {
             strength: 0.25,
             threshold: 0.15,
             brightness_boost: 0.35,
-            radius: 1,
             bright_edges_only: true,
             min_luminance: 0.25,
         }
@@ -51,7 +47,6 @@ impl EdgeLuminanceConfig {
             strength: 0.12,
             threshold: 0.20,
             brightness_boost: 0.20,
-            radius: 1,
             bright_edges_only: true,
             min_luminance: 0.30,
         }

@@ -102,25 +102,6 @@ impl Opalescence {
         v0 * (1.0 - sy) + v1 * sy
     }
 
-    /// Multi-octave noise for organic patterns (available for future enhancements)
-    #[allow(dead_code)]
-    fn fractal_noise(&self, x: f64, y: f64, octaves: usize) -> f64 {
-        let mut total = 0.0;
-        let mut amplitude = 1.0;
-        let mut frequency = 1.0;
-        let mut max_value = 0.0;
-
-        for i in 0..octaves {
-            let seed = i as f64 * 123.456;
-            total += self.smooth_noise(x * frequency, y * frequency, seed) * amplitude;
-            max_value += amplitude;
-            amplitude *= 0.5;
-            frequency *= 2.0;
-        }
-
-        total / max_value
-    }
-
     /// Calculate angle-dependent color shift
     /// Simulates thin-film interference patterns
     #[inline]

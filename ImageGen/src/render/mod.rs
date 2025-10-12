@@ -23,7 +23,6 @@ pub mod drawing;
 pub mod effects;
 pub mod error;
 pub mod histogram;
-pub mod pipeline;
 pub mod simd_tonemap;
 pub mod types;
 pub mod velocity_hdr;
@@ -43,7 +42,7 @@ use self::histogram::HistogramData;
 pub use color::{OklabColor, generate_body_color_sequences};
 #[allow(unused_imports)]
 pub use drawing::{
-    draw_line_segment_aa_spectral, draw_line_segment_aa_spectral_with_dispersion, parallel_blur_2d_rgba,
+    draw_line_segment_aa_spectral_with_dispersion, parallel_blur_2d_rgba,
 };
 pub use effects::{DogBloomConfig, ExposureCalculator, apply_dog_bloom};
 pub use histogram::compute_black_white_gamma;

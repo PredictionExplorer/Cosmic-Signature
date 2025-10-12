@@ -152,11 +152,9 @@ fn verlet_step(bodies: &mut [Body], dt: f64) {
     }
 }
 
-/// Recorded positions + final state
+/// Recorded positions
 pub struct FullSim {
     pub positions: Vec<Vec<Vector3<f64>>>,
-    #[allow(dead_code)] // Used for escape detection in some code paths
-    pub final_bodies: Vec<Body>,
 }
 
 /// warmup + record with optional early-exit checks
@@ -175,7 +173,7 @@ pub fn get_positions(mut bodies: Vec<Body>, steps: usize) -> FullSim {
         }
         verlet_step(&mut b2, dt);
     }
-    FullSim { positions: all, final_bodies: b2 }
+    FullSim { positions: all }
 }
 
 /// Fast trajectory simulation with early-exit for clearly bad candidates
@@ -215,7 +213,7 @@ pub fn get_positions_with_early_exit(
         verlet_step(&mut b2, dt);
     }
     
-    Some(FullSim { positions: all, final_bodies: b2 })
+    Some(FullSim { positions: all })
 }
 
 /// Shift to COM

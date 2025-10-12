@@ -84,12 +84,6 @@ pub const DEFAULT_COLOR_GRADE_VIBRANCE: f64 = 1.12;
 /// Default clarity strength (high-pass contrast) during color grading
 pub const DEFAULT_COLOR_GRADE_CLARITY: f64 = 0.30;
 
-/// Default clarity blur radius (pixels) used for the high-pass filter
-/// Note: This is now computed dynamically based on resolution in ColorGradeParams::from_resolution()
-/// This constant is kept for reference (3px @ 1080p baseline)
-#[allow(dead_code)]
-pub const DEFAULT_COLOR_GRADE_CLARITY_RADIUS: usize = 3;
-
 /// Default tone curve strength for midtone contrast shaping
 pub const DEFAULT_COLOR_GRADE_TONE_CURVE: f64 = 0.55;
 
