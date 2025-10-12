@@ -3,7 +3,7 @@
 **Cosmic Signature** is an on-chain, last-bidder-wins game built on **Arbitrum**.
 Players compete by placing bids with **ETH** or **Cosmic Signature Token (CST)**, extending the round deadline. When the timer expires, the last bidder wins the **main prize**. Along the way, participants earn **special prizes**, including **Cosmic Signature NFTs **, ETH, and CST rewards.
 
-The ecosystem includes staking, donations, charity allocations, and DAO governance to create a complete, community-driven game economy.
+The ecosystem includes staking, donations to the game, charity allocations, and DAO governance to create a complete, community-driven game economy.
 
 ---
 
@@ -68,28 +68,31 @@ The ecosystem includes staking, donations, charity allocations, and DAO governan
 ## Prizes
 At round end, prizes are distributed as follows:
 
-- **Main Prize Winner**
+- **Main Prize Winner (Last Bidder)**
   - ETH share (main prize percentage)
-  - 1× CosmicSignature NFT 
-
-- **Endurance Champion**
-  - CST bonus (`totalNumBids * multiplier`)
-  - 1× CosmicSignature NFT 
-
-- **Chrono-Warrior**
-  - ETH share (chrono prize percentage)
+  - 1 Cosmic Signature NFT
+  - CST bonus
 
 - **Last CST Bidder**
+  - 1 Cosmic Signature NFT
   - CST bonus
-  - 1× CosmicSignature NFT 
+
+- **Endurance Champion**
+  - 1 Cosmic Signature NFT
+  - CST bonus
+
+- **Chrono-Warrior**
+  - ETH share (chrono-warrior prize percentage)
+  - 1 Cosmic Signature NFT
+  - CST bonus
 
 - **Bidders (raffles)**
-  - ETH raffle prizes
-  - Randomly awarded Cosmic Signature NFTs
-  - CST rewards per bid
+  - An instant CST rewards for each bid
+  - Randomly awarded ETH raffle prizes
+  - Randomly awarded Cosmic Signature NFTs and CST bonuses
 
 - **Stakers**
-  - RW NFT stakers: raffle for Cosmic Signature NFTs
+  - RW NFT stakers: raffle for Cosmic Signature NFTs and CST bonuses
   - CosmicSignature NFT stakers: ETH reward share
 
 - **Ecosystem**
@@ -116,7 +119,7 @@ At round end, prizes are distributed as follows:
 
 ## Installation & Development
 ### Prerequisites
-- Node.js v18+
+- Node.js v20+
 - npm
 - Git
 
@@ -157,7 +160,7 @@ bash scripts/hardhat-node.bash
   * Bid pricing fractions, Dutch auction durations
   * Prize distribution percentages (main, chrono, charity, stakers, etc.)
 
-Constants and formulas are documented in **contract-configuration-params-calculation/**.
+A few constants and formulas are documented in **contract-configuration-params-calculation/**.
 
 ---
 
@@ -178,7 +181,7 @@ Scripts for deployment and registration are located in:
 * **Access control:** Owner-only for sensitive system management.
 * **Reentrancy protection:** Applied to external state-changing functions.
 * **Prize custody:** Secondary prizes escrowed in `PrizesWallet` until claimed.
-* **Charity transfers:** Best-effort, non-blocking (won’t revert prize claim if charity transfer fails).
+* **Charity transfers:** Best-effort, non-blocking (won’t revert prize claim if transfer to Charity Wallet fails).
 * **Randomness:** Multiple Arbitrum precompiles + fallback sources for unpredictable random numbers.
 
 ---
