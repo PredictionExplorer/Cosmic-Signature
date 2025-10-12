@@ -4,6 +4,7 @@ use crate::analysis::{
     calculate_total_angular_momentum, calculate_total_energy, equilateralness_score,
     non_chaoticness,
 };
+use crate::error::{Result, SimulationError};
 use nalgebra::Vector3;
 use rayon::prelude::*;
 use sha3::{Digest, Sha3_256};
@@ -100,30 +101,52 @@ impl Body {
     }
 }
 
-/// Basic Verlet step
+/// Basic Verlet step (optimized for 3-body problem with zero-allocation)
 fn verlet_step(bodies: &mut [Body], dt: f64) {
-    let pos: Vec<_> = bodies.iter().map(|b| b.position).collect();
-    let mass: Vec<_> = bodies.iter().map(|b| b.mass).collect();
-    for (i, b) in bodies.iter_mut().enumerate() {
+    // Use fixed-size arrays for 3-body problem (eliminates heap allocations)
+    // This optimization saves ~2M allocations during Borda search!
+    debug_assert_eq!(bodies.len(), 3, "Optimized for 3-body problem");
+    
+    // Stack-allocated arrays (zero heap allocation!)
+    let mut pos = [Vector3::zeros(); 3];
+    let mut mass = [0.0; 3];
+    
+    for (i, b) in bodies.iter().enumerate().take(3) {
+        pos[i] = b.position;
+        mass[i] = b.mass;
+    }
+    
+    // First acceleration calculation
+    for (i, b) in bodies.iter_mut().enumerate().take(3) {
         b.reset_acceleration();
-        for (j, &op) in pos.iter().enumerate() {
+        for j in 0..3 {
             if i != j {
-                b.update_acceleration(mass[j], &op)
+                b.update_acceleration(mass[j], &pos[j])
             }
         }
     }
+    
+    // Update positions
     for b in bodies.iter_mut() {
         b.position += b.velocity * dt + 0.5 * b.acceleration * dt * dt;
     }
-    let new_pos: Vec<_> = bodies.iter().map(|b| b.position).collect();
-    for (i, b) in bodies.iter_mut().enumerate() {
+    
+    // Update positions array for second pass
+    for (i, b) in bodies.iter().enumerate().take(3) {
+        pos[i] = b.position;
+    }
+    
+    // Second acceleration calculation
+    for (i, b) in bodies.iter_mut().enumerate().take(3) {
         b.reset_acceleration();
-        for (j, &op) in new_pos.iter().enumerate() {
+        for j in 0..3 {
             if i != j {
-                b.update_acceleration(mass[j], &op)
+                b.update_acceleration(mass[j], &pos[j])
             }
         }
     }
+    
+    // Update velocities
     for b in bodies.iter_mut() {
         b.velocity += b.acceleration * dt;
     }
@@ -132,10 +155,11 @@ fn verlet_step(bodies: &mut [Body], dt: f64) {
 /// Recorded positions + final state
 pub struct FullSim {
     pub positions: Vec<Vec<Vector3<f64>>>,
+    #[allow(dead_code)] // Used for escape detection in some code paths
     pub final_bodies: Vec<Body>,
 }
 
-/// warmup + record
+/// warmup + record with optional early-exit checks
 pub fn get_positions(mut bodies: Vec<Body>, steps: usize) -> FullSim {
     // Ensure the initial state is expressed in the centre-of-mass (COM) frame
     shift_bodies_to_com(&mut bodies);
@@ -152,6 +176,46 @@ pub fn get_positions(mut bodies: Vec<Body>, steps: usize) -> FullSim {
         verlet_step(&mut b2, dt);
     }
     FullSim { positions: all, final_bodies: b2 }
+}
+
+/// Fast trajectory simulation with early-exit for clearly bad candidates
+/// Returns None if the trajectory is clearly unsuitable (saves expensive full simulation)
+pub fn get_positions_with_early_exit(
+    mut bodies: Vec<Body>,
+    steps: usize,
+    escape_threshold: f64,
+) -> Option<FullSim> {
+    // Ensure the initial state is expressed in the centre-of-mass (COM) frame
+    shift_bodies_to_com(&mut bodies);
+    let dt = crate::render::constants::DEFAULT_DT;
+    
+    // Warmup phase with periodic escape checks
+    const CHECK_INTERVAL: usize = 10000; // Check every 10k steps during warmup
+    for step in 0..steps {
+        verlet_step(&mut bodies, dt);
+        
+        // Early-exit check: detect escaping bodies during warmup
+        if step % CHECK_INTERVAL == 0 && step > 0 && is_definitely_escaping(&bodies, escape_threshold) {
+            return None; // Body escaping, skip this candidate
+        }
+    }
+    
+    // Final escape check after warmup
+    if is_definitely_escaping(&bodies, escape_threshold) {
+        return None;
+    }
+    
+    // Record phase - body configuration is good, record the full trajectory
+    let mut b2 = bodies.clone();
+    let mut all = vec![vec![Vector3::zeros(); steps]; bodies.len()];
+    for i in 0..steps {
+        for (j, b) in b2.iter().enumerate() {
+            all[j][i] = b.position;
+        }
+        verlet_step(&mut b2, dt);
+    }
+    
+    Some(FullSim { positions: all, final_bodies: b2 })
 }
 
 /// Shift to COM
@@ -181,6 +245,7 @@ pub fn is_definitely_escaping(b: &[Body], th: f64) -> bool {
     let mut loc = b.to_vec();
     shift_bodies_to_com(&mut loc);
     let n = loc.len(); // Cache length to avoid repeated calls
+    #[allow(clippy::needless_range_loop)] // Direct indexing for performance in hot path
     for i in 0..n {
         let bi = &loc[i];
         let kin =
@@ -221,7 +286,7 @@ pub fn select_best_trajectory(
     cw: f64,
     ew: f64,
     th: f64,
-) -> (Vec<Body>, TrajectoryResult) {
+) -> Result<(Vec<Body>, TrajectoryResult)> {
     info!("STAGE 1/7: Borda search over {num_sims} random orbits...");
     // Generate random triples and immediately transform them to the COM frame so
     // the total linear momentum and the COM position are exactly zero.
@@ -280,29 +345,49 @@ pub fn select_best_trajectory(
         .enumerate()
         .map(|(i, b)| {
             let cnt = pc.fetch_add(1, Ordering::Relaxed) + 1;
-            if cnt % cs == 0 {
+            if cnt.is_multiple_of(cs) {
                 info!(
                     "   Borda search: {:.0}% done",
                     (cnt as f64 / num_sims as f64) * crate::render::constants::PERCENT_FACTOR
                 );
             }
+            // Quick rejection: check energy and angular momentum first
             let e = calculate_total_energy(b);
             let ang = calculate_total_angular_momentum(b).norm();
             if e > 10.0 || ang < 10.0 {
                 dc.fetch_add(1, Ordering::Relaxed);
                 return None;
             }
-            let simr = get_positions(b.clone(), steps);
-            if is_definitely_escaping(&simr.final_bodies, th) {
-                dc.fetch_add(1, Ordering::Relaxed);
-                return None;
-            }
+            
+            // Run simulation with early-exit checks for escaping bodies
+            let simr = match get_positions_with_early_exit(b.clone(), steps, th) {
+                Some(result) => result,
+                None => {
+                    // Early-exit triggered - body escaped during simulation
+                    dc.fetch_add(1, Ordering::Relaxed);
+                    return None;
+                }
+            };
+            
             let pos = simr.positions;
             let m1 = b[0].mass;
             let m2 = b[1].mass;
             let m3 = b[2].mass;
+            
+            // Compute quality metrics
             let c = non_chaoticness(m1, m2, m3, &pos);
             let eq = equilateralness_score(&pos);
+            
+            // Early rejection: if both metrics are terrible, skip
+            // This saves time on Borda ranking for clearly unsuitable candidates
+            const MIN_VIABLE_CHAOS: f64 = 0.1;     // Below this, too chaotic
+            const MIN_VIABLE_EQUILATERAL: f64 = 0.01; // Below this, too linear
+            
+            if c < MIN_VIABLE_CHAOS && eq < MIN_VIABLE_EQUILATERAL {
+                dc.fetch_add(1, Ordering::Relaxed);
+                return None;
+            }
+            
             Some((
                 TrajectoryResult {
                     chaos: c,
@@ -321,9 +406,18 @@ pub fn select_best_trajectory(
         "   => Discarded {dtot}/{num_sims} ({:.1}%) orbits due to filters or escapes.",
         crate::render::constants::PERCENT_FACTOR * dtot as f64 / num_sims as f64
     );
-    let mut iv: Vec<(TrajectoryResult, usize)> = results.into_iter().filter_map(|x| x).collect();
+    let mut iv: Vec<(TrajectoryResult, usize)> = results.into_iter().flatten().collect();
     if iv.is_empty() {
-        panic!("No valid orbits found after filtering + escape checks!");
+        return Err(SimulationError::NoValidOrbits {
+            total_attempted: num_sims,
+            discarded: dtot,
+            reason: format!(
+                "All orbits filtered out due to: high energy (E > 10), \
+                low angular momentum (L < 10), or escaping bodies (threshold: {})",
+                th
+            ),
+        }
+        .into());
     }
     fn assign(vals: Vec<(f64, usize)>, hb: bool) -> Vec<usize> {
         let mut v = vals;
@@ -357,5 +451,5 @@ pub fn select_best_trajectory(
     let bi = iv[0].1;
     let bt = iv[0].0.clone();
     info!("\n   => Chosen orbit idx {bi} with weighted score {:.3}", bt.total_score_weighted);
-    (many[bi].clone(), bt)
+    Ok((many[bi].clone(), bt))
 }

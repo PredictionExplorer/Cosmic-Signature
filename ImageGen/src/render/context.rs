@@ -42,6 +42,12 @@ impl RenderContext {
     pub fn pixel_count(&self) -> usize {
         self.width_usize * self.height_usize
     }
+    
+    /// Get the bounding box used for coordinate transformations
+    #[inline]
+    pub fn bounds(&self) -> &BoundingBox {
+        &self.bounds
+    }
 
 }
 
@@ -49,9 +55,9 @@ impl RenderContext {
 #[derive(Clone, Copy, Debug)]
 pub struct BoundingBox {
     pub min_x: f64,
-    _max_x: f64,
+    pub max_x: f64,
     pub min_y: f64,
-    _max_y: f64,
+    pub max_y: f64,
     pub width: f64,
     pub height: f64,
 }
@@ -62,9 +68,9 @@ impl BoundingBox {
         let (min_x, max_x, min_y, max_y) = crate::utils::bounding_box(positions);
         Self {
             min_x,
-            _max_x: max_x,
+            max_x,
             min_y,
-            _max_y: max_y,
+            max_y,
             width: (max_x - min_x).max(1e-12),
             height: (max_y - min_y).max(1e-12),
         }

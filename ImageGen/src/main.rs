@@ -1,28 +1,26 @@
 use clap::Parser;
-use image::{ImageBuffer, Rgb};
-use std::error::Error;
-use std::fs;
-use tracing::{error, info, warn};
+use tracing::info;
 use tracing_subscriber::EnvFilter;
 
 mod analysis;
+mod app;
 mod drift;
 mod drift_config;
+mod error;
 mod generation_log;
 mod oklab;
 mod post_effects;
 mod render;
 mod sim;
+mod soa_positions;
+mod spectral_constants;
 mod spectrum;
+mod spectrum_simd;
 mod utils;
 
-use drift::*;
-use drift_config::*;
-use generation_log::*;
-use render::constants;
-use render::*;
-use sim::*;
-use utils::*;
+use error::Result;
+use render::RenderConfig;
+use sim::Sha3RandomByteStream;
 
 /// Command-line arguments
 #[derive(Parser, Debug)]
@@ -195,41 +193,22 @@ fn setup_logging(json: bool, level: &str) {
     }
 }
 
-fn main() -> std::result::Result<(), Box<dyn Error>> {
+fn main() -> Result<()> {
     let args = Args::parse();
 
-    // Initialize tracing with configuration
+    // Initialize tracing
     setup_logging(args.json_logs, &args.log_level);
 
-    let num_sims = match args.num_sims {
-        Some(val) => val,
-        None => {
-            if args.special {
-                100_000
-            } else {
-                30_000
-            }
-        }
-    };
+    // Determine number of simulations
+    let num_sims = args.num_sims.unwrap_or(if args.special { 100_000 } else { 30_000 });
 
-    // Create pics and vids directories
-    fs::create_dir_all("pics")?;
-    fs::create_dir_all("vids")?;
-
-    let width = args.width;
-    let height = args.height;
-
-    // Convert hex seed
-    let hex_seed = if args.seed.starts_with("0x") { &args.seed[2..] } else { &args.seed };
-    let seed_bytes = hex::decode(hex_seed).expect("invalid hex seed");
+    // Setup
+    app::setup_directories()?;
+    error::validation::validate_dimensions(args.width, args.height)?;
     
-    // Derive noise seed for nebula clouds from first 4 bytes of simulation seed
-    let noise_seed = i32::from_le_bytes([
-        seed_bytes.get(0).copied().unwrap_or(0),
-        seed_bytes.get(1).copied().unwrap_or(0),
-        seed_bytes.get(2).copied().unwrap_or(0),
-        seed_bytes.get(3).copied().unwrap_or(0),
-    ]);
+    let seed_bytes = app::parse_seed(&args.seed)?;
+    let hex_seed = if args.seed.starts_with("0x") { &args.seed[2..] } else { &args.seed };
+    let noise_seed = app::derive_noise_seed(&seed_bytes);
     
     let mut rng = Sha3RandomByteStream::new(
         &seed_bytes,
@@ -239,143 +218,86 @@ fn main() -> std::result::Result<(), Box<dyn Error>> {
         args.velocity,
     );
 
-    // 1) Borda selection
-    info!("STAGE 1/7: Borda search over {} random orbits...", num_sims);
-    let (best_bodies, best_info) = sim::select_best_trajectory(
+    // Stage 1: Borda selection
+    let (best_bodies, best_info) = app::run_borda_selection(
         &mut rng,
         num_sims,
         args.num_steps_sim,
         args.chaos_weight,
         args.equil_weight,
         args.escape_threshold,
-    );
+    )?;
 
-    // 2) Re-run best orbit
-    info!("STAGE 2/7: Re-running best orbit for {} steps...", args.num_steps_sim);
-    let sim_result = get_positions(best_bodies.clone(), args.num_steps_sim);
-    let mut positions = sim_result.positions;
-    info!("   => Done.");
+    // Stage 2: Re-run best orbit
+    let mut positions = app::simulate_best_orbit(best_bodies, args.num_steps_sim);
 
-    // 2.5) Resolve and apply drift transformation
+    // Stage 2.5: Apply drift (if enabled)
     let drift_config = if !args.no_drift {
-        info!("STAGE 2.5/7: Resolving drift configuration...");
-        
-        // Resolve drift parameters (either from args or generate random)
-        let resolved = resolve_drift_config(
+        app::apply_drift_transformation(
+            &mut positions,
+            &args.drift_mode,
             args.drift_scale,
             args.drift_arc_fraction,
             args.drift_orbit_eccentricity,
             &mut rng,
             args.special,
-        );
-        
-        info!("Applying {} drift...", args.drift_mode);
-        let num_steps = positions[0].len();
-        let drift_params = resolved.to_drift_parameters();
-        
-        if drift_params.arc_fraction == 0.0 && args.drift_mode.to_lowercase().starts_with("ell") {
-            warn!("Elliptical drift requested with zero arc fraction; skipping motion");
-        }
-        
-        let mut drift_transform =
-            parse_drift_mode(&args.drift_mode, &mut rng, drift_params, num_steps);
-        let dt = constants::DEFAULT_DT; // Same dt as used in simulation
-        drift_transform.apply(&mut positions, dt);
-
-        info!("   => Drift applied successfully");
-        
-        Some(resolved)
+        )
     } else {
         info!("STAGE 2.5/7: Drift disabled (--no-drift flag)");
         None
     };
 
-    // 3) Generate color sequences
-    info!("STAGE 3/7: Generating color sequences + alpha...");
-    let alpha_value = 1.0 / (args.alpha_denom as f64);
-    let (colors, body_alphas) =
-        generate_body_color_sequences(&mut rng, args.num_steps_sim, alpha_value);
+    // Stage 3: Generate colors
+    let (colors, body_alphas) = app::generate_colors(
+        &mut rng,
+        args.num_steps_sim,
+        args.alpha_denom,
+    );
 
-    // Create render configuration
-    let render_config = render::RenderConfig {
-        hdr_scale: if args.hdr_mode == "auto" { args.hdr_scale } else { 1.0 },
-    };
-
-    // Using OKLab color space for accumulation
+    // Using OKLab color space
     info!("   => Using OKLab color space for accumulation");
 
-    // 4) bounding box info
+    // Stage 4: Bounding box
     info!("STAGE 4/7: Determining bounding box...");
-    let (min_x, max_x, min_y, max_y) = bounding_box(&positions);
-    info!("   => X: [{:.3}, {:.3}], Y: [{:.3}, {:.3}]", min_x, max_x, min_y, max_y);
+    let render_ctx = render::context::RenderContext::new(args.width, args.height, &positions);
+    let bbox = render_ctx.bounds();
+    info!("   => X: [{:.3}, {:.3}], Y: [{:.3}, {:.3}]", bbox.min_x, bbox.max_x, bbox.min_y, bbox.max_y);
 
-    // 5) pass 1 => gather histogram
-    info!("STAGE 5/7: PASS 1 => building global histogram...");
-    let (blur_radius_px, blur_strength, blur_core_brightness) = if args.special {
-        (
-            // Much stronger blur for special mode, optimized for 1080p
-            (0.032 * std::cmp::min(args.width, args.height) as f64).round() as usize,
-            12.0, // significantly boosted blur strength
-            12.0, // core brightness = equal to strength for brighter lines
-        )
-    } else {
-        (
-            // lighter blur settings for standard mode
-            (0.014 * std::cmp::min(args.width, args.height) as f64).round() as usize,
-            7.0, // moderate blur strength
-            7.0, // core brightness = equal to strength for brighter lines
-        )
+    // Configure rendering
+    let render_config = RenderConfig {
+        hdr_scale: if args.hdr_mode == "auto" { args.hdr_scale } else { 1.0 },
     };
+    
+    let (blur_radius_px, blur_strength, blur_core_brightness) = 
+        app::create_blur_config(args.special, args.width, args.height);
 
-    let frame_rate = constants::DEFAULT_VIDEO_FPS;
-    let target_frames = constants::DEFAULT_TARGET_FRAMES; // ~30 sec @ 60 FPS
-    let frame_interval = (args.num_steps_sim / target_frames as usize).max(1);
+    let dog_config = app::create_dog_config(
+        args.width,
+        args.height,
+        args.dog_sigma,
+        args.dog_ratio,
+        args.dog_strength,
+    );
 
-    let mut all_r = Vec::new();
-    let mut all_g = Vec::new();
-    let mut all_b = Vec::new();
-
-    // Create DoG bloom config with resolution-aware sigma
-    let dog_sigma = args.dog_sigma.unwrap_or_else(|| {
-        // Default: 0.0065 of min dimension = 7px @ 1080p, 14px @ 4K
-        0.0065 * std::cmp::min(args.width, args.height) as f64
-    });
-    let dog_config = render::DogBloomConfig {
-        inner_sigma: dog_sigma,
-        outer_ratio: args.dog_ratio,
-        strength: args.dog_strength,
-        threshold: 0.01,
-    };
-
-    // Create perceptual blur config
     let perceptual_blur_enabled = args.perceptual_blur.to_lowercase() == "on";
-    let perceptual_blur_config = if perceptual_blur_enabled {
-        Some(post_effects::PerceptualBlurConfig {
-            radius: args.perceptual_blur_radius.unwrap_or(blur_radius_px),
-            strength: args.perceptual_blur_strength,
-            gamut_mode: match args.perceptual_gamut_mode.as_str() {
-                "clamp" => oklab::GamutMapMode::Clamp,
-                "soft-clip" => oklab::GamutMapMode::SoftClip,
-                _ => oklab::GamutMapMode::PreserveHue,
-            },
-        })
-    } else {
-        None
-    };
+    let perceptual_blur_config = app::create_perceptual_blur_config(
+        perceptual_blur_enabled,
+        blur_radius_px,
+        args.perceptual_blur_radius,
+        args.perceptual_blur_strength,
+        &args.perceptual_gamut_mode,
+    );
 
-    pass_1_build_histogram_spectral(
+    // Stage 5-6: Build histogram and compute levels
+    let levels = app::build_histogram_and_levels(
         &positions,
         &colors,
         &body_alphas,
-        width,
-        height,
+        args.width,
+        args.height,
         blur_radius_px,
         blur_strength,
         blur_core_brightness,
-        frame_interval,
-        &mut all_r,
-        &mut all_g,
-        &mut all_b,
         &args.bloom_mode,
         &dog_config,
         &args.hdr_mode,
@@ -384,55 +306,25 @@ fn main() -> std::result::Result<(), Box<dyn Error>> {
         args.special,
         noise_seed,
         &render_config,
-    );
-
-    // 6) compute black/white/gamma
-    info!("STAGE 6/7: Determine global black/white/gamma...");
-    let (black_r, white_r, black_g, white_g, black_b, white_b) = compute_black_white_gamma(
-        &mut all_r,
-        &mut all_g,
-        &mut all_b,
         args.clip_black,
         args.clip_white,
-    );
-    info!(
-        "   => R:[{:.3e},{:.3e}] G:[{:.3e},{:.3e}] B:[{:.3e},{:.3e}]",
-        black_r, white_r, black_g, white_g, black_b, white_b
-    );
-    // Free memory
-    drop(all_r);
-    drop(all_g);
-    drop(all_b);
+    )?;
 
-    // Generate filename with optional profile tag
-    let base_filename = if args.profile_tag.is_empty() {
-        args.file_name.clone()
-    } else {
-        format!("{}_{}", args.file_name, args.profile_tag)
-    };
-
+    let base_filename = app::generate_filename(&args.file_name, &args.profile_tag);
     let output_png = format!("pics/{}.png", base_filename);
 
-    // Check if test frame mode is enabled
+    // Stage 7: Render
     if args.test_frame {
-        // TEST FRAME MODE: Render only the first frame and save as PNG
-        info!("STAGE 7/7: TEST FRAME MODE => rendering first frame only...");
-        
-        let test_frame = render::render_single_frame_spectral(
+        app::render_test_frame(
             &positions,
             &colors,
             &body_alphas,
-            width,
-            height,
+            args.width,
+            args.height,
             blur_radius_px,
             blur_strength,
             blur_core_brightness,
-            black_r,
-            white_r,
-            black_g,
-            white_g,
-            black_b,
-            white_b,
+            &levels,
             &args.bloom_mode,
             &dog_config,
             &args.hdr_mode,
@@ -441,79 +333,36 @@ fn main() -> std::result::Result<(), Box<dyn Error>> {
             args.special,
             noise_seed,
             &render_config,
+            &output_png,
+            &best_info,
         )?;
-        
-        info!("Saving test frame to: {}", output_png);
-        save_image_as_png(&test_frame, &output_png)?;
-        
-        info!("✓ Test frame saved successfully!");
-        info!(
-            "Best orbit => Weighted Borda = {:.3}\nTest complete!",
-            best_info.total_score_weighted
-        );
         return Ok(());
     }
 
-    // NORMAL MODE: Render full video
-    info!("STAGE 7/7: PASS 2 => final frames => video...");
+    // Normal mode: Render full video
     let output_vid = format!("vids/{}.mp4", base_filename);
-    let mut last_frame_png: Option<ImageBuffer<Rgb<u8>, Vec<u8>>> = None;
-
-    // Create video encoding options with default settings
-    let video_options = render::VideoEncodingOptions::default();
-
-    render::create_video_from_frames_singlepass(
-        width,
-        height,
-        frame_rate,
-        |out| {
-            pass_2_write_frames_spectral(
-                &positions,
-                &colors,
-                &body_alphas,
-                width,
-                height,
-                blur_radius_px,
-                blur_strength,        // Pass blur_strength
-                blur_core_brightness, // Pass blur_core_brightness
-                frame_interval,
-                black_r,
-                white_r,
-                black_g,
-                white_g,
-                black_b,
-                white_b,
-                &args.bloom_mode,
-                &dog_config,
-                &args.hdr_mode,
-                perceptual_blur_enabled,
-                perceptual_blur_config.as_ref(),
-                args.special,
-                noise_seed,
-                |buf_8bit| {
-                    out.write_all(buf_8bit).map_err(render::error::RenderError::VideoEncoding)?;
-                    Ok(())
-                },
-                &mut last_frame_png,
-                &render_config,
-            )?;
-            Ok(())
-        },
+    
+    app::render_video(
+        &positions,
+        &colors,
+        &body_alphas,
+        args.width,
+        args.height,
+        blur_radius_px,
+        blur_strength,
+        blur_core_brightness,
+        &levels,
+        &args.bloom_mode,
+        &dog_config,
+        &args.hdr_mode,
+        perceptual_blur_enabled,
+        perceptual_blur_config.as_ref(),
+        args.special,
+        noise_seed,
+        &render_config,
         &output_vid,
-        &video_options,
-    )
-    .map_err(|e| Box::new(e) as Box<dyn Error>)?;
-
-    // Save final frame if available
-    if let Some(last_frame) = last_frame_png {
-        info!("Attempting to save PNG to: {}", output_png);
-        match save_image_as_png(&last_frame, &output_png) {
-            Ok(_) => {}
-            Err(e) => error!("Failed to save final PNG: {}", e),
-        }
-    } else {
-        warn!("Warning: No final frame was generated to save as PNG.");
-    }
+        &output_png,
+    )?;
 
     info!(
         "Done! Best orbit => Weighted Borda = {:.3}\nHave a nice day!",
@@ -521,43 +370,25 @@ fn main() -> std::result::Result<(), Box<dyn Error>> {
     );
     
     // Log generation parameters for reproducibility
-    log_generation_parameters(
-        &args,
-        &base_filename,
-        &hex_seed.to_string(),
-        &drift_config,
+    let app_config = app::AppConfig {
+        seed: args.seed.clone(),
+        file_name: args.file_name.clone(),
         num_sims,
-        &best_info,
-    );
-    
-    Ok(())
-}
-
-/// Helper function to log generation parameters
-fn log_generation_parameters(
-    args: &Args,
-    file_name: &str,
-    seed: &str,
-    drift_config: &Option<ResolvedDriftConfig>,
-    num_sims: usize,
-    best_info: &sim::TrajectoryResult,
-) {
-    let logger = GenerationLogger::new();
-    
-    let mut record = GenerationRecord::new(
-        file_name.to_string(),
-        format!("0x{}", seed),
-        args.special,
-    );
-    
-    // Populate render configuration
-    record.render_config = LoggedRenderConfig {
+        num_steps_sim: args.num_steps_sim,
         width: args.width,
         height: args.height,
+        special: args.special,
+        test_frame: args.test_frame,
         clip_black: args.clip_black,
         clip_white: args.clip_white,
         alpha_denom: args.alpha_denom,
-        alpha_compress: args.alpha_compress,
+        escape_threshold: args.escape_threshold,
+        drift_enabled: !args.no_drift,
+        drift_mode: args.drift_mode.clone(),
+        drift_scale: args.drift_scale,
+        drift_arc_fraction: args.drift_arc_fraction,
+        drift_orbit_eccentricity: args.drift_orbit_eccentricity,
+        profile_tag: args.profile_tag.clone(),
         bloom_mode: args.bloom_mode.clone(),
         dog_strength: args.dog_strength,
         dog_sigma: args.dog_sigma,
@@ -568,49 +399,15 @@ fn log_generation_parameters(
         perceptual_blur_radius: args.perceptual_blur_radius,
         perceptual_blur_strength: args.perceptual_blur_strength,
         perceptual_gamut_mode: args.perceptual_gamut_mode.clone(),
-    };
-    
-    // Populate drift configuration
-    record.drift_config = if let Some(drift) = drift_config {
-        generation_log::DriftConfig {
-            enabled: true,
-            mode: args.drift_mode.clone(),
-            scale: drift.scale,
-            arc_fraction: drift.arc_fraction,
-            orbit_eccentricity: drift.orbit_eccentricity,
-            randomized: drift.was_randomized,
-        }
-    } else {
-        generation_log::DriftConfig {
-            enabled: false,
-            mode: "none".to_string(),
-            scale: 0.0,
-            arc_fraction: 0.0,
-            orbit_eccentricity: 0.0,
-            randomized: false,
-        }
-    };
-    
-    // Populate simulation configuration
-    record.simulation_config = SimulationConfig {
-        num_sims,
-        num_steps_sim: args.num_steps_sim,
-        location: args.location,
-        velocity: args.velocity,
         min_mass: args.min_mass,
         max_mass: args.max_mass,
+        location: args.location,
+        velocity: args.velocity,
         chaos_weight: args.chaos_weight,
         equil_weight: args.equil_weight,
-        escape_threshold: args.escape_threshold,
     };
     
-    // Populate orbit information
-    record.orbit_info = OrbitInfo {
-        selected_index: 0, // Not available in TrajectoryResult
-        weighted_score: best_info.total_score_weighted,
-        total_candidates: num_sims,
-        discarded_count: 0, // Not available in TrajectoryResult
-    };
+    app::log_generation(&app_config, &base_filename, hex_seed, &drift_config, num_sims, &best_info);
     
-    logger.log_generation(record);
+    Ok(())
 }

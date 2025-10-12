@@ -168,6 +168,7 @@ impl CinematicColorGrade {
         }
 
         // Shadow and highlight tinting
+        #[allow(clippy::needless_range_loop)] // Direct indexing clearer for color channel manipulation
         for i in 0..3 {
             vibrant[i] += self.params.shadow_tint[i];
             vibrant[i] += self.params.highlight_tint[i];

@@ -88,10 +88,10 @@ impl EffectChainBuilder {
         }
 
         // Add perceptual blur if enabled
-        if config.perceptual_blur_enabled {
-            if let Some(blur_config) = &config.perceptual_blur_config {
-                chain.add(Box::new(PerceptualBlur::new(blur_config.clone())));
-            }
+        if config.perceptual_blur_enabled && config.perceptual_blur_config.is_some() {
+            // We know this is Some due to the check above
+            let blur_config = config.perceptual_blur_config.as_ref().unwrap();
+            chain.add(Box::new(PerceptualBlur::new(blur_config.clone())));
         }
 
         // Add HDR/auto-exposure

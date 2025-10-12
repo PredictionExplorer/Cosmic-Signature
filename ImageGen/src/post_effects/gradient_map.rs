@@ -137,6 +137,8 @@ impl GradientMap {
 
     /// Convert RGB to HSV
     fn rgb_to_hsv(r: f64, g: f64, b: f64) -> (f64, f64, f64) {
+        use crate::utils::{is_zero, approx_eq};
+        
         let max = r.max(g).max(b);
         let min = r.min(g).min(b);
         let delta = max - min;
@@ -144,11 +146,11 @@ impl GradientMap {
         let v = max;
         let s = if max > 0.0 { delta / max } else { 0.0 };
         
-        let h = if delta == 0.0 {
+        let h = if is_zero(delta) {
             0.0
-        } else if max == r {
+        } else if approx_eq(max, r) {
             60.0 * (((g - b) / delta) % 6.0)
-        } else if max == g {
+        } else if approx_eq(max, g) {
             60.0 * (((b - r) / delta) + 2.0)
         } else {
             60.0 * (((r - g) / delta) + 4.0)

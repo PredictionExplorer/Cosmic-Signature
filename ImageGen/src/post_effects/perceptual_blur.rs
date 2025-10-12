@@ -190,8 +190,10 @@ mod tests {
 
     #[test]
     fn test_perceptual_blur_zero_radius() {
-        let mut config = PerceptualBlurConfig::default();
-        config.radius = 0;
+        let config = PerceptualBlurConfig {
+            radius: 0,
+            ..Default::default()
+        };
         let blur = PerceptualBlur::new(config);
 
         let input = vec![(0.5, 0.5, 0.5, 1.0); 100];
@@ -247,19 +249,19 @@ mod tests {
                 let b_straight = b / a;
 
                 assert!(
-                    r_straight >= -0.001 && r_straight <= 1.001,
+                    (-0.001..=1.001).contains(&r_straight),
                     "Pixel {} R out of gamut: {}",
                     i,
                     r_straight
                 );
                 assert!(
-                    g_straight >= -0.001 && g_straight <= 1.001,
+                    (-0.001..=1.001).contains(&g_straight),
                     "Pixel {} G out of gamut: {}",
                     i,
                     g_straight
                 );
                 assert!(
-                    b_straight >= -0.001 && b_straight <= 1.001,
+                    (-0.001..=1.001).contains(&b_straight),
                     "Pixel {} B out of gamut: {}",
                     i,
                     b_straight

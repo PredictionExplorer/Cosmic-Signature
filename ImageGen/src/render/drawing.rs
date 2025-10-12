@@ -1,8 +1,8 @@
 //! Line drawing, plot functions, and primitive rendering
 
 use super::color::OklabColor;
-use crate::spectrum::NUM_BINS;
-use crate::utils::build_gaussian_kernel;
+use crate::{spectral_constants, spectrum::NUM_BINS, utils::{build_gaussian_kernel, is_zero}};
+use spectral_constants::{LAMBDA_START, LAMBDA_END};
 use rayon::prelude::*;
 use smallvec::SmallVec;
 
@@ -20,9 +20,6 @@ use smallvec::SmallVec;
 /// - Violet hues (around 300°) map to violet wavelengths (380-450nm)
 #[inline]
 pub(crate) fn oklab_hue_to_wavelength(a: f64, b: f64) -> f64 {
-    const LAMBDA_START: f64 = 380.0;
-    const LAMBDA_END: f64 = 700.0;
-    
     // Calculate hue angle in radians (-π to +π)
     let hue_rad = b.atan2(a);
     
@@ -66,19 +63,31 @@ pub(crate) fn oklab_hue_to_wavelength(a: f64, b: f64) -> f64 {
     wavelength.clamp(LAMBDA_START, LAMBDA_END)
 }
 
-/// Gaussian blur context for efficient blurring
+/// Gaussian blur context for efficient blurring with reusable temp buffer
 pub(crate) struct GaussianBlurContext {
     kernel: SmallVec<[f64; 32]>,
     radius: usize,
+    temp_buffer: Vec<(f64, f64, f64, f64)>,
 }
 
 impl GaussianBlurContext {
-    fn new(radius: usize) -> Self {
+    fn new(radius: usize, buffer_size: usize) -> Self {
         let kernel = build_gaussian_kernel(radius);
         let kernel_len = kernel.len();
         let mut small_kernel = SmallVec::with_capacity(kernel_len);
         small_kernel.extend_from_slice(&kernel);
-        Self { kernel: small_kernel, radius }
+        Self { 
+            kernel: small_kernel, 
+            radius,
+            temp_buffer: vec![(0.0, 0.0, 0.0, 0.0); buffer_size],
+        }
+    }
+    
+    /// Ensure temp buffer has correct capacity
+    fn ensure_capacity(&mut self, size: usize) {
+        if self.temp_buffer.len() != size {
+            self.temp_buffer.resize(size, (0.0, 0.0, 0.0, 0.0));
+        }
     }
 }
 
@@ -93,11 +102,12 @@ pub fn parallel_blur_2d_rgba(
         return;
     }
 
-    let blur_ctx = GaussianBlurContext::new(radius);
+    let mut blur_ctx = GaussianBlurContext::new(radius, buffer.len());
 
-    // Horizontal pass
-    let mut temp = vec![(0.0, 0.0, 0.0, 0.0); buffer.len()];
-    temp.par_chunks_mut(width).enumerate().for_each(|(y, row)| {
+    // Horizontal pass (reuse pre-allocated temp buffer)
+    blur_ctx.ensure_capacity(buffer.len());
+    blur_ctx.temp_buffer.par_chunks_mut(width).enumerate().for_each(|(y, row)| {
+        #[allow(clippy::needless_range_loop)] // Direct indexing for performance
         for x in 0..width {
             let mut sum = (0.0, 0.0, 0.0, 0.0);
 
@@ -117,13 +127,14 @@ pub fn parallel_blur_2d_rgba(
 
     // Vertical pass
     buffer.par_chunks_mut(width).enumerate().for_each(|(y, row)| {
+        #[allow(clippy::needless_range_loop)] // Direct indexing for performance
         for x in 0..width {
             let mut sum = (0.0, 0.0, 0.0, 0.0);
 
             for (i, &k) in blur_ctx.kernel.iter().enumerate() {
                 let src_y = (y as i32 + i as i32 - blur_ctx.radius as i32)
                     .clamp(0, height as i32 - 1) as usize;
-                let pixel = temp[src_y * width + x];
+                let pixel = blur_ctx.temp_buffer[src_y * width + x];
                 sum.0 += pixel.0 * k;
                 sum.1 += pixel.1 * k;
                 sum.2 += pixel.2 * k;
@@ -160,6 +171,7 @@ fn lerp(a: f64, b: f64, t: f32) -> f64 {
 }
 
 /// Plot a spectral pixel with anti-aliasing coverage
+#[allow(clippy::too_many_arguments)] // Low-level pixel plotting requires all parameters
 fn plot_spec(
     accum: &mut [[f64; NUM_BINS]],
     width: u32,
@@ -211,6 +223,7 @@ fn plot_spec(
 
 /// Draw anti-aliased line segment for spectral rendering
 #[allow(dead_code)]
+#[allow(clippy::too_many_arguments)] // Low-level drawing primitive requires all parameters
 pub fn draw_line_segment_aa_spectral(
     accum: &mut [[f64; NUM_BINS]],
     width: u32,
@@ -231,6 +244,7 @@ pub fn draw_line_segment_aa_spectral(
 }
 
 /// Draw anti-aliased line segment for spectral rendering with optional dispersion
+#[allow(clippy::too_many_arguments)] // Low-level drawing primitive requires all parameters
 pub fn draw_line_segment_aa_spectral_with_dispersion(
     accum: &mut [[f64; NUM_BINS]],
     width: u32,
@@ -278,13 +292,8 @@ pub fn draw_line_segment_aa_spectral_with_dispersion(
     let wavelength0 = oklab_hue_to_wavelength(a0, b0);
     let wavelength1 = oklab_hue_to_wavelength(a1, b1);
     
-    const LAMBDA_START: f64 = 380.0;
-    const LAMBDA_END: f64 = 700.0;
-    const LAMBDA_RANGE: f64 = LAMBDA_END - LAMBDA_START;
-    const BIN_WIDTH: f64 = LAMBDA_RANGE / NUM_BINS as f64;
-    
-    let center_bin0 = ((wavelength0 - LAMBDA_START) / BIN_WIDTH).round() as isize;
-    let center_bin1 = ((wavelength1 - LAMBDA_START) / BIN_WIDTH).round() as isize;
+    let center_bin0 = ((wavelength0 - LAMBDA_START) / spectral_constants::BIN_WIDTH).round() as isize;
+    let center_bin1 = ((wavelength1 - LAMBDA_START) / spectral_constants::BIN_WIDTH).round() as isize;
     
     use crate::render::constants::{SPECTRAL_DISPERSION_BINS, SPECTRAL_DISPERSION_STRENGTH};
     let dispersion_range = SPECTRAL_DISPERSION_BINS as isize;
@@ -303,8 +312,8 @@ pub fn draw_line_segment_aa_spectral_with_dispersion(
         let bin1 = (center_bin1 + bin_offset).clamp(0, (NUM_BINS - 1) as isize) as usize;
         
         // Convert bins back to wavelengths
-        let disp_wavelength0 = LAMBDA_START + (bin0 as f64 + 0.5) * BIN_WIDTH;
-        let disp_wavelength1 = LAMBDA_START + (bin1 as f64 + 0.5) * BIN_WIDTH;
+        let disp_wavelength0 = spectral_constants::bin_to_wavelength(bin0);
+        let disp_wavelength1 = spectral_constants::bin_to_wavelength(bin1);
         
         // Create new colors by preserving lightness but using dispersed wavelengths
         // We reconstruct OkLab from wavelength (approximate reverse)
@@ -369,6 +378,7 @@ fn wavelength_to_oklab(wavelength: f64, lightness: f64) -> OklabColor {
 }
 
 /// Internal implementation of spectral line drawing (original logic)
+#[allow(clippy::too_many_arguments)] // Low-level drawing primitive requires all parameters
 fn draw_line_segment_aa_spectral_internal(
     accum: &mut [[f64; NUM_BINS]],
     width: u32,
@@ -406,7 +416,7 @@ fn draw_line_segment_aa_spectral_internal(
 
     let dx = x1 - x0;
     let dy = y1 - y0;
-    let gradient = if dx == 0.0 { 1.0 } else { dy / dx };
+    let gradient = if is_zero(dx as f64) { 1.0 } else { dy / dx };
 
     // Convert OkLab colors to wavelengths using perceptually uniform mapping
     let (_l0, a0, b0) = col0;
@@ -416,16 +426,9 @@ fn draw_line_segment_aa_spectral_internal(
     let wavelength0 = oklab_hue_to_wavelength(a0, b0);
     let wavelength1 = oklab_hue_to_wavelength(a1, b1);
     
-    // Constants for wavelength to bin conversion
-    const LAMBDA_START: f64 = 380.0;
-    const LAMBDA_END: f64 = 700.0;
-    const LAMBDA_RANGE: f64 = LAMBDA_END - LAMBDA_START;
-    const BIN_WIDTH: f64 = LAMBDA_RANGE / NUM_BINS as f64;
-    
     // Convert wavelengths to fractional bin positions
-    // These are guaranteed to be within [0, NUM_BINS-1] due to wavelength clamping
-    let bin0_f = ((wavelength0 - LAMBDA_START) / BIN_WIDTH).clamp(0.0, (NUM_BINS - 1) as f64);
-    let bin1_f = ((wavelength1 - LAMBDA_START) / BIN_WIDTH).clamp(0.0, (NUM_BINS - 1) as f64);
+    let bin0_f = spectral_constants::wavelength_to_bin(wavelength0);
+    let bin1_f = spectral_constants::wavelength_to_bin(wavelength1);
 
     // First endpoint
     let xend = x0.round();

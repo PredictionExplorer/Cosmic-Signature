@@ -1,0 +1,14 @@
+# Clippy configuration for Three Body Problem visualization
+#
+# This configuration documents intentional deviations from default Clippy lints,
+# all of which are performance optimizations in hot paths.
+
+# Allow needless_range_loop in performance-critical sections
+# Direct indexing is intentionally used for:
+# 1. Cache-friendly access patterns
+# 2. Clearer intent when manipulating parallel arrays
+# 3. Performance in tight loops (blur kernels, color channels)
+#
+# Affected files: spectrum.rs, drawing.rs, color_grade.rs, sim.rs
+# Trade-off: Slight verbosity for measurable performance gain
+

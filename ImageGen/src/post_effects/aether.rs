@@ -152,7 +152,7 @@ pub fn apply_aether_weave(
             final_b -= spectral;
         } else {
             // Non-luxury mode: rainbow iridescence based on position
-            let hue_shift = (u * 2.1 + v * 3.4 + flow_dir).sin() * 6.28318; // Full hue range
+            let hue_shift = (u * 2.1 + v * 3.4 + flow_dir).sin() * std::f64::consts::TAU; // Full hue range
             final_r += (hue_shift).cos() * spectral;
             final_g += (hue_shift + 2.09439).cos() * spectral; // +120°
             final_b += (hue_shift + 4.18879).cos() * spectral; // +240°

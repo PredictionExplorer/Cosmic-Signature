@@ -19,6 +19,7 @@ pub enum GamutMapMode {
     SoftClip,
 }
 
+#[allow(clippy::derivable_impls)] // PreserveHue as default is intentional and clear
 impl Default for GamutMapMode {
     fn default() -> Self {
         GamutMapMode::PreserveHue
@@ -153,12 +154,9 @@ impl GamutMapMode {
                     let test_b = lum_clamped + (b - lum) * mid;
 
                     // Check if this scale factor keeps us in gamut
-                    if test_r >= 0.0
-                        && test_r <= 1.0
-                        && test_g >= 0.0
-                        && test_g <= 1.0
-                        && test_b >= 0.0
-                        && test_b <= 1.0
+                    if (0.0..=1.0).contains(&test_r)
+                        && (0.0..=1.0).contains(&test_g)
+                        && (0.0..=1.0).contains(&test_b)
                     {
                         low = mid;
                     } else {
@@ -318,21 +316,21 @@ mod tests {
 
                 // Verify all outputs are in valid range
                 assert!(
-                    r_out >= 0.0 && r_out <= 1.0,
+                    (0.0..=1.0).contains(&r_out),
                     "{:?} failed to map {} R to gamut: {}",
                     mode,
                     name,
                     r_out
                 );
                 assert!(
-                    g_out >= 0.0 && g_out <= 1.0,
+                    (0.0..=1.0).contains(&g_out),
                     "{:?} failed to map {} G to gamut: {}",
                     mode,
                     name,
                     g_out
                 );
                 assert!(
-                    b_out >= 0.0 && b_out <= 1.0,
+                    (0.0..=1.0).contains(&b_out),
                     "{:?} failed to map {} B to gamut: {}",
                     mode,
                     name,
@@ -351,9 +349,9 @@ mod tests {
         let (r_out, g_out, b_out) = GamutMapMode::PreserveHue.map_to_gamut(r_in, g_in, b_in);
 
         // Verify the color is now in gamut
-        assert!(r_out >= 0.0 && r_out <= 1.0, "R out of gamut: {}", r_out);
-        assert!(g_out >= 0.0 && g_out <= 1.0, "G out of gamut: {}", g_out);
-        assert!(b_out >= 0.0 && b_out <= 1.0, "B out of gamut: {}", b_out);
+        assert!((0.0..=1.0).contains(&r_out), "R out of gamut: {}", r_out);
+        assert!((0.0..=1.0).contains(&g_out), "G out of gamut: {}", g_out);
+        assert!((0.0..=1.0).contains(&b_out), "B out of gamut: {}", b_out);
 
         // Test that the luminance is preserved
         let lum_in = 0.2126 * r_in + 0.7152 * g_in + 0.0722 * b_in;
@@ -386,8 +384,8 @@ mod tests {
 
         // Verify all values are in gamut
         assert!(r_neg >= 0.0, "R should be non-negative: {}", r_neg);
-        assert!(g_neg >= 0.0 && g_neg <= 1.0, "G out of gamut: {}", g_neg);
-        assert!(b_neg >= 0.0 && b_neg <= 1.0, "B out of gamut: {}", b_neg);
+        assert!((0.0..=1.0).contains(&g_neg), "G out of gamut: {}", g_neg);
+        assert!((0.0..=1.0).contains(&b_neg), "B out of gamut: {}", b_neg);
 
         // Test 4: Already in gamut - should be unchanged
         let in_gamut = (0.8, 0.5, 0.3);

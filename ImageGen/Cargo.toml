@@ -35,6 +35,18 @@ thiserror = "2.0.17"
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
 
+[features]
+# Advanced optimization infrastructure (experimental)
+advanced-optimizations = []
+default = []
+
+[dev-dependencies]
+criterion = "0.7"
+
+[[bench]]
+name = "rendering_benchmark"
+harness = false
+
 [profile.release]
 opt-level       = 3
 lto             = "fat"

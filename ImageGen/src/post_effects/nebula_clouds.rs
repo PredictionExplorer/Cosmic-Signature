@@ -270,7 +270,7 @@ mod tests {
         
         // Noise should be in [0, 1] range
         let noise = nebula.evaluate_noise(100.0, 100.0, 0.0);
-        assert!(noise >= 0.0 && noise <= 1.0, "Noise value out of range: {}", noise);
+        assert!((0.0..=1.0).contains(&noise), "Noise value out of range: {}", noise);
         
         // Different positions should give different values
         let noise2 = nebula.evaluate_noise(500.0, 500.0, 0.0);
