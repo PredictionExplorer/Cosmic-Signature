@@ -20,9 +20,12 @@ pub mod color;
 pub mod constants;
 pub mod context;
 pub mod drawing;
+pub mod effect_randomizer;
 pub mod effects;
 pub mod error;
 pub mod histogram;
+pub mod parameter_descriptors;
+pub mod randomizable_config;
 pub mod simd_tonemap;
 pub mod types;
 pub mod velocity_hdr;
@@ -303,11 +306,182 @@ fn composite_buffers(
 }
 
 
-/// Build effect configuration for rendering
+/// Build effect configuration from resolved randomizable config
 /// 
-/// Creates a consistent EffectConfig across all rendering passes (histogram, render, single-frame).
-/// Handles both standard and special modes with appropriate effect strengths.
-#[allow(clippy::too_many_arguments)] // Helper function consolidates rendering parameters
+/// Creates a fully configured EffectConfig from a ResolvedEffectConfig with all
+/// parameters determined (either explicitly set or randomized).
+fn build_effect_config_from_resolved(
+    resolved: &randomizable_config::ResolvedEffectConfig,
+) -> EffectConfig {
+    use crate::oklab::GamutMapMode;
+    use crate::post_effects::{
+        AetherConfig, AtmosphericDepthConfig, ChampleveConfig, ColorGradeParams,
+        EdgeLuminanceConfig, FineTextureConfig, GlowEnhancementConfig,
+        MicroContrastConfig, OpalescenceConfig,
+        fine_texture::TextureType,
+    };
+    
+    let width = resolved.width as usize;
+    let height = resolved.height as usize;
+    let min_dim = width.min(height);
+    
+    // Calculate derived parameters from resolved scales
+    let blur_radius_px = (resolved.blur_radius_scale * min_dim as f64).round() as usize;
+    let dog_inner_sigma = resolved.dog_sigma_scale * min_dim as f64;
+    let glow_radius = (resolved.glow_radius_scale * min_dim as f64).round() as usize;
+    let chromatic_bloom_radius = (resolved.chromatic_bloom_radius_scale * min_dim as f64).round() as usize;
+    let chromatic_bloom_separation = resolved.chromatic_bloom_separation_scale * min_dim as f64;
+    let opalescence_scale_abs = resolved.opalescence_scale * ((width * height) as f64).sqrt();
+    let fine_texture_scale_abs = resolved.fine_texture_scale * ((width * height) as f64).sqrt();
+    
+    // Build DoG config from resolved parameters
+    let dog_config = DogBloomConfig {
+        inner_sigma: dog_inner_sigma,
+        outer_ratio: resolved.dog_ratio,
+        strength: resolved.dog_strength,
+        threshold: 0.01, // Fixed threshold
+    };
+    
+    // Build perceptual blur config if enabled
+    let perceptual_blur_config = if resolved.enable_perceptual_blur {
+        Some(PerceptualBlurConfig {
+            radius: blur_radius_px, // Use main blur radius
+            strength: resolved.perceptual_blur_strength,
+            gamut_mode: GamutMapMode::PreserveHue, // Fixed mode
+        })
+    } else {
+        None
+    };
+    
+    // Determine gradient map settings (only enabled in special mode or if explicitly enabled)
+    let gradient_map_enabled = resolved.enable_gradient_map && resolved.special_mode;
+    let gradient_map_config = GradientMapConfig {
+        palette: LuxuryPalette::GoldPurple,
+        strength: resolved.gradient_map_strength,
+        hue_preservation: resolved.gradient_map_hue_preservation,
+    };
+    
+    EffectConfig {
+        // Core bloom and blur
+        bloom_mode: if resolved.enable_bloom { "dog".to_string() } else { "none".to_string() },
+        blur_radius_px,
+        blur_strength: resolved.blur_strength,
+        blur_core_brightness: resolved.blur_core_brightness,
+        dog_config,
+        hdr_mode: "auto".to_string(),
+        perceptual_blur_enabled: resolved.enable_perceptual_blur,
+        perceptual_blur_config,
+        
+        // Color manipulation
+        color_grade_enabled: resolved.enable_color_grade,
+        color_grade_params: ColorGradeParams {
+            strength: resolved.color_grade_strength,
+            vignette_strength: resolved.vignette_strength,
+            vignette_softness: resolved.vignette_softness,
+            vibrance: resolved.vibrance,
+            clarity_strength: resolved.clarity_strength,
+            clarity_radius: (0.0028 * min_dim as f64).round().max(1.0) as usize,
+            tone_curve: resolved.tone_curve_strength,
+            shadow_tint: constants::DEFAULT_COLOR_GRADE_SHADOW_TINT,
+            highlight_tint: constants::DEFAULT_COLOR_GRADE_HIGHLIGHT_TINT,
+            palette_wave_strength: if resolved.special_mode { 1.0 } else { 0.0 },
+        },
+        gradient_map_enabled,
+        gradient_map_config,
+        
+        // Material and iridescence
+        champleve_enabled: resolved.enable_champleve,
+        champleve_config: ChampleveConfig {
+            cell_density: constants::DEFAULT_CHAMPLEVE_CELL_DENSITY,
+            flow_alignment: resolved.champleve_flow_alignment,
+            interference_amplitude: resolved.champleve_interference_amplitude,
+            interference_frequency: constants::DEFAULT_CHAMPLEVE_INTERFERENCE_FREQUENCY,
+            rim_intensity: resolved.champleve_rim_intensity,
+            rim_warmth: resolved.champleve_rim_warmth,
+            rim_sharpness: constants::DEFAULT_CHAMPLEVE_RIM_SHARPNESS,
+            interior_lift: resolved.champleve_interior_lift,
+            anisotropy: constants::DEFAULT_CHAMPLEVE_ANISOTROPY,
+            cell_softness: constants::DEFAULT_CHAMPLEVE_CELL_SOFTNESS,
+        },
+        aether_enabled: resolved.enable_aether,
+        aether_config: AetherConfig {
+            filament_density: constants::DEFAULT_AETHER_FILAMENT_DENSITY,
+            flow_alignment: resolved.aether_flow_alignment,
+            scattering_strength: resolved.aether_scattering_strength,
+            scattering_falloff: constants::DEFAULT_AETHER_SCATTERING_FALLOFF,
+            iridescence_amplitude: resolved.aether_iridescence_amplitude,
+            iridescence_frequency: constants::DEFAULT_AETHER_IRIDESCENCE_FREQUENCY,
+            caustic_strength: resolved.aether_caustic_strength,
+            caustic_softness: constants::DEFAULT_AETHER_CAUSTIC_SOFTNESS,
+            luxury_mode: resolved.special_mode,
+        },
+        chromatic_bloom_enabled: resolved.enable_chromatic_bloom,
+        chromatic_bloom_config: ChromaticBloomConfig {
+            radius: chromatic_bloom_radius,
+            strength: resolved.chromatic_bloom_strength,
+            separation: chromatic_bloom_separation,
+            threshold: resolved.chromatic_bloom_threshold,
+        },
+        opalescence_enabled: resolved.enable_opalescence,
+        opalescence_config: OpalescenceConfig {
+            strength: resolved.opalescence_strength,
+            scale: opalescence_scale_abs,
+            layers: resolved.opalescence_layers,
+            chromatic_shift: 0.5, // Fixed
+            angle_sensitivity: 0.8, // Fixed
+            pearl_sheen: 0.3, // Fixed
+        },
+        
+        // Detail and clarity
+        edge_luminance_enabled: resolved.enable_edge_luminance,
+        edge_luminance_config: EdgeLuminanceConfig {
+            strength: resolved.edge_luminance_strength,
+            threshold: resolved.edge_luminance_threshold,
+            brightness_boost: resolved.edge_luminance_brightness_boost,
+            bright_edges_only: true, // Fixed
+            min_luminance: 0.2, // Fixed
+        },
+        micro_contrast_enabled: resolved.enable_micro_contrast,
+        micro_contrast_config: MicroContrastConfig {
+            strength: resolved.micro_contrast_strength,
+            radius: resolved.micro_contrast_radius,
+            edge_threshold: 0.15, // Fixed
+            luminance_weight: 0.7, // Fixed
+        },
+        glow_enhancement_enabled: resolved.enable_glow,
+        glow_enhancement_config: GlowEnhancementConfig {
+            strength: resolved.glow_strength,
+            threshold: resolved.glow_threshold,
+            radius: glow_radius,
+            sharpness: resolved.glow_sharpness,
+            saturation_boost: resolved.glow_saturation_boost,
+        },
+        
+        // Atmospheric and surface
+        atmospheric_depth_enabled: resolved.enable_atmospheric_depth,
+        atmospheric_depth_config: AtmosphericDepthConfig {
+            strength: resolved.atmospheric_depth_strength,
+            fog_color: (0.08, 0.12, 0.22), // Fixed cosmic tint
+            density_threshold: 0.15, // Fixed
+            desaturation: resolved.atmospheric_desaturation,
+            darkening: resolved.atmospheric_darkening,
+            density_radius: 3, // Fixed
+        },
+        fine_texture_enabled: resolved.enable_fine_texture,
+        fine_texture_config: FineTextureConfig {
+            texture_type: TextureType::Canvas, // Fixed
+            strength: resolved.fine_texture_strength,
+            scale: fine_texture_scale_abs,
+            contrast: resolved.fine_texture_contrast,
+            anisotropy: 0.3, // Fixed
+            angle: 0.0, // Fixed
+        },
+    }
+}
+
+/// Legacy build effect configuration (kept for backward compatibility if needed)
+#[allow(dead_code)]
+#[allow(clippy::too_many_arguments)]
 fn build_effect_config(
     width: usize,
     height: usize,
@@ -453,50 +627,43 @@ pub fn pass_1_build_histogram_spectral(
     positions: &[Vec<Vector3<f64>>],
     colors: &[Vec<OklabColor>],
     body_alphas: &[f64],
-    width: u32,
-    height: u32,
-    blur_radius_px: usize,
-    blur_strength: f64,
-    blur_core_brightness: f64,
+    resolved_config: &randomizable_config::ResolvedEffectConfig,
     frame_interval: usize,
     all_r: &mut Vec<f64>,
     all_g: &mut Vec<f64>,
     all_b: &mut Vec<f64>,
-    bloom_mode: &str,
-    dog_config: &DogBloomConfig,
-    hdr_mode: &str,
-    perceptual_blur_enabled: bool,
-    perceptual_blur_config: Option<&PerceptualBlurConfig>,
-    special_mode: bool,
     noise_seed: i32,
     render_config: &RenderConfig,
 ) {
+    let width = resolved_config.width;
+    let height = resolved_config.height;
+    let special_mode = resolved_config.special_mode;
+    
     // Create render context
     let ctx = RenderContext::new(width, height, positions);
     let mut accum_spd = vec![[0.0f64; NUM_BINS]; ctx.pixel_count()];
     let mut accum_rgba = vec![(0.0, 0.0, 0.0, 0.0); ctx.pixel_count()];
 
-    // Build effect configuration using helper function (DRY principle)
-    let effect_config = build_effect_config(
-        width as usize,
-        height as usize,
-        bloom_mode,
-        blur_radius_px,
-        blur_strength,
-        blur_core_brightness,
-        dog_config,
-        hdr_mode,
-        perceptual_blur_enabled,
-        perceptual_blur_config,
-        special_mode,
-    );
+    // Build effect configuration from resolved config
+    let effect_config = build_effect_config_from_resolved(resolved_config);
     let effect_chain = EffectChainBuilder::new(effect_config);
     
     // Create nebula configuration (rendered separately, not in effect chain)
-    let nebula_config = if special_mode {
-        NebulaCloudConfig::special_mode(width as usize, height as usize, noise_seed)
-    } else {
-        NebulaCloudConfig::standard_mode(width as usize, height as usize, noise_seed)
+    let nebula_config = NebulaCloudConfig {
+        strength: resolved_config.nebula_strength,
+        octaves: resolved_config.nebula_octaves,
+        base_frequency: resolved_config.nebula_base_frequency,
+        lacunarity: 2.0, // Fixed
+        persistence: 0.5, // Fixed
+        noise_seed: noise_seed as i64,
+        colors: [
+            [0.08, 0.12, 0.22],  // Deep blue
+            [0.15, 0.08, 0.25],  // Purple
+            [0.25, 0.12, 0.18],  // Magenta
+            [0.12, 0.15, 0.28],  // Blue-violet
+        ],
+        time_scale: 1.0, // Fixed
+        edge_fade: 0.3, // Fixed
     };
 
     // Create histogram storage
@@ -606,11 +773,7 @@ pub fn pass_2_write_frames_spectral(
     positions: &[Vec<Vector3<f64>>],
     colors: &[Vec<OklabColor>],
     body_alphas: &[f64],
-    width: u32,
-    height: u32,
-    blur_radius_px: usize,
-    blur_strength: f64,
-    blur_core_brightness: f64,
+    resolved_config: &randomizable_config::ResolvedEffectConfig,
     frame_interval: usize,
     black_r: f64,
     white_r: f64,
@@ -618,43 +781,40 @@ pub fn pass_2_write_frames_spectral(
     white_g: f64,
     black_b: f64,
     white_b: f64,
-    bloom_mode: &str,
-    dog_config: &DogBloomConfig,
-    hdr_mode: &str,
-    perceptual_blur_enabled: bool,
-    perceptual_blur_config: Option<&PerceptualBlurConfig>,
-    special_mode: bool,
     noise_seed: i32,
     mut frame_sink: impl FnMut(&[u8]) -> Result<()>,
     last_frame_out: &mut Option<ImageBuffer<Rgb<u8>, Vec<u8>>>,
     render_config: &RenderConfig,
 ) -> Result<()> {
+    let width = resolved_config.width;
+    let height = resolved_config.height;
+    let special_mode = resolved_config.special_mode;
+    
     // Create render context
     let ctx = RenderContext::new(width, height, positions);
     let mut accum_spd = vec![[0.0f64; NUM_BINS]; ctx.pixel_count()];
     let mut accum_rgba = vec![(0.0, 0.0, 0.0, 0.0); ctx.pixel_count()];
 
-    // Build effect configuration using helper function (DRY principle)
-    let effect_config = build_effect_config(
-        width as usize,
-        height as usize,
-        bloom_mode,
-        blur_radius_px,
-        blur_strength,
-        blur_core_brightness,
-        dog_config,
-        hdr_mode,
-        perceptual_blur_enabled,
-        perceptual_blur_config,
-        special_mode,
-    );
+    // Build effect configuration from resolved config
+    let effect_config = build_effect_config_from_resolved(resolved_config);
     let effect_chain = EffectChainBuilder::new(effect_config);
     
     // Create nebula configuration (rendered separately, not in effect chain)
-    let nebula_config = if special_mode {
-        NebulaCloudConfig::special_mode(width as usize, height as usize, noise_seed)
-    } else {
-        NebulaCloudConfig::standard_mode(width as usize, height as usize, noise_seed)
+    let nebula_config = NebulaCloudConfig {
+        strength: resolved_config.nebula_strength,
+        octaves: resolved_config.nebula_octaves,
+        base_frequency: resolved_config.nebula_base_frequency,
+        lacunarity: 2.0, // Fixed
+        persistence: 0.5, // Fixed
+        noise_seed: noise_seed as i64,
+        colors: [
+            [0.08, 0.12, 0.22],  // Deep blue
+            [0.15, 0.08, 0.25],  // Purple
+            [0.25, 0.12, 0.18],  // Magenta
+            [0.12, 0.15, 0.28],  // Blue-violet
+        ],
+        time_scale: 1.0, // Fixed
+        edge_fade: 0.3, // Fixed
     };
 
     let total_steps = positions[0].len();
@@ -766,54 +926,47 @@ pub fn render_single_frame_spectral(
     positions: &[Vec<Vector3<f64>>],
     colors: &[Vec<OklabColor>],
     body_alphas: &[f64],
-    width: u32,
-    height: u32,
-    blur_radius_px: usize,
-    blur_strength: f64,
-    blur_core_brightness: f64,
+    resolved_config: &randomizable_config::ResolvedEffectConfig,
     black_r: f64,
     white_r: f64,
     black_g: f64,
     white_g: f64,
     black_b: f64,
     white_b: f64,
-    bloom_mode: &str,
-    dog_config: &DogBloomConfig,
-    hdr_mode: &str,
-    perceptual_blur_enabled: bool,
-    perceptual_blur_config: Option<&PerceptualBlurConfig>,
-    special_mode: bool,
     noise_seed: i32,
     render_config: &RenderConfig,
 ) -> Result<ImageBuffer<Rgb<u8>, Vec<u8>>> {
     info!("   Rendering first frame only (test mode)...");
+    
+    let width = resolved_config.width;
+    let height = resolved_config.height;
+    let special_mode = resolved_config.special_mode;
     
     // Create render context
     let ctx = RenderContext::new(width, height, positions);
     let mut accum_spd = vec![[0.0f64; NUM_BINS]; ctx.pixel_count()];
     let mut accum_rgba = vec![(0.0, 0.0, 0.0, 0.0); ctx.pixel_count()];
 
-    // Build effect configuration using helper function (DRY principle)
-    let effect_config = build_effect_config(
-        width as usize,
-        height as usize,
-        bloom_mode,
-        blur_radius_px,
-        blur_strength,
-        blur_core_brightness,
-        dog_config,
-        hdr_mode,
-        perceptual_blur_enabled,
-        perceptual_blur_config,
-        special_mode,
-    );
+    // Build effect configuration from resolved config
+    let effect_config = build_effect_config_from_resolved(resolved_config);
     let effect_chain = EffectChainBuilder::new(effect_config);
     
     // Create nebula configuration
-    let nebula_config = if special_mode {
-        NebulaCloudConfig::special_mode(width as usize, height as usize, noise_seed)
-    } else {
-        NebulaCloudConfig::standard_mode(width as usize, height as usize, noise_seed)
+    let nebula_config = NebulaCloudConfig {
+        strength: resolved_config.nebula_strength,
+        octaves: resolved_config.nebula_octaves,
+        base_frequency: resolved_config.nebula_base_frequency,
+        lacunarity: 2.0, // Fixed
+        persistence: 0.5, // Fixed
+        noise_seed: noise_seed as i64,
+        colors: [
+            [0.08, 0.12, 0.22],  // Deep blue
+            [0.15, 0.08, 0.25],  // Purple
+            [0.25, 0.12, 0.18],  // Magenta
+            [0.12, 0.15, 0.28],  // Blue-violet
+        ],
+        time_scale: 1.0, // Fixed
+        edge_fade: 0.3, // Fixed
     };
 
     let total_steps = positions[0].len();

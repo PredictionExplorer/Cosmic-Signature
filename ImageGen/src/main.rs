@@ -232,6 +232,254 @@ struct Args {
     /// Disable temporal smoothing (video frame blending)
     #[arg(long, default_value_t = false)]
     disable_temporal_smoothing: bool,
+
+    // ==== Gallery Quality Mode ====
+    
+    /// Enable gallery quality mode (narrower randomization ranges for exhibition-ready results)
+    #[arg(long, default_value_t = false)]
+    gallery_quality: bool,
+
+    // ==== Bloom & Glow Parameters ====
+    
+    /// Gaussian blur strength (if not specified, randomized in range 4.0-18.0)
+    #[arg(long)]
+    param_blur_strength: Option<f64>,
+
+    /// Blur radius scale relative to resolution (if not specified, randomized in range 0.008-0.045)
+    #[arg(long)]
+    param_blur_radius_scale: Option<f64>,
+
+    /// Blur core brightness preservation (if not specified, randomized in range 4.0-18.0)
+    #[arg(long)]
+    param_blur_core_brightness: Option<f64>,
+
+    /// DoG bloom strength (if not specified, randomized in range 0.15-0.60)
+    #[arg(long)]
+    param_dog_strength: Option<f64>,
+
+    /// DoG inner sigma scale (if not specified, randomized in range 0.004-0.012)
+    #[arg(long)]
+    param_dog_sigma_scale: Option<f64>,
+
+    /// DoG outer/inner ratio (if not specified, randomized in range 2.0-4.0)
+    #[arg(long)]
+    param_dog_ratio: Option<f64>,
+
+    /// Glow enhancement strength (if not specified, randomized in range 0.15-0.70)
+    #[arg(long)]
+    param_glow_strength: Option<f64>,
+
+    /// Glow luminance threshold (if not specified, randomized in range 0.50-0.85)
+    #[arg(long)]
+    param_glow_threshold: Option<f64>,
+
+    /// Glow radius scale (if not specified, randomized in range 0.004-0.012)
+    #[arg(long)]
+    param_glow_radius_scale: Option<f64>,
+
+    /// Glow sharpness (if not specified, randomized in range 1.5-4.0)
+    #[arg(long)]
+    param_glow_sharpness: Option<f64>,
+
+    /// Glow saturation boost (if not specified, randomized in range 0.0-0.40)
+    #[arg(long)]
+    param_glow_saturation_boost: Option<f64>,
+
+    // ==== Chromatic Bloom Parameters ====
+    
+    /// Chromatic bloom strength (if not specified, randomized in range 0.35-0.85)
+    #[arg(long)]
+    param_chromatic_bloom_strength: Option<f64>,
+
+    /// Chromatic bloom radius scale (if not specified, randomized in range 0.007-0.018)
+    #[arg(long)]
+    param_chromatic_bloom_radius_scale: Option<f64>,
+
+    /// Chromatic bloom RGB separation scale (if not specified, randomized in range 0.0015-0.0035)
+    #[arg(long)]
+    param_chromatic_bloom_separation_scale: Option<f64>,
+
+    /// Chromatic bloom threshold (if not specified, randomized in range 0.08-0.30)
+    #[arg(long)]
+    param_chromatic_bloom_threshold: Option<f64>,
+
+    // ==== Perceptual Blur Parameters ====
+    
+    /// Perceptual blur strength (if not specified, randomized in range 0.35-0.85)
+    #[arg(long)]
+    param_perceptual_blur_strength: Option<f64>,
+
+    // ==== Color Grading Parameters ====
+    
+    /// Color grading strength (if not specified, randomized in range 0.0-0.75)
+    #[arg(long)]
+    param_color_grade_strength: Option<f64>,
+
+    /// Vignette strength (if not specified, randomized in range 0.0-0.65)
+    #[arg(long)]
+    param_vignette_strength: Option<f64>,
+
+    /// Vignette softness exponent (if not specified, randomized in range 1.8-3.5)
+    #[arg(long)]
+    param_vignette_softness: Option<f64>,
+
+    /// Color vibrance multiplier (if not specified, randomized in range 0.85-1.35)
+    #[arg(long)]
+    param_vibrance: Option<f64>,
+
+    /// Clarity strength (if not specified, randomized in range 0.0-0.50)
+    #[arg(long)]
+    param_clarity_strength: Option<f64>,
+
+    /// Tone curve strength (if not specified, randomized in range 0.0-0.75)
+    #[arg(long)]
+    param_tone_curve_strength: Option<f64>,
+
+    // ==== Gradient Mapping Parameters ====
+    
+    /// Gradient map strength (if not specified, randomized in range 0.40-1.0)
+    #[arg(long)]
+    param_gradient_map_strength: Option<f64>,
+
+    /// Gradient map hue preservation (if not specified, randomized in range 0.0-0.40)
+    #[arg(long)]
+    param_gradient_map_hue_preservation: Option<f64>,
+
+    // ==== Opalescence Parameters ====
+    
+    /// Opalescence strength (if not specified, randomized in range 0.0-0.35)
+    #[arg(long)]
+    param_opalescence_strength: Option<f64>,
+
+    /// Opalescence pattern scale (if not specified, randomized in range 0.005-0.015)
+    #[arg(long)]
+    param_opalescence_scale: Option<f64>,
+
+    /// Opalescence interference layers (if not specified, randomized in range 1-4)
+    #[arg(long)]
+    param_opalescence_layers: Option<usize>,
+
+    // ==== Champlevé Parameters ====
+    
+    /// Champlevé flow alignment (if not specified, randomized in range 0.20-0.85)
+    #[arg(long)]
+    param_champleve_flow_alignment: Option<f64>,
+
+    /// Champlevé interference amplitude (if not specified, randomized in range 0.15-0.80)
+    #[arg(long)]
+    param_champleve_interference_amplitude: Option<f64>,
+
+    /// Champlevé rim intensity (if not specified, randomized in range 0.5-3.0)
+    #[arg(long)]
+    param_champleve_rim_intensity: Option<f64>,
+
+    /// Champlevé rim warmth (if not specified, randomized in range 0.0-0.90)
+    #[arg(long)]
+    param_champleve_rim_warmth: Option<f64>,
+
+    /// Champlevé interior lift (if not specified, randomized in range 0.20-0.90)
+    #[arg(long)]
+    param_champleve_interior_lift: Option<f64>,
+
+    // ==== Aether Parameters ====
+    
+    /// Aether flow alignment (if not specified, randomized in range 0.30-0.95)
+    #[arg(long)]
+    param_aether_flow_alignment: Option<f64>,
+
+    /// Aether scattering strength (if not specified, randomized in range 0.30-1.50)
+    #[arg(long)]
+    param_aether_scattering_strength: Option<f64>,
+
+    /// Aether iridescence amplitude (if not specified, randomized in range 0.20-0.85)
+    #[arg(long)]
+    param_aether_iridescence_amplitude: Option<f64>,
+
+    /// Aether caustic strength (if not specified, randomized in range 0.0-0.60)
+    #[arg(long)]
+    param_aether_caustic_strength: Option<f64>,
+
+    // ==== Micro-Contrast Parameters ====
+    
+    /// Micro-contrast strength (if not specified, randomized in range 0.10-0.45)
+    #[arg(long)]
+    param_micro_contrast_strength: Option<f64>,
+
+    /// Micro-contrast radius (if not specified, randomized in range 2-8)
+    #[arg(long)]
+    param_micro_contrast_radius: Option<usize>,
+
+    // ==== Edge Luminance Parameters ====
+    
+    /// Edge luminance strength (if not specified, randomized in range 0.08-0.40)
+    #[arg(long)]
+    param_edge_luminance_strength: Option<f64>,
+
+    /// Edge luminance threshold (if not specified, randomized in range 0.10-0.30)
+    #[arg(long)]
+    param_edge_luminance_threshold: Option<f64>,
+
+    /// Edge luminance brightness boost (if not specified, randomized in range 0.15-0.50)
+    #[arg(long)]
+    param_edge_luminance_brightness_boost: Option<f64>,
+
+    // ==== Atmospheric Depth Parameters ====
+    
+    /// Atmospheric depth strength (if not specified, randomized in range 0.0-0.45)
+    #[arg(long)]
+    param_atmospheric_depth_strength: Option<f64>,
+
+    /// Atmospheric desaturation (if not specified, randomized in range 0.10-0.60)
+    #[arg(long)]
+    param_atmospheric_desaturation: Option<f64>,
+
+    /// Atmospheric darkening (if not specified, randomized in range 0.0-0.35)
+    #[arg(long)]
+    param_atmospheric_darkening: Option<f64>,
+
+    // ==== Fine Texture Parameters ====
+    
+    /// Fine texture strength (if not specified, randomized in range 0.02-0.25)
+    #[arg(long)]
+    param_fine_texture_strength: Option<f64>,
+
+    /// Fine texture scale (if not specified, randomized in range 0.0008-0.0028)
+    #[arg(long)]
+    param_fine_texture_scale: Option<f64>,
+
+    /// Fine texture contrast (if not specified, randomized in range 0.15-0.50)
+    #[arg(long)]
+    param_fine_texture_contrast: Option<f64>,
+
+    // ==== HDR Parameters ====
+    
+    /// HDR scale (if not specified, randomized in range 0.06-0.25)
+    #[arg(long)]
+    param_hdr_scale: Option<f64>,
+
+    // ==== Clipping Parameters ====
+    
+    /// Black point clipping (if not specified, randomized in range 0.005-0.025, constrained < clip_white)
+    #[arg(long)]
+    param_clip_black: Option<f64>,
+
+    /// White point clipping (if not specified, randomized in range 0.975-0.998, constrained > clip_black)
+    #[arg(long)]
+    param_clip_white: Option<f64>,
+
+    // ==== Nebula Parameters ====
+    
+    /// Nebula strength (if not specified, randomized in range 0.0-0.30)
+    #[arg(long)]
+    param_nebula_strength: Option<f64>,
+
+    /// Nebula octaves (if not specified, randomized in range 3-5)
+    #[arg(long)]
+    param_nebula_octaves: Option<usize>,
+
+    /// Nebula base frequency (if not specified, randomized in range 0.0008-0.0025)
+    #[arg(long)]
+    param_nebula_base_frequency: Option<f64>,
 }
 
 fn setup_logging(json: bool, level: &str) {
@@ -252,6 +500,114 @@ fn setup_logging(json: bool, level: &str) {
             .with_target(false)
             .with_thread_ids(false)
             .init();
+    }
+}
+
+/// Build randomizable effect configuration from command-line arguments.
+/// Any unspecified parameter will be randomized during resolution.
+fn build_randomizable_config(args: &Args) -> render::randomizable_config::RandomizableEffectConfig {
+    use render::randomizable_config::RandomizableEffectConfig;
+
+    RandomizableEffectConfig {
+        gallery_quality: args.gallery_quality,
+
+        // Effect enables (convert disable flags to enable options)
+        enable_bloom: if args.disable_all_effects || args.disable_bloom { Some(false) } else { None },
+        enable_glow: if args.disable_all_effects || args.disable_glow { Some(false) } else { None },
+        enable_chromatic_bloom: if args.disable_all_effects || args.disable_chromatic_bloom { Some(false) } else { None },
+        enable_perceptual_blur: if args.disable_all_effects || args.disable_perceptual_blur { Some(false) } else { None },
+        enable_micro_contrast: if args.disable_all_effects || args.disable_micro_contrast { Some(false) } else { None },
+        enable_gradient_map: if args.disable_all_effects || args.disable_gradient_map { Some(false) } else { None },
+        enable_color_grade: if args.disable_all_effects || args.disable_color_grade { Some(false) } else { None },
+        enable_champleve: if args.disable_all_effects || args.disable_champleve { Some(false) } else { None },
+        enable_aether: if args.disable_all_effects || args.disable_aether { Some(false) } else { None },
+        enable_opalescence: if args.disable_all_effects || args.disable_opalescence { Some(false) } else { None },
+        enable_edge_luminance: if args.disable_all_effects || args.disable_edge_luminance { Some(false) } else { None },
+        enable_atmospheric_depth: if args.disable_all_effects || args.disable_atmospheric_depth { Some(false) } else { None },
+        enable_fine_texture: if args.disable_all_effects || args.disable_fine_texture { Some(false) } else { None },
+
+        // Bloom & Glow parameters
+        blur_strength: args.param_blur_strength,
+        blur_radius_scale: args.param_blur_radius_scale,
+        blur_core_brightness: args.param_blur_core_brightness,
+        dog_strength: args.param_dog_strength,
+        dog_sigma_scale: args.param_dog_sigma_scale,
+        dog_ratio: args.param_dog_ratio,
+        glow_strength: args.param_glow_strength,
+        glow_threshold: args.param_glow_threshold,
+        glow_radius_scale: args.param_glow_radius_scale,
+        glow_sharpness: args.param_glow_sharpness,
+        glow_saturation_boost: args.param_glow_saturation_boost,
+
+        // Chromatic effects
+        chromatic_bloom_strength: args.param_chromatic_bloom_strength,
+        chromatic_bloom_radius_scale: args.param_chromatic_bloom_radius_scale,
+        chromatic_bloom_separation_scale: args.param_chromatic_bloom_separation_scale,
+        chromatic_bloom_threshold: args.param_chromatic_bloom_threshold,
+
+        // Perceptual blur
+        perceptual_blur_strength: args.param_perceptual_blur_strength,
+
+        // Color grading
+        color_grade_strength: args.param_color_grade_strength,
+        vignette_strength: args.param_vignette_strength,
+        vignette_softness: args.param_vignette_softness,
+        vibrance: args.param_vibrance,
+        clarity_strength: args.param_clarity_strength,
+        tone_curve_strength: args.param_tone_curve_strength,
+
+        // Gradient mapping
+        gradient_map_strength: args.param_gradient_map_strength,
+        gradient_map_hue_preservation: args.param_gradient_map_hue_preservation,
+
+        // Opalescence
+        opalescence_strength: args.param_opalescence_strength,
+        opalescence_scale: args.param_opalescence_scale,
+        opalescence_layers: args.param_opalescence_layers,
+
+        // Champlevé
+        champleve_flow_alignment: args.param_champleve_flow_alignment,
+        champleve_interference_amplitude: args.param_champleve_interference_amplitude,
+        champleve_rim_intensity: args.param_champleve_rim_intensity,
+        champleve_rim_warmth: args.param_champleve_rim_warmth,
+        champleve_interior_lift: args.param_champleve_interior_lift,
+
+        // Aether
+        aether_flow_alignment: args.param_aether_flow_alignment,
+        aether_scattering_strength: args.param_aether_scattering_strength,
+        aether_iridescence_amplitude: args.param_aether_iridescence_amplitude,
+        aether_caustic_strength: args.param_aether_caustic_strength,
+
+        // Micro-contrast
+        micro_contrast_strength: args.param_micro_contrast_strength,
+        micro_contrast_radius: args.param_micro_contrast_radius,
+
+        // Edge luminance
+        edge_luminance_strength: args.param_edge_luminance_strength,
+        edge_luminance_threshold: args.param_edge_luminance_threshold,
+        edge_luminance_brightness_boost: args.param_edge_luminance_brightness_boost,
+
+        // Atmospheric depth
+        atmospheric_depth_strength: args.param_atmospheric_depth_strength,
+        atmospheric_desaturation: args.param_atmospheric_desaturation,
+        atmospheric_darkening: args.param_atmospheric_darkening,
+
+        // Fine texture
+        fine_texture_strength: args.param_fine_texture_strength,
+        fine_texture_scale: args.param_fine_texture_scale,
+        fine_texture_contrast: args.param_fine_texture_contrast,
+
+        // HDR
+        hdr_scale: args.param_hdr_scale,
+
+        // Clipping
+        clip_black: args.param_clip_black,
+        clip_white: args.param_clip_white,
+
+        // Nebula
+        nebula_strength: args.param_nebula_strength,
+        nebula_octaves: args.param_nebula_octaves,
+        nebula_base_frequency: args.param_nebula_base_frequency,
     }
 }
 
@@ -279,6 +635,33 @@ fn main() -> Result<()> {
         args.location,
         args.velocity,
     );
+
+    // Resolve effect configuration (randomize unspecified parameters)
+    info!("Resolving effect configuration...");
+    let randomizable_config = build_randomizable_config(&args);
+    let (resolved_effect_config, randomization_log) = randomizable_config.resolve(
+        &mut rng,
+        args.width,
+        args.height,
+        args.special,
+    );
+    
+    let num_randomized = randomization_log.effects.iter()
+        .map(|e| e.parameters.iter().filter(|p| p.was_randomized).count())
+        .sum::<usize>();
+    
+    info!(
+        "   => Resolved {} effects ({} parameters randomized, {} explicit)",
+        randomization_log.effects.len(),
+        num_randomized,
+        randomization_log.effects.iter()
+            .map(|e| e.parameters.len())
+            .sum::<usize>() - num_randomized
+    );
+    
+    if args.gallery_quality {
+        info!("   => Gallery quality mode enabled (conservative randomization ranges)");
+    }
 
     // Stage 1: Borda selection
     let (best_bodies, best_info) = app::run_borda_selection(
@@ -325,51 +708,19 @@ fn main() -> Result<()> {
     let bbox = render_ctx.bounds();
     info!("   => X: [{:.3}, {:.3}], Y: [{:.3}, {:.3}]", bbox.min_x, bbox.max_x, bbox.min_y, bbox.max_y);
 
-    // Configure rendering
+    // Configure rendering from resolved parameters
     let render_config = RenderConfig {
-        hdr_scale: if args.hdr_mode == "auto" { args.hdr_scale } else { 1.0 },
+        hdr_scale: if args.hdr_mode == "auto" { resolved_effect_config.hdr_scale } else { 1.0 },
     };
-    
-    let (blur_radius_px, blur_strength, blur_core_brightness) = 
-        app::create_blur_config(args.special, args.width, args.height);
-
-    let dog_config = app::create_dog_config(
-        args.width,
-        args.height,
-        args.dog_sigma,
-        args.dog_ratio,
-        args.dog_strength,
-    );
-
-    let perceptual_blur_enabled = args.perceptual_blur.to_lowercase() == "on";
-    let perceptual_blur_config = app::create_perceptual_blur_config(
-        perceptual_blur_enabled,
-        blur_radius_px,
-        args.perceptual_blur_radius,
-        args.perceptual_blur_strength,
-        &args.perceptual_gamut_mode,
-    );
 
     // Stage 5-6: Build histogram and compute levels
     let levels = app::build_histogram_and_levels(
         &positions,
         &colors,
         &body_alphas,
-        args.width,
-        args.height,
-        blur_radius_px,
-        blur_strength,
-        blur_core_brightness,
-        &args.bloom_mode,
-        &dog_config,
-        &args.hdr_mode,
-        perceptual_blur_enabled,
-        perceptual_blur_config.as_ref(),
-        args.special,
+        &resolved_effect_config,
         noise_seed,
         &render_config,
-        args.clip_black,
-        args.clip_white,
     )?;
 
     let base_filename = app::generate_filename(&args.file_name, &args.profile_tag);
@@ -381,18 +732,8 @@ fn main() -> Result<()> {
             &positions,
             &colors,
             &body_alphas,
-            args.width,
-            args.height,
-            blur_radius_px,
-            blur_strength,
-            blur_core_brightness,
+            &resolved_effect_config,
             &levels,
-            &args.bloom_mode,
-            &dog_config,
-            &args.hdr_mode,
-            perceptual_blur_enabled,
-            perceptual_blur_config.as_ref(),
-            args.special,
             noise_seed,
             &render_config,
             &output_png,
@@ -408,18 +749,8 @@ fn main() -> Result<()> {
         &positions,
         &colors,
         &body_alphas,
-        args.width,
-        args.height,
-        blur_radius_px,
-        blur_strength,
-        blur_core_brightness,
+        &resolved_effect_config,
         &levels,
-        &args.bloom_mode,
-        &dog_config,
-        &args.hdr_mode,
-        perceptual_blur_enabled,
-        perceptual_blur_config.as_ref(),
-        args.special,
         noise_seed,
         &render_config,
         &output_vid,
@@ -469,7 +800,15 @@ fn main() -> Result<()> {
         equil_weight: args.equil_weight,
     };
     
-    app::log_generation(&app_config, &base_filename, hex_seed, &drift_config, num_sims, &best_info);
+    app::log_generation(
+        &app_config,
+        &base_filename,
+        hex_seed,
+        &drift_config,
+        num_sims,
+        &best_info,
+        Some(&randomization_log),
+    );
     
     Ok(())
 }

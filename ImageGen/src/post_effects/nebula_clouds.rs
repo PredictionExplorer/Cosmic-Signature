@@ -40,6 +40,7 @@ impl Default for NebulaCloudConfig {
 
 impl NebulaCloudConfig {
     /// Create configuration for special mode with enhanced atmosphere
+    #[allow(dead_code)] // Legacy helper - kept for backward compatibility
     pub fn special_mode(width: usize, height: usize, seed: i32) -> Self {
         let min_dim = width.min(height) as f64;
         Self {

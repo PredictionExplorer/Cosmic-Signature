@@ -38,6 +38,10 @@ pub struct GenerationRecord {
     
     /// Selected orbit information from Borda selection
     pub orbit_info: OrbitInfo,
+    
+    /// Randomization log (if any parameters were randomized)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub randomization_log: Option<crate::render::effect_randomizer::RandomizationLog>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -106,6 +110,7 @@ impl GenerationRecord {
             drift_config: DriftConfig::default(),
             simulation_config: SimulationConfig::default(),
             orbit_info: OrbitInfo::default(),
+            randomization_log: None,
         }
     }
 }

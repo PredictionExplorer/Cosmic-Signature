@@ -181,6 +181,7 @@ pub fn generate_colors(
 }
 
 /// Create blur configuration based on mode and resolution
+#[allow(dead_code)] // Legacy helper - kept for backward compatibility
 pub fn create_blur_config(special: bool, width: u32, height: u32) -> (usize, f64, f64) {
     if special {
         (
@@ -198,6 +199,7 @@ pub fn create_blur_config(special: bool, width: u32, height: u32) -> (usize, f64
 }
 
 /// Create DoG bloom configuration with resolution-aware sigma
+#[allow(dead_code)] // Legacy helper - kept for backward compatibility
 pub fn create_dog_config(
     width: u32,
     height: u32,
@@ -218,6 +220,7 @@ pub fn create_dog_config(
 }
 
 /// Create perceptual blur configuration
+#[allow(dead_code)] // Legacy helper - kept for backward compatibility
 pub fn create_perceptual_blur_config(
     enabled: bool,
     blur_radius_px: usize,
@@ -243,26 +246,13 @@ pub fn create_perceptual_blur_config(
 }
 
 /// Build histogram and determine color levels
-#[allow(clippy::too_many_arguments)] // Necessary for complete rendering configuration
 pub fn build_histogram_and_levels(
     positions: &[Vec<Vector3<f64>>],
     colors: &[Vec<render::OklabColor>],
     body_alphas: &[f64],
-    width: u32,
-    height: u32,
-    blur_radius_px: usize,
-    blur_strength: f64,
-    blur_core_brightness: f64,
-    bloom_mode: &str,
-    dog_config: &DogBloomConfig,
-    hdr_mode: &str,
-    perceptual_blur_enabled: bool,
-    perceptual_blur_config: Option<&post_effects::PerceptualBlurConfig>,
-    special: bool,
+    resolved_config: &render::randomizable_config::ResolvedEffectConfig,
     noise_seed: i32,
     render_config: &RenderConfig,
-    clip_black: f64,
-    clip_white: f64,
 ) -> Result<ChannelLevels> {
     info!("STAGE 5/7: PASS 1 => building global histogram...");
     
@@ -277,21 +267,11 @@ pub fn build_histogram_and_levels(
         positions,
         colors,
         body_alphas,
-        width,
-        height,
-        blur_radius_px,
-        blur_strength,
-        blur_core_brightness,
+        resolved_config,
         frame_interval,
         &mut all_r,
         &mut all_g,
         &mut all_b,
-        bloom_mode,
-        dog_config,
-        hdr_mode,
-        perceptual_blur_enabled,
-        perceptual_blur_config,
-        special,
         noise_seed,
         render_config,
     );
@@ -301,8 +281,8 @@ pub fn build_histogram_and_levels(
         &mut all_r,
         &mut all_g,
         &mut all_b,
-        clip_black,
-        clip_white,
+        resolved_config.clip_black,
+        resolved_config.clip_white,
     );
     
     info!(
@@ -323,23 +303,13 @@ pub fn generate_filename(base_name: &str, profile_tag: &str) -> String {
 }
 
 /// Render test frame (first frame only)
-#[allow(clippy::too_many_arguments)] // Necessary for complete rendering configuration
+#[allow(clippy::too_many_arguments)] // Core rendering function requires all parameters
 pub fn render_test_frame(
     positions: &[Vec<Vector3<f64>>],
     colors: &[Vec<render::OklabColor>],
     body_alphas: &[f64],
-    width: u32,
-    height: u32,
-    blur_radius_px: usize,
-    blur_strength: f64,
-    blur_core_brightness: f64,
+    resolved_config: &render::randomizable_config::ResolvedEffectConfig,
     levels: &ChannelLevels,
-    bloom_mode: &str,
-    dog_config: &DogBloomConfig,
-    hdr_mode: &str,
-    perceptual_blur_enabled: bool,
-    perceptual_blur_config: Option<&post_effects::PerceptualBlurConfig>,
-    special: bool,
     noise_seed: i32,
     render_config: &RenderConfig,
     output_png: &str,
@@ -351,23 +321,13 @@ pub fn render_test_frame(
         positions,
         colors,
         body_alphas,
-        width,
-        height,
-        blur_radius_px,
-        blur_strength,
-        blur_core_brightness,
+        resolved_config,
         levels.black[0],
         levels.range[0] + levels.black[0],
         levels.black[1],
         levels.range[1] + levels.black[1],
         levels.black[2],
         levels.range[2] + levels.black[2],
-        bloom_mode,
-        dog_config,
-        hdr_mode,
-        perceptual_blur_enabled,
-        perceptual_blur_config,
-        special,
         noise_seed,
         render_config,
     )?;
@@ -385,23 +345,13 @@ pub fn render_test_frame(
 }
 
 /// Render full video
-#[allow(clippy::too_many_arguments)] // Necessary for complete rendering configuration
+#[allow(clippy::too_many_arguments)] // Core rendering function requires all parameters
 pub fn render_video(
     positions: &[Vec<Vector3<f64>>],
     colors: &[Vec<render::OklabColor>],
     body_alphas: &[f64],
-    width: u32,
-    height: u32,
-    blur_radius_px: usize,
-    blur_strength: f64,
-    blur_core_brightness: f64,
+    resolved_config: &render::randomizable_config::ResolvedEffectConfig,
     levels: &ChannelLevels,
-    bloom_mode: &str,
-    dog_config: &DogBloomConfig,
-    hdr_mode: &str,
-    perceptual_blur_enabled: bool,
-    perceptual_blur_config: Option<&post_effects::PerceptualBlurConfig>,
-    special: bool,
     noise_seed: i32,
     render_config: &RenderConfig,
     output_vid: &str,
@@ -417,19 +367,15 @@ pub fn render_video(
     let video_options = VideoEncodingOptions::default();
     
     create_video_from_frames_singlepass(
-        width,
-        height,
+        resolved_config.width,
+        resolved_config.height,
         frame_rate,
         |out| {
             pass_2_write_frames_spectral(
                 positions,
                 colors,
                 body_alphas,
-                width,
-                height,
-                blur_radius_px,
-                blur_strength,
-                blur_core_brightness,
+                resolved_config,
                 frame_interval,
                 levels.black[0],
                 levels.range[0] + levels.black[0],
@@ -437,12 +383,6 @@ pub fn render_video(
                 levels.range[1] + levels.black[1],
                 levels.black[2],
                 levels.range[2] + levels.black[2],
-                bloom_mode,
-                dog_config,
-                hdr_mode,
-                perceptual_blur_enabled,
-                perceptual_blur_config,
-                special,
                 noise_seed,
                 |buf_8bit| {
                     out.write_all(buf_8bit).map_err(render::error::RenderError::VideoEncoding)?;
@@ -476,6 +416,7 @@ pub fn log_generation(
     drift_config: &Option<ResolvedDriftConfig>,
     num_sims: usize,
     best_info: &TrajectoryResult,
+    randomization_log: Option<&render::effect_randomizer::RandomizationLog>,
 ) {
     let logger = GenerationLogger::new();
     
@@ -542,6 +483,9 @@ pub fn log_generation(
         total_candidates: num_sims,
         discarded_count: 0,
     };
+    
+    // Include randomization log if provided
+    record.randomization_log = randomization_log.cloned();
     
     logger.log_generation(record);
 }
