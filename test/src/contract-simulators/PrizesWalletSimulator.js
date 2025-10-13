@@ -46,16 +46,18 @@ const { assertEvent } = require("../../../src/ContractTestingHelpers.js");
 			expect(value_).equal(ethDeposits_.reduce((amountSum_, ethDeposit_) => (amountSum_ + ethDeposit_.amount), 0n));
 			for (let ethDepositIndex_ = ethDeposits_.length; ( -- ethDepositIndex_ ) >= 0; ) {
 				const ethDeposit_ = ethDeposits_[ethDepositIndex_];
-				this.depositEth(roundNum_, ethDeposit_.prizeWinnerAddress, ethDeposit_.amount, contracts_, transactionReceipt_, eventIndexWrapper_);
+				this.depositEth(roundNum_, BigInt(ethDepositIndex_), ethDeposit_.prizeWinnerAddress, ethDeposit_.amount, contracts_, transactionReceipt_, eventIndexWrapper_);
 			}
 		},
 
 		// #endregion
 		// #region `depositEth`
 
-		depositEth: function(roundNum_, prizeWinnerAddress_, amount_, contracts_, transactionReceipt_, eventIndexWrapper_) {
+		depositEth: function(roundNum_, prizeWinnerIndex_, prizeWinnerAddress_, amount_, contracts_, transactionReceipt_, eventIndexWrapper_) {
 			expect(typeof roundNum_).equal("bigint");
 			expect(roundNum_).greaterThanOrEqual(0n);
+			expect(typeof prizeWinnerIndex_).equal("bigint");
+			expect(prizeWinnerIndex_).greaterThanOrEqual(0n);
 			// assertAddressIsValid(prizeWinnerAddress_);
 			expect(prizeWinnerAddress_).not.equal(hre.ethers.ZeroAddress);
 			expect(typeof amount_).equal("bigint");
@@ -73,7 +75,7 @@ const { assertEvent } = require("../../../src/ContractTestingHelpers.js");
 				transactionReceipt_.logs[eventIndexWrapper_.value],
 				contracts_.prizesWallet,
 				"EthReceived",
-				[roundNum_, prizeWinnerAddress_, amount_,]
+				[roundNum_, prizeWinnerIndex_, prizeWinnerAddress_, amount_,]
 			);
 			++ eventIndexWrapper_.value;
 		},

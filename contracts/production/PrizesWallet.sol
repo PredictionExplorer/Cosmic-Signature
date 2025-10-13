@@ -106,7 +106,7 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 			-- ethDepositIndex_;
 			EthDeposit calldata ethDepositReference_ = ethDeposits_[ethDepositIndex_];
 			// #enable_asserts amountSum_ += ethDepositReference_.amount;
-			_depositEth(roundNum_, ethDepositReference_.prizeWinnerAddress, ethDepositReference_.amount);
+			_depositEth(roundNum_, ethDepositIndex_, ethDepositReference_.prizeWinnerAddress, ethDepositReference_.amount);
 		}
 		// #enable_asserts assert(amountSum_ == msg.value);
 		return roundTimeoutTimeToWithdrawPrizes_;
@@ -159,14 +159,14 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 	// #endregion
 	// #region `depositEth`
 
-	function depositEth(uint256 roundNum_, address prizeWinnerAddress_) external payable override nonReentrant _onlyGame {
-		_depositEth(roundNum_, prizeWinnerAddress_, msg.value);
+	function depositEth(uint256 roundNum_, uint256 prizeWinnerIndex_, address prizeWinnerAddress_) external payable override nonReentrant _onlyGame {
+		_depositEth(roundNum_, prizeWinnerIndex_, prizeWinnerAddress_, msg.value);
 	}
 
 	// #endregion
 	// #region `_depositEth`
 
-	function _depositEth(uint256 roundNum_, address prizeWinnerAddress_, uint256 amount_) private {
+	function _depositEth(uint256 roundNum_, uint256 prizeWinnerIndex_, address prizeWinnerAddress_, uint256 amount_) private {
 		// #enable_asserts assert(prizeWinnerAddress_ != address(0));
 		EthBalanceInfo storage ethBalanceInfoReference_ = _ethBalancesInfo[uint160(prizeWinnerAddress_)];
 
@@ -184,7 +184,7 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 		// This will not overflow because ETH total supply is limited.
 		ethBalanceInfoReference_.amount += amount_;
 
-		emit EthReceived(roundNum_, prizeWinnerAddress_, amount_);
+		emit EthReceived(roundNum_, prizeWinnerIndex_, prizeWinnerAddress_, amount_);
 	}
 
 	// #endregion

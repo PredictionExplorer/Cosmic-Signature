@@ -113,7 +113,7 @@ describe("PrizesWallet-2", function () {
 					transactionReceipt_.logs[3 - counter_],
 					newPrizesWallet_,
 					"EthReceived",
-					[0n, contracts_.signers[counter_].address, BigInt(1 << counter_) * 10n ** (18n - 3n),]
+					[0n, BigInt(counter_), contracts_.signers[counter_].address, BigInt(1 << counter_) * 10n ** (18n - 3n),]
 				);
 			}
 		}
@@ -348,7 +348,7 @@ describe("PrizesWallet-2", function () {
 			.revertedWithCustomError(newPrizesWallet_, "UnauthorizedCaller")
 			.withArgs("Only the CosmicSignatureGame contract is permitted to call this method.", contracts_.signers[1].address);
 
-		transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[1]).depositEth(0n, contracts_.signers[2].address, {value: 0n,});
+		transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[1]).depositEth(0n, 0n, contracts_.signers[2].address, {value: 0n,});
 		await expect(transactionResponsePromise_)
 			.revertedWithCustomError(newPrizesWallet_, "UnauthorizedCaller")
 			.withArgs("Only the CosmicSignatureGame contract is permitted to call this method.", contracts_.signers[1].address);

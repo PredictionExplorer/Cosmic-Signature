@@ -94,12 +94,21 @@ interface IPrizesWallet is IAddressValidator {
 	/// @notice Emitted when an ETH prize is received for a prize winner.
 	/// This is used only for secondary prizes.
 	/// @param roundNum The current bidding round number.
+	/// @param prizeWinnerIndex Prize winner index.
+	/// [Comment-202511099]
+	/// This is the ETH deposit ID that Comment-202511097 is talking about.
+	/// [/Comment-202511099]
 	/// @param prizeWinnerAddress Prize winner address.
 	/// @param amount ETH amount.
 	/// It can potentially be zero.
 	/// @dev Issue. This event is kinda redundant, given that `CosmicSignatureGame` already emits
 	/// a more specific event for each ETH deposit. But Nick is saying that he does need it.
-	event EthReceived(uint256 indexed roundNum, address indexed prizeWinnerAddress, uint256 amount);
+	event EthReceived(
+		uint256 indexed roundNum,
+		uint256 prizeWinnerIndex,
+		address indexed prizeWinnerAddress,
+		uint256 amount
+	);
 
 	/// @notice Emitted when someone withdraws ETH.
 	/// @param prizeWinnerAddress Prize winner address.
@@ -218,9 +227,11 @@ interface IPrizesWallet is IAddressValidator {
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
 	/// It's OK if `msg.value` is zero.
 	/// @param roundNum_ The current bidding round number.
+	/// @param prizeWinnerIndex_ Prize winner index.
+	/// Comment-202511099 applies.
 	/// @param prizeWinnerAddress_ Prize winner address.
 	/// @dev Comment-202502076 applies.
-	function depositEth(uint256 roundNum_, address prizeWinnerAddress_) external payable;
+	function depositEth(uint256 roundNum_, uint256 prizeWinnerIndex_, address prizeWinnerAddress_) external payable;
 
 	/// @notice A prize winner calls this method to withdraw their ETH balance.
 	/// Only the winner is permitted to call this method.

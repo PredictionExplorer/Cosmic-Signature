@@ -177,7 +177,7 @@ A user also can force-send ETH to the Game contract by `selfdestruct`ing a contr
 
 - While a round is active, a user can place an ETH bid. The current ETH bid price, or a half of it if an RWLK was provided, is transferred to the Game contract.
 
-- At the end of each round, a half of the Game contract ETH balance is awarded to various beneficiaries: main prize winner gets paid directly to their address; CSN staking awards are transferred to `StakingWalletCosmicSignatureNft`; ETH to be donated to charity is tansferred to `CharityWallet`; other winners' ETH prizes, including any secondary prizes won by main prize winner, are transferred to `PrizesWallet`.
+- At the end of each round, a half of the Game contract ETH balance is awarded to various beneficiaries: main prize winner gets paid directly to their address; CSN staking awards are transferred to `StakingWalletCosmicSignatureNft`; ETH to be donated to charity is transferred to `CharityWallet`; other winners' ETH prizes, including any secondary prizes won by main prize winner, are transferred to `PrizesWallet`.
 
 - At any time, a user can withdraw their ETH balance from `PrizesWallet`. After a timeout, anybody is allowed to withdraw unclaimed assets from there.
 

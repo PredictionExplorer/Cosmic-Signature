@@ -29,31 +29,38 @@ interface ISecondaryPrizes is ICosmicSignatureGameStorage {
 		uint256 indexed prizeCosmicSignatureNftId
 	);
 
-	/// @notice Emitted when the Chrono-Warrior ETH prize becomes available to be withdrawn.
+	/// @notice Emitted when Chrono-Warrior receives their prize.
 	/// The ETH is transferred to `prizesWallet`.
 	/// @param roundNum The current bidding round number.
+	/// @param winnerIndex Winner index.
+	/// [Comment-202511097]
+	/// It's unique per round across `ChronoWarriorPrizePaid` and `RaffleWinnerBidderEthPrizeAllocated` events --
+	/// to act as `PrizesWallet` ETH deposit ID.
+	/// [/Comment-202511097]
 	/// @param chronoWarriorAddress Chrono-Warrior address.
 	/// @param ethPrizeAmount The ETH prize amount.
 	/// It can potentially be zero.
-	/// @dev
-	/// [Comment-202412189]
-	/// Using the word "Allocated" instead of something like "Paid" because we transfer the ETH to `prizesWallet`,
-	/// rather than to the winner directly.
-	/// [/Comment-202412189]
-	event ChronoWarriorEthPrizeAllocated(
+	/// @param cstPrizeAmount The amount of the Cosmic Signature Token minted and awarded.
+	/// @param prizeCosmicSignatureNftId The ID of the Cosmic Signature NFT minted and awarded.
+	event ChronoWarriorPrizePaid(
 		uint256 indexed roundNum,
+		uint256 winnerIndex,
 		address indexed chronoWarriorAddress,
-		uint256 ethPrizeAmount
+		uint256 ethPrizeAmount,
+		uint256 cstPrizeAmount,
+		uint256 indexed prizeCosmicSignatureNftId
 	);
 
 	/// @notice Emitted when a raffle winner among bidders ETH prize becomes available to be withdrawn.
 	/// The ETH is transferred to `prizesWallet`.
 	/// @param roundNum The current bidding round number.
 	/// @param winnerIndex Winner index.
+	/// Comment-202511097 applies.
 	/// @param winnerAddress Winner address.
 	/// @param ethPrizeAmount The ETH prize amount.
 	/// It can potentially be zero.
-	/// @dev Comment-202412189 applies.
+	/// @dev Using the word "Allocated" instead of something like "Paid" because we transfer the ETH to `prizesWallet`,
+	/// rather than to the winner directly.
 	event RaffleWinnerBidderEthPrizeAllocated(
 		uint256 indexed roundNum,
 		uint256 winnerIndex,
@@ -61,17 +68,21 @@ interface ISecondaryPrizes is ICosmicSignatureGameStorage {
 		uint256 ethPrizeAmount
 	);
 
-	/// @notice Emitted when a raffle winner receives their Cosmic Signature NFT prize.
+	/// @notice Emitted when a raffle winner receives their prize.
 	/// @param roundNum The current bidding round number.
 	/// @param winnerIsRandomWalkNftStaker Whether the winner is a Random Walk NFT staker or a bidder.
 	/// @param winnerIndex Winner index.
+	/// Unique among all events of this type per unique combination of `roundNum` and `winnerIsRandomWalkNftStaker`.
+	/// Comment-202511097 does not apply.
 	/// @param winnerAddress Winner address.
+	/// @param cstPrizeAmount The amount of the Cosmic Signature Token minted and awarded.
 	/// @param prizeCosmicSignatureNftId The ID of the Cosmic Signature NFT minted and awarded.
-	event RaffleWinnerCosmicSignatureNftAwarded(
+	event RaffleWinnerPrizePaid(
 		uint256 indexed roundNum,
 		bool winnerIsRandomWalkNftStaker,
 		uint256 winnerIndex,
 		address indexed winnerAddress,
+		uint256 cstPrizeAmount,
 		uint256 indexed prizeCosmicSignatureNftId
 	);
 

@@ -63,18 +63,22 @@ These roles are maintained in `BidStatistics`:
 
 #### Example 2: Prize Distribution
 **Scenario**: Round ends with 10 ETH contract balance, 50 total bids
-- Main prize (25%): 2.5 ETH → Last bidder
-- Chrono-Warrior (7%): 0.7 ETH → Longest EC streak holder
-- Bidder raffles (5% ÷ 3): 0.166 ETH each → 3 random bidders
-- CSN staking (10%): 1 ETH → Distributed to all CSN stakers
-- Charity (10%): 1 ETH → Charity address
-- Remaining (43%): 4.3 ETH → Stays for next round
+- Main Prize (25%): 2.5 ETH → Last Bidder
+- Chrono-Warrior (8%): 0.8 ETH → longest EC streak holder
+- Bidder Raffles (4% ÷ 3): 0.133 ETH each → 3 random bidders
+- CSN Staking (6%): 0.6 ETH → distributed to all CSN stakers
+- Charity (7%): 0.7 ETH → Charity Wallet
+- Remaining (50%): 5 ETH → stays for the next round
 
 **CST rewards**:
-- Each bidder: 100 CST immediate reward
-- Endurance Champion: 50 × 10 = 500 CST bonus
-- Last CST bidder: 50 × 10 = 500 CST bonus
-- Marketing wallet: 1000 CST
+- Each Bidder (when placing a bid): 100 CST immediate reward
+- Last Bidder: 1000 CST bonus
+- Last CST Bidder: 1000 CST bonus
+- Endurance Champion: 1000 CST bonus
+- Chrono-Warrior: 1000 CST bonus
+- Bidders: 1000 CST bonus to each of 10 randomly picked bidders
+- Random Walk NFT Stakers: 1000 CST bonus to each of 10 randomly picked Random Walk NFT stakers
+- Marketing Wallet: 3000 CST
 
 #### Example 3: Champions Tracking
 **Detailed timeline with timestamps**:
@@ -108,4 +112,3 @@ Round ends at t=2000:
   - Final EC: David (if he remained last bidder)
   - Final CW: Evaluated comparing all chrono windows
 ```
-
