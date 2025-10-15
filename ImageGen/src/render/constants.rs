@@ -176,7 +176,8 @@ pub const ENERGY_DENSITY_SHIFT_STRENGTH: f64 = 0.75;  // Increased from 0.35 for
 
 // ========== Video Encoding Constants ==========
 
-/// Default video bitrate for high quality output
+/// Default video bitrate for high quality output (legacy, no longer used)
+#[allow(dead_code)]
 pub const DEFAULT_VIDEO_BITRATE: &str = "100M";
 
 /// Default video framerate
@@ -185,10 +186,12 @@ pub const DEFAULT_VIDEO_FPS: u32 = 60;
 /// Default target duration in frames (~30 seconds at 60 FPS)
 pub const DEFAULT_TARGET_FRAMES: u32 = 1800;
 
-/// Default video codec
+/// Default video codec (legacy, no longer used - now using H.265)
+#[allow(dead_code)]
 pub const DEFAULT_VIDEO_CODEC: &str = "libx264";
 
-/// Default pixel format for compatibility
+/// Default pixel format for compatibility (legacy, no longer used - now using 10-bit formats)
+#[allow(dead_code)]
 pub const DEFAULT_PIXEL_FORMAT: &str = "yuv420p";
 
 // ========== Simulation Constants ==========

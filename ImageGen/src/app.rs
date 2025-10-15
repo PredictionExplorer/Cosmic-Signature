@@ -12,7 +12,7 @@ use crate::oklab;
 use crate::post_effects;
 use crate::render::{
     self, constants, generate_body_color_sequences,
-    save_image_as_png, ChannelLevels, DogBloomConfig, RenderConfig,
+    save_image_as_png_16bit, ChannelLevels, DogBloomConfig, RenderConfig,
     VideoEncodingOptions, compute_black_white_gamma,
     pass_1_build_histogram_spectral, pass_2_write_frames_spectral,
     render_single_frame_spectral, create_video_from_frames_singlepass,
@@ -333,9 +333,9 @@ pub fn render_test_frame(
     )?;
     
     info!("Saving test frame to: {}", output_png);
-    save_image_as_png(&test_frame, output_png)?;
+    save_image_as_png_16bit(&test_frame, output_png)?;
     
-    info!("✓ Test frame saved successfully!");
+    info!("✓ Test frame saved successfully (16-bit PNG)!");
     info!(
         "Best orbit => Weighted Borda = {:.3}\nTest complete!",
         best_info.total_score_weighted
@@ -356,15 +356,24 @@ pub fn render_video(
     render_config: &RenderConfig,
     output_vid: &str,
     output_png: &str,
+    fast_encode: bool,
 ) -> Result<()> {
-    info!("STAGE 7/7: PASS 2 => final frames => video...");
+    if fast_encode {
+        info!("STAGE 7/7: PASS 2 => final frames => video (FAST ENCODE MODE)...");
+    } else {
+        info!("STAGE 7/7: PASS 2 => final frames => video (HIGH QUALITY MODE)...");
+    }
     
     let frame_rate = constants::DEFAULT_VIDEO_FPS;
     let target_frames = constants::DEFAULT_TARGET_FRAMES;
     let frame_interval = (positions[0].len() / target_frames as usize).max(1);
     
-    let mut last_frame_png: Option<ImageBuffer<Rgb<u8>, Vec<u8>>> = None;
-    let video_options = VideoEncodingOptions::default();
+    let mut last_frame_png: Option<ImageBuffer<Rgb<u16>, Vec<u16>>> = None;
+    let video_options = if fast_encode {
+        VideoEncodingOptions::fast_encode()
+    } else {
+        VideoEncodingOptions::default()
+    };
     
     create_video_from_frames_singlepass(
         resolved_config.width,
@@ -399,8 +408,8 @@ pub fn render_video(
     
     // Save final frame
     if let Some(last_frame) = last_frame_png {
-        info!("Attempting to save PNG to: {}", output_png);
-        save_image_as_png(&last_frame, output_png)?;
+        info!("Attempting to save 16-bit PNG to: {}", output_png);
+        save_image_as_png_16bit(&last_frame, output_png)?;
     } else {
         warn!("Warning: No final frame was generated to save as PNG.");
     }

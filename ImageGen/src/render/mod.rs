@@ -69,17 +69,19 @@ impl Default for RenderConfig {
     }
 }
 
+/// Core tonemapping function (shared logic for both 8-bit and 16-bit)
+/// Returns final RGB channels in 0.0-1.0 range
 #[inline]
-fn tonemap_to_8bit(fr: f64, fg: f64, fb: f64, fa: f64, levels: &ChannelLevels) -> [u8; 3] {
+fn tonemap_core(fr: f64, fg: f64, fb: f64, fa: f64, levels: &ChannelLevels) -> [f64; 3] {
     let alpha = fa.clamp(0.0, 1.0);
     if alpha <= 0.0 {
-        return [0, 0, 0];
+        return [0.0, 0.0, 0.0];
     }
 
     let source = [fr.max(0.0), fg.max(0.0), fb.max(0.0)];
     let premult = [source[0] * alpha, source[1] * alpha, source[2] * alpha];
     if premult[0] <= 0.0 && premult[1] <= 0.0 && premult[2] <= 0.0 {
-        return [0, 0, 0];
+        return [0.0, 0.0, 0.0];
     }
 
     let mut leveled = [0.0; 3];
@@ -96,7 +98,7 @@ fn tonemap_to_8bit(fr: f64, fg: f64, fb: f64, fa: f64, levels: &ChannelLevels) -
         0.2126 * channel_curves[0] + 0.7152 * channel_curves[1] + 0.0722 * channel_curves[2];
 
     if target_luma <= 0.0 {
-        return [0, 0, 0];
+        return [0.0, 0.0, 0.0];
     }
 
     let straight_luma = 0.2126 * source[0] + 0.7152 * source[1] + 0.0722 * source[2];
@@ -129,18 +131,37 @@ fn tonemap_to_8bit(fr: f64, fg: f64, fb: f64, fa: f64, levels: &ChannelLevels) -
         }
     }
 
+    final_channels
+}
+
+/// Tonemap to 8-bit (for legacy support, not currently used)
+#[allow(dead_code)]
+#[inline]
+fn tonemap_to_8bit(fr: f64, fg: f64, fb: f64, fa: f64, levels: &ChannelLevels) -> [u8; 3] {
+    let channels = tonemap_core(fr, fg, fb, fa, levels);
     [
-        (final_channels[0] * 255.0).round().clamp(0.0, 255.0) as u8,
-        (final_channels[1] * 255.0).round().clamp(0.0, 255.0) as u8,
-        (final_channels[2] * 255.0).round().clamp(0.0, 255.0) as u8,
+        (channels[0] * 255.0).round().clamp(0.0, 255.0) as u8,
+        (channels[1] * 255.0).round().clamp(0.0, 255.0) as u8,
+        (channels[2] * 255.0).round().clamp(0.0, 255.0) as u8,
     ]
 }
 
-/// Save single image as PNG
-pub fn save_image_as_png(rgb_img: &ImageBuffer<Rgb<u8>, Vec<u8>>, path: &str) -> Result<()> {
-    let dyn_img = DynamicImage::ImageRgb8(rgb_img.clone());
+/// Tonemap to 16-bit (primary output format for maximum precision)
+#[inline]
+fn tonemap_to_16bit(fr: f64, fg: f64, fb: f64, fa: f64, levels: &ChannelLevels) -> [u16; 3] {
+    let channels = tonemap_core(fr, fg, fb, fa, levels);
+    [
+        (channels[0] * 65535.0).round().clamp(0.0, 65535.0) as u16,
+        (channels[1] * 65535.0).round().clamp(0.0, 65535.0) as u16,
+        (channels[2] * 65535.0).round().clamp(0.0, 65535.0) as u16,
+    ]
+}
+
+/// Save 16-bit image as PNG
+pub fn save_image_as_png_16bit(rgb_img: &ImageBuffer<Rgb<u16>, Vec<u16>>, path: &str) -> Result<()> {
+    let dyn_img = DynamicImage::ImageRgb16(rgb_img.clone());
     dyn_img.save(path).map_err(|e| RenderError::ImageEncoding(e.to_string()))?;
-    info!("   Saved PNG => {path}");
+    info!("   Saved 16-bit PNG => {path}");
     Ok(())
 }
 
@@ -771,7 +792,7 @@ pub fn pass_1_build_histogram_spectral(
 }
 
 // ====================== PASS 2 (SPECTRAL) ===========================
-/// Pass 2: final frames => color mapping => write frames (spectral)
+/// Pass 2: final frames => color mapping => write frames (spectral, 16-bit output)
 #[allow(clippy::too_many_arguments)] // Low-level rendering primitive requires all parameters
 pub fn pass_2_write_frames_spectral(
     positions: &[Vec<Vector3<f64>>],
@@ -787,7 +808,7 @@ pub fn pass_2_write_frames_spectral(
     white_b: f64,
     noise_seed: i32,
     mut frame_sink: impl FnMut(&[u8]) -> Result<()>,
-    last_frame_out: &mut Option<ImageBuffer<Rgb<u8>, Vec<u8>>>,
+    last_frame_out: &mut Option<ImageBuffer<Rgb<u16>, Vec<u16>>>,
     render_config: &RenderConfig,
 ) -> Result<()> {
     let width = resolved_config.width;
@@ -902,20 +923,28 @@ pub fn pass_2_write_frames_spectral(
             // Composite nebula background UNDER trajectory foreground
             let final_frame_pixels = composite_buffers(&nebula_background, &trajectory_pixels);
 
-            // levels + ACES tonemapping
-            let mut buf_8bit = vec![0u8; ctx.pixel_count() * 3];
-            buf_8bit.par_chunks_mut(3).zip(final_frame_pixels.par_iter()).for_each(
+            // levels + ACES tonemapping to 16-bit
+            let mut buf_16bit = vec![0u16; ctx.pixel_count() * 3];
+            buf_16bit.par_chunks_mut(3).zip(final_frame_pixels.par_iter()).for_each(
                 |(chunk, &(fr, fg, fb, fa))| {
-                    let mapped = tonemap_to_8bit(fr, fg, fb, fa, &levels);
+                    let mapped = tonemap_to_16bit(fr, fg, fb, fa, &levels);
                     chunk[0] = mapped[0];
                     chunk[1] = mapped[1];
                     chunk[2] = mapped[2];
                 },
             );
 
-            frame_sink(&buf_8bit)?;
+            // Convert u16 buffer to bytes for FFmpeg (little-endian rgb48le format)
+            let buf_bytes = unsafe {
+                std::slice::from_raw_parts(
+                    buf_16bit.as_ptr() as *const u8,
+                    buf_16bit.len() * 2,
+                )
+            };
+
+            frame_sink(buf_bytes)?;
             if is_final {
-                *last_frame_out = ImageBuffer::from_raw(width, height, buf_8bit);
+                *last_frame_out = ImageBuffer::from_raw(width, height, buf_16bit);
             }
         }
     }
@@ -924,7 +953,7 @@ pub fn pass_2_write_frames_spectral(
 }
 
 // ====================== SINGLE FRAME RENDERING ===========================
-/// Render a single test frame (first frame only) for quick testing
+/// Render a single test frame (first frame only) for quick testing (16-bit output)
 #[allow(clippy::too_many_arguments)] // Low-level rendering primitive requires all parameters
 pub fn render_single_frame_spectral(
     positions: &[Vec<Vector3<f64>>],
@@ -939,7 +968,7 @@ pub fn render_single_frame_spectral(
     white_b: f64,
     noise_seed: i32,
     render_config: &RenderConfig,
-) -> Result<ImageBuffer<Rgb<u8>, Vec<u8>>> {
+) -> Result<ImageBuffer<Rgb<u16>, Vec<u16>>> {
     info!("   Rendering first frame only (test mode)...");
     
     let width = resolved_config.width;
@@ -1043,11 +1072,11 @@ pub fn render_single_frame_spectral(
     // Composite nebula under trajectories
     let final_pixels = composite_buffers(&nebula_background, &trajectory_pixels);
 
-    // Tonemap to 8-bit
-    let mut buf_8bit = vec![0u8; ctx.pixel_count() * 3];
-    buf_8bit.par_chunks_mut(3).zip(final_pixels.par_iter()).for_each(
+    // Tonemap to 16-bit
+    let mut buf_16bit = vec![0u16; ctx.pixel_count() * 3];
+    buf_16bit.par_chunks_mut(3).zip(final_pixels.par_iter()).for_each(
         |(chunk, &(fr, fg, fb, fa))| {
-            let mapped = tonemap_to_8bit(fr, fg, fb, fa, &levels);
+            let mapped = tonemap_to_16bit(fr, fg, fb, fa, &levels);
             chunk[0] = mapped[0];
             chunk[1] = mapped[1];
             chunk[2] = mapped[2];
@@ -1055,8 +1084,8 @@ pub fn render_single_frame_spectral(
     );
 
     // Create ImageBuffer and return
-    let image = ImageBuffer::from_raw(width, height, buf_8bit)
-        .ok_or_else(|| RenderError::ImageEncoding("Failed to create image buffer".to_string()))?;
+    let image = ImageBuffer::from_raw(width, height, buf_16bit)
+        .ok_or_else(|| RenderError::ImageEncoding("Failed to create 16-bit image buffer".to_string()))?;
     
     Ok(image)
 }

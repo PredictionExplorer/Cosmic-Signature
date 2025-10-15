@@ -84,6 +84,11 @@ struct Args {
     #[arg(long, default_value_t = false)]
     test_frame: bool,
 
+    /// Fast encode mode: use hardware acceleration (3-5× faster, slightly lower quality)
+    /// Default is high-quality mode with H.265, 10-bit color, and perceptual optimization
+    #[arg(long, default_value_t = false)]
+    fast_encode: bool,
+
     /// Denominator for alpha used in drawing lines
     #[arg(long, default_value_t = 15_000_000)]
     alpha_denom: usize,
@@ -775,6 +780,7 @@ fn main() -> Result<()> {
         &render_config,
         &output_vid,
         &output_png,
+        args.fast_encode,
     )?;
 
     info!(
