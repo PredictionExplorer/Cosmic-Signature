@@ -345,6 +345,10 @@ struct Args {
     #[arg(long)]
     param_gradient_map_hue_preservation: Option<f64>,
 
+    /// Gradient map palette selection (0-14: 0=GoldPurple, 1=CosmicTealPink, 2=AmberCyan, 3=IndigoGold, 4=BlueOrange, 5=VenetianRenaissance, 6=JapaneseUkiyoe, 7=ArtNouveau, 8=LunarOpal, 9=FireOpal, 10=DeepOcean, 11=AuroraBorealis, 12=MoltenMetal, 13=AncientJade, 14=RoyalAmethyst)
+    #[arg(long)]
+    param_gradient_map_palette: Option<usize>,
+
     // ==== Opalescence Parameters ====
     
     /// Opalescence strength (if not specified, randomized in range 0.0-0.35)
@@ -436,6 +440,18 @@ struct Args {
     /// Atmospheric darkening (if not specified, randomized in range 0.0-0.35)
     #[arg(long)]
     param_atmospheric_darkening: Option<f64>,
+
+    /// Atmospheric fog color red component (if not specified, randomized in range 0.0-0.30)
+    #[arg(long)]
+    param_atmospheric_fog_color_r: Option<f64>,
+
+    /// Atmospheric fog color green component (if not specified, randomized in range 0.0-0.30)
+    #[arg(long)]
+    param_atmospheric_fog_color_g: Option<f64>,
+
+    /// Atmospheric fog color blue component (if not specified, randomized in range 0.0-0.30)
+    #[arg(long)]
+    param_atmospheric_fog_color_b: Option<f64>,
 
     // ==== Fine Texture Parameters ====
     
@@ -559,6 +575,7 @@ fn build_randomizable_config(args: &Args) -> render::randomizable_config::Random
         // Gradient mapping
         gradient_map_strength: args.param_gradient_map_strength,
         gradient_map_hue_preservation: args.param_gradient_map_hue_preservation,
+        gradient_map_palette: args.param_gradient_map_palette,
 
         // Opalescence
         opalescence_strength: args.param_opalescence_strength,
@@ -591,6 +608,9 @@ fn build_randomizable_config(args: &Args) -> render::randomizable_config::Random
         atmospheric_depth_strength: args.param_atmospheric_depth_strength,
         atmospheric_desaturation: args.param_atmospheric_desaturation,
         atmospheric_darkening: args.param_atmospheric_darkening,
+        atmospheric_fog_color_r: args.param_atmospheric_fog_color_r,
+        atmospheric_fog_color_g: args.param_atmospheric_fog_color_g,
+        atmospheric_fog_color_b: args.param_atmospheric_fog_color_b,
 
         // Fine texture
         fine_texture_strength: args.param_fine_texture_strength,

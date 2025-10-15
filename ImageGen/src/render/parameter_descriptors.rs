@@ -56,8 +56,8 @@ impl IntParamDescriptor {
 
 pub const BLUR_STRENGTH: FloatParamDescriptor = FloatParamDescriptor {
     name: "blur_strength",
-    min: 1.5,    // Widened from 4.0 - subtle/minimal bloom
-    max: 28.0,   // Widened from 18.0 - extreme bloom (guarded by performance check)
+    min: 0.8,    // Ultra-exploratory: ultra-subtle bloom
+    max: 35.0,   // Ultra-exploratory: extreme bloom (guarded by performance check)
     gallery_min: 6.0,
     gallery_max: 14.0,
     description: "Strength of Gaussian blur bloom effect",
@@ -83,8 +83,8 @@ pub const BLUR_CORE_BRIGHTNESS: FloatParamDescriptor = FloatParamDescriptor {
 
 pub const DOG_STRENGTH: FloatParamDescriptor = FloatParamDescriptor {
     name: "dog_strength",
-    min: 0.08,   // Widened from 0.15 - very subtle
-    max: 0.80,   // Widened from 0.60 - intense
+    min: 0.0,    // Ultra-exploratory: full spectrum from none to extreme
+    max: 0.95,   // Ultra-exploratory: maximum DoG effect
     gallery_min: 0.25,
     gallery_max: 0.45,
     description: "Difference-of-Gaussians bloom strength",
@@ -110,8 +110,8 @@ pub const DOG_RATIO: FloatParamDescriptor = FloatParamDescriptor {
 
 pub const GLOW_STRENGTH: FloatParamDescriptor = FloatParamDescriptor {
     name: "glow_strength",
-    min: 0.05,   // Widened from 0.15 - barely visible
-    max: 0.95,   // Widened from 0.70 - maximum glow
+    min: 0.0,    // Ultra-exploratory: full 0-100% range
+    max: 1.0,    // Ultra-exploratory: maximum glow possible
     gallery_min: 0.20,
     gallery_max: 0.55,
     description: "Tight glow enhancement strength",
@@ -119,8 +119,8 @@ pub const GLOW_STRENGTH: FloatParamDescriptor = FloatParamDescriptor {
 
 pub const GLOW_THRESHOLD: FloatParamDescriptor = FloatParamDescriptor {
     name: "glow_threshold",
-    min: 0.25,   // Widened from 0.50 - glow activates on dimmer areas
-    max: 0.95,   // Widened from 0.85 - only brightest pixels glow
+    min: 0.15,   // Ultra-exploratory: almost everything glows
+    max: 0.98,   // Ultra-exploratory: almost nothing glows
     gallery_min: 0.60,
     gallery_max: 0.75,
     description: "Luminance threshold for glow activation",
@@ -158,8 +158,8 @@ pub const GLOW_SATURATION_BOOST: FloatParamDescriptor = FloatParamDescriptor {
 
 pub const CHROMATIC_BLOOM_STRENGTH: FloatParamDescriptor = FloatParamDescriptor {
     name: "chromatic_bloom_strength",
-    min: 0.20,   // Widened from 0.35 - subtle chromatic effect
-    max: 0.95,   // Widened from 0.85 - extreme prismatic separation
+    min: 0.10,   // Ultra-exploratory: barely visible chromatic aberration
+    max: 1.0,    // Ultra-exploratory: full prismatic separation
     gallery_min: 0.50,
     gallery_max: 0.75,
     description: "Prismatic color separation strength",
@@ -176,8 +176,8 @@ pub const CHROMATIC_BLOOM_RADIUS_SCALE: FloatParamDescriptor = FloatParamDescrip
 
 pub const CHROMATIC_BLOOM_SEPARATION_SCALE: FloatParamDescriptor = FloatParamDescriptor {
     name: "chromatic_bloom_separation_scale",
-    min: 0.0010, // Widened from 0.0015 - minimal separation
-    max: 0.0050, // Widened from 0.0035 - extreme RGB offset
+    min: 0.0005, // Ultra-exploratory: ultra-tight chromatic effect
+    max: 0.0070, // Ultra-exploratory: extreme RGB offset
     gallery_min: 0.0018,
     gallery_max: 0.0028,
     description: "RGB channel separation distance scale",
@@ -219,7 +219,7 @@ pub const COLOR_GRADE_STRENGTH: FloatParamDescriptor = FloatParamDescriptor {
 pub const VIGNETTE_STRENGTH: FloatParamDescriptor = FloatParamDescriptor {
     name: "vignette_strength",
     min: 0.0,    // Already at natural minimum (no vignette)
-    max: 0.90,   // Widened from 0.65 - extreme darkness
+    max: 0.95,   // Ultra-exploratory: near-total edge darkness
     gallery_min: 0.25,
     gallery_max: 0.55,
     description: "Vignette darkness strength",
@@ -227,8 +227,8 @@ pub const VIGNETTE_STRENGTH: FloatParamDescriptor = FloatParamDescriptor {
 
 pub const VIGNETTE_SOFTNESS: FloatParamDescriptor = FloatParamDescriptor {
     name: "vignette_softness",
-    min: 1.3,    // Widened from 1.8 - sharp edge vignette
-    max: 4.5,    // Widened from 3.5 - ultra-soft vignette
+    min: 0.8,    // Ultra-exploratory: ultra-sharp edge
+    max: 5.5,    // Ultra-exploratory: ultra-soft vignette
     gallery_min: 2.2,
     gallery_max: 3.0,
     description: "Vignette edge softness exponent",
@@ -236,8 +236,8 @@ pub const VIGNETTE_SOFTNESS: FloatParamDescriptor = FloatParamDescriptor {
 
 pub const VIBRANCE: FloatParamDescriptor = FloatParamDescriptor {
     name: "vibrance",
-    min: 0.70,   // Widened from 0.85 - desaturated look
-    max: 1.60,   // Widened from 1.35 - extreme vibrance
+    min: 0.50,   // Ultra-exploratory: very desaturated/muted
+    max: 1.80,   // Ultra-exploratory: hyper-saturated
     gallery_min: 0.95,
     gallery_max: 1.20,
     description: "Color vibrance multiplier",
@@ -246,7 +246,7 @@ pub const VIBRANCE: FloatParamDescriptor = FloatParamDescriptor {
 pub const CLARITY_STRENGTH: FloatParamDescriptor = FloatParamDescriptor {
     name: "clarity_strength",
     min: 0.0,    // Already at natural minimum
-    max: 0.65,   // Widened from 0.50 - extreme local contrast
+    max: 0.80,   // Ultra-exploratory: extreme local contrast
     gallery_min: 0.20,
     gallery_max: 0.40,
     description: "High-pass contrast clarity boost",
@@ -255,14 +255,14 @@ pub const CLARITY_STRENGTH: FloatParamDescriptor = FloatParamDescriptor {
 pub const TONE_CURVE_STRENGTH: FloatParamDescriptor = FloatParamDescriptor {
     name: "tone_curve_strength",
     min: 0.0,    // Already at natural minimum
-    max: 0.95,   // Widened from 0.75 - extreme S-curve
+    max: 1.0,    // Ultra-exploratory: maximum S-curve contrast
     gallery_min: 0.35,
     gallery_max: 0.65,
     description: "Midtone contrast curve strength",
 };
 
 // ==================== GRADIENT MAPPING ====================
-// EXPLORATORY RANGES WIDENED: Palette exploration
+// EXPLORATORY RANGES WIDENED: Palette exploration + randomization
 
 pub const GRADIENT_MAP_STRENGTH: FloatParamDescriptor = FloatParamDescriptor {
     name: "gradient_map_strength",
@@ -282,13 +282,22 @@ pub const GRADIENT_MAP_HUE_PRESERVATION: FloatParamDescriptor = FloatParamDescri
     description: "Original hue preservation factor",
 };
 
+pub const GRADIENT_MAP_PALETTE: IntParamDescriptor = IntParamDescriptor {
+    name: "gradient_map_palette",
+    min: 0,
+    max: 14,     // 15 palettes total (0-14)
+    gallery_min: 0,
+    gallery_max: 14,
+    description: "Luxury palette selection (0=GoldPurple, 1=CosmicTealPink, 2=AmberCyan, 3=IndigoGold, 4=BlueOrange, 5=VenetianRenaissance, 6=JapaneseUkiyoe, 7=ArtNouveau, 8=LunarOpal, 9=FireOpal, 10=DeepOcean, 11=AuroraBorealis, 12=MoltenMetal, 13=AncientJade, 14=RoyalAmethyst)",
+};
+
 // ==================== MATERIAL EFFECTS ====================
 // EXPLORATORY RANGES WIDENED: Iridescent material exploration
 
 pub const OPALESCENCE_STRENGTH: FloatParamDescriptor = FloatParamDescriptor {
     name: "opalescence_strength",
     min: 0.0,    // Already at natural minimum
-    max: 0.50,   // Widened from 0.35 - extreme gem shimmer (guarded when layers > 5)
+    max: 0.60,   // Ultra-exploratory: extreme gem shimmer (guarded when layers > 5)
     gallery_min: 0.08,
     gallery_max: 0.25,
     description: "Gem-like iridescent shimmer strength",
@@ -323,8 +332,8 @@ pub const CHAMPLEVE_FLOW_ALIGNMENT: FloatParamDescriptor = FloatParamDescriptor 
 
 pub const CHAMPLEVE_INTERFERENCE_AMPLITUDE: FloatParamDescriptor = FloatParamDescriptor {
     name: "champleve_interference_amplitude",
-    min: 0.08,   // Widened from 0.15 - subtle iridescence
-    max: 0.95,   // Widened from 0.80 - extreme color shifts
+    min: 0.0,    // Ultra-exploratory: full spectrum
+    max: 1.0,    // Ultra-exploratory: maximum iridescence
     gallery_min: 0.35,
     gallery_max: 0.70,
     description: "Iridescent interference amplitude",
@@ -332,8 +341,8 @@ pub const CHAMPLEVE_INTERFERENCE_AMPLITUDE: FloatParamDescriptor = FloatParamDes
 
 pub const CHAMPLEVE_RIM_INTENSITY: FloatParamDescriptor = FloatParamDescriptor {
     name: "champleve_rim_intensity",
-    min: 0.3,    // Widened from 0.5 - subtle rim
-    max: 4.0,    // Widened from 3.0 - extreme metallic rim
+    min: 0.1,    // Ultra-exploratory: barely visible rim
+    max: 5.0,    // Ultra-exploratory: extreme metallic rim
     gallery_min: 1.2,
     gallery_max: 2.5,
     description: "Metallic rim brightness multiplier",
@@ -398,8 +407,8 @@ pub const AETHER_CAUSTIC_STRENGTH: FloatParamDescriptor = FloatParamDescriptor {
 
 pub const MICRO_CONTRAST_STRENGTH: FloatParamDescriptor = FloatParamDescriptor {
     name: "micro_contrast_strength",
-    min: 0.0,    // Widened from 0.10 - no local contrast
-    max: 0.70,   // Widened from 0.45 - extreme crispness
+    min: 0.0,    // Already at natural minimum
+    max: 0.85,   // Ultra-exploratory: extreme crispness
     gallery_min: 0.15,
     gallery_max: 0.35,
     description: "Local contrast enhancement strength",
@@ -416,8 +425,8 @@ pub const MICRO_CONTRAST_RADIUS: IntParamDescriptor = IntParamDescriptor {
 
 pub const EDGE_LUMINANCE_STRENGTH: FloatParamDescriptor = FloatParamDescriptor {
     name: "edge_luminance_strength",
-    min: 0.0,    // Widened from 0.08 - no edge enhancement
-    max: 0.60,   // Widened from 0.40 - extreme edge brightness
+    min: 0.0,    // Already at natural minimum
+    max: 0.75,   // Ultra-exploratory: extreme edge brightness
     gallery_min: 0.12,
     gallery_max: 0.30,
     description: "Edge brightening strength",
@@ -442,12 +451,12 @@ pub const EDGE_LUMINANCE_BRIGHTNESS_BOOST: FloatParamDescriptor = FloatParamDesc
 };
 
 // ==================== ATMOSPHERIC ====================
-// EXPLORATORY RANGES WIDENED: Atmospheric depth exploration
+// EXPLORATORY RANGES WIDENED: Atmospheric depth exploration + fog color randomization
 
 pub const ATMOSPHERIC_DEPTH_STRENGTH: FloatParamDescriptor = FloatParamDescriptor {
     name: "atmospheric_depth_strength",
     min: 0.0,    // Already at natural minimum
-    max: 0.65,   // Widened from 0.45 - extreme atmospheric haze
+    max: 0.75,   // Ultra-exploratory: extreme atmospheric haze
     gallery_min: 0.10,
     gallery_max: 0.35,
     description: "Atmospheric perspective strength",
@@ -459,7 +468,7 @@ pub const ATMOSPHERIC_DESATURATION: FloatParamDescriptor = FloatParamDescriptor 
     max: 0.85,   // Widened from 0.60 - extreme monochrome at depth
     gallery_min: 0.25,
     gallery_max: 0.50,
-    description: "Depth-based desaturation",
+    description: "Depth-based darkening",
 };
 
 pub const ATMOSPHERIC_DARKENING: FloatParamDescriptor = FloatParamDescriptor {
@@ -471,10 +480,37 @@ pub const ATMOSPHERIC_DARKENING: FloatParamDescriptor = FloatParamDescriptor {
     description: "Depth-based darkening",
 };
 
+pub const ATMOSPHERIC_FOG_COLOR_R: FloatParamDescriptor = FloatParamDescriptor {
+    name: "atmospheric_fog_color_r",
+    min: 0.0,    // Black fog component
+    max: 0.30,   // Limited to dark tones for atmospheric effect
+    gallery_min: 0.05,
+    gallery_max: 0.25,
+    description: "Atmospheric fog color red component (dark tones)",
+};
+
+pub const ATMOSPHERIC_FOG_COLOR_G: FloatParamDescriptor = FloatParamDescriptor {
+    name: "atmospheric_fog_color_g",
+    min: 0.0,    // Black fog component
+    max: 0.30,   // Limited to dark tones for atmospheric effect
+    gallery_min: 0.05,
+    gallery_max: 0.25,
+    description: "Atmospheric fog color green component (dark tones)",
+};
+
+pub const ATMOSPHERIC_FOG_COLOR_B: FloatParamDescriptor = FloatParamDescriptor {
+    name: "atmospheric_fog_color_b",
+    min: 0.0,    // Black fog component
+    max: 0.30,   // Limited to dark tones for atmospheric effect
+    gallery_min: 0.05,
+    gallery_max: 0.25,
+    description: "Atmospheric fog color blue component (dark tones)",
+};
+
 pub const FINE_TEXTURE_STRENGTH: FloatParamDescriptor = FloatParamDescriptor {
     name: "fine_texture_strength",
-    min: 0.0,    // Widened from 0.02 - no texture
-    max: 0.40,   // Widened from 0.25 - extreme canvas texture
+    min: 0.0,    // Already at natural minimum
+    max: 0.50,   // Ultra-exploratory: extreme canvas texture
     gallery_min: 0.06,
     gallery_max: 0.18,
     description: "Canvas/surface texture strength",

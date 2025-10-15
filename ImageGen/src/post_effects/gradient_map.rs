@@ -56,6 +56,31 @@ pub enum LuxuryPalette {
     CosmicNebula,
 }
 
+impl LuxuryPalette {
+    /// Convert an integer index (0-14) to a palette variant.
+    /// Useful for randomized palette selection.
+    pub fn from_index(index: usize) -> Self {
+        match index % 15 {  // Modulo ensures we always get a valid palette
+            0 => LuxuryPalette::GoldPurple,
+            1 => LuxuryPalette::CosmicTealPink,
+            2 => LuxuryPalette::AmberCyan,
+            3 => LuxuryPalette::IndigoGold,
+            4 => LuxuryPalette::BlueOrange,
+            5 => LuxuryPalette::VenetianRenaissance,
+            6 => LuxuryPalette::JapaneseUkiyoe,
+            7 => LuxuryPalette::ArtNouveau,
+            8 => LuxuryPalette::LunarOpal,
+            9 => LuxuryPalette::FireOpal,
+            10 => LuxuryPalette::DeepOcean,
+            11 => LuxuryPalette::AuroraBorealis,
+            12 => LuxuryPalette::MoltenMetal,
+            13 => LuxuryPalette::AncientJade,
+            14 => LuxuryPalette::RoyalAmethyst,
+            _ => unreachable!("Modulo 15 ensures index is 0-14"),
+        }
+    }
+}
+
 /// Configuration for gradient mapping effect
 #[derive(Clone, Debug)]
 pub struct GradientMapConfig {

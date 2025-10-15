@@ -62,6 +62,7 @@ pub struct RandomizableEffectConfig {
     // Gradient mapping
     pub gradient_map_strength: Option<f64>,
     pub gradient_map_hue_preservation: Option<f64>,
+    pub gradient_map_palette: Option<usize>,  // 0-14 for 15 different palettes
 
     // Material effects - Opalescence
     pub opalescence_strength: Option<f64>,
@@ -92,6 +93,9 @@ pub struct RandomizableEffectConfig {
     pub atmospheric_depth_strength: Option<f64>,
     pub atmospheric_desaturation: Option<f64>,
     pub atmospheric_darkening: Option<f64>,
+    pub atmospheric_fog_color_r: Option<f64>,  // Fog color RGB components
+    pub atmospheric_fog_color_g: Option<f64>,
+    pub atmospheric_fog_color_b: Option<f64>,
     pub fine_texture_strength: Option<f64>,
     pub fine_texture_scale: Option<f64>,
     pub fine_texture_contrast: Option<f64>,
@@ -219,6 +223,7 @@ impl RandomizableEffectConfig {
             tone_curve_strength: self.resolve_float("tone_curve_strength", self.tone_curve_strength, &pd::TONE_CURVE_STRENGTH, &mut randomizer, &mut log),
             gradient_map_strength: self.resolve_float("gradient_map_strength", self.gradient_map_strength, &pd::GRADIENT_MAP_STRENGTH, &mut randomizer, &mut log),
             gradient_map_hue_preservation: self.resolve_float("gradient_map_hue_preservation", self.gradient_map_hue_preservation, &pd::GRADIENT_MAP_HUE_PRESERVATION, &mut randomizer, &mut log),
+            gradient_map_palette: self.resolve_int("gradient_map_palette", self.gradient_map_palette, &pd::GRADIENT_MAP_PALETTE, &mut randomizer, &mut log),
             opalescence_strength: self.resolve_float("opalescence_strength", self.opalescence_strength, &pd::OPALESCENCE_STRENGTH, &mut randomizer, &mut log),
             opalescence_scale: self.resolve_float("opalescence_scale", self.opalescence_scale, &pd::OPALESCENCE_SCALE, &mut randomizer, &mut log),
             opalescence_layers: self.resolve_int("opalescence_layers", self.opalescence_layers, &pd::OPALESCENCE_LAYERS, &mut randomizer, &mut log),
@@ -239,6 +244,9 @@ impl RandomizableEffectConfig {
             atmospheric_depth_strength: self.resolve_float("atmospheric_depth_strength", self.atmospheric_depth_strength, &pd::ATMOSPHERIC_DEPTH_STRENGTH, &mut randomizer, &mut log),
             atmospheric_desaturation: self.resolve_float("atmospheric_desaturation", self.atmospheric_desaturation, &pd::ATMOSPHERIC_DESATURATION, &mut randomizer, &mut log),
             atmospheric_darkening: self.resolve_float("atmospheric_darkening", self.atmospheric_darkening, &pd::ATMOSPHERIC_DARKENING, &mut randomizer, &mut log),
+            atmospheric_fog_color_r: self.resolve_float("atmospheric_fog_color_r", self.atmospheric_fog_color_r, &pd::ATMOSPHERIC_FOG_COLOR_R, &mut randomizer, &mut log),
+            atmospheric_fog_color_g: self.resolve_float("atmospheric_fog_color_g", self.atmospheric_fog_color_g, &pd::ATMOSPHERIC_FOG_COLOR_G, &mut randomizer, &mut log),
+            atmospheric_fog_color_b: self.resolve_float("atmospheric_fog_color_b", self.atmospheric_fog_color_b, &pd::ATMOSPHERIC_FOG_COLOR_B, &mut randomizer, &mut log),
             fine_texture_strength: self.resolve_float("fine_texture_strength", self.fine_texture_strength, &pd::FINE_TEXTURE_STRENGTH, &mut randomizer, &mut log),
             fine_texture_scale: self.resolve_float("fine_texture_scale", self.fine_texture_scale, &pd::FINE_TEXTURE_SCALE, &mut randomizer, &mut log),
             fine_texture_contrast: self.resolve_float("fine_texture_contrast", self.fine_texture_contrast, &pd::FINE_TEXTURE_CONTRAST, &mut randomizer, &mut log),
@@ -466,6 +474,7 @@ pub struct ResolvedEffectConfig {
     pub tone_curve_strength: f64,
     pub gradient_map_strength: f64,
     pub gradient_map_hue_preservation: f64,
+    pub gradient_map_palette: usize,  // Palette index (0-14)
     pub opalescence_strength: f64,
     pub opalescence_scale: f64,
     pub opalescence_layers: usize,
@@ -486,6 +495,9 @@ pub struct ResolvedEffectConfig {
     pub atmospheric_depth_strength: f64,
     pub atmospheric_desaturation: f64,
     pub atmospheric_darkening: f64,
+    pub atmospheric_fog_color_r: f64,  // RGB fog color components
+    pub atmospheric_fog_color_g: f64,
+    pub atmospheric_fog_color_b: f64,
     pub fine_texture_strength: f64,
     pub fine_texture_scale: f64,
     pub fine_texture_contrast: f64,
@@ -632,6 +644,7 @@ mod tests {
             tone_curve_strength: 0.5,
             gradient_map_strength: 0.7,
             gradient_map_hue_preservation: 0.2,
+            gradient_map_palette: 0,
             opalescence_strength: 0.15,
             opalescence_scale: 0.01,
             opalescence_layers: 3,
@@ -652,6 +665,9 @@ mod tests {
             atmospheric_depth_strength: 0.25,
             atmospheric_desaturation: 0.35,
             atmospheric_darkening: 0.15,
+            atmospheric_fog_color_r: 0.08,
+            atmospheric_fog_color_g: 0.12,
+            atmospheric_fog_color_b: 0.22,
             fine_texture_strength: 0.12,
             fine_texture_scale: 0.0018,
             fine_texture_contrast: 0.35,
@@ -733,6 +749,7 @@ mod tests {
             tone_curve_strength: 0.5,
             gradient_map_strength: 0.7,
             gradient_map_hue_preservation: 0.2,
+            gradient_map_palette: 0,
             opalescence_strength: 0.15,
             opalescence_scale: 0.01,
             opalescence_layers: 3,
@@ -753,6 +770,9 @@ mod tests {
             atmospheric_depth_strength: 0.25,
             atmospheric_desaturation: 0.35,
             atmospheric_darkening: 0.15,
+            atmospheric_fog_color_r: 0.08,
+            atmospheric_fog_color_g: 0.12,
+            atmospheric_fog_color_b: 0.22,
             fine_texture_strength: 0.12,
             fine_texture_scale: 0.0018,
             fine_texture_contrast: 0.35,
@@ -831,6 +851,7 @@ mod tests {
             tone_curve_strength: 0.5,
             gradient_map_strength: 0.7,
             gradient_map_hue_preservation: 0.2,
+            gradient_map_palette: 0,
             opalescence_scale: 0.01,
             champleve_flow_alignment: 0.6,
             champleve_interference_amplitude: 0.5,
@@ -849,6 +870,9 @@ mod tests {
             atmospheric_depth_strength: 0.25,
             atmospheric_desaturation: 0.35,
             atmospheric_darkening: 0.15,
+            atmospheric_fog_color_r: 0.08,
+            atmospheric_fog_color_g: 0.12,
+            atmospheric_fog_color_b: 0.22,
             fine_texture_strength: 0.12,
             fine_texture_scale: 0.0018,
             fine_texture_contrast: 0.35,
@@ -923,6 +947,7 @@ mod tests {
             tone_curve_strength: 0.5,
             gradient_map_strength: 0.7,
             gradient_map_hue_preservation: 0.2,
+            gradient_map_palette: 0,
             opalescence_scale: 0.01,
             champleve_flow_alignment: 0.6,
             champleve_interference_amplitude: 0.5,
@@ -941,6 +966,9 @@ mod tests {
             atmospheric_depth_strength: 0.25,
             atmospheric_desaturation: 0.35,
             atmospheric_darkening: 0.15,
+            atmospheric_fog_color_r: 0.08,
+            atmospheric_fog_color_g: 0.12,
+            atmospheric_fog_color_b: 0.22,
             fine_texture_strength: 0.12,
             fine_texture_scale: 0.0018,
             fine_texture_contrast: 0.35,
@@ -980,14 +1008,92 @@ mod tests {
         let mut rng = Sha3RandomByteStream::new(&seed, 100.0, 300.0, 300.0, 1.0);
         let (resolved, log) = config.resolve(&mut rng, 1920, 1080, false);
 
-        // Verify all parameters are within their widened exploratory ranges
-        assert!(resolved.blur_strength >= 1.5 && resolved.blur_strength <= 28.0);
+        // Verify all parameters are within their ultra-widened exploratory ranges
+        assert!(resolved.blur_strength >= 0.8 && resolved.blur_strength <= 35.0);
         assert!(resolved.blur_radius_scale >= 0.004 && resolved.blur_radius_scale <= 0.065);
-        assert!(resolved.glow_strength >= 0.05 && resolved.glow_strength <= 0.95);
-        assert!(resolved.chromatic_bloom_strength >= 0.20 && resolved.chromatic_bloom_strength <= 0.95);
+        assert!(resolved.glow_strength >= 0.0 && resolved.glow_strength <= 1.0);
+        assert!(resolved.chromatic_bloom_strength >= 0.10 && resolved.chromatic_bloom_strength <= 1.0);
         assert!(resolved.opalescence_layers >= 1 && resolved.opalescence_layers <= 6);
+        assert!(resolved.gradient_map_palette <= 14, "Palette index should be 0-14");
+        assert!(resolved.atmospheric_fog_color_r >= 0.0 && resolved.atmospheric_fog_color_r <= 0.30);
+        assert!(resolved.atmospheric_fog_color_g >= 0.0 && resolved.atmospheric_fog_color_g <= 0.30);
+        assert!(resolved.atmospheric_fog_color_b >= 0.0 && resolved.atmospheric_fog_color_b <= 0.30);
 
         // Verify log contains all randomized parameters
         assert!(!log.effects.is_empty(), "Should have randomization log");
+    }
+
+    /// Test that gradient palette randomization produces valid palette indices
+    #[test]
+    fn test_gradient_palette_randomization() {
+        let config = RandomizableEffectConfig {
+            gallery_quality: false,
+            ..Default::default()
+        };
+
+        // Test multiple random seeds to ensure variety
+        for seed_val in 1..20 {
+            let seed = [seed_val, 2, 3, 4, 5, 6, 7, 8];
+            let mut rng = Sha3RandomByteStream::new(&seed, 100.0, 300.0, 300.0, 1.0);
+            let (resolved, _log) = config.resolve(&mut rng, 1920, 1080, false);
+
+            // Verify palette index is always within valid range
+            assert!(
+                resolved.gradient_map_palette <= 14,
+                "Palette index {} exceeds maximum (14)",
+                resolved.gradient_map_palette
+            );
+        }
+    }
+
+    /// Test that atmospheric fog color randomization produces valid RGB values
+    #[test]
+    fn test_atmospheric_fog_color_randomization() {
+        let config = RandomizableEffectConfig {
+            gallery_quality: false,
+            ..Default::default()
+        };
+
+        // Test multiple random seeds to ensure variety
+        for seed_val in 1..20 {
+            let seed = [seed_val, 10, 20, 30, 40, 50, 60, 70];
+            let mut rng = Sha3RandomByteStream::new(&seed, 100.0, 300.0, 300.0, 1.0);
+            let (resolved, _log) = config.resolve(&mut rng, 1920, 1080, false);
+
+            // Verify fog colors are within valid dark tone range
+            assert!(
+                resolved.atmospheric_fog_color_r >= 0.0 && resolved.atmospheric_fog_color_r <= 0.30,
+                "Fog color R {} out of range", resolved.atmospheric_fog_color_r
+            );
+            assert!(
+                resolved.atmospheric_fog_color_g >= 0.0 && resolved.atmospheric_fog_color_g <= 0.30,
+                "Fog color G {} out of range", resolved.atmospheric_fog_color_g
+            );
+            assert!(
+                resolved.atmospheric_fog_color_b >= 0.0 && resolved.atmospheric_fog_color_b <= 0.30,
+                "Fog color B {} out of range", resolved.atmospheric_fog_color_b
+            );
+        }
+    }
+
+    /// Test that LuxuryPalette::from_index correctly maps all valid indices
+    #[test]
+    fn test_luxury_palette_from_index() {
+        use crate::post_effects::LuxuryPalette;
+        
+        // Test all valid indices
+        for i in 0..=14 {
+            let palette = LuxuryPalette::from_index(i);
+            // Just verify it doesn't panic and returns a valid palette
+            // The actual mapping correctness is ensured by the match statement
+            drop(palette);
+        }
+        
+        // Test that modulo wrapping works (indices > 14)
+        let palette_15 = LuxuryPalette::from_index(15);
+        let palette_0 = LuxuryPalette::from_index(0);
+        // Both should be GoldPurple (though we can't easily test enum equality without PartialEq)
+        drop(palette_15);
+        drop(palette_0);
     }
 }

@@ -356,7 +356,7 @@ fn build_effect_config_from_resolved(
     // Determine gradient map settings (only enabled in special mode or if explicitly enabled)
     let gradient_map_enabled = resolved.enable_gradient_map && resolved.special_mode;
     let gradient_map_config = GradientMapConfig {
-        palette: LuxuryPalette::GoldPurple,
+        palette: LuxuryPalette::from_index(resolved.gradient_map_palette),
         strength: resolved.gradient_map_strength,
         hue_preservation: resolved.gradient_map_hue_preservation,
     };
@@ -461,7 +461,11 @@ fn build_effect_config_from_resolved(
         atmospheric_depth_enabled: resolved.enable_atmospheric_depth,
         atmospheric_depth_config: AtmosphericDepthConfig {
             strength: resolved.atmospheric_depth_strength,
-            fog_color: (0.08, 0.12, 0.22), // Fixed cosmic tint
+            fog_color: (
+                resolved.atmospheric_fog_color_r,
+                resolved.atmospheric_fog_color_g,
+                resolved.atmospheric_fog_color_b,
+            ),
             density_threshold: 0.15, // Fixed
             desaturation: resolved.atmospheric_desaturation,
             darkening: resolved.atmospheric_darkening,
