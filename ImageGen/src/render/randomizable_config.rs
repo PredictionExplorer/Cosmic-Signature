@@ -497,94 +497,78 @@ pub struct ResolvedEffectConfig {
     pub nebula_base_frequency: f64,
 }
 
-/// Apply conflict detection and automatic adjustments to prevent "effect soup".
+/// Apply essential constraints to prevent performance catastrophes and mathematical impossibilities.
+///
+/// Philosophy: Maximum exploration with minimum intervention.
+/// - NO aesthetic constraints (oversaturation, clutter, darkness are valid artistic choices)
+/// - ONLY essential guards: performance, stability, mathematical validity
+/// - Parameters are chosen independently to maximize exploration of visual space
 fn apply_conflict_detection(mut config: ResolvedEffectConfig, log: &mut RandomizationLog) -> ResolvedEffectConfig {
     let mut adjustments = Vec::new();
 
-    // Conflict 1: Strong chromatic bloom + strong gradient map = oversaturation
-    if config.enable_chromatic_bloom
-        && config.enable_gradient_map
-        && config.chromatic_bloom_strength > 0.6
-        && config.gradient_map_strength > 0.7
-    {
-        let original_chromatic = config.chromatic_bloom_strength;
-        let original_gradient = config.gradient_map_strength;
+    // ============================================================================
+    // ESSENTIAL CONSTRAINT 1: Performance Guard - Extreme Blur
+    // ============================================================================
+    // Prevents: Out-of-memory errors or multi-hour render times
+    // Threshold: Only triggers at truly extreme combinations (top 5% of range)
+    // 
+    // Large blur radius (>60px at 1080p) combined with high iteration count
+    // can cause >3GB memory allocation and >10 minutes per frame
+    if config.enable_bloom && config.blur_radius_scale > 0.060 && config.blur_strength > 24.0 {
+        let original_radius = config.blur_radius_scale;
+        let original_strength = config.blur_strength;
         
-        config.chromatic_bloom_strength *= 0.7;
-        config.gradient_map_strength *= 0.7;
+        // Scale back just enough to stay within performance envelope
+        let performance_factor = 0.85;
+        config.blur_radius_scale *= performance_factor;
+        config.blur_strength *= performance_factor;
         
         adjustments.push(format!(
-            "Reduced chromatic_bloom_strength ({:.3} -> {:.3}) and gradient_map_strength ({:.3} -> {:.3}) to prevent oversaturation",
-            original_chromatic, config.chromatic_bloom_strength,
-            original_gradient, config.gradient_map_strength
+            "Performance guard: Scaled extreme blur parameters (radius: {:.4} -> {:.4}, strength: {:.2} -> {:.2}) to prevent memory/time issues",
+            original_radius, config.blur_radius_scale,
+            original_strength, config.blur_strength
         ));
     }
 
-    // Conflict 2: Very high opalescence + very high champleve = too busy
-    if config.enable_opalescence
-        && config.enable_champleve
-        && config.opalescence_strength > 0.25
-        && config.champleve_interference_amplitude > 0.65
+    // ============================================================================
+    // ESSENTIAL CONSTRAINT 2: Exponential Cost Guard - Opalescence Layers
+    // ============================================================================
+    // Prevents: Exponential performance degradation
+    // Threshold: Only restricts most extreme combination (6+ layers at high strength)
+    //
+    // Each opalescence layer multiplies rendering cost. 6+ layers at high strength
+    // can cause minutes per frame due to nested interference calculations.
+    if config.enable_opalescence 
+        && config.opalescence_layers > 5 
+        && config.opalescence_strength > 0.30 
     {
-        let original_opal = config.opalescence_strength;
-        let original_champ = config.champleve_interference_amplitude;
+        let original_layers = config.opalescence_layers;
         
-        config.opalescence_strength *= 0.75;
-        config.champleve_interference_amplitude *= 0.75;
+        config.opalescence_layers = 5;
         
         adjustments.push(format!(
-            "Reduced opalescence_strength ({:.3} -> {:.3}) and champleve_interference_amplitude ({:.3} -> {:.3}) to avoid visual clutter",
-            original_opal, config.opalescence_strength,
-            original_champ, config.champleve_interference_amplitude
+            "Performance guard: Capped opalescence_layers ({} -> 5) at high strength ({:.2}) to prevent exponential cost",
+            original_layers, config.opalescence_strength
         ));
     }
 
-    // Conflict 3: High atmospheric depth + high fine texture = muddy look
-    if config.enable_atmospheric_depth
-        && config.enable_fine_texture
-        && config.atmospheric_depth_strength > 0.35
-        && config.fine_texture_strength > 0.18
-    {
-        let original_atmo = config.atmospheric_depth_strength;
-        let original_texture = config.fine_texture_strength;
-        
-        config.atmospheric_depth_strength *= 0.8;
-        config.fine_texture_strength *= 0.8;
-        
-        adjustments.push(format!(
-            "Reduced atmospheric_depth_strength ({:.3} -> {:.3}) and fine_texture_strength ({:.3} -> {:.3}) to maintain clarity",
-            original_atmo, config.atmospheric_depth_strength,
-            original_texture, config.fine_texture_strength
-        ));
-    }
-
-    // Conflict 4: Extreme vignette + strong atmospheric depth = too dark
-    if config.enable_color_grade
-        && config.enable_atmospheric_depth
-        && config.vignette_strength > 0.55
-        && config.atmospheric_depth_strength > 0.35
-    {
-        let original_vignette = config.vignette_strength;
-        
-        config.vignette_strength *= 0.7;
-        
-        adjustments.push(format!(
-            "Reduced vignette_strength ({:.3} -> {:.3}) due to strong atmospheric depth",
-            original_vignette, config.vignette_strength
-        ));
-    }
+    // ============================================================================
+    // Note: All aesthetic conflict rules have been removed to maximize exploration.
+    // Oversaturation, visual clutter, muddy looks, and extreme darkness are valid
+    // artistic outcomes. Users can regenerate with different seeds if desired.
+    // ============================================================================
 
     // Log adjustments if any were made
     if !adjustments.is_empty() {
         let mut adjustment_record = RandomizationRecord::new(
-            "conflict_detection".to_string(),
+            "essential_constraints".to_string(),
             true,
             false,
         );
         
         for adjustment in adjustments {
             adjustment_record.parameters.push(crate::render::effect_randomizer::RandomizedParameter {
-                name: "adjustment".to_string(),
+                name: "performance_guard".to_string(),
                 value: adjustment,
                 was_randomized: false,
                 range_used: "N/A".to_string(),
@@ -597,3 +581,413 @@ fn apply_conflict_detection(mut config: ResolvedEffectConfig, log: &mut Randomiz
     config
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::sim::Sha3RandomByteStream;
+
+    /// Test that extreme blur parameters trigger performance guard
+    #[test]
+    fn test_extreme_blur_performance_guard() {
+        let config = ResolvedEffectConfig {
+            width: 1920,
+            height: 1080,
+            gallery_quality: false,
+            special_mode: false,
+            enable_bloom: true,
+            blur_radius_scale: 0.070, // Extreme radius (above 0.060 threshold)
+            blur_strength: 26.0,       // Extreme strength (above 24.0 threshold)
+            // Initialize other required fields with defaults
+            enable_glow: false,
+            enable_chromatic_bloom: false,
+            enable_perceptual_blur: false,
+            enable_micro_contrast: false,
+            enable_gradient_map: false,
+            enable_color_grade: false,
+            enable_champleve: false,
+            enable_aether: false,
+            enable_opalescence: false,
+            enable_edge_luminance: false,
+            enable_atmospheric_depth: false,
+            enable_fine_texture: false,
+            blur_core_brightness: 10.0,
+            dog_strength: 0.3,
+            dog_sigma_scale: 0.006,
+            dog_ratio: 2.5,
+            glow_strength: 0.4,
+            glow_threshold: 0.65,
+            glow_radius_scale: 0.007,
+            glow_sharpness: 2.5,
+            glow_saturation_boost: 0.2,
+            chromatic_bloom_strength: 0.6,
+            chromatic_bloom_radius_scale: 0.012,
+            chromatic_bloom_separation_scale: 0.002,
+            chromatic_bloom_threshold: 0.15,
+            perceptual_blur_strength: 0.65,
+            color_grade_strength: 0.5,
+            vignette_strength: 0.4,
+            vignette_softness: 2.5,
+            vibrance: 1.1,
+            clarity_strength: 0.25,
+            tone_curve_strength: 0.5,
+            gradient_map_strength: 0.7,
+            gradient_map_hue_preservation: 0.2,
+            opalescence_strength: 0.15,
+            opalescence_scale: 0.01,
+            opalescence_layers: 3,
+            champleve_flow_alignment: 0.6,
+            champleve_interference_amplitude: 0.5,
+            champleve_rim_intensity: 1.8,
+            champleve_rim_warmth: 0.6,
+            champleve_interior_lift: 0.65,
+            aether_flow_alignment: 0.7,
+            aether_scattering_strength: 0.9,
+            aether_iridescence_amplitude: 0.6,
+            aether_caustic_strength: 0.3,
+            micro_contrast_strength: 0.25,
+            micro_contrast_radius: 5,
+            edge_luminance_strength: 0.2,
+            edge_luminance_threshold: 0.18,
+            edge_luminance_brightness_boost: 0.3,
+            atmospheric_depth_strength: 0.25,
+            atmospheric_desaturation: 0.35,
+            atmospheric_darkening: 0.15,
+            fine_texture_strength: 0.12,
+            fine_texture_scale: 0.0018,
+            fine_texture_contrast: 0.35,
+            hdr_scale: 0.12,
+            clip_black: 0.01,
+            clip_white: 0.99,
+            nebula_strength: 0.0,
+            nebula_octaves: 4,
+            nebula_base_frequency: 0.0015,
+        };
+
+        let mut log = RandomizationLog::new(false);
+        let result = apply_conflict_detection(config.clone(), &mut log);
+
+        // Verify that both parameters were scaled down
+        assert!(
+            result.blur_radius_scale < config.blur_radius_scale,
+            "Blur radius should be reduced by performance guard"
+        );
+        assert!(
+            result.blur_strength < config.blur_strength,
+            "Blur strength should be reduced by performance guard"
+        );
+
+        // Verify adjustment was logged
+        assert!(
+            !log.effects.is_empty(),
+            "Performance adjustment should be logged"
+        );
+        assert_eq!(
+            log.effects[0].effect_name, "essential_constraints",
+            "Should log essential constraints"
+        );
+    }
+
+    /// Test that extreme blur parameters below threshold are NOT affected
+    #[test]
+    fn test_below_threshold_blur_not_affected() {
+        let config = ResolvedEffectConfig {
+            width: 1920,
+            height: 1080,
+            gallery_quality: false,
+            special_mode: false,
+            enable_bloom: true,
+            blur_radius_scale: 0.055, // Below 0.060 threshold
+            blur_strength: 23.0,       // Below 24.0 threshold
+            // Same defaults as above
+            enable_glow: false,
+            enable_chromatic_bloom: false,
+            enable_perceptual_blur: false,
+            enable_micro_contrast: false,
+            enable_gradient_map: false,
+            enable_color_grade: false,
+            enable_champleve: false,
+            enable_aether: false,
+            enable_opalescence: false,
+            enable_edge_luminance: false,
+            enable_atmospheric_depth: false,
+            enable_fine_texture: false,
+            blur_core_brightness: 10.0,
+            dog_strength: 0.3,
+            dog_sigma_scale: 0.006,
+            dog_ratio: 2.5,
+            glow_strength: 0.4,
+            glow_threshold: 0.65,
+            glow_radius_scale: 0.007,
+            glow_sharpness: 2.5,
+            glow_saturation_boost: 0.2,
+            chromatic_bloom_strength: 0.6,
+            chromatic_bloom_radius_scale: 0.012,
+            chromatic_bloom_separation_scale: 0.002,
+            chromatic_bloom_threshold: 0.15,
+            perceptual_blur_strength: 0.65,
+            color_grade_strength: 0.5,
+            vignette_strength: 0.4,
+            vignette_softness: 2.5,
+            vibrance: 1.1,
+            clarity_strength: 0.25,
+            tone_curve_strength: 0.5,
+            gradient_map_strength: 0.7,
+            gradient_map_hue_preservation: 0.2,
+            opalescence_strength: 0.15,
+            opalescence_scale: 0.01,
+            opalescence_layers: 3,
+            champleve_flow_alignment: 0.6,
+            champleve_interference_amplitude: 0.5,
+            champleve_rim_intensity: 1.8,
+            champleve_rim_warmth: 0.6,
+            champleve_interior_lift: 0.65,
+            aether_flow_alignment: 0.7,
+            aether_scattering_strength: 0.9,
+            aether_iridescence_amplitude: 0.6,
+            aether_caustic_strength: 0.3,
+            micro_contrast_strength: 0.25,
+            micro_contrast_radius: 5,
+            edge_luminance_strength: 0.2,
+            edge_luminance_threshold: 0.18,
+            edge_luminance_brightness_boost: 0.3,
+            atmospheric_depth_strength: 0.25,
+            atmospheric_desaturation: 0.35,
+            atmospheric_darkening: 0.15,
+            fine_texture_strength: 0.12,
+            fine_texture_scale: 0.0018,
+            fine_texture_contrast: 0.35,
+            hdr_scale: 0.12,
+            clip_black: 0.01,
+            clip_white: 0.99,
+            nebula_strength: 0.0,
+            nebula_octaves: 4,
+            nebula_base_frequency: 0.0015,
+        };
+
+        let mut log = RandomizationLog::new(false);
+        let result = apply_conflict_detection(config.clone(), &mut log);
+
+        // Verify parameters are unchanged
+        assert_eq!(
+            result.blur_radius_scale, config.blur_radius_scale,
+            "Blur radius should not change below threshold"
+        );
+        assert_eq!(
+            result.blur_strength, config.blur_strength,
+            "Blur strength should not change below threshold"
+        );
+
+        // Verify no adjustment was logged
+        assert!(
+            log.effects.is_empty(),
+            "No adjustment should be logged for safe parameters"
+        );
+    }
+
+    /// Test that extreme opalescence layers are capped at high strength
+    #[test]
+    fn test_opalescence_layers_performance_guard() {
+        let config = ResolvedEffectConfig {
+            width: 1920,
+            height: 1080,
+            gallery_quality: false,
+            special_mode: false,
+            enable_bloom: false,
+            enable_glow: false,
+            enable_chromatic_bloom: false,
+            enable_perceptual_blur: false,
+            enable_micro_contrast: false,
+            enable_gradient_map: false,
+            enable_color_grade: false,
+            enable_champleve: false,
+            enable_aether: false,
+            enable_opalescence: true,
+            opalescence_layers: 6,      // Above 5 threshold
+            opalescence_strength: 0.35, // Above 0.30 threshold
+            enable_edge_luminance: false,
+            enable_atmospheric_depth: false,
+            enable_fine_texture: false,
+            blur_radius_scale: 0.02,
+            blur_strength: 10.0,
+            blur_core_brightness: 10.0,
+            dog_strength: 0.3,
+            dog_sigma_scale: 0.006,
+            dog_ratio: 2.5,
+            glow_strength: 0.4,
+            glow_threshold: 0.65,
+            glow_radius_scale: 0.007,
+            glow_sharpness: 2.5,
+            glow_saturation_boost: 0.2,
+            chromatic_bloom_strength: 0.6,
+            chromatic_bloom_radius_scale: 0.012,
+            chromatic_bloom_separation_scale: 0.002,
+            chromatic_bloom_threshold: 0.15,
+            perceptual_blur_strength: 0.65,
+            color_grade_strength: 0.5,
+            vignette_strength: 0.4,
+            vignette_softness: 2.5,
+            vibrance: 1.1,
+            clarity_strength: 0.25,
+            tone_curve_strength: 0.5,
+            gradient_map_strength: 0.7,
+            gradient_map_hue_preservation: 0.2,
+            opalescence_scale: 0.01,
+            champleve_flow_alignment: 0.6,
+            champleve_interference_amplitude: 0.5,
+            champleve_rim_intensity: 1.8,
+            champleve_rim_warmth: 0.6,
+            champleve_interior_lift: 0.65,
+            aether_flow_alignment: 0.7,
+            aether_scattering_strength: 0.9,
+            aether_iridescence_amplitude: 0.6,
+            aether_caustic_strength: 0.3,
+            micro_contrast_strength: 0.25,
+            micro_contrast_radius: 5,
+            edge_luminance_strength: 0.2,
+            edge_luminance_threshold: 0.18,
+            edge_luminance_brightness_boost: 0.3,
+            atmospheric_depth_strength: 0.25,
+            atmospheric_desaturation: 0.35,
+            atmospheric_darkening: 0.15,
+            fine_texture_strength: 0.12,
+            fine_texture_scale: 0.0018,
+            fine_texture_contrast: 0.35,
+            hdr_scale: 0.12,
+            clip_black: 0.01,
+            clip_white: 0.99,
+            nebula_strength: 0.0,
+            nebula_octaves: 4,
+            nebula_base_frequency: 0.0015,
+        };
+
+        let mut log = RandomizationLog::new(false);
+        let result = apply_conflict_detection(config.clone(), &mut log);
+
+        // Verify layers were capped at 5
+        assert_eq!(
+            result.opalescence_layers, 5,
+            "Opalescence layers should be capped at 5"
+        );
+
+        // Verify adjustment was logged
+        assert!(
+            !log.effects.is_empty(),
+            "Performance adjustment should be logged"
+        );
+    }
+
+    /// Test that opalescence layers below threshold or low strength are NOT capped
+    #[test]
+    fn test_opalescence_below_threshold_not_affected() {
+        let config = ResolvedEffectConfig {
+            width: 1920,
+            height: 1080,
+            gallery_quality: false,
+            special_mode: false,
+            enable_bloom: false,
+            enable_glow: false,
+            enable_chromatic_bloom: false,
+            enable_perceptual_blur: false,
+            enable_micro_contrast: false,
+            enable_gradient_map: false,
+            enable_color_grade: false,
+            enable_champleve: false,
+            enable_aether: false,
+            enable_opalescence: true,
+            opalescence_layers: 6,      // Above threshold BUT...
+            opalescence_strength: 0.25, // ...strength below 0.30 threshold
+            enable_edge_luminance: false,
+            enable_atmospheric_depth: false,
+            enable_fine_texture: false,
+            blur_radius_scale: 0.02,
+            blur_strength: 10.0,
+            blur_core_brightness: 10.0,
+            dog_strength: 0.3,
+            dog_sigma_scale: 0.006,
+            dog_ratio: 2.5,
+            glow_strength: 0.4,
+            glow_threshold: 0.65,
+            glow_radius_scale: 0.007,
+            glow_sharpness: 2.5,
+            glow_saturation_boost: 0.2,
+            chromatic_bloom_strength: 0.6,
+            chromatic_bloom_radius_scale: 0.012,
+            chromatic_bloom_separation_scale: 0.002,
+            chromatic_bloom_threshold: 0.15,
+            perceptual_blur_strength: 0.65,
+            color_grade_strength: 0.5,
+            vignette_strength: 0.4,
+            vignette_softness: 2.5,
+            vibrance: 1.1,
+            clarity_strength: 0.25,
+            tone_curve_strength: 0.5,
+            gradient_map_strength: 0.7,
+            gradient_map_hue_preservation: 0.2,
+            opalescence_scale: 0.01,
+            champleve_flow_alignment: 0.6,
+            champleve_interference_amplitude: 0.5,
+            champleve_rim_intensity: 1.8,
+            champleve_rim_warmth: 0.6,
+            champleve_interior_lift: 0.65,
+            aether_flow_alignment: 0.7,
+            aether_scattering_strength: 0.9,
+            aether_iridescence_amplitude: 0.6,
+            aether_caustic_strength: 0.3,
+            micro_contrast_strength: 0.25,
+            micro_contrast_radius: 5,
+            edge_luminance_strength: 0.2,
+            edge_luminance_threshold: 0.18,
+            edge_luminance_brightness_boost: 0.3,
+            atmospheric_depth_strength: 0.25,
+            atmospheric_desaturation: 0.35,
+            atmospheric_darkening: 0.15,
+            fine_texture_strength: 0.12,
+            fine_texture_scale: 0.0018,
+            fine_texture_contrast: 0.35,
+            hdr_scale: 0.12,
+            clip_black: 0.01,
+            clip_white: 0.99,
+            nebula_strength: 0.0,
+            nebula_octaves: 4,
+            nebula_base_frequency: 0.0015,
+        };
+
+        let mut log = RandomizationLog::new(false);
+        let result = apply_conflict_detection(config.clone(), &mut log);
+
+        // Verify layers are NOT capped (strength too low)
+        assert_eq!(
+            result.opalescence_layers, 6,
+            "Opalescence layers should not be capped at low strength"
+        );
+
+        // Verify no adjustment was logged
+        assert!(
+            log.effects.is_empty(),
+            "No adjustment should be logged for safe parameters"
+        );
+    }
+
+    /// Test that parameter randomization works end-to-end with new wider ranges
+    #[test]
+    fn test_wide_range_randomization() {
+        let config = RandomizableEffectConfig {
+            gallery_quality: false,
+            ..Default::default()
+        };
+
+        let seed = [1, 2, 3, 4, 5, 6, 7, 8];
+        let mut rng = Sha3RandomByteStream::new(&seed, 100.0, 300.0, 300.0, 1.0);
+        let (resolved, log) = config.resolve(&mut rng, 1920, 1080, false);
+
+        // Verify all parameters are within their widened exploratory ranges
+        assert!(resolved.blur_strength >= 1.5 && resolved.blur_strength <= 28.0);
+        assert!(resolved.blur_radius_scale >= 0.004 && resolved.blur_radius_scale <= 0.065);
+        assert!(resolved.glow_strength >= 0.05 && resolved.glow_strength <= 0.95);
+        assert!(resolved.chromatic_bloom_strength >= 0.20 && resolved.chromatic_bloom_strength <= 0.95);
+        assert!(resolved.opalescence_layers >= 1 && resolved.opalescence_layers <= 6);
+
+        // Verify log contains all randomized parameters
+        assert!(!log.effects.is_empty(), "Should have randomization log");
+    }
+}

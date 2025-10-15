@@ -734,8 +734,8 @@ pub fn pass_1_build_histogram_spectral(
             accum_rgba.clear();
             accum_rgba.resize(ctx.pixel_count(), (0.0, 0.0, 0.0, 0.0));
 
-            // Generate nebula background separately (if enabled)
-            let nebula_background = if special_mode {
+            // Generate nebula background separately (with zero-overhead check)
+            let nebula_background = if special_mode && resolved_config.nebula_strength > 0.0 {
                 generate_nebula_background(
                     width as usize,
                     height as usize,
@@ -743,7 +743,7 @@ pub fn pass_1_build_histogram_spectral(
                     &nebula_config,
                 )
             } else {
-                empty_background.clone()  // Reuse pre-allocated empty buffer
+                empty_background.clone()  // Reuse pre-allocated empty buffer (zero overhead)
             };
 
             // Composite nebula background UNDER trajectory foreground
@@ -883,8 +883,8 @@ pub fn pass_2_write_frames_spectral(
             accum_rgba.clear();
             accum_rgba.resize(ctx.pixel_count(), (0.0, 0.0, 0.0, 0.0));
 
-            // Generate nebula background separately (if enabled)
-            let nebula_background = if special_mode {
+            // Generate nebula background separately (with zero-overhead check)
+            let nebula_background = if special_mode && resolved_config.nebula_strength > 0.0 {
                 generate_nebula_background(
                     width as usize,
                     height as usize,
@@ -892,7 +892,7 @@ pub fn pass_2_write_frames_spectral(
                     &nebula_config,
                 )
             } else {
-                empty_background.clone()  // Reuse pre-allocated empty buffer
+                empty_background.clone()  // Reuse pre-allocated empty buffer (zero overhead)
             };
 
             // Composite nebula background UNDER trajectory foreground
@@ -1029,11 +1029,11 @@ pub fn render_single_frame_spectral(
         .process_frame(accum_rgba, width as usize, height as usize, &frame_params)
         .expect("Failed to process test frame");
 
-    // Generate nebula background for frame 0
-    let nebula_background = if special_mode {
+    // Generate nebula background for frame 0 (with zero-overhead check)
+    let nebula_background = if special_mode && resolved_config.nebula_strength > 0.0 {
         generate_nebula_background(width as usize, height as usize, 0, &nebula_config)
     } else {
-        empty_background  // Reuse pre-allocated empty buffer
+        empty_background  // Reuse pre-allocated empty buffer (zero overhead)
     };
 
     // Composite nebula under trajectories
