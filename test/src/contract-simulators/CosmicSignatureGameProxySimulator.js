@@ -14,8 +14,17 @@ const { assertAddressIsValid, assertEvent, generateRandomUInt256Seed } = require
 // #endregion
 // #region `createCosmicSignatureGameProxySimulator`
 
-/// todo-3 Another test would be to populate this with some random values. But I have no immediate plans to develop it.
-async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatureTokenSimulator_, randomWalkNftSimulator_, cosmicSignatureNftSimulator_, prizesWalletSimulator_, stakingWalletRandomWalkNftSimulator_, stakingWalletCosmicSignatureNftSimulator_, charityWalletSimulator_) {
+/** todo-3 Another test would be to populate this with some random values. But I have no immediate plans to develop it. */
+async function createCosmicSignatureGameProxySimulator(
+	contracts_,
+	cosmicSignatureTokenSimulator_,
+	randomWalkNftSimulator_,
+	cosmicSignatureNftSimulator_,
+	prizesWalletSimulator_,
+	stakingWalletRandomWalkNftSimulator_,
+	stakingWalletCosmicSignatureNftSimulator_,
+	charityWalletSimulator_
+) {
 	// #region
 
 	const FIRST_ROUND_INITIAL_ETH_BID_PRICE = 10n ** (18n - 4n);
@@ -35,19 +44,23 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 		lastBidderAddress: hre.ethers.ZeroAddress,
 		lastCstBidderAddress: hre.ethers.ZeroAddress,
 
-		/// 1 item per bid.
-		/// [Comment-202504102]
-		/// We do not store info on past bidding rounds here.
-		/// I have reviewed contract code to confirm that it never modifies info related to past bidding rounds.
-		/// Comment-202411098 relates.
-		/// [/Comment-202504102]
+		/**
+		1 item per bid.
+		[Comment-202504102]
+		We do not store info on past bidding rounds here.
+		I have reviewed contract code to confirm that it never modifies info related to past bidding rounds.
+		Comment-202411098 relates.
+		[/Comment-202504102]
+		*/
 		bidderAddresses: [],
 
-		/// 1 item per bidder.
-		/// An item:
-		///    Property key is bidder address.
-		///    Property value is an object equivalent to `ICosmicSignatureGameStorage.BidderInfo` in Solidity.
-		/// Comment-202504102 applies.
+		/**
+		1 item per bidder.
+		An item:
+		   Property key is bidder address.
+		   Property value is an object equivalent to `ICosmicSignatureGameStorage.BidderInfo` in Solidity.
+		Comment-202504102 applies.
+		*/
 		biddersInfo: {},
 
 		enduranceChampionAddress: hre.ethers.ZeroAddress,
@@ -75,10 +88,12 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 		nextRoundFirstCstDutchAuctionBeginningBidPrice: 200n * 10n ** 18n,
 		cstDutchAuctionBeginningBidPriceMinLimit: 200n * 10n ** 18n,
 
-		/// [Comment-202504221]
-		/// Property key is NFT ID.
-		/// Property value is `bool`.
-		/// [/Comment-202504221]
+		/**
+		[Comment-202504221]
+		Property key is NFT ID.
+		Property value is `bool`.
+		[/Comment-202504221]
+		*/
 		usedRandomWalkNfts: {},
 
 		bidMessageLengthMaxLimit: 280n,
@@ -265,8 +280,10 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 		// #endregion
 		// #region `getBidderInfo`
 
-		/// Solidity autogenerates a similar method.
-		/// In the contarct, a remotely similar method is named `getBidderTotalSpentAmounts`.
+		/**
+		Solidity autogenerates a similar method.
+		In the contarct, a remotely similar method is named `getBidderTotalSpentAmounts`.
+		*/
 		getBidderInfo: function(bidderAddress_) {
 			// expect(bidderAddress_).properAddress;
 			const bidderInfo_ = this.biddersInfo[bidderAddress_];
@@ -406,8 +423,10 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 		// We don't need `bidWithEthAndDonateNft`.
 		// #region `canBidWithEth`
 
-		/// Issue. To keep it simple, this method doesn't assert that the bidder has enough ETH.
-		/// If they don't the test would fail.
+		/**
+		Issue. To keep it simple, this method doesn't assert that the bidder has enough ETH.
+		If they don't the test would fail.
+		*/
 		canBidWithEth: async function(transactionBlock_, bidderAddress_, value_, randomWalkNftId_, message_, paidEthPrice_, contracts_, transactionResponsePromise_) {
 			assertAddressIsValid(bidderAddress_);
 			expect(typeof value_).equal("bigint");
@@ -464,7 +483,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 		// #endregion
 		// #region `bidWithEth`
 
-		/// Assuming that `canBidWithEth` returned `true`.
+		/** Assuming that `canBidWithEth` returned `true`. */
 		bidWithEth: async function(transactionBlock_, bidderAddress_, bidderEthBalanceAmountBeforeTransaction_, value_, randomWalkNftId_, message_, ethBidPrice_, paidEthPrice_, contracts_, transactionReceipt_, eventIndexWrapper_) {
 			// // [Comment-202505093]
 			// // We will assert this near Comment-202505086.
@@ -684,7 +703,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 		// #endregion
 		// #region `bidWithCst`
 
-		/// Assuming that `canBidWithCst` returned `true`.
+		/** Assuming that `canBidWithCst` returned `true`. */
 		bidWithCst: /*async*/ function(transactionBlock_, bidderAddress_, message_, paidCstPrice_, contracts_, transactionReceipt_, eventIndexWrapper_) {
 			// // Comment-202505093 applies..
 			// assertAddressIsValid(bidderAddress_);
@@ -865,7 +884,7 @@ async function createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatu
 		// #endregion
 		// #region `claimMainPrize`
 		
-		/// Assuming that `canClaimMainPrize` returned `true`.
+		/** Assuming that `canClaimMainPrize` returned `true`. */
 		claimMainPrize: async function(blockBeforeTransaction_, transactionBlock_, callerAddress_, bidderEthBalanceAmountBeforeTransaction_, contracts_, transactionReceipt_, eventIndexWrapper_ /* , blockchainPropertyGetter_ */) {
 			// console.info((callerAddress_ == this.lastBidderAddress) ? "202505138 The last bidder claims the main prize." : "202505139 Someone else claims the main prize.");
 			this._updateChampionsIfNeeded(transactionBlock_);

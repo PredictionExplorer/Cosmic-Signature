@@ -125,6 +125,7 @@ library CosmicSignatureErrors {
 	/// @notice Thrown when someone attempts to withdraw ETH, but is not permitted to do so.
 	/// See also: `MainPrizeClaimDenied`, `DonatedTokenClaimDenied`, `DonatedNftClaimDenied`.
 	/// @param errStr Description of the error.
+	/// @param roundNum Bidding round number.
 	/// @param prizeWinnerAddress Prize winner address.
 	/// @param beneficiaryAddress The address that attempted to withdrew the funds.
 	/// Comment-202411285 applies.
@@ -132,6 +133,7 @@ library CosmicSignatureErrors {
 	/// @param blockTimeStamp The current block timestamp.
 	error EthWithdrawalDenied(
 		string errStr,
+		uint256 roundNum,
 		address prizeWinnerAddress,
 		address beneficiaryAddress,
 		uint256 operationPermittedTime,

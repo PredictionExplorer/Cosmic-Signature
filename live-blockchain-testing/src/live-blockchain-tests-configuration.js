@@ -76,7 +76,7 @@ const configuration =
 				// This value is expressed in ETH. It will be converted to Wei.
 				// To test on the mainnet, this doesn't necessarily need to be that big.
 				// You can reduce this, based on how much ETH is spent on the testnet.
-				accountEthBalanceAmountMinLimitInEth: 0.01,
+				accountEthBalanceAmountMinLimitInEth: 0.015,
 			},
 
 			// Whether to configure newly deployed Cosmic Signature contracts.

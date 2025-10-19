@@ -10,6 +10,7 @@ const { expect } = require("chai");
 const hre = require("hardhat");
 const { anyUint } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { generateRandomUInt32, generateRandomUInt256, waitForTransactionReceipt } = require("../../src/Helpers.js");
+const { setRoundActivationTimeIfNeeded } = require("../../src/ContractDeploymentHelpers.js");
 const { loadFixtureDeployContractsForTesting, assertEvent } = require("../../src/ContractTestingHelpers.js");
 
 // #endregion
@@ -159,7 +160,7 @@ describe("PrizesWallet-2", function () {
 		// #endregion
 		// #region
 
-		transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[2]).withdrawEverything(false, [], []);
+		transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[2]).withdrawEverything([], [], []);
 		transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 		expect(transactionReceipt_.logs.length).equal(0);
 
@@ -167,19 +168,20 @@ describe("PrizesWallet-2", function () {
 		// #region
 
 		{
+			const ethPrizeRoundNums_ = [0n,];
 			const donatedTokensToClaim_ = [
 				[0n, tokensAddress_[3], 0n,],
 				[0n, tokensAddress_[1], (1n << 1n) * 10n ** 18n,],
 			];
 			const donatedNftIndexes_ = [3n, 0n,];
-			transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[2]).withdrawEverything(true, donatedTokensToClaim_, donatedNftIndexes_);
+			transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[2]).withdrawEverything(ethPrizeRoundNums_, donatedTokensToClaim_, donatedNftIndexes_);
 			transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 			expect(transactionReceipt_.logs.length).equal(9);
 			assertEvent(
 				transactionReceipt_.logs[0],
 				newPrizesWallet_,
 				"EthWithdrawn",
-				[contracts_.signers[2].address, contracts_.signers[2].address, (1n << 2n) * 10n ** (18n - 3n),]
+				[0n, contracts_.signers[2].address, contracts_.signers[2].address, (1n << 2n) * 10n ** (18n - 3n),]
 			);
 			assertEvent(
 				transactionReceipt_.logs[1],
@@ -217,43 +219,62 @@ describe("PrizesWallet-2", function () {
 	// #endregion
 	// #region
 
-	it("The withdrawEth methods", async function () {
-		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
+	it("The withdrawEth and withdrawEthMany methods", async function () {
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		const bidderContractFactory_ = await hre.ethers.getContractFactory("BidderContract", contracts_.deployerSigner);
 		const bidderContract_ = await bidderContractFactory_.deploy(contracts_.cosmicSignatureGameProxyAddress);
 		await bidderContract_.waitForDeployment();
 		const bidderContractAddress_ = await bidderContract_.getAddress();
 
-		let nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPriceAdvanced(1n);
-		await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEth(-1n, "", {value: nextEthBidPrice_,}));
-		let durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrizeRaw();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_),]);
-		// await hre.ethers.provider.send("evm_mine");
-		await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).claimMainPrize());
-		const timeoutDurationToWithdrawPrizes_ = await contracts_.prizesWallet.timeoutDurationToWithdrawPrizes();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(timeoutDurationToWithdrawPrizes_),]);
-		// await hre.ethers.provider.send("evm_mine");
-
-		for ( let brokenEthReceiverEthDepositAcceptanceModeCode_ = 2n; brokenEthReceiverEthDepositAcceptanceModeCode_ >= 0n; -- brokenEthReceiverEthDepositAcceptanceModeCode_ ) {
-			await waitForTransactionReceipt(bidderContract_.setEthDepositAcceptanceModeCode(brokenEthReceiverEthDepositAcceptanceModeCode_));
-			for ( let counter_ = 0; counter_ <= 1; ++ counter_ ) {
-				const prizeWinnerAddress_ = (counter_ <= 0) ? bidderContractAddress_ : contracts_.signers[1].address;
-				const prizeWinnerEthBalanceAmount_ = (await contracts_.prizesWallet["getEthBalanceInfo(address)"](prizeWinnerAddress_))[1];
-				// console.info(hre.ethers.formatEther(prizeWinnerEthBalanceAmount_));
-				/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
-				const transactionResponsePromise_ =
-					(counter_ <= 0) ?
-					bidderContract_.connect(contracts_.signers[4])["doWithdrawEth"]() :
-					bidderContract_.connect(contracts_.signers[4])["doWithdrawEth(address)"](contracts_.signers[1].address);
+		for ( let roundNum_ = 0n; roundNum_ <= 2n; ++ roundNum_ ) {
+			await setRoundActivationTimeIfNeeded(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner), 2n);
+			/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
+			let transactionResponsePromise_ =
+				(roundNum_ != 1n) ?
+				bidderContract_.connect(contracts_.signers[4]).doBidWithEth({value: 10n ** (18n - 2n),}) :
+				contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEth(-1n, "", {value: 10n ** (18n - 2n),});
+			await waitForTransactionReceipt(transactionResponsePromise_);
+			let durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrizeRaw();
+			await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_),]);
+			// await hre.ethers.provider.send("evm_mine");
+			transactionResponsePromise_ =
+				(roundNum_ != 1n) ?
+				bidderContract_.connect(contracts_.signers[5]).doClaimMainPrize() :
+				contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).claimMainPrize();
+			await waitForTransactionReceipt(transactionResponsePromise_);
+			const prizeWinnerAddress_ = (roundNum_ != 1n) ? bidderContractAddress_ : contracts_.signers[1].address;
+			const prizeWinnerEthBalanceAmount_ = await contracts_.prizesWallet["getEthBalanceAmount(uint256,address)"](roundNum_, prizeWinnerAddress_);
+			expect(prizeWinnerEthBalanceAmount_).greaterThan(0n);
+			if (roundNum_ == 1n) {
+				const timeoutDurationToWithdrawPrizes_ = await contracts_.prizesWallet.timeoutDurationToWithdrawPrizes();
+				await hre.ethers.provider.send("evm_increaseTime", [Number(timeoutDurationToWithdrawPrizes_),]);
+				// await hre.ethers.provider.send("evm_mine");
+			}
+			for ( let brokenEthReceiverEthDepositAcceptanceModeCode_ = 2n; brokenEthReceiverEthDepositAcceptanceModeCode_ >= 0n; -- brokenEthReceiverEthDepositAcceptanceModeCode_ ) {
+				// console.info(`202511164 ${roundNum_} ${brokenEthReceiverEthDepositAcceptanceModeCode_}`);
+				transactionResponsePromise_ = bidderContract_.setEthDepositAcceptanceModeCode(brokenEthReceiverEthDepositAcceptanceModeCode_);
+				await waitForTransactionReceipt(transactionResponsePromise_);
+				switch (roundNum_) {
+					case 0n:
+						transactionResponsePromise_ = bidderContract_.connect(contracts_.signers[6])["doWithdrawEth(uint256)"](roundNum_);
+						break;
+					case 1n:
+						transactionResponsePromise_ = bidderContract_.connect(contracts_.signers[7])["doWithdrawEth(uint256,address)"](roundNum_, prizeWinnerAddress_);
+						break;
+					default:
+						transactionResponsePromise_ = bidderContract_.connect(contracts_.signers[8]).doWithdrawEthMany([roundNum_]);
+						break;
+				}
+				let transactionResponsePromiseAssertion_ = expect(transactionResponsePromise_);
 				if (brokenEthReceiverEthDepositAcceptanceModeCode_ > 0n) {
-					await expect(transactionResponsePromise_)
+					await transactionResponsePromiseAssertion_
 						.revertedWithCustomError(contracts_.prizesWallet, "FundTransferFailed")
 						.withArgs("ETH withdrawal failed.", bidderContractAddress_, prizeWinnerEthBalanceAmount_);
 				} else {
-					await expect(transactionResponsePromise_)
+					await transactionResponsePromiseAssertion_
 						.emit(contracts_.prizesWallet, "EthWithdrawn")
-						.withArgs(prizeWinnerAddress_, bidderContractAddress_, prizeWinnerEthBalanceAmount_);
+						.withArgs(roundNum_, prizeWinnerAddress_, bidderContractAddress_, prizeWinnerEthBalanceAmount_);
 				}
 			}
 		}
@@ -314,7 +335,7 @@ describe("PrizesWallet-2", function () {
 		let prizesWalletDonatedNftClaimedLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.indexOf(prizesWalletDonatedNftClaimedTopicHash_) >= 0));
 		expect(prizesWalletDonatedNftClaimedLogs_.length).equal(3);
 		for ( let counter_ = 0; counter_ <= 2; ++ counter_ ) {
-			const prizesWalletDonatedNftClaimedParsedLog_ = /*contracts_.prizesWallet.interface.parseLog*/(prizesWalletDonatedNftClaimedLogs_[counter_]);
+			const prizesWalletDonatedNftClaimedParsedLog_ = contracts_.prizesWallet.interface.parseLog(prizesWalletDonatedNftClaimedLogs_[counter_]);
 			expect(prizesWalletDonatedNftClaimedParsedLog_.args.roundNum).equal(0n);
 			expect(prizesWalletDonatedNftClaimedParsedLog_.args.beneficiaryAddress).equal(contracts_.signers[2].address);
 			expect(prizesWalletDonatedNftClaimedParsedLog_.args.nftAddress).equal(contracts_.randomWalkNftAddress);
@@ -409,7 +430,7 @@ describe("PrizesWallet-2", function () {
 			let randomNumber_ = generateRandomUInt32();
 
 			// Comment-202507062 applies.
-			const maliciousActorModeCode_ = BigInt(randomNumber_ % (12 * 2) + 101);
+			const maliciousActorModeCode_ = BigInt(randomNumber_ % (13 * 2) + 101);
 
 			await waitForTransactionReceipt(maliciousToken_.connect(contracts_.signers[0]).setModeCode(maliciousActorModeCode_));
 			await waitForTransactionReceipt(maliciousPrizeWinner_.connect(contracts_.signers[0]).setModeCode(maliciousActorModeCode_));
@@ -427,7 +448,7 @@ describe("PrizesWallet-2", function () {
 				/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 				let transactionResponsePromise_;
 				randomNumber_ = generateRandomUInt32();
-				const choiceCode_ = randomNumber_ % 14;
+				const choiceCode_ = randomNumber_ % 15;
 				// console.info(`202507069 ${choiceCode_} ${maliciousActorModeCode_}`);
 
 				// #endregion
@@ -444,22 +465,22 @@ describe("PrizesWallet-2", function () {
 					case 1:
 					case 2:
 					case 3: {
-						let withdrawEth_ = false;
+						const ethPrizeRoundNums_ = [];
 						const donatedTokensToClaim_ = [];
 						const donatedNftIndexes_ = [];
 						switch (choiceCode_) {
 							case 1: {
 								// console.info("202507073");
-								withdrawEth_ = true;
+								ethPrizeRoundNums_.push((roundNum_ <= 0n) ? 0n : (roundNum_ - 1n));
 								break;
 							}
 							case 2: {
-								if (roundNum_ > 0n) {
+								if (roundNum_ <= 0n) {
 									// console.info("202507074");
-									donatedTokensToClaim_.push([roundNum_ - 1n, maliciousTokenAddress_, 1n,]);
+									transactionWillNotFailDueToReentry_ = true;
 								} else {
 									// console.info("202507075");
-									transactionWillNotFailDueToReentry_ = true;
+									donatedTokensToClaim_.push([roundNum_ - 1n, maliciousTokenAddress_, 1n,]);
 								}
 								break;
 							}
@@ -475,12 +496,12 @@ describe("PrizesWallet-2", function () {
 								break;
 							}
 						}
-						transactionResponsePromise_ = maliciousPrizeWinner_.connect(contracts_.signers[0]).doWithdrawEverything(withdrawEth_, donatedTokensToClaim_, donatedNftIndexes_);
+						transactionResponsePromise_ = maliciousPrizeWinner_.connect(contracts_.signers[0]).doWithdrawEverything(ethPrizeRoundNums_, donatedTokensToClaim_, donatedNftIndexes_);
 						break;
 					}
 					case 4: {
 						// console.info("202507078");
-						transactionResponsePromise_ = maliciousPrizeWinner_.connect(contracts_.signers[0])["doWithdrawEth()"]();
+						transactionResponsePromise_ = maliciousPrizeWinner_.connect(contracts_.signers[0])["doWithdrawEth(uint256)"]((roundNum_ <= 0n) ? 0n : (roundNum_ - 1n));
 						break;
 					}
 					case 5: {
@@ -491,15 +512,20 @@ describe("PrizesWallet-2", function () {
 						// console.info("202507081");
 						await hre.ethers.provider.send("evm_increaseTime", [Number(timeoutDurationToWithdrawPrizes_),]);
 						// await hre.ethers.provider.send("evm_mine");
-						transactionResponsePromise_ = maliciousPrizeWinner_.connect(contracts_.signers[0])["doWithdrawEth(address)"](maliciousPrizeWinnerAddress_);
+						transactionResponsePromise_ = maliciousPrizeWinner_.connect(contracts_.signers[0])["doWithdrawEth(uint256,address)"](roundNum_ - 1n, maliciousPrizeWinnerAddress_);
 						break;
 					}
 					case 6: {
+						// console.info("202511173");
+						transactionResponsePromise_ = maliciousPrizeWinner_.connect(contracts_.signers[0]).doWithdrawEthMany([(roundNum_ <= 0n) ? 0n : (roundNum_ - 1n),]);
+						break;
+					}
+					case 7: {
 						// console.info("202507082");
 						transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[10]).donateToken(roundNum_, contracts_.signers[0].address, maliciousTokenAddress_, 1n);
 						break;
 					}
-					case 7: {
+					case 8: {
 						if (roundNum_ <= 0n) {
 							// console.info("202507083");
 							continue;
@@ -507,6 +533,7 @@ describe("PrizesWallet-2", function () {
 						// console.info("202507084");
 
 						// [Comment-202507153]
+						// todo-0 I dislike this. Take a closer look.
 						// It appears that this can call `maliciousToken.transferFrom` to transfer from the zero address,
 						// which won't cause a reversal.
 						// Comment-202507177 relates.
@@ -515,14 +542,14 @@ describe("PrizesWallet-2", function () {
 
 						break;
 					}
-					case 8: {
+					case 9: {
 						const donatedTokensToClaim_ = [];
-						if (roundNum_ > 0n) {
+						if (roundNum_ <= 0n) {
 							// console.info("202507085");
-							donatedTokensToClaim_.push([roundNum_ - 1n, maliciousTokenAddress_, 1n,]);
+							transactionWillNotFailDueToReentry_ = true;
 						} else {
 							// console.info("202507086");
-							transactionWillNotFailDueToReentry_ = true;
+							donatedTokensToClaim_.push([roundNum_ - 1n, maliciousTokenAddress_, 1n,]);
 						}
 
 						// Comment-202507153 applies.
@@ -530,15 +557,15 @@ describe("PrizesWallet-2", function () {
 
 						break;
 					}
-					case 9:
 					case 10:
-					case 11: {
+					case 11:
+					case 12: {
 						// console.info("202507088");
 						transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[10]).donateNft(roundNum_, contracts_.signers[0].address, maliciousTokenAddress_, 0n);
 						nextDonatedNftToDonateIndexIncrement_ = 1n;
 						break;
 					}
-					case 12: {
+					case 13: {
 						if ( ! (nextDonatedNftToClaimIndex_ < nextDonatedNftToDonateIndex_ && donatedNftRoundNums_[Number(nextDonatedNftToClaimIndex_)] < roundNum_) ) {
 							// console.info("202507089");
 							continue;
@@ -549,7 +576,7 @@ describe("PrizesWallet-2", function () {
 						break;
 					}
 					default: {
-						expect(choiceCode_).equal(13);
+						expect(choiceCode_).equal(14);
 						const donatedNftIndexes_ = [];
 						if (nextDonatedNftToClaimIndex_ < nextDonatedNftToDonateIndex_ && donatedNftRoundNums_[Number(nextDonatedNftToClaimIndex_)] < roundNum_) {
 							// console.info("202507092");
@@ -568,13 +595,14 @@ describe("PrizesWallet-2", function () {
 				// #region
 
 				// Comment-202507062 applies.
-				if (maliciousActorModeCode_ <= 112n && ( ! transactionWillNotFailDueToReentry_ )) {
+				if (maliciousActorModeCode_ <= 113n && ( ! transactionWillNotFailDueToReentry_ )) {
 
 					const transactionResponsePromiseAssertion_ = expect(transactionResponsePromise_);
 					switch (choiceCode_) {
 						case 1:
 						case 4:
-						case 5: {
+						case 5:
+						case 6: {
 							// console.info("202507094");
 							await transactionResponsePromiseAssertion_
 								.revertedWithCustomError(newPrizesWallet_, "FundTransferFailed")

@@ -19,11 +19,15 @@ import { BrokenEthReceiver } from "./BrokenEthReceiver.sol";
 contract BidderContract is BrokenEthReceiver {
 	CosmicSignatureGame public immutable cosmicSignatureGame;
 
-	/// @notice Info about NFTs to claim.
-	/// @dev Issue. It's questionable that we store these here.
-	/// It would instead be better to simply claim all NFTs donated during bidding rounds that we won.
-	/// We can get all that info from `PrizesWallet`.
-	/// Although logic like that could require more gas.
+	/// @notice We are going to withdraw ETH that we could have received in these rounds.
+	/// @dev Issue. Comment-202511146 applies.
+	uint256[] public wonRoundNums;
+
+	/// @notice Info about donated NFTs to claim.
+	/// @dev
+	/// [Comment-202511146]
+	/// Issue. I dislike it that that we store these here. It's kinda a hack.
+	/// [/Comment-202511146]
 	uint256[] public donatedNftIndexes;
 
 	constructor(CosmicSignatureGame cosmicSignatureGame_) {
@@ -63,6 +67,7 @@ contract BidderContract is BrokenEthReceiver {
 	}
 
 	function doClaimMainPrize() external {
+		wonRoundNums.push(cosmicSignatureGame.roundNum());
 		// // #enable_asserts // #disable_smtchecker uint256 gasUsed_  = gasleft();
 		cosmicSignatureGame.claimMainPrize();
 		// // #enable_asserts // #disable_smtchecker gasUsed_  -= gasleft();
@@ -74,23 +79,30 @@ contract BidderContract is BrokenEthReceiver {
 		// [/Comment-202508067]
 	}
 
-	function doWithdrawEth() external {
+	function doWithdrawEth(uint256 roundNum_) external {
 		PrizesWallet prizesWallet_ = cosmicSignatureGame.prizesWallet();
-		prizesWallet_.withdrawEth();
+		prizesWallet_.withdrawEth(roundNum_);
 
 		// Comment-202508067 applies.
 	}
 
-	function doWithdrawEth(address prizeWinnerAddress_) external {
+	function doWithdrawEth(uint256 roundNum_, address prizeWinnerAddress_) external {
 		PrizesWallet prizesWallet_ = cosmicSignatureGame.prizesWallet();
-		prizesWallet_.withdrawEth(prizeWinnerAddress_);
+		prizesWallet_.withdrawEth(roundNum_, prizeWinnerAddress_);
+
+		// Comment-202508067 applies.
+	}
+
+	function doWithdrawEthMany(uint256[] calldata roundNums_) external {
+		PrizesWallet prizesWallet_ = cosmicSignatureGame.prizesWallet();
+		prizesWallet_.withdrawEthMany(roundNums_);
 
 		// Comment-202508067 applies.
 	}
 
 	/// @dev Comment-202508069 applies.
-	/// Issue. There are `PrizesWallet` and/or other contract methods that do multiple things in a single transaction.
-	/// This method should, ideally, call those.
+	/// Issue. There are `PrizesWallet.withdrawEverything` and/or other contract methods
+	/// that do multiple things in a single transaction. This method should, ideally, call those.
 	function withdrawEverything() external {
 		{
 			CosmicSignatureToken token_ = cosmicSignatureGame.token();
@@ -111,10 +123,10 @@ contract BidderContract is BrokenEthReceiver {
 			// #enable_asserts assert(nft_.balanceOf(address(this)) == 0);
 		}
 
-		// Issue. Would it make sense to call `PrizesWallet.withdrawEverything`?
 		{
 			PrizesWallet prizesWallet_ = cosmicSignatureGame.prizesWallet();
-			prizesWallet_.withdrawEth();
+			prizesWallet_.withdrawEthMany(wonRoundNums);
+			delete wonRoundNums;
 
 			// Comment-202508067 relates.
 			surrenderMyEth();

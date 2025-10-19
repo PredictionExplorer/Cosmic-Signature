@@ -26,13 +26,6 @@ interface IPrizesWallet is IAddressValidator {
 		uint256 amount;
 	}
 
-	struct EthBalanceInfo {
-		uint256 roundNum;
-
-		/// @notice This can be zero.
-		uint256 amount;
-	}
-
 	/// @notice Details about ERC-20 token donations made to the Game.
 	struct DonatedToken {
 		// uint256 roundNum;
@@ -111,7 +104,9 @@ interface IPrizesWallet is IAddressValidator {
 	);
 
 	/// @notice Emitted when someone withdraws ETH.
+	/// @param roundNum Bidding round number.
 	/// @param prizeWinnerAddress Prize winner address.
+	/// It can potentially be zero.
 	/// @param beneficiaryAddress The address that withdrew the funds.
 	/// [Comment-202411285]
 	/// It will be different from `prizeWinnerAddress` if the latter forgot to claim the prize
@@ -121,7 +116,12 @@ interface IPrizesWallet is IAddressValidator {
 	/// [/Comment-202411285]
 	/// @param amount ETH amount.
 	/// It can potentially be zero, especially if someone withdraws an already withdrawn ETH balance.
-	event EthWithdrawn(address indexed prizeWinnerAddress, address indexed beneficiaryAddress, uint256 amount);
+	event EthWithdrawn(
+		uint256 indexed roundNum,
+		address indexed prizeWinnerAddress,
+		address indexed beneficiaryAddress,
+		uint256 amount
+	);
 
 	/// @notice Emitted when someone makes an ERC-20 token donation.
 	/// @param roundNum The current bidding round number.
@@ -215,9 +215,9 @@ interface IPrizesWallet is IAddressValidator {
 	/// [/Comment-202502076]
 	function registerRoundEnd(uint256 roundNum_, address mainPrizeBeneficiaryAddress_) external returns (uint256);
 
-	/// @notice This method combines `withdrawEth`, `claimManyDonatedTokens`, `claimManyDonatedNfts`.
+	/// @notice This method combines `withdrawEthMany`, `claimManyDonatedTokens`, `claimManyDonatedNfts`.
 	function withdrawEverything(
-		bool withdrawEth_,
+		uint256[] calldata ethPrizeRoundNums_,
 		DonatedTokenToClaim[] calldata donatedTokensToClaim_,
 		uint256[] calldata donatedNftIndexes_
 	) external;
@@ -233,21 +233,29 @@ interface IPrizesWallet is IAddressValidator {
 	/// @dev Comment-202502076 applies.
 	function depositEth(uint256 roundNum_, uint256 prizeWinnerIndex_, address prizeWinnerAddress_) external payable;
 
-	/// @notice A prize winner calls this method to withdraw their ETH balance.
-	/// Only the winner is permitted to call this method.
-	function withdrawEth() external;
+	/// @notice An ETH prize winner calls this method to withdraw their ETH prize won in the given bidding round.
+	/// @param roundNum_ Bidding round number.
+	function withdrawEth(uint256 roundNum_) external;
 
-	/// @notice Anybody is welcomed to call this method after a timeout expires
-	/// to withdraw a prize winner's unclaimed ETH.
+	/// @notice Anybody is welcomed to call this method after a timeout expires to withdraw an unclaimed ETH prize.
+	/// @param roundNum_ Bidding round number.
 	/// @param prizeWinnerAddress_ Prize winner address.
-	function withdrawEth(address prizeWinnerAddress_) external;
+	/// It's OK if it's zero.
+	function withdrawEth(uint256 roundNum_, address prizeWinnerAddress_) external;
 
-	/// @return Details on ETH balance belonging to `_msgSender()`.
-	function getEthBalanceInfo() external view returns (EthBalanceInfo memory);
+	/// @notice Similarly to `withdrawEth(uint256 roundNum_)`, withdraws zero or more ETH prizes.
+	/// @param roundNums_ It's OK if it contains duplicates.
+	function withdrawEthMany(uint256[] calldata roundNums_) external;
 
-	/// @return Details on ETH balance belonging to the given address.
+	/// @return Not yet withdrawn ETH prize balance amount won by `_msgSender()` in the given bidding round.
+	/// @param roundNum_ Bidding round number.
+	function getEthBalanceAmount(uint256 roundNum_) external view returns (uint256);
+
+	/// @return Not yet withdrawn ETH prize balance amount won by the given winner in the given bidding round.
+	/// @param roundNum_ Bidding round number.
 	/// @param prizeWinnerAddress_ Prize winner address.
-	function getEthBalanceInfo(address prizeWinnerAddress_) external view returns (EthBalanceInfo memory);
+	/// It's OK if it's zero.
+	function getEthBalanceAmount(uint256 roundNum_, address prizeWinnerAddress_) external view returns (uint256);
 
 	/// @notice Deposits a donated ERC-20 token amount.
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.

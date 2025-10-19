@@ -99,7 +99,7 @@ describe("MainPrize", function () {
 		await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEth(-1n, "", {value: nextEthBidPrice_,}));
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).claimMainPrize()).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "MainPrizeEarlyClaim");
 		durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrizeRaw();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) - 1 - await makeNextBlockTimeDeterministic(400),]);
+		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) - 1 - await makeNextBlockTimeDeterministic(450),]);
 		// await hre.ethers.provider.send("evm_mine");
 		// mainEthPrizeAmount_ = await contracts_.cosmicSignatureGameProxy.getMainEthPrizeAmount();
 		// const timeStamp1_ = performance.now();
@@ -263,7 +263,9 @@ describe("MainPrize", function () {
 			if (uniqueSecondaryEthPrizeWinners_[parsedLog_.args.prizeWinnerAddress] == undefined) {
 				uniqueSecondaryEthPrizeWinners_[parsedLog_.args.prizeWinnerAddress] = true;
 				const prizeWinnerSigner_ = contracts_.signers[contracts_.signerAddressToIndexMapping[parsedLog_.args.prizeWinnerAddress]];
-				await waitForTransactionReceipt(contracts_.prizesWallet.connect(prizeWinnerSigner_).withdrawEth());
+
+				// This withdraws only ETH received on the last main prize claim.
+				await waitForTransactionReceipt(contracts_.prizesWallet.connect(prizeWinnerSigner_).withdrawEth(parsedLog_.args.roundNum));
 			}
 		}
 	});
@@ -344,7 +346,7 @@ describe("MainPrize", function () {
 				uniqueRaffleWinnerBidderEthPrizeWinners_[parsedLog_.args.winnerAddress] = true;
 				if (parsedLog_.args.winnerAddress != bidderContractAddress_) {
 					const prizeWinnerSigner_ = contracts_.signers[contracts_.signerAddressToIndexMapping[parsedLog_.args.winnerAddress]];
-					await waitForTransactionReceipt(contracts_.prizesWallet.connect(prizeWinnerSigner_).withdrawEth());
+					await waitForTransactionReceipt(contracts_.prizesWallet.connect(prizeWinnerSigner_).withdrawEth(parsedLog_.args.roundNum));
 				}
 			}
 		}

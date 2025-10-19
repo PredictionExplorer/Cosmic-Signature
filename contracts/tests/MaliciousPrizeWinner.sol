@@ -15,19 +15,23 @@ contract MaliciousPrizeWinner is MaliciousActorBase {
 	}
 
 	function doWithdrawEverything(
-		bool withdrawEth_,
+		uint256[] calldata ethPrizeRoundNums_,
 		IPrizesWallet.DonatedTokenToClaim[] calldata donatedTokensToClaim_,
 		uint256[] calldata donatedNftIndexes_
 	) external {
-		prizesWallet.withdrawEverything(withdrawEth_, donatedTokensToClaim_, donatedNftIndexes_);
+		prizesWallet.withdrawEverything(ethPrizeRoundNums_, donatedTokensToClaim_, donatedNftIndexes_);
 	}
 
-	function doWithdrawEth() external {
-		prizesWallet.withdrawEth();
+	function doWithdrawEth(uint256 roundNum_) external {
+		prizesWallet.withdrawEth(roundNum_);
 	}
 
-	function doWithdrawEth(address prizeWinnerAddress_) external {
-		prizesWallet.withdrawEth(prizeWinnerAddress_);
+	function doWithdrawEth(uint256 roundNum_, address prizeWinnerAddress_) external {
+		prizesWallet.withdrawEth(roundNum_, prizeWinnerAddress_);
+	}
+
+	function doWithdrawEthMany(uint256[] calldata roundNums_) external {
+		prizesWallet.withdrawEthMany(roundNums_);
 	}
 
 	function doClaimDonatedToken(uint256 roundNum_, IERC20 tokenAddress_, uint256 amount_) external {
