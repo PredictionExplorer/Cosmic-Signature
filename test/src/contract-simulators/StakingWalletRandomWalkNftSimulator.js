@@ -22,14 +22,16 @@ const { assertEvent } = require("../../../src/ContractTestingHelpers.js");
 
 		randomWalkNftSimulator: randomWalkNftSimulator_,
 
-		/// Comment-202504221 applies.
+		/** Comment-202504221 applies. */
 		usedNfts: {},
 
 		actionCounter: 0n,
 
-		/// If I implement `unstake` this would need to be sparse.
-		/// Actually this is already kinda sparse, given that the item at the index of 0 is missing.
-		/// Comment-202508224 relates and/or applies.
+		/**
+		If I implement `unstake` this would need to be sparse.
+		Actually this is already kinda sparse, given that the item at the index of 0 is missing.
+		Comment-202508224 relates and/or applies.
+		*/
 		stakeActions: [undefined,],
 
 		// #endregion

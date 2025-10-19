@@ -28,9 +28,11 @@ async function validateCosmicSignatureGameState(
 	expect(await cosmicSignatureGameProxy_.charityAddress({blockTag: "pending",})).equal(charityWalletAddress_);
 }
 
-/// Assuming `cosmicSignatureGameProxy_.roundActivationTime` is in the future.
-/// Otherwise contract parameter setters would revert.
-/// Comment-202509065 applies.
+/**
+Assuming `cosmicSignatureGameProxy_.roundActivationTime` is in the future.
+Otherwise contract parameter setters would revert.
+Comment-202509065 applies.
+*/
 async function configureCosmicSignatureGame(
 	cosmicSignatureGameProxy_,
 	ownerSigner_,

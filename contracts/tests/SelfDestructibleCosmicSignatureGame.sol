@@ -49,7 +49,7 @@ contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
 		// }
 
 		// // todo-9 Donated NFTs now live in `PrizesWallet`.
-		// // todo-9 So the owner or maybe a bidder account controlled by the owner can get them from there, right?
+		// // todo-9 So the owner or maybe a bidder account controlled by the owner can get them from there.
 		// for (uint256 donatedNftIndex_ = nextDonatedNftIndex; donatedNftIndex_ > 0; ) {
 		// 	-- donatedNftIndex_;
 		// 	CosmicSignatureConstants.DonatedNft storage donatedNft_ = donatedNfts[donatedNftIndex_];

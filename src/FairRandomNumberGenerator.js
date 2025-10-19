@@ -38,10 +38,10 @@ const { generateRandomUInt256FromSeedWrapper } = require("./Helpers.js");
 function createFairRandomNumberGenerator(n_, k_, randomNumberSeedWrapper_) {
 	// #region Data
 
-	/// Each candidate's pick count.
+	/** Each candidate's pick count. */
 	const _counts = (new Array(n_)).fill(0);
 
-	/// The sum of counts.
+	/** The sum of counts. */
 	let _totalCount = 0;
 
 	// #endregion

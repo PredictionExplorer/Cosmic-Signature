@@ -691,6 +691,10 @@ abstract contract MainPrize is
 		// cstDutchAuctionBeginningBidPrice = nextRoundFirstCstDutchAuctionBeginningBidPrice;
 
 		// It appears to be unnecessary to emit an event about this change.
+		// todo-0 Talk to Nick about the above.
+		// todo-0 Keep in mind that this affects like 3 other timings. We get those by dividing this.
+		// todo-0 The divisors stay unchanged, so there are no more events to raise, but the backend needs to be aware of the logic.
+		// todo-0 See the `contract-configuration-params-calculation` folder.
 		mainPrizeTimeIncrementInMicroSeconds += mainPrizeTimeIncrementInMicroSeconds / mainPrizeTimeIncrementIncreaseDivisor;
 
 		_setRoundActivationTime(block.timestamp + delayDurationBeforeRoundActivation);
