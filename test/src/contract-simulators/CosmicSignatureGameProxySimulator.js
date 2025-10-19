@@ -162,6 +162,22 @@ async function createCosmicSignatureGameProxySimulator(
 		},
 
 		// #endregion
+		// #region `setMainPrizeTimeIncrementInMicroSeconds`
+
+		setMainPrizeTimeIncrementInMicroSeconds: function(newValue_, contracts_, transactionReceipt_, eventIndexWrapper_) {
+			expect(typeof newValue_).equal("bigint");
+			expect(newValue_).greaterThanOrEqual(1_000_000n);
+			this.mainPrizeTimeIncrementInMicroSeconds = newValue_;
+			assertEvent(
+				transactionReceipt_.logs[eventIndexWrapper_.value],
+				contracts_.cosmicSignatureGameProxy,
+				"MainPrizeTimeIncrementInMicroSecondsChanged",
+				[newValue_,]
+			);
+			++ eventIndexWrapper_.value;
+		},
+
+		// #endregion
 		// #region `_extendMainPrizeTime`
 
 		_extendMainPrizeTime: function(transactionBlock_) {
@@ -1238,7 +1254,7 @@ async function createCosmicSignatureGameProxySimulator(
 			this.chronoWarriorAddress = hre.ethers.ZeroAddress;
 			this.chronoWarriorDuration = (-1n);
 			++ this.roundNum;
-			this.mainPrizeTimeIncrementInMicroSeconds += this.mainPrizeTimeIncrementInMicroSeconds / this.mainPrizeTimeIncrementIncreaseDivisor;
+			this.setMainPrizeTimeIncrementInMicroSeconds(this.mainPrizeTimeIncrementInMicroSeconds + this.mainPrizeTimeIncrementInMicroSeconds / this.mainPrizeTimeIncrementIncreaseDivisor, contracts_, transactionReceipt_, eventIndexWrapper_);
 			this.setRoundActivationTime(BigInt(transactionBlock_.timestamp) + this.delayDurationBeforeRoundActivation, contracts_, transactionReceipt_, eventIndexWrapper_);
 		},
 

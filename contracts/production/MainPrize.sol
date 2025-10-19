@@ -77,6 +77,7 @@ abstract contract MainPrize is
 	///    `charityAddress`.
 	///    `_setRoundActivationTime`.
 	///    `getDurationUntilMainPrizeRaw`.
+	///    `_setMainPrizeTimeIncrementInMicroSeconds`.
 	///    `_updateChampionsIfNeeded`.
 	///    `_updateChronoWarriorIfNeeded`.
 	///    `LastCstBidderPrizePaid`.
@@ -689,9 +690,7 @@ abstract contract MainPrize is
 		// // [/Comment-202501307]
 		// cstDutchAuctionBeginningBidPrice = nextRoundFirstCstDutchAuctionBeginningBidPrice;
 
-		// It appears to be unnecessary to emit an event about this change.
-		mainPrizeTimeIncrementInMicroSeconds += mainPrizeTimeIncrementInMicroSeconds / mainPrizeTimeIncrementIncreaseDivisor;
-
+		_setMainPrizeTimeIncrementInMicroSeconds(mainPrizeTimeIncrementInMicroSeconds + mainPrizeTimeIncrementInMicroSeconds / mainPrizeTimeIncrementIncreaseDivisor);
 		_setRoundActivationTime(block.timestamp + delayDurationBeforeRoundActivation);
 	}
 
