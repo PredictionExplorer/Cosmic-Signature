@@ -232,7 +232,7 @@ describe("CosmicSignatureGame-1", function () {
 						// This NFT ID is guaranteed to be valid.
 						// Issue. This test does not test an invalid NFT ID. In that case `ERC721.ownerOf`, which our contract calls,
 						// would revert with a different error.
-						// todo-1 --- Develop a separate test for that? Unnecessary. The transaction would just revert.
+						// Would it make sense to develop a separate test for that? Unnecessary. The transaction would just revert.
 						// [/Comment-202504224]
 						randomWalkNftId_ = randomNumber_ % randomWalkNftTotalSupply_;
 

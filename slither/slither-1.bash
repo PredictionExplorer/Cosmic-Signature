@@ -1,7 +1,5 @@
 #!/usr/bin/bash
 
-# todo-0 Slither is currently broken. Maybe report the bug.
-
 '/usr/bin/clear'
 
 (

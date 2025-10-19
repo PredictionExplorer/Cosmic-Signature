@@ -533,7 +533,6 @@ describe("PrizesWallet-2", function () {
 						// console.info("202507084");
 
 						// [Comment-202507153]
-						// todo-0 I dislike this. Take a closer look.
 						// It appears that this can call `maliciousToken.transferFrom` to transfer from the zero address,
 						// which won't cause a reversal.
 						// Comment-202507177 relates.
