@@ -156,7 +156,7 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	///    0 when bidding programmatically from an external script,
 	///      while calling this method in the context of the "pending" block.
 	///      Although an external script can have a smarter time aware logic that conditionally passes 0 or 1.
-	///    0 when bidding manually, like through our web site, 
+	///    0 when bidding manually, like through our web site,
 	///      while calling this method in the context of the "pending" block.
 	///      Alternatively, it could make sense to pass 1, assuming that human hands aren't that fast.
 	///    1 for testing on Hardhat Network, provided this method is called in the context of the "latest" block
