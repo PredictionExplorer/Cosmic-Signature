@@ -263,7 +263,7 @@ describe("PrizesWallet-2", function () {
 						transactionResponsePromise_ = bidderContract_.connect(contracts_.signers[7])["doWithdrawEth(uint256,address)"](roundNum_, prizeWinnerAddress_);
 						break;
 					default:
-						transactionResponsePromise_ = bidderContract_.connect(contracts_.signers[8]).doWithdrawEthMany([roundNum_]);
+						transactionResponsePromise_ = bidderContract_.connect(contracts_.signers[8]).doWithdrawEthMany([roundNum_, roundNum_,]);
 						break;
 				}
 				let transactionResponsePromiseAssertion_ = expect(transactionResponsePromise_);
@@ -275,6 +275,11 @@ describe("PrizesWallet-2", function () {
 					await transactionResponsePromiseAssertion_
 						.emit(contracts_.prizesWallet, "EthWithdrawn")
 						.withArgs(roundNum_, prizeWinnerAddress_, bidderContractAddress_, prizeWinnerEthBalanceAmount_);
+					if (roundNum_ == 2n) {
+						await transactionResponsePromiseAssertion_
+							.emit(contracts_.prizesWallet, "EthWithdrawn")
+							.withArgs(roundNum_, prizeWinnerAddress_, bidderContractAddress_, 0n);
+					}
 				}
 			}
 		}
