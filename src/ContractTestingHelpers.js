@@ -271,7 +271,7 @@ function assertEvent(event, contract, eventName, eventArgs) {
  * To (almost) guaranteed that, call this function before mining the last block.
  * @param {number} currentSecondRemainingDurationMinLimitInMilliSeconds
  */
-async function makeNextBlockTimeDeterministic(currentSecondRemainingDurationMinLimitInMilliSeconds = 200) {
+async function makeNextBlockTimeDeterministic(currentSecondRemainingDurationMinLimitInMilliSeconds = 300) {
 	const currentDateTime = Date.now();
 	const currentSecondElapsedDurationInMilliSeconds = currentDateTime % 1000;
 	const currentSecondRemainingDurationInMilliSeconds = 1000 - currentSecondElapsedDurationInMilliSeconds;
