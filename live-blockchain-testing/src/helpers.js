@@ -2,11 +2,13 @@
 
 // const hre = require("hardhat");
 
-// /// [Comment-202509229]
-// /// Issue. This is a legacy function that I stopped short of deleting for now.
-// /// Consider deleting it.
-// /// [/Comment-202509229]
-// /// todo-9 This should return an object: `{cosmicSignatureGameAddress, cosmicSignatureGame,}`.
+// /**
+// [Comment-202509229]
+// Issue. This is a legacy function that I stopped short of deleting for now.
+// Consider deleting it.
+// [/Comment-202509229]
+// todo-9 This should return an object: `{cosmicSignatureGameAddress, cosmicSignatureGame,}`.
+// */
 // async function getCosmicSignatureGameContract(cosmicSignatureGameContractName = "CosmicSignatureGame") {
 // 	const cosmicSignatureGameAddress = process.env.COSMIC_SIGNATURE_GAME_ADDRESS;
 // 	if (cosmicSignatureGameAddress == undefined || cosmicSignatureGameAddress.length <= 0) {
@@ -26,8 +28,10 @@
 // 	return cosmicSignatureGame;
 // }
 
-// /// Comment-202509229 applies.
-// /// todo-9 This should return an object: `{bidderContractAddress, bidderContract,}`.
+// /**
+// Comment-202509229 applies.
+// todo-9 This should return an object: `{bidderContractAddress, bidderContract,}`.
+// */
 // async function getBidderContract() {
 // 	const bidderContractAddress = process.env.BIDDER_CONTRACT_ADDRESS;
 // 	if (bidderContractAddress == undefined || bidderContractAddress.length <= 0) {

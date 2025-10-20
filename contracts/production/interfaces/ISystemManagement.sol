@@ -10,6 +10,7 @@ import { IStakingWalletRandomWalkNft } from "./IStakingWalletRandomWalkNft.sol";
 import { IStakingWalletCosmicSignatureNft } from "./IStakingWalletCosmicSignatureNft.sol";
 import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
 import { IBiddingBase } from "./IBiddingBase.sol";
+import { IMainPrizeBase } from "./IMainPrizeBase.sol";
 
 /// @title Cosmic Signature Game Configuration Management.
 /// @author The Cosmic Signature Development Team.
@@ -17,7 +18,8 @@ import { IBiddingBase } from "./IBiddingBase.sol";
 interface ISystemManagement is
 	IAddressValidator,
 	ICosmicSignatureGameStorage,
-	IBiddingBase {
+	IBiddingBase,
+	IMainPrizeBase {
 	/// @notice Sets `delayDurationBeforeRoundActivation`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.

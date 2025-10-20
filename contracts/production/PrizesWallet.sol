@@ -44,9 +44,8 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 	/// If an item equals zero the timeout is considered not expired yet.
 	uint256[1 << 64] public roundTimeoutTimesToWithdrawPrizes;
 
-	/// @notice For each prize winner address, contains an `EthBalanceInfo`.
-	/// @dev Comment-202411252 relates.
-	EthBalanceInfo[1 << 160] private _ethBalancesInfo;
+	/// @notice For each bidding round number and prize winner address, contains not yet withdrawn ETH balance amount.
+	uint256[1 << 160][1 << 64] private _ethBalanceAmounts;
 
 	/// @notice Details about ERC-20 token donations made to the Game.
 	/// Contains 1 item for each bidding round number.
@@ -101,14 +100,14 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 
 	function registerRoundEndAndDepositEthMany(uint256 roundNum_, address mainPrizeBeneficiaryAddress_, EthDeposit[] calldata ethDeposits_) external payable override nonReentrant _onlyGame returns (uint256) {
 		uint256 roundTimeoutTimeToWithdrawPrizes_ = _registerRoundEnd(roundNum_, mainPrizeBeneficiaryAddress_);
-		// #enable_asserts uint256 amountSum_ = 0;
+		// #enable_asserts uint256 ethDepositAmountSum_ = 0;
 		for (uint256 ethDepositIndex_ = ethDeposits_.length; ethDepositIndex_ > 0; ) {
 			-- ethDepositIndex_;
 			EthDeposit calldata ethDepositReference_ = ethDeposits_[ethDepositIndex_];
-			// #enable_asserts amountSum_ += ethDepositReference_.amount;
+			// #enable_asserts ethDepositAmountSum_ += ethDepositReference_.amount;
 			_depositEth(roundNum_, ethDepositIndex_, ethDepositReference_.prizeWinnerAddress, ethDepositReference_.amount);
 		}
-		// #enable_asserts assert(amountSum_ == msg.value);
+		// #enable_asserts assert(ethDepositAmountSum_ == msg.value);
 		return roundTimeoutTimeToWithdrawPrizes_;
 	}
 
@@ -127,7 +126,6 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 		// [ToDo-202507148-1]
 		// Should I make at least one of these (maybe the 1st one) a `require`,
 		// so that a potentially malicious upgraded Game contract could not rewrite history.
-		// The same applies to the `assert` near Comment-202411252.
 		// But then all `_onlyGame` methods in all our contracts will have to be reviewed and possibly uglified.
 		// [/ToDo-202507148-1]
 		// #enable_asserts assert(mainPrizeBeneficiaryAddresses[roundNum_] == address(0));
@@ -145,13 +143,11 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 	// #region `withdrawEverything`
 
 	function withdrawEverything(
-		bool withdrawEth_,
+		uint256[] calldata ethPrizeRoundNums_,
 		DonatedTokenToClaim[] calldata donatedTokensToClaim_,
 		uint256[] calldata donatedNftIndexes_
 	) external override nonReentrant {
-		if (withdrawEth_) {
-			_withdrawEth();
-		}
+		_withdrawEthMany(ethPrizeRoundNums_);
 		_claimManyDonatedTokens(donatedTokensToClaim_);
 		_claimManyDonatedNfts(donatedNftIndexes_);
 	}
@@ -168,21 +164,9 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 
 	function _depositEth(uint256 roundNum_, uint256 prizeWinnerIndex_, address prizeWinnerAddress_, uint256 amount_) private {
 		// #enable_asserts assert(prizeWinnerAddress_ != address(0));
-		EthBalanceInfo storage ethBalanceInfoReference_ = _ethBalancesInfo[uint160(prizeWinnerAddress_)];
 
-		// [Comment-202411252]
-		// Even if this address already has a nonzero balance from a past bidding round,
-		// we will forget and overwrite that past bidding round number,
-		// which will update the timeout time to withdraw the cumulative balance.
-		// A little issue with this design is that the saving of `roundNum` costs some gas,
-		// which we would not have to pay if we used `roundNum` as array item index.
-		// Given ToDo-202507148-1, it could be better to use `roundNum` as array item index.
-		// [/Comment-202411252]
-		// #enable_asserts assert(roundNum_ >= ethBalanceInfoReference_.roundNum);
-		ethBalanceInfoReference_.roundNum = roundNum_;
-
-		// This will not overflow because ETH total supply is limited.
-		ethBalanceInfoReference_.amount += amount_;
+		// This cannot overflow because ETH total supply is limited.
+		_ethBalanceAmounts[roundNum_][uint256(uint160(prizeWinnerAddress_))] += amount_;
 
 		emit EthReceived(roundNum_, prizeWinnerIndex_, prizeWinnerAddress_, amount_);
 	}
@@ -190,68 +174,103 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 	// #endregion
 	// #region `withdrawEth`
 
-	function withdrawEth() external override nonReentrant {
-		_withdrawEth();
-	}
-
-	// #endregion
-	// #region `_withdrawEth`
-
-	function _withdrawEth() private {
-		EthBalanceInfo storage ethBalanceInfoReference_ = _ethBalancesInfo[uint160(_msgSender())];
-		_withdrawEth(_msgSender(), ethBalanceInfoReference_);
+	function withdrawEth(uint256 roundNum_) external override nonReentrant {
+		_withdrawEth(roundNum_, _msgSender());
 	}
 
 	// #endregion
 	// #region `withdrawEth`
 
-	function withdrawEth(address prizeWinnerAddress_) external override nonReentrant {
-		EthBalanceInfo storage ethBalanceInfoReference_ = _ethBalancesInfo[uint160(prizeWinnerAddress_)];
-		uint256 roundTimeoutTimeToWithdrawPrizes_ = roundTimeoutTimesToWithdrawPrizes[ethBalanceInfoReference_.roundNum];
+	function withdrawEth(uint256 roundNum_, address prizeWinnerAddress_) external override nonReentrant {
+		uint256 roundTimeoutTimeToWithdrawPrizes_ = roundTimeoutTimesToWithdrawPrizes[roundNum_];
 		require(
 			block.timestamp >= roundTimeoutTimeToWithdrawPrizes_ && roundTimeoutTimeToWithdrawPrizes_ > 0,
 			CosmicSignatureErrors.EthWithdrawalDenied(
-				"Only the ETH prize winner is permitted to withdraw their balance before a timeout expires.",
+				"Only the ETH prize winner is permitted to withdraw the prize before a timeout expires.",
+				roundNum_,
 				prizeWinnerAddress_,
 				_msgSender(),
 				roundTimeoutTimeToWithdrawPrizes_,
 				block.timestamp
 			)
 		);
-		_withdrawEth(prizeWinnerAddress_, ethBalanceInfoReference_);
+		_withdrawEth(roundNum_, prizeWinnerAddress_);
 	}
 
 	// #endregion
 	// #region `_withdrawEth`
 
-	function _withdrawEth(address prizeWinnerAddress_, EthBalanceInfo storage ethBalanceInfoReference_) private {
+	function _withdrawEth(uint256 roundNum_, address prizeWinnerAddress_) private {
 		// It's OK if this is zero.
-		uint256 ethBalanceAmountCopy_ = ethBalanceInfoReference_.amount;
-
-		delete ethBalanceInfoReference_.amount;
-		delete ethBalanceInfoReference_.roundNum;
-		emit EthWithdrawn(prizeWinnerAddress_, _msgSender(), ethBalanceAmountCopy_);
+		uint256 ethBalanceAmountToWithdraw_ = _prepareWithdrawEth(roundNum_, prizeWinnerAddress_);
 
 		// Comment-202502043 applies.
-		(bool isSuccess_, ) = _msgSender().call{value: ethBalanceAmountCopy_}("");
+		(bool isSuccess_, ) = _msgSender().call{value: ethBalanceAmountToWithdraw_}("");
 
 		if ( ! isSuccess_ ) {
-			revert CosmicSignatureErrors.FundTransferFailed("ETH withdrawal failed.", _msgSender(), ethBalanceAmountCopy_);
+			revert CosmicSignatureErrors.FundTransferFailed("ETH withdrawal failed.", _msgSender(), ethBalanceAmountToWithdraw_);
 		}
 	}
 
 	// #endregion
-	// #region `getEthBalanceInfo`
+	// #region `withdrawEthMany`
 
-	function getEthBalanceInfo() external view override returns (EthBalanceInfo memory) {
-		return _ethBalancesInfo[uint160(_msgSender())];
+	function withdrawEthMany(uint256[] calldata roundNums_) external override nonReentrant {
+		_withdrawEthMany(roundNums_);
 	}
 
 	// #endregion
-	// #region `getEthBalanceInfo`
+	// #region `_withdrawEthMany`
 
-	function getEthBalanceInfo(address prizeWinnerAddress_) external view override returns (EthBalanceInfo memory) {
-		return _ethBalancesInfo[uint160(prizeWinnerAddress_)];
+	function _withdrawEthMany(uint256[] calldata roundNums_) private {
+		uint256 roundNumIndex_ = roundNums_.length;
+		if (roundNumIndex_ <= 0) {
+			return;
+		}
+
+		// It's OK if this is zero.
+		uint256 ethBalanceAmountToWithdraw_ = 0;
+		
+		do {
+			-- roundNumIndex_;
+
+			// This cannot overflow because ETH total supply is limited.
+			ethBalanceAmountToWithdraw_ += _prepareWithdrawEth(roundNums_[roundNumIndex_], _msgSender());
+		} while (roundNumIndex_ > 0);
+
+		// Comment-202502043 applies.
+		(bool isSuccess_, ) = _msgSender().call{value: ethBalanceAmountToWithdraw_}("");
+
+		if ( ! isSuccess_ ) {
+			revert CosmicSignatureErrors.FundTransferFailed("ETH withdrawal failed.", _msgSender(), ethBalanceAmountToWithdraw_);
+		}
+	}
+
+	// #endregion
+	// #region `_prepareWithdrawEth`
+
+	/// @return ETH amount to transfer to the caller.
+	function _prepareWithdrawEth(uint256 roundNum_, address prizeWinnerAddress_) private returns (uint256) {
+		// It's OK if this is zero.
+		uint256 ethBalanceAmountCopy_ = _ethBalanceAmounts[roundNum_][uint256(uint160(prizeWinnerAddress_))];
+
+		delete _ethBalanceAmounts[roundNum_][uint256(uint160(prizeWinnerAddress_))];
+		emit EthWithdrawn(roundNum_, prizeWinnerAddress_, _msgSender(), ethBalanceAmountCopy_);
+		return ethBalanceAmountCopy_;
+	}
+
+	// #endregion
+	// #region `getEthBalanceAmount`
+
+	function getEthBalanceAmount(uint256 roundNum_) external view override returns (uint256) {
+		return _ethBalanceAmounts[roundNum_][uint256(uint160(_msgSender()))];
+	}
+
+	// #endregion
+	// #region `getEthBalanceAmount`
+
+	function getEthBalanceAmount(uint256 roundNum_, address prizeWinnerAddress_) external view override returns (uint256) {
+		return _ethBalanceAmounts[roundNum_][uint256(uint160(prizeWinnerAddress_))];
 	}
 
 	// #endregion

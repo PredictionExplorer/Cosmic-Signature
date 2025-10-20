@@ -22,7 +22,7 @@ describe("PrizesWallet-1", function () {
 
 		if (SKIP_LONG_TESTS) {
 			// todo-1 Review all calls to `console` to make sure we specify a correct error severity.
-			// todo-1 Also remember that it treats strings like "%s" in a special way.
+			// todo-0 Also remember that it treats sequences like "%s" in a special way.
 			console.warn("Warning 202506083. Skipping a long test.");
 			// return;
 		}
@@ -43,6 +43,7 @@ describe("PrizesWallet-1", function () {
 
 		const randomNumberSeed_ = generateRandomUInt256();
 		const randomNumberSeedWrapper_ = {value: randomNumberSeed_,};
+		/** @type {bigint} */
 		let randomNumber_;
 
 		// #endregion
@@ -146,15 +147,19 @@ describe("PrizesWallet-1", function () {
 
 		let ethBalanceAmount_ = 0n;
 
-		// It could make sense to keep signer indexes here, which could be more efficient, but it's OK to keep their addresses too.
+		// It could make sense to keep signer indexes in here, which could be more efficient, but it's OK to keep their addresses too.
 		const mainPrizeBeneficiaryAddresses_ = [];
 
 		const timeoutDurationToWithdrawPrizes_ = await newPrizesWallet_.timeoutDurationToWithdrawPrizes();
 		const roundTimeoutTimesToWithdrawPrizes_ = [];
-		const ethBalancesInfo_ = [];
-		for (let bidderIndex_ = numBidders_; ( -- bidderIndex_ ) >= 0; ) {
-			ethBalancesInfo_.push({roundNum: 0n, amount: 0n,});
-		}
+
+		/**
+		This array contains `numBidders_` items, an item for each bidder.
+		Each item is an array containing an item for each bidding round.
+		Each item of which is not yet withdrawn ETH balance amount.
+		Comment-202511172 applies.
+		*/
+		const ethBalanceAmounts_ = Array.from({length: numBidders_,}, () => ([]));
 
 		// This array contains an item for each bidding round.
 		// Each item is a `string` representing donated token holder address. It can be zero.
@@ -174,6 +179,7 @@ describe("PrizesWallet-1", function () {
 			/*async*/ () => {
 				mainPrizeBeneficiaryAddresses_.push(hre.ethers.ZeroAddress);
 				roundTimeoutTimesToWithdrawPrizes_.push(0n);
+				ethBalanceAmounts_.forEach((item) => {item.push(0n);});
 				donatedTokens_.push(hre.ethers.ZeroAddress);
 				++ roundNum_;
 				// console.info(`202507165 ${roundNum_}`);
@@ -207,8 +213,8 @@ describe("PrizesWallet-1", function () {
 			// #endregion
 			// #region
 
+			const numChoice1s_ = 15;
 			randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
-			const numChoice1s_ = 14;
 			let choice1Code_ = Number(randomNumber_ % BigInt(numChoice1s_));
 
 			// #endregion
@@ -261,8 +267,10 @@ describe("PrizesWallet-1", function () {
 				// console.info("202506084");
 				randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 				const mainPrizeBeneficiaryIndex_ = Number(randomNumber_ % BigInt(numBidders_));
-				await waitForTransactionReceipt(newPrizesWallet_.connect(fakeGame_).registerRoundEnd(roundNum_, contracts_.signers[mainPrizeBeneficiaryIndex_].address));
-				const transactionBlock_ = await hre.ethers.provider.getBlock("latest");
+				/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
+				const transactionResponsePromise_ = newPrizesWallet_.connect(fakeGame_).registerRoundEnd(roundNum_, contracts_.signers[mainPrizeBeneficiaryIndex_].address);
+				const transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
+				const transactionBlock_ = await transactionReceipt_.getBlock();
 				mainPrizeBeneficiaryAddresses_[Number(roundNum_)] = contracts_.signers[mainPrizeBeneficiaryIndex_].address;
 				roundTimeoutTimesToWithdrawPrizes_[Number(roundNum_)] = BigInt(transactionBlock_.timestamp) + timeoutDurationToWithdrawPrizes_;
 				expect(await newPrizesWallet_.mainPrizeBeneficiaryAddresses(roundNum_)).equal(mainPrizeBeneficiaryAddresses_[Number(roundNum_)]);
@@ -285,32 +293,34 @@ describe("PrizesWallet-1", function () {
 					// console.info("202506146");
 					ethAmount_ = 0n;
 				}
-				await expect(newPrizesWallet_.connect(fakeGame_).depositEth(roundNum_, 132n, contracts_.signers[prizeWinnerIndex_].address, {value: ethAmount_,}))
+				randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
+				await expect(newPrizesWallet_.connect(fakeGame_).depositEth(roundNum_, randomNumber_, contracts_.signers[prizeWinnerIndex_].address, {value: ethAmount_,}))
 					.emit(newPrizesWallet_, "EthReceived")
-					.withArgs(roundNum_, 132n, contracts_.signers[prizeWinnerIndex_].address, ethAmount_);
+					.withArgs(roundNum_, randomNumber_, contracts_.signers[prizeWinnerIndex_].address, ethAmount_);
 				ethBalanceAmount_ += ethAmount_;
-				ethBalancesInfo_[prizeWinnerIndex_].roundNum = roundNum_;
-				ethBalancesInfo_[prizeWinnerIndex_].amount += ethAmount_;
+				ethBalanceAmounts_[prizeWinnerIndex_][Number(roundNum_)] += ethAmount_;
 				expect(await hre.ethers.provider.getBalance(newPrizesWalletAddress_)).equal(ethBalanceAmount_);
 				randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
-				// console.info("202506197", (randomNumber_ & 1n).toString());
-				const ethBalanceInfoFromContract_ =
+				// console.info(`202506197 ${randomNumber_ & 1n}`);
+				const prizeWinnerEthBalanceAmountFromContract_ =
 					((randomNumber_ & 1n) == 0n) ?
-					await newPrizesWallet_.connect(contracts_.signers[prizeWinnerIndex_])["getEthBalanceInfo()"]() :
-					await newPrizesWallet_["getEthBalanceInfo(address)"](contracts_.signers[prizeWinnerIndex_].address);
-				expect(ethBalanceInfoFromContract_[0]).equal(ethBalancesInfo_[prizeWinnerIndex_].roundNum);
-				expect(ethBalanceInfoFromContract_[1]).equal(ethBalancesInfo_[prizeWinnerIndex_].amount);
+					await newPrizesWallet_.connect(contracts_.signers[prizeWinnerIndex_])["getEthBalanceAmount(uint256)"](roundNum_) :
+					await newPrizesWallet_["getEthBalanceAmount(uint256,address)"](roundNum_, contracts_.signers[prizeWinnerIndex_].address);
+				expect(prizeWinnerEthBalanceAmountFromContract_).equal(ethBalanceAmounts_[prizeWinnerIndex_][Number(roundNum_)]);
 
 				// #endregion
-			} else if ((choice1Code_ -= 1) < 0) {
-				// #region `withdrawEth()`
+			} else if ((choice1Code_ -= 2) < 0) {
+				// #region `withdrawEth(uint256 roundNum_)`, `withdrawEthMany`
 
-				// console.info("202506088");
+				// console.info(`202506088 ${choice1Code_}`);
 				let prizeWinnerIndex_;
-				for (let counter_ = numBidders_; ; ) {
+				let prizeRoundNum_;
+				for (let counter_ = /*Math.min(*/numBidders_/*, Number(roundNum_) + 1)*/; ; ) {
 					randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 					prizeWinnerIndex_ = Number(randomNumber_ % BigInt(numBidders_));
-					if (ethBalancesInfo_[prizeWinnerIndex_].amount > 0n) {
+					randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
+					prizeRoundNum_ = roundNum_ -  randomNumber_ % BigInt(Math.min(Number(roundNum_) + 1, 10));
+					if (ethBalanceAmounts_[prizeWinnerIndex_][Number(prizeRoundNum_)] > 0n) {
 						// console.info("202506175", counter_.toString(), "/", numBidders_.toString());
 						break;
 					}
@@ -321,43 +331,45 @@ describe("PrizesWallet-1", function () {
 				}
 				const prizeWinnerEthBalanceAmountBeforeTransaction_ = await hre.ethers.provider.getBalance(contracts_.signers[prizeWinnerIndex_].address);
 				/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
-				const transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[prizeWinnerIndex_])["withdrawEth()"]();
+				const transactionResponsePromise_ =
+					(choice1Code_ == -1) ?
+					newPrizesWallet_.connect(contracts_.signers[prizeWinnerIndex_])["withdrawEth(uint256)"](prizeRoundNum_) :
+					newPrizesWallet_.connect(contracts_.signers[prizeWinnerIndex_]).withdrawEthMany([prizeRoundNum_,]);
+				const transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 				await expect(transactionResponsePromise_)
 					.emit(newPrizesWallet_, "EthWithdrawn")
-					.withArgs(contracts_.signers[prizeWinnerIndex_].address, contracts_.signers[prizeWinnerIndex_].address, ethBalancesInfo_[prizeWinnerIndex_].amount);
-				const transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
-				ethBalanceAmount_ -= ethBalancesInfo_[prizeWinnerIndex_].amount;
+					.withArgs(prizeRoundNum_, contracts_.signers[prizeWinnerIndex_].address, contracts_.signers[prizeWinnerIndex_].address, ethBalanceAmounts_[prizeWinnerIndex_][Number(prizeRoundNum_)]);
+				ethBalanceAmount_ -= ethBalanceAmounts_[prizeWinnerIndex_][Number(prizeRoundNum_)];
 				expect(await hre.ethers.provider.getBalance(newPrizesWalletAddress_)).equal(ethBalanceAmount_);
 				const transactionFeeInEth_ = transactionReceipt_.fee;
 				expect(transactionFeeInEth_).greaterThan(0n);
-				expect(await hre.ethers.provider.getBalance(contracts_.signers[prizeWinnerIndex_].address)).equal(prizeWinnerEthBalanceAmountBeforeTransaction_ - transactionFeeInEth_ + ethBalancesInfo_[prizeWinnerIndex_].amount);
-				ethBalancesInfo_[prizeWinnerIndex_].roundNum = 0n;
-				ethBalancesInfo_[prizeWinnerIndex_].amount = 0n;
+				expect(await hre.ethers.provider.getBalance(contracts_.signers[prizeWinnerIndex_].address)).equal(prizeWinnerEthBalanceAmountBeforeTransaction_ - transactionFeeInEth_ + ethBalanceAmounts_[prizeWinnerIndex_][Number(prizeRoundNum_)]);
+				ethBalanceAmounts_[prizeWinnerIndex_][Number(prizeRoundNum_)] = 0n;
 				randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
-				// console.info("202506198", (randomNumber_ & 1n).toString());
-				const ethBalanceInfoFromContract_ =
+				// console.info(`202506198 ${randomNumber_ & 1n}`);
+				const prizeWinnerEthBalanceAmountFromContract_ =
 					((randomNumber_ & 1n) == 0n) ?
-					await newPrizesWallet_.connect(contracts_.signers[prizeWinnerIndex_])["getEthBalanceInfo()"]() :
-					await newPrizesWallet_["getEthBalanceInfo(address)"](contracts_.signers[prizeWinnerIndex_].address);
-				expect(ethBalanceInfoFromContract_[0]).equal(ethBalancesInfo_[prizeWinnerIndex_].roundNum);
-				expect(ethBalanceInfoFromContract_[1]).equal(ethBalancesInfo_[prizeWinnerIndex_].amount);
+					await newPrizesWallet_.connect(contracts_.signers[prizeWinnerIndex_])["getEthBalanceAmount(uint256)"](prizeRoundNum_) :
+					await newPrizesWallet_["getEthBalanceAmount(uint256,address)"](prizeRoundNum_, contracts_.signers[prizeWinnerIndex_].address);
+				expect(prizeWinnerEthBalanceAmountFromContract_).equal(ethBalanceAmounts_[prizeWinnerIndex_][Number(prizeRoundNum_)]);
 
 				// #endregion
 			} else if ((choice1Code_ -= 1) < 0) {
-				// #region `withdrawEth(address prizeWinnerAddress_)`
+				// #region `withdrawEth(uint256 roundNum_, address prizeWinnerAddress_)`
 
 				// console.info("202506089");
 				const blockBeforeTransaction_ = await hre.ethers.provider.getBlock("latest");
-				randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
-				const strangerIndex_ = Number(randomNumber_ % BigInt(numBidders_));
 				let prizeWinnerIndex_;
-				let roundTimeoutTimeToWithdrawPrizes_;
+				let prizeRoundNum_;
+				let prizeRoundTimeoutTimeToWithdrawPrizes_;
 				for (let counter_ = numBidders_; ; ) {
 					randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 					prizeWinnerIndex_ = Number(randomNumber_ % BigInt(numBidders_));
-					roundTimeoutTimeToWithdrawPrizes_ = roundTimeoutTimesToWithdrawPrizes_[Number(ethBalancesInfo_[prizeWinnerIndex_].roundNum)];
-					if ( ethBalancesInfo_[prizeWinnerIndex_].amount > 0n &&
-					     (blockBeforeTransaction_.timestamp + 1 >= Number(roundTimeoutTimeToWithdrawPrizes_) && roundTimeoutTimeToWithdrawPrizes_ > 0n)
+					randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
+					prizeRoundNum_ = roundNum_ -  randomNumber_ % BigInt(Math.min(Number(roundNum_) + 1, 10));
+					prizeRoundTimeoutTimeToWithdrawPrizes_ = roundTimeoutTimesToWithdrawPrizes_[Number(prizeRoundNum_)];
+					if ( ethBalanceAmounts_[prizeWinnerIndex_][Number(prizeRoundNum_)] > 0n &&
+					     (blockBeforeTransaction_.timestamp + 1 >= Number(prizeRoundTimeoutTimeToWithdrawPrizes_) && prizeRoundTimeoutTimeToWithdrawPrizes_ > 0n)
 					) {
 						// console.info("202506177", counter_.toString(), "/", numBidders_.toString());
 						break;
@@ -367,56 +379,57 @@ describe("PrizesWallet-1", function () {
 						break;
 					}
 				}
+				randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
+				const strangerIndex_ = Number(randomNumber_ % BigInt(numBidders_));
 				const strangerEthBalanceAmountBeforeTransaction_ = await hre.ethers.provider.getBalance(contracts_.signers[strangerIndex_].address);
 				/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
-				const transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[strangerIndex_])["withdrawEth(address)"](contracts_.signers[prizeWinnerIndex_].address);
+				const transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[strangerIndex_])["withdrawEth(uint256,address)"](prizeRoundNum_, contracts_.signers[prizeWinnerIndex_].address);
 				const transactionReceipt_ = await tryWaitForTransactionReceipt(transactionResponsePromise_);
 				const transactionBlock_ = await hre.ethers.provider.getBlock("latest");
 
 				// // Comment-202506169 applies.
-				// if (ethBalancesInfo_[prizeWinnerIndex_].amount > 0) {
+				// if (ethBalanceAmounts_[prizeWinnerIndex_][Number(prizeRoundNum_)] > 0) {
 				// 	++ testCounter5_;
 				// }
 
-				if ( ! (transactionBlock_.timestamp >= Number(roundTimeoutTimeToWithdrawPrizes_) && roundTimeoutTimeToWithdrawPrizes_ > 0n) ) {
+				if ( ! (transactionBlock_.timestamp >= Number(prizeRoundTimeoutTimeToWithdrawPrizes_) && prizeRoundTimeoutTimeToWithdrawPrizes_ > 0n) ) {
 					// console.info("202506094");
 					expect(transactionReceipt_ != undefined).false;
 					await expect(transactionResponsePromise_)
 						.revertedWithCustomError(newPrizesWallet_, "EthWithdrawalDenied")
 						.withArgs(
-							"Only the ETH prize winner is permitted to withdraw their balance before a timeout expires.",
+							"Only the ETH prize winner is permitted to withdraw the prize before a timeout expires.",
+							prizeRoundNum_,
 							contracts_.signers[prizeWinnerIndex_].address,
 							contracts_.signers[strangerIndex_].address,
-							roundTimeoutTimeToWithdrawPrizes_,
+							prizeRoundTimeoutTimeToWithdrawPrizes_,
 							BigInt(transactionBlock_.timestamp)
 						);
 				} else {
 					// console.info("202506095");
 
 					// // Comment-202506169 applies.
-					// if (ethBalancesInfo_[prizeWinnerIndex_].amount > 0) {
+					// if (ethBalanceAmounts_[prizeWinnerIndex_][Number(prizeRoundNum_)] > 0) {
 					// 	console.info("202506174", (( ++ testCounter6_ ) / testCounter5_).toPrecision(2));
 					// }
 
 					expect(transactionReceipt_ != undefined).true;
 					await expect(transactionResponsePromise_)
 						.emit(newPrizesWallet_, "EthWithdrawn")
-						.withArgs(contracts_.signers[prizeWinnerIndex_].address, contracts_.signers[strangerIndex_].address, ethBalancesInfo_[prizeWinnerIndex_].amount);
-					ethBalanceAmount_ -= ethBalancesInfo_[prizeWinnerIndex_].amount;
+						.withArgs(prizeRoundNum_, contracts_.signers[prizeWinnerIndex_].address, contracts_.signers[strangerIndex_].address, ethBalanceAmounts_[prizeWinnerIndex_][Number(prizeRoundNum_)]);
+					ethBalanceAmount_ -= ethBalanceAmounts_[prizeWinnerIndex_][Number(prizeRoundNum_)];
 					expect(await hre.ethers.provider.getBalance(newPrizesWalletAddress_)).equal(ethBalanceAmount_);
 					const transactionFeeInEth_ = transactionReceipt_.fee;
 					expect(transactionFeeInEth_).greaterThan(0n);
-					expect(await hre.ethers.provider.getBalance(contracts_.signers[strangerIndex_].address)).equal(strangerEthBalanceAmountBeforeTransaction_ - transactionFeeInEth_ + ethBalancesInfo_[prizeWinnerIndex_].amount);
-					ethBalancesInfo_[prizeWinnerIndex_].roundNum = 0n;
-					ethBalancesInfo_[prizeWinnerIndex_].amount = 0n;
+					expect(await hre.ethers.provider.getBalance(contracts_.signers[strangerIndex_].address)).equal(strangerEthBalanceAmountBeforeTransaction_ - transactionFeeInEth_ + ethBalanceAmounts_[prizeWinnerIndex_][Number(prizeRoundNum_)]);
+					ethBalanceAmounts_[prizeWinnerIndex_][Number(prizeRoundNum_)] = 0n;
 					randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
-					// console.info("202506199", (randomNumber_ & 1n).toString());
-					const ethBalanceInfoFromContract_ =
+					// console.info(`202506199 ${randomNumber_ & 1n}`);
+					const prizeWinnerEthBalanceAmountFromContract_ =
 						((randomNumber_ & 1n) == 0n) ?
-						await newPrizesWallet_.connect(contracts_.signers[prizeWinnerIndex_])["getEthBalanceInfo()"]() :
-						await newPrizesWallet_["getEthBalanceInfo(address)"](contracts_.signers[prizeWinnerIndex_].address);
-					expect(ethBalanceInfoFromContract_[0]).equal(ethBalancesInfo_[prizeWinnerIndex_].roundNum);
-					expect(ethBalanceInfoFromContract_[1]).equal(ethBalancesInfo_[prizeWinnerIndex_].amount);
+						await newPrizesWallet_.connect(contracts_.signers[prizeWinnerIndex_])["getEthBalanceAmount(uint256)"](prizeRoundNum_) :
+						await newPrizesWallet_["getEthBalanceAmount(uint256,address)"](prizeRoundNum_, contracts_.signers[prizeWinnerIndex_].address);
+					expect(prizeWinnerEthBalanceAmountFromContract_).equal(ethBalanceAmounts_[prizeWinnerIndex_][Number(prizeRoundNum_)]);
 				}
 
 				// #endregion
@@ -514,7 +527,7 @@ describe("PrizesWallet-1", function () {
 					// #endregion
 					// #region
 
-					for (let counter_ = Math.min(numBidders_, Number(roundNum_) + 1); ; ) {
+					for (let counter_ = /*Math.min(*/numBidders_/*, Number(roundNum_) + 1)*/; ; ) {
 						randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 						mainPrizeBeneficiaryIndex_ = Number(randomNumber_ % BigInt(numBidders_));
 						randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);

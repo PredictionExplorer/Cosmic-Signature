@@ -68,7 +68,9 @@ describe("CosmicSignatureGame-1", function () {
 
 			const randomNumberSeedWrapper_ = {value: randomNumberSeed_,};
 			const fairRandomNumberGenerator1N_ = 7;
-			const fairRandomNumberGenerator1_ = createFairRandomNumberGenerator(fairRandomNumberGenerator1N_, 3, randomNumberSeedWrapper_);
+			const fairRandomNumberGenerator1K_ = 3;
+			const fairRandomNumberGenerator1_ = createFairRandomNumberGenerator(fairRandomNumberGenerator1N_, fairRandomNumberGenerator1K_, randomNumberSeedWrapper_);
+			/** @type {bigint} */
 			let randomNumber_;
 
 			// #endregion
@@ -88,10 +90,12 @@ describe("CosmicSignatureGame-1", function () {
 			{
 				// const timeStamp1_ = performance.now();
 				for (const signer5_ of contracts_.signers) {
+					// This test sometimes requires more ETH than signers have by default.
 					{
 						const signer5BalanceAmount_ = await hre.ethers.provider.getBalance(signer5_.address);
-						await hre.ethers.provider.send("hardhat_setBalance", [signer5_.address, "0x" + (signer5BalanceAmount_ * 2n).toString(16),]);
+						await hre.ethers.provider.send("hardhat_setBalance", [signer5_.address, "0x" + (signer5BalanceAmount_ << 2n).toString(16),]);
 					}
+
 					{
 						const randomWalkNftForSigner5_ = contracts_.randomWalkNft.connect(signer5_);
 						await waitForTransactionReceipt(randomWalkNftForSigner5_.setApprovalForAll(contracts_.stakingWalletRandomWalkNftAddress, true));
@@ -115,7 +119,17 @@ describe("CosmicSignatureGame-1", function () {
 			const stakingWalletRandomWalkNftSimulator_ = /*await*/ createStakingWalletRandomWalkNftSimulator(randomWalkNftSimulator_);
 			const stakingWalletCosmicSignatureNftSimulator_ = /*await*/ createStakingWalletCosmicSignatureNftSimulator(cosmicSignatureNftSimulator_);
 			const charityWalletSimulator_ = /*await*/ createCharityWalletSimulator();
-			const cosmicSignatureGameProxySimulator_ = await createCosmicSignatureGameProxySimulator(contracts_, cosmicSignatureTokenSimulator_, randomWalkNftSimulator_, cosmicSignatureNftSimulator_, prizesWalletSimulator_, stakingWalletRandomWalkNftSimulator_, stakingWalletCosmicSignatureNftSimulator_, charityWalletSimulator_);
+			const cosmicSignatureGameProxySimulator_ =
+				await createCosmicSignatureGameProxySimulator(
+					contracts_,
+					cosmicSignatureTokenSimulator_,
+					randomWalkNftSimulator_,
+					cosmicSignatureNftSimulator_,
+					prizesWalletSimulator_,
+					stakingWalletRandomWalkNftSimulator_,
+					stakingWalletCosmicSignatureNftSimulator_,
+					charityWalletSimulator_
+				);
 
 			// #endregion
 			// #region `assertContractSimulators_`
@@ -124,7 +138,7 @@ describe("CosmicSignatureGame-1", function () {
 				await assertCosmicSignatureTokenSimulator(cosmicSignatureTokenSimulator_, contracts_, randomNumberSeedWrapper_);
 				await assertRandomWalkNftSimulator(randomWalkNftSimulator_, contracts_, randomNumberSeedWrapper_);
 				await assertCosmicSignatureNftSimulator(cosmicSignatureNftSimulator_, contracts_, randomNumberSeedWrapper_);
-				await assertPrizesWalletSimulator(prizesWalletSimulator_, contracts_, randomNumberSeedWrapper_);
+				await assertPrizesWalletSimulator(prizesWalletSimulator_, contracts_, randomNumberSeedWrapper_, cosmicSignatureGameProxySimulator_.roundNum);
 				await assertStakingWalletRandomWalkNftSimulator(stakingWalletRandomWalkNftSimulator_, contracts_, randomNumberSeedWrapper_);
 				await assertStakingWalletCosmicSignatureNftSimulator(stakingWalletCosmicSignatureNftSimulator_, contracts_, randomNumberSeedWrapper_);
 				await assertCharityWalletSimulator(charityWalletSimulator_, contracts_);
@@ -135,6 +149,9 @@ describe("CosmicSignatureGame-1", function () {
 			// #region
 
 			await assertContractSimulators_();
+
+			// #endregion
+			// #region
 
 			// Remember to re-query this after every block mining.
 			let latestBlock_ = await hre.ethers.provider.getBlock("latest");
@@ -198,10 +215,12 @@ describe("CosmicSignatureGame-1", function () {
 				// #endregion
 				// #region `tryFindUnusedRandomWalkNft_`
 
-				/// [Comment-202504222]
-				/// Makes a reasonble effort to find an unused NFT that belongs to `signer_`.
-				/// [/Comment-202504222]
-				/// `isForStaking_`: `true` for staking; `false` for bidding.
+				/**
+				[Comment-202504222]
+				Makes a reasonble effort to find an unused NFT that belongs to `signer_`.
+				[/Comment-202504222]
+				@param isForStaking_ `true` for staking; `false` for bidding.
+				*/
 				const tryFindUnusedRandomWalkNft_ = (isForStaking_) => {
 					// If this is zero `randomWalkNftId_` will stay `-1n`.
 					const randomWalkNftTotalSupply_ = randomWalkNftSimulator_.totalSupply();
@@ -211,9 +230,9 @@ describe("CosmicSignatureGame-1", function () {
 
 						// [Comment-202504224]
 						// This NFT ID is guaranteed to be valid.
-						// Issue. We do not test an invalid NFT ID. In that case `ERC721.ownerOf`, which our contract calls,
+						// Issue. This test does not test an invalid NFT ID. In that case `ERC721.ownerOf`, which our contract calls,
 						// would revert with a different error.
-						// todo-1 --- Develop a separate test for that? Unnecessary. The transaction would just revert.
+						// Would it make sense to develop a separate test for that? Unnecessary. The transaction would just revert.
 						// [/Comment-202504224]
 						randomWalkNftId_ = randomNumber_ % randomWalkNftTotalSupply_;
 
@@ -231,9 +250,9 @@ describe("CosmicSignatureGame-1", function () {
 				// #endregion
 				// #region `tryFindUnusedCosmicSignatureNft_`
 
-				// Comment-202504222 applies.
+				/** Comment-202504222 applies. */
 				const tryFindUnusedCosmicSignatureNft_ = () => {
-					// If this is zero `cosmicSignatureNftId_` will stay `-1n`.
+					/** If this is zero `cosmicSignatureNftId_` will stay `-1n`. */
 					const cosmicSignatureNftTotalSupply_ = cosmicSignatureNftSimulator_.totalSupply()
 
 					for (let counter_ = Math.min(contracts_.signers.length, Number(cosmicSignatureNftTotalSupply_)); ( -- counter_ ) >= 0; ) {
@@ -267,9 +286,11 @@ describe("CosmicSignatureGame-1", function () {
 				// #endregion
 				// #region `advanceNextBlockTime_`
 
-				// Issue. This logic is a bit of a hack, not precise science.
-				// What we need is that the logic near Comment-202504043 allowed us to break the loop
-				// and the behavior was generally close to what will be happening in the production.
+				/**
+				Issue. This logic is a bit of a hack, not precise science.
+				Its goal is that the logic near Comment-202504043 allowed us to break the loop
+				and the behavior was generally close to what will be happening in the production.
+				*/
 				const advanceNextBlockTime_ = async () => {
 					// Increasing block time increase as the number of bids in the current bidding round increases.
 					// Doing so ensures that block time will eventually reach main prize time.
@@ -277,8 +298,9 @@ describe("CosmicSignatureGame-1", function () {
 						(cosmicSignatureGameProxySimulator_.mainPrizeTimeIncrementInMicroSeconds + (20n * 60n) * cosmicSignatureGameProxySimulator_.getTotalNumBids()) / 2_000_000n;
 
 					// This logic increases the chance that:
-					// 1. The first bidder or a non-last bidder claims the main prize.
-					// 2. The logic near Comment-202505117 causes ETH bid price to become very small, down to 1 Wei.
+					// 1. The first bidder or a non-last bidder claims main prize.
+					// 2. The logic near Comment-202505117 causes ETH bid price to eventually become very small, down to 1 Wei.
+					//    Comment-202503162 relates.
 					{
 						const totalNumBidsCopy_ = cosmicSignatureGameProxySimulator_.getTotalNumBids();
 						randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);

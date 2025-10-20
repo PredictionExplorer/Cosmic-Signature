@@ -38,7 +38,6 @@ abstract contract MainPrize is
 	/// @dev Comment-202411169 relates and/or applies.
 	/// Comment-202411078 relates and/or applies.
 	///
-	/// todo-1 +++ Review this list again. Done on Oct 8 2925.
 	/// Observable universe entities accessed by `claimMainPrize`, `_distributePrizes`, `_prepareNextRound`.
 	///    `OpenZeppelinPanic`.
 	///    `nonReentrant`.
@@ -78,6 +77,7 @@ abstract contract MainPrize is
 	///    `charityAddress`.
 	///    `_setRoundActivationTime`.
 	///    `getDurationUntilMainPrizeRaw`.
+	///    `_setMainPrizeTimeIncrementInMicroSeconds`.
 	///    `_updateChampionsIfNeeded`.
 	///    `_updateChronoWarriorIfNeeded`.
 	///    `LastCstBidderPrizePaid`.
@@ -690,9 +690,7 @@ abstract contract MainPrize is
 		// // [/Comment-202501307]
 		// cstDutchAuctionBeginningBidPrice = nextRoundFirstCstDutchAuctionBeginningBidPrice;
 
-		// It appears to be unnecessary to emit an event about this change.
-		mainPrizeTimeIncrementInMicroSeconds += mainPrizeTimeIncrementInMicroSeconds / mainPrizeTimeIncrementIncreaseDivisor;
-
+		_setMainPrizeTimeIncrementInMicroSeconds(mainPrizeTimeIncrementInMicroSeconds + mainPrizeTimeIncrementInMicroSeconds / mainPrizeTimeIncrementIncreaseDivisor);
 		_setRoundActivationTime(block.timestamp + delayDurationBeforeRoundActivation);
 	}
 

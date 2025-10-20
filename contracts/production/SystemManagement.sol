@@ -11,6 +11,7 @@ import { IStakingWalletRandomWalkNft, StakingWalletRandomWalkNft } from "./Staki
 import { IStakingWalletCosmicSignatureNft, StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { BiddingBase } from "./BiddingBase.sol";
+import { MainPrizeBase } from "./MainPrizeBase.sol";
 import { ISystemManagement } from "./interfaces/ISystemManagement.sol";
 
 abstract contract SystemManagement is
@@ -18,6 +19,7 @@ abstract contract SystemManagement is
 	AddressValidator,
 	CosmicSignatureGameStorage,
 	BiddingBase,
+	MainPrizeBase,
 	ISystemManagement {
 	function setDelayDurationBeforeRoundActivation(uint256 newValue_) external override onlyOwner /*_onlyRoundIsInactive*/ {
 		delayDurationBeforeRoundActivation = newValue_;
@@ -107,8 +109,7 @@ abstract contract SystemManagement is
 	}
 
 	function setMainPrizeTimeIncrementInMicroSeconds(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
-		mainPrizeTimeIncrementInMicroSeconds = newValue_;
-		emit MainPrizeTimeIncrementInMicroSecondsChanged(newValue_);
+		_setMainPrizeTimeIncrementInMicroSeconds(newValue_);
 	}
 
 	function setMainPrizeTimeIncrementIncreaseDivisor(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {

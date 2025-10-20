@@ -7,10 +7,10 @@ const hre = require("hardhat");
 const { waitForTransactionReceipt } = require("../src/Helpers.js");
 
 main()
-	.then(() => { process.exit(0); })
+	.then(() => {})
 	.catch((errorObject_) => {
 		console.error(errorObject_);
-		process.exit(1);
+		process.exitCode = 1;
 	});
 
 async function main() {

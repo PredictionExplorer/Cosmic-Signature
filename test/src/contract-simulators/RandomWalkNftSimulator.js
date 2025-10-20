@@ -20,8 +20,10 @@ const { assertAddressIsValid, assertEvent } = require("../../../src/ContractTest
 	const randomWalkNftSimulator_ = {
 		// #region Data
 
-		/// For each NFT ID, stores an object that contains: `ownerAddress`.
-		/// Each item index equals respective NFT ID.
+		/**
+		For each NFT ID, stores an object that contains: `ownerAddress`.
+		Each item index equals respective NFT ID.
+		*/
 		nftsMetaData: [],
 
 		// #endregion

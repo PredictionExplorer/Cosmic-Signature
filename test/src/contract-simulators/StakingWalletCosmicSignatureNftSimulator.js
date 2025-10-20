@@ -24,7 +24,7 @@ const { assertEvent } = require("../../../src/ContractTestingHelpers.js");
 		ethBalanceAmount: 0n,
 		numStakedNfts: 0n,
 
-		/// Comment-202504221 applies.
+		/** Comment-202504221 applies. */
 		usedNfts: {},
 
 		actionCounter: 0n,

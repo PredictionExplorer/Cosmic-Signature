@@ -18,10 +18,10 @@ async function configurePrizesWallet(prizesWallet_, ownerSigner_, timeoutDuratio
 	}
 }
 
-async function withdrawEverything(prizesWallet_, bidderSigner_, withdrawEth_, donatedTokensToClaim_, donatedNftIndexes_) {
+async function withdrawEverything(prizesWallet_, bidderSigner_, ethPrizeRoundNums_, donatedTokensToClaim_, donatedNftIndexes_) {
 	console.info("withdrawEverything");
 	const timeStamp1_ = performance.now();
-	await waitForTransactionReceipt(prizesWallet_.connect(bidderSigner_).withdrawEverything(withdrawEth_, donatedTokensToClaim_, donatedNftIndexes_));
+	await waitForTransactionReceipt(prizesWallet_.connect(bidderSigner_).withdrawEverything(ethPrizeRoundNums_, donatedTokensToClaim_, donatedNftIndexes_));
 	const timeStamp2_ = performance.now();
 	console.info(`Took ${(timeStamp2_ - timeStamp1_).toFixed(1)} ms.`);
 }

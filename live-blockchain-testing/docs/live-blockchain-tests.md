@@ -52,7 +52,7 @@ It will run for about a minute.
 
 - If everything worked as designed, you will need to get back ETH from each of the involved accounts. In addition, if you used your production Random Walk NFTs, transfer them from bidder2 back to yourself.
 
-- If not everything worked as designed, you might need to start with withdrawing ETH and donated NFTs from `PrizesWallet` and ETH from the Game contract. The test logs what is held in `PrizesWallet` and the Game contract ETH balance. By default, the test is configured to deploy `SelfDestructibleCosmicSignatureGame`. Call `finalizeTesting` on it to get your ETH back.\
+- If not everything worked as designed, you might need to start with withdrawing ETH and donated NFTs from `PrizesWallet` and ETH from the Game contract. The test logs what was deposited to `PrizesWallet` and the Game contract ETH balance. By default, the test is configured to deploy `SelfDestructibleCosmicSignatureGame`. Call `finalizeTesting` on it to get your ETH back.\
 Comment-202509304 relates and/or applies.
 
 #### Caveats

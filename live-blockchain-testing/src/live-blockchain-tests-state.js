@@ -44,9 +44,15 @@ class State {
 	contracts;
 
 	nextRandomWalkNftIndex = 0;
+
+	/**
+	Key is bidder address.
+	Value is an array of bidding round numbers in which ETH was deposited to `PrizesWallet` for the bidder.
+	*/
+	accountEthPrizeRoundNums = {};
+
 	donatedTokensToClaim = [];
 	donatedNftIndexes = [];
-	outcomeCode = 0;
 
 	constructor() {
 		// Doing nothing.

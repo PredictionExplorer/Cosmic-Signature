@@ -84,12 +84,14 @@ function generateRandomUInt256() {
 // #endregion
 // #region // `generateRandomUInt256Seed`
 
-// /// Comment-202504067 applies.
-// /// [Comment-202504071]
-// /// This is a production function.
-// /// It's not implemented.
-// /// Only a similar test function is implemented.
-// /// [/Comment-202504071]
+// /**
+// Comment-202504067 applies.
+// [Comment-202504071]
+// This is a production function.
+// It's not implemented.
+// Only a similar test function is implemented.
+// [/Comment-202504071]
+// */
 // function generateRandomUInt256Seed(???) {
 // 	return ???;
 // }
@@ -97,7 +99,7 @@ function generateRandomUInt256() {
 // #endregion
 // #region `generateRandomUInt256FromSeedWrapper`
 
-/// Comment-202504065 applies.
+/** Comment-202504065 applies. */
 function generateRandomUInt256FromSeedWrapper(seedWrapper_) {
 	const newSeed_ = BigInt.asUintN(256, seedWrapper_.value + 1n);
 	seedWrapper_.value = newSeed_;

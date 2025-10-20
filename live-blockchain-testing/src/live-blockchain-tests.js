@@ -59,10 +59,10 @@ const state = new State();
 
 prepare2();
 main()
-	.then(() => { process.exit(state.outcomeCode); })
+	.then(() => {})
 	.catch((errorObject_) => {
 		console.error(errorObject_);
-		process.exit(1);
+		process.exitCode = 1;
 	});
 
 // #endregion
@@ -109,7 +109,7 @@ function prepare1() {
 // #endregion
 // #region `validateConfiguration`
 
-/// Comment-202509244 relates.
+/** Comment-202509244 relates. */
 function validateConfiguration() {
 	// Comment-202509242 relates and/or applies.
 	if ( configuration.finalizeTesting &&
@@ -163,6 +163,9 @@ function createAccountSigner(accountPrivateKeySeedSaltEntry_) {
 	const accountSigner_ = new hre.ethers.Wallet(accountPrivateKey_, hre.ethers.provider);
 	console.info(`${accountName_}: privateKey = ${accountPrivateKey_}, address = ${accountSigner_.address}`);
 	state[`${accountName_}Signer`] = accountSigner_;
+	if (accountName_.startsWith("bidder")) {
+		state.accountEthPrizeRoundNums[accountSigner_.address] = [];
+	}
 }
 
 // #endregion
@@ -179,7 +182,7 @@ async function main() {
 	await finalizeTestingIfNeeded();
 	await payMarketingRewardsIfNeeded();
 	console.info(
-		(state.outcomeCode == 0) ?
+		( ! (process.exitCode > 0) ) ?
 		`${nodeOsModule.EOL}Live blockchain tests completed successfully.` :
 		`${nodeOsModule.EOL}Live blockchain tests completed with errors.`
 	);
@@ -403,8 +406,11 @@ async function tryPlayCosmicSignatureGameIfNeeded() {
 			await ensureDurationElapsedSinceRoundActivationIsAtLeast(state.contracts.cosmicSignatureGameProxy, state.ownerSigner, (configuration.cosmicSignatureContracts.cosmicSignatureGame.ethDutchAuctionDuration * 2n + 3n / 2n) / 3n);
 
 			await bidWithEth(state.contracts.cosmicSignatureGameProxy, state.bidder1Signer);
+
+			// // Testing.
 			// await sleepForMilliSeconds(2000);
 			// console.info(await state.contracts.cosmicSignatureGameProxy.tryGetCurrentChampions({blockTag: "pending",}));
+
 			const randomWalkNft1Id_ = await getRandomWalkNft(state.bidder2Signer);
 			await bidWithEthPlusRandomWalkNft(state.contracts.cosmicSignatureGameProxy, state.bidder2Signer, randomWalkNft1Id_);
 			await bidWithEthAndDonateNft(state.contracts.cosmicSignatureGameProxy, state.contracts.prizesWallet, state.bidder2Signer, state.contracts.randomWalkNftAddress, randomWalkNft1Id_, state.donatedNftIndexes);
@@ -416,13 +422,13 @@ async function tryPlayCosmicSignatureGameIfNeeded() {
 
 			await bidWithCstAndDonateToken(state.contracts.cosmicSignatureGameProxy, state.contracts.prizesWallet, state.bidder2Signer, state.contracts.cosmicSignatureToken, 234567n, state.donatedTokensToClaim);
 			await waitUntilMainPrizeTime(state.contracts.cosmicSignatureGameProxy);
-			await claimMainPrize(state.contracts.cosmicSignatureGameProxy, state.bidder2Signer);
+			await claimMainPrize(state.contracts.cosmicSignatureGameProxy, state.contracts.prizesWallet, state.bidder2Signer, state.accountEthPrizeRoundNums);
 		}
 	} catch(errorObject_) {
 		// console.error(errorObject_.errorName, errorObject_.args);
 		// console.error(errorObject_.shortMessage || errorObject_.reason);
 		console.error(errorObject_);
-		state.outcomeCode = 1;
+		process.exitCode = 1;
 	}
 }
 
@@ -462,18 +468,22 @@ async function tryWithdrawEverythingIfNeeded() {
 
 async function tryWithdrawEverythingToAccountIfNeeded(accountName_, donatedTokensToClaim_, donatedNftIndexes_) {
 	const accountSigner_ = state[accountName_ + "Signer"];
-	const accountEthBalanceAmount_ = (await state.contracts.prizesWallet["getEthBalanceInfo(address)"](accountSigner_.address, {blockTag: "pending",})).amount;
+	const accountEthPrizeRoundNums_ = state.accountEthPrizeRoundNums[accountSigner_.address];
+	let accountEthPrizesTotalAmount_ = 0n;
+	for (const accountEthPrizeRoundNum_ of accountEthPrizeRoundNums_) {
+		accountEthPrizesTotalAmount_ += await state.contracts.prizesWallet["getEthBalanceAmount(uint256,address)"](accountEthPrizeRoundNum_, accountSigner_.address, {blockTag: "pending",});
+	}
 	const jsonStringifyHelper_ =
 		(key_, value_) =>
 		((typeof value_ == "bigint") ? ((key_ == "amount") ? hre.ethers.formatEther(value_) : Number(value_)) : value_);
 	console.info(
-		`${accountName_} assets held in PrizesWallet: ` +
-		`ETH Balance: ${hre.ethers.formatEther(accountEthBalanceAmount_)} ETH, ` +
-		`ERC-20 Tokens: ${JSON.stringify(donatedTokensToClaim_, jsonStringifyHelper_)}, ` +
-		`NFT Indexes: ${JSON.stringify(donatedNftIndexes_, jsonStringifyHelper_)}`
+		`${accountName_} assets deposited to PrizesWallet: ` +
+		`ETH prizes won in rounds ${JSON.stringify(accountEthPrizeRoundNums_, jsonStringifyHelper_)}: ${hre.ethers.formatEther(accountEthPrizesTotalAmount_)} ETH, ` +
+		`ERC-20 tokens: ${JSON.stringify(donatedTokensToClaim_, jsonStringifyHelper_)}, ` +
+		`NFT indexes: ${JSON.stringify(donatedNftIndexes_, jsonStringifyHelper_)}`
 	);
 	if ( configuration.withdrawEverything &&
-	     ( accountEthBalanceAmount_ > 0n ||
+	     ( accountEthPrizesTotalAmount_ > 0n ||
 
 	       // Is it possible to combine some `donatedTokensToClaim_` items or filter out its items with zero amounts?
 	       // Regardless, it's not important for this test.
@@ -483,15 +493,15 @@ async function tryWithdrawEverythingToAccountIfNeeded(accountName_, donatedToken
 	     )
 	) {
 		try {
-			await withdrawEverything(state.contracts.prizesWallet, accountSigner_, accountEthBalanceAmount_ > 0n, donatedTokensToClaim_, donatedNftIndexes_);
+			await withdrawEverything(state.contracts.prizesWallet, accountSigner_, accountEthPrizeRoundNums_, donatedTokensToClaim_, donatedNftIndexes_);
 		} catch(errorObject_) {
 			// [Comment-202509304]
-			// Issue. On transaction reversal, you will have to manually withdraw ERC-20 tokens and ERC-721 NFTs that we logged.
-			// ETH can still be withdrawn automatically if you run this test again.
+			// Issue. On transaction reversal, you will have to manually withdraw
+			// ETH, ERC-20 tokens, and ERC-721 NFTs that we logged.
 			// [/Comment-202509304]
 
 			console.error(errorObject_);
-			state.outcomeCode = 1;
+			process.exitCode = 1;
 		}
 	}
 }

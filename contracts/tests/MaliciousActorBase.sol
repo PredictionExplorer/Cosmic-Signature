@@ -59,27 +59,31 @@ abstract contract MaliciousActorBase {
 			} else if (modeCode == 102) {
 				prizesWallet.registerRoundEnd(0, address(this));
 			} else if (modeCode == 103) {
+				uint256[] memory ethPrizeRoundNums_;
 				IPrizesWallet.DonatedTokenToClaim[] memory donatedTokensToClaim_;
 				uint256[] memory donatedNftIndexes_;
-				prizesWallet.withdrawEverything(false, donatedTokensToClaim_, donatedNftIndexes_);
+				prizesWallet.withdrawEverything(ethPrizeRoundNums_, donatedTokensToClaim_, donatedNftIndexes_);
 			} else if (modeCode == 104) {
 				prizesWallet.depositEth{value: 1 wei}(0, 0, address(this));
 			} else if (modeCode == 105) {
-				prizesWallet.withdrawEth();
+				prizesWallet.withdrawEth(0);
 			} else if (modeCode == 106) {
-				prizesWallet.withdrawEth(address(this));
+				prizesWallet.withdrawEth(0, address(this));
 			} else if (modeCode == 107) {
-				prizesWallet.donateToken(0, address(this), IERC20(address(this)), 1);
+				uint256[] memory roundNums_;
+				prizesWallet.withdrawEthMany(roundNums_);
 			} else if (modeCode == 108) {
-				prizesWallet.claimDonatedToken(0, IERC20(address(this)), 1);
+				prizesWallet.donateToken(0, address(this), IERC20(address(this)), 1);
 			} else if (modeCode == 109) {
+				prizesWallet.claimDonatedToken(0, IERC20(address(this)), 1);
+			} else if (modeCode == 110) {
 				IPrizesWallet.DonatedTokenToClaim[] memory donatedTokensToClaim_;
 				prizesWallet.claimManyDonatedTokens(donatedTokensToClaim_);
-			} else if (modeCode == 110) {
-				prizesWallet.donateNft(0, address(this), IERC721(address(this)), 0);
 			} else if (modeCode == 111) {
-				prizesWallet.claimDonatedNft(0);
+				prizesWallet.donateNft(0, address(this), IERC721(address(this)), 0);
 			} else if (modeCode == 112) {
+				prizesWallet.claimDonatedNft(0);
+			} else if (modeCode == 113) {
 				uint256[] memory donatedNftIndexes_;
 				prizesWallet.claimManyDonatedNfts(donatedNftIndexes_);
 			}

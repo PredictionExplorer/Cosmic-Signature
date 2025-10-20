@@ -38,8 +38,8 @@
 // }
 
 // main()
-// 	.then(() => { process.exit(0); })
+// 	.then(() => {})
 // 	.catch((errorObject_) => {
 // 		console.error(errorObject_);
-// 		process.exit(1);
+// 		process.exitCode = 1;
 // 	});

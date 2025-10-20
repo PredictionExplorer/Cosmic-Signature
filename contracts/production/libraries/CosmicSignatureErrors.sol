@@ -125,6 +125,7 @@ library CosmicSignatureErrors {
 	/// @notice Thrown when someone attempts to withdraw ETH, but is not permitted to do so.
 	/// See also: `MainPrizeClaimDenied`, `DonatedTokenClaimDenied`, `DonatedNftClaimDenied`.
 	/// @param errStr Description of the error.
+	/// @param roundNum Bidding round number.
 	/// @param prizeWinnerAddress Prize winner address.
 	/// @param beneficiaryAddress The address that attempted to withdrew the funds.
 	/// Comment-202411285 applies.
@@ -132,6 +133,7 @@ library CosmicSignatureErrors {
 	/// @param blockTimeStamp The current block timestamp.
 	error EthWithdrawalDenied(
 		string errStr,
+		uint256 roundNum,
 		address prizeWinnerAddress,
 		address beneficiaryAddress,
 		uint256 operationPermittedTime,
@@ -189,7 +191,7 @@ library CosmicSignatureErrors {
 	// #endregion
 	// #region NFT Staking
 
-	// todo-1 +++ Keep commented.
+	// todo-1 +++ Keep this commented.
 	// /// @notice Thrown when there are no staked NFTs.
 	// /// @param errStr Description of the error.
 	// error NoStakedNfts(string errStr);
@@ -204,7 +206,7 @@ library CosmicSignatureErrors {
 	/// @param nftId NFT ID.
 	error NftHasAlreadyBeenStaked(string errStr, uint256 nftId);
 
-	// todo-1 +++ Keep commented.
+	// todo-1 +++ Keep this commented.
 	// /// @notice Thrown when attempting to unstake an already unstaked NFT.
 	// /// @param errStr Description of the error.
 	// /// @param stakeActionId NFT stake action ID.
@@ -227,7 +229,7 @@ library CosmicSignatureErrors {
 	/// @notice Thrown when an unauthorized caller attempts to call a restricted method.
 	/// @param errStr Description of the error.
 	/// @param callerAddress Caller address.
-	/// @dev todo-1 +++ We don't have any other errors of this kind, right? If I find any, try to eliminate them.
+	/// @dev We do not and should not have any other errors of this kind.
 	error UnauthorizedCaller(string errStr, address callerAddress);
 
 	// #endregion

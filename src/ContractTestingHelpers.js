@@ -162,14 +162,16 @@ async function deployContractsForTestingAdvanced(
 // #endregion
 // #region `hackPrepareHardhatCoverageIfNeeded`
 
-/// [Comment-202508265]
-/// Issue. The Hardhat Coverage task ignores parts of Hardhat configuration.
-/// This method fixes the issue.
-/// The `blockGasLimit` parameter is also ignored, but we are happy with its default value.
-/// todo-3 Is the above behavior going to change in a future version of Hardhat 2.x? Unlikely.
-/// Comment-202505294 relates.
-/// Comment-202509185 relates.
-/// [/Comment-202508265]
+/**
+[Comment-202508265]
+Issue. The Hardhat Coverage task ignores parts of Hardhat configuration.
+This method fixes the issue.
+The `blockGasLimit` parameter is also ignored, but we are happy with its default value.
+todo-3 Is the above behavior going to change in a future version of Hardhat 2.x? Unlikely.
+Comment-202505294 relates.
+Comment-202509185 relates.
+[/Comment-202508265]
+*/
 async function hackPrepareHardhatCoverageOnceIfNeeded() {
 	// Comment-202508267 applies.
 	const gas = 30_000_000;
@@ -234,7 +236,7 @@ async function tryWaitForTransactionReceipt(transactionResponsePromise) {
 // #endregion
 // #region `checkTransactionErrorObject`
 
-/// Comment-202508253 relates.
+/** Comment-202508253 relates. */
 function checkTransactionErrorObject(transactionErrorObject) {
 	{
 		const weExpectThisError = transactionErrorObject.message.startsWith("VM Exception while processing transaction: reverted with ");

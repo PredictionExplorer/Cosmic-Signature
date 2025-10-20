@@ -15,9 +15,10 @@ async function waitUntilMainPrizeTime(cosmicSignatureGameProxy_) {
 	}
 }
 
-async function claimMainPrize(cosmicSignatureGameProxy_, bidderSigner_) {
+async function claimMainPrize(cosmicSignatureGameProxy_, prizesWallet_, bidderSigner_, accountEthPrizeRoundNums_) {
 	console.info("claimMainPrize");
 	const cosmicSignatureGameProxyMainPrizeClaimedTopicHash_ = cosmicSignatureGameProxy_.interface.getEvent("MainPrizeClaimed").topicHash;
+	const prizesWalletEthReceivedTopicHash_ = prizesWallet_.interface.getEvent("EthReceived").topicHash;
 	let mainEthPrizeAmount_ = await cosmicSignatureGameProxy_.getMainEthPrizeAmount({blockTag: "pending",});
 	const timeStamp1_ = performance.now();
 	/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
@@ -29,9 +30,22 @@ async function claimMainPrize(cosmicSignatureGameProxy_, bidderSigner_) {
 	expect(parsedLog_.args.beneficiaryAddress).equal(bidderSigner_.address);
 	expect(parsedLog_.args.ethPrizeAmount).equal(mainEthPrizeAmount_);
 	console.info(`Completed bidding round ${parsedLog_.args.roundNum}. claimMainPrize took ${(timeStamp2_ - timeStamp1_).toFixed(1)} ms.`);
+	// todo-0 Replace `indexOf` with `includes` everywhere.
+	let logs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.includes(prizesWalletEthReceivedTopicHash_)));
+	for (log_ of logs_) {
+		parsedLog_ = prizesWallet_.interface.parseLog(log_);
+		if (parsedLog_.args.amount > 0n) {
+			const ethPrizeWinnerEthPrizeRoundNums_ = accountEthPrizeRoundNums_[parsedLog_.args.prizeWinnerAddress];
+			if ( ! ethPrizeWinnerEthPrizeRoundNums_.includes(parsedLog_.args.roundNum) ) {
+				ethPrizeWinnerEthPrizeRoundNums_.push(parsedLog_.args.roundNum);
+			}
+		} else {
+			console.warn("Warning 202511145.");
+		}
+	}
 }
 
-// /// Comment-202509229 applies.
+// /** Comment-202509229 applies. */
 // async function forward_time_to_main_prize_time() {
 // 	const cosmicSignatureGame = await getCosmicSignatureGameContract();
 // 	let durationUntilMainPrize = await cosmicSignatureGame.getDurationUntilMainPrizeRaw(/*todo-9 {blockTag: "pending",}*/);
@@ -50,7 +64,7 @@ async function claimMainPrize(cosmicSignatureGameProxy_, bidderSigner_) {
 // 	}
 // }
 
-// /// Comment-202509229 applies.
+// /** Comment-202509229 applies. */
 // async function claim_main_prize(testingAcct, cosmicSignatureGame) {
 // 	let mainEthPrizeAmount = await cosmicSignatureGame.getMainEthPrizeAmount({blockTag: "pending",});
 // 	let charityEthDonationAmount = await cosmicSignatureGame.getCharityEthDonationAmount({blockTag: "pending",});
@@ -96,17 +110,20 @@ async function claimMainPrize(cosmicSignatureGameProxy_, bidderSigner_) {
 // 	expect(parsed_log.args.amount).equal(charityEthDonationAmount);
 // }
 
-// /// Comment-202509229 applies.
-// /// todo-9 Now Chrono-Warrior also gets ETH.
-// /// todo-9 So maybe this function name should not include "raffle".
+// /**
+// Comment-202509229 applies.
+// todo-9 Now Chrono-Warrior also gets ETH.
+// todo-9 So maybe this function name should not include "raffle".
+// */
 // async function claim_raffle_eth(testingAcct, prizesWallet, event_logs) {
 // 	const unique_winners = {};
 // 	for (let i = 0; i < event_logs.length; i++) {
 // 		let wlog = prizesWallet.interface.parseLog(event_logs[i]);
 // 		let prizeWinnerAddress = wlog.args.prizeWinnerAddress;
-// 		if (prizeWinnerAddress.address == testingAcct.address) {
+// 		if (prizeWinnerAddress == testingAcct.address) {
+// 			// todo-9 Do we now need to check that we haven't yet seen this combination of `prizeWinnerAddress` and `wlog.args.roundNum`?
 // 			if (unique_winners[prizeWinnerAddress] == undefined) {
-// 				await waitForTransactionReceipt(prizesWallet.connect(testingAcct).withdrawEth());
+// 				await waitForTransactionReceipt(prizesWallet.connect(testingAcct).withdrawEth(wlog.args.roundNum));
 // 				unique_winners[prizeWinnerAddress] = 1;
 // 			}
 // 		}

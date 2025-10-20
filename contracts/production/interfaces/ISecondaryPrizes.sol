@@ -35,7 +35,7 @@ interface ISecondaryPrizes is ICosmicSignatureGameStorage {
 	/// @param winnerIndex Winner index.
 	/// [Comment-202511097]
 	/// It's unique per round across `ChronoWarriorPrizePaid` and `RaffleWinnerBidderEthPrizeAllocated` events --
-	/// to act as `PrizesWallet` ETH deposit ID.
+	/// to act as `PrizesWallet` ETH deposit ID that `PrizesWallet` will echo with its `EthReceived` event.
 	/// [/Comment-202511097]
 	/// @param chronoWarriorAddress Chrono-Warrior address.
 	/// @param ethPrizeAmount The ETH prize amount.

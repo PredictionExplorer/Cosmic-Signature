@@ -20,8 +20,10 @@ const { assertAddressIsValid, assertEvent } = require("../../../src/ContractTest
 	const cosmicSignatureNftSimulator_ = {
 		// #region Data
 
-		/// For each NFT ID, stores an object that contains: `ownerAddress`, `name`, `seed`.
-		/// Each item index equals respective NFT ID.
+		/**
+		For each NFT ID, stores an object that contains: `ownerAddress`, `name`, `seed`.
+		Each item index equals respective NFT ID.
+		*/
 		nftsMetaData: [],
 
 		// #endregion
