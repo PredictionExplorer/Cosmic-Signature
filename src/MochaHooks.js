@@ -5,11 +5,11 @@ const hre = require("hardhat");
 const helpersModule = require("./Helpers.js");
 
 // function test1(x_) {
-// 	console.info(Date.now().toString(), x_);
+// 	console.info("%s", `${Date.now()} ${x_}`);
 // }
 
 async function beforeAll() {
-	// console.info("202508203");
+	// console.info("%s", "202508203");
 	expect(hre.network.name).equal("hardhat");
 	expect(helpersModule.HARDHAT_MODE_CODE).equal(1);
 

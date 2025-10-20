@@ -7,7 +7,7 @@ const { sleepForMilliSeconds, waitForTransactionReceipt } = require("../../../sr
 async function waitUntilMainPrizeTime(cosmicSignatureGameProxy_) {
 	for (;;) {
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy_.getDurationUntilMainPrizeRaw({blockTag: "pending",});
-		console.info(`${durationUntilMainPrize_} seconds until main prize.`);
+		console.info("%s", `${durationUntilMainPrize_} seconds until main prize.`);
 		if (durationUntilMainPrize_ <= 0n) {
 			break;
 		}
@@ -16,7 +16,7 @@ async function waitUntilMainPrizeTime(cosmicSignatureGameProxy_) {
 }
 
 async function claimMainPrize(cosmicSignatureGameProxy_, prizesWallet_, bidderSigner_, accountEthPrizeRoundNums_) {
-	console.info("claimMainPrize");
+	console.info("%s", "claimMainPrize");
 	const cosmicSignatureGameProxyMainPrizeClaimedTopicHash_ = cosmicSignatureGameProxy_.interface.getEvent("MainPrizeClaimed").topicHash;
 	const prizesWalletEthReceivedTopicHash_ = prizesWallet_.interface.getEvent("EthReceived").topicHash;
 	let mainEthPrizeAmount_ = await cosmicSignatureGameProxy_.getMainEthPrizeAmount({blockTag: "pending",});
@@ -29,7 +29,7 @@ async function claimMainPrize(cosmicSignatureGameProxy_, prizesWallet_, bidderSi
 	let parsedLog_ = cosmicSignatureGameProxy_.interface.parseLog(log_);
 	expect(parsedLog_.args.beneficiaryAddress).equal(bidderSigner_.address);
 	expect(parsedLog_.args.ethPrizeAmount).equal(mainEthPrizeAmount_);
-	console.info(`Completed bidding round ${parsedLog_.args.roundNum}. claimMainPrize took ${(timeStamp2_ - timeStamp1_).toFixed(1)} ms.`);
+	console.info("%s", `Completed bidding round ${parsedLog_.args.roundNum}. claimMainPrize took ${(timeStamp2_ - timeStamp1_).toFixed(1)} ms.`);
 	// todo-0 Replace `indexOf` with `includes` everywhere.
 	let logs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.includes(prizesWalletEthReceivedTopicHash_)));
 	for (log_ of logs_) {
@@ -40,7 +40,7 @@ async function claimMainPrize(cosmicSignatureGameProxy_, prizesWallet_, bidderSi
 				ethPrizeWinnerEthPrizeRoundNums_.push(parsedLog_.args.roundNum);
 			}
 		} else {
-			console.warn("Warning 202511145.");
+			console.warn("%s", "Warning 202511145.");
 		}
 	}
 }
@@ -49,7 +49,7 @@ async function claimMainPrize(cosmicSignatureGameProxy_, prizesWallet_, bidderSi
 // async function forward_time_to_main_prize_time() {
 // 	const cosmicSignatureGame = await getCosmicSignatureGameContract();
 // 	let durationUntilMainPrize = await cosmicSignatureGame.getDurationUntilMainPrizeRaw(/*todo-9 {blockTag: "pending",}*/);
-// 	console.info("Duration until main prize before:", durationUntilMainPrize);
+// 	console.info("%s", `Duration until main prize before: ${durationUntilMainPrize}`);
 // 	if (durationUntilMainPrize > 0n) {
 // 		if (durationUntilMainPrize > 1n) {
 // 			await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize),]);
@@ -60,7 +60,7 @@ async function claimMainPrize(cosmicSignatureGameProxy_, prizesWallet_, bidderSi
 // 		// But this can also be negative.
 // 		durationUntilMainPrize = await cosmicSignatureGame.getDurationUntilMainPrizeRaw(/*todo-9 {blockTag: "pending",}*/);
 //
-// 		console.info("Duration until main prize after:", durationUntilMainPrize);
+// 		console.info("%s", `Duration until main prize after: ${durationUntilMainPrize}`);
 // 	}
 // }
 

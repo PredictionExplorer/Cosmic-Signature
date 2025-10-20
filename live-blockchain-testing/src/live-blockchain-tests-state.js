@@ -16,7 +16,7 @@ class State {
 	*/
 	accountPrivateKeySeed;
 
-	/** 
+	/**
 	This is the default signer for all contracts. It holds no ETH.
 	So we must explicitly `connect` to a particular signer for each call.
 	@type {import("hardhat").ethers.Wallet}

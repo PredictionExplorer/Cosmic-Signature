@@ -10,17 +10,17 @@ async function ensureDurationElapsedSinceRoundActivationIsAtLeast(cosmicSignatur
 	const roundActivationTimeMaxLimit_ = pendingBlockTimeStamp_ - durationElapsedSinceRoundActivationMinLimit_;
 	const roundActivationTimeExcess_ = roundActivationTime_ - roundActivationTimeMaxLimit_;
 	if(roundActivationTimeExcess_ > 0n) {
-		console.info(`Moving bidding round activation time back by ${roundActivationTimeExcess_} seconds.`);
+		console.info("%s", `Moving bidding round activation time back by ${roundActivationTimeExcess_} seconds.`);
 		await waitForTransactionReceipt(cosmicSignatureGameProxy_.connect(ownerSigner_).setRoundActivationTime(roundActivationTimeMaxLimit_));
 	} else {
-		console.info(`It's unnecessary to move bidding round activation time back. Its current value is already before its desired value by ${( - roundActivationTimeExcess_ )} seconds.`);
+		console.info("%s", `It's unnecessary to move bidding round activation time back. Its current value is already before its desired value by ${( - roundActivationTimeExcess_ )} seconds.`);
 	}
 }
 
 async function waitUntilCstDutchAuctionElapsedDurationIsAtLeast(cosmicSignatureGameProxy_, cstDutchAuctionElapsedDurationMinLimit_) {
 	for (;;) {
 		let cstDutchAuctionElapsedDuration_ = (await cosmicSignatureGameProxy_.getCstDutchAuctionDurations({blockTag: "pending",}))[1];
-		console.info(`CST Dutch auction elapsed duration is ${cstDutchAuctionElapsedDuration_} seconds. We want it to be at least ${cstDutchAuctionElapsedDurationMinLimit_} seconds.`);
+		console.info("%s", `CST Dutch auction elapsed duration is ${cstDutchAuctionElapsedDuration_} seconds. We want it to be at least ${cstDutchAuctionElapsedDurationMinLimit_} seconds.`);
 		if (cstDutchAuctionElapsedDuration_ >= cstDutchAuctionElapsedDurationMinLimit_) {
 			break;
 		}
@@ -30,7 +30,7 @@ async function waitUntilCstDutchAuctionElapsedDurationIsAtLeast(cosmicSignatureG
 }
 
 async function bidWithEth(cosmicSignatureGameProxy_, bidderSigner_) {
-	console.info("bidWithEth");
+	console.info("%s", "bidWithEth");
 	const cosmicSignatureGameProxyBidPlacedTopicHash_ = cosmicSignatureGameProxy_.interface.getEvent("BidPlaced").topicHash;
 	const nextEthBidPrices_ = new Array(5);
 
@@ -69,7 +69,7 @@ async function bidWithEth(cosmicSignatureGameProxy_, bidderSigner_) {
 }
 
 async function bidWithEthPlusRandomWalkNft(cosmicSignatureGameProxy_, bidderSigner_, randomWalkNftId_) {
-	console.info("bidWithEthPlusRandomWalkNft");
+	console.info("%s", "bidWithEthPlusRandomWalkNft");
 	const cosmicSignatureGameProxyBidPlacedTopicHash_ = cosmicSignatureGameProxy_.interface.getEvent("BidPlaced").topicHash;
 	const nextEthBidPrices_ = new Array(5);
 
@@ -110,7 +110,7 @@ async function bidWithEthPlusRandomWalkNft(cosmicSignatureGameProxy_, bidderSign
 }
 
 async function bidWithEthAndDonateNft(cosmicSignatureGameProxy_, prizesWallet_, bidderSigner_, donatedNftAddress_, donatedNftId_, donatedNftIndexes_) {
-	console.info("bidWithEthAndDonateNft");
+	console.info("%s", "bidWithEthAndDonateNft");
 	const cosmicSignatureGameProxyBidPlacedTopicHash_ = cosmicSignatureGameProxy_.interface.getEvent("BidPlaced").topicHash;
 	const prizesWalletNftDonatedTopicHash_ = prizesWallet_.interface.getEvent("NftDonated").topicHash;
 	const nextEthBidPrices_ = new Array(5);
@@ -149,7 +149,7 @@ async function bidWithEthAndDonateNft(cosmicSignatureGameProxy_, prizesWallet_, 
 }
 
 async function bidWithEthPlusRandomWalkNftAndDonateNft(cosmicSignatureGameProxy_, prizesWallet_, bidderSigner_, randomWalkNftId_, donatedNftAddress_, donatedNftId_, donatedNftIndexes_) {
-	console.info("bidWithEthPlusRandomWalkNftAndDonateNft");
+	console.info("%s", "bidWithEthPlusRandomWalkNftAndDonateNft");
 	const cosmicSignatureGameProxyBidPlacedTopicHash_ = cosmicSignatureGameProxy_.interface.getEvent("BidPlaced").topicHash;
 	const prizesWalletNftDonatedTopicHash_ = prizesWallet_.interface.getEvent("NftDonated").topicHash;
 	const nextEthBidPrices_ = new Array(5);
@@ -197,7 +197,7 @@ async function bidWithEthPlusRandomWalkNftAndDonateNft(cosmicSignatureGameProxy_
 }
 
 async function bidWithCstAndDonateToken(cosmicSignatureGameProxy_, prizesWallet_, bidderSigner_, donatedTokenAddress_, donatedTokenAmount_, donatedTokensToClaim_) {
-	console.info("bidWithCstAndDonateToken");
+	console.info("%s", "bidWithCstAndDonateToken");
 	const cosmicSignatureGameProxyBidPlacedTopicHash_ = cosmicSignatureGameProxy_.interface.getEvent("BidPlaced").topicHash;
 	const prizesWalletTokenDonatedTopicHash_ = prizesWallet_.interface.getEvent("TokenDonated").topicHash;
 	const nextCstBidPrices_ = new Array(5);
@@ -208,7 +208,7 @@ async function bidWithCstAndDonateToken(cosmicSignatureGameProxy_, prizesWallet_
 		// Comment-202509215 applies.
 		nextCstBidPrices_[nextCstBidPriceIndex_] = await cosmicSignatureGameProxy_.getNextCstBidPriceAdvanced(BigInt(nextCstBidPriceIndex_), {blockTag: "pending",});
 
-		// console.info(hre.ethers.formatEther(nextCstBidPrices_[nextCstBidPriceIndex_]));
+		// console.info("%s", hre.ethers.formatEther(nextCstBidPrices_[nextCstBidPriceIndex_]));
 		if (nextCstBidPriceIndex_ <= 0) {
 			break;
 		}
@@ -222,6 +222,7 @@ async function bidWithCstAndDonateToken(cosmicSignatureGameProxy_, prizesWallet_
 	let transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 	const timeStamp3_ = performance.now();
 	console.info(
+		"%s",
 		`${nextCstBidPrices_.length} getNextCstBidPriceAdvanced calls took ${(timeStamp2_ - timeStamp1_).toFixed(1)} ms. ` +
 		`bidWithCstAndDonateToken took ${(timeStamp3_ - timeStamp2_).toFixed(1)} ms.`
 	);

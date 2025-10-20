@@ -41,7 +41,7 @@ describe("CosmicSignatureGame-1", function () {
 		// #region
 
 		if (SKIP_LONG_TESTS) {
-			console.warn("Warning 202505015. Skipping a long test.");
+			console.warn("%s", "Warning 202505015. Skipping a long test.");
 			// return;
 		}
 
@@ -58,7 +58,7 @@ describe("CosmicSignatureGame-1", function () {
 		// #region
 
 		const randomNumberSeed_ = generateRandomUInt256();
-		// console.info(uint256ToPaddedHexString(randomNumberSeed_));
+		// console.info("%s", uint256ToPaddedHexString(randomNumberSeed_));
 
 		// #endregion
 		// #region
@@ -106,7 +106,7 @@ describe("CosmicSignatureGame-1", function () {
 					}
 				}
 				// const timeStamp2_ = performance.now();
-				// console.info((timeStamp2_ - timeStamp1_).toFixed(1));
+				// console.info("%s", (timeStamp2_ - timeStamp1_).toFixed(1));
 			}
 			
 			// #endregion
@@ -253,7 +253,7 @@ describe("CosmicSignatureGame-1", function () {
 				/** Comment-202504222 applies. */
 				const tryFindUnusedCosmicSignatureNft_ = () => {
 					/** If this is zero `cosmicSignatureNftId_` will stay `-1n`. */
-					const cosmicSignatureNftTotalSupply_ = cosmicSignatureNftSimulator_.totalSupply()
+					const cosmicSignatureNftTotalSupply_ = cosmicSignatureNftSimulator_.totalSupply();
 
 					for (let counter_ = Math.min(contracts_.signers.length, Number(cosmicSignatureNftTotalSupply_)); ( -- counter_ ) >= 0; ) {
 						randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
@@ -328,7 +328,7 @@ describe("CosmicSignatureGame-1", function () {
 					// #region Minting A Random Walk NFT
 
 					case 0: {
-						// console.info("202505106");
+						// console.info("%s", "202505106");
 						blockBeforeTransaction_ = latestBlock_;
 
 						// It would be nice to implement this method in `createRandomWalkNftSimulator`, but keeping it simple.
@@ -338,11 +338,11 @@ describe("CosmicSignatureGame-1", function () {
 						const transactionResponsePromise_ = randomWalkNftForSigner_.mint({value: randomWalkNftMintPrice_,});
 						// const transactionResponse_ = await transactionResponsePromise_;
 						transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
-						// console.info("202506257", String(transactionResponse_.timestamp));
+						// console.info("%s", `202506257 ${transactionResponse_.timestamp}`);
 						latestBlock_ = await transactionReceipt_.getBlock();
 						transactionBlock_ = latestBlock_;
 						randomWalkNftId_ = randomWalkNftSimulator_.mint(signer_.address, contracts_, transactionReceipt_, eventIndexWrapper_);
-						// console.info("Minted RW NFT " + randomWalkNftId_.toString() + ".");
+						// console.info("%s", `Minted RW NFT ${randomWalkNftId_}.`);
 						break;
 					}
 
@@ -352,7 +352,7 @@ describe("CosmicSignatureGame-1", function () {
 					case 1: {
 						const found_ = tryFindUnusedRandomWalkNft_(true);
 						if (found_) {
-							// console.info("202505107 Staking RW NFT " + randomWalkNftId_.toString() + ".");
+							// console.info("%s", `202505107 Staking RW NFT ${randomWalkNftId_}.`);
 							blockBeforeTransaction_ = latestBlock_;
 							/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 							const transactionResponsePromise_ = stakingWalletRandomWalkNftForSigner_.stake(randomWalkNftId_);
@@ -361,7 +361,7 @@ describe("CosmicSignatureGame-1", function () {
 							transactionBlock_ = latestBlock_;
 							stakingWalletRandomWalkNftSimulator_.stake(signer_.address, randomWalkNftId_, contracts_, transactionReceipt_, eventIndexWrapper_);
 						} else {
-							// console.info("202505143 Cannot find an RW NFT to stake.");
+							// console.info("%s", "202505143 Cannot find an RW NFT to stake.");
 						}
 						break;
 					}
@@ -372,7 +372,7 @@ describe("CosmicSignatureGame-1", function () {
 					case 2: {
 						const found_ = tryFindUnusedCosmicSignatureNft_();
 						if (found_) {
-							// console.info("202505108 Staking CS NFT " + cosmicSignatureNftId_.toString() + ".");
+							// console.info("%s", `202505108 Staking CS NFT ${cosmicSignatureNftId_}.`);
 							blockBeforeTransaction_ = latestBlock_;
 							/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 							const transactionResponsePromise_ = stakingWalletCosmicSignatureNftForSigner_.stake(cosmicSignatureNftId_);
@@ -381,7 +381,7 @@ describe("CosmicSignatureGame-1", function () {
 							transactionBlock_ = latestBlock_;
 							stakingWalletCosmicSignatureNftSimulator_.stake(signer_.address, cosmicSignatureNftId_, contracts_, transactionReceipt_, eventIndexWrapper_);
 						} else {
-							// console.info("202505144 Cannot find a CS NFT to stake.");
+							// console.info("%s", "202505144 Cannot find a CS NFT to stake.");
 						}
 						break;
 					}
@@ -390,18 +390,18 @@ describe("CosmicSignatureGame-1", function () {
 					// #region Calling `CosmicSignatureGame.donateEth` or `CosmicSignatureGame.donateEthWithInfo`
 
 					case 3: {
-						// console.info("202505109");
+						// console.info("%s", "202505109");
 						blockBeforeTransaction_ = latestBlock_;
 						randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 						const ethDonationAmount_ = BigInt(Math.max(Number(BigInt.asUintN(53, randomNumber_)) - Number(1n << (53n - 4n)), 0));
 						if ((randomNumber_ & (1n << 128n)) == 0n) {
-							// console.info("202506038 Donating " + hre.ethers.formatEther(ethDonationAmount_) + " ETH.");
+							// console.info("%s", `202506038 Donating ${hre.ethers.formatEther(ethDonationAmount_)} ETH.`);
 							/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 							const transactionResponsePromise_ = cosmicSignatureGameProxyForSigner_.donateEth({value: ethDonationAmount_,});
 							transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 							cosmicSignatureGameProxySimulator_.donateEth(signer_.address, ethDonationAmount_, contracts_, transactionReceipt_, eventIndexWrapper_);
 						} else {
-							// console.info("202506039 Donating " + hre.ethers.formatEther(ethDonationAmount_) + " ETH with info.");
+							// console.info("%s", `202506039 Donating ${hre.ethers.formatEther(ethDonationAmount_)} ETH with info.`);
 
 							// Comment-202505061 applies.
 							generateBidMessage_();
@@ -424,9 +424,9 @@ describe("CosmicSignatureGame-1", function () {
 
 						await advanceNextBlockTime_();
 						if (tryFindUnusedRandomWalkNft_(false)) {
-							// console.info("Found an RW NFT for bidding: " + randomWalkNftId_.toString() + ".");
+							// console.info("%s", `Found an RW NFT for bidding: ${randomWalkNftId_}.`);
 						} else if (randomWalkNftId_ >= 0n) {
-							// console.info("Cannot find an RW NFT for bidding.");
+							// console.info("%s", "Cannot find an RW NFT for bidding.");
 							randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 
 							// Even if no appropriate NFT was found, we want in most cases the bid transaction to succeed.
@@ -434,7 +434,7 @@ describe("CosmicSignatureGame-1", function () {
 								randomWalkNftId_ = ((randomNumber_ & 0x30n) != 0n) ? ( ~ randomWalkNftId_ ) : (-1n);
 							}
 						} else {
-							// console.info("There are no RW NFTs yet.");
+							// console.info("%s", "There are no RW NFTs yet.");
 						}
 						generateBidMessage_();
 						blockBeforeTransaction_ = latestBlock_;
@@ -452,16 +452,16 @@ describe("CosmicSignatureGame-1", function () {
 						if (randomWalkNftId_ == -1n && bidMessageLength_ <= 0n) {
 							randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 							if ((randomNumber_ & 3n) != 0n) {
-								// console.info("202505159");
+								// console.info("%s", "202505159");
 								sendEth_ = true;
 							} else {
-								// console.info("202505161");
+								// console.info("%s", "202505161");
 							}
 						} else {
-							// console.info("202505162");
+							// console.info("%s", "202505162");
 						}
 						const signerEthBalanceAmountBeforeTransaction_ = await hre.ethers.provider.getBalance(signer_.address);
-						// console.info("202507209", hre.ethers.formatEther(signerEthBalanceAmountBeforeTransaction_), hre.ethers.formatEther(ethPriceToPayMaxLimit_));
+						// console.info("%s", `202507209 ${hre.ethers.formatEther(signerEthBalanceAmountBeforeTransaction_)} ${hre.ethers.formatEther(ethPriceToPayMaxLimit_)}`);
 						/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 						const transactionResponsePromise_ =
 							sendEth_ ?
@@ -487,7 +487,7 @@ describe("CosmicSignatureGame-1", function () {
 							);
 						expect(transactionShouldHaveSucceeded_).equal(transactionReceipt_ != undefined);
 						if (transactionShouldHaveSucceeded_) {
-							// console.info("202505111", signerIndex_.toString());
+							// console.info("%s", `202505111 ${signerIndex_}`);
 							await cosmicSignatureGameProxySimulator_.bidWithEth(
 								transactionBlock_,
 								signer_.address,
@@ -551,7 +551,7 @@ describe("CosmicSignatureGame-1", function () {
 							);
 						expect(transactionShouldHaveSucceeded_).equal(transactionReceipt_ != undefined);
 						if (transactionShouldHaveSucceeded_) {
-							// console.info("202505112", signerIndex_.toString());
+							// console.info("%s", `202505112 ${signerIndex_}`);
 							/*await*/ cosmicSignatureGameProxySimulator_.bidWithCst(
 								transactionBlock_,
 								signer_.address,
@@ -600,8 +600,8 @@ describe("CosmicSignatureGame-1", function () {
 						// const timeStamp2_ = performance.now();
 						expect(transactionShouldHaveSucceeded_).equal(transactionReceipt_ != undefined);
 						if (transactionShouldHaveSucceeded_) {
-							// console.info("202505113", signerIndex_.toString());
-							// console.info("202505142", cosmicSignatureGameProxySimulator_.getTotalNumBids().toString());
+							// console.info("%s", `202505113 ${signerIndex_}`);
+							// console.info("%s", `202505142 ${cosmicSignatureGameProxySimulator_.getTotalNumBids()}`);
 							totalNumBids_ += Number(cosmicSignatureGameProxySimulator_.getTotalNumBids());
 							// const timeStamp3_ = performance.now();
 							await cosmicSignatureGameProxySimulator_.claimMainPrize(
@@ -616,6 +616,7 @@ describe("CosmicSignatureGame-1", function () {
 							);
 							// const timeStamp4_ = performance.now();
 							// console.info(
+							// 	"%s %s",
 							// 	(timeStamp2_ - timeStamp1_).toFixed(1),
 							// 	(timeStamp4_ - timeStamp3_).toFixed(1)
 							// );
@@ -646,19 +647,19 @@ describe("CosmicSignatureGame-1", function () {
 
 				randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 				if ((randomNumber_ & (0x0Fn << (0n * 8n))) == 0n) {
-					// console.info("202505265");
+					// console.info("%s", "202505265");
 					await assertCosmicSignatureGameProxySimulatorGetBidderTotalSpentAmounts(cosmicSignatureGameProxySimulator_, contracts_, signer_.address);
 				}
 				if ((randomNumber_ & (0x0Fn << (1n * 8n))) == 0n) {
-					// console.info("202505266");
+					// console.info("%s", "202505266");
 					await assertCosmicSignatureGameProxySimulatorTryGetCurrentChampions(cosmicSignatureGameProxySimulator_, contracts_, latestBlock_);
 				}
 				if ((randomNumber_ & (0x0Fn << (2n * 8n))) == 0n) {
-					// console.info("202505267");
+					// console.info("%s", "202505267");
 					await assertCosmicSignatureGameProxySimulatorGetEthDutchAuctionDurations(cosmicSignatureGameProxySimulator_, contracts_, latestBlock_);
 				}
 				if ((randomNumber_ & (0x0Fn << (3n * 8n))) == 0n) {
-					// console.info("202505268");
+					// console.info("%s", "202505268");
 					await assertCosmicSignatureGameProxySimulatorGetCstDutchAuctionDurations(cosmicSignatureGameProxySimulator_, contracts_, latestBlock_);
 				}
 
@@ -676,15 +677,15 @@ describe("CosmicSignatureGame-1", function () {
 
 							// Doing nothing.
 						} else {
-							console.warn("Warning 202505017. Adjacent block timestamp difference is " + adjacentBlockTimeStampDifference_.toString() + ".");
+							console.warn("%s", `Warning 202505017. Adjacent block timestamp difference is ${adjacentBlockTimeStampDifference_}.`);
 						}
 					}
 					if (transactionReceipt_ != undefined) {
-						// console.info("202505075");
+						// console.info("%s", "202505075");
 						expect(transactionReceipt_.logs.length).equal(eventIndexWrapper_.value);
 						await assertContractSimulators_();
 					} else {
-						// console.info("202505076");
+						// console.info("%s", "202505076");
 					}
 				}
 
@@ -694,7 +695,7 @@ describe("CosmicSignatureGame-1", function () {
 				if (tryBreakLoop_) {
 					// {
 					// 	const averageNumBidsPerRound_ = totalNumBids_ / Number(cosmicSignatureGameProxySimulator_.roundNum);
-					// 	console.info("202505118 averageNumBidsPerRound_ = " + averageNumBidsPerRound_.toString());
+					// 	console.info("%s", `202505118 averageNumBidsPerRound_ = ${averageNumBidsPerRound_}`);
 					// }
 					if (Number(cosmicSignatureGameProxySimulator_.roundNum) >= numRoundsToRunMinLimit_) {
 						const averageNumBidsPerRound_ = totalNumBids_ / Number(cosmicSignatureGameProxySimulator_.roundNum);
@@ -707,7 +708,7 @@ describe("CosmicSignatureGame-1", function () {
 						}
 						// const errorDetails_ = {bidAverageCountPerRound: averageNumBidsPerRound_,};
 						// throw new Error("Error 202504052. " + JSON.stringify(errorDetails_));
-						console.warn("Warning 202504052. averageNumBidsPerRound_ = " + averageNumBidsPerRound_.toString());
+						console.warn("%s", `Warning 202504052. averageNumBidsPerRound_ = ${averageNumBidsPerRound_}`);
 					}
 
 					// [Comment-202505117]
@@ -737,9 +738,9 @@ describe("CosmicSignatureGame-1", function () {
 
 			{
 				const errorContext_ = {randomNumberSeed: uint256ToPaddedHexString(randomNumberSeed_),};
-				console.error("Error 202504055. " + JSON.stringify(errorContext_));
+				console.error("%s", `Error 202504055. ${JSON.stringify(errorContext_)}`);
 			}
-			// console.error(errorObject_.stack);
+			// console.error("%s", errorObject_.stack);
 			throw errorObject_;
 
 			// #endregion

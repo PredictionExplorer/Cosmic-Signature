@@ -127,25 +127,25 @@ const solidityCompilerPathGlobal = "/usr/bin/solc";
 // #region
 
 if (ENABLE_HARDHAT_PREPROCESSOR) {
-	console.warn("Warning. Hardhat Preprocessor is enabled. Assuming it's intentional.");
+	console.warn("%s", "Warning. Hardhat Preprocessor is enabled. Assuming it's intentional.");
 	if (ENABLE_SMTCHECKER <= 0 && ( ! ENABLE_ASSERTS )) {
 		// [Comment-202409025/]
-		console.warn("Warning. Neither the preprocessing for SMTChecker nor asserts are enabled. Assuming it's intentional.");
+		console.warn("%s", "Warning. Neither the preprocessing for SMTChecker nor asserts are enabled. Assuming it's intentional.");
 	}
 	if (ENABLE_SMTCHECKER > 0 && ( ! ENABLE_ASSERTS )) {
-		console.warn("Warning. The preprocessing for SMTChecker is enabled, but asserts are disabled. Is it intentional?");
+		console.warn("%s", "Warning. The preprocessing for SMTChecker is enabled, but asserts are disabled. Is it intentional?");
 	}
 	if (ENABLE_SMTCHECKER >= 2) {
-		console.info("SMTChecker execution is enabled.");
+		console.info("%s", "SMTChecker execution is enabled.");
 	}
 } else {
-	console.warn("Warning. Hardhat Preprocessor is disabled. Assuming it's intentional.");
+	console.warn("%s", "Warning. Hardhat Preprocessor is disabled. Assuming it's intentional.");
 }
 
 // [Comment-202411143/]
 // Comment-202409011 relates.
 // Comment-202411136 relates.
-console.warn(`Warning. Make sure "${solidityCompilerPath}" version is "${solidityCompilerLongVersion}". Hardhat will not necessarily validate that.`);
+console.warn("%s", `Warning. Make sure "${solidityCompilerPath}" version is "${solidityCompilerLongVersion}". Hardhat will not necessarily validate that.`);
 
 // #endregion
 // #region
@@ -556,7 +556,7 @@ const hardhatUserConfig = {
 	// // We probably can get by without this.
 	// // [/Comment-202509112]
 	// sourcify: {
-	// 	enabled: true
+	// 	enabled: true,
 	// },
 
 	// #endregion

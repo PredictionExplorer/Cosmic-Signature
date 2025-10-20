@@ -67,7 +67,7 @@ const deployContractsAdvanced = async function (
 			cosmicSignatureGameFactory,
 			[deployerSigner.address,],
 			{
-				kind: "uups"
+				kind: "uups",
 			}
 		);
 	await cosmicSignatureGameProxy.waitForDeployment();
@@ -204,7 +204,7 @@ async function setRoundActivationTimeIfNeeded(cosmicSignatureGameProxy, roundAct
 			const currentBlockTag = (HARDHAT_MODE_CODE == 1) ? "latest" : "pending";
 
 			const currentBlockTimeStamp = await getBlockTimeStampByBlockNumber(currentBlockTag);
-			// console.info(currentBlockTimeStamp.toString());
+			// console.info("%s", currentBlockTimeStamp);
 			roundActivationTime += currentBlockTimeStamp;
 		}
 		await waitForTransactionReceipt(cosmicSignatureGameProxy.setRoundActivationTime(roundActivationTime));

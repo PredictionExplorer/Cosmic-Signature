@@ -64,7 +64,7 @@ describe("BlockTimeStamps", function () {
 			}
 			await mineBlock_();
 			latestBlock_ = await hre.ethers.provider.getBlock("latest");
-			// console.info(Date.now().toString(), latestBlock_.timestamp.toString());
+			// console.info("%s", `${Date.now()} ${latestBlock_.timestamp}`);
 
 			// Issue. There is an astronomically small chance that this assertion will fail after many iterations of this loop
 			// if the generated random numbers result in system time running faster than we increase block timestamps.

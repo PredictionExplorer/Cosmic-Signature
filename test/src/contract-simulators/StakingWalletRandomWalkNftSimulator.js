@@ -90,7 +90,7 @@ const { assertEvent } = require("../../../src/ContractTestingHelpers.js");
 						const randomNumber_ = generateRandomUInt256FromSeed(randomNumberSeed_);
 						const luckyStakeActionIndex_ = randomNumber_ % numStakedNftsCopy_ + 1n;
 						const luckyStakerAddress_ = this.stakeActions[Number(luckyStakeActionIndex_)].nftOwnerAddress;
-						// console.info("202504297", luckyStakerAddress_);
+						// console.info("%s", `202504297 ${luckyStakerAddress_}`);
 						luckyStakerAddresses_[luckyStakerIndex_] = luckyStakerAddress_;
 					}
 				} else {
@@ -125,7 +125,7 @@ async function assertStakingWalletRandomWalkNftSimulator(stakingWalletRandomWalk
 // #region `assertIfRandomRandomWalkNftWasUsedForStakingIfPossible`
 
 async function assertIfRandomRandomWalkNftWasUsedForStakingIfPossible(stakingWalletRandomWalkNftSimulator_, contracts_, randomNumberSeedWrapper_) {
-	const nftTotalSupplyCopy_ = stakingWalletRandomWalkNftSimulator_.randomWalkNftSimulator.totalSupply()
+	const nftTotalSupplyCopy_ = stakingWalletRandomWalkNftSimulator_.randomWalkNftSimulator.totalSupply();
 	if (nftTotalSupplyCopy_ == 0n) {
 		return;
 	}

@@ -170,7 +170,7 @@ async function assertCosmicSignatureNftSimulator(cosmicSignatureNftSimulator_, c
 // #region `assertRandomCosmicSignatureNftMetaDataIfPossible`
 
 async function assertRandomCosmicSignatureNftMetaDataIfPossible(cosmicSignatureNftSimulator_, contracts_, randomNumberSeedWrapper_) {
-	const nftTotalSupplyCopy_ = cosmicSignatureNftSimulator_.totalSupply()
+	const nftTotalSupplyCopy_ = cosmicSignatureNftSimulator_.totalSupply();
 	if (nftTotalSupplyCopy_ == 0n) {
 		return;
 	}
@@ -192,7 +192,7 @@ async function assertCosmicSignatureNftMetaData(cosmicSignatureNftSimulator_, co
 // #region `assertRandomCosmicSignatureNftSeedsAreUnequalIfPossible`
 
 /*async*/ function assertRandomCosmicSignatureNftSeedsAreUnequalIfPossible(cosmicSignatureNftSimulator_, randomNumberSeedWrapper_) {
-	const nftTotalSupplyCopy_ = cosmicSignatureNftSimulator_.totalSupply()
+	const nftTotalSupplyCopy_ = cosmicSignatureNftSimulator_.totalSupply();
 	if (nftTotalSupplyCopy_ < 2n) {
 		return;
 	}

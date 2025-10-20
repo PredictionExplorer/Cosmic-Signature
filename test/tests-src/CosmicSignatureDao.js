@@ -50,7 +50,7 @@ describe("CosmicSignatureDao", function () {
 			// [/Comment-202508043]
 			expect(quorum_).equal(await contracts_.cosmicSignatureToken.getPastTotalSupply(latestBlock_.timestamp - secondsAgoCounter_) * quorumNumerator_ / quorumDenominator_);
 
-			// console.info(secondsAgoCounter_.toString());
+			// console.info("%s", secondsAgoCounter_);
 			if (quorum_ == 0n) {
 				expect(secondsAgoCounter_).greaterThan(1);
 				break;
@@ -173,7 +173,7 @@ describe("CosmicSignatureDao", function () {
 		// This can return 0 through 7.
 		const generateRandomSignerIndex_ = () => {
 			let signerIndex_ = generateRandomUInt32() % 8;
-			// console.info(signerIndex_.toString());
+			// console.info("%s", signerIndex_);
 			return signerIndex_;
 		};
 
@@ -184,7 +184,7 @@ describe("CosmicSignatureDao", function () {
 			if (signerIndex_ >= 2) {
 				++ signerIndex_;
 			}
-			// console.info(signerIndex_.toString());
+			// console.info("%s", signerIndex_);
 			return signerIndex_;
 		};
 
@@ -195,7 +195,7 @@ describe("CosmicSignatureDao", function () {
 			if (signerIndex_ >= 3) {
 				++ signerIndex_;
 			}
-			// console.info(signerIndex_.toString());
+			// console.info("%s", signerIndex_);
 			return signerIndex_;
 		};
 

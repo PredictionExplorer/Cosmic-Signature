@@ -9,7 +9,7 @@ const { waitForTransactionReceipt } = require("../src/Helpers.js");
 main()
 	.then(() => {})
 	.catch((errorObject_) => {
-		console.error(errorObject_);
+		console.error("%o", errorObject_);
 		process.exitCode = 1;
 	});
 
@@ -42,10 +42,10 @@ async function main() {
 	// (Although these consderations is not that important when using fake money.)
 	// [/Comment-202510018]
 	const gasEstimate_ = await sourceSigner_.estimateGas(transactionRequest_);
-	// console.info(`${gasEstimate_}`);
-	// console.info(transactionRequest_);
+	// console.info("%s", `${gasEstimate_}`);
+	// console.info("%o", transactionRequest_);
 	transactionRequest_.gasLimit = gasEstimate_;
 
 	await waitForTransactionReceipt(sourceSigner_.sendTransaction(transactionRequest_));
-	console.info("Done.");
+	console.info("%s", "Done.");
 }

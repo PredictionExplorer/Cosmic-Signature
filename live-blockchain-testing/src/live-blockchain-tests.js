@@ -61,7 +61,7 @@ prepare2();
 main()
 	.then(() => {})
 	.catch((errorObject_) => {
-		console.error(errorObject_);
+		console.error("%o", errorObject_);
 		process.exitCode = 1;
 	});
 
@@ -71,7 +71,7 @@ main()
 function prepare1() {
 	// // Testing.
 	// process.on("unhandledRejection", (reason_, promise_) => {
-	// 	console.error("Unhandled rejection from:", promise_, `${nodeOsModule.EOL}Reason:`, reason_);
+	// 	console.error(/*"%s",*/ "Unhandled rejection from:", promise_, `${nodeOsModule.EOL}Reason:`, reason_);
 	// });
 
 	validateConfiguration();
@@ -87,17 +87,17 @@ function prepare1() {
 			hardhatModeCodeAsString_ = "2";
 			process.env["HARDHAT_MODE_CODE"] = hardhatModeCodeAsString_;
 		} else {
-			console.warn(`${nodeOsModule.EOL}Warning. The HARDHAT_MODE_CODE environment variable is already set to "${hardhatModeCodeAsString_}". Is it intentional?`);
+			console.warn("%s", `${nodeOsModule.EOL}Warning. The HARDHAT_MODE_CODE environment variable is already set to "${hardhatModeCodeAsString_}". Is it intentional?`);
 		}
 	}
 	{
 		const hardhatNetworkName_ = process.env.HARDHAT_NETWORK ?? "";
 		if (hardhatNetworkName_.length > 0) {
-			console.warn(`${nodeOsModule.EOL}Warning. The HARDHAT_NETWORK environment variable is already set to "${hardhatNetworkName_}". Is it intentional?`);
+			console.warn("%s", `${nodeOsModule.EOL}Warning. The HARDHAT_NETWORK environment variable is already set to "${hardhatNetworkName_}". Is it intentional?`);
 		}
 		if (configuration.hardhat.networkName.length > 0) {
 			if (hardhatNetworkName_.length > 0) {
-				console.warn(`Warning. Overriding the HARDHAT_NETWORK environment variable with "${configuration.hardhat.networkName}".`);
+				console.warn("%s", `Warning. Overriding the HARDHAT_NETWORK environment variable with "${configuration.hardhat.networkName}".`);
 			}
 			process.env.HARDHAT_NETWORK = configuration.hardhat.networkName;
 		}
@@ -124,7 +124,7 @@ function validateConfiguration() {
 // #region `prepare2`
 
 function prepare2() {
-	console.info(`${nodeOsModule.EOL}hre.network.name = ${hre.network.name}`);
+	console.info("%s", `${nodeOsModule.EOL}hre.network.name = ${hre.network.name}`);
 	hackApplyGasMultiplierIfNeeded();
 	createAccountSigners();
 }
@@ -139,13 +139,13 @@ function createAccountSigners() {
 		const accountPrivateKeySeedAsString_ = vars.get("accountPrivateKeySeed", "");
 		const accountPrivateKeySeed_ = (accountPrivateKeySeedAsString_.length > 0) ? BigInt(accountPrivateKeySeedAsString_) : defaultAccountPrivateKeySeed;
 		state.accountPrivateKeySeed = accountPrivateKeySeed_;
-		console.info(`${nodeOsModule.EOL}accountPrivateKeySeed = ${uint256ToPaddedHexString(accountPrivateKeySeed_)}`);
+		console.info("%s", `${nodeOsModule.EOL}accountPrivateKeySeed = ${uint256ToPaddedHexString(accountPrivateKeySeed_)}`);
 		if (accountPrivateKeySeed_ == defaultAccountPrivateKeySeed) {
-			console.warn("Warning. That's the default hardcoded value. Your money, fake or real, may be at risk!");
+			console.warn("%s", "Warning. That's the default hardcoded value. Your money, fake or real, may be at risk!");
 		}
 	}
 
-	console.info(`${nodeOsModule.EOL}Accounts:`);
+	console.info("%s", `${nodeOsModule.EOL}Accounts:`);
 	Object.entries(accountPrivateKeySeedSalts).forEach(createAccountSigner);
 }
 
@@ -157,11 +157,11 @@ function createAccountSigners() {
  */
 function createAccountSigner(accountPrivateKeySeedSaltEntry_) {
 	const [accountName_, accountPrivateKeySeedSalt_,] = accountPrivateKeySeedSaltEntry_;
-	// console.info(accountName_, accountPrivateKeySeedSalt_);
+	// console.info("%s %s", accountName_, accountPrivateKeySeedSalt_);
 	const accountPrivateKeySeed_ = state.accountPrivateKeySeed ^ accountPrivateKeySeedSalt_;
 	const accountPrivateKey_ = generateAccountPrivateKeyFromSeed(accountPrivateKeySeed_);
 	const accountSigner_ = new hre.ethers.Wallet(accountPrivateKey_, hre.ethers.provider);
-	console.info(`${accountName_}: privateKey = ${accountPrivateKey_}, address = ${accountSigner_.address}`);
+	console.info("%s", `${accountName_}: privateKey = ${accountPrivateKey_}, address = ${accountSigner_.address}`);
 	state[`${accountName_}Signer`] = accountSigner_;
 	if (accountName_.startsWith("bidder")) {
 		state.accountEthPrizeRoundNums[accountSigner_.address] = [];
@@ -182,6 +182,7 @@ async function main() {
 	await finalizeTestingIfNeeded();
 	await payMarketingRewardsIfNeeded();
 	console.info(
+		"%s",
 		( ! (process.exitCode > 0) ) ?
 		`${nodeOsModule.EOL}Live blockchain tests completed successfully.` :
 		`${nodeOsModule.EOL}Live blockchain tests completed with errors.`
@@ -216,10 +217,10 @@ async function runDeployCosmicSignatureContractsIfNeeded() {
 				console.error();
 				throw new Error(`"${deployCosmicSignatureContractsReportFilePath_}" already exists, but it's not a file.`);
 			}
-			console.info(`${nodeOsModule.EOL}"${deployCosmicSignatureContractsReportFilePath_}" already exists. Reusing the already deployed Cosmic Signature contracts. Assuming their bytecodes have not changed.${nodeOsModule.EOL}`);
+			console.info("%s", `${nodeOsModule.EOL}"${deployCosmicSignatureContractsReportFilePath_}" already exists. Reusing the already deployed Cosmic Signature contracts. Assuming their bytecodes have not changed.${nodeOsModule.EOL}`);
 		}
 	} else {
-		console.info(`${nodeOsModule.EOL}We are configured to not deploy Cosmic Signature contracts.${nodeOsModule.EOL}`);
+		console.info("%s", `${nodeOsModule.EOL}We are configured to not deploy Cosmic Signature contracts.${nodeOsModule.EOL}`);
 	}
 	return deployCosmicSignatureContractsReportFilePath_;
 }
@@ -231,7 +232,7 @@ async function runDeployCosmicSignatureContractsIfNeeded() {
  * @param {string} deployCosmicSignatureContractsReportFilePath_
  */
 async function createCosmicSignatureContracts(deployCosmicSignatureContractsReportFilePath_) {
-	console.info(`Loading "${deployCosmicSignatureContractsReportFilePath_}".`);
+	console.info("%s", `Loading "${deployCosmicSignatureContractsReportFilePath_}".`);
 	const deployCosmicSignatureContractsReportJsonString_ = await nodeFsModule.promises.readFile(deployCosmicSignatureContractsReportFilePath_, "utf8");
 	state.contracts = JSON.parse(deployCosmicSignatureContractsReportJsonString_);
 	await createContract("CosmicSignatureToken", "cosmicSignatureToken");
@@ -265,10 +266,10 @@ async function validateCosmicSignatureContractStatesIfNeeded() {
 	if (configuration.validateCosmicSignatureContractStates >= 2 || configuration.validateCosmicSignatureContractStates > 0 && state.deployedCosmicSignatureContracts) {
 		// Doing nothing.
 	} else {
-		console.info(`${nodeOsModule.EOL}We are configured to not validate Cosmic Signature contract states.`);
+		console.info("%s", `${nodeOsModule.EOL}We are configured to not validate Cosmic Signature contract states.`);
 		return;
 	}
-	console.info(`${nodeOsModule.EOL}Validating Cosmic Signature contract states.`);
+	console.info("%s", `${nodeOsModule.EOL}Validating Cosmic Signature contract states.`);
 	await validateCosmicSignatureToken(state.contracts.cosmicSignatureToken, /*state.ownerSigner.address,*/ state.contracts.cosmicSignatureGameProxyAddress);
 
 	// It appears that there is nothing to validate in `RandomWalkNft`.
@@ -303,10 +304,10 @@ async function fundAccountsWithEthIfNeeded() {
 	const ownerEthBalanceAmount_ = await hre.ethers.provider.getBalance(state.ownerSigner.address, "pending");
 	const message_ = `${nodeOsModule.EOL}owner ETH balance is ${hre.ethers.formatEther(ownerEthBalanceAmount_)} ETH. `;
 	if ( ! configuration.fundAccountsWithEth ) {
-		console.info(message_ + "We are configured to not fund any accounts with ETH.");
+		console.info("%s", `${message_}We are configured to not fund any accounts with ETH.`);
 		return;
 	}
-	console.info(message_ + "Checking if any accounts need funding with ETH.");
+	console.info("%s", `${message_}Checking if any accounts need funding with ETH.`);
 	await fundAccountWithEthIfNeeded("bidder1", state.bidder1Signer.address);
 	await fundAccountWithEthIfNeeded("bidder2", state.bidder2Signer.address);
 	await fundAccountWithEthIfNeeded("bidder3", state.bidder3Signer.address);
@@ -318,22 +319,22 @@ async function fundAccountsWithEthIfNeeded() {
 
 /**
  * @param {string} accountName_ 
- * @param {string} accountAddress_
+ * @param {string} accountAddress_ 
  */
 async function fundAccountWithEthIfNeeded(accountName_, accountAddress_) {
 	const accountEthBalanceAmountMinLimitInWei_ = hre.ethers.parseEther(configuration.accountFundingWithEth.accountEthBalanceAmountMinLimitInEth.toFixed(18));
 	const accountEthBalanceAmount_ = await hre.ethers.provider.getBalance(accountAddress_, "pending");
 	const message_ = `${accountName_} ETH balance is ${hre.ethers.formatEther(accountEthBalanceAmount_)} ETH.`;
 	if (accountEthBalanceAmount_ >= accountEthBalanceAmountMinLimitInWei_) {
-		console.info(message_);
+		console.info("%s", message_);
 		return;
 	}
 	if (accountName_ == "treasurer" && ( ! configuration.payMarketingRewards )) {
-		console.info(`${message_} Not funding it because we are configured to not pay marketing rewards.`);
+		console.info("%s", `${message_} Not funding it because we are configured to not pay marketing rewards.`);
 		return;
 	}
 	const ethAmountToTransferToAccount_ = accountEthBalanceAmountMinLimitInWei_ * 2n - accountEthBalanceAmount_;
-	console.info(`${message_} Funding it with ${hre.ethers.formatEther(ethAmountToTransferToAccount_)} ETH.`);
+	console.info("%s", `${message_} Funding it with ${hre.ethers.formatEther(ethAmountToTransferToAccount_)} ETH.`);
 	
 	// Comment-202510018 relates.
 	await waitForTransactionReceipt(state.ownerSigner.sendTransaction({to: accountAddress_, value: ethAmountToTransferToAccount_,}));
@@ -346,10 +347,10 @@ async function configureCosmicSignatureContractsIfNeeded() {
 	if (configuration.configureCosmicSignatureContracts >= 2 || configuration.configureCosmicSignatureContracts > 0 && state.deployedCosmicSignatureContracts) {
 		// Doing nothing.
 	} else {
-		console.info(`${nodeOsModule.EOL}We are configured to not configure Cosmic Signature contracts.`);
+		console.info("%s", `${nodeOsModule.EOL}We are configured to not configure Cosmic Signature contracts.`);
 		return;
 	}
-	console.info(`${nodeOsModule.EOL}Configuring Cosmic Signature contracts.`);
+	console.info("%s", `${nodeOsModule.EOL}Configuring Cosmic Signature contracts.`);
 	await configureCosmicSignatureToken(state.contracts.cosmicSignatureToken, state.bidder2Signer, state.contracts.prizesWalletAddress);
 	await configureRandomWalkNft(state.contracts.randomWalkNft, state.bidder2Signer, state.bidder3Signer, state.contracts.prizesWalletAddress);
 	await configurePrizesWallet(state.contracts.prizesWallet, state.ownerSigner, configuration.cosmicSignatureContracts.prizesWallet.timeoutDurationToWithdrawPrizes);
@@ -371,10 +372,10 @@ async function configureCosmicSignatureContractsIfNeeded() {
 
 async function donateEthToCosmicSignatureGameIfNeeded() {
 	if ( ! configuration.donateEthToCosmicSignatureGame ) {
-		console.info(`${nodeOsModule.EOL}We are configured to not donate ETH to ${configuration.cosmicSignatureContractsDeployment.cosmicSignatureGameContractName}.`);
+		console.info("%s", `${nodeOsModule.EOL}We are configured to not donate ETH to ${configuration.cosmicSignatureContractsDeployment.cosmicSignatureGameContractName}.`);
 		return;
 	}
-	console.info(`${nodeOsModule.EOL}Donating ETH to ${configuration.cosmicSignatureContractsDeployment.cosmicSignatureGameContractName}.`);
+	console.info("%s", `${nodeOsModule.EOL}Donating ETH to ${configuration.cosmicSignatureContractsDeployment.cosmicSignatureGameContractName}.`);
 	await donateEthToCosmicSignatureGame(state.contracts.cosmicSignatureGameProxy, state.bidder1Signer, state.bidder3Signer, configuration.ethDonationToCosmicSignatureGame.amountInEth);
 }
 
@@ -383,22 +384,22 @@ async function donateEthToCosmicSignatureGameIfNeeded() {
 
 async function tryPlayCosmicSignatureGameIfNeeded() {
 	// // Testing.
-	// console.info(`${nodeOsModule.EOL}Test 202510024.`);
+	// console.info("%s", `${nodeOsModule.EOL}Test 202510024.`);
 	// await waitForTransactionReceipt(state.contracts.cosmicSignatureGameProxy.connect(state.ownerSigner).setRoundActivationTime(0n));
-	// console.info(Date.now().toString());
+	// console.info("%s", Date.now());
 	// await waitForTransactionReceipt(state.contracts.cosmicSignatureGameProxy.connect(state.ownerSigner).setRoundActivationTime(10n ** 11n));
-	// console.info(Date.now().toString());
+	// console.info("%s", Date.now());
 	// await waitForTransactionReceipt(state.contracts.cosmicSignatureGameProxy.connect(state.ownerSigner).setRoundActivationTime(0n));
-	// console.info(Date.now().toString());
+	// console.info("%s", Date.now());
 	// await waitForTransactionReceipt(state.contracts.cosmicSignatureGameProxy.connect(state.ownerSigner).setRoundActivationTime(10n ** 11n));
-	// console.info(Date.now().toString());
-	// console.info("End Test 202510024.");
+	// console.info("%s", Date.now());
+	// console.info("%s", "End Test 202510024.");
 
 	if ( ! configuration.playCosmicSignatureGame ) {
-		console.info(`${nodeOsModule.EOL}We are configured to not play Cosmic Signature Game.`);
+		console.info("%s", `${nodeOsModule.EOL}We are configured to not play Cosmic Signature Game.`);
 		return;
 	}
-	console.info(`${nodeOsModule.EOL}Playing Cosmic Signature Game.`);
+	console.info("%s", `${nodeOsModule.EOL}Playing Cosmic Signature Game.`);
 	try {
 		for ( let roundCounter_ = 0; roundCounter_ < configuration.cosmicSignatureGamePlaying.numRoundsToPlay; ++ roundCounter_ ) {
 			// Reducing the bidding round's first ETH bid price.
@@ -409,7 +410,7 @@ async function tryPlayCosmicSignatureGameIfNeeded() {
 
 			// // Testing.
 			// await sleepForMilliSeconds(2000);
-			// console.info(await state.contracts.cosmicSignatureGameProxy.tryGetCurrentChampions({blockTag: "pending",}));
+			// console.info("%s", await state.contracts.cosmicSignatureGameProxy.tryGetCurrentChampions({blockTag: "pending",}));
 
 			const randomWalkNft1Id_ = await getRandomWalkNft(state.bidder2Signer);
 			await bidWithEthPlusRandomWalkNft(state.contracts.cosmicSignatureGameProxy, state.bidder2Signer, randomWalkNft1Id_);
@@ -425,9 +426,9 @@ async function tryPlayCosmicSignatureGameIfNeeded() {
 			await claimMainPrize(state.contracts.cosmicSignatureGameProxy, state.contracts.prizesWallet, state.bidder2Signer, state.accountEthPrizeRoundNums);
 		}
 	} catch(errorObject_) {
-		// console.error(errorObject_.errorName, errorObject_.args);
-		// console.error(errorObject_.shortMessage || errorObject_.reason);
-		console.error(errorObject_);
+		// console.error("%s %s", errorObject_.errorName, errorObject_.args);
+		// console.error("%s", errorObject_.shortMessage || errorObject_.reason);
+		console.error("%o", errorObject_);
 		process.exitCode = 1;
 	}
 }
@@ -441,7 +442,7 @@ async function getRandomWalkNft(minterSigner_) {
 	if (state.nextRandomWalkNftIndex < configuration.cosmicSignatureGamePlaying.randomWalkNftIds.length) {
 		randomWalkNftId_ = configuration.cosmicSignatureGamePlaying.randomWalkNftIds[state.nextRandomWalkNftIndex];
 		++ state.nextRandomWalkNftIndex;
-		console.info(`Using a Random Walk NFT with id = ${randomWalkNftId_}.`);
+		console.info("%s", `Using a Random Walk NFT with id = ${randomWalkNftId_}.`);
 	} else {
 		randomWalkNftId_ = await mintRandomWalkNft(state.contracts.randomWalkNft, minterSigner_);
 	}
@@ -453,10 +454,10 @@ async function getRandomWalkNft(minterSigner_) {
 
 async function tryWithdrawEverythingIfNeeded() {
 	if ( ! configuration.withdrawEverything ) {
-		console.info(`${nodeOsModule.EOL}We are configured to not withdraw everything.`);
+		console.info("%s", `${nodeOsModule.EOL}We are configured to not withdraw everything.`);
 		// return;
 	} else {
-		console.info(`${nodeOsModule.EOL}Withdrawing everything.`);
+		console.info("%s", `${nodeOsModule.EOL}Withdrawing everything.`);
 	}
 	await tryWithdrawEverythingToAccountIfNeeded("bidder1", [], []);
 	await tryWithdrawEverythingToAccountIfNeeded("bidder2", state.donatedTokensToClaim, state.donatedNftIndexes);
@@ -477,6 +478,7 @@ async function tryWithdrawEverythingToAccountIfNeeded(accountName_, donatedToken
 		(key_, value_) =>
 		((typeof value_ == "bigint") ? ((key_ == "amount") ? hre.ethers.formatEther(value_) : Number(value_)) : value_);
 	console.info(
+		"%s",
 		`${accountName_} assets deposited to PrizesWallet: ` +
 		`ETH prizes won in rounds ${JSON.stringify(accountEthPrizeRoundNums_, jsonStringifyHelper_)}: ${hre.ethers.formatEther(accountEthPrizesTotalAmount_)} ETH, ` +
 		`ERC-20 tokens: ${JSON.stringify(donatedTokensToClaim_, jsonStringifyHelper_)}, ` +
@@ -489,7 +491,7 @@ async function tryWithdrawEverythingToAccountIfNeeded(accountName_, donatedToken
 	       // Regardless, it's not important for this test.
 	       donatedTokensToClaim_.length > 0 ||
 
-	       donatedNftIndexes_.length > 0 
+	       donatedNftIndexes_.length > 0
 	     )
 	) {
 		try {
@@ -500,7 +502,7 @@ async function tryWithdrawEverythingToAccountIfNeeded(accountName_, donatedToken
 			// ETH, ERC-20 tokens, and ERC-721 NFTs that we logged.
 			// [/Comment-202509304]
 
-			console.error(errorObject_);
+			console.error("%o", errorObject_);
 			process.exitCode = 1;
 		}
 	}
@@ -511,7 +513,7 @@ async function tryWithdrawEverythingToAccountIfNeeded(accountName_, donatedToken
 
 async function finalizeTestingIfNeeded() {
 	if ( ! configuration.finalizeTesting ) {
-		console.info(`${nodeOsModule.EOL}We are configured to not finalize testing.`);
+		console.info("%s", `${nodeOsModule.EOL}We are configured to not finalize testing.`);
 		return;
 	}
 	await finalizeTestingIfEthBalanceIsNonZero(state.contracts.cosmicSignatureGameProxy, state.contracts.cosmicSignatureGameProxyAddress, state.ownerSigner);
@@ -524,10 +526,10 @@ async function payMarketingRewardsIfNeeded() {
 	const marketingWalletCstBalanceAmount_ = await state.contracts.cosmicSignatureToken.balanceOf(state.contracts.marketingWalletAddress, {blockTag: "pending",});
 	const message_ = `${nodeOsModule.EOL}Marketing Wallet CST balance is ${hre.ethers.formatEther(marketingWalletCstBalanceAmount_)}. `;
 	if ( ! configuration.payMarketingRewards ) {
-		console.info(message_ + "We are configured to not pay marketing rewards.");
+		console.info("%s", `${message_}We are configured to not pay marketing rewards.`);
 		return;
 	}
-	console.info(message_ + "Paying marketing rewards.");
+	console.info("%s", `${message_}Paying marketing rewards.`);
 	const specs_ = [
 		[state.bidder1Signer.address, marketingWalletCstBalanceAmount_ / 7n,],
 		[state.bidder2Signer.address, marketingWalletCstBalanceAmount_ / 6n,],

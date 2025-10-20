@@ -107,7 +107,7 @@ describe("MainPrize", function () {
 		// const timeStamp2_ = performance.now();
 		await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).claimMainPrize());
 		// const timeStamp3_ = performance.now();
-		// console.info(`202508247 ${(timeStamp2_ - timeStamp1_).toFixed(1)} ${(timeStamp3_ - timeStamp2_).toFixed(1)}`);
+		// console.info("%s", `202508247 ${(timeStamp2_ - timeStamp1_).toFixed(1)} ${(timeStamp3_ - timeStamp2_).toFixed(1)}`);
 		gameBalanceAmount_ = await hre.ethers.provider.getBalance(contracts_.cosmicSignatureGameProxyAddress);
 		mainEthPrizeAmount2_ = await contracts_.cosmicSignatureGameProxy.getMainEthPrizeAmount();
 		mainEthPrizeExpectedAmount_ = gameBalanceAmount_ * mainEthPrizeAmountPercentage_ / 100n;

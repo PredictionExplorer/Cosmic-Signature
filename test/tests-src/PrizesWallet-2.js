@@ -252,7 +252,7 @@ describe("PrizesWallet-2", function () {
 				// await hre.ethers.provider.send("evm_mine");
 			}
 			for ( let brokenEthReceiverEthDepositAcceptanceModeCode_ = 2n; brokenEthReceiverEthDepositAcceptanceModeCode_ >= 0n; -- brokenEthReceiverEthDepositAcceptanceModeCode_ ) {
-				// console.info(`202511164 ${roundNum_} ${brokenEthReceiverEthDepositAcceptanceModeCode_}`);
+				// console.info("%s", `202511164 ${roundNum_} ${brokenEthReceiverEthDepositAcceptanceModeCode_}`);
 				transactionResponsePromise_ = bidderContract_.setEthDepositAcceptanceModeCode(brokenEthReceiverEthDepositAcceptanceModeCode_);
 				await waitForTransactionReceipt(transactionResponsePromise_);
 				switch (roundNum_) {
@@ -437,7 +437,7 @@ describe("PrizesWallet-2", function () {
 			let nextDonatedNftToDonateIndexIncrement_ = 0n;
 			let nextDonatedNftToClaimIndexIncrement_ = 0n;
 			let transactionWillNotFailDueToReentry_ = false;
-			// console.info("202507179");
+			// console.info("%s", "202507179");
 
 			// #endregion
 			// #region
@@ -449,14 +449,14 @@ describe("PrizesWallet-2", function () {
 				let transactionResponsePromise_;
 				randomNumber_ = generateRandomUInt32();
 				const choiceCode_ = randomNumber_ % 15;
-				// console.info(`202507069 ${choiceCode_} ${maliciousActorModeCode_}`);
+				// console.info("%s", `202507069 ${choiceCode_} ${maliciousActorModeCode_}`);
 
 				// #endregion
 				// #region
 
 				switch (choiceCode_) {
 					case 0: {
-						// console.info("202507072");
+						// console.info("%s", "202507072");
 						transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[10]).registerRoundEndAndDepositEthMany(roundNum_, maliciousPrizeWinnerAddress_, [[maliciousPrizeWinnerAddress_, 1n,]], {value: 1n,});
 						++ roundNum_;
 						transactionWillNotFailDueToReentry_ = true;
@@ -470,27 +470,27 @@ describe("PrizesWallet-2", function () {
 						const donatedNftIndexes_ = [];
 						switch (choiceCode_) {
 							case 1: {
-								// console.info("202507073");
+								// console.info("%s", "202507073");
 								ethPrizeRoundNums_.push((roundNum_ <= 0n) ? 0n : (roundNum_ - 1n));
 								break;
 							}
 							case 2: {
 								if (roundNum_ <= 0n) {
-									// console.info("202507074");
+									// console.info("%s", "202507074");
 									transactionWillNotFailDueToReentry_ = true;
 								} else {
-									// console.info("202507075");
+									// console.info("%s", "202507075");
 									donatedTokensToClaim_.push([roundNum_ - 1n, maliciousTokenAddress_, 1n,]);
 								}
 								break;
 							}
 							default: {
 								if (nextDonatedNftToClaimIndex_ < nextDonatedNftToDonateIndex_ && donatedNftRoundNums_[Number(nextDonatedNftToClaimIndex_)] < roundNum_) {
-									// console.info("202507076");
+									// console.info("%s", "202507076");
 									donatedNftIndexes_.push(nextDonatedNftToClaimIndex_);
 									nextDonatedNftToClaimIndexIncrement_ = 1n;
 								} else {
-									// console.info("202507077");
+									// console.info("%s", "202507077");
 									transactionWillNotFailDueToReentry_ = true;
 								}
 								break;
@@ -500,37 +500,37 @@ describe("PrizesWallet-2", function () {
 						break;
 					}
 					case 4: {
-						// console.info("202507078");
+						// console.info("%s", "202507078");
 						transactionResponsePromise_ = maliciousPrizeWinner_.connect(contracts_.signers[0])["doWithdrawEth(uint256)"]((roundNum_ <= 0n) ? 0n : (roundNum_ - 1n));
 						break;
 					}
 					case 5: {
 						if (roundNum_ <= 0n) {
-							// console.info("202507079");
+							// console.info("%s", "202507079");
 							continue;
 						}
-						// console.info("202507081");
+						// console.info("%s", "202507081");
 						await hre.ethers.provider.send("evm_increaseTime", [Number(timeoutDurationToWithdrawPrizes_),]);
 						// await hre.ethers.provider.send("evm_mine");
 						transactionResponsePromise_ = maliciousPrizeWinner_.connect(contracts_.signers[0])["doWithdrawEth(uint256,address)"](roundNum_ - 1n, maliciousPrizeWinnerAddress_);
 						break;
 					}
 					case 6: {
-						// console.info("202511173");
+						// console.info("%s", "202511173");
 						transactionResponsePromise_ = maliciousPrizeWinner_.connect(contracts_.signers[0]).doWithdrawEthMany([(roundNum_ <= 0n) ? 0n : (roundNum_ - 1n),]);
 						break;
 					}
 					case 7: {
-						// console.info("202507082");
+						// console.info("%s", "202507082");
 						transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[10]).donateToken(roundNum_, contracts_.signers[0].address, maliciousTokenAddress_, 1n);
 						break;
 					}
 					case 8: {
 						if (roundNum_ <= 0n) {
-							// console.info("202507083");
+							// console.info("%s", "202507083");
 							continue;
 						}
-						// console.info("202507084");
+						// console.info("%s", "202507084");
 
 						// [Comment-202507153]
 						// It appears that this can call `maliciousToken.transferFrom` to transfer from the zero address,
@@ -544,10 +544,10 @@ describe("PrizesWallet-2", function () {
 					case 9: {
 						const donatedTokensToClaim_ = [];
 						if (roundNum_ <= 0n) {
-							// console.info("202507085");
+							// console.info("%s", "202507085");
 							transactionWillNotFailDueToReentry_ = true;
 						} else {
-							// console.info("202507086");
+							// console.info("%s", "202507086");
 							donatedTokensToClaim_.push([roundNum_ - 1n, maliciousTokenAddress_, 1n,]);
 						}
 
@@ -559,17 +559,17 @@ describe("PrizesWallet-2", function () {
 					case 10:
 					case 11:
 					case 12: {
-						// console.info("202507088");
+						// console.info("%s", "202507088");
 						transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[10]).donateNft(roundNum_, contracts_.signers[0].address, maliciousTokenAddress_, 0n);
 						nextDonatedNftToDonateIndexIncrement_ = 1n;
 						break;
 					}
 					case 13: {
 						if ( ! (nextDonatedNftToClaimIndex_ < nextDonatedNftToDonateIndex_ && donatedNftRoundNums_[Number(nextDonatedNftToClaimIndex_)] < roundNum_) ) {
-							// console.info("202507089");
+							// console.info("%s", "202507089");
 							continue;
 						}
-						// console.info("202507091");
+						// console.info("%s", "202507091");
 						transactionResponsePromise_ = maliciousPrizeWinner_.connect(contracts_.signers[0]).doClaimDonatedNft(nextDonatedNftToClaimIndex_);
 						nextDonatedNftToClaimIndexIncrement_ = 1n;
 						break;
@@ -578,11 +578,11 @@ describe("PrizesWallet-2", function () {
 						expect(choiceCode_).equal(14);
 						const donatedNftIndexes_ = [];
 						if (nextDonatedNftToClaimIndex_ < nextDonatedNftToDonateIndex_ && donatedNftRoundNums_[Number(nextDonatedNftToClaimIndex_)] < roundNum_) {
-							// console.info("202507092");
+							// console.info("%s", "202507092");
 							donatedNftIndexes_.push(nextDonatedNftToClaimIndex_);
 							nextDonatedNftToClaimIndexIncrement_ = 1n;
 						} else {
-							// console.info("202507093");
+							// console.info("%s", "202507093");
 							transactionWillNotFailDueToReentry_ = true;
 						}
 						transactionResponsePromise_ = maliciousPrizeWinner_.connect(contracts_.signers[0]).doClaimManyDonatedNfts(donatedNftIndexes_);
@@ -602,14 +602,14 @@ describe("PrizesWallet-2", function () {
 						case 4:
 						case 5:
 						case 6: {
-							// console.info("202507094");
+							// console.info("%s", "202507094");
 							await transactionResponsePromiseAssertion_
 								.revertedWithCustomError(newPrizesWallet_, "FundTransferFailed")
 								.withArgs("ETH withdrawal failed.", maliciousPrizeWinnerAddress_, anyUint);
 							break;
 						}
 						default: {
-							// console.info("202507095");
+							// console.info("%s", "202507095");
 							await transactionResponsePromiseAssertion_.revertedWithCustomError(newPrizesWallet_, "ReentrancyGuardReentrantCall");
 							break;
 						}
@@ -618,11 +618,11 @@ describe("PrizesWallet-2", function () {
 					await waitForTransactionReceipt(transactionResponsePromise_);
 					// nextDonatedNftToDonateIndex_ += nextDonatedNftToDonateIndexIncrement_;
 					if (nextDonatedNftToDonateIndexIncrement_ > 0n) {
-						// console.info("202507096");
+						// console.info("%s", "202507096");
 						donatedNftRoundNums_[Number(nextDonatedNftToDonateIndex_)] = roundNum_;
 						++ nextDonatedNftToDonateIndex_;
 					} else {
-						// console.info("202507097");
+						// console.info("%s", "202507097");
 					}
 					nextDonatedNftToClaimIndex_ += nextDonatedNftToClaimIndexIncrement_;
 				}

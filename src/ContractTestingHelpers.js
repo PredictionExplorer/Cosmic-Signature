@@ -62,7 +62,7 @@ async function loadFixtureDeployContractsForTesting(roundActivationTime) {
 		
 		nextBlockDate.setUTCFullYear(nextBlockDate.getUTCFullYear() + 10);
 		const nextBlockTimeStamp = Math.trunc(nextBlockDate.getTime() / 1000);
-		// console.info(nextBlockTimeStamp);
+		// console.info("%s", nextBlockTimeStamp);
 
 		// Issue. Currently, this doesn't fail due to the new timestamp not being in the future from the latest block.
 		// Otherwise we would need a loop adding 10 years and trying on each iteration until succeeded.
@@ -177,14 +177,14 @@ async function hackPrepareHardhatCoverageOnceIfNeeded() {
 	const gas = 30_000_000;
 
 	if (( ! hre.__SOLIDITY_COVERAGE_RUNNING ) || preparedHardhatCoverage) {
-		// console.info("202508262");
+		// console.info("%s", "202508262");
 
 		expect(hre.network.config.gas).equal(gas);
 
 		return;
 	}
 	
-	// console.info("202508263");
+	// console.info("%s", "202508263");
 	preparedHardhatCoverage = true;
 
 	expect(typeof hre.network.config.gas).equal("number");
@@ -283,7 +283,7 @@ async function makeNextBlockTimeDeterministic(currentSecondRemainingDurationMinL
 		// [/Comment-202506264]
 		await sleepForMilliSeconds(currentSecondRemainingDurationInMilliSeconds + 1);
 
-		// console.info(Date.now().toString());
+		// console.info("%s", Date.now());
 		secondBeginningReachCount = 1;
 	} else {
 		secondBeginningReachCount = 0;

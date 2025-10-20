@@ -15,7 +15,7 @@ calculateDivisor(input.initialDurationUntilMainPrize, "initialDurationUntilMainP
 
 function calculateDivisor(desiredValue_, divisorName_) {
 	const divisor_ = (input.mainPrizeTimeIncrementInMicroSeconds + desiredValue_ / 2n) / desiredValue_;
-	console.info(`${divisorName_} = ${divisor_}`);
+	console.info("%s", `${divisorName_} = ${divisor_}`);
 	// prototype1(desiredValue_);
 }
 
@@ -32,6 +32,6 @@ function calculateDivisor(desiredValue_, divisorName_) {
 // 		output_ += error_.toString() + " ";
 // 		++ desiredValue_;
 // 	}
-// 	console.info(output_);
+// 	console.info("%s", output_);
 // 	console.info();
 // }

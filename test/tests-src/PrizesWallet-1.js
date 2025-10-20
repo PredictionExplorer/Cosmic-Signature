@@ -22,8 +22,8 @@ describe("PrizesWallet-1", function () {
 
 		if (SKIP_LONG_TESTS) {
 			// todo-1 Review all calls to `console` to make sure we specify a correct error severity.
-			// todo-0 Also remember that it treats sequences like "%s" in a special way.
-			console.warn("Warning 202506083. Skipping a long test.");
+			// todo-1 +++ Also remember that it treats sequences like "%s" in a special way.
+			console.warn("%s", "Warning 202506083. Skipping a long test.");
 			// return;
 		}
 
@@ -182,7 +182,7 @@ describe("PrizesWallet-1", function () {
 				ethBalanceAmounts_.forEach((item) => {item.push(0n);});
 				donatedTokens_.push(hre.ethers.ZeroAddress);
 				++ roundNum_;
-				// console.info(`202507165 ${roundNum_}`);
+				// console.info("%s", `202507165 ${roundNum_}`);
 			};
 
 		// #endregion
@@ -201,12 +201,12 @@ describe("PrizesWallet-1", function () {
 			{
 				randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 				if ((randomNumber_ & 0xFn) == 0n) {
-					// console.info("202506195");
+					// console.info("%s", "202506195");
 					randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 					await hre.ethers.provider.send("evm_increaseTime", [Number(randomNumber_ % (timeoutDurationToWithdrawPrizes_ * 3n / 2n))]);
 					await hre.ethers.provider.send("evm_mine");
 				} else {
-					// console.info("202506196");
+					// console.info("%s", "202506196");
 				}
 			}
 
@@ -223,20 +223,20 @@ describe("PrizesWallet-1", function () {
 			if ((choice1Code_ -= 2) < 0) {
 				// #region Minting An ERC-20 Token Amount
 
-				// console.info("202506104");
+				// console.info("%s", "202506104");
 				randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 				const bidderIndex_ = Number(randomNumber_ % BigInt(numBidders_));
 				randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 				const tokenIndex_ = Number(randomNumber_ % BigInt(numTokens_));
 				let tokenAmount_;
 				if (choice1Code_ == -1) {
-					// console.info("202506142");
+					// console.info("%s", "202506142");
 					randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 
 					// [Comment-202506191/]
 					tokenAmount_ = randomNumber_ % 10n ** 18n;
 				} else {
-					// console.info("202506143");
+					// console.info("%s", "202506143");
 					tokenAmount_ = 0n;
 				}
 				await expect(tokens_[tokenIndex_].connect(fakeGame_).mint(contracts_.signers[bidderIndex_].address, tokenAmount_))
@@ -249,7 +249,7 @@ describe("PrizesWallet-1", function () {
 			} else if ((choice1Code_ -= 1) < 0) {
 				// #region Minting An NFT
 
-				// console.info("202506141");
+				// console.info("%s", "202506141");
 				randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 				const bidderIndex_ = Number(randomNumber_ % BigInt(numBidders_));
 				randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
@@ -264,7 +264,7 @@ describe("PrizesWallet-1", function () {
 			} else if ((choice1Code_ -= 1) < 0) {
 				// #region `registerRoundEnd`
 
-				// console.info("202506084");
+				// console.info("%s", "202506084");
 				randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 				const mainPrizeBeneficiaryIndex_ = Number(randomNumber_ % BigInt(numBidders_));
 				/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
@@ -281,16 +281,16 @@ describe("PrizesWallet-1", function () {
 			} else if ((choice1Code_ -= 2) < 0) {
 				// #region `depositEth`
 
-				// console.info("202506144");
+				// console.info("%s", "202506144");
 				randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 				const prizeWinnerIndex_ = Number(randomNumber_ % BigInt(numBidders_));
 				let ethAmount_;
 				if (choice1Code_ == -1) {
-					// console.info("202506145");
+					// console.info("%s", "202506145");
 					randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 					ethAmount_ = randomNumber_ % 10n ** (18n - 3n);
 				} else {
-					// console.info("202506146");
+					// console.info("%s", "202506146");
 					ethAmount_ = 0n;
 				}
 				randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
@@ -301,7 +301,7 @@ describe("PrizesWallet-1", function () {
 				ethBalanceAmounts_[prizeWinnerIndex_][Number(roundNum_)] += ethAmount_;
 				expect(await hre.ethers.provider.getBalance(newPrizesWalletAddress_)).equal(ethBalanceAmount_);
 				randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
-				// console.info(`202506197 ${randomNumber_ & 1n}`);
+				// console.info("%s", `202506197 ${randomNumber_ & 1n}`);
 				const prizeWinnerEthBalanceAmountFromContract_ =
 					((randomNumber_ & 1n) == 0n) ?
 					await newPrizesWallet_.connect(contracts_.signers[prizeWinnerIndex_])["getEthBalanceAmount(uint256)"](roundNum_) :
@@ -312,7 +312,7 @@ describe("PrizesWallet-1", function () {
 			} else if ((choice1Code_ -= 2) < 0) {
 				// #region `withdrawEth(uint256 roundNum_)`, `withdrawEthMany`
 
-				// console.info(`202506088 ${choice1Code_}`);
+				// console.info("%s", `202506088 ${choice1Code_}`);
 				let prizeWinnerIndex_;
 				let prizeRoundNum_;
 				for (let counter_ = /*Math.min(*/numBidders_/*, Number(roundNum_) + 1)*/; ; ) {
@@ -321,11 +321,11 @@ describe("PrizesWallet-1", function () {
 					randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 					prizeRoundNum_ = roundNum_ -  randomNumber_ % BigInt(Math.min(Number(roundNum_) + 1, 10));
 					if (ethBalanceAmounts_[prizeWinnerIndex_][Number(prizeRoundNum_)] > 0n) {
-						// console.info("202506175", counter_.toString(), "/", numBidders_.toString());
+						// console.info("%s", `202506175 ${counter_} / ${numBidders_}`);
 						break;
 					}
 					if (( -- counter_ ) <= 0) {
-						// console.info("202506176");
+						// console.info("%s", "202506176");
 						break;
 					}
 				}
@@ -346,7 +346,7 @@ describe("PrizesWallet-1", function () {
 				expect(await hre.ethers.provider.getBalance(contracts_.signers[prizeWinnerIndex_].address)).equal(prizeWinnerEthBalanceAmountBeforeTransaction_ - transactionFeeInEth_ + ethBalanceAmounts_[prizeWinnerIndex_][Number(prizeRoundNum_)]);
 				ethBalanceAmounts_[prizeWinnerIndex_][Number(prizeRoundNum_)] = 0n;
 				randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
-				// console.info(`202506198 ${randomNumber_ & 1n}`);
+				// console.info("%s", `202506198 ${randomNumber_ & 1n}`);
 				const prizeWinnerEthBalanceAmountFromContract_ =
 					((randomNumber_ & 1n) == 0n) ?
 					await newPrizesWallet_.connect(contracts_.signers[prizeWinnerIndex_])["getEthBalanceAmount(uint256)"](prizeRoundNum_) :
@@ -357,7 +357,7 @@ describe("PrizesWallet-1", function () {
 			} else if ((choice1Code_ -= 1) < 0) {
 				// #region `withdrawEth(uint256 roundNum_, address prizeWinnerAddress_)`
 
-				// console.info("202506089");
+				// console.info("%s", "202506089");
 				const blockBeforeTransaction_ = await hre.ethers.provider.getBlock("latest");
 				let prizeWinnerIndex_;
 				let prizeRoundNum_;
@@ -371,11 +371,11 @@ describe("PrizesWallet-1", function () {
 					if ( ethBalanceAmounts_[prizeWinnerIndex_][Number(prizeRoundNum_)] > 0n &&
 					     (blockBeforeTransaction_.timestamp + 1 >= Number(prizeRoundTimeoutTimeToWithdrawPrizes_) && prizeRoundTimeoutTimeToWithdrawPrizes_ > 0n)
 					) {
-						// console.info("202506177", counter_.toString(), "/", numBidders_.toString());
+						// console.info("%s", `202506177 ${counter_} / ${numBidders_}`);
 						break;
 					}
 					if (( -- counter_ ) <= 0) {
-						// console.info("202506178");
+						// console.info("%s", "202506178");
 						break;
 					}
 				}
@@ -393,7 +393,7 @@ describe("PrizesWallet-1", function () {
 				// }
 
 				if ( ! (transactionBlock_.timestamp >= Number(prizeRoundTimeoutTimeToWithdrawPrizes_) && prizeRoundTimeoutTimeToWithdrawPrizes_ > 0n) ) {
-					// console.info("202506094");
+					// console.info("%s", "202506094");
 					expect(transactionReceipt_ != undefined).false;
 					await expect(transactionResponsePromise_)
 						.revertedWithCustomError(newPrizesWallet_, "EthWithdrawalDenied")
@@ -406,11 +406,11 @@ describe("PrizesWallet-1", function () {
 							BigInt(transactionBlock_.timestamp)
 						);
 				} else {
-					// console.info("202506095");
+					// console.info("%s", "202506095");
 
 					// // Comment-202506169 applies.
 					// if (ethBalanceAmounts_[prizeWinnerIndex_][Number(prizeRoundNum_)] > 0) {
-					// 	console.info("202506174", (( ++ testCounter6_ ) / testCounter5_).toPrecision(2));
+					// 	console.info("%s", `202506174 ${(( ++ testCounter6_ ) / testCounter5_).toPrecision(2)}`);
 					// }
 
 					expect(transactionReceipt_ != undefined).true;
@@ -424,7 +424,7 @@ describe("PrizesWallet-1", function () {
 					expect(await hre.ethers.provider.getBalance(contracts_.signers[strangerIndex_].address)).equal(strangerEthBalanceAmountBeforeTransaction_ - transactionFeeInEth_ + ethBalanceAmounts_[prizeWinnerIndex_][Number(prizeRoundNum_)]);
 					ethBalanceAmounts_[prizeWinnerIndex_][Number(prizeRoundNum_)] = 0n;
 					randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
-					// console.info(`202506199 ${randomNumber_ & 1n}`);
+					// console.info("%s", `202506199 ${randomNumber_ & 1n}`);
 					const prizeWinnerEthBalanceAmountFromContract_ =
 						((randomNumber_ & 1n) == 0n) ?
 						await newPrizesWallet_.connect(contracts_.signers[prizeWinnerIndex_])["getEthBalanceAmount(uint256)"](prizeRoundNum_) :
@@ -436,20 +436,20 @@ describe("PrizesWallet-1", function () {
 			} else if ((choice1Code_ -= 2) < 0) {
 				// #region `donateToken`
 
-				// console.info("202506097");
+				// console.info("%s", "202506097");
 				randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 				const donorIndex_ = Number(randomNumber_ % BigInt(numBidders_));
 				randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 				const tokenIndex_ = Number(randomNumber_ % BigInt(numTokens_));
 				let tokenAmount_;
 				if (choice1Code_ == -1) {
-					// console.info("202506149");
+					// console.info("%s", "202506149");
 					randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 
 					// [Comment-202506102/]
 					tokenAmount_ = randomNumber_ % 10n ** 18n;
 				} else {
-					// console.info("202506151");
+					// console.info("%s", "202506151");
 					tokenAmount_ = 0n;
 				}
 				/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
@@ -468,11 +468,11 @@ describe("PrizesWallet-1", function () {
 				// One factor that helps is that some donations or their parts never get claimed.
 				if ( ! (tokenAmount_ <= allTokenBalanceAmounts_[tokenIndex_][contracts_.signers[donorIndex_].address]) ) {
 
-					// console.info("202506107", iterationCounter_.toString());
+					// console.info("%s", `202506107 ${iterationCounter_}`);
 					await expect(transactionResponsePromise_)
 						.revertedWithCustomError(tokens_[tokenIndex_], "ERC20InsufficientBalance");
 				} else {
-					// console.info("202506154", iterationCounter_.toString(), roundNum_.toString(), tokenIndex_.toString(), hre.ethers.formatEther(tokenAmount_));
+					// console.info("%s", `202506154 ${iterationCounter_} ${roundNum_} ${tokenIndex_} ${hre.ethers.formatEther(tokenAmount_)}`);
 					await waitForTransactionReceipt(transactionResponsePromise_);
 
 					// Because near Comment-202507161 we have added the zero addresses to `allTokenBalanceAmounts_`,
@@ -480,10 +480,10 @@ describe("PrizesWallet-1", function () {
 					const donatedTokenHolderAddress_ = await newPrizesWallet_.donatedTokens(roundNum_);
 
 					if (donatedTokens_[Number(roundNum_)] == hre.ethers.ZeroAddress) {
-						// console.info("202507154", donatedTokenHolderAddress_, typeof donatedTokenHolderAddress_);
+						// console.info("%s", `202507154 ${donatedTokenHolderAddress_} ${typeof donatedTokenHolderAddress_}`);
 						donatedTokens_[Number(roundNum_)] = donatedTokenHolderAddress_;
 						for (const tokenBalanceAmounts_ of allTokenBalanceAmounts_) {
-							// console.info("202507157");
+							// console.info("%s", "202507157");
 
 							// [Comment-202507163/]
 							expect(Object.hasOwn(tokenBalanceAmounts_, donatedTokenHolderAddress_)).false;
@@ -491,7 +491,7 @@ describe("PrizesWallet-1", function () {
 							tokenBalanceAmounts_[donatedTokenHolderAddress_] = 0n;
 						}
 					} else {
-						// console.info("202507159");
+						// console.info("%s", "202507159");
 						expect(donatedTokenHolderAddress_).equal(donatedTokens_[Number(roundNum_)]);
 					}
 					allTokenBalanceAmounts_[tokenIndex_][contracts_.signers[donorIndex_].address] -= tokenAmount_;
@@ -517,7 +517,7 @@ describe("PrizesWallet-1", function () {
 				{
 					// #region
 
-					// console.info("202506114");
+					// console.info("%s", "202506114");
 					const blockBeforeTransaction_ = await hre.ethers.provider.getBlock("latest");
 					let mainPrizeBeneficiaryIndex_;
 					let tokenIndex_;
@@ -540,11 +540,11 @@ describe("PrizesWallet-1", function () {
 						       (blockBeforeTransaction_.timestamp + 1 >= Number(donationRoundTimeoutTimeToWithdrawPrizes_) && donationRoundTimeoutTimeToWithdrawPrizes_ > 0n)
 						     )
 						) {
-							// console.info("202506182");
+							// console.info("%s", "202506182");
 							break;
 						}
 						if (( -- counter_ ) <= 0) {
-							// console.info("202506183");
+							// console.info("%s", "202506183");
 							break;
 						}
 					}
@@ -559,10 +559,10 @@ describe("PrizesWallet-1", function () {
 
 					randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 					if (choice1Code_ == -1) {
-						// console.info("202507166");
+						// console.info("%s", "202507166");
 						donatedTokenAmountToClaim_ = randomNumber_ % ((allTokenBalanceAmounts_[tokenIndex_][donatedTokens_[Number(donationRoundNum_)]] << 1n) + 1n);
 					} else {
-						// console.info("202507167");
+						// console.info("%s", "202507167");
 						donatedTokenAmountToClaim_ =
 							((randomNumber_ & 1n) == 0n) ?
 							0n :
@@ -576,9 +576,9 @@ describe("PrizesWallet-1", function () {
 					const transactionResponsePromise_ = newPrizesWallet_.connect(contracts_.signers[mainPrizeBeneficiaryIndex_]).claimDonatedToken(donationRoundNum_, tokensAddress_[tokenIndex_], donatedTokenAmountToClaim_);
 					const transactionReceipt_ = await tryWaitForTransactionReceipt(transactionResponsePromise_);
 					// if (transactionReceipt_ != undefined) {
-					// 	console.info("202507168");
+					// 	console.info("%s", "202507168");
 					// } else {
-					// 	console.error("202507169");
+					// 	console.error("%s", "202507169");
 					// }
 
 					// #endregion
@@ -587,6 +587,7 @@ describe("PrizesWallet-1", function () {
 					// {
 					// 	const transactionBlock_ = await hre.ethers.provider.getBlock("latest");
 					// 	console.info(
+					// 		// "%s",
 					// 		"202506186",
 					// 		donationRoundNum_.toString(),
 					// 		tokenIndex_.toString(),
@@ -608,7 +609,7 @@ describe("PrizesWallet-1", function () {
 
 					if (transactionShouldHaveSucceeded_) {
 						if (contracts_.signers[mainPrizeBeneficiaryIndex_].address != mainPrizeBeneficiaryAddresses_[Number(donationRoundNum_)]) {
-							// console.info("202506202");
+							// console.info("%s", "202506202");
 
 							// // [Comment-202506169/]
 							// if (allTokenBalanceAmounts_[tokenIndex_][donatedTokens_[Number(donationRoundNum_)]] > 0n) {
@@ -617,14 +618,14 @@ describe("PrizesWallet-1", function () {
 
 							const transactionBlock_ = await hre.ethers.provider.getBlock("latest");
 							if (transactionBlock_.timestamp >= Number(donationRoundTimeoutTimeToWithdrawPrizes_) && donationRoundTimeoutTimeToWithdrawPrizes_ > 0n) {
-								// console.info("202506173");
+								// console.info("%s", "202506173");
 
 								// // Comment-202506169 applies.
 								// if (allTokenBalanceAmounts_[tokenIndex_][donatedTokens_[Number(donationRoundNum_)]] > 0n) {
-								// 	console.info("202506115", (( ++ testCounter2_ ) / testCounter1_).toPrecision(2));
+								// 	console.info("%s", `202506115 ${(( ++ testCounter2_ ) / testCounter1_).toPrecision(2)}`);
 								// }
 							} else {
-								// console.info("202506116");
+								// console.info("%s", "202506116");
 								await expect(transactionResponsePromise_)
 									.revertedWithCustomError(newPrizesWallet_, "DonatedTokenClaimDenied")
 									.withArgs(
@@ -638,7 +639,7 @@ describe("PrizesWallet-1", function () {
 								transactionShouldHaveSucceeded_ = false;
 							}
 						} else {
-							// console.info("202506117");
+							// console.info("%s", "202506117");
 						}
 					}
 
@@ -647,7 +648,7 @@ describe("PrizesWallet-1", function () {
 
 					if (transactionShouldHaveSucceeded_) {
 						if (donatedTokens_[Number(donationRoundNum_)] == hre.ethers.ZeroAddress) {
-							// console.info("202507171");
+							// console.info("%s", "202507171");
 							await expect(transactionResponsePromise_).revertedWithCustomError(tokens_[tokenIndex_], "ERC20InvalidApprover");
 							transactionShouldHaveSucceeded_ = false;
 						}
@@ -658,13 +659,13 @@ describe("PrizesWallet-1", function () {
 
 					if (transactionShouldHaveSucceeded_) {
 						if (donatedTokenAmountToClaim_ == 0n) {
-							// console.info("202507172");
+							// console.info("%s", "202507172");
 							donatedTokenAmountToClaim_ = allTokenBalanceAmounts_[tokenIndex_][donatedTokens_[Number(donationRoundNum_)]];
 						} else {
-							// console.info("202507173");
+							// console.info("%s", "202507173");
 						}
 						if (donatedTokenAmountToClaim_ > allTokenBalanceAmounts_[tokenIndex_][donatedTokens_[Number(donationRoundNum_)]]) {
-							// console.info("202507174");
+							// console.info("%s", "202507174");
 							await expect(transactionResponsePromise_).revertedWithCustomError(tokens_[tokenIndex_], "ERC20InsufficientBalance");
 							transactionShouldHaveSucceeded_ = false;
 						}
@@ -679,7 +680,7 @@ describe("PrizesWallet-1", function () {
 					// #region
 
 					if (transactionShouldHaveSucceeded_) {
-						// console.info("202506124");
+						// console.info("%s", "202506124");
 						allTokenBalanceAmounts_[tokenIndex_][donatedTokens_[Number(donationRoundNum_)]] -= donatedTokenAmountToClaim_;
 						allTokenBalanceAmounts_[tokenIndex_][contracts_.signers[mainPrizeBeneficiaryIndex_].address] += donatedTokenAmountToClaim_;
 						await expect(transactionResponsePromise_)
@@ -713,7 +714,7 @@ describe("PrizesWallet-1", function () {
 			} else if ((choice1Code_ -= 1) < 0) {
 				// #region `donateNft`
 
-				// console.info("202506127");
+				// console.info("%s", "202506127");
 				let donorIndex_;
 				let nftContractIndex_;
 				let nftId_;
@@ -727,11 +728,11 @@ describe("PrizesWallet-1", function () {
 					if ( Number(nftId_) < allNfts_[nftContractIndex_].length &&
 					     allNfts_[nftContractIndex_][Number(nftId_)] == contracts_.signers[donorIndex_].address
 					) {
-						// console.info("202506156");
+						// console.info("%s", "202506156");
 						break;
 					}
 					if (( -- counter_ ) <= 0) {
-						// console.info("202506157");
+						// console.info("%s", "202506157");
 						break;
 					}
 				}
@@ -744,13 +745,13 @@ describe("PrizesWallet-1", function () {
 						nftId_
 					);
 				if ( ! (Number(nftId_) < allNfts_[nftContractIndex_].length) ) {
-					// console.info("202506131");
+					// console.info("%s", "202506131");
 					await expect(transactionResponsePromise_).revertedWithCustomError(nftContracts_[nftContractIndex_], "ERC721NonexistentToken");
 				} else if ( ! (allNfts_[nftContractIndex_][Number(nftId_)] == contracts_.signers[donorIndex_].address) ) {
-					// console.info("202506132");
+					// console.info("%s", "202506132");
 					await expect(transactionResponsePromise_).revertedWithCustomError(nftContracts_[nftContractIndex_], "ERC721IncorrectOwner");
 				} else {
-					// console.info("202506135");
+					// console.info("%s", "202506135");
 					await expect(transactionResponsePromise_)
 						.emit(newPrizesWallet_, "NftDonated")
 						.withArgs(roundNum_, contracts_.signers[donorIndex_].address, nftContractsAddress_[nftContractIndex_], nftId_, BigInt(donatedNfts_.length))
@@ -770,7 +771,7 @@ describe("PrizesWallet-1", function () {
 			} else {
 				// #region `claimDonatedNft`
 
-				// console.info("202506159");
+				// console.info("%s", "202506159");
 				expect(choice1Code_ -= 1).equal(-1);
 				const blockBeforeTransaction_ = await hre.ethers.provider.getBlock("latest");
 				let mainPrizeBeneficiaryIndex_;
@@ -783,17 +784,17 @@ describe("PrizesWallet-1", function () {
 					donatedNftIndex_ = donatedNfts_.length - Number(randomNumber_ % BigInt(Math.min(donatedNfts_.length + 1, 10)));
 					if (donatedNftIndex_ < donatedNfts_.length && donatedNfts_[donatedNftIndex_].nftContractIndex >= 0) {
 						if (contracts_.signers[mainPrizeBeneficiaryIndex_].address == mainPrizeBeneficiaryAddresses_[Number(donatedNfts_[donatedNftIndex_].roundNum)]) {
-							// console.info("202506187", iterationCounter_.toString());
+							// console.info("%s", `202506187 ${iterationCounter_}`);
 							break;
 						}
 						donationRoundTimeoutTimeToWithdrawPrizes_ = roundTimeoutTimesToWithdrawPrizes_[Number(donatedNfts_[donatedNftIndex_].roundNum)];
 						if (blockBeforeTransaction_.timestamp + 1 >= Number(donationRoundTimeoutTimeToWithdrawPrizes_) && donationRoundTimeoutTimeToWithdrawPrizes_ > 0n) {
-							// console.info("202506188", iterationCounter_.toString());
+							// console.info("%s", `202506188 ${iterationCounter_}`);
 							break;
 						}
 					}
 					if (( -- counter_ ) <= 0) {
-						// console.info("202506204", iterationCounter_.toString());
+						// console.info("%s", `202506204 ${iterationCounter_}`);
 						break;
 					}
 				}
@@ -803,7 +804,7 @@ describe("PrizesWallet-1", function () {
 				let transactionShouldHaveSucceeded_ = true;
 				if (transactionShouldHaveSucceeded_) {
 					if ( ! (donatedNftIndex_ < donatedNfts_.length) ) {
-						// console.info("202506167");
+						// console.info("%s", "202506167");
 						await expect(transactionResponsePromise_)
 							.revertedWithCustomError(newPrizesWallet_, "InvalidDonatedNftIndex")
 							.withArgs("Invalid donated NFT index.", contracts_.signers[mainPrizeBeneficiaryIndex_].address, BigInt(donatedNftIndex_));
@@ -812,7 +813,7 @@ describe("PrizesWallet-1", function () {
 				}
 				if (transactionShouldHaveSucceeded_) {
 					if ( ! (donatedNfts_[donatedNftIndex_].nftContractIndex >= 0) ) {
-						// console.info("202506168");
+						// console.info("%s", "202506168");
 						await expect(transactionResponsePromise_)
 							.revertedWithCustomError(newPrizesWallet_, "DonatedNftAlreadyClaimed")
 							.withArgs("Donated NFT already claimed.", contracts_.signers[mainPrizeBeneficiaryIndex_].address, BigInt(donatedNftIndex_));
@@ -821,19 +822,19 @@ describe("PrizesWallet-1", function () {
 				}
 				if (transactionShouldHaveSucceeded_) {
 					if (contracts_.signers[mainPrizeBeneficiaryIndex_].address != mainPrizeBeneficiaryAddresses_[Number(donatedNfts_[donatedNftIndex_].roundNum)]) {
-						// console.info("202506203");
+						// console.info("%s", "202506203");
 
 						// // Comment-202506169 applies.
 						// ++ testCounter3_;
 
 						const transactionBlock_ = await hre.ethers.provider.getBlock("latest");
 						if (transactionBlock_.timestamp >= Number(donationRoundTimeoutTimeToWithdrawPrizes_) && donationRoundTimeoutTimeToWithdrawPrizes_ > 0n) {
-							// console.info("202506205");
+							// console.info("%s", "202506205");
 
 							// // Comment-202506169 applies.
-							// console.info("202506171", (( ++ testCounter4_ ) / testCounter3_).toPrecision(2));
+							// console.info("%s", `202506171 ${(( ++ testCounter4_ ) / testCounter3_).toPrecision(2)}`);
 						} else {
-							// console.info("202506162");
+							// console.info("%s", "202506162");
 							await expect(transactionResponsePromise_)
 								.revertedWithCustomError(newPrizesWallet_, "DonatedNftClaimDenied")
 								.withArgs(
@@ -846,12 +847,12 @@ describe("PrizesWallet-1", function () {
 							transactionShouldHaveSucceeded_ = false;
 						}
 					} else {
-						// console.info("202506163");
+						// console.info("%s", "202506163");
 					}
 				}
 				expect(transactionShouldHaveSucceeded_).equal(transactionReceipt_ != undefined);
 				if (transactionShouldHaveSucceeded_) {
-					// console.info("202506164");
+					// console.info("%s", "202506164");
 					await expect(transactionResponsePromise_)
 						.emit(newPrizesWallet_, "DonatedNftClaimed")
 						.withArgs(

@@ -17,7 +17,7 @@ async function mintRandomWalkNft(randomWalkNft_, minterSigner_) {
 	let randomWalkNftMintEventLog_ = transactionReceipt_.logs[1];
 	let randomWalkNftMintEventParsedLog_ = randomWalkNft_.interface.parseLog(randomWalkNftMintEventLog_);
 	let nftId_ = randomWalkNftMintEventParsedLog_.args.tokenId;
-	console.info(`Minted a Random Walk NFT with id = ${nftId_}.`);
+	console.info("%s", `Minted a Random Walk NFT with id = ${nftId_}.`);
 	return nftId_;
 }
 
