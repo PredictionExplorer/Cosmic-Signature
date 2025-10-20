@@ -332,7 +332,7 @@ describe("PrizesWallet-2", function () {
 		/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 		let transactionResponsePromise_ = contracts_.prizesWallet.connect(contracts_.signers[2]).claimManyDonatedNfts([0n, 1n, 2n]);
 		let transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
-		let prizesWalletDonatedNftClaimedLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.indexOf(prizesWalletDonatedNftClaimedTopicHash_) >= 0));
+		let prizesWalletDonatedNftClaimedLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.includes(prizesWalletDonatedNftClaimedTopicHash_)));
 		expect(prizesWalletDonatedNftClaimedLogs_.length).equal(3);
 		for ( let counter_ = 0; counter_ <= 2; ++ counter_ ) {
 			const prizesWalletDonatedNftClaimedParsedLog_ = contracts_.prizesWallet.interface.parseLog(prizesWalletDonatedNftClaimedLogs_[counter_]);

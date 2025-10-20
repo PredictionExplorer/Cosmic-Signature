@@ -635,7 +635,7 @@ describe("Bidding", function () {
 		/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 		let transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithCst(nextCstBidExpectedPrice_ * 10n, "cst bid");
 		let transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
-		let log_ = transactionReceipt_.logs.find((log_) => (log_.topics.indexOf(cosmicSignatureGameProxyBidPlacedTopicHash_) >= 0));
+		let log_ = transactionReceipt_.logs.find((log_) => (log_.topics.includes(cosmicSignatureGameProxyBidPlacedTopicHash_)));
 		let parsedLog_ = contracts_.cosmicSignatureGameProxy.interface.parseLog(log_);
 		expect(parsedLog_.args.lastBidderAddress).equal(contracts_.signers[1].address);
 		expect(parsedLog_.args.paidEthPrice).equal(-1n);

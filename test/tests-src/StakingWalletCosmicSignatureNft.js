@@ -38,7 +38,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 			/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 			const transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).claimMainPrize();
 			const transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
-			const cosmicSignatureNftNftMintedLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.indexOf(cosmicSignatureNftNftMintedTopicHash_) >= 0));
+			const cosmicSignatureNftNftMintedLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.includes(cosmicSignatureNftNftMintedTopicHash_)));
 			for (const cosmicSignatureNftNftMintedLog_ of cosmicSignatureNftNftMintedLogs_) {
 				const cosmicSignatureNftNftMintedParsedLog_ = contracts_.cosmicSignatureNft.interface.parseLog(cosmicSignatureNftNftMintedLog_);
 				nftIds_.push(cosmicSignatureNftNftMintedParsedLog_.args.nftId);
@@ -63,7 +63,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 				contracts_.stakingWalletCosmicSignatureNft.connect(contracts_.signers[0]).stake(nftId_) :
 				contracts_.stakingWalletCosmicSignatureNft.connect(contracts_.signers[0]).stakeMany([nftId_]);
 			const transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
-			const stakingWalletCosmicSignatureNftNftStakedLog_ = transactionReceipt_.logs.find((log_) => (log_.topics.indexOf(stakingWalletCosmicSignatureNftNftStakedTopicHash_) >= 0));
+			const stakingWalletCosmicSignatureNftNftStakedLog_ = transactionReceipt_.logs.find((log_) => (log_.topics.includes(stakingWalletCosmicSignatureNftNftStakedTopicHash_)));
 			const stakingWalletCosmicSignatureNftNftStakedParsedLog_ = contracts_.stakingWalletCosmicSignatureNft.interface.parseLog(stakingWalletCosmicSignatureNftNftStakedLog_);
 			stakeActions_.push(
 				{
@@ -124,7 +124,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 			/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 			const transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).claimMainPrize();
 			const transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
-			const cosmicSignatureNftNftMintedLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.indexOf(cosmicSignatureNftNftMintedTopicHash_) >= 0));
+			const cosmicSignatureNftNftMintedLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.includes(cosmicSignatureNftNftMintedTopicHash_)));
 			for (const cosmicSignatureNftNftMintedLog_ of cosmicSignatureNftNftMintedLogs_) {
 				const cosmicSignatureNftNftMintedParsedLog_ = contracts_.cosmicSignatureNft.interface.parseLog(cosmicSignatureNftNftMintedLog_);
 				// console.info("%s", `202507211 ${cosmicSignatureNftNftMintedParsedLog_.args.nftId}`);
@@ -141,7 +141,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 			const transactionResponsePromise_ = contracts_.stakingWalletCosmicSignatureNft.connect(contracts_.signers[0]).stakeMany(nftIds_);
 			const transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 			expect(transactionReceipt_.logs.length).equals(nftIds_.length * 2);
-			const stakingWalletCosmicSignatureNftNftStakedLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.indexOf(stakingWalletCosmicSignatureNftNftStakedTopicHash_) >= 0));
+			const stakingWalletCosmicSignatureNftNftStakedLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.includes(stakingWalletCosmicSignatureNftNftStakedTopicHash_)));
 			expect(stakingWalletCosmicSignatureNftNftStakedLogs_.length).equals(nftIds_.length);
 			for (let stakingWalletCosmicSignatureNftNftStakedLogIndex_ = stakingWalletCosmicSignatureNftNftStakedLogs_.length; ( -- stakingWalletCosmicSignatureNftNftStakedLogIndex_ ) >= 0; ) {
 				const stakingWalletCosmicSignatureNftNftStakedLog_ = stakingWalletCosmicSignatureNftNftStakedLogs_[stakingWalletCosmicSignatureNftNftStakedLogIndex_];
@@ -167,7 +167,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 			const transactionResponsePromise_ = contracts_.stakingWalletCosmicSignatureNft.connect(contracts_.signers[0]).unstakeMany(stakeActionIds_);
 			const transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 			expect(transactionReceipt_.logs.length).equals(stakeActionIds_.length * 2);
-			const stakingWalletCosmicSignatureNftNftUnstakedLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.indexOf(stakingWalletCosmicSignatureNftNftUnstakedTopicHash_) >= 0));
+			const stakingWalletCosmicSignatureNftNftUnstakedLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.includes(stakingWalletCosmicSignatureNftNftUnstakedTopicHash_)));
 			expect(stakingWalletCosmicSignatureNftNftUnstakedLogs_.length).equals(stakeActionIds_.length);
 			for (let stakingWalletCosmicSignatureNftNftUnstakedLogIndex_ = stakeActionIds_.length; ( -- stakingWalletCosmicSignatureNftNftUnstakedLogIndex_ ) >= 0; ) {
 				const stakingWalletCosmicSignatureNftNftUnstakedLog_ = stakingWalletCosmicSignatureNftNftUnstakedLogs_[stakingWalletCosmicSignatureNftNftUnstakedLogIndex_];
@@ -244,7 +244,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 				/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 				let transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(bidders_[0]).claimMainPrize();
 				let transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
-				const stakingWalletCosmicSignatureNftEthDepositReceivedLog_ = transactionReceipt_.logs.find((log_) => (log_.topics.indexOf(stakingWalletCosmicSignatureNftEthDepositReceivedTopicHash_) >= 0));
+				const stakingWalletCosmicSignatureNftEthDepositReceivedLog_ = transactionReceipt_.logs.find((log_) => (log_.topics.includes(stakingWalletCosmicSignatureNftEthDepositReceivedTopicHash_)));
 				if (roundNum_ % BigInt(numRoundsPerIteration_) == 0n) {
 					// console.info("%s", "202507216");
 					expect(stakingWalletCosmicSignatureNftEthDepositReceivedLog_).equal(undefined);
@@ -263,7 +263,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 					expect(remainderEthAmountIncrement_).greaterThanOrEqual(0n);
 					remainderEthAmount_ += remainderEthAmountIncrement_;
 				}
-				const cosmicSignatureNftNftMintedLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.indexOf(cosmicSignatureNftNftMintedTopicHash_) >= 0));
+				const cosmicSignatureNftNftMintedLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.includes(cosmicSignatureNftNftMintedTopicHash_)));
 				expect(cosmicSignatureNftNftMintedLogs_.length).greaterThanOrEqual(2);
 				for (const cosmicSignatureNftNftMintedLog_ of cosmicSignatureNftNftMintedLogs_) {
 					// console.info("%s", "202507218");
@@ -271,7 +271,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 					const nftOwnerSigner_ = contracts_.signers[contracts_.signerAddressToIndexMapping[cosmicSignatureNftNftMintedParsedLog_.args.nftOwnerAddress]];
 					transactionResponsePromise_ = contracts_.stakingWalletCosmicSignatureNft.connect(nftOwnerSigner_).stake(cosmicSignatureNftNftMintedParsedLog_.args.nftId);
 					transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
-					const stakingWalletCosmicSignatureNftNftStakedLog_ = transactionReceipt_.logs.find((log_) => (log_.topics.indexOf(stakingWalletCosmicSignatureNftNftStakedTopicHash_) >= 0));
+					const stakingWalletCosmicSignatureNftNftStakedLog_ = transactionReceipt_.logs.find((log_) => (log_.topics.includes(stakingWalletCosmicSignatureNftNftStakedTopicHash_)));
 					const stakingWalletCosmicSignatureNftNftStakedParsedLog_ = contracts_.stakingWalletCosmicSignatureNft.interface.parseLog(stakingWalletCosmicSignatureNftNftStakedLog_);
 					expect(stakingWalletCosmicSignatureNftNftStakedParsedLog_.args.nftId).equal(cosmicSignatureNftNftMintedParsedLog_.args.nftId);
 					expect(stakingWalletCosmicSignatureNftNftStakedParsedLog_.args.stakerAddress).equal(cosmicSignatureNftNftMintedParsedLog_.args.nftOwnerAddress);
@@ -405,7 +405,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 			transactionResponsePromise_ = contracts_.stakingWalletCosmicSignatureNft.connect(nftStakerSigner_).stake(nftId_);
 
 			transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
-			log_ = transactionReceipt_.logs.find((log_) => (log_.topics.indexOf(stakingWalletCosmicSignatureNftNftStakedTopicHash_) >= 0));
+			log_ = transactionReceipt_.logs.find((log_) => (log_.topics.includes(stakingWalletCosmicSignatureNftNftStakedTopicHash_)));
 			parsedLog_ = contracts_.stakingWalletCosmicSignatureNft.interface.parseLog(log_);
 			stakeActionIds_.push(parsedLog_.args.stakeActionId);
 		}
@@ -429,7 +429,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 		transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 
 		// Issue. These are really not all events that show newly minted and awarded CS NFTs.
-		let cosmicSignatureGameProxyRaffleWinnerPrizePaidLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.indexOf(cosmicSignatureGameProxyRaffleWinnerPrizePaidTopicHash_) >= 0));
+		let cosmicSignatureGameProxyRaffleWinnerPrizePaidLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.includes(cosmicSignatureGameProxyRaffleWinnerPrizePaidTopicHash_)));
 
 		// Asserting that the the extra NFTs have not been staked.
 		for ( let raffleNftIndex_ = 0; raffleNftIndex_ < cosmicSignatureGameProxyRaffleWinnerPrizePaidLogs_.length; ++ raffleNftIndex_ ) {
@@ -504,7 +504,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 			const transactionResponsePromise_ = contracts_.stakingWalletCosmicSignatureNft.connect(contracts_.signers[0]).stake(nftId_);
 			if (counter_ <= 0) {
 				const transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
-				const stakingWalletCosmicSignatureNftNftStakedLog_ = transactionReceipt_.logs.find((log_) => (log_.topics.indexOf(stakingWalletCosmicSignatureNftNftStakedTopicHash_) >= 0));
+				const stakingWalletCosmicSignatureNftNftStakedLog_ = transactionReceipt_.logs.find((log_) => (log_.topics.includes(stakingWalletCosmicSignatureNftNftStakedTopicHash_)));
 				const stakingWalletCosmicSignatureNftNftStakedParsedLog_ = contracts_.stakingWalletCosmicSignatureNft.interface.parseLog(stakingWalletCosmicSignatureNftNftStakedLog_);
 				await waitForTransactionReceipt(contracts_.stakingWalletCosmicSignatureNft.connect(contracts_.signers[0]).unstake(stakingWalletCosmicSignatureNftNftStakedParsedLog_.args.stakeActionId));
 				expect(await contracts_.stakingWalletCosmicSignatureNft.usedNfts(nftId_)).equal(1n);
@@ -535,7 +535,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 		/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 		let transactionResponsePromise_ = contracts_.stakingWalletCosmicSignatureNft.connect(contracts_.signers[0]).stake(nftId_);
 		let transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
-		const stakingWalletCosmicSignatureNftNftStakedLog_ = transactionReceipt_.logs.find((log_) => (log_.topics.indexOf(stakingWalletCosmicSignatureNftNftStakedTopicHash_) >= 0));
+		const stakingWalletCosmicSignatureNftNftStakedLog_ = transactionReceipt_.logs.find((log_) => (log_.topics.includes(stakingWalletCosmicSignatureNftNftStakedTopicHash_)));
 		const stakingWalletCosmicSignatureNftNftStakedParsedLog_ = contracts_.stakingWalletCosmicSignatureNft.interface.parseLog(stakingWalletCosmicSignatureNftNftStakedLog_);
 		// console.info("%s", stakingWalletCosmicSignatureNftNftStakedParsedLog_.args.stakeActionId);
 
@@ -567,7 +567,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 		/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 		let transactionResponsePromise_ = contracts_.stakingWalletCosmicSignatureNft.connect(contracts_.signers[0]).stake(nftId_);
 		let transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
-		const stakingWalletCosmicSignatureNftNftStakedLog_ = transactionReceipt_.logs.find((log_) => (log_.topics.indexOf(stakingWalletCosmicSignatureNftNftStakedTopicHash_) >= 0));
+		const stakingWalletCosmicSignatureNftNftStakedLog_ = transactionReceipt_.logs.find((log_) => (log_.topics.includes(stakingWalletCosmicSignatureNftNftStakedTopicHash_)));
 		const stakingWalletCosmicSignatureNftNftStakedParsedLog_ = contracts_.stakingWalletCosmicSignatureNft.interface.parseLog(stakingWalletCosmicSignatureNftNftStakedLog_);
 		// console.info("%s", stakingWalletCosmicSignatureNftNftStakedParsedLog_.args.stakeActionId);
 
@@ -612,7 +612,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 			/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 			const transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).claimMainPrize();
 			const transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
-			const cosmicSignatureNftNftMintedLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.indexOf(cosmicSignatureNftNftMintedTopicHash_) >= 0));
+			const cosmicSignatureNftNftMintedLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.includes(cosmicSignatureNftNftMintedTopicHash_)));
 			// console.info("%s", `202507281 ${cosmicSignatureNftNftMintedLogs_.length}`);
 			for (const cosmicSignatureNftNftMintedLog_ of cosmicSignatureNftNftMintedLogs_) {
 				const cosmicSignatureNftNftMintedParsedLog_ = contracts_.cosmicSignatureNft.interface.parseLog(cosmicSignatureNftNftMintedLog_);
@@ -628,7 +628,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 			/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 			const transactionResponsePromise_ = contracts_.stakingWalletCosmicSignatureNft.connect(contracts_.signers[0]).stakeMany(nftIds_);
 			const transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
-			const stakingWalletCosmicSignatureNftNftStakedLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.indexOf(stakingWalletCosmicSignatureNftNftStakedTopicHash_) >= 0));
+			const stakingWalletCosmicSignatureNftNftStakedLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.includes(stakingWalletCosmicSignatureNftNftStakedTopicHash_)));
 			for (const stakingWalletCosmicSignatureNftNftStakedLog_ of stakingWalletCosmicSignatureNftNftStakedLogs_) {
 				const stakingWalletCosmicSignatureNftNftStakedParsedLog_ = contracts_.stakingWalletCosmicSignatureNft.interface.parseLog(stakingWalletCosmicSignatureNftNftStakedLog_);
 				// console.info("%s", `202507283 ${stakingWalletCosmicSignatureNftNftStakedParsedLog_.args.nftId} ${stakingWalletCosmicSignatureNftNftStakedParsedLog_.args.stakeActionId}`);
@@ -682,7 +682,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 		/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 		let transactionResponsePromise_ = brokenCosmicSignatureNftStaker_.connect(contracts_.signers[0]).doStake(nftId_);
 		let transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
-		const stakingWalletCosmicSignatureNftNftStakedLog_ = transactionReceipt_.logs.find((log_) => (log_.topics.indexOf(stakingWalletCosmicSignatureNftNftStakedTopicHash_) >= 0));
+		const stakingWalletCosmicSignatureNftNftStakedLog_ = transactionReceipt_.logs.find((log_) => (log_.topics.includes(stakingWalletCosmicSignatureNftNftStakedTopicHash_)));
 		const stakingWalletCosmicSignatureNftNftStakedParsedLog_ = contracts_.stakingWalletCosmicSignatureNft.interface.parseLog(stakingWalletCosmicSignatureNftNftStakedLog_);
 
 		for ( let brokenCosmicSignatureNftStakerEthDepositAcceptanceModeCode_ = 2n; ; -- brokenCosmicSignatureNftStakerEthDepositAcceptanceModeCode_ ) {
@@ -742,7 +742,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 		/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 		let transactionResponsePromise_ = maliciousCosmicSignatureNftStaker_.connect(contracts_.signers[0]).doStake(nftId_);
 		let transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
-		const stakingWalletCosmicSignatureNftNftStakedLog_ = transactionReceipt_.logs.find((log_) => (log_.topics.indexOf(stakingWalletCosmicSignatureNftNftStakedTopicHash_) >= 0));
+		const stakingWalletCosmicSignatureNftNftStakedLog_ = transactionReceipt_.logs.find((log_) => (log_.topics.includes(stakingWalletCosmicSignatureNftNftStakedTopicHash_)));
 		const stakingWalletCosmicSignatureNftNftStakedParsedLog_ = contracts_.stakingWalletCosmicSignatureNft.interface.parseLog(stakingWalletCosmicSignatureNftNftStakedLog_);
 
 		for ( let maliciousCosmicSignatureNftStakerModeCode_ = 6n; ; -- maliciousCosmicSignatureNftStakerModeCode_ ) {
