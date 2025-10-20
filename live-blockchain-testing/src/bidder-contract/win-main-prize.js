@@ -38,10 +38,10 @@
 //
 // 	let transactionReceipt = await waitForTransactionReceipt(transactionResponsePromise);
 // 	let topic_sig = randomWalkNft.interface.getEventTopic("MintEvent");
-// 	let log = transactionReceipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
+// 	let log = transactionReceipt.logs.find(x => x.topics.includes(topic_sig));
 // 	let parsed_log = randomWalkNft.interface.parseLog(log);
 // 	let nftId = parsed_log.args.tokenId;
-// 	console.info(`nftId = ${nftId}`);
+// 	console.info("%s", `nftId = ${nftId}`);
 // 	await waitForTransactionReceipt(randomWalkNft.connect(signer0).transferFrom(signer0.address, bidderContract.address, nftId));
 // 	nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice({blockTag: "pending",});
 // 	// todo-9 This no longer calls `nftAddress_.setApprovalForAll(address(prizesWallet_), true);`.
@@ -57,7 +57,7 @@
 //
 // 	transactionReceipt = await waitForTransactionReceipt(transactionResponsePromise);
 // 	topic_sig = randomWalkNft.interface.getEventTopic("MintEvent");
-// 	log = transactionReceipt.logs.find(x => x.topics.indexOf(topic_sig) >= 0);
+// 	log = transactionReceipt.logs.find(x => x.topics.includes(topic_sig));
 // 	parsed_log = randomWalkNft.interface.parseLog(log);
 // 	nftId = parsed_log.args.tokenId;
 // 	await waitForTransactionReceipt(randomWalkNft.connect(signer0).transferFrom(signer0.address, bidderContract.address, nftId));
@@ -72,6 +72,6 @@
 // main()
 // 	.then(() => {})
 // 	.catch((errorObject_) => {
-// 		console.error(errorObject_);
+// 		console.error("%o", errorObject_);
 // 		process.exitCode = 1;
 // 	});

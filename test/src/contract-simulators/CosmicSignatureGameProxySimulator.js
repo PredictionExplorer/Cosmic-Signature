@@ -453,24 +453,24 @@ async function createCosmicSignatureGameProxySimulator(
 			expect(paidEthPrice_).greaterThan(0n);
 			const overpaidEthPrice_ = value_ - paidEthPrice_;
 			if ( ! (overpaidEthPrice_ >= 0n) ) {
-				// console.info("202504151");
+				// console.info("%s", "202504151");
 				await expect(transactionResponsePromise_)
 					.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "InsufficientReceivedBidAmount")
 					.withArgs("The current ETH bid price is greater than the amount you transferred.", paidEthPrice_, value_);
 				return false;
 			}
 			if (randomWalkNftId_ < 0n) {
-				// console.info("202505125");
+				// console.info("%s", "202505125");
 			} else {
 				if (this.wasRandomWalkNftUsed(randomWalkNftId_)) {
-					// console.info("202504152");
+					// console.info("%s", "202504152");
 					await expect(transactionResponsePromise_)
 						.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "UsedRandomWalkNft")
 						.withArgs("This Random Walk NFT has already been used for bidding.", randomWalkNftId_);
 					return false;
 				}
 				if ( ! (bidderAddress_ == this.randomWalkNftSimulator.ownerOf(randomWalkNftId_)) ) {
-					// console.info("202504153");
+					// console.info("%s", "202504153");
 					await expect(transactionResponsePromise_)
 						.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "CallerIsNotNftOwner")
 						.withArgs("You are not the owner of this Random Walk NFT.", contracts_.randomWalkNftAddress, randomWalkNftId_, bidderAddress_);
@@ -478,7 +478,7 @@ async function createCosmicSignatureGameProxySimulator(
 				}
 			}
 			if ( ! (message_.length <= this.bidMessageLengthMaxLimit) ) {
-				// console.info("202504154");
+				// console.info("%s", "202504154");
 				await expect(transactionResponsePromise_)
 					.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "TooLongBidMessage")
 					.withArgs("Message is too long.", message_.length);
@@ -486,7 +486,7 @@ async function createCosmicSignatureGameProxySimulator(
 			}
 			if (this.lastBidderAddress == hre.ethers.ZeroAddress) {
 				if ( ! (BigInt(transactionBlock_.timestamp) >= this.roundActivationTime) ) {
-					// console.info("202504155");
+					// console.info("%s", "202504155");
 					await expect(transactionResponsePromise_)
 						.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "RoundIsInactive")
 						.withArgs("The current bidding round is not active yet.", this.roundActivationTime, BigInt(transactionBlock_.timestamp));
@@ -520,9 +520,9 @@ async function createCosmicSignatureGameProxySimulator(
 			expect(typeof paidEthPrice_).equal("bigint");
 			expect(paidEthPrice_).greaterThan(0n);
 			let overpaidEthPrice_ = value_ - paidEthPrice_;
-			// console.info("bidWithEth succeeded.", hre.ethers.formatEther(ethBidPrice_), hre.ethers.formatEther(paidEthPrice_), hre.ethers.formatEther(value_), hre.ethers.formatEther(overpaidEthPrice_));
+			// console.info(/*"%s",*/ "bidWithEth succeeded.", hre.ethers.formatEther(ethBidPrice_), hre.ethers.formatEther(paidEthPrice_), hre.ethers.formatEther(value_), hre.ethers.formatEther(overpaidEthPrice_));
 			if (overpaidEthPrice_ == 0n) {
-				// console.info("202505081");
+				// console.info("%s", "202505081");
 			} else if (overpaidEthPrice_ > 0n) {
 				// Comment-202505117 relates.
 				const transactionGasPrice_ = transactionReceipt_.gasPrice;
@@ -530,27 +530,27 @@ async function createCosmicSignatureGameProxySimulator(
 				const ethBidRefundAmountToSwallowMaxLimit_ = this.ethBidRefundAmountInGasToSwallowMaxLimit * transactionGasPrice_;
 
 				if (overpaidEthPrice_ <= ethBidRefundAmountToSwallowMaxLimit_) {
-					// console.info("202505145", hre.ethers.formatEther(overpaidEthPrice_), hre.ethers.formatEther(ethBidRefundAmountToSwallowMaxLimit_));
+					// console.info(/*"%s",*/ "202505145", hre.ethers.formatEther(overpaidEthPrice_), hre.ethers.formatEther(ethBidRefundAmountToSwallowMaxLimit_));
 					overpaidEthPrice_ = 0n;
 					paidEthPrice_ = value_;
 				} else {
-					// console.info("202505087", hre.ethers.formatEther(overpaidEthPrice_), hre.ethers.formatEther(ethBidRefundAmountToSwallowMaxLimit_));
+					// console.info(/*"%s",*/ "202505087", hre.ethers.formatEther(overpaidEthPrice_), hre.ethers.formatEther(ethBidRefundAmountToSwallowMaxLimit_));
 				}
 			} else {
 				expect(false).true;
 			}
 			if (randomWalkNftId_ < 0n) {
-				// console.info("202505088");
+				// console.info("%s", "202505088");
 			} else {
-				// console.info("202505089");
+				// console.info("%s", "202505089");
 				this.usedRandomWalkNfts[randomWalkNftId_] = true;
 			}
 			this.biddersInfo[bidderAddress_].totalSpentEthAmount += paidEthPrice_;
 			if (this.lastBidderAddress == hre.ethers.ZeroAddress) {
-				// console.info("202505115", hre.ethers.formatEther(ethBidPrice_));
+				// console.info("%s", `202505115 ${hre.ethers.formatEther(ethBidPrice_)}`);
 				this.ethDutchAuctionBeginningBidPrice = ethBidPrice_ * this.ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
 			} else {
-				// console.info("202505126");
+				// console.info("%s", "202505126");
 			}
 			this.nextEthBidPrice = ethBidPrice_ + ethBidPrice_ / this.ethBidPriceIncreaseDivisor + 1n;
 
@@ -597,29 +597,29 @@ async function createCosmicSignatureGameProxySimulator(
 			if (this.lastBidderAddress == hre.ethers.ZeroAddress) {
 				nextEthBidPrice_ = this.ethDutchAuctionBeginningBidPrice;
 				if (nextEthBidPrice_ == 0n) {
-					// console.info("202505127");
+					// console.info("%s", "202505127");
 					nextEthBidPrice_ = this.FIRST_ROUND_INITIAL_ETH_BID_PRICE;
 				} else {
 					const ethDutchAuctionElapsedDuration_ = this.getDurationElapsedSinceRoundActivation(blockBeforeTransaction_) + currentTimeOffset_;
 					if (ethDutchAuctionElapsedDuration_ <= 0n) {
-						// console.info("202505128");
+						// console.info("%s", "202505128");
 					} else {
 						// Comment-202501301 applies.
 						const ethDutchAuctionEndingBidPrice_ = nextEthBidPrice_ / this.ethDutchAuctionEndingBidPriceDivisor + 1n;
 
 						const ethDutchAuctionDuration_ = this._getEthDutchAuctionDuration();
 						if (ethDutchAuctionElapsedDuration_ < ethDutchAuctionDuration_) {
-							// console.info("202505129");
+							// console.info("%s", "202505129");
 							const ethDutchAuctionBidPriceDifference_ = nextEthBidPrice_ - ethDutchAuctionEndingBidPrice_;
 							nextEthBidPrice_ -= ethDutchAuctionBidPriceDifference_ * ethDutchAuctionElapsedDuration_ / ethDutchAuctionDuration_;
 						} else {
-							// console.info("202505131");
+							// console.info("%s", "202505131");
 							nextEthBidPrice_ = ethDutchAuctionEndingBidPrice_;
 						}
 					}
 				}
 			} else {
-				// console.info("202505132");
+				// console.info("%s", "202505132");
 				nextEthBidPrice_ = this.nextEthBidPrice;
 			}
 			return nextEthBidPrice_;
@@ -676,7 +676,7 @@ async function createCosmicSignatureGameProxySimulator(
 			expect(typeof paidCstPrice_).equal("bigint");
 			expect(paidCstPrice_).greaterThanOrEqual(0n);
 			if ( ! (paidCstPrice_ <= cstPriceToPayMaxLimit_) ) {
-				// console.info("202504166");
+				// console.info("%s", "202504166");
 				await expect(transactionResponsePromise_)
 					.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "InsufficientReceivedBidAmount")
 					.withArgs("The current CST bid price is greater than the maximum you allowed.", paidCstPrice_, cstPriceToPayMaxLimit_);
@@ -684,14 +684,14 @@ async function createCosmicSignatureGameProxySimulator(
 			}
 			const bidderCstBalanceBeforeTransaction_ = this.cosmicSignatureTokenSimulator.balanceOf(bidderAddress_);
 			if ( ! (paidCstPrice_ <= bidderCstBalanceBeforeTransaction_) ) {
-				// console.info("202504167");
+				// console.info("%s", "202504167");
 				await expect(transactionResponsePromise_)
 					.revertedWithCustomError(contracts_.cosmicSignatureToken, "ERC20InsufficientBalance")
 					.withArgs(bidderAddress_, bidderCstBalanceBeforeTransaction_, paidCstPrice_);
 				return false;
 			}
 			if ( ! (message_.length <= this.bidMessageLengthMaxLimit) ) {
-				// console.info("202504168");
+				// console.info("%s", "202504168");
 				await expect(transactionResponsePromise_)
 					.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "TooLongBidMessage")
 					.withArgs("Message is too long.", message_.length);
@@ -700,14 +700,14 @@ async function createCosmicSignatureGameProxySimulator(
 			if (this.lastBidderAddress == hre.ethers.ZeroAddress) {
 				// // Our Solidity code now validates this a bit later, but here we no longer need to validate this.
 				// if ( ! (BigInt(transactionBlock_.timestamp) >= this.roundActivationTime) ) {
-				// 	// console.info("202504169");
+				// 	// console.info("%s", "202504169");
 				// 	await expect(transactionResponsePromise_)
 				// 		.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "RoundIsInactive")
 				// 		.withArgs("The current bidding round is not active yet.", this.roundActivationTime, BigInt(transactionBlock_.timestamp));
 				// 	return false;
 				// }
 
-				// console.info("202504171");
+				// console.info("%s", "202504171");
 				await expect(transactionResponsePromise_)
 					.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "WrongBidType")
 					.withArgs("The first bid in a bidding round shall be ETH.");
@@ -727,7 +727,7 @@ async function createCosmicSignatureGameProxySimulator(
 			expect(typeof message_).equal("string");
 			expect(typeof paidCstPrice_).equal("bigint");
 			expect(paidCstPrice_).greaterThanOrEqual(0n);
-			// console.info("bidWithCst succeeded.", hre.ethers.formatEther(paidCstPrice_));
+			// console.info("%s", `bidWithCst succeeded. ${hre.ethers.formatEther(paidCstPrice_)}`);
 
 			// Comment-202505086 applies.
 			this.cosmicSignatureTokenSimulator.burn(bidderAddress_, paidCstPrice_, contracts_, transactionReceipt_, eventIndexWrapper_);
@@ -768,10 +768,10 @@ async function createCosmicSignatureGameProxySimulator(
 			/*const*/ let [cstDutchAuctionDuration_, cstDutchAuctionRemainingDuration_] = this._getCstDutchAuctionTotalAndRemainingDurations(blockBeforeTransaction_);
 			cstDutchAuctionRemainingDuration_ -= currentTimeOffset_;
 			if (cstDutchAuctionRemainingDuration_ <= 0n) {
-				// console.info("202505133");
+				// console.info("%s", "202505133");
 				return 0n;
 			}
-			// console.info("202505134");
+			// console.info("%s", "202505134");
 
 			// Comment-202501307 relates and/or applies.
 			const cstDutchAuctionBeginningBidPrice_ =
@@ -865,7 +865,7 @@ async function createCosmicSignatureGameProxySimulator(
 			assertAddressIsValid(callerAddress_);
 			if (callerAddress_ == this.lastBidderAddress) {
 				if ( ! (BigInt(transactionBlock_.timestamp) >= this.mainPrizeTime) ) {
-					// console.info("202504252");
+					// console.info("%s", "202504252");
 					await expect(transactionResponsePromise_)
 						.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "MainPrizeEarlyClaim")
 						.withArgs("Not enough time has elapsed.", this.mainPrizeTime, BigInt(transactionBlock_.timestamp));
@@ -873,7 +873,7 @@ async function createCosmicSignatureGameProxySimulator(
 				}
 			} else {
 				if ( ! (this.lastBidderAddress != hre.ethers.ZeroAddress) ) {
-					// console.info("202504253");
+					// console.info("%s", "202504253");
 					await expect(transactionResponsePromise_)
 						.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "NoBidsPlacedInCurrentRound")
 						.withArgs("There have been no bids in the current bidding round yet.");
@@ -882,7 +882,7 @@ async function createCosmicSignatureGameProxySimulator(
 				const durationUntilOperationIsPermitted_ =
 					this.getDurationUntilMainPrizeRaw(transactionBlock_) + this.timeoutDurationToClaimMainPrize;
 				if ( ! (durationUntilOperationIsPermitted_ <= 0n) ) {
-					// console.info("202504254");
+					// console.info("%s", "202504254");
 					await expect(transactionResponsePromise_)
 						.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "MainPrizeClaimDenied")
 						.withArgs(
@@ -902,7 +902,7 @@ async function createCosmicSignatureGameProxySimulator(
 		
 		/** Assuming that `canClaimMainPrize` returned `true`. */
 		claimMainPrize: async function(blockBeforeTransaction_, transactionBlock_, callerAddress_, bidderEthBalanceAmountBeforeTransaction_, contracts_, transactionReceipt_, eventIndexWrapper_ /* , blockchainPropertyGetter_ */) {
-			// console.info((callerAddress_ == this.lastBidderAddress) ? "202505138 The last bidder claims the main prize." : "202505139 Someone else claims the main prize.");
+			// console.info("%s", (callerAddress_ == this.lastBidderAddress) ? "202505138 The last bidder claims the main prize." : "202505139 Someone else claims the main prize.");
 			this._updateChampionsIfNeeded(transactionBlock_);
 			this._updateChronoWarriorIfNeeded(BigInt(transactionBlock_.timestamp));
 			await this._distributePrizes(blockBeforeTransaction_, transactionBlock_, callerAddress_, bidderEthBalanceAmountBeforeTransaction_, contracts_, transactionReceipt_, eventIndexWrapper_ /* , blockchainPropertyGetter_ */);
@@ -1057,7 +1057,7 @@ async function createCosmicSignatureGameProxySimulator(
 
 					for (let luckyStakerIndex_ = luckyStakerAddresses_.length; ( -- luckyStakerIndex_ ) >= 0; ) {
 						const luckyStakerAddress_ = luckyStakerAddresses_[luckyStakerIndex_];
-						// console.info("202504295", luckyStakerAddress_);
+						// console.info("%s", `202504295 ${luckyStakerAddress_}`);
 						-- cosmicSignatureTokenMintSpecIndex_;
 						cosmicSignatureTokenMintSpecs_[cosmicSignatureTokenMintSpecIndex_] = {account: luckyStakerAddress_, value: this.cstPrizeAmount,};
 						cosmicSignatureNftOwnerAddresses_[cosmicSignatureTokenMintSpecIndex_] = luckyStakerAddress_;
@@ -1478,7 +1478,7 @@ async function assertCosmicSignatureGameProxySimulatorRandomWalkNft(cosmicSignat
 
 async function assertCosmicSignatureGameProxySimulatorGetBidderTotalSpentAmounts(cosmicSignatureGameProxySimulator_, contracts_, bidderAddress_) {
 	const bidderTotalSpentAmountsFromContract_ = await contracts_.cosmicSignatureGameProxy.getBidderTotalSpentAmounts(cosmicSignatureGameProxySimulator_.roundNum, bidderAddress_);
-	// console.info(bidderTotalSpentAmountsFromContract_[0], bidderTotalSpentAmountsFromContract_[1]);
+	// console.info(/*"%s",*/ bidderTotalSpentAmountsFromContract_[0], bidderTotalSpentAmountsFromContract_[1]);
 	const bidderInfoFromContractSimulator_ = cosmicSignatureGameProxySimulator_.getBidderInfo(bidderAddress_);
 	expect(bidderTotalSpentAmountsFromContract_[0]).equal(bidderInfoFromContractSimulator_.totalSpentEthAmount);
 	expect(bidderTotalSpentAmountsFromContract_[1]).equal(bidderInfoFromContractSimulator_.totalSpentCstAmount);
@@ -1489,7 +1489,7 @@ async function assertCosmicSignatureGameProxySimulatorGetBidderTotalSpentAmounts
 
 async function assertCosmicSignatureGameProxySimulatorTryGetCurrentChampions(cosmicSignatureGameProxySimulator_, contracts_, latestBlock_) {
 	const currentChampionsFromContract_ = await contracts_.cosmicSignatureGameProxy.tryGetCurrentChampions();
-	// console.info(currentChampionsFromContract_[0], currentChampionsFromContract_[1].toString(), currentChampionsFromContract_[2], currentChampionsFromContract_[3].toString());
+	// console.info(/*"%s",*/ currentChampionsFromContract_[0], currentChampionsFromContract_[1].toString(), currentChampionsFromContract_[2], currentChampionsFromContract_[3].toString());
 	const currentChampionsFromContractSimulator_ = cosmicSignatureGameProxySimulator_.tryGetCurrentChampions(latestBlock_);
 	expect(currentChampionsFromContract_[0]).equal(currentChampionsFromContractSimulator_.enduranceChampionAddress);
 	expect(currentChampionsFromContract_[1]).equal(currentChampionsFromContractSimulator_.enduranceChampionDuration);
@@ -1502,7 +1502,7 @@ async function assertCosmicSignatureGameProxySimulatorTryGetCurrentChampions(cos
 
 async function assertCosmicSignatureGameProxySimulatorGetEthDutchAuctionDurations(cosmicSignatureGameProxySimulator_, contracts_, latestBlock_) {
 	const ethDutchAuctionDurationsFromContract_ = await contracts_.cosmicSignatureGameProxy.getEthDutchAuctionDurations();
-	// console.info(ethDutchAuctionDurationsFromContract_[0].toString(), ethDutchAuctionDurationsFromContract_[1].toString());
+	// console.info(/*"%s",*/ ethDutchAuctionDurationsFromContract_[0].toString(), ethDutchAuctionDurationsFromContract_[1].toString());
 	const ethDutchAuctionDurationsFromContractSimulator_ = cosmicSignatureGameProxySimulator_.getEthDutchAuctionDurations(latestBlock_);
 	expect(ethDutchAuctionDurationsFromContract_[0]).equal(ethDutchAuctionDurationsFromContractSimulator_.ethDutchAuctionDuration);
 	expect(ethDutchAuctionDurationsFromContract_[1]).equal(ethDutchAuctionDurationsFromContractSimulator_.ethDutchAuctionElapsedDuration);
@@ -1513,7 +1513,7 @@ async function assertCosmicSignatureGameProxySimulatorGetEthDutchAuctionDuration
 
 async function assertCosmicSignatureGameProxySimulatorGetCstDutchAuctionDurations(cosmicSignatureGameProxySimulator_, contracts_, latestBlock_) {
 	const cstDutchAuctionDurationsFromContract_ = await contracts_.cosmicSignatureGameProxy.getCstDutchAuctionDurations();
-	// console.info(cstDutchAuctionDurationsFromContract_[0].toString(), cstDutchAuctionDurationsFromContract_[1].toString());
+	// console.info(/*"%s",*/ cstDutchAuctionDurationsFromContract_[0].toString(), cstDutchAuctionDurationsFromContract_[1].toString());
 	const cstDutchAuctionDurationsFromContractSimulator_ = cosmicSignatureGameProxySimulator_.getCstDutchAuctionDurations(latestBlock_);
 	expect(cstDutchAuctionDurationsFromContract_[0]).equal(cstDutchAuctionDurationsFromContractSimulator_.cstDutchAuctionDuration);
 	expect(cstDutchAuctionDurationsFromContract_[1]).equal(cstDutchAuctionDurationsFromContractSimulator_.cstDutchAuctionElapsedDuration);

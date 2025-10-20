@@ -12,7 +12,7 @@
 // async function getCosmicSignatureGameContract(cosmicSignatureGameContractName = "CosmicSignatureGame") {
 // 	const cosmicSignatureGameAddress = process.env.COSMIC_SIGNATURE_GAME_ADDRESS;
 // 	if (cosmicSignatureGameAddress == undefined || cosmicSignatureGameAddress.length <= 0) {
-// 		console.error("COSMIC_SIGNATURE_GAME_ADDRESS environment variable does not contain contract address.");
+// 		console.error("%s", "COSMIC_SIGNATURE_GAME_ADDRESS environment variable does not contain contract address.");
 // 		process.exit(1);
 // 	}
 //
@@ -35,7 +35,7 @@
 // async function getBidderContract() {
 // 	const bidderContractAddress = process.env.BIDDER_CONTRACT_ADDRESS;
 // 	if (bidderContractAddress == undefined || bidderContractAddress.length <= 0) {
-// 		console.error("BIDDER_CONTRACT_ADDRESS environment variable does not contain contract address.");
+// 		console.error("%s", "BIDDER_CONTRACT_ADDRESS environment variable does not contain contract address.");
 // 		process.exit(1);
 // 	}
 //

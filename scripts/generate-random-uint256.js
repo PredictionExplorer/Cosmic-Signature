@@ -13,6 +13,6 @@ function main() {
 	for ( let counter_ = numRandomNumbersToGenerate_; counter_ > 0; -- counter_ ) {
 		const randomNumber_ = generateRandomUInt256();
 		const randomNumberAsString_ = uint256ToPaddedHexString(randomNumber_);
-		console.info(randomNumberAsString_);
+		console.info("%s", randomNumberAsString_);
 	}
 }

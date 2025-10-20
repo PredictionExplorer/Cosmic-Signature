@@ -28,18 +28,18 @@ let HARDHAT_MODE_CODE = parseIntegerEnvironmentVariable("HARDHAT_MODE_CODE", Num
 switch (HARDHAT_MODE_CODE) {
 	case 1:
 	case 2: {
-		console.info(`HARDHAT_MODE_CODE = ${HARDHAT_MODE_CODE}`);
+		console.info("%s", `HARDHAT_MODE_CODE = ${HARDHAT_MODE_CODE}`);
 		break;
 	}
 	case Number.NEGATIVE_INFINITY: {
-		console.warn("Warning. The HARDHAT_MODE_CODE environment variable is not set. Assuming it equals 1.");
+		console.warn("%s", "Warning. The HARDHAT_MODE_CODE environment variable is not set. Assuming it equals 1.");
 		HARDHAT_MODE_CODE = 1;
 		break;
 	}
 	default: {
-		throw new Error(`Invalid HARDHAT_MODE_CODE: ${HARDHAT_MODE_CODE}.`)
+		throw new Error(`Invalid HARDHAT_MODE_CODE: ${HARDHAT_MODE_CODE}.`);
 		// break;
-	}	
+	}
 }
 
 // #endregion
@@ -54,7 +54,7 @@ function shuffleArray(array_) {
 		const index2_ = generateRandomUInt32() % index1_;
 		-- index1_;
 		[array_[index1_], array_[index2_]] = [array_[index2_], array_[index1_]];
-	}	
+	}
 }
 
 // #endregion
@@ -305,6 +305,7 @@ async function waitForTransactionReceipt(transactionResponsePromise_) {
 	// 	const gasUnusedAsFractionOfOriginalGasEstimate_ = gasUnusedFromOriginalGasEstimate_ / originalGasEstimate_;
 	// 
 	// 	console.info(
+	// 		"%s",
 	// 		`202509184 ` +
 	// 		`${transactionBlock_.number} ` +
 	// 		`${transactionResponse_.gasLimit} ` +
@@ -347,7 +348,7 @@ async function safeErc1967GetChangedImplementationAddress(proxyAddress_, oldImpl
 				return newImplementationAddress_;
 			}
 		}
-		console.warn("Warning. We have to wait for the contract upgrade transaction to be mined.");
+		console.warn("%s", "Warning. We have to wait for the contract upgrade transaction to be mined.");
 		await sleepForMilliSeconds(2000);
 	}
 }

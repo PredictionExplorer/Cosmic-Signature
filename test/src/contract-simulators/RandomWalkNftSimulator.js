@@ -117,7 +117,7 @@ async function assertRandomWalkNftSimulator(randomWalkNftSimulator_, contracts_,
 // #region `assertRandomRandomWalkNftMetaDataIfPossible`
 
 async function assertRandomRandomWalkNftMetaDataIfPossible(randomWalkNftSimulator_, contracts_, randomNumberSeedWrapper_) {
-	const nftTotalSupplyCopy_ = randomWalkNftSimulator_.totalSupply()
+	const nftTotalSupplyCopy_ = randomWalkNftSimulator_.totalSupply();
 	if (nftTotalSupplyCopy_ == 0n) {
 		return;
 	}

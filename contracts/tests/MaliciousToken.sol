@@ -7,7 +7,7 @@ import { MaliciousActorBase } from "./MaliciousActorBase.sol";
 
 /// @notice This contract can be used where an ERC-20 or ERC-721 contract is needed.
 contract MaliciousToken is MaliciousActorBase {
-	// mapping(address => uint256 balanceAmount) public balanceAmounts; 
+	// mapping(address => uint256 balanceAmount) public balanceAmounts;
 
 	constructor(PrizesWallet prizesWallet_, CosmicSignatureGame game_) MaliciousActorBase(prizesWallet_, game_) {
 		// Doing nothing.

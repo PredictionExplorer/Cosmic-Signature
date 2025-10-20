@@ -17,12 +17,12 @@
 // 	await bidderContract.waitForDeployment();
 // 	const bidderContractAddress = await bidderContract.getAddress();
 //
-// 	console.info("BidderContract address: " + bidderContractAddress);
+// 	console.info("%s", `BidderContract address: ${bidderContractAddress}`);
 // }
 
 // main()
 // 	.then(() => {})
 // 	.catch((errorObject_) => {
-// 		console.error(errorObject_);
+// 		console.error("%o", errorObject_);
 // 		process.exitCode = 1;
 // 	});

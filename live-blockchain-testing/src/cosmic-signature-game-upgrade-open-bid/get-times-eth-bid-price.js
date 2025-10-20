@@ -9,6 +9,7 @@
 // 	// let privKey = process.env.PRIVKEY;
 // 	// if (privKey == undefined || privKey.length <= 0) {
 // 	// 	console.info(
+// 	// 		"%s",
 // 	// 		// todo-9 "scripts/deploy.js" no longer exists.
 // 	// 		"Please provide private key on the command line as ENVIRONMENT variable 'PRIVKEY', example : PRIVKEY=\"0x21982349...\" npx hardhat run scripts/deploy.js",
 // 	// 	);
@@ -16,12 +17,12 @@
 // 	// }
 // 	let cosmicSignatureGame = await getCosmicSignatureGameContract("CosmicSignatureGameOpenBid");
 // 	let value = await cosmicSignatureGame.timesEthBidPrice({blockTag: "pending",});
-// 	console.info("timesEthBidPrice =", value);
+// 	console.info("%s", `timesEthBidPrice = ${value}`);
 // }
 
 // main()
 // 	.then(() => {})
 // 	.catch((errorObject_) => {
-// 		console.error(errorObject_);
+// 		console.error("%o", errorObject_);
 // 		process.exitCode = 1;
 // 	});

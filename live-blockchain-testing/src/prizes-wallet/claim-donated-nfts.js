@@ -37,24 +37,25 @@
 // }
 
 // async function list_donated_nfts(nfts) {
-// 	//console.info(nfts);
+// 	// console.info("%s", nfts);
 // 	const numNfts = nfts.length;
 // 	for (let i = 0; i < numNfts; i++) {
 // 		const roundNfts = nfts[i];
-// 		console.info("Bidding round " + i.toString());
+// 		console.info("%s", `Bidding round ${i}`);
 // 		if (roundNfts == undefined || roundNfts.length <= 0) {
-// 			console.info("\t(no claimable NFTs)");
+// 			console.info("%s", "\t(no claimable NFTs)");
 // 			continue;
 // 		}
 // 		for (let j = 0; j < roundNfts.length; j++) {
 // 			let record = roundNfts[j];
 // 			console.info(
+// 				"%s",
 // 				"\t" +
-// 					record.nftAddress.toString() +
-// 					": nftId = " +
-// 					record.nftId.toString() +
-// 					", num=" +
-// 					record.index,
+// 				record.nftAddress.toString() +
+// 				": nftId = " +
+// 				record.nftId.toString() +
+// 				", num = " +
+// 				record.index.toString()
 // 			);
 // 		}
 // 	}
@@ -78,11 +79,11 @@
 // 	let cosmicSignatureGame = await getCosmicSignatureGameContract();
 // 	let nfts = await get_unclaimed_donated_nfts(cosmicSignatureGame);
 // 	if (nfts.length <= 0) {
-// 		console.info("Map of donated unclaimed NFTs is empty, no claiming is possible");
+// 		console.info("%s", "Map of donated unclaimed NFTs is empty, no claiming is possible");
 // 		return;
 // 	}
 // 	if (privKey == undefined || privKey.length <= 0) {
-// 		console.info("Fetching NFTs, please wait ...");
+// 		console.info("%s", "Fetching NFTs, please wait ...");
 // 		await list_donated_nfts(nfts);
 // 		return;
 // 	} else {
@@ -90,7 +91,7 @@
 // 	}
 // 	let roundNumStr = process.env.ROUND_NUM;
 // 	if (roundNumStr == undefined || roundNumStr.length <= 0) {
-// 		console.info("Please provide ROUND_NUM environment variable to claim NFTs");
+// 		console.info("%s", "Please provide ROUND_NUM environment variable to claim NFTs");
 // 		process.exit(1);
 // 	}
 // 	let roundToClaim = parseInt(roundNumStr, 10);
@@ -98,13 +99,13 @@
 // 	// todo-9 `cosmicSignatureGame.winners` no longer exists. A similar variable exists in `PrizesWallet`.
 // 	let mainPrizeBeneficiaryAddress = await cosmicSignatureGame.winners(roundToClaim, {blockTag: "pending",});
 // 	if (mainPrizeBeneficiaryAddress.toString() != testingAcct.address.toString()) {
-// 		console.info("You aren't the beneficiary of main prize " + roundToClaim.toString() + ", beneficiary is " + mainPrizeBeneficiaryAddress.toString());
+// 		console.info("%s", `You aren't the beneficiary of main prize ${roundToClaim}, beneficiary is ${mainPrizeBeneficiaryAddress}`);
 // 		process.exit(1);
 // 	}
 //
 // 	if (privKey.length > 0) {
 // 		if (paramList.length > 0) {
-// 			console.info("Sending claimMany transaction");
+// 			console.info("%s", "Sending claimMany transaction");
 // 			// todo-9 It appears that we need to call `waitForTransactionReceipt` here.
 // 			await cosmicSignatureGame.connect(testingAcct).claimManyDonatedNfts(paramList);
 // 		}
@@ -114,6 +115,6 @@
 // main()
 // 	.then(() => {})
 // 	.catch((errorObject_) => {
-// 		console.error(errorObject_);
+// 		console.error("%o", errorObject_);
 // 		process.exitCode = 1;
 // 	});

@@ -15,6 +15,6 @@
 // main()
 // 	.then(() => {})
 // 	.catch((errorObject_) => {
-// 		console.error(errorObject_);
+// 		console.error("%o", errorObject_);
 // 		process.exitCode = 1;
 // 	});

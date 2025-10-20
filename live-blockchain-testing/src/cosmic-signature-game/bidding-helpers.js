@@ -10,17 +10,17 @@ async function ensureDurationElapsedSinceRoundActivationIsAtLeast(cosmicSignatur
 	const roundActivationTimeMaxLimit_ = pendingBlockTimeStamp_ - durationElapsedSinceRoundActivationMinLimit_;
 	const roundActivationTimeExcess_ = roundActivationTime_ - roundActivationTimeMaxLimit_;
 	if(roundActivationTimeExcess_ > 0n) {
-		console.info(`Moving bidding round activation time back by ${roundActivationTimeExcess_} seconds.`);
+		console.info("%s", `Moving bidding round activation time back by ${roundActivationTimeExcess_} seconds.`);
 		await waitForTransactionReceipt(cosmicSignatureGameProxy_.connect(ownerSigner_).setRoundActivationTime(roundActivationTimeMaxLimit_));
 	} else {
-		console.info(`It's unnecessary to move bidding round activation time back. Its current value is already before its desired value by ${( - roundActivationTimeExcess_ )} seconds.`);
+		console.info("%s", `It's unnecessary to move bidding round activation time back. Its current value is already before its desired value by ${( - roundActivationTimeExcess_ )} seconds.`);
 	}
 }
 
 async function waitUntilCstDutchAuctionElapsedDurationIsAtLeast(cosmicSignatureGameProxy_, cstDutchAuctionElapsedDurationMinLimit_) {
 	for (;;) {
 		let cstDutchAuctionElapsedDuration_ = (await cosmicSignatureGameProxy_.getCstDutchAuctionDurations({blockTag: "pending",}))[1];
-		console.info(`CST Dutch auction elapsed duration is ${cstDutchAuctionElapsedDuration_} seconds. We want it to be at least ${cstDutchAuctionElapsedDurationMinLimit_} seconds.`);
+		console.info("%s", `CST Dutch auction elapsed duration is ${cstDutchAuctionElapsedDuration_} seconds. We want it to be at least ${cstDutchAuctionElapsedDurationMinLimit_} seconds.`);
 		if (cstDutchAuctionElapsedDuration_ >= cstDutchAuctionElapsedDurationMinLimit_) {
 			break;
 		}
@@ -30,7 +30,7 @@ async function waitUntilCstDutchAuctionElapsedDurationIsAtLeast(cosmicSignatureG
 }
 
 async function bidWithEth(cosmicSignatureGameProxy_, bidderSigner_) {
-	console.info("bidWithEth");
+	console.info("%s", "bidWithEth");
 	const cosmicSignatureGameProxyBidPlacedTopicHash_ = cosmicSignatureGameProxy_.interface.getEvent("BidPlaced").topicHash;
 	const nextEthBidPrices_ = new Array(5);
 
@@ -59,7 +59,7 @@ async function bidWithEth(cosmicSignatureGameProxy_, bidderSigner_) {
 			.connect(bidderSigner_)
 			.bidWithEth(-1n, "bidWithEth", {value: nextEthBidPrices_[0],});
 	let transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
-	let log_ = transactionReceipt_.logs.find((log_) => (log_.topics.indexOf(cosmicSignatureGameProxyBidPlacedTopicHash_) >= 0));
+	let log_ = transactionReceipt_.logs.find((log_) => (log_.topics.includes(cosmicSignatureGameProxyBidPlacedTopicHash_)));
 	let parsedLog_ = cosmicSignatureGameProxy_.interface.parseLog(log_);
 	expect(parsedLog_.args.lastBidderAddress).equal(bidderSigner_.address);
 	expect(parsedLog_.args.paidEthPrice).oneOf(nextEthBidPrices_);
@@ -69,7 +69,7 @@ async function bidWithEth(cosmicSignatureGameProxy_, bidderSigner_) {
 }
 
 async function bidWithEthPlusRandomWalkNft(cosmicSignatureGameProxy_, bidderSigner_, randomWalkNftId_) {
-	console.info("bidWithEthPlusRandomWalkNft");
+	console.info("%s", "bidWithEthPlusRandomWalkNft");
 	const cosmicSignatureGameProxyBidPlacedTopicHash_ = cosmicSignatureGameProxy_.interface.getEvent("BidPlaced").topicHash;
 	const nextEthBidPrices_ = new Array(5);
 
@@ -100,7 +100,7 @@ async function bidWithEthPlusRandomWalkNft(cosmicSignatureGameProxy_, bidderSign
 			break;
 		}
 	}
-	let log_ = transactionReceipt_.logs.find((log_) => (log_.topics.indexOf(cosmicSignatureGameProxyBidPlacedTopicHash_) >= 0));
+	let log_ = transactionReceipt_.logs.find((log_) => (log_.topics.includes(cosmicSignatureGameProxyBidPlacedTopicHash_)));
 	let parsedLog_ = cosmicSignatureGameProxy_.interface.parseLog(log_);
 	expect(parsedLog_.args.lastBidderAddress).equal(bidderSigner_.address);
 	expect(parsedLog_.args.paidEthPrice).oneOf(nextEthPlusRandomWalkNftBidPrices_);
@@ -110,7 +110,7 @@ async function bidWithEthPlusRandomWalkNft(cosmicSignatureGameProxy_, bidderSign
 }
 
 async function bidWithEthAndDonateNft(cosmicSignatureGameProxy_, prizesWallet_, bidderSigner_, donatedNftAddress_, donatedNftId_, donatedNftIndexes_) {
-	console.info("bidWithEthAndDonateNft");
+	console.info("%s", "bidWithEthAndDonateNft");
 	const cosmicSignatureGameProxyBidPlacedTopicHash_ = cosmicSignatureGameProxy_.interface.getEvent("BidPlaced").topicHash;
 	const prizesWalletNftDonatedTopicHash_ = prizesWallet_.interface.getEvent("NftDonated").topicHash;
 	const nextEthBidPrices_ = new Array(5);
@@ -133,14 +133,14 @@ async function bidWithEthAndDonateNft(cosmicSignatureGameProxy_, prizesWallet_, 
 			.connect(bidderSigner_)
 			.bidWithEthAndDonateNft(-1n, "bidWithEthAndDonateNft", donatedNftAddress_, donatedNftId_, {value: nextEthBidPrices_[0],});
 	let transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
-	let log_ = transactionReceipt_.logs.find((log_) => (log_.topics.indexOf(cosmicSignatureGameProxyBidPlacedTopicHash_) >= 0));
+	let log_ = transactionReceipt_.logs.find((log_) => (log_.topics.includes(cosmicSignatureGameProxyBidPlacedTopicHash_)));
 	let parsedLog_ = cosmicSignatureGameProxy_.interface.parseLog(log_);
 	expect(parsedLog_.args.lastBidderAddress).equal(bidderSigner_.address);
 	expect(parsedLog_.args.paidEthPrice).oneOf(nextEthBidPrices_);
 	expect(parsedLog_.args.paidCstPrice).equals(-1n);
 	expect(parsedLog_.args.randomWalkNftId).equal(-1n);
 	expect(parsedLog_.args.message).equal("bidWithEthAndDonateNft");
-	log_ = transactionReceipt_.logs.find((log_) => (log_.topics.indexOf(prizesWalletNftDonatedTopicHash_) >= 0));
+	log_ = transactionReceipt_.logs.find((log_) => (log_.topics.includes(prizesWalletNftDonatedTopicHash_)));
 	parsedLog_ = prizesWallet_.interface.parseLog(log_);
 	expect(parsedLog_.args.donorAddress).equal(bidderSigner_.address);
 	expect(parsedLog_.args.nftAddress).equal(donatedNftAddress_);
@@ -149,7 +149,7 @@ async function bidWithEthAndDonateNft(cosmicSignatureGameProxy_, prizesWallet_, 
 }
 
 async function bidWithEthPlusRandomWalkNftAndDonateNft(cosmicSignatureGameProxy_, prizesWallet_, bidderSigner_, randomWalkNftId_, donatedNftAddress_, donatedNftId_, donatedNftIndexes_) {
-	console.info("bidWithEthPlusRandomWalkNftAndDonateNft");
+	console.info("%s", "bidWithEthPlusRandomWalkNftAndDonateNft");
 	const cosmicSignatureGameProxyBidPlacedTopicHash_ = cosmicSignatureGameProxy_.interface.getEvent("BidPlaced").topicHash;
 	const prizesWalletNftDonatedTopicHash_ = prizesWallet_.interface.getEvent("NftDonated").topicHash;
 	const nextEthBidPrices_ = new Array(5);
@@ -181,14 +181,14 @@ async function bidWithEthPlusRandomWalkNftAndDonateNft(cosmicSignatureGameProxy_
 			break;
 		}
 	}
-	let log_ = transactionReceipt_.logs.find((log_) => (log_.topics.indexOf(cosmicSignatureGameProxyBidPlacedTopicHash_) >= 0));
+	let log_ = transactionReceipt_.logs.find((log_) => (log_.topics.includes(cosmicSignatureGameProxyBidPlacedTopicHash_)));
 	let parsedLog_ = cosmicSignatureGameProxy_.interface.parseLog(log_);
 	expect(parsedLog_.args.lastBidderAddress).equal(bidderSigner_.address);
 	expect(parsedLog_.args.paidEthPrice).oneOf(nextEthPlusRandomWalkNftBidPrices_);
 	expect(parsedLog_.args.paidCstPrice).equals(-1n);
 	expect(parsedLog_.args.randomWalkNftId).equal(randomWalkNftId_);
 	expect(parsedLog_.args.message).equal("bidWithEthPlusRandomWalkNftAndDonateNft");
-	log_ = transactionReceipt_.logs.find((log_) => (log_.topics.indexOf(prizesWalletNftDonatedTopicHash_) >= 0));
+	log_ = transactionReceipt_.logs.find((log_) => (log_.topics.includes(prizesWalletNftDonatedTopicHash_)));
 	parsedLog_ = prizesWallet_.interface.parseLog(log_);
 	expect(parsedLog_.args.donorAddress).equal(bidderSigner_.address);
 	expect(parsedLog_.args.nftAddress).equal(donatedNftAddress_);
@@ -197,7 +197,7 @@ async function bidWithEthPlusRandomWalkNftAndDonateNft(cosmicSignatureGameProxy_
 }
 
 async function bidWithCstAndDonateToken(cosmicSignatureGameProxy_, prizesWallet_, bidderSigner_, donatedTokenAddress_, donatedTokenAmount_, donatedTokensToClaim_) {
-	console.info("bidWithCstAndDonateToken");
+	console.info("%s", "bidWithCstAndDonateToken");
 	const cosmicSignatureGameProxyBidPlacedTopicHash_ = cosmicSignatureGameProxy_.interface.getEvent("BidPlaced").topicHash;
 	const prizesWalletTokenDonatedTopicHash_ = prizesWallet_.interface.getEvent("TokenDonated").topicHash;
 	const nextCstBidPrices_ = new Array(5);
@@ -208,7 +208,7 @@ async function bidWithCstAndDonateToken(cosmicSignatureGameProxy_, prizesWallet_
 		// Comment-202509215 applies.
 		nextCstBidPrices_[nextCstBidPriceIndex_] = await cosmicSignatureGameProxy_.getNextCstBidPriceAdvanced(BigInt(nextCstBidPriceIndex_), {blockTag: "pending",});
 
-		// console.info(hre.ethers.formatEther(nextCstBidPrices_[nextCstBidPriceIndex_]));
+		// console.info("%s", hre.ethers.formatEther(nextCstBidPrices_[nextCstBidPriceIndex_]));
 		if (nextCstBidPriceIndex_ <= 0) {
 			break;
 		}
@@ -222,17 +222,18 @@ async function bidWithCstAndDonateToken(cosmicSignatureGameProxy_, prizesWallet_
 	let transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 	const timeStamp3_ = performance.now();
 	console.info(
+		"%s",
 		`${nextCstBidPrices_.length} getNextCstBidPriceAdvanced calls took ${(timeStamp2_ - timeStamp1_).toFixed(1)} ms. ` +
 		`bidWithCstAndDonateToken took ${(timeStamp3_ - timeStamp2_).toFixed(1)} ms.`
 	);
-	let log_ = transactionReceipt_.logs.find((log_) => (log_.topics.indexOf(cosmicSignatureGameProxyBidPlacedTopicHash_) >= 0));
+	let log_ = transactionReceipt_.logs.find((log_) => (log_.topics.includes(cosmicSignatureGameProxyBidPlacedTopicHash_)));
 	let parsedLog_ = cosmicSignatureGameProxy_.interface.parseLog(log_);
 	expect(parsedLog_.args.lastBidderAddress).equal(bidderSigner_.address);
 	expect(parsedLog_.args.paidEthPrice).equals(-1n);
 	expect(parsedLog_.args.paidCstPrice).oneOf(nextCstBidPrices_);
 	expect(parsedLog_.args.randomWalkNftId).equal(-1n);
 	expect(parsedLog_.args.message).equal("bidWithCstAndDonateToken");
-	log_ = transactionReceipt_.logs.find((log_) => (log_.topics.indexOf(prizesWalletTokenDonatedTopicHash_) >= 0));
+	log_ = transactionReceipt_.logs.find((log_) => (log_.topics.includes(prizesWalletTokenDonatedTopicHash_)));
 	parsedLog_ = prizesWallet_.interface.parseLog(log_);
 	expect(parsedLog_.args.donorAddress).equal(bidderSigner_.address);
 	expect(parsedLog_.args.tokenAddress).equal(donatedTokenAddress_);

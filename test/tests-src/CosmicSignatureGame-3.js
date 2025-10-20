@@ -71,7 +71,7 @@ describe("CosmicSignatureGame-3", function () {
 				await transactionResponsePromise_;
 				expect(false).true;
 			} catch (errorObject_) {
-				// console.error("<***>" + errorObject_.message + "<***>");
+				// console.error("%s", "<***>" + errorObject_.message + "<***>");
 				expect(errorObject_.message.startsWith(`Contract at ${contractProxyAddress_} doesn't look like an ERC 1967 proxy with a logic contract address`)).true;
 			}
 		}
@@ -93,7 +93,7 @@ describe("CosmicSignatureGame-3", function () {
 				await transactionResponsePromise_;
 				expect(false).true;
 			} catch (errorObject_) {
-				// console.error("<***>" + errorObject_.message + "<***>");
+				// console.error("%s", "<***>" + errorObject_.message + "<***>");
 				expect(errorObject_.message.startsWith("Contract `contracts/production/CharityWallet.sol:CharityWallet` is not upgrade safe")).true;
 			}
 		}

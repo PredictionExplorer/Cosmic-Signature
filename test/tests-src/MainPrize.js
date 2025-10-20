@@ -107,7 +107,7 @@ describe("MainPrize", function () {
 		// const timeStamp2_ = performance.now();
 		await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).claimMainPrize());
 		// const timeStamp3_ = performance.now();
-		// console.info(`202508247 ${(timeStamp2_ - timeStamp1_).toFixed(1)} ${(timeStamp3_ - timeStamp2_).toFixed(1)}`);
+		// console.info("%s", `202508247 ${(timeStamp2_ - timeStamp1_).toFixed(1)} ${(timeStamp3_ - timeStamp2_).toFixed(1)}`);
 		gameBalanceAmount_ = await hre.ethers.provider.getBalance(contracts_.cosmicSignatureGameProxyAddress);
 		mainEthPrizeAmount2_ = await contracts_.cosmicSignatureGameProxy.getMainEthPrizeAmount();
 		mainEthPrizeExpectedAmount_ = gameBalanceAmount_ * mainEthPrizeAmountPercentage_ / 100n;
@@ -229,7 +229,7 @@ describe("MainPrize", function () {
 		expect(mainPrizeBeneficiaryAddress_).equal(contracts_.signers[3].address);
 
 		// Asserting the number of ETH deposits.
-		let prizesWalletEthReceivedLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.indexOf(prizesWalletEthReceivedTopicHash_) >= 0));
+		let prizesWalletEthReceivedLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.includes(prizesWalletEthReceivedTopicHash_)));
 		expect(prizesWalletEthReceivedLogs_.length).equal(numEthPrizesToDepositToPrizesWallet_);
 		
 		expectedCosmicSignatureNftTotalSupply_ += numCosmicSignatureNftPrizes_;
@@ -256,7 +256,7 @@ describe("MainPrize", function () {
 		let totalNumBids_ = await contracts_.cosmicSignatureGameProxy.getTotalNumBids(roundNum_);
 		expect(totalNumBids_).equal(0n);
 
-		prizesWalletEthReceivedLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.indexOf(prizesWalletEthReceivedTopicHash_) >= 0));
+		prizesWalletEthReceivedLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.includes(prizesWalletEthReceivedTopicHash_)));
 		const uniqueSecondaryEthPrizeWinners_ = {};
 		for ( let prizesWalletEthDepositIndex_ = 0; prizesWalletEthDepositIndex_ < prizesWalletEthReceivedLogs_.length; ++ prizesWalletEthDepositIndex_ ) {
 			const parsedLog_ = contracts_.prizesWallet.interface.parseLog(prizesWalletEthReceivedLogs_[prizesWalletEthDepositIndex_]);
@@ -336,7 +336,7 @@ describe("MainPrize", function () {
 		const stakingWalletCosmicSignatureNftExpectedBalanceAmountAfter_ = stakingWalletCosmicSignatureNftBalanceAmountBefore_ + cosmicSignatureNftStakingTotalEthRewardAmount_;
 		expect(stakingWalletCosmicSignatureNftBalanceAmountAfter_).equal(stakingWalletCosmicSignatureNftExpectedBalanceAmountAfter_);
 
-		let cosmicSignatureGameProxyRaffleWinnerBidderEthPrizeAllocatedLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.indexOf(cosmicSignatureGameProxyRaffleWinnerBidderEthPrizeAllocatedTopicHash_) >= 0));
+		let cosmicSignatureGameProxyRaffleWinnerBidderEthPrizeAllocatedLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.includes(cosmicSignatureGameProxyRaffleWinnerBidderEthPrizeAllocatedTopicHash_)));
 		let sumRaffleWinnerBidderEthPrizes_ = 0n;
 		const uniqueRaffleWinnerBidderEthPrizeWinners_ = {};
 		for ( let counter_ = 0; counter_ < cosmicSignatureGameProxyRaffleWinnerBidderEthPrizeAllocatedLogs_.length; ++ counter_ ) {

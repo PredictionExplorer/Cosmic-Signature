@@ -48,17 +48,17 @@ async function configureCosmicSignatureGame(
 	await waitForTransactionReceipt(cosmicSignatureGameProxy_.connect(ownerSigner_).setMainPrizeTimeIncrementInMicroSeconds(mainPrizeTimeIncrementInMicroSeconds_));
 	{
 		const ethDutchAuctionDurationDivisor_ = (mainPrizeTimeIncrementInMicroSeconds_ + ethDutchAuctionDuration_ / 2n) / ethDutchAuctionDuration_;
-		console.info(`${nodeOsModule.EOL}ethDutchAuctionDurationDivisor = ${ethDutchAuctionDurationDivisor_}`);
+		console.info("%s", `${nodeOsModule.EOL}ethDutchAuctionDurationDivisor = ${ethDutchAuctionDurationDivisor_}`);
 		await waitForTransactionReceipt(cosmicSignatureGameProxy_.connect(ownerSigner_).setEthDutchAuctionDurationDivisor(ethDutchAuctionDurationDivisor_));
 	}
 	{
 		const cstDutchAuctionDurationDivisor_ = (mainPrizeTimeIncrementInMicroSeconds_ + cstDutchAuctionDuration_ / 2n) / cstDutchAuctionDuration_;
-		console.info(`cstDutchAuctionDurationDivisor = ${cstDutchAuctionDurationDivisor_}`);
+		console.info("%s", `cstDutchAuctionDurationDivisor = ${cstDutchAuctionDurationDivisor_}`);
 		await waitForTransactionReceipt(cosmicSignatureGameProxy_.connect(ownerSigner_).setCstDutchAuctionDurationDivisor(cstDutchAuctionDurationDivisor_));
 	}
 	{
 		const initialDurationUntilMainPrizeDivisor_ = (mainPrizeTimeIncrementInMicroSeconds_ + initialDurationUntilMainPrize_ / 2n) / initialDurationUntilMainPrize_;
-		console.info(`initialDurationUntilMainPrizeDivisor = ${initialDurationUntilMainPrizeDivisor_}`);
+		console.info("%s", `initialDurationUntilMainPrizeDivisor = ${initialDurationUntilMainPrizeDivisor_}`);
 		await waitForTransactionReceipt(cosmicSignatureGameProxy_.connect(ownerSigner_).setInitialDurationUntilMainPrizeDivisor(initialDurationUntilMainPrizeDivisor_));
 	}
 	if (timeoutDurationToClaimMainPrize_ >= 0n) {

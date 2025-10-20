@@ -83,10 +83,10 @@ const { assertEvent } = require("../../../src/ContractTestingHelpers.js");
 			expect(roundNum_).greaterThanOrEqual(0n);
 			const numStakedNftsCopy_ = this.numStakedNfts;
 			if (numStakedNftsCopy_ == 0n) {
-				// console.info("202505104");
+				// console.info("%s", "202505104");
 				return false;
 			}
-			// console.info("202505105");
+			// console.info("%s", "202505105");
 			this.ethBalanceAmount += value_;
 			const newRewardAmountPerStakedNft_ = this.rewardAmountPerStakedNft + value_ / numStakedNftsCopy_;
 			this.rewardAmountPerStakedNft = newRewardAmountPerStakedNft_;
@@ -129,7 +129,7 @@ async function assertStakingWalletCosmicSignatureNftSimulator(stakingWalletCosmi
 // #region `assertIfRandomCosmicSignatureNftWasUsedForStakingIfPossible`
 
 async function assertIfRandomCosmicSignatureNftWasUsedForStakingIfPossible(stakingWalletCosmicSignatureNftSimulator_, contracts_, randomNumberSeedWrapper_) {
-	const nftTotalSupplyCopy_ = stakingWalletCosmicSignatureNftSimulator_.cosmicSignatureNftSimulator.totalSupply()
+	const nftTotalSupplyCopy_ = stakingWalletCosmicSignatureNftSimulator_.cosmicSignatureNftSimulator.totalSupply();
 	if (nftTotalSupplyCopy_ == 0n) {
 		return;
 	}

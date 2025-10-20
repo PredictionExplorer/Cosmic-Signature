@@ -7,7 +7,7 @@ const { sleepForMilliSeconds, waitForTransactionReceipt } = require("../../../sr
 async function waitUntilMainPrizeTime(cosmicSignatureGameProxy_) {
 	for (;;) {
 		let durationUntilMainPrize_ = await cosmicSignatureGameProxy_.getDurationUntilMainPrizeRaw({blockTag: "pending",});
-		console.info(`${durationUntilMainPrize_} seconds until main prize.`);
+		console.info("%s", `${durationUntilMainPrize_} seconds until main prize.`);
 		if (durationUntilMainPrize_ <= 0n) {
 			break;
 		}
@@ -16,7 +16,7 @@ async function waitUntilMainPrizeTime(cosmicSignatureGameProxy_) {
 }
 
 async function claimMainPrize(cosmicSignatureGameProxy_, prizesWallet_, bidderSigner_, accountEthPrizeRoundNums_) {
-	console.info("claimMainPrize");
+	console.info("%s", "claimMainPrize");
 	const cosmicSignatureGameProxyMainPrizeClaimedTopicHash_ = cosmicSignatureGameProxy_.interface.getEvent("MainPrizeClaimed").topicHash;
 	const prizesWalletEthReceivedTopicHash_ = prizesWallet_.interface.getEvent("EthReceived").topicHash;
 	let mainEthPrizeAmount_ = await cosmicSignatureGameProxy_.getMainEthPrizeAmount({blockTag: "pending",});
@@ -25,12 +25,11 @@ async function claimMainPrize(cosmicSignatureGameProxy_, prizesWallet_, bidderSi
 	let transactionResponsePromise_ = cosmicSignatureGameProxy_.connect(bidderSigner_).claimMainPrize();
 	let transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 	const timeStamp2_ = performance.now();
-	let log_ = transactionReceipt_.logs.find((log_) => (log_.topics.indexOf(cosmicSignatureGameProxyMainPrizeClaimedTopicHash_) >= 0));
+	let log_ = transactionReceipt_.logs.find((log_) => (log_.topics.includes(cosmicSignatureGameProxyMainPrizeClaimedTopicHash_)));
 	let parsedLog_ = cosmicSignatureGameProxy_.interface.parseLog(log_);
 	expect(parsedLog_.args.beneficiaryAddress).equal(bidderSigner_.address);
 	expect(parsedLog_.args.ethPrizeAmount).equal(mainEthPrizeAmount_);
-	console.info(`Completed bidding round ${parsedLog_.args.roundNum}. claimMainPrize took ${(timeStamp2_ - timeStamp1_).toFixed(1)} ms.`);
-	// todo-0 Replace `indexOf` with `includes` everywhere.
+	console.info("%s", `Completed bidding round ${parsedLog_.args.roundNum}. claimMainPrize took ${(timeStamp2_ - timeStamp1_).toFixed(1)} ms.`);
 	let logs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.includes(prizesWalletEthReceivedTopicHash_)));
 	for (log_ of logs_) {
 		parsedLog_ = prizesWallet_.interface.parseLog(log_);
@@ -40,7 +39,7 @@ async function claimMainPrize(cosmicSignatureGameProxy_, prizesWallet_, bidderSi
 				ethPrizeWinnerEthPrizeRoundNums_.push(parsedLog_.args.roundNum);
 			}
 		} else {
-			console.warn("Warning 202511145.");
+			console.warn("%s", "Warning 202511145.");
 		}
 	}
 }
@@ -49,7 +48,7 @@ async function claimMainPrize(cosmicSignatureGameProxy_, prizesWallet_, bidderSi
 // async function forward_time_to_main_prize_time() {
 // 	const cosmicSignatureGame = await getCosmicSignatureGameContract();
 // 	let durationUntilMainPrize = await cosmicSignatureGame.getDurationUntilMainPrizeRaw(/*todo-9 {blockTag: "pending",}*/);
-// 	console.info("Duration until main prize before:", durationUntilMainPrize);
+// 	console.info("%s", `Duration until main prize before: ${durationUntilMainPrize}`);
 // 	if (durationUntilMainPrize > 0n) {
 // 		if (durationUntilMainPrize > 1n) {
 // 			await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize),]);
@@ -60,7 +59,7 @@ async function claimMainPrize(cosmicSignatureGameProxy_, prizesWallet_, bidderSi
 // 		// But this can also be negative.
 // 		durationUntilMainPrize = await cosmicSignatureGame.getDurationUntilMainPrizeRaw(/*todo-9 {blockTag: "pending",}*/);
 //
-// 		console.info("Duration until main prize after:", durationUntilMainPrize);
+// 		console.info("%s", `Duration until main prize after: ${durationUntilMainPrize}`);
 // 	}
 // }
 
@@ -72,7 +71,7 @@ async function claimMainPrize(cosmicSignatureGameProxy_, prizesWallet_, bidderSi
 // 	let transactionResponsePromise = cosmicSignatureGame.connect(testingAcct).claimMainPrize();
 // 	let transactionReceipt = await waitForTransactionReceipt(transactionResponsePromise);
 // 	let topic_sig = cosmicSignatureGame.interface.getEventTopic("MainPrizeClaimed");
-// 	let event_logs = transactionReceipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
+// 	let event_logs = transactionReceipt.logs.filter((log_) => (log_.topics.includes(topic_sig)));
 // 	let parsed_log = cosmicSignatureGame.interface.parseLog(event_logs[0]);
 // 	expect(parsed_log.args.beneficiaryAddress).equal(testingAcct.address);
 // 	expect(parsed_log.args.amount).equal(mainEthPrizeAmount);
@@ -83,7 +82,7 @@ async function claimMainPrize(cosmicSignatureGameProxy_, prizesWallet_, bidderSi
 // 	const cosmicSignatureNft = await hre.ethers.getContractAt("CosmicSignatureNft", cosmicSignatureNftAddress);
 //
 // 	topic_sig = cosmicSignatureGame.interface.getEventTopic("RaffleWinnerPrizePaid");
-// 	event_logs = transactionReceipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
+// 	event_logs = transactionReceipt.logs.filter((log_) => (log_.topics.includes(topic_sig)));
 // 	for (let i = 0; i < event_logs.length; i++) {
 // 		let parsed_log = cosmicSignatureGame.interface.parseLog(event_logs[i]);
 // 		let ownr = await cosmicSignatureNft.ownerOf(parsed_log.args.prizeCosmicSignatureNftId, {blockTag: "pending",});
@@ -96,7 +95,7 @@ async function claimMainPrize(cosmicSignatureGameProxy_, prizesWallet_, bidderSi
 // 	const prizesWallet = await hre.ethers.getContractAt("PrizesWallet", prizesWalletAddress);
 //
 // 	topic_sig = prizesWallet.interface.getEventTopic("EthReceived");
-// 	event_logs = transactionReceipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
+// 	event_logs = transactionReceipt.logs.filter((log_) => (log_.topics.includes(topic_sig)));
 // 	await claim_raffle_eth(testingAcct, prizesWallet, event_logs);
 //
 // 	const charityWalletAddress = await cosmicSignatureGame.charityAddress({blockTag: "pending",});
@@ -105,7 +104,7 @@ async function claimMainPrize(cosmicSignatureGameProxy_, prizesWallet_, bidderSi
 // 	const charityWallet = await hre.ethers.getContractAt("CharityWallet", charityWalletAddress);
 //
 // 	topic_sig = charityWallet.interface.getEventTopic("DonationReceived");
-// 	event_logs = transactionReceipt.logs.filter((log_) => (log_.topics.indexOf(topic_sig) >= 0));
+// 	event_logs = transactionReceipt.logs.filter((log_) => (log_.topics.includes(topic_sig)));
 // 	parsed_log = charityWallet.interface.parseLog(event_logs[0]);
 // 	expect(parsed_log.args.amount).equal(charityEthDonationAmount);
 // }

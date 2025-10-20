@@ -68,7 +68,7 @@ Only during the inactive stage the contract owner is allowed to call most `Cosmi
 
 Users are allowed to place bids during the active stage.
 
-When a bid is placed, `mainPrizeTime` gets updated (the logic is described in a separate section). 
+When a bid is placed, `mainPrizeTime` gets updated (the logic is described in a separate section).
 
 When `block.timestamp` reaches `mainPrizeTime`, the last bidder is granted the right to claim main prize. But if they do not do so by the time `block.timestamp` reaches `mainPrizeTime` plus a configurble timeout, main prize becomes available to claim by anybody.
 

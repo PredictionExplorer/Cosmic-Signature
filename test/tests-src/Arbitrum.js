@@ -19,7 +19,7 @@ describe("Arbitrum", function () {
 		const durationToWaitBeforePlacingFirstBid_ =
 			await contracts_.cosmicSignatureGameProxy.delayDurationBeforeRoundActivation() +
 			(await contracts_.cosmicSignatureGameProxy.getEthDutchAuctionDurations())[0];
-		// console.info(Number(durationToWaitBeforePlacingFirstBid_) / (60.0 * 60.0));
+		// console.info("%s", Number(durationToWaitBeforePlacingFirstBid_) / (60.0 * 60.0));
 
 		// // This tests Comment-202507116.
 		// {
@@ -34,7 +34,7 @@ describe("Arbitrum", function () {
 		// 			++ successCounter_;
 		// 		}
 		// 	}
-		// 	console.info(`202507114 ${successCounter_} ${failureCounter_}`);
+		// 	console.info("%s", `202507114 ${successCounter_} ${failureCounter_}`);
 		// }
 
 		for ( let counter_ = 0; counter_ < 50; ++ counter_ ) {
@@ -57,11 +57,11 @@ describe("Arbitrum", function () {
 			/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 			let transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).claimMainPrize();
 			let transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
-			let cosmicSignatureGameProxyArbitrumErrorLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.indexOf(cosmicSignatureGameProxyArbitrumErrorTopicHash_) >= 0));
-			// console.info("202507119", cosmicSignatureGameProxyArbitrumErrorLogs_.length.toString());
+			let cosmicSignatureGameProxyArbitrumErrorLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.includes(cosmicSignatureGameProxyArbitrumErrorTopicHash_)));
+			// console.info("%s", `202507119 ${cosmicSignatureGameProxyArbitrumErrorLogs_.length}`);
 			let eventIndex_ = 0;
 			if ((fakeArbBaseModeCode_ & 0x3n) != 0n) {
-				// console.info("202507121");
+				// console.info("%s", "202507121");
 				assertEvent(
 					cosmicSignatureGameProxyArbitrumErrorLogs_[eventIndex_],
 					contracts_.cosmicSignatureGameProxy,
@@ -70,7 +70,7 @@ describe("Arbitrum", function () {
 				);
 				++ eventIndex_;
 			} else if ((fakeArbBaseModeCode_ & 0x30n) != 0n) {
-				// console.info("202507122");
+				// console.info("%s", "202507122");
 				assertEvent(
 					cosmicSignatureGameProxyArbitrumErrorLogs_[eventIndex_],
 					contracts_.cosmicSignatureGameProxy,
@@ -80,7 +80,7 @@ describe("Arbitrum", function () {
 				++ eventIndex_;
 			}
 			if ((fakeArbBaseModeCode_ & 0x300n) != 0n) {
-				// console.info("202507123");
+				// console.info("%s", "202507123");
 				assertEvent(
 					cosmicSignatureGameProxyArbitrumErrorLogs_[eventIndex_],
 					contracts_.cosmicSignatureGameProxy,
@@ -90,7 +90,7 @@ describe("Arbitrum", function () {
 				++ eventIndex_;
 			}
 			if ((fakeArbBaseModeCode_ & 0x3000n) != 0n) {
-				// console.info("202507124");
+				// console.info("%s", "202507124");
 				assertEvent(
 					cosmicSignatureGameProxyArbitrumErrorLogs_[eventIndex_],
 					contracts_.cosmicSignatureGameProxy,
@@ -100,7 +100,7 @@ describe("Arbitrum", function () {
 				++ eventIndex_;
 			}
 			// if (eventIndex_ == 0) {
-			// 	console.info("202507125");
+			// 	console.info("%s", "202507125");
 			// }
 			expect(cosmicSignatureGameProxyArbitrumErrorLogs_.length).equal(eventIndex_);
 		}
