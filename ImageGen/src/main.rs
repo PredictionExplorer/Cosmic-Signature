@@ -9,6 +9,7 @@ mod drift_config;
 mod error;
 mod generation_log;
 mod oklab;
+mod parameter_distributions;
 mod post_effects;
 mod render;
 mod sim;
@@ -17,6 +18,7 @@ mod spectral_constants;
 mod spectrum;
 mod spectrum_simd;
 mod utils;
+mod weighted_sampler;
 
 use error::Result;
 use render::RenderConfig;
@@ -661,7 +663,7 @@ fn main() -> Result<()> {
         args.velocity,
     );
 
-    // Resolve effect configuration (randomize unspecified parameters)
+    // Resolve effect configuration (randomize unspecified parameters using distributions)
     info!("Resolving effect configuration...");
     let randomizable_config = build_randomizable_config(&args);
     let (resolved_effect_config, randomization_log) = randomizable_config.resolve(

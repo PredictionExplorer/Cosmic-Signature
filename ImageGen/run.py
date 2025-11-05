@@ -77,6 +77,7 @@ def main():
             # Generate random seed and mode
             seed = generate_random_seed()
             is_special = random.choice([True, False])
+            is_special = False
 
             print(f"\n[Generation {count}] (Success: {successful}, Failed: {failed})")
 

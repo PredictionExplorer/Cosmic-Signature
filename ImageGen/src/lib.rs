@@ -9,6 +9,7 @@ pub mod drift_config;
 pub mod error;
 pub mod generation_log;
 pub mod oklab;
+pub mod parameter_distributions;
 pub mod post_effects;
 pub mod render;
 pub mod sim;
@@ -17,6 +18,7 @@ pub mod spectral_constants;
 pub mod spectrum;
 pub mod spectrum_simd;
 pub mod utils;
+pub mod weighted_sampler;
 
 // Re-export common types for convenience
 pub use error::{AppError, ConfigError, RenderError, SimulationError, Result};

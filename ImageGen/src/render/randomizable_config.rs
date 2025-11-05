@@ -116,6 +116,15 @@ pub struct RandomizableEffectConfig {
 impl RandomizableEffectConfig {
     /// Resolve all Option<T> values: use explicit values or randomize.
     /// Returns a fully resolved configuration and a log of randomization decisions.
+    ///
+    /// All unspecified parameters are sampled from distributions (typically truncated
+    /// normal) rather than uniformly, providing better aesthetic results.
+    ///
+    /// # Arguments
+    /// * `rng` - Random number generator
+    /// * `width` - Image width
+    /// * `height` - Image height
+    /// * `special_mode` - Special mode flag (user-specified, NOT randomized)
     pub fn resolve(
         &self,
         rng: &mut Sha3RandomByteStream,

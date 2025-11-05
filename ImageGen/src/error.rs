@@ -153,6 +153,12 @@ pub enum ConfigError {
         path: String,
         error: std::io::Error,
     },
+    
+    /// Favorites profile loading/validation error (currently unused, kept for future extensions)
+    #[allow(dead_code)]
+    InvalidProfile {
+        message: String,
+    },
 }
 
 impl fmt::Display for ConfigError {
@@ -164,6 +170,9 @@ impl fmt::Display for ConfigError {
             Self::FileSystem { operation, path, error } => {
                 write!(f, "Failed to {} '{}': {}", operation, path, error)
             }
+            Self::InvalidProfile { message } => {
+                write!(f, "Invalid favorites profile: {}", message)
+            }
         }
     }
 }
@@ -173,6 +182,7 @@ impl Error for ConfigError {
         match self {
             Self::InvalidSeed { error, .. } => Some(error),
             Self::FileSystem { error, .. } => Some(error),
+            Self::InvalidProfile { .. } => None,
         }
     }
 }

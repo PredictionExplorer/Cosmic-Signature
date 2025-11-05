@@ -1,13 +1,20 @@
-//! Effect randomization system for exploratory parameter generation.
+//! Effect randomization system using statistical distributions.
 //!
-//! This module provides type-safe randomization of effect parameters within
-//! carefully tuned ranges, enabling exploration of the visual parameter space
-//! while maintaining aesthetic coherence.
+//! This module provides type-safe randomization of effect parameters using
+//! distributions (typically truncated normal) rather than uniform sampling.
+//!
+//! All parameters are sampled from distributions with specific means and
+//! standard deviations, providing better aesthetic results while still
+//! allowing exploration of the parameter space.
 
 use super::parameter_descriptors::{FloatParamDescriptor, IntParamDescriptor};
 use crate::sim::Sha3RandomByteStream;
+use crate::weighted_sampler;
 
-/// Randomizer for effect parameters using the deterministic RNG.
+/// Randomizer for effect parameters using statistical distributions.
+///
+/// Parameters are sampled from truncated normal distributions centered
+/// around aesthetically pleasing values, with controllable spread.
 pub struct EffectRandomizer<'a> {
     rng: &'a mut Sha3RandomByteStream,
     gallery_quality: bool,
@@ -15,25 +22,64 @@ pub struct EffectRandomizer<'a> {
 
 impl<'a> EffectRandomizer<'a> {
     /// Create a new effect randomizer.
-    pub fn new(rng: &'a mut Sha3RandomByteStream, gallery_quality: bool) -> Self {
-        Self { rng, gallery_quality }
+    ///
+    /// # Arguments
+    /// * `rng` - Random number generator
+    /// * `gallery_quality` - Use narrower parameter ranges
+    pub fn new(
+        rng: &'a mut Sha3RandomByteStream,
+        gallery_quality: bool,
+    ) -> Self {
+        Self {
+            rng,
+            gallery_quality,
+        }
     }
 
     /// Randomly decide whether an effect should be enabled (50% probability).
+    ///
+    /// Note: This provides balanced variety. Future versions may add
+    /// per-effect probabilities.
     pub fn randomize_enable(&mut self) -> bool {
-        self.random_f64() < 0.5
+        self.rng.next_f64() < 0.5
     }
 
-    /// Generate a random float within the descriptor's range.
+    /// Generate a random float using distribution-based sampling.
+    ///
+    /// Samples from a truncated normal distribution centered around
+    /// aesthetically pleasing values, providing better results than
+    /// uniform sampling while maintaining variety.
+    ///
+    /// # Safety
+    /// ALWAYS returns a value within [min, max]. Multiple fallback strategies
+    /// ensure this function never panics and never returns invalid values.
     pub fn randomize_float(&mut self, descriptor: &FloatParamDescriptor) -> f64 {
         let (min, max) = descriptor.range(self.gallery_quality);
-        self.random_range(min, max)
+        
+        weighted_sampler::sample_parameter(
+            self.rng,
+            descriptor.name,
+            min,
+            max,
+        )
     }
 
-    /// Generate a random integer within the descriptor's range.
+    /// Generate a random integer using distribution-based sampling.
+    ///
+    /// For integer parameters with defined distributions, samples from
+    /// truncated normal and rounds. Otherwise uses uniform sampling.
+    ///
+    /// # Safety
+    /// ALWAYS returns a value within [min, max]. Never panics.
     pub fn randomize_int(&mut self, descriptor: &IntParamDescriptor) -> usize {
         let (min, max) = descriptor.range(self.gallery_quality);
-        self.random_range_int(min, max)
+        
+        weighted_sampler::sample_parameter_int(
+            self.rng,
+            descriptor.name,
+            min,
+            max,
+        )
     }
 
     /// Generate two floats ensuring first < second (for constrained pairs).
@@ -53,12 +99,16 @@ impl<'a> EffectRandomizer<'a> {
     }
 
     /// Generate a random float in [min, max] using the RNG.
+    /// Kept for backward compatibility and testing.
+    #[allow(dead_code)]
     fn random_range(&mut self, min: f64, max: f64) -> f64 {
         let t = self.random_f64();
         min + t * (max - min)
     }
 
     /// Generate a random integer in [min, max] using the RNG.
+    /// Kept for backward compatibility and testing.
+    #[allow(dead_code)]
     fn random_range_int(&mut self, min: usize, max: usize) -> usize {
         let range = max - min + 1;
         let t = self.random_f64();
@@ -66,6 +116,8 @@ impl<'a> EffectRandomizer<'a> {
     }
 
     /// Get a random f64 in [0.0, 1.0) from the RNG.
+    /// Kept for backward compatibility and testing.
+    #[allow(dead_code)]
     fn random_f64(&mut self) -> f64 {
         // Use 4 bytes to construct a uniform random float
         let b0 = self.rng.next_byte() as u32;
