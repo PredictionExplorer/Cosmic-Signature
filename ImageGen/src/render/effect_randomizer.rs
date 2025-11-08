@@ -36,12 +36,64 @@ impl<'a> EffectRandomizer<'a> {
         }
     }
 
-    /// Randomly decide whether an effect should be enabled (50% probability).
+    /// Randomly decide whether an effect should be enabled with per-effect probabilities.
     ///
-    /// Note: This provides balanced variety. Future versions may add
-    /// per-effect probabilities.
-    pub fn randomize_enable(&mut self) -> bool {
-        self.rng.next_f64() < 0.5
+    /// Probabilities are based on analysis of Amazing vs Boring images:
+    /// - Effects that were OFF in amazing images get lower enable probability
+    /// - Effects that were ON in amazing images get higher enable probability
+    /// 
+    /// This maintains variety while biasing toward aesthetically superior results.
+    pub fn randomize_enable(&mut self, effect_name: &str) -> bool {
+        let probability = self.get_enable_probability(effect_name);
+        self.rng.next_f64() < probability
+    }
+    
+    /// Get the enable probability for a specific effect based on empirical analysis.
+    ///
+    /// Analysis results (Amazing vs Boring enable rates):
+    /// - opalescence: 0% vs 81% → 15% probability (mostly off)
+    /// - aether: 0% vs 62% → 15% probability (mostly off)
+    /// - atmospheric_depth: 14% vs 67% → 25% probability (mostly off)
+    /// - gradient_map: 14% vs 52% → 25% probability (mostly off)
+    /// - fine_texture: 29% vs 57% → 35% probability (somewhat less)
+    /// - chromatic_bloom: 43% vs 62% → 45% probability (balanced, slightly less)
+    /// - perceptual_blur: 43% vs 57% → 45% probability (balanced)
+    /// - champleve: 86% vs 48% → 75% probability (mostly on)
+    /// - bloom: 71% vs 43% → 70% probability (mostly on)
+    /// - micro_contrast: 57% vs 38% → 60% probability (more on)
+    /// - glow: No significant difference → 50% (neutral)
+    /// - color_grade: 43% vs 52% → 50% (neutral)
+    /// - edge_luminance: 29% vs 57% → 45% (balanced)
+    fn get_enable_probability(&self, effect_name: &str) -> f64 {
+        match effect_name {
+            // Mostly disabled in Amazing images (15%)
+            "opalescence" => 0.15,
+            "aether" => 0.15,
+            
+            // Frequently disabled in Amazing images (25%)
+            "atmospheric_depth" => 0.25,
+            "gradient_map" => 0.25,
+            
+            // Somewhat less in Amazing images (35%)
+            "fine_texture" => 0.35,
+            
+            // Balanced but slightly favoring off (45%)
+            "chromatic_bloom" => 0.45,
+            "perceptual_blur" => 0.45,
+            "edge_luminance" => 0.45,
+            
+            // Neutral (50%)
+            "glow" => 0.50,
+            "color_grade" => 0.50,
+            
+            // More often enabled in Amazing images (60%+)
+            "micro_contrast" => 0.60,
+            "bloom" => 0.70,
+            "champleve" => 0.75,
+            
+            // Unknown effects default to neutral
+            _ => 0.50,
+        }
     }
 
     /// Generate a random float using distribution-based sampling.
@@ -219,16 +271,35 @@ mod tests {
         let mut rng = make_test_rng();
         let mut randomizer = EffectRandomizer::new(&mut rng, false);
         
-        // Generate many samples and check they're roughly 50/50
+        // Test neutral effect (50% probability)
         let mut count_true = 0;
         for _ in 0..1000 {
-            if randomizer.randomize_enable() {
+            if randomizer.randomize_enable("glow") {
                 count_true += 1;
             }
         }
+        // Should be roughly 500 ± 100 for 50% probability effect
+        assert!(count_true > 400 && count_true < 600, "Got {}", count_true);
         
-        // Should be roughly 500 ± 100
-        assert!(count_true > 400 && count_true < 600);
+        // Test high-probability effect (bloom at 70%)
+        let mut count_bloom = 0;
+        for _ in 0..1000 {
+            if randomizer.randomize_enable("bloom") {
+                count_bloom += 1;
+            }
+        }
+        // Should be roughly 700 ± 100 for 70% probability effect
+        assert!(count_bloom > 600 && count_bloom < 800, "Got {}", count_bloom);
+        
+        // Test low-probability effect (opalescence at 15%)
+        let mut count_opal = 0;
+        for _ in 0..1000 {
+            if randomizer.randomize_enable("opalescence") {
+                count_opal += 1;
+            }
+        }
+        // Should be roughly 150 ± 75 for 15% probability effect
+        assert!(count_opal > 75 && count_opal < 225, "Got {}", count_opal);
     }
 
     #[test]

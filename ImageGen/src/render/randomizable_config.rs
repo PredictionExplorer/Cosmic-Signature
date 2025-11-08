@@ -340,7 +340,7 @@ impl RandomizableEffectConfig {
     ) -> bool {
         let (enabled, was_randomized) = match value {
             Some(v) => (v, false),
-            None => (randomizer.randomize_enable(), true),
+            None => (randomizer.randomize_enable(name), true),
         };
 
         log.add_record(RandomizationRecord::new(
