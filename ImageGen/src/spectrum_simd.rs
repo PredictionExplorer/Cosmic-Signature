@@ -38,7 +38,7 @@ pub fn spd_to_rgba_simd(spd: &[f64; NUM_BINS]) -> (f64, f64, f64, f64) {
     }
 }
 
-/// Scalar fallback implementation (bit-identical to standard version)
+/// Scalar fallback implementation with enhanced saturation
 #[inline]
 fn spd_to_rgba_scalar(spd: &[f64; NUM_BINS]) -> (f64, f64, f64, f64) {
     let mut r = 0.0;
@@ -70,12 +70,15 @@ fn spd_to_rgba_scalar(spd: &[f64; NUM_BINS]) -> (f64, f64, f64, f64) {
     let min_channel = r.min(g).min(b);
     let color_range = max_channel - min_channel;
     
-    let sat_boost = if color_range < 0.1 {
-        2.5
-    } else if color_range < 0.3 {
-        2.2
+    // Enhanced saturation boost for stunning vibrancy (scalar path)
+    let sat_boost = if color_range < 0.08 {
+        3.2  // Dramatically boost low-saturation colors
+    } else if color_range < 0.2 {
+        2.8  // Strong boost for moderate saturation
+    } else if color_range < 0.4 {
+        2.4  // Significant boost for good saturation
     } else {
-        1.8
+        2.0  // Maintain rich saturation for already vibrant colors
     };
     
     r = mean + (r - mean) * sat_boost;
@@ -183,12 +186,15 @@ unsafe fn spd_to_rgba_avx2(spd: &[f64; NUM_BINS]) -> (f64, f64, f64, f64) {
     let min_channel = r.min(g).min(b);
     let color_range = max_channel - min_channel;
     
-    let sat_boost = if color_range < 0.1 {
-        2.5
-    } else if color_range < 0.3 {
-        2.2
+    // Enhanced saturation boost for stunning vibrancy (AVX2 path)
+    let sat_boost = if color_range < 0.08 {
+        3.2  // Dramatically boost low-saturation colors
+    } else if color_range < 0.2 {
+        2.8  // Strong boost for moderate saturation
+    } else if color_range < 0.4 {
+        2.4  // Significant boost for good saturation
     } else {
-        1.8
+        2.0  // Maintain rich saturation for already vibrant colors
     };
     
     r = mean + (r - mean) * sat_boost;

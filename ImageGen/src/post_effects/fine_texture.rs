@@ -45,28 +45,28 @@ impl Default for FineTextureConfig {
 }
 
 impl FineTextureConfig {
-    /// Canvas texture for special mode (subtle, refined)
+    /// Canvas texture for special mode (luxurious fine art finish)
     pub fn special_mode_canvas(width: usize, height: usize) -> Self {
         let base_scale = (width as f64 * height as f64).sqrt();
         Self {
             texture_type: TextureType::Canvas,
-            strength: 0.12,
-            scale: base_scale * 0.0018,
-            contrast: 0.35,
-            anisotropy: 0.25,
+            strength: 0.16,                    // Enhanced for richer tactility
+            scale: base_scale * 0.0016,        // Finer weave for delicate detail
+            contrast: 0.42,                    // Increased for more pronounced texture
+            anisotropy: 0.32,                  // Enhanced directionality
             angle: 45.0,
         }
     }
 
-    /// Standard mode (minimal texture)
+    /// Standard mode (refined subtle texture)
     pub fn standard_mode(width: usize, height: usize) -> Self {
         let base_scale = (width as f64 * height as f64).sqrt();
         Self {
             texture_type: TextureType::FilmGrain,
-            strength: 0.04,
-            scale: base_scale * 0.0008,
-            contrast: 0.20,
-            anisotropy: 0.0,
+            strength: 0.07,                    // Enhanced from minimal
+            scale: base_scale * 0.0010,        // Refined grain structure
+            contrast: 0.28,                    // Increased for visible quality
+            anisotropy: 0.08,                  // Subtle directionality
             angle: 0.0,
         }
     }

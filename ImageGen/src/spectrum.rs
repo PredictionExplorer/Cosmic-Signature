@@ -20,32 +20,58 @@ pub fn wavelength_nm_for_bin(bin: usize) -> f64 {
     LAMBDA_START + (bin as f64 + 0.5) * (LAMBDA_END - LAMBDA_START) / NUM_BINS as f64
 }
 
-/// Approximate (linear-sRGB) colour corresponding to a given wavelength.
-/// Formula adapted from Dan Bruton's reference (gamma removed → stay linear).
+/// Enhanced wavelength to RGB conversion with refined spectral transitions
+/// Uses smoother interpolation and extended color ranges for maximum vibrancy
 fn wavelength_to_rgb(lambda: f64) -> (f64, f64, f64) {
-    let (r, g, b) = if (380.0..440.0).contains(&lambda) {
-        (-(lambda - 440.0) / (440.0 - 380.0), 0.0, 1.0)
-    } else if (440.0..490.0).contains(&lambda) {
-        (0.0, (lambda - 440.0) / (490.0 - 440.0), 1.0)
-    } else if (490.0..510.0).contains(&lambda) {
-        (0.0, 1.0, -(lambda - 510.0) / (510.0 - 490.0))
-    } else if (510.0..580.0).contains(&lambda) {
-        ((lambda - 510.0) / (580.0 - 510.0), 1.0, 0.0)
-    } else if (580.0..645.0).contains(&lambda) {
-        (1.0, -(lambda - 645.0) / (645.0 - 580.0), 0.0)
-    } else if (645.0..=700.0).contains(&lambda) {
-        (1.0, 0.0, 0.0)
+    let (r, g, b) = if (380.0..430.0).contains(&lambda) {
+        // Violet to deep blue - enhanced purple richness
+        let violet_boost = 1.15; // Amplify violet component
+        (-(lambda - 440.0) / (440.0 - 380.0) * violet_boost, 0.0, 1.0)
+    } else if (430.0..475.0).contains(&lambda) {
+        // Deep blue - pure saturated blue region
+        (0.0, (lambda - 430.0) / (475.0 - 430.0) * 0.3, 1.0)
+    } else if (475.0..495.0).contains(&lambda) {
+        // Blue to cyan - enhanced cyan luminosity
+        let t = (lambda - 475.0) / (495.0 - 475.0);
+        (0.0, 0.3 + t * 0.7, 1.0)
+    } else if (495.0..515.0).contains(&lambda) {
+        // Cyan to green - vibrant teal transition
+        let t = (lambda - 495.0) / (515.0 - 495.0);
+        (0.0, 1.0, 1.0 - t * 1.0)
+    } else if (515.0..560.0).contains(&lambda) {
+        // Green - pure emerald with enhanced luminosity
+        let t = (lambda - 515.0) / (560.0 - 515.0);
+        (t * 0.85, 1.0, 0.0)
+    } else if (560.0..585.0).contains(&lambda) {
+        // Yellow-green to yellow - golden brilliance
+        let t = (lambda - 560.0) / (585.0 - 560.0);
+        (0.85 + t * 0.15, 1.0, 0.0)
+    } else if (585.0..615.0).contains(&lambda) {
+        // Yellow to orange - warm sunset glow
+        let t = (lambda - 585.0) / (615.0 - 585.0);
+        (1.0, 1.0 - t * 0.45, 0.0)
+    } else if (615.0..650.0).contains(&lambda) {
+        // Orange to red - fiery transition
+        let t = (lambda - 615.0) / (650.0 - 615.0);
+        (1.0, (1.0 - t) * 0.55, 0.0)
+    } else if (650.0..=700.0).contains(&lambda) {
+        // Deep red - enhanced crimson intensity
+        let t = (lambda - 650.0) / (700.0 - 650.0);
+        (1.0, 0.0, t * 0.08) // Subtle magenta shift in deep red
     } else {
         (0.0, 0.0, 0.0)
     };
 
-    // Intensity falloff near ends of visible range (simple linear ramp).
-    let factor = if (380.0..420.0).contains(&lambda) {
-        0.3 + 0.7 * (lambda - 380.0) / (420.0 - 380.0)
-    } else if (420.0..645.0).contains(&lambda) {
+    // Enhanced intensity curve with smoother falloff and higher retention
+    let factor = if (380.0..410.0).contains(&lambda) {
+        // Gentler violet falloff for richer purples
+        0.45 + 0.55 * (lambda - 380.0) / (410.0 - 380.0)
+    } else if (410.0..655.0).contains(&lambda) {
+        // Extended peak brilliance range
         1.0
-    } else if (645.0..=700.0).contains(&lambda) {
-        0.3 + 0.7 * (700.0 - lambda) / (700.0 - 645.0)
+    } else if (655.0..=700.0).contains(&lambda) {
+        // Smoother red falloff preserving deep crimson
+        0.45 + 0.55 * (700.0 - lambda) / (700.0 - 655.0)
     } else {
         0.0
     };

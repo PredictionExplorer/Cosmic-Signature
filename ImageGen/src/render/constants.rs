@@ -13,41 +13,41 @@ pub const HUE_FULL_CIRCLE: f64 = 360.0;
 /// This ensures the three bodies have maximally separated base colors
 pub const BODY_HUE_SEPARATION: f64 = 120.0;
 
-/// Controls drift rate of hue over time (higher = more palette movement)
-pub const HUE_DRIFT_SCALE: f64 = 1.85;
+/// Enhanced drift rate for captivating palette evolution
+pub const HUE_DRIFT_SCALE: f64 = 2.15;  // Increased from 1.85 for more dynamic color shifts
 
-/// Base time drift factor for subtle color evolution
-pub const BASE_HUE_DRIFT: f64 = 1.4;
+/// Enhanced base drift for rich color journey
+pub const BASE_HUE_DRIFT: f64 = 1.7;  // Increased from 1.4 for stronger evolution
 
-/// Amplitude, in degrees, applied by the palette sway wave
-pub const HUE_WAVE_AMPLITUDE: f64 = 52.0;
+/// Amplified wave amplitude for dramatic color sweeps
+pub const HUE_WAVE_AMPLITUDE: f64 = 62.0;  // Increased from 52 for bolder palette movement
 
-/// Frequency, in cycles, of the palette sway wave across a trajectory
-pub const HUE_WAVE_FREQUENCY: f64 = 2.6;
+/// Refined wave frequency for elegant color cycles
+pub const HUE_WAVE_FREQUENCY: f64 = 2.9;  // Increased from 2.6 for richer harmonic variation
 
 /// Additional per-body phase offsets (degrees) to guarantee separation
 pub const BODY_HUE_PHASE: [f64; 3] = [0.0, 120.0, 240.0];
 
 // ========== OKLab Perceptual Color Space Constants ==========
 
-/// Base chroma value (typical range 0-0.3 for natural colors)
-/// Higher values produce more saturated colors
-pub const OKLAB_CHROMA_BASE: f64 = 0.18;
+/// Base chroma value - dramatically increased for stunning saturation
+/// Higher values produce more saturated, jewel-like colors
+pub const OKLAB_CHROMA_BASE: f64 = 0.24;  // Increased from 0.18 for richer colors
 
-/// Range of chroma variation around the base value
-pub const OKLAB_CHROMA_RANGE: f64 = 0.12;
+/// Range of chroma variation - wider range for more dynamic color shifts
+pub const OKLAB_CHROMA_RANGE: f64 = 0.16;  // Increased from 0.12 for greater variety
 
-/// Additional chroma modulation applied via palette waves
-pub const OKLAB_CHROMA_WAVE_AMPLITUDE: f64 = 0.07;
+/// Additional chroma modulation - enhanced for vivid palette movement
+pub const OKLAB_CHROMA_WAVE_AMPLITUDE: f64 = 0.10;  // Increased from 0.07 for bolder waves
 
-/// Base lightness value (0=black, 1=white)
-pub const OKLAB_LIGHTNESS_BASE: f64 = 0.62;
+/// Base lightness value - optimized for maximum vibrancy while maintaining depth
+pub const OKLAB_LIGHTNESS_BASE: f64 = 0.68;  // Increased from 0.62 for brighter overall tone
 
-/// Range of lightness variation around the base value
-pub const OKLAB_LIGHTNESS_RANGE: f64 = 0.32;
+/// Range of lightness variation - expanded for dramatic luminosity shifts
+pub const OKLAB_LIGHTNESS_RANGE: f64 = 0.36;  // Increased from 0.32 for wider dynamic range
 
-/// Additional lightness modulation applied via palette waves
-pub const OKLAB_LIGHTNESS_WAVE_AMPLITUDE: f64 = 0.22;
+/// Additional lightness modulation - amplified for stunning brightness waves
+pub const OKLAB_LIGHTNESS_WAVE_AMPLITUDE: f64 = 0.26;  // Increased from 0.22 for dramatic sparkle
 
 // ========== Rendering Constants ==========
 
@@ -69,85 +69,85 @@ pub const GAUSSIAN_SIGMA_MIN: f64 = 1.0;
 /// Factor for two-sigma-squared calculation in Gaussian
 pub const GAUSSIAN_TWO_FACTOR: f64 = 2.0;
 
-/// Default strength for the cinematic color grading effect (0-1)
-pub const DEFAULT_COLOR_GRADE_STRENGTH: f64 = 0.48;
+/// Enhanced cinematic color grading for dramatic visual impact
+pub const DEFAULT_COLOR_GRADE_STRENGTH: f64 = 0.58;  // Increased from 0.48 for richer grading
 
-/// Default vignette strength for color grading (0-1)
-pub const DEFAULT_COLOR_GRADE_VIGNETTE: f64 = 0.45;
+/// Enhanced vignette for focused attention and depth
+pub const DEFAULT_COLOR_GRADE_VIGNETTE: f64 = 0.52;  // Increased from 0.45 for stronger framing
 
-/// Default vignette softness exponent (> 1.0)
-pub const DEFAULT_COLOR_GRADE_VIGNETTE_SOFTNESS: f64 = 2.6;
+/// Vignette softness optimized for smooth falloff
+pub const DEFAULT_COLOR_GRADE_VIGNETTE_SOFTNESS: f64 = 2.8;  // Increased from 2.6 for gentler transition
 
-/// Default vibrance boost applied during color grading
-pub const DEFAULT_COLOR_GRADE_VIBRANCE: f64 = 1.12;
+/// Vibrance dramatically enhanced for jewel-like saturation
+pub const DEFAULT_COLOR_GRADE_VIBRANCE: f64 = 1.28;  // Increased from 1.12 for stunning colors
 
-/// Default clarity strength (high-pass contrast) during color grading
-pub const DEFAULT_COLOR_GRADE_CLARITY: f64 = 0.30;
+/// Clarity boosted for crystalline detail and definition
+pub const DEFAULT_COLOR_GRADE_CLARITY: f64 = 0.38;  // Increased from 0.30 for sharper micro-contrast
 
-/// Default tone curve strength for midtone contrast shaping
-pub const DEFAULT_COLOR_GRADE_TONE_CURVE: f64 = 0.55;
+/// Tone curve enhanced for powerful midtone punch
+pub const DEFAULT_COLOR_GRADE_TONE_CURVE: f64 = 0.65;  // Increased from 0.55 for more dramatic S-curve
 
-/// Default cool tint added to shadows during color grading (linear RGB deltas)
-pub const DEFAULT_COLOR_GRADE_SHADOW_TINT: [f64; 3] = [-0.08, -0.02, 0.16];
+/// Enhanced cool tint for deep, rich shadows with azure undertones
+pub const DEFAULT_COLOR_GRADE_SHADOW_TINT: [f64; 3] = [-0.10, -0.03, 0.20];  // Cooler, deeper shadows
 
-/// Default warm tint added to highlights during color grading (linear RGB deltas)
-pub const DEFAULT_COLOR_GRADE_HIGHLIGHT_TINT: [f64; 3] = [0.11, 0.05, -0.03];
+/// Enhanced warm tint for luminous, golden highlights
+pub const DEFAULT_COLOR_GRADE_HIGHLIGHT_TINT: [f64; 3] = [0.14, 0.07, -0.04];  // Warmer, richer highlights
 
-/// Default cell density for the champlevé effect (cells per normalized unit)
-pub const DEFAULT_CHAMPLEVE_CELL_DENSITY: f64 = 55.0;
+/// Enhanced cell density for intricate champlevé detail
+pub const DEFAULT_CHAMPLEVE_CELL_DENSITY: f64 = 62.0;  // Increased from 55 for finer tessellation
 
-/// Influence of luminance on champlevé interference alignment
-pub const DEFAULT_CHAMPLEVE_FLOW_ALIGNMENT: f64 = 0.65;
+/// Enhanced flow alignment for fluid, organic champlevé patterns
+pub const DEFAULT_CHAMPLEVE_FLOW_ALIGNMENT: f64 = 0.72;  // Increased from 0.65 for stronger directionality
 
-/// Default interference amplitude for iridescence
-pub const DEFAULT_CHAMPLEVE_INTERFERENCE_AMPLITUDE: f64 = 0.6;
+/// Amplified interference for stunning iridescent shimmer
+pub const DEFAULT_CHAMPLEVE_INTERFERENCE_AMPLITUDE: f64 = 0.72;  // Increased from 0.6 for richer color play
 
-/// Default interference frequency for iridescent striations
-pub const DEFAULT_CHAMPLEVE_INTERFERENCE_FREQUENCY: f64 = 30.0;
+/// Enhanced interference frequency for delicate pearlescent bands
+pub const DEFAULT_CHAMPLEVE_INTERFERENCE_FREQUENCY: f64 = 35.0;  // Increased from 30 for finer detail
 
-/// Default rim intensity for metal inlay
-pub const DEFAULT_CHAMPLEVE_RIM_INTENSITY: f64 = 2.0;
+/// Dramatically enhanced rim intensity for brilliant metallic edges
+pub const DEFAULT_CHAMPLEVE_RIM_INTENSITY: f64 = 2.4;  // Increased from 2.0 for brighter halos
 
-/// Default rim warmth blend factor (0 = original color, 1 = full gold)
-pub const DEFAULT_CHAMPLEVE_RIM_WARMTH: f64 = 0.72;
+/// Enhanced rim warmth for luxurious golden accents
+pub const DEFAULT_CHAMPLEVE_RIM_WARMTH: f64 = 0.78;  // Increased from 0.72 for richer gold
 
-/// Default rim sharpness exponent
-pub const DEFAULT_CHAMPLEVE_RIM_SHARPNESS: f64 = 4.5;
+/// Sharpened rim definition for crisp metallic boundaries
+pub const DEFAULT_CHAMPLEVE_RIM_SHARPNESS: f64 = 5.0;  // Increased from 4.5 for sharper edges
 
-/// Default interior lift for opaline glow
-pub const DEFAULT_CHAMPLEVE_INTERIOR_LIFT: f64 = 0.70;
+/// Enhanced interior glow for luminous opalescence
+pub const DEFAULT_CHAMPLEVE_INTERIOR_LIFT: f64 = 0.78;  // Increased from 0.70 for brighter cores
 
-/// Default anisotropy strength for brushed-metal sheen
-pub const DEFAULT_CHAMPLEVE_ANISOTROPY: f64 = 0.95;
+/// Amplified anisotropy for stunning brushed-metal reflections
+pub const DEFAULT_CHAMPLEVE_ANISOTROPY: f64 = 1.05;  // Increased from 0.95 for stronger directional sheen
 
 /// Default centre highlight compression for champlevé cells
 pub const DEFAULT_CHAMPLEVE_CELL_SOFTNESS: f64 = 1.1;
 
 // ========== Aether Effect Constants ==========
 
-/// Default density of filaments in the aether weave
-pub const DEFAULT_AETHER_FILAMENT_DENSITY: f64 = 90.0;
+/// Enhanced filament density for intricate ethereal weave
+pub const DEFAULT_AETHER_FILAMENT_DENSITY: f64 = 105.0;  // Increased from 90 for richer texture
 
-/// Default strength of flow alignment for anisotropic warp
-pub const DEFAULT_AETHER_FLOW_ALIGNMENT: f64 = 0.85;
+/// Amplified flow alignment for mesmerizing directional flow
+pub const DEFAULT_AETHER_FLOW_ALIGNMENT: f64 = 0.92;  // Increased from 0.85 for stronger coherence
 
-/// Base intensity of the volumetric scattering effect
-pub const DEFAULT_AETHER_SCATTERING_STRENGTH: f64 = 1.0;
+/// Enhanced scattering for luminous volumetric presence
+pub const DEFAULT_AETHER_SCATTERING_STRENGTH: f64 = 1.2;  // Increased from 1.0 for stronger glow
 
-/// Exponent for the scattering falloff curve
-pub const DEFAULT_AETHER_SCATTERING_FALLOFF: f64 = 2.5;
+/// Optimized falloff for smooth, atmospheric transitions
+pub const DEFAULT_AETHER_SCATTERING_FALLOFF: f64 = 2.7;  // Increased from 2.5 for gentler gradient
 
-/// Amplitude of the iridescent color shifting
-pub const DEFAULT_AETHER_IRIDESCENCE_AMPLITUDE: f64 = 0.65;
+/// Amplified iridescence for spectacular chromatic shimmer
+pub const DEFAULT_AETHER_IRIDESCENCE_AMPLITUDE: f64 = 0.78;  // Increased from 0.65 for richer color play
 
-/// Frequency of the iridescent color bands
-pub const DEFAULT_AETHER_IRIDESCENCE_FREQUENCY: f64 = 12.0;
+/// Enhanced frequency for delicate rainbow bands
+pub const DEFAULT_AETHER_IRIDESCENCE_FREQUENCY: f64 = 14.0;  // Increased from 12 for finer detail
 
-/// Intensity of the negative space caustics
-pub const DEFAULT_AETHER_CAUSTIC_STRENGTH: f64 = 0.35;
+/// Intensified caustics for dramatic light refraction
+pub const DEFAULT_AETHER_CAUSTIC_STRENGTH: f64 = 0.45;  // Increased from 0.35 for stronger effect
 
-/// Softness of the caustic bleed effect
-pub const DEFAULT_AETHER_CAUSTIC_SOFTNESS: f64 = 3.0;
+/// Refined caustic softness for elegant bleed and bloom
+pub const DEFAULT_AETHER_CAUSTIC_SOFTNESS: f64 = 3.5;  // Increased from 3.0 for smoother transitions
 
 // ========== Special Mode Enhancement Constants ==========
 

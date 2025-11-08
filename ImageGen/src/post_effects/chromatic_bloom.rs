@@ -28,18 +28,19 @@ impl Default for ChromaticBloomConfig {
 }
 
 impl ChromaticBloomConfig {
-    /// Create configuration scaled for the given resolution.
-    /// This ensures the effect looks consistent across different resolutions.
+    /// Create configuration scaled for the given resolution with enhanced prismatic beauty
+    /// This ensures the effect looks consistently stunning across different resolutions
     pub fn from_resolution(width: usize, height: usize) -> Self {
         let min_dim = width.min(height) as f64;
         Self {
-            // Scale radius: 12px @ 1080p, 24px @ 4K
-            radius: (0.0111 * min_dim).round() as usize,
-            // Scale separation: 2.5px @ 1080p, 5px @ 4K
-            separation: 0.0023 * min_dim,
-            // These are ratios, no scaling needed
-            strength: 0.65,
-            threshold: 0.15,
+            // Enhanced radius for luxurious bloom spread: 14px @ 1080p, 28px @ 4K
+            radius: (0.013 * min_dim).round() as usize,  // Increased from 0.0111
+            // Enhanced separation for dramatic chromatic aberration: 3.2px @ 1080p
+            separation: 0.0030 * min_dim,  // Increased from 0.0023
+            // Enhanced strength for vivid prismatic color
+            strength: 0.78,  // Increased from 0.65
+            // Lower threshold for more magical bloom coverage
+            threshold: 0.12,  // Reduced from 0.15
         }
     }
 }

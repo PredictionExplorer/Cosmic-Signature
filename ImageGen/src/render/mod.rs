@@ -102,7 +102,8 @@ fn tonemap_core(fr: f64, fg: f64, fb: f64, fa: f64, levels: &ChannelLevels) -> [
     }
 
     let straight_luma = 0.2126 * source[0] + 0.7152 * source[1] + 0.0722 * source[2];
-    let chroma_preserve = (alpha / (alpha + 0.1)).clamp(0.0, 1.0);
+    // Enhanced chroma preservation for vivid, saturated colors
+    let chroma_preserve = (alpha / (alpha + 0.06)).clamp(0.0, 1.0);  // Reduced from 0.1 for stronger saturation
 
     let mut final_channels = [0.0; 3];
     if straight_luma > 0.0 {
@@ -114,7 +115,8 @@ fn tonemap_core(fr: f64, fg: f64, fb: f64, fa: f64, levels: &ChannelLevels) -> [
         final_channels = channel_curves;
     }
 
-    let neutral_mix = ((0.05 - alpha).max(0.0) / 0.05).clamp(0.0, 1.0) * 0.2;
+    // Reduced neutral mixing for more vibrant low-alpha regions
+    let neutral_mix = ((0.03 - alpha).max(0.0) / 0.03).clamp(0.0, 1.0) * 0.15;  // More aggressive preservation
     if neutral_mix > 0.0 {
         for c in &mut final_channels {
             *c = (*c * (1.0 - neutral_mix) + target_luma * neutral_mix).max(0.0);
@@ -166,13 +168,15 @@ pub fn save_image_as_png_16bit(rgb_img: &ImageBuffer<Rgb<u16>, Vec<u16>>, path: 
 }
 
 /// Pass 1: gather global histogram for final color leveling
-// ACES Filmic Tonemapping Curve constants
-// Source: https://knarkowicz.wordpress.com/2016/01/06/aces-filmic-tone-mapping-curve/
-const A: f64 = 2.51;
-const B: f64 = 0.03;
-const C: f64 = 2.43;
-const D: f64 = 0.59;
-const E: f64 = 0.14;
+// Enhanced ACES Filmic Tonemapping Curve - refined for maximum beauty
+// Based on ACES standard with custom optimization for luminous, jewel-like imagery
+// Original ACES: https://knarkowicz.wordpress.com/2016/01/06/aces-filmic-tone-mapping-curve/
+// Enhanced to preserve highlights while maintaining rich shadows
+const A: f64 = 2.58;  // Increased from 2.51 for more highlight preservation
+const B: f64 = 0.02;  // Reduced from 0.03 for deeper blacks with more punch
+const C: f64 = 2.38;  // Reduced from 2.43 for stronger midtone contrast
+const D: f64 = 0.56;  // Reduced from 0.59 for enhanced shadow depth
+const E: f64 = 0.12;  // Reduced from 0.14 for richer shadow detail
 
 /// Optimized ACES tonemapping using lookup table
 struct AcesLut {

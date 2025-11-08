@@ -33,29 +33,29 @@ impl Default for OpalescenceConfig {
 }
 
 impl OpalescenceConfig {
-    /// Create configuration optimized for special mode (full effect)
+    /// Create configuration optimized for special mode (stunning gem-like quality)
     pub fn special_mode(width: usize, height: usize) -> Self {
         let base_scale = (width as f64 * height as f64).sqrt();
         Self {
-            strength: 0.18,                    // Noticeable but refined
-            scale: base_scale * 0.008,         // Medium-scale features
-            layers: 3,                         // Multiple interference layers
-            chromatic_shift: 0.35,             // Moderate rainbow shift
-            angle_sensitivity: 1.25,           // Strong angle dependency
-            pearl_sheen: 0.22,                 // Subtle pearl highlights
+            strength: 0.26,                    // Enhanced for dramatic opalescence
+            scale: base_scale * 0.0072,        // Finer patterns for delicate detail
+            layers: 4,                         // Maximum layers for rich depth
+            chromatic_shift: 0.48,             // Strong rainbow shimmer
+            angle_sensitivity: 1.50,           // Dramatic angle-dependent color play
+            pearl_sheen: 0.32,                 // Luminous pearl highlights
         }
     }
 
-    /// Create configuration for standard mode (subtle effect)
+    /// Create configuration for standard mode (beautiful subtle shimmer)
     pub fn standard_mode(width: usize, height: usize) -> Self {
         let base_scale = (width as f64 * height as f64).sqrt();
         Self {
-            strength: 0.08,                    // Very subtle
-            scale: base_scale * 0.012,         // Slightly larger features
-            layers: 2,                         // Fewer layers
-            chromatic_shift: 0.15,             // Minimal rainbow
-            angle_sensitivity: 0.65,           // Less angle-dependent
-            pearl_sheen: 0.08,                 // Minimal sheen
+            strength: 0.14,                    // Enhanced from very subtle
+            scale: base_scale * 0.010,         // Refined pattern scale
+            layers: 3,                         // More layers for richer effect
+            chromatic_shift: 0.24,             // Enhanced rainbow effect
+            angle_sensitivity: 0.85,           // Increased angle dependency
+            pearl_sheen: 0.16,                 // Enhanced pearl sheen
         }
     }
 }

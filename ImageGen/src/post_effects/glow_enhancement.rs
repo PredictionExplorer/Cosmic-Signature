@@ -31,27 +31,27 @@ impl Default for GlowEnhancementConfig {
 }
 
 impl GlowEnhancementConfig {
-    /// Create configuration for special mode (strong sparkle)
+    /// Create configuration for special mode (stunning ethereal sparkle)
     pub fn special_mode(width: usize, height: usize) -> Self {
         let min_dim = width.min(height) as f64;
         Self {
-            strength: 0.45,                           // Strong glow effect
-            threshold: 0.65,                          // Only very bright areas
-            radius: (0.008 * min_dim).round() as usize, // ~8px at 1080p
-            sharpness: 2.5,                           // Sharp, tight glow
-            saturation_boost: 0.25,                   // Boost color in glows
+            strength: 0.62,                           // Dramatically increased for magical glow
+            threshold: 0.58,                          // Lower threshold for more glow coverage
+            radius: (0.010 * min_dim).round() as usize, // Larger radius for dreamy halos
+            sharpness: 2.2,                           // Softer glow for ethereal quality
+            saturation_boost: 0.38,                   // Strong color boost for jewel-like sparkle
         }
     }
 
-    /// Create configuration for standard mode (subtle sparkle)
+    /// Create configuration for standard mode (beautiful luminous sparkle)
     pub fn standard_mode(width: usize, height: usize) -> Self {
         let min_dim = width.min(height) as f64;
         Self {
-            strength: 0.25,                           // Subtle glow
-            threshold: 0.70,                          // Only brightest areas
-            radius: (0.006 * min_dim).round() as usize, // ~6px at 1080p
-            sharpness: 2.8,                           // Very sharp
-            saturation_boost: 0.15,                   // Gentle color boost
+            strength: 0.40,                           // Enhanced from subtle to beautiful
+            threshold: 0.62,                          // Lower threshold for more sparkle
+            radius: (0.008 * min_dim).round() as usize, // Larger radius for soft glow
+            sharpness: 2.5,                           // Balanced sharpness
+            saturation_boost: 0.28,                   // Enhanced color vibrancy
         }
     }
 }
