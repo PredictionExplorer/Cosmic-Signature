@@ -136,18 +136,6 @@ fn tonemap_core(fr: f64, fg: f64, fb: f64, fa: f64, levels: &ChannelLevels) -> [
     final_channels
 }
 
-/// Tonemap to 8-bit (for legacy support, not currently used)
-#[allow(dead_code)]
-#[inline]
-fn tonemap_to_8bit(fr: f64, fg: f64, fb: f64, fa: f64, levels: &ChannelLevels) -> [u8; 3] {
-    let channels = tonemap_core(fr, fg, fb, fa, levels);
-    [
-        (channels[0] * 255.0).round().clamp(0.0, 255.0) as u8,
-        (channels[1] * 255.0).round().clamp(0.0, 255.0) as u8,
-        (channels[2] * 255.0).round().clamp(0.0, 255.0) as u8,
-    ]
-}
-
 /// Tonemap to 16-bit (primary output format for maximum precision)
 #[inline]
 fn tonemap_to_16bit(fr: f64, fg: f64, fb: f64, fa: f64, levels: &ChannelLevels) -> [u16; 3] {
@@ -239,7 +227,7 @@ fn generate_nebula_background(
     height: usize,
     frame_number: usize,
     config: &NebulaCloudConfig,
-) -> PixelBuffer {
+) -> Result<PixelBuffer> {
     // Start with empty buffer (black background)
     let background = vec![(0.0, 0.0, 0.0, 0.0); width * height];
     
@@ -247,7 +235,7 @@ fn generate_nebula_background(
     let nebula = NebulaClouds::new(config.clone());
     nebula
         .process_with_time(&background, width, height, frame_number)
-        .expect("Failed to generate nebula background")
+        .map_err(|e| RenderError::EffectError(e.to_string()))
 }
 
 /// Composite background and foreground buffers using enhanced "over" operator
@@ -508,111 +496,6 @@ fn build_effect_config_from_resolved(
     }
 }
 
-/// Legacy build effect configuration (kept for backward compatibility if needed)
-#[allow(dead_code)]
-#[allow(clippy::too_many_arguments)]
-fn build_effect_config(
-    width: usize,
-    height: usize,
-    bloom_mode: &str,
-    blur_radius_px: usize,
-    blur_strength: f64,
-    blur_core_brightness: f64,
-    dog_config: &DogBloomConfig,
-    hdr_mode: &str,
-    perceptual_blur_enabled: bool,
-    perceptual_blur_config: Option<&PerceptualBlurConfig>,
-    special_mode: bool,
-) -> EffectConfig {
-    use crate::post_effects::{
-        AetherConfig, AtmosphericDepthConfig, ChampleveConfig, ColorGradeParams,
-        EdgeLuminanceConfig, FineTextureConfig, GlowEnhancementConfig,
-        MicroContrastConfig, OpalescenceConfig,
-    };
-
-    // Determine gradient map settings (only enabled in special mode with palette)
-    let gradient_map_enabled = special_mode;
-    let gradient_map_config = if special_mode {
-        GradientMapConfig {
-            palette: LuxuryPalette::GoldPurple,
-            strength: 0.85,
-            hue_preservation: 0.15,
-        }
-    } else {
-        GradientMapConfig {
-            palette: LuxuryPalette::GoldPurple,
-            strength: 0.0,
-            hue_preservation: 1.0,
-        }
-    };
-
-    EffectConfig {
-        // Core bloom and blur
-        bloom_mode: bloom_mode.to_string(),
-        blur_radius_px,
-        blur_strength,
-        blur_core_brightness,
-        dog_config: dog_config.clone(),
-        hdr_mode: hdr_mode.to_string(),
-        perceptual_blur_enabled,
-        perceptual_blur_config: perceptual_blur_config.cloned(),
-        
-        // Color manipulation
-        color_grade_enabled: true,
-        color_grade_params: ColorGradeParams::from_resolution_and_mode(width, height, special_mode),
-        gradient_map_enabled, // Only when actually needed
-        gradient_map_config,
-        
-        // Material and iridescence (always enabled, scaled by mode)
-        champleve_enabled: true,
-        champleve_config: ChampleveConfig::new(special_mode),
-        aether_enabled: true,
-        aether_config: AetherConfig::new(special_mode),
-        chromatic_bloom_enabled: true,
-        chromatic_bloom_config: ChromaticBloomConfig::from_resolution(width, height),
-        opalescence_enabled: true, // NOW ENABLED IN BOTH MODES
-        opalescence_config: if special_mode {
-            OpalescenceConfig::special_mode(width, height)
-        } else {
-            OpalescenceConfig::standard_mode(width, height)
-        },
-        
-        // Detail and clarity (NEW - enabled in both modes)
-        edge_luminance_enabled: true, // NOW ENABLED IN BOTH MODES
-        edge_luminance_config: if special_mode {
-            EdgeLuminanceConfig::special_mode()
-        } else {
-            EdgeLuminanceConfig::standard_mode()
-        },
-        micro_contrast_enabled: true, // NEW - enabled in both modes
-        micro_contrast_config: if special_mode {
-            MicroContrastConfig::special_mode()
-        } else {
-            MicroContrastConfig::standard_mode()
-        },
-        glow_enhancement_enabled: true, // NEW - enabled in both modes
-        glow_enhancement_config: if special_mode {
-            GlowEnhancementConfig::special_mode(width, height)
-        } else {
-            GlowEnhancementConfig::standard_mode(width, height)
-        },
-        
-        // Atmospheric and surface (NEW - enabled in both modes)
-        atmospheric_depth_enabled: true, // NOW ENABLED IN BOTH MODES
-        atmospheric_depth_config: if special_mode {
-            AtmosphericDepthConfig::special_mode()
-        } else {
-            AtmosphericDepthConfig::standard_mode()
-        },
-        fine_texture_enabled: true, // NOW ENABLED IN BOTH MODES
-        fine_texture_config: if special_mode {
-            FineTextureConfig::special_mode_canvas(width, height)
-        } else {
-            FineTextureConfig::standard_mode(width, height)
-        },
-    }
-}
-
 /// Apply energy density wavelength shift to spectral buffer
 /// Hot regions (high energy) shift toward red, cool regions stay blue
 fn apply_energy_density_shift(accum_spd: &mut [[f64; NUM_BINS]], special_mode: bool) {
@@ -663,7 +546,7 @@ pub fn pass_1_build_histogram_spectral(
     all_b: &mut Vec<f64>,
     noise_seed: i32,
     render_config: &RenderConfig,
-) {
+) -> Result<()> {
     let width = resolved_config.width;
     let height = resolved_config.height;
     let special_mode = resolved_config.special_mode;
@@ -758,7 +641,7 @@ pub fn pass_1_build_histogram_spectral(
             let rgba_buffer = std::mem::take(&mut accum_rgba);
             let trajectory_pixels = effect_chain
                 .process_frame(rgba_buffer, width as usize, height as usize, &frame_params)
-                .expect("Failed to process frame during spectral histogram pass");
+                .map_err(|e| RenderError::EffectError(e.to_string()))?;
             // Reuse the buffer instead of reallocating - clear and resize to avoid allocation
             accum_rgba.clear();
             accum_rgba.resize(ctx.pixel_count(), (0.0, 0.0, 0.0, 0.0));
@@ -770,7 +653,7 @@ pub fn pass_1_build_histogram_spectral(
                     height as usize,
                     step / frame_interval,
                     &nebula_config,
-                )
+                )?
             } else {
                 empty_background.clone()  // Reuse pre-allocated empty buffer (zero overhead)
             };
@@ -793,6 +676,7 @@ pub fn pass_1_build_histogram_spectral(
     *all_b = extracted_b;
 
     info!("   pass 1 (spectral histogram): 100% done");
+    Ok(())
 }
 
 // ====================== PASS 2 (SPECTRAL) ===========================
@@ -907,7 +791,7 @@ pub fn pass_2_write_frames_spectral(
             let rgba_buffer = std::mem::take(&mut accum_rgba);
             let trajectory_pixels = effect_chain
                 .process_frame(rgba_buffer, width as usize, height as usize, &frame_params)
-                .expect("Failed to process frame during spectral render pass");
+                .map_err(|e| RenderError::EffectError(e.to_string()))?;
             // Reuse the buffer instead of reallocating - clear and resize to avoid allocation
             accum_rgba.clear();
             accum_rgba.resize(ctx.pixel_count(), (0.0, 0.0, 0.0, 0.0));
@@ -919,7 +803,7 @@ pub fn pass_2_write_frames_spectral(
                     height as usize,
                     step / frame_interval,
                     &nebula_config,
-                )
+                )?
             } else {
                 empty_background.clone()  // Reuse pre-allocated empty buffer (zero overhead)
             };
@@ -1064,11 +948,11 @@ pub fn render_single_frame_spectral(
     let frame_params = FrameParams { _frame_number: 0, _density: None };
     let trajectory_pixels = effect_chain
         .process_frame(accum_rgba, width as usize, height as usize, &frame_params)
-        .expect("Failed to process test frame");
+        .map_err(|e| RenderError::EffectError(e.to_string()))?;
 
     // Generate nebula background for frame 0 (with zero-overhead check)
     let nebula_background = if special_mode && resolved_config.nebula_strength > 0.0 {
-        generate_nebula_background(width as usize, height as usize, 0, &nebula_config)
+        generate_nebula_background(width as usize, height as usize, 0, &nebula_config)?
     } else {
         empty_background  // Reuse pre-allocated empty buffer (zero overhead)
     };

@@ -8,11 +8,9 @@ use crate::drift::parse_drift_mode;
 use crate::drift_config::{resolve_drift_config, ResolvedDriftConfig};
 use crate::error::{ConfigError, Result};
 use crate::generation_log::{GenerationLogger, GenerationRecord, LoggedRenderConfig, DriftConfig, SimulationConfig, OrbitInfo};
-use crate::oklab;
-use crate::post_effects;
 use crate::render::{
     self, constants, generate_body_color_sequences,
-    save_image_as_png_16bit, ChannelLevels, DogBloomConfig, RenderConfig,
+    save_image_as_png_16bit, ChannelLevels, RenderConfig,
     VideoEncodingOptions, compute_black_white_gamma,
     pass_1_build_histogram_spectral, pass_2_write_frames_spectral,
     render_single_frame_spectral, create_video_from_frames_singlepass,
@@ -180,71 +178,6 @@ pub fn generate_colors(
     generate_body_color_sequences(rng, num_steps_sim, alpha_value)
 }
 
-/// Create blur configuration based on mode and resolution
-#[allow(dead_code)] // Legacy helper - kept for backward compatibility
-pub fn create_blur_config(special: bool, width: u32, height: u32) -> (usize, f64, f64) {
-    if special {
-        (
-            (0.032 * std::cmp::min(width, height) as f64).round() as usize,
-            12.0,
-            12.0,
-        )
-    } else {
-        (
-            (0.014 * std::cmp::min(width, height) as f64).round() as usize,
-            7.0,
-            7.0,
-        )
-    }
-}
-
-/// Create DoG bloom configuration with resolution-aware sigma
-#[allow(dead_code)] // Legacy helper - kept for backward compatibility
-pub fn create_dog_config(
-    width: u32,
-    height: u32,
-    dog_sigma: Option<f64>,
-    dog_ratio: f64,
-    dog_strength: f64,
-) -> DogBloomConfig {
-    let sigma = dog_sigma.unwrap_or_else(|| {
-        0.0065 * std::cmp::min(width, height) as f64
-    });
-    
-    DogBloomConfig {
-        inner_sigma: sigma,
-        outer_ratio: dog_ratio,
-        strength: dog_strength,
-        threshold: 0.01,
-    }
-}
-
-/// Create perceptual blur configuration
-#[allow(dead_code)] // Legacy helper - kept for backward compatibility
-pub fn create_perceptual_blur_config(
-    enabled: bool,
-    blur_radius_px: usize,
-    perceptual_blur_radius: Option<usize>,
-    perceptual_blur_strength: f64,
-    perceptual_gamut_mode: &str,
-) -> Option<post_effects::PerceptualBlurConfig> {
-    if !enabled {
-        return None;
-    }
-    
-    use oklab::GamutMapMode;
-    
-    Some(post_effects::PerceptualBlurConfig {
-        radius: perceptual_blur_radius.unwrap_or(blur_radius_px),
-        strength: perceptual_blur_strength,
-        gamut_mode: match perceptual_gamut_mode {
-            "clamp" => GamutMapMode::Clamp,
-            "soft-clip" => GamutMapMode::SoftClip,
-            _ => GamutMapMode::PreserveHue,
-        },
-    })
-}
-
 /// Build histogram and determine color levels
 pub fn build_histogram_and_levels(
     positions: &[Vec<Vector3<f64>>],
@@ -274,7 +207,7 @@ pub fn build_histogram_and_levels(
         &mut all_b,
         noise_seed,
         render_config,
-    );
+    )?;
     
     info!("STAGE 6/7: Determine global black/white/gamma...");
     let (black_r, white_r, black_g, white_g, black_b, white_b) = compute_black_white_gamma(
@@ -541,22 +474,6 @@ mod tests {
     fn test_generate_filename_with_tag() {
         let name = generate_filename("test", "profile1");
         assert_eq!(name, "test_profile1");
-    }
-
-    #[test]
-    fn test_create_blur_config_standard() {
-        let (radius, strength, brightness) = create_blur_config(false, 1920, 1080);
-        assert_eq!(radius, (0.014_f64 * 1080.0).round() as usize);
-        assert_eq!(strength, 7.0);
-        assert_eq!(brightness, 7.0);
-    }
-
-    #[test]
-    fn test_create_blur_config_special() {
-        let (radius, strength, brightness) = create_blur_config(true, 1920, 1080);
-        assert_eq!(radius, (0.032_f64 * 1080.0).round() as usize);
-        assert_eq!(strength, 12.0);
-        assert_eq!(brightness, 12.0);
     }
 }
 
