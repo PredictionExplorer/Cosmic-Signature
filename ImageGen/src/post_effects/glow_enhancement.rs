@@ -42,18 +42,6 @@ impl GlowEnhancementConfig {
             saturation_boost: 0.38,                   // Strong color boost for jewel-like sparkle
         }
     }
-
-    /// Create configuration for standard mode (beautiful luminous sparkle)
-    pub fn standard_mode(width: usize, height: usize) -> Self {
-        let min_dim = width.min(height) as f64;
-        Self {
-            strength: 0.40,                           // Enhanced from subtle to beautiful
-            threshold: 0.62,                          // Lower threshold for more sparkle
-            radius: (0.008 * min_dim).round() as usize, // Larger radius for soft glow
-            sharpness: 2.5,                           // Balanced sharpness
-            saturation_boost: 0.28,                   // Enhanced color vibrancy
-        }
-    }
 }
 
 /// Glow enhancement post-effect

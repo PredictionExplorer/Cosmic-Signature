@@ -37,16 +37,6 @@ impl MicroContrastConfig {
             luminance_weight: 0.7,    // Focus on luminance contrast
         }
     }
-
-    /// Create configuration for standard mode (subtle clarity)
-    pub fn standard_mode() -> Self {
-        Self {
-            strength: 0.18,           // Subtle clarity boost
-            radius: 2,
-            edge_threshold: 0.15,     // More edge protection
-            luminance_weight: 0.6,
-        }
-    }
 }
 
 /// Micro-contrast enhancement post-effect

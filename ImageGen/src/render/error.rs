@@ -8,6 +8,9 @@ pub enum RenderError {
     #[error("Effect chain failed: {0}")]
     EffectChain(String),
 
+    #[error("Effect error: {0}")]
+    EffectError(String),
+
     #[error("Video encoding failed")]
     VideoEncoding(#[from] std::io::Error),
 

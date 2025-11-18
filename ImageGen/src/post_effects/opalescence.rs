@@ -45,19 +45,6 @@ impl OpalescenceConfig {
             pearl_sheen: 0.32,                 // Luminous pearl highlights
         }
     }
-
-    /// Create configuration for standard mode (beautiful subtle shimmer)
-    pub fn standard_mode(width: usize, height: usize) -> Self {
-        let base_scale = (width as f64 * height as f64).sqrt();
-        Self {
-            strength: 0.14,                    // Enhanced from very subtle
-            scale: base_scale * 0.010,         // Refined pattern scale
-            layers: 3,                         // More layers for richer effect
-            chromatic_shift: 0.24,             // Enhanced rainbow effect
-            angle_sensitivity: 0.85,           // Increased angle dependency
-            pearl_sheen: 0.16,                 // Enhanced pearl sheen
-        }
-    }
 }
 
 /// Opalescence post-effect

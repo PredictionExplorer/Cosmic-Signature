@@ -329,7 +329,7 @@ fn build_effect_config_from_resolved(
     use crate::oklab::GamutMapMode;
     use crate::post_effects::{
         AetherConfig, AtmosphericDepthConfig, ChampleveConfig, ColorGradeParams,
-        EdgeLuminanceConfig, FineTextureConfig, GlowEnhancementConfig,
+        CrepuscularRaysConfig, EdgeLuminanceConfig, FineTextureConfig, GlowEnhancementConfig,
         MicroContrastConfig, OpalescenceConfig,
         fine_texture::TextureType,
     };
@@ -484,14 +484,26 @@ fn build_effect_config_from_resolved(
             darkening: resolved.atmospheric_darkening,
             density_radius: 3, // Fixed
         },
+        crepuscular_rays_enabled: resolved.enable_crepuscular_rays,
+        crepuscular_rays_config: CrepuscularRaysConfig {
+            strength: resolved.crepuscular_rays_strength,
+            density: resolved.crepuscular_rays_density,
+            decay: resolved.crepuscular_rays_decay,
+            weight: resolved.crepuscular_rays_weight,
+            exposure: resolved.crepuscular_rays_exposure,
+            light_position: (0.5, 0.5), // Fixed to center for orbits
+            ray_color: (1.0, 0.95, 0.8), // Fixed warm golden color
+        },
         fine_texture_enabled: resolved.enable_fine_texture,
         fine_texture_config: FineTextureConfig {
-            texture_type: TextureType::Canvas, // Fixed
+            texture_type: if resolved.fine_texture_type == 1 { TextureType::Impasto } else { TextureType::Canvas },
             strength: resolved.fine_texture_strength,
             scale: fine_texture_scale_abs,
             contrast: resolved.fine_texture_contrast,
             anisotropy: 0.3, // Fixed
             angle: 0.0, // Fixed
+            light_angle: resolved.fine_texture_light_angle,
+            specular_strength: resolved.fine_texture_specular,
         },
     }
 }

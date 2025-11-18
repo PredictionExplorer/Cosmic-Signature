@@ -76,6 +76,7 @@ impl<'a> EffectRandomizer<'a> {
             
             // Somewhat less in Amazing images (35%)
             "fine_texture" => 0.35,
+            "crepuscular_rays" => 0.30,
             
             // Balanced but slightly favoring off (45%)
             "chromatic_bloom" => 0.45,
@@ -368,4 +369,3 @@ mod tests {
         }
     }
 }
-

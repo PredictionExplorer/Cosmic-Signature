@@ -507,19 +507,68 @@ pub const ATMOSPHERIC_FOG_COLOR_B: FloatParamDescriptor = FloatParamDescriptor {
     description: "Atmospheric fog color blue component (dark tones)",
 };
 
+// ==================== CREPUSCULAR RAYS (GOD RAYS) ====================
+
+pub const CREPUSCULAR_RAYS_STRENGTH: FloatParamDescriptor = FloatParamDescriptor {
+    name: "crepuscular_rays_strength",
+    min: 0.0,
+    max: 1.0,
+    gallery_min: 0.4,
+    gallery_max: 0.8,
+    description: "Strength of God Rays",
+};
+
+pub const CREPUSCULAR_RAYS_DENSITY: FloatParamDescriptor = FloatParamDescriptor {
+    name: "crepuscular_rays_density",
+    min: 0.5,
+    max: 1.0,
+    gallery_min: 0.8,
+    gallery_max: 1.0,
+    description: "Sampling density for rays",
+};
+
+pub const CREPUSCULAR_RAYS_DECAY: FloatParamDescriptor = FloatParamDescriptor {
+    name: "crepuscular_rays_decay",
+    min: 0.90,
+    max: 0.99,
+    gallery_min: 0.95,
+    gallery_max: 0.98,
+    description: "Light decay rate",
+};
+
+pub const CREPUSCULAR_RAYS_WEIGHT: FloatParamDescriptor = FloatParamDescriptor {
+    name: "crepuscular_rays_weight",
+    min: 0.1,
+    max: 0.8,
+    gallery_min: 0.3,
+    gallery_max: 0.6,
+    description: "Light sample weight",
+};
+
+pub const CREPUSCULAR_RAYS_EXPOSURE: FloatParamDescriptor = FloatParamDescriptor {
+    name: "crepuscular_rays_exposure",
+    min: 0.1,
+    max: 0.5,
+    gallery_min: 0.15,
+    gallery_max: 0.3,
+    description: "Threshold for light emission",
+};
+
+// ==================== FINE TEXTURE & IMPASTO ====================
+
 pub const FINE_TEXTURE_STRENGTH: FloatParamDescriptor = FloatParamDescriptor {
     name: "fine_texture_strength",
-    min: 0.0,    // Already at natural minimum
-    max: 0.50,   // Ultra-exploratory: extreme canvas texture
-    gallery_min: 0.06,
-    gallery_max: 0.18,
+    min: 0.0,
+    max: 0.50,
+    gallery_min: 0.15,
+    gallery_max: 0.35,
     description: "Canvas/surface texture strength",
 };
 
 pub const FINE_TEXTURE_SCALE: FloatParamDescriptor = FloatParamDescriptor {
     name: "fine_texture_scale",
-    min: 0.0005, // Widened from 0.0008 - ultra-fine grain
-    max: 0.0040, // Widened from 0.0028 - coarse texture
+    min: 0.0005,
+    max: 0.0040,
     gallery_min: 0.0012,
     gallery_max: 0.0022,
     description: "Texture feature scale",
@@ -527,11 +576,38 @@ pub const FINE_TEXTURE_SCALE: FloatParamDescriptor = FloatParamDescriptor {
 
 pub const FINE_TEXTURE_CONTRAST: FloatParamDescriptor = FloatParamDescriptor {
     name: "fine_texture_contrast",
-    min: 0.08,   // Widened from 0.15 - subtle texture
-    max: 0.70,   // Widened from 0.50 - harsh texture
+    min: 0.08,
+    max: 0.70,
     gallery_min: 0.25,
     gallery_max: 0.42,
     description: "Texture contrast intensity",
+};
+
+pub const FINE_TEXTURE_SPECULAR: FloatParamDescriptor = FloatParamDescriptor {
+    name: "fine_texture_specular",
+    min: 0.0,
+    max: 0.5,
+    gallery_min: 0.1,
+    gallery_max: 0.25,
+    description: "Specular highlight strength (Impasto)",
+};
+
+pub const FINE_TEXTURE_LIGHT_ANGLE: FloatParamDescriptor = FloatParamDescriptor {
+    name: "fine_texture_light_angle",
+    min: 0.0,
+    max: 360.0,
+    gallery_min: 120.0,
+    gallery_max: 150.0,
+    description: "Light direction for 3D texture",
+};
+
+pub const FINE_TEXTURE_TYPE: IntParamDescriptor = IntParamDescriptor {
+    name: "fine_texture_type",
+    min: 0,
+    max: 1,
+    gallery_min: 0,
+    gallery_max: 1,
+    description: "Texture type (0=Canvas, 1=Impasto)",
 };
 
 // ==================== HDR & EXPOSURE ====================
@@ -596,4 +672,3 @@ pub const NEBULA_BASE_FREQUENCY: FloatParamDescriptor = FloatParamDescriptor {
     gallery_max: 0.0020,
     description: "Nebula noise base frequency",
 };
-

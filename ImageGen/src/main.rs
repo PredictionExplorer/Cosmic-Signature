@@ -140,10 +140,21 @@ fn build_randomizable_config(args: &EffectArgs) -> render::randomizable_config::
         atmospheric_fog_color_g: args.param_atmospheric_fog_color_g,
         atmospheric_fog_color_b: args.param_atmospheric_fog_color_b,
 
+        // Crepuscular Rays
+        enable_crepuscular_rays: if args.disable_all_effects { Some(false) } else { None },
+        crepuscular_rays_strength: None,
+        crepuscular_rays_density: None,
+        crepuscular_rays_decay: None,
+        crepuscular_rays_weight: None,
+        crepuscular_rays_exposure: None,
+
         // Fine texture
         fine_texture_strength: args.param_fine_texture_strength,
         fine_texture_scale: args.param_fine_texture_scale,
         fine_texture_contrast: args.param_fine_texture_contrast,
+        fine_texture_specular: None,
+        fine_texture_light_angle: None,
+        fine_texture_type: None,
 
         // HDR
         hdr_scale: args.param_hdr_scale,

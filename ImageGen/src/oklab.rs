@@ -11,12 +11,8 @@ use rayon::prelude::*;
 /// Configuration for gamut mapping strategies when converting from OKLab back to sRGB.
 #[derive(Debug, Clone, Copy)]
 pub enum GamutMapMode {
-    /// Simple clamping of out-of-gamut values (fast but can cause discontinuities)
-    Clamp,
     /// Preserve hue by scaling towards gray (maintains perceptual hue)
     PreserveHue,
-    /// Soft clipping using smooth transitions (reduces harsh edges)
-    SoftClip,
 }
 
 #[allow(clippy::derivable_impls)] // PreserveHue as default is intentional and clear
@@ -120,11 +116,6 @@ impl GamutMapMode {
     /// and perceptual quality.
     pub fn map_to_gamut(&self, r: f64, g: f64, b: f64) -> (f64, f64, f64) {
         match self {
-            GamutMapMode::Clamp => {
-                // Simple clamping - fast but can cause color shifts
-                (r.clamp(0.0, 1.0), g.clamp(0.0, 1.0), b.clamp(0.0, 1.0))
-            }
-
             GamutMapMode::PreserveHue => {
                 // Check if already in gamut
                 let max_val = r.max(g).max(b);
@@ -170,29 +161,6 @@ impl GamutMapMode {
                     lum_clamped + (g - lum) * low,
                     lum_clamped + (b - lum) * low,
                 )
-            }
-
-            GamutMapMode::SoftClip => {
-                // Smooth S-curve mapping for values near boundaries
-                fn soft_clip_channel(x: f64) -> f64 {
-                    if x <= 0.0 {
-                        0.0
-                    } else if x >= 1.0 {
-                        1.0
-                    } else if x < 0.05 {
-                        // Smooth transition near 0
-                        let t = x / 0.05;
-                        x * (2.0 - t)
-                    } else if x > 0.95 {
-                        // Smooth transition near 1
-                        let t = (x - 0.95) / 0.05;
-                        0.95 + 0.05 * t * (2.0 - t)
-                    } else {
-                        x
-                    }
-                }
-
-                (soft_clip_channel(r), soft_clip_channel(g), soft_clip_channel(b))
             }
         }
     }

@@ -13,7 +13,8 @@ use crate::post_effects::{
     GradientMap, GradientMapConfig, MicroContrast, MicroContrastConfig,
     PerceptualBlur, PerceptualBlurConfig, PostEffect,
     PostEffectChain, aether::AetherConfig, apply_aether_weave, apply_champleve_iridescence,
-    AtmosphericDepth, AtmosphericDepthConfig, EdgeLuminance, EdgeLuminanceConfig,
+    AtmosphericDepth, AtmosphericDepthConfig, CrepuscularRays, CrepuscularRaysConfig,
+    EdgeLuminance, EdgeLuminanceConfig,
     FineTexture, FineTextureConfig, Opalescence, OpalescenceConfig,
 };
 use crate::spectrum::{NUM_BINS, spd_to_rgba};
@@ -68,6 +69,8 @@ pub struct EffectConfig {
     // Atmospheric and surface effects
     pub atmospheric_depth_enabled: bool,
     pub atmospheric_depth_config: AtmosphericDepthConfig,
+    pub crepuscular_rays_enabled: bool,
+    pub crepuscular_rays_config: CrepuscularRaysConfig,
     pub fine_texture_enabled: bool,
     pub fine_texture_config: FineTextureConfig,
 }
@@ -201,12 +204,17 @@ impl EffectChainBuilder {
         // ===== PHASE 7: ATMOSPHERIC & SURFACE =====
         // Final spatial and material qualities
         
-        // 7a. Atmospheric depth (spatial perspective + fog)
+        // 7a. Crepuscular Rays (God Rays) - Light scattering through volume
+        if config.crepuscular_rays_enabled {
+            chain.add(Box::new(CrepuscularRays::new(config.crepuscular_rays_config.clone())));
+        }
+
+        // 7b. Atmospheric depth (spatial perspective + fog)
         if config.atmospheric_depth_enabled {
             chain.add(Box::new(AtmosphericDepth::new(config.atmospheric_depth_config.clone())));
         }
 
-        // 7b. Fine texture (surface quality: canvas, linen, etc. - preserves all prior work)
+        // 7c. Fine texture (surface quality: canvas, linen, etc. - preserves all prior work)
         if config.fine_texture_enabled {
             chain.add(Box::new(FineTexture::new(config.fine_texture_config.clone())));
         }

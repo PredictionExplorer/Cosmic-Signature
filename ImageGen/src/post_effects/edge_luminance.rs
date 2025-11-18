@@ -40,17 +40,6 @@ impl EdgeLuminanceConfig {
             min_luminance: 0.25,
         }
     }
-
-    /// Create configuration for standard mode (subtle enhancement)
-    pub fn standard_mode() -> Self {
-        Self {
-            strength: 0.12,
-            threshold: 0.20,
-            brightness_boost: 0.20,
-            bright_edges_only: true,
-            min_luminance: 0.30,
-        }
-    }
 }
 
 /// Edge luminance enhancement post-effect

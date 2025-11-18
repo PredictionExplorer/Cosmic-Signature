@@ -13,7 +13,7 @@ from pathlib import Path
 from datetime import datetime
 
 # Number of concurrent processes to run
-MAX_CONCURRENT = 4
+MAX_CONCURRENT = 1
 
 
 def generate_random_seed() -> str:
@@ -48,10 +48,10 @@ async def run_simulation(seed: str, is_special: bool, job_id: int) -> bool:
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
         )
-        
+
         stdout, stderr = await process.communicate()
         success = process.returncode == 0
-        
+
         elapsed = (datetime.now() - start_time).total_seconds()
 
         if success:
@@ -73,23 +73,23 @@ async def worker(semaphore: asyncio.Semaphore, stats: dict):
     """Worker that continuously runs simulations."""
     job_id = stats['worker_count']
     stats['worker_count'] += 1
-    
+
     while stats['running']:
         # Generate random seed and mode
         seed = generate_random_seed()
         is_special = random.choice([True, False])
         is_special = False  # Override to standard mode
-        
+
         async with semaphore:
             if not stats['running']:
                 break
-                
+
             stats['count'] += 1
             current_job = stats['count']
-            
+
             # Run simulation
             success = await run_simulation(seed, is_special, job_id)
-            
+
             if success:
                 stats['successful'] += 1
             else:
@@ -135,22 +135,22 @@ async def main_async():
 
     try:
         # Create worker tasks and status reporter
-        workers = [asyncio.create_task(worker(semaphore, stats)) 
+        workers = [asyncio.create_task(worker(semaphore, stats))
                    for _ in range(MAX_CONCURRENT)]
         reporter = asyncio.create_task(status_reporter(stats))
-        
+
         # Wait for all workers (runs indefinitely until interrupted)
         await asyncio.gather(*workers, reporter)
-        
+
     except KeyboardInterrupt:
         print("\n\n" + "="*60)
         print("Stopping workers gracefully...")
         print("="*60)
         stats['running'] = False
-        
+
         # Give workers a moment to finish current jobs
         await asyncio.sleep(1)
-        
+
         print("\n" + "="*60)
         print("Stopped by user")
         print("="*60)
