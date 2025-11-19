@@ -554,6 +554,109 @@ pub const CREPUSCULAR_RAYS_EXPOSURE: FloatParamDescriptor = FloatParamDescriptor
     description: "Threshold for light emission",
 };
 
+// ==================== VOLUMETRIC OCCLUSION (SELF-SHADOWING) ====================
+
+pub const VOLUMETRIC_OCCLUSION_STRENGTH: FloatParamDescriptor = FloatParamDescriptor {
+    name: "volumetric_occlusion_strength",
+    min: 0.1,
+    max: 0.8,
+    gallery_min: 0.3,
+    gallery_max: 0.6,
+    description: "Strength of volumetric shadows",
+};
+
+pub const VOLUMETRIC_OCCLUSION_RADIUS: IntParamDescriptor = IntParamDescriptor {
+    name: "volumetric_occlusion_radius",
+    min: 2,
+    max: 16,
+    gallery_min: 4,
+    gallery_max: 8,
+    description: "Radius (steps) of volumetric shadow raymarching",
+};
+
+pub const VOLUMETRIC_OCCLUSION_LIGHT_ANGLE: FloatParamDescriptor = FloatParamDescriptor {
+    name: "volumetric_occlusion_light_angle",
+    min: 0.0,
+    max: 360.0,
+    gallery_min: 120.0,
+    gallery_max: 150.0,
+    description: "Light direction for shadows",
+};
+
+pub const VOLUMETRIC_OCCLUSION_DENSITY_SCALE: FloatParamDescriptor = FloatParamDescriptor {
+    name: "volumetric_occlusion_density_scale",
+    min: 0.5,
+    max: 2.0,
+    gallery_min: 0.8,
+    gallery_max: 1.2,
+    description: "Shadow resolution/density",
+};
+
+pub const VOLUMETRIC_OCCLUSION_DECAY: FloatParamDescriptor = FloatParamDescriptor {
+    name: "volumetric_occlusion_decay",
+    min: 0.8,
+    max: 0.99,
+    gallery_min: 0.92,
+    gallery_max: 0.97,
+    description: "Shadow falloff rate",
+};
+
+pub const VOLUMETRIC_OCCLUSION_THRESHOLD: FloatParamDescriptor = FloatParamDescriptor {
+    name: "volumetric_occlusion_threshold",
+    min: 0.05,
+    max: 0.3,
+    gallery_min: 0.08,
+    gallery_max: 0.15,
+    description: "Luminance threshold for casting shadows",
+};
+
+// ==================== REFRACTIVE CAUSTICS ====================
+
+pub const REFRACTIVE_CAUSTICS_STRENGTH: FloatParamDescriptor = FloatParamDescriptor {
+    name: "refractive_caustics_strength",
+    min: 0.1,
+    max: 1.0,
+    gallery_min: 0.4,
+    gallery_max: 0.7,
+    description: "Strength of refractive distortion",
+};
+
+pub const REFRACTIVE_CAUSTICS_IOR: FloatParamDescriptor = FloatParamDescriptor {
+    name: "refractive_caustics_ior",
+    min: 0.5,
+    max: 2.0,
+    gallery_min: 0.8,
+    gallery_max: 1.2,
+    description: "Index of Refraction scale",
+};
+
+pub const REFRACTIVE_CAUSTICS_DISPERSION: FloatParamDescriptor = FloatParamDescriptor {
+    name: "refractive_caustics_dispersion",
+    min: 0.001,
+    max: 0.01,
+    gallery_min: 0.003,
+    gallery_max: 0.006,
+    description: "Prismatic shift in refraction (chromatic aberration)",
+};
+
+pub const REFRACTIVE_CAUSTICS_FOCUS: FloatParamDescriptor = FloatParamDescriptor {
+    name: "refractive_caustics_focus",
+    min: 5.0,
+    max: 30.0,
+    gallery_min: 12.0,
+    gallery_max: 18.0,
+    description: "Sharpness of caustic highlights",
+};
+
+pub const REFRACTIVE_CAUSTICS_THRESHOLD: FloatParamDescriptor = FloatParamDescriptor {
+    name: "refractive_caustics_threshold",
+    min: 0.05,
+    max: 0.3,
+    gallery_min: 0.08,
+    gallery_max: 0.15,
+    description: "Luminance threshold for refraction",
+};
+
 // ==================== FINE TEXTURE & IMPASTO ====================
 
 pub const FINE_TEXTURE_STRENGTH: FloatParamDescriptor = FloatParamDescriptor {

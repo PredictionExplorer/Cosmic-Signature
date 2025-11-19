@@ -9,13 +9,13 @@ use super::drawing::parallel_blur_2d_rgba;
 use super::error::{RenderError, Result};
 use crate::post_effects::{
     AutoExposure, ChampleveConfig, ChromaticBloom, ChromaticBloomConfig, CinematicColorGrade,
-    ColorGradeParams, DogBloom, GaussianBloom, GlowEnhancement, GlowEnhancementConfig,
-    GradientMap, GradientMapConfig, MicroContrast, MicroContrastConfig,
-    PerceptualBlur, PerceptualBlurConfig, PostEffect,
-    PostEffectChain, aether::AetherConfig, apply_aether_weave, apply_champleve_iridescence,
-    AtmosphericDepth, AtmosphericDepthConfig, CrepuscularRays, CrepuscularRaysConfig,
-    EdgeLuminance, EdgeLuminanceConfig,
-    FineTexture, FineTextureConfig, Opalescence, OpalescenceConfig,
+    ColorGradeParams, CrepuscularRays, CrepuscularRaysConfig, DogBloom, GaussianBloom,
+    GlowEnhancement, GlowEnhancementConfig, GradientMap, GradientMapConfig, MicroContrast,
+    MicroContrastConfig, PerceptualBlur, PerceptualBlurConfig, PostEffect, PostEffectChain,
+    aether::AetherConfig, apply_aether_weave, apply_champleve_iridescence, AtmosphericDepth,
+    AtmosphericDepthConfig, RefractiveCaustics, RefractiveCausticsConfig, EdgeLuminance, EdgeLuminanceConfig,
+    FineTexture, FineTextureConfig, Opalescence, OpalescenceConfig, VolumetricOcclusion,
+    VolumetricOcclusionConfig,
 };
 use crate::spectrum::{NUM_BINS, spd_to_rgba};
 use rayon::prelude::*;
@@ -71,6 +71,10 @@ pub struct EffectConfig {
     pub atmospheric_depth_config: AtmosphericDepthConfig,
     pub crepuscular_rays_enabled: bool,
     pub crepuscular_rays_config: CrepuscularRaysConfig,
+    pub volumetric_occlusion_enabled: bool,
+    pub volumetric_occlusion_config: VolumetricOcclusionConfig,
+    pub refractive_caustics_enabled: bool,
+    pub refractive_caustics_config: RefractiveCausticsConfig,
     pub fine_texture_enabled: bool,
     pub fine_texture_config: FineTextureConfig,
 }
@@ -209,12 +213,22 @@ impl EffectChainBuilder {
             chain.add(Box::new(CrepuscularRays::new(config.crepuscular_rays_config.clone())));
         }
 
-        // 7b. Atmospheric depth (spatial perspective + fog)
+        // 7b. Volumetric Occlusion (Self-Shadowing)
+        if config.volumetric_occlusion_enabled {
+            chain.add(Box::new(VolumetricOcclusion::new(config.volumetric_occlusion_config.clone())));
+        }
+
+        // 7c. Refractive Caustics (Lensing)
+        if config.refractive_caustics_enabled {
+            chain.add(Box::new(RefractiveCaustics::new(config.refractive_caustics_config.clone())));
+        }
+
+        // 7d. Atmospheric depth (spatial perspective + fog)
         if config.atmospheric_depth_enabled {
             chain.add(Box::new(AtmosphericDepth::new(config.atmospheric_depth_config.clone())));
         }
 
-        // 7c. Fine texture (surface quality: canvas, linen, etc. - preserves all prior work)
+        // 7e. Fine texture (surface quality: canvas, linen, etc. - preserves all prior work)
         if config.fine_texture_enabled {
             chain.add(Box::new(FineTexture::new(config.fine_texture_config.clone())));
         }

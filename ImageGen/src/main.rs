@@ -148,6 +148,23 @@ fn build_randomizable_config(args: &EffectArgs) -> render::randomizable_config::
         crepuscular_rays_weight: None,
         crepuscular_rays_exposure: None,
 
+        // Volumetric Occlusion
+        enable_volumetric_occlusion: if args.disable_all_effects { Some(false) } else { None },
+        volumetric_occlusion_strength: None,
+        volumetric_occlusion_radius: None,
+        volumetric_occlusion_light_angle: None,
+        volumetric_occlusion_density_scale: None,
+        volumetric_occlusion_decay: None,
+        volumetric_occlusion_threshold: None,
+
+        // Refractive Caustics
+        enable_refractive_caustics: if args.disable_all_effects { Some(false) } else { None },
+        refractive_caustics_strength: None,
+        refractive_caustics_ior: None,
+        refractive_caustics_dispersion: None,
+        refractive_caustics_focus: None,
+        refractive_caustics_threshold: None,
+
         // Fine texture
         fine_texture_strength: args.param_fine_texture_strength,
         fine_texture_scale: args.param_fine_texture_scale,

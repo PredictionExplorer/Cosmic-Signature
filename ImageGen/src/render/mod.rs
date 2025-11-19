@@ -328,9 +328,9 @@ fn build_effect_config_from_resolved(
 ) -> EffectConfig {
     use crate::oklab::GamutMapMode;
     use crate::post_effects::{
-        AetherConfig, AtmosphericDepthConfig, ChampleveConfig, ColorGradeParams,
+        AetherConfig, AtmosphericDepthConfig, RefractiveCausticsConfig, ChampleveConfig, ColorGradeParams,
         CrepuscularRaysConfig, EdgeLuminanceConfig, FineTextureConfig, GlowEnhancementConfig,
-        MicroContrastConfig, OpalescenceConfig,
+        MicroContrastConfig, OpalescenceConfig, VolumetricOcclusionConfig,
         fine_texture::TextureType,
     };
     
@@ -493,6 +493,26 @@ fn build_effect_config_from_resolved(
             exposure: resolved.crepuscular_rays_exposure,
             light_position: (0.5, 0.5), // Fixed to center for orbits
             ray_color: (1.0, 0.95, 0.8), // Fixed warm golden color
+        },
+        volumetric_occlusion_enabled: resolved.enable_volumetric_occlusion,
+        volumetric_occlusion_config: VolumetricOcclusionConfig {
+            strength: resolved.volumetric_occlusion_strength,
+            steps: resolved.volumetric_occlusion_radius,
+            density_scale: resolved.volumetric_occlusion_density_scale,
+            light_angle: resolved.volumetric_occlusion_light_angle,
+            shadow_color: (0.0, 0.0, 0.05),
+            decay: resolved.volumetric_occlusion_decay,
+            shadow_threshold: resolved.volumetric_occlusion_threshold,
+        },
+        refractive_caustics_enabled: resolved.enable_refractive_caustics,
+        refractive_caustics_config: RefractiveCausticsConfig {
+            strength: resolved.refractive_caustics_strength,
+            scale: resolved.refractive_caustics_ior,
+            chromatic_aberration: resolved.refractive_caustics_dispersion,
+            brightness: 1.2,
+            threshold: resolved.refractive_caustics_threshold,
+            focus_sharpness: resolved.refractive_caustics_focus,
+            light_angle: 45.0,
         },
         fine_texture_enabled: resolved.enable_fine_texture,
         fine_texture_config: FineTextureConfig {

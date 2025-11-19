@@ -28,6 +28,8 @@ pub struct RandomizableEffectConfig {
     pub enable_edge_luminance: Option<bool>,
     pub enable_atmospheric_depth: Option<bool>,
     pub enable_crepuscular_rays: Option<bool>,
+    pub enable_volumetric_occlusion: Option<bool>,
+    pub enable_refractive_caustics: Option<bool>,
     pub enable_fine_texture: Option<bool>,
 
     // Bloom & Glow parameters
@@ -104,6 +106,21 @@ pub struct RandomizableEffectConfig {
     pub crepuscular_rays_decay: Option<f64>,
     pub crepuscular_rays_weight: Option<f64>,
     pub crepuscular_rays_exposure: Option<f64>,
+
+    // Volumetric Occlusion (Self-Shadowing)
+    pub volumetric_occlusion_strength: Option<f64>,
+    pub volumetric_occlusion_radius: Option<usize>,
+    pub volumetric_occlusion_light_angle: Option<f64>,
+    pub volumetric_occlusion_density_scale: Option<f64>,
+    pub volumetric_occlusion_decay: Option<f64>,
+    pub volumetric_occlusion_threshold: Option<f64>,
+
+    // Refractive Caustics
+    pub refractive_caustics_strength: Option<f64>,
+    pub refractive_caustics_ior: Option<f64>,
+    pub refractive_caustics_dispersion: Option<f64>,
+    pub refractive_caustics_focus: Option<f64>,
+    pub refractive_caustics_threshold: Option<f64>,
 
     // Fine Texture / Impasto
     pub fine_texture_strength: Option<f64>,
@@ -210,6 +227,18 @@ impl RandomizableEffectConfig {
                 &mut randomizer,
                 &mut log,
             ),
+            enable_volumetric_occlusion: self.resolve_enable(
+                "volumetric_occlusion",
+                self.enable_volumetric_occlusion,
+                &mut randomizer,
+                &mut log,
+            ),
+            enable_refractive_caustics: self.resolve_enable(
+                "refractive_caustics",
+                self.enable_refractive_caustics,
+                &mut randomizer,
+                &mut log,
+            ),
             enable_fine_texture: self.resolve_enable(
                 "fine_texture",
                 self.enable_fine_texture,
@@ -272,6 +301,19 @@ impl RandomizableEffectConfig {
             crepuscular_rays_decay: self.resolve_float("crepuscular_rays_decay", self.crepuscular_rays_decay, &pd::CREPUSCULAR_RAYS_DECAY, &mut randomizer, &mut log),
             crepuscular_rays_weight: self.resolve_float("crepuscular_rays_weight", self.crepuscular_rays_weight, &pd::CREPUSCULAR_RAYS_WEIGHT, &mut randomizer, &mut log),
             crepuscular_rays_exposure: self.resolve_float("crepuscular_rays_exposure", self.crepuscular_rays_exposure, &pd::CREPUSCULAR_RAYS_EXPOSURE, &mut randomizer, &mut log),
+
+            volumetric_occlusion_strength: self.resolve_float("volumetric_occlusion_strength", self.volumetric_occlusion_strength, &pd::VOLUMETRIC_OCCLUSION_STRENGTH, &mut randomizer, &mut log),
+            volumetric_occlusion_radius: self.resolve_int("volumetric_occlusion_radius", self.volumetric_occlusion_radius, &pd::VOLUMETRIC_OCCLUSION_RADIUS, &mut randomizer, &mut log),
+            volumetric_occlusion_light_angle: self.resolve_float("volumetric_occlusion_light_angle", self.volumetric_occlusion_light_angle, &pd::VOLUMETRIC_OCCLUSION_LIGHT_ANGLE, &mut randomizer, &mut log),
+            volumetric_occlusion_density_scale: self.resolve_float("volumetric_occlusion_density_scale", self.volumetric_occlusion_density_scale, &pd::VOLUMETRIC_OCCLUSION_DENSITY_SCALE, &mut randomizer, &mut log),
+            volumetric_occlusion_decay: self.resolve_float("volumetric_occlusion_decay", self.volumetric_occlusion_decay, &pd::VOLUMETRIC_OCCLUSION_DECAY, &mut randomizer, &mut log),
+            volumetric_occlusion_threshold: self.resolve_float("volumetric_occlusion_threshold", self.volumetric_occlusion_threshold, &pd::VOLUMETRIC_OCCLUSION_THRESHOLD, &mut randomizer, &mut log),
+
+            refractive_caustics_strength: self.resolve_float("refractive_caustics_strength", self.refractive_caustics_strength, &pd::REFRACTIVE_CAUSTICS_STRENGTH, &mut randomizer, &mut log),
+            refractive_caustics_ior: self.resolve_float("refractive_caustics_ior", self.refractive_caustics_ior, &pd::REFRACTIVE_CAUSTICS_IOR, &mut randomizer, &mut log),
+            refractive_caustics_dispersion: self.resolve_float("refractive_caustics_dispersion", self.refractive_caustics_dispersion, &pd::REFRACTIVE_CAUSTICS_DISPERSION, &mut randomizer, &mut log),
+            refractive_caustics_focus: self.resolve_float("refractive_caustics_focus", self.refractive_caustics_focus, &pd::REFRACTIVE_CAUSTICS_FOCUS, &mut randomizer, &mut log),
+            refractive_caustics_threshold: self.resolve_float("refractive_caustics_threshold", self.refractive_caustics_threshold, &pd::REFRACTIVE_CAUSTICS_THRESHOLD, &mut randomizer, &mut log),
 
             fine_texture_strength: self.resolve_float("fine_texture_strength", self.fine_texture_strength, &pd::FINE_TEXTURE_STRENGTH, &mut randomizer, &mut log),
             fine_texture_scale: self.resolve_float("fine_texture_scale", self.fine_texture_scale, &pd::FINE_TEXTURE_SCALE, &mut randomizer, &mut log),
@@ -478,6 +520,8 @@ pub struct ResolvedEffectConfig {
     pub enable_edge_luminance: bool,
     pub enable_atmospheric_depth: bool,
     pub enable_crepuscular_rays: bool,
+    pub enable_volumetric_occlusion: bool,
+    pub enable_refractive_caustics: bool,
     pub enable_fine_texture: bool,
 
     // Parameters
@@ -534,6 +578,17 @@ pub struct ResolvedEffectConfig {
     pub crepuscular_rays_decay: f64,
     pub crepuscular_rays_weight: f64,
     pub crepuscular_rays_exposure: f64,
+    pub volumetric_occlusion_strength: f64,
+    pub volumetric_occlusion_radius: usize,
+    pub volumetric_occlusion_light_angle: f64,
+    pub volumetric_occlusion_density_scale: f64,
+    pub volumetric_occlusion_decay: f64,
+    pub volumetric_occlusion_threshold: f64,
+    pub refractive_caustics_strength: f64,
+    pub refractive_caustics_ior: f64,
+    pub refractive_caustics_dispersion: f64,
+    pub refractive_caustics_focus: f64,
+    pub refractive_caustics_threshold: f64,
     pub fine_texture_strength: f64,
     pub fine_texture_scale: f64,
     pub fine_texture_contrast: f64,

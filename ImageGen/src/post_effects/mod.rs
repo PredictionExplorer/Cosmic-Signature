@@ -133,8 +133,10 @@ pub mod micro_contrast;
 pub mod nebula_clouds;
 pub mod opalescence;
 pub mod perceptual_blur;
+pub mod refractive_caustics;
 pub mod temporal_smoothing;
 pub mod utils;
+pub mod volumetric_occlusion;
 
 // Export all public types
 pub use aether::{AetherConfig, apply_aether_weave};
@@ -154,8 +156,10 @@ pub use micro_contrast::{MicroContrast, MicroContrastConfig};
 pub use nebula_clouds::{NebulaClouds, NebulaCloudConfig};
 pub use opalescence::{Opalescence, OpalescenceConfig};
 pub use perceptual_blur::{PerceptualBlur, PerceptualBlurConfig};
+pub use refractive_caustics::{RefractiveCaustics, RefractiveCausticsConfig};
 #[allow(unused_imports)] // Temporal smoothing requires special video integration (stateful effect)
 pub use temporal_smoothing::{TemporalSmoothing, TemporalSmoothingConfig};
+pub use volumetric_occlusion::{VolumetricOcclusion, VolumetricOcclusionConfig};
 
 #[cfg(test)]
 mod tests {

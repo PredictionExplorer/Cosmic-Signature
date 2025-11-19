@@ -69,10 +69,12 @@ impl<'a> EffectRandomizer<'a> {
             // Mostly disabled in Amazing images (15%)
             "opalescence" => 0.15,
             "aether" => 0.15,
+            "refractive_caustics" => 0.15,
             
             // Frequently disabled in Amazing images (25%)
             "atmospheric_depth" => 0.25,
             "gradient_map" => 0.25,
+            "volumetric_occlusion" => 0.25,
             
             // Somewhat less in Amazing images (35%)
             "fine_texture" => 0.35,
