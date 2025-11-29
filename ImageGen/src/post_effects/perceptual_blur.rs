@@ -227,7 +227,7 @@ mod tests {
     #[test]
     fn test_gamut_mapping_applied() {
         let config =
-            PerceptualBlurConfig { radius: 1, strength: 1.0, gamut_mode: GamutMapMode::Clamp };
+            PerceptualBlurConfig { radius: 1, strength: 1.0, gamut_mode: GamutMapMode::PreserveHue };
         let blur = PerceptualBlur::new(config);
 
         // Create input that might produce out-of-gamut colors after blur

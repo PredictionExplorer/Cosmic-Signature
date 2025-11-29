@@ -276,7 +276,7 @@ mod tests {
 
     #[test]
     fn test_buffer_processing() {
-        let config = GlowEnhancementConfig::standard_mode(100, 100);
+        let config = GlowEnhancementConfig::special_mode(100, 100);
         let glow = GlowEnhancement::new(config);
 
         // Create test buffer with gradient

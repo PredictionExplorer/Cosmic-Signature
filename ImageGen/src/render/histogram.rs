@@ -3,60 +3,80 @@
 //! This module provides efficient histogram storage and computation of color statistics
 //! for automatic exposure and color grading.
 //!
-//! Public API methods are provided for library consumers even if not used internally.
-
-#![allow(dead_code)] // Public API methods for library consumers
+//! # Usage
+//!
+//! ```ignore
+//! let mut histogram = HistogramData::with_capacity(pixel_count);
+//! for pixel in frame_pixels {
+//!     histogram.push(pixel.r, pixel.g, pixel.b);
+//! }
+//! let (all_r, all_g, all_b) = histogram.extract_channels();
+//! let levels = compute_black_white_gamma(&mut all_r, &mut all_g, &mut all_b, 0.01, 0.99);
+//! ```
 
 use rayon::prelude::*;
 
-/// Optimized histogram storage with better memory layout
+/// Optimized histogram storage with better memory layout.
+///
+/// Stores RGB samples in an interleaved format for better cache locality
+/// during collection and extraction.
 pub struct HistogramData {
     /// Interleaved RGB data for better cache locality
     data: Vec<[f64; 3]>,
 }
 
+#[allow(dead_code)] // Public API for library consumers
 impl HistogramData {
-    /// Create new histogram storage with given capacity
+    /// Create new histogram storage with given capacity.
+    ///
+    /// Pre-allocating with expected capacity avoids reallocations during collection.
+    #[must_use]
     pub fn with_capacity(capacity: usize) -> Self {
         Self { data: Vec::with_capacity(capacity) }
     }
 
-    /// Add a pixel's RGB values to the histogram
+    /// Add a pixel's RGB values to the histogram.
     #[inline]
     pub fn push(&mut self, r: f64, g: f64, b: f64) {
         self.data.push([r, g, b]);
     }
 
-    /// Get the number of collected samples
+    /// Get the number of collected samples.
     ///
     /// Useful for monitoring histogram collection progress.
+    #[must_use]
     pub fn len(&self) -> usize {
         self.data.len()
     }
     
-    /// Check if the histogram is empty
+    /// Check if the histogram is empty.
     ///
     /// Returns true if no samples have been collected yet.
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.data.is_empty()
     }
 
-    /// Reserve additional capacity to reduce reallocations
+    /// Reserve additional capacity to reduce reallocations.
     ///
     /// Call this if you know approximately how many samples you'll collect.
     pub fn reserve(&mut self, additional: usize) {
         self.data.reserve(additional);
     }
 
-    /// Get raw histogram data for custom analysis
+    /// Get raw histogram data for custom analysis.
     ///
     /// Returns immutable access to the underlying RGB sample data.
+    #[must_use]
     pub fn data(&self) -> &[[f64; 3]] {
         &self.data
     }
     
-    /// Extract channels into separate vectors efficiently
-    /// Returns (all_r, all_g, all_b) for use in black/white computation
+    /// Extract channels into separate vectors efficiently.
+    ///
+    /// Returns (all_r, all_g, all_b) for use in black/white computation.
+    /// Consumes self to avoid unnecessary copying.
+    #[must_use]
     pub fn extract_channels(self) -> (Vec<f64>, Vec<f64>, Vec<f64>) {
         let len = self.data.len();
         let mut all_r = Vec::with_capacity(len);
@@ -71,10 +91,19 @@ impl HistogramData {
         
         (all_r, all_g, all_b)
     }
-
 }
 
-/// Compute black/white points from histogram data
+/// Compute black/white points from histogram data.
+///
+/// This function determines the clipping points for each color channel
+/// based on percentile analysis. It's used to normalize the dynamic range
+/// of rendered frames.
+///
+/// # Returns
+///
+/// A tuple of (black_r, white_r, black_g, white_g, black_b, white_b) representing
+/// the clipping points for each channel.
+#[must_use]
 pub fn compute_black_white_gamma(
     all_r: &mut [f64],
     all_g: &mut [f64],

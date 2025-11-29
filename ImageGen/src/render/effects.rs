@@ -250,6 +250,343 @@ impl EffectChainBuilder {
     }
 }
 
+impl Default for EffectConfig {
+    fn default() -> Self {
+        Self {
+            bloom_mode: "dog".to_string(),
+            blur_radius_px: 15,
+            blur_strength: 10.0,
+            blur_core_brightness: 10.0,
+            dog_config: DogBloomConfig::default(),
+            hdr_mode: "auto".to_string(),
+            perceptual_blur_enabled: true,
+            perceptual_blur_config: None,
+            color_grade_enabled: true,
+            color_grade_params: ColorGradeParams::default(),
+            gradient_map_enabled: false,
+            gradient_map_config: GradientMapConfig::default(),
+            champleve_enabled: true,
+            champleve_config: ChampleveConfig::default(),
+            aether_enabled: false,
+            aether_config: AetherConfig::default(),
+            chromatic_bloom_enabled: true,
+            chromatic_bloom_config: ChromaticBloomConfig::default(),
+            opalescence_enabled: false,
+            opalescence_config: OpalescenceConfig::default(),
+            edge_luminance_enabled: true,
+            edge_luminance_config: EdgeLuminanceConfig::default(),
+            micro_contrast_enabled: true,
+            micro_contrast_config: MicroContrastConfig::default(),
+            glow_enhancement_enabled: true,
+            glow_enhancement_config: GlowEnhancementConfig::default(),
+            atmospheric_depth_enabled: false,
+            atmospheric_depth_config: AtmosphericDepthConfig::default(),
+            crepuscular_rays_enabled: false,
+            crepuscular_rays_config: CrepuscularRaysConfig::default(),
+            volumetric_occlusion_enabled: false,
+            volumetric_occlusion_config: VolumetricOcclusionConfig::default(),
+            refractive_caustics_enabled: false,
+            refractive_caustics_config: RefractiveCausticsConfig::default(),
+            fine_texture_enabled: false,
+            fine_texture_config: FineTextureConfig::default(),
+        }
+    }
+}
+
+#[allow(dead_code)] // Public API for library consumers
+impl EffectConfig {
+    /// Create a new builder for EffectConfig.
+    ///
+    /// The builder pattern allows for fluent, readable configuration construction.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// let config = EffectConfig::builder()
+    ///     .with_dog_bloom(DogBloomConfig::default())
+    ///     .enable_chromatic_bloom(true)
+    ///     .with_color_grade(ColorGradeParams::cinematic())
+    ///     .build();
+    /// ```
+    #[must_use]
+    pub fn builder() -> EffectConfigBuilder {
+        EffectConfigBuilder::new()
+    }
+}
+
+/// Builder for creating `EffectConfig` instances.
+///
+/// This builder provides a fluent API for constructing effect configurations,
+/// making complex configurations more readable and maintainable.
+#[derive(Clone, Debug)]
+#[allow(dead_code)] // Public API for library consumers
+pub struct EffectConfigBuilder {
+    config: EffectConfig,
+}
+
+impl Default for EffectConfigBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[allow(dead_code)] // Public API for library consumers
+impl EffectConfigBuilder {
+    /// Create a new builder with default configuration.
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            config: EffectConfig::default(),
+        }
+    }
+
+    /// Set the bloom mode ("dog", "gaussian", or "none").
+    #[must_use]
+    pub fn bloom_mode(mut self, mode: impl Into<String>) -> Self {
+        self.config.bloom_mode = mode.into();
+        self
+    }
+
+    /// Configure DoG bloom with the given settings.
+    #[must_use]
+    pub fn with_dog_bloom(mut self, config: DogBloomConfig) -> Self {
+        self.config.bloom_mode = "dog".to_string();
+        self.config.dog_config = config;
+        self
+    }
+
+    /// Set blur parameters.
+    #[must_use]
+    pub fn blur(mut self, radius_px: usize, strength: f64, core_brightness: f64) -> Self {
+        self.config.blur_radius_px = radius_px;
+        self.config.blur_strength = strength;
+        self.config.blur_core_brightness = core_brightness;
+        self
+    }
+
+    /// Enable or disable chromatic bloom.
+    #[must_use]
+    pub fn enable_chromatic_bloom(mut self, enabled: bool) -> Self {
+        self.config.chromatic_bloom_enabled = enabled;
+        self
+    }
+
+    /// Configure chromatic bloom with the given settings.
+    #[must_use]
+    pub fn with_chromatic_bloom(mut self, config: ChromaticBloomConfig) -> Self {
+        self.config.chromatic_bloom_enabled = true;
+        self.config.chromatic_bloom_config = config;
+        self
+    }
+
+    /// Configure color grading with the given parameters.
+    #[must_use]
+    pub fn with_color_grade(mut self, params: ColorGradeParams) -> Self {
+        self.config.color_grade_enabled = true;
+        self.config.color_grade_params = params;
+        self
+    }
+
+    /// Enable or disable color grading.
+    #[must_use]
+    pub fn enable_color_grade(mut self, enabled: bool) -> Self {
+        self.config.color_grade_enabled = enabled;
+        self
+    }
+
+    /// Configure perceptual blur with the given settings.
+    #[must_use]
+    pub fn with_perceptual_blur(mut self, config: PerceptualBlurConfig) -> Self {
+        self.config.perceptual_blur_enabled = true;
+        self.config.perceptual_blur_config = Some(config);
+        self
+    }
+
+    /// Enable or disable perceptual blur.
+    #[must_use]
+    pub fn enable_perceptual_blur(mut self, enabled: bool) -> Self {
+        self.config.perceptual_blur_enabled = enabled;
+        self
+    }
+
+    /// Configure champlevé effect with the given settings.
+    #[must_use]
+    pub fn with_champleve(mut self, config: ChampleveConfig) -> Self {
+        self.config.champleve_enabled = true;
+        self.config.champleve_config = config;
+        self
+    }
+
+    /// Enable or disable champlevé effect.
+    #[must_use]
+    pub fn enable_champleve(mut self, enabled: bool) -> Self {
+        self.config.champleve_enabled = enabled;
+        self
+    }
+
+    /// Configure aether effect with the given settings.
+    #[must_use]
+    pub fn with_aether(mut self, config: AetherConfig) -> Self {
+        self.config.aether_enabled = true;
+        self.config.aether_config = config;
+        self
+    }
+
+    /// Enable or disable aether effect.
+    #[must_use]
+    pub fn enable_aether(mut self, enabled: bool) -> Self {
+        self.config.aether_enabled = enabled;
+        self
+    }
+
+    /// Configure opalescence effect with the given settings.
+    #[must_use]
+    pub fn with_opalescence(mut self, config: OpalescenceConfig) -> Self {
+        self.config.opalescence_enabled = true;
+        self.config.opalescence_config = config;
+        self
+    }
+
+    /// Enable or disable opalescence effect.
+    #[must_use]
+    pub fn enable_opalescence(mut self, enabled: bool) -> Self {
+        self.config.opalescence_enabled = enabled;
+        self
+    }
+
+    /// Configure glow enhancement with the given settings.
+    #[must_use]
+    pub fn with_glow(mut self, config: GlowEnhancementConfig) -> Self {
+        self.config.glow_enhancement_enabled = true;
+        self.config.glow_enhancement_config = config;
+        self
+    }
+
+    /// Enable or disable glow enhancement.
+    #[must_use]
+    pub fn enable_glow(mut self, enabled: bool) -> Self {
+        self.config.glow_enhancement_enabled = enabled;
+        self
+    }
+
+    /// Configure edge luminance with the given settings.
+    #[must_use]
+    pub fn with_edge_luminance(mut self, config: EdgeLuminanceConfig) -> Self {
+        self.config.edge_luminance_enabled = true;
+        self.config.edge_luminance_config = config;
+        self
+    }
+
+    /// Enable or disable edge luminance.
+    #[must_use]
+    pub fn enable_edge_luminance(mut self, enabled: bool) -> Self {
+        self.config.edge_luminance_enabled = enabled;
+        self
+    }
+
+    /// Configure micro contrast with the given settings.
+    #[must_use]
+    pub fn with_micro_contrast(mut self, config: MicroContrastConfig) -> Self {
+        self.config.micro_contrast_enabled = true;
+        self.config.micro_contrast_config = config;
+        self
+    }
+
+    /// Enable or disable micro contrast.
+    #[must_use]
+    pub fn enable_micro_contrast(mut self, enabled: bool) -> Self {
+        self.config.micro_contrast_enabled = enabled;
+        self
+    }
+
+    /// Configure gradient mapping with the given settings.
+    #[must_use]
+    pub fn with_gradient_map(mut self, config: GradientMapConfig) -> Self {
+        self.config.gradient_map_enabled = true;
+        self.config.gradient_map_config = config;
+        self
+    }
+
+    /// Enable or disable gradient mapping.
+    #[must_use]
+    pub fn enable_gradient_map(mut self, enabled: bool) -> Self {
+        self.config.gradient_map_enabled = enabled;
+        self
+    }
+
+    /// Configure atmospheric depth with the given settings.
+    #[must_use]
+    pub fn with_atmospheric_depth(mut self, config: AtmosphericDepthConfig) -> Self {
+        self.config.atmospheric_depth_enabled = true;
+        self.config.atmospheric_depth_config = config;
+        self
+    }
+
+    /// Enable or disable atmospheric depth.
+    #[must_use]
+    pub fn enable_atmospheric_depth(mut self, enabled: bool) -> Self {
+        self.config.atmospheric_depth_enabled = enabled;
+        self
+    }
+
+    /// Configure fine texture with the given settings.
+    #[must_use]
+    pub fn with_fine_texture(mut self, config: FineTextureConfig) -> Self {
+        self.config.fine_texture_enabled = true;
+        self.config.fine_texture_config = config;
+        self
+    }
+
+    /// Enable or disable fine texture.
+    #[must_use]
+    pub fn enable_fine_texture(mut self, enabled: bool) -> Self {
+        self.config.fine_texture_enabled = enabled;
+        self
+    }
+
+    /// Set HDR mode ("auto" or "off").
+    #[must_use]
+    pub fn hdr_mode(mut self, mode: impl Into<String>) -> Self {
+        self.config.hdr_mode = mode.into();
+        self
+    }
+
+    /// Disable all effects (minimal rendering).
+    /// 
+    /// This creates a passthrough chain that returns input unchanged.
+    #[must_use]
+    pub fn disable_all_effects(mut self) -> Self {
+        // Disable bloom and blur
+        self.config.bloom_mode = "none".to_string();
+        self.config.blur_radius_px = 0;
+        // Disable HDR/auto-exposure
+        self.config.hdr_mode = "off".to_string();
+        // Disable all individual effects
+        self.config.chromatic_bloom_enabled = false;
+        self.config.perceptual_blur_enabled = false;
+        self.config.color_grade_enabled = false;
+        self.config.gradient_map_enabled = false;
+        self.config.champleve_enabled = false;
+        self.config.aether_enabled = false;
+        self.config.opalescence_enabled = false;
+        self.config.edge_luminance_enabled = false;
+        self.config.micro_contrast_enabled = false;
+        self.config.glow_enhancement_enabled = false;
+        self.config.atmospheric_depth_enabled = false;
+        self.config.crepuscular_rays_enabled = false;
+        self.config.volumetric_occlusion_enabled = false;
+        self.config.refractive_caustics_enabled = false;
+        self.config.fine_texture_enabled = false;
+        self
+    }
+
+    /// Build the final EffectConfig.
+    #[must_use]
+    pub fn build(self) -> EffectConfig {
+        self.config
+    }
+}
+
 /// Configuration for Difference-of-Gaussians bloom
 #[derive(Clone, Debug)]
 pub struct DogBloomConfig {
@@ -560,5 +897,219 @@ impl PostEffect for AetherFinish {
         let mut buffer = input.clone();
         apply_aether_weave(&mut buffer, width, height, &self.config);
         Ok(buffer)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_effect_config_default() {
+        let config = EffectConfig::default();
+        
+        assert_eq!(config.bloom_mode, "dog");
+        assert!(config.blur_radius_px > 0);
+        assert!(config.perceptual_blur_enabled);
+        assert!(config.color_grade_enabled);
+    }
+
+    #[test]
+    fn test_effect_config_builder_default() {
+        let config = EffectConfig::builder().build();
+        let default = EffectConfig::default();
+        
+        assert_eq!(config.bloom_mode, default.bloom_mode);
+        assert_eq!(config.blur_radius_px, default.blur_radius_px);
+    }
+
+    #[test]
+    fn test_builder_bloom_mode() {
+        let config = EffectConfig::builder()
+            .bloom_mode("gaussian")
+            .build();
+        
+        assert_eq!(config.bloom_mode, "gaussian");
+    }
+
+    #[test]
+    fn test_builder_with_dog_bloom() {
+        let dog_config = DogBloomConfig {
+            inner_sigma: 10.0,
+            outer_ratio: 3.0,
+            strength: 0.5,
+            threshold: 0.02,
+        };
+        
+        let config = EffectConfig::builder()
+            .with_dog_bloom(dog_config.clone())
+            .build();
+        
+        assert_eq!(config.bloom_mode, "dog");
+        assert!((config.dog_config.inner_sigma - 10.0).abs() < 1e-10);
+        assert!((config.dog_config.outer_ratio - 3.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_builder_blur_settings() {
+        let config = EffectConfig::builder()
+            .blur(20, 15.0, 12.0)
+            .build();
+        
+        assert_eq!(config.blur_radius_px, 20);
+        assert!((config.blur_strength - 15.0).abs() < 1e-10);
+        assert!((config.blur_core_brightness - 12.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_builder_enable_chromatic_bloom() {
+        let enabled = EffectConfig::builder()
+            .enable_chromatic_bloom(true)
+            .build();
+        assert!(enabled.chromatic_bloom_enabled);
+        
+        let disabled = EffectConfig::builder()
+            .enable_chromatic_bloom(false)
+            .build();
+        assert!(!disabled.chromatic_bloom_enabled);
+    }
+
+    #[test]
+    fn test_builder_disable_all() {
+        let config = EffectConfig::builder()
+            .disable_all_effects()
+            .build();
+        
+        assert_eq!(config.bloom_mode, "none");
+        assert!(!config.chromatic_bloom_enabled);
+        assert!(!config.perceptual_blur_enabled);
+        assert!(!config.color_grade_enabled);
+        assert!(!config.champleve_enabled);
+        assert!(!config.aether_enabled);
+        assert!(!config.opalescence_enabled);
+        assert!(!config.edge_luminance_enabled);
+        assert!(!config.micro_contrast_enabled);
+        assert!(!config.glow_enhancement_enabled);
+        assert!(!config.atmospheric_depth_enabled);
+        assert!(!config.fine_texture_enabled);
+    }
+
+    #[test]
+    fn test_builder_chaining() {
+        let config = EffectConfig::builder()
+            .bloom_mode("dog")
+            .enable_chromatic_bloom(true)
+            .enable_color_grade(true)
+            .enable_champleve(false)
+            .enable_aether(false)
+            .hdr_mode("auto")
+            .build();
+        
+        assert_eq!(config.bloom_mode, "dog");
+        assert!(config.chromatic_bloom_enabled);
+        assert!(config.color_grade_enabled);
+        assert!(!config.champleve_enabled);
+        assert!(!config.aether_enabled);
+        assert_eq!(config.hdr_mode, "auto");
+    }
+
+    #[test]
+    fn test_dog_bloom_config_default() {
+        let config = DogBloomConfig::default();
+        
+        assert!((config.inner_sigma - 6.0).abs() < 1e-10);
+        assert!((config.outer_ratio - 2.5).abs() < 1e-10);
+        assert!((config.strength - 0.35).abs() < 1e-10);
+        assert!((config.threshold - 0.01).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_exposure_calculator_default() {
+        let calc = ExposureCalculator::default();
+        
+        assert!((calc.target_percentile - 0.95).abs() < 1e-10);
+        assert!((calc.min_exposure - 0.1).abs() < 1e-10);
+        assert!((calc.max_exposure - 10.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_exposure_calculator_empty_pixels() {
+        let calc = ExposureCalculator::default();
+        let pixels: Vec<(f64, f64, f64, f64)> = vec![];
+        
+        let exposure = calc.calculate_exposure(&pixels);
+        assert!((exposure - 1.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_exposure_calculator_uniform_gray() {
+        let calc = ExposureCalculator::default();
+        let pixels = vec![(0.5, 0.5, 0.5, 1.0); 100];
+        
+        let exposure = calc.calculate_exposure(&pixels);
+        assert!(exposure > 0.0 && exposure.is_finite());
+    }
+
+    #[test]
+    fn test_effect_chain_builder_creates_chain() {
+        let config = EffectConfig::default();
+        let chain = EffectChainBuilder::new(config);
+        
+        // Basic test - just verify chain can be created
+        let buffer = vec![(0.5, 0.5, 0.5, 1.0); 100];
+        let params = FrameParams { _frame_number: 0, _density: None };
+        
+        let result = chain.process_frame(buffer, 10, 10, &params);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_upsample_bilinear_identity() {
+        // Upsampling to same size should preserve values
+        let src = vec![
+            (1.0, 0.0, 0.0, 1.0),
+            (0.0, 1.0, 0.0, 1.0),
+            (0.0, 0.0, 1.0, 1.0),
+            (1.0, 1.0, 1.0, 1.0),
+        ];
+        
+        let result = upsample_bilinear(&src, 2, 2, 2, 2);
+        
+        for (orig, res) in src.iter().zip(result.iter()) {
+            assert!((orig.0 - res.0).abs() < 0.01);
+            assert!((orig.1 - res.1).abs() < 0.01);
+            assert!((orig.2 - res.2).abs() < 0.01);
+            assert!((orig.3 - res.3).abs() < 0.01);
+        }
+    }
+
+    #[test]
+    fn test_upsample_bilinear_doubles_size() {
+        let src = vec![(0.5, 0.5, 0.5, 1.0); 4];
+        let result = upsample_bilinear(&src, 2, 2, 4, 4);
+        
+        assert_eq!(result.len(), 16);
+        
+        // Uniform input should produce uniform output
+        for pixel in &result {
+            assert!((pixel.0 - 0.5).abs() < 0.1);
+        }
+    }
+
+    #[test]
+    fn test_apply_dog_bloom_uniform() {
+        let config = DogBloomConfig::default();
+        let input = vec![(0.5, 0.5, 0.5, 1.0); 64 * 64];
+        
+        let result = apply_dog_bloom(&input, 64, 64, &config);
+        
+        // Uniform input should produce relatively uniform output
+        assert_eq!(result.len(), 64 * 64);
+        for pixel in &result {
+            assert!(pixel.0.is_finite());
+            assert!(pixel.1.is_finite());
+            assert!(pixel.2.is_finite());
+            assert!(pixel.3.is_finite());
+        }
     }
 }

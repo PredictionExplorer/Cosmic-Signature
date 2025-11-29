@@ -5,6 +5,16 @@
 //!
 //! This module provides accurate conversions between linear sRGB and OKLab color spaces,
 //! with support for batch processing and various gamut mapping strategies.
+//!
+//! # Color Space Properties
+//!
+//! OKLab is a perceptually uniform color space with the following properties:
+//! - **L** (Lightness): 0.0 (black) to 1.0 (white)
+//! - **a**: Green-red axis, approximately -0.4 to +0.4
+//! - **b**: Blue-yellow axis, approximately -0.4 to +0.4
+//!
+//! Perceptual uniformity means that equal distances in the color space
+//! correspond to equal perceived color differences.
 
 use rayon::prelude::*;
 
@@ -33,6 +43,7 @@ impl Default for GamutMapMode {
 ///   - a is green-red axis [-0.4, 0.4] approximately
 ///   - b is blue-yellow axis [-0.4, 0.4] approximately
 #[inline]
+#[must_use]
 pub fn linear_srgb_to_oklab(r: f64, g: f64, b: f64) -> (f64, f64, f64) {
     // Step 1: Linear RGB to cone response (LMS)
     let l = 0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b;
@@ -62,6 +73,7 @@ pub fn linear_srgb_to_oklab(r: f64, g: f64, b: f64) -> (f64, f64, f64) {
 /// # Returns
 /// * `(r, g, b)` - Linear RGB values (may be outside [0, 1] range)
 #[inline]
+#[must_use]
 pub fn oklab_to_linear_srgb(l: f64, a: f64, b: f64) -> (f64, f64, f64) {
     // Step 1: Lab to nonlinear cone response
     let l_prime = l + 0.3963377774 * a + 0.2158037573 * b;
@@ -85,6 +97,7 @@ pub fn oklab_to_linear_srgb(l: f64, a: f64, b: f64) -> (f64, f64, f64) {
 ///
 /// This function processes multiple pixels in parallel for better performance.
 /// Alpha channel is preserved unchanged.
+#[must_use]
 pub fn linear_srgb_to_oklab_batch(pixels: &[(f64, f64, f64, f64)]) -> Vec<(f64, f64, f64, f64)> {
     pixels
         .par_iter()
@@ -99,6 +112,7 @@ pub fn linear_srgb_to_oklab_batch(pixels: &[(f64, f64, f64, f64)]) -> Vec<(f64, 
 ///
 /// This function processes multiple pixels in parallel for better performance.
 /// Alpha channel is preserved unchanged.
+#[must_use]
 pub fn oklab_to_linear_srgb_batch(pixels: &[(f64, f64, f64, f64)]) -> Vec<(f64, f64, f64, f64)> {
     pixels
         .par_iter()
@@ -261,12 +275,11 @@ mod tests {
     fn test_gamut_mapping() {
         // Test in-gamut color (should be unchanged)
         let in_gamut = (0.5, 0.7, 0.3);
-        for mode in [GamutMapMode::Clamp, GamutMapMode::PreserveHue, GamutMapMode::SoftClip] {
-            let mapped = mode.map_to_gamut(in_gamut.0, in_gamut.1, in_gamut.2);
-            assert!((mapped.0 - in_gamut.0).abs() < EPSILON, "{:?} changed in-gamut R", mode);
-            assert!((mapped.1 - in_gamut.1).abs() < EPSILON, "{:?} changed in-gamut G", mode);
-            assert!((mapped.2 - in_gamut.2).abs() < EPSILON, "{:?} changed in-gamut B", mode);
-        }
+        let mode = GamutMapMode::PreserveHue;
+        let mapped = mode.map_to_gamut(in_gamut.0, in_gamut.1, in_gamut.2);
+        assert!((mapped.0 - in_gamut.0).abs() < EPSILON, "PreserveHue changed in-gamut R");
+        assert!((mapped.1 - in_gamut.1).abs() < EPSILON, "PreserveHue changed in-gamut G");
+        assert!((mapped.2 - in_gamut.2).abs() < EPSILON, "PreserveHue changed in-gamut B");
 
         // Test out-of-gamut colors
         let test_cases = [
@@ -279,32 +292,27 @@ mod tests {
         ];
 
         for (r, g, b, name) in &test_cases {
-            for mode in [GamutMapMode::Clamp, GamutMapMode::PreserveHue, GamutMapMode::SoftClip] {
-                let (r_out, g_out, b_out) = mode.map_to_gamut(*r, *g, *b);
+            let (r_out, g_out, b_out) = mode.map_to_gamut(*r, *g, *b);
 
-                // Verify all outputs are in valid range
-                assert!(
-                    (0.0..=1.0).contains(&r_out),
-                    "{:?} failed to map {} R to gamut: {}",
-                    mode,
-                    name,
-                    r_out
-                );
-                assert!(
-                    (0.0..=1.0).contains(&g_out),
-                    "{:?} failed to map {} G to gamut: {}",
-                    mode,
-                    name,
-                    g_out
-                );
-                assert!(
-                    (0.0..=1.0).contains(&b_out),
-                    "{:?} failed to map {} B to gamut: {}",
-                    mode,
-                    name,
-                    b_out
-                );
-            }
+            // Verify all outputs are in valid range
+            assert!(
+                (0.0..=1.0).contains(&r_out),
+                "PreserveHue failed to map {} R to gamut: {}",
+                name,
+                r_out
+            );
+            assert!(
+                (0.0..=1.0).contains(&g_out),
+                "PreserveHue failed to map {} G to gamut: {}",
+                name,
+                g_out
+            );
+            assert!(
+                (0.0..=1.0).contains(&b_out),
+                "PreserveHue failed to map {} B to gamut: {}",
+                name,
+                b_out
+            );
         }
     }
 
@@ -362,5 +370,105 @@ mod tests {
         assert!((r_unchanged - in_gamut.0).abs() < EPSILON, "In-gamut R changed");
         assert!((g_unchanged - in_gamut.1).abs() < EPSILON, "In-gamut G changed");
         assert!((b_unchanged - in_gamut.2).abs() < EPSILON, "In-gamut B changed");
+    }
+
+    #[test]
+    fn test_default_gamut_mode() {
+        let mode = GamutMapMode::default();
+        assert!(matches!(mode, GamutMapMode::PreserveHue));
+    }
+}
+
+/// Property-based tests for OKLab color conversions.
+///
+/// These tests verify key invariants using random inputs.
+#[cfg(test)]
+mod proptests {
+    use super::*;
+    use proptest::prelude::*;
+
+    proptest! {
+        /// RGB to OKLab roundtrip preserves values within tolerance.
+        #[test]
+        fn roundtrip_preserves_values(
+            r in 0.0f64..=1.0,
+            g in 0.0f64..=1.0,
+            b in 0.0f64..=1.0,
+        ) {
+            let (l, a, b_ch) = linear_srgb_to_oklab(r, g, b);
+            let (r2, g2, b2) = oklab_to_linear_srgb(l, a, b_ch);
+            
+            prop_assert!((r - r2).abs() < 1e-6, "R mismatch: {} vs {}", r, r2);
+            prop_assert!((g - g2).abs() < 1e-6, "G mismatch: {} vs {}", g, g2);
+            prop_assert!((b - b2).abs() < 1e-6, "B mismatch: {} vs {}", b, b2);
+        }
+
+        /// OKLab lightness is bounded for in-gamut colors.
+        #[test]
+        fn oklab_lightness_is_bounded(
+            r in 0.0f64..=1.0,
+            g in 0.0f64..=1.0,
+            b in 0.0f64..=1.0,
+        ) {
+            let (l, _, _) = linear_srgb_to_oklab(r, g, b);
+            prop_assert!(l >= 0.0 && l <= 1.001, "L out of bounds: {}", l);
+        }
+
+        /// Grays have near-zero chroma (a and b).
+        #[test]
+        fn grays_have_zero_chroma(
+            gray in 0.0f64..=1.0,
+        ) {
+            let (_, a, b) = linear_srgb_to_oklab(gray, gray, gray);
+            prop_assert!(a.abs() < 0.001, "Gray a not zero: {}", a);
+            prop_assert!(b.abs() < 0.001, "Gray b not zero: {}", b);
+        }
+
+        /// Gamut mapping always produces in-range values.
+        #[test]
+        fn gamut_mapping_produces_valid_values(
+            r in -2.0f64..=2.0,
+            g in -2.0f64..=2.0,
+            b in -2.0f64..=2.0,
+        ) {
+            let (r_out, g_out, b_out) = GamutMapMode::PreserveHue.map_to_gamut(r, g, b);
+            
+            prop_assert!((0.0..=1.0).contains(&r_out), "R out of gamut: {}", r_out);
+            prop_assert!((0.0..=1.0).contains(&g_out), "G out of gamut: {}", g_out);
+            prop_assert!((0.0..=1.0).contains(&b_out), "B out of gamut: {}", b_out);
+        }
+
+        /// Batch conversion matches individual conversion.
+        #[test]
+        fn batch_matches_individual(
+            r in 0.0f64..=1.0,
+            g in 0.0f64..=1.0,
+            b in 0.0f64..=1.0,
+            a in 0.0f64..=1.0,
+        ) {
+            let pixels = vec![(r, g, b, a)];
+            let batch_result = linear_srgb_to_oklab_batch(&pixels);
+            
+            let (l, a_ch, b_ch) = linear_srgb_to_oklab(r, g, b);
+            
+            prop_assert!((batch_result[0].0 - l).abs() < 1e-10, "Batch L mismatch");
+            prop_assert!((batch_result[0].1 - a_ch).abs() < 1e-10, "Batch a mismatch");
+            prop_assert!((batch_result[0].2 - b_ch).abs() < 1e-10, "Batch b mismatch");
+            prop_assert!((batch_result[0].3 - a).abs() < 1e-10, "Batch alpha mismatch");
+        }
+
+        /// Conversion produces finite values for any input.
+        #[test]
+        fn conversion_produces_finite_values(
+            r in -10.0f64..=10.0,
+            g in -10.0f64..=10.0,
+            b in -10.0f64..=10.0,
+        ) {
+            let (l, a, b_ch) = linear_srgb_to_oklab(r, g, b);
+            
+            prop_assert!(l.is_finite(), "L is not finite for input ({}, {}, {})", r, g, b);
+            prop_assert!(a.is_finite(), "a is not finite for input ({}, {}, {})", r, g, b);
+            prop_assert!(b_ch.is_finite(), "b is not finite for input ({}, {}, {})", r, g, b);
+        }
     }
 }

@@ -32,16 +32,17 @@ sha3     = "0.10.8"
 smallvec = "1.15.1"
 statrs   = "0.18.0"
 thiserror = "2.0.17"
+toml = "0.8"
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
 
 [features]
-# Advanced optimization infrastructure (experimental)
-advanced-optimizations = []
 default = []
 
 [dev-dependencies]
 criterion = "0.7"
+proptest = "1.4"
+tempfile = "3.14"
 
 [[bench]]
 name = "rendering_benchmark"

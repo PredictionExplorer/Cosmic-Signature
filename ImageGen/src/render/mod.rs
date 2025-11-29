@@ -8,7 +8,6 @@ use crate::post_effects::{
     PerceptualBlurConfig,
 };
 use crate::spectrum::NUM_BINS;
-use nalgebra::Vector3;
 use rayon::prelude::*;
 use std::sync::LazyLock;
 use tracing::{debug, info};
@@ -51,23 +50,17 @@ pub use effects::{DogBloomConfig, ExposureCalculator, apply_dog_bloom};
 pub use histogram::compute_black_white_gamma;
 // Re-export all types as part of public library API (not used internally, but part of API contract)
 #[allow(unused_imports)] // Public API re-exports for library consumers
-pub use types::{BloomConfig, BlurConfig, ChannelLevels, HdrConfig, PerceptualBlurSettings, Resolution, SceneData};
-pub use video::{VideoEncodingOptions, create_video_from_frames_singlepass};
+pub use types::{
+    BloomConfig, BlurConfig, ChannelLevels, HdrConfig, PerceptualBlurSettings, 
+    RenderConfig, RenderParams, Resolution, SceneData, SceneDataRef,
+};
+pub use video::VideoEncodingOptions;
+// Re-export retry functionality for library consumers
+#[allow(unused_imports)] // Public API for library consumers
+pub use video::{EncodingStrategy, create_video_from_frames_singlepass, create_video_with_retry};
 
 // Re-export types from dependencies used in public API
 pub use image::{DynamicImage, ImageBuffer, Rgb};
-
-/// Rendering configuration parameters
-#[derive(Clone, Copy, Debug)]
-pub struct RenderConfig {
-    pub hdr_scale: f64,
-}
-
-impl Default for RenderConfig {
-    fn default() -> Self {
-        Self { hdr_scale: constants::DEFAULT_HDR_SCALE }
-    }
-}
 
 /// Core tonemapping function (shared logic for both 8-bit and 16-bit)
 /// Returns final RGB channels in 0.0-1.0 range
@@ -564,144 +557,244 @@ fn apply_energy_density_shift(accum_spd: &mut [[f64; NUM_BINS]], special_mode: b
     });
 }
 
-// ====================== PASS 1 (SPECTRAL) ===========================
-/// Pass 1: gather global histogram for final color leveling (spectral)
-#[allow(clippy::too_many_arguments)] // Low-level rendering primitive requires all parameters
-pub fn pass_1_build_histogram_spectral(
-    positions: &[Vec<Vector3<f64>>],
-    colors: &[Vec<OklabColor>],
-    body_alphas: &[f64],
-    resolved_config: &randomizable_config::ResolvedEffectConfig,
+// ====================== RENDER LOOP CONTEXT ===========================
+
+/// Context for the render loop, encapsulating common setup
+///
+/// This struct reduces code duplication between pass_1 and pass_2 by
+/// providing a shared container for rendering state.
+struct RenderLoopContext<'a> {
+    ctx: RenderContext,
+    accum_spd: Vec<[f64; NUM_BINS]>,
+    accum_rgba: PixelBuffer,
+    effect_chain: EffectChainBuilder,
+    nebula_config: NebulaCloudConfig,
+    velocity_calc: velocity_hdr::VelocityHdrCalculator<'a>,
+    empty_background: PixelBuffer,
+    total_steps: usize,
+    chunk_line: usize,
     frame_interval: usize,
-    all_r: &mut Vec<f64>,
-    all_g: &mut Vec<f64>,
-    all_b: &mut Vec<f64>,
-    noise_seed: i32,
-    render_config: &RenderConfig,
-) -> Result<()> {
-    let width = resolved_config.width;
-    let height = resolved_config.height;
-    let special_mode = resolved_config.special_mode;
-    
-    // Create render context
-    let ctx = RenderContext::new(width, height, positions);
-    let mut accum_spd = vec![[0.0f64; NUM_BINS]; ctx.pixel_count()];
-    let mut accum_rgba = vec![(0.0, 0.0, 0.0, 0.0); ctx.pixel_count()];
+    width: u32,
+    height: u32,
+    special_mode: bool,
+    hdr_scale: f64,
+}
 
-    // Build effect configuration from resolved config
-    let effect_config = build_effect_config_from_resolved(resolved_config);
-    let effect_chain = EffectChainBuilder::new(effect_config);
-    
-    // Create nebula configuration (rendered separately, not in effect chain)
-    let nebula_config = NebulaCloudConfig {
-        strength: resolved_config.nebula_strength,
-        octaves: resolved_config.nebula_octaves,
-        base_frequency: resolved_config.nebula_base_frequency,
-        lacunarity: 2.0, // Fixed
-        persistence: 0.5, // Fixed
-        noise_seed: noise_seed as i64,
-        colors: [
-            [0.08, 0.12, 0.22],  // Deep blue
-            [0.15, 0.08, 0.25],  // Purple
-            [0.25, 0.12, 0.18],  // Magenta
-            [0.12, 0.15, 0.28],  // Blue-violet
-        ],
-        time_scale: 1.0, // Fixed
-        edge_fade: 0.3, // Fixed
-    };
-
-    // Create histogram storage
-    let mut histogram = HistogramData::with_capacity(ctx.pixel_count() * 10);
-
-    let total_steps = positions[0].len();
-    let chunk_line = (total_steps / 10).max(1);
-    let dt = constants::DEFAULT_DT;
-    
-    // Create velocity HDR calculator for efficient multiplier computation
-    let velocity_calc = velocity_hdr::VelocityHdrCalculator::new(positions, dt, special_mode);
-    
-    // Pre-allocate empty background buffer for reuse (optimization: saves 60× 2MB allocations)
-    let empty_background = vec![(0.0, 0.0, 0.0, 0.0); ctx.pixel_count()];
-
-    for step in 0..total_steps {
-        if step % chunk_line == 0 {
-            let pct = (step as f64 / total_steps as f64) * constants::PERCENT_FACTOR;
-            debug!(progress = pct, pass = 1, mode = "spectral", "Histogram pass progress");
-        }
+impl<'a> RenderLoopContext<'a> {
+    /// Create a new render loop context from render parameters
+    fn new(params: &'a RenderParams<'a>) -> Self {
+        let positions = params.scene.positions;
+        let resolved_config = params.resolved_config;
+        let noise_seed = params.noise_seed;
         
-        // Prepare triangle vertices with batched data access (better cache locality)
+        let width = resolved_config.width;
+        let height = resolved_config.height;
+        let special_mode = resolved_config.special_mode;
+        
+        // Create render context
+        let ctx = RenderContext::new(width, height, positions);
+        let pixel_count = ctx.pixel_count();
+        
+        // Allocate accumulation buffers
+        let accum_spd = vec![[0.0f64; NUM_BINS]; pixel_count];
+        let accum_rgba = vec![(0.0, 0.0, 0.0, 0.0); pixel_count];
+        
+        // Build effect configuration from resolved config
+        let effect_config = build_effect_config_from_resolved(resolved_config);
+        let effect_chain = EffectChainBuilder::new(effect_config);
+        
+        // Create nebula configuration
+        let nebula_config = NebulaCloudConfig {
+            strength: resolved_config.nebula_strength,
+            octaves: resolved_config.nebula_octaves,
+            base_frequency: resolved_config.nebula_base_frequency,
+            lacunarity: 2.0,
+            persistence: 0.5,
+            noise_seed: noise_seed as i64,
+            colors: [
+                [0.08, 0.12, 0.22],
+                [0.15, 0.08, 0.25],
+                [0.25, 0.12, 0.18],
+                [0.12, 0.15, 0.28],
+            ],
+            time_scale: 1.0,
+            edge_fade: 0.3,
+        };
+        
+        let total_steps = positions[0].len();
+        let chunk_line = (total_steps / 10).max(1);
+        let dt = constants::DEFAULT_DT;
+        
+        // Create velocity HDR calculator
+        let velocity_calc = velocity_hdr::VelocityHdrCalculator::new(positions, dt, special_mode);
+        
+        // Pre-allocate empty background buffer
+        let empty_background = vec![(0.0, 0.0, 0.0, 0.0); pixel_count];
+        
+        Self {
+            ctx,
+            accum_spd,
+            accum_rgba,
+            effect_chain,
+            nebula_config,
+            velocity_calc,
+            empty_background,
+            total_steps,
+            chunk_line,
+            frame_interval: params.frame_interval,
+            width,
+            height,
+            special_mode,
+            hdr_scale: params.render_config.hdr_scale,
+        }
+    }
+    
+    /// Draw a single step of the simulation to the accumulation buffers
+    #[inline]
+    fn draw_step(
+        &mut self,
+        step: usize,
+        positions: &[Vec<nalgebra::Vector3<f64>>],
+        colors: &[Vec<OklabColor>],
+        body_alphas: &[f64],
+    ) {
+        // Prepare triangle vertices
         let vertices = prepare_triangle_vertices(
             positions,
             colors,
             &[body_alphas[0], body_alphas[1], body_alphas[2]],
             step,
-            &ctx,
+            &self.ctx,
         );
 
-        // Compute velocity-based HDR multipliers using the calculator
-        let hdr_mult_01 = velocity_calc.compute_segment_multiplier(step, 0, 1);
-        let hdr_mult_12 = velocity_calc.compute_segment_multiplier(step, 1, 2);
-        let hdr_mult_20 = velocity_calc.compute_segment_multiplier(step, 2, 0);
+        // Compute velocity-based HDR multipliers
+        let hdr_mult_01 = self.velocity_calc.compute_segment_multiplier(step, 0, 1);
+        let hdr_mult_12 = self.velocity_calc.compute_segment_multiplier(step, 1, 2);
+        let hdr_mult_20 = self.velocity_calc.compute_segment_multiplier(step, 2, 0);
 
-        // Draw entire triangle in batch (10-20% faster than individual calls)
+        // Draw entire triangle in batch
         draw_triangle_batch_spectral(
-            &mut accum_spd,
-            width,
-            height,
+            &mut self.accum_spd,
+            self.width,
+            self.height,
             vertices[0],
             vertices[1],
             vertices[2],
             hdr_mult_01,
             hdr_mult_12,
             hdr_mult_20,
-            render_config.hdr_scale,
-            special_mode,
+            self.hdr_scale,
+            self.special_mode,
         );
+    }
+    
+    /// Process a frame and return the final composited pixels
+    fn process_frame(&mut self, frame_number: usize, resolved_config: &randomizable_config::ResolvedEffectConfig) -> Result<PixelBuffer> {
+        // Apply energy density wavelength shift before conversion
+        apply_energy_density_shift(&mut self.accum_spd, self.special_mode);
+        
+        // Convert SPD -> RGBA
+        convert_spd_buffer_to_rgba(&self.accum_spd, &mut self.accum_rgba);
+        
+        // Process with effect chain
+        let frame_params = FrameParams { _frame_number: frame_number, _density: None };
+        let rgba_buffer = std::mem::take(&mut self.accum_rgba);
+        let trajectory_pixels = self.effect_chain
+            .process_frame(rgba_buffer, self.width as usize, self.height as usize, &frame_params)
+            .map_err(|e| RenderError::EffectError(e.to_string()))?;
+        
+        // Reuse the buffer
+        self.accum_rgba.clear();
+        self.accum_rgba.resize(self.ctx.pixel_count(), (0.0, 0.0, 0.0, 0.0));
+        
+        // Generate nebula background
+        let nebula_background = if self.special_mode && resolved_config.nebula_strength > 0.0 {
+            generate_nebula_background(
+                self.width as usize,
+                self.height as usize,
+                frame_number,
+                &self.nebula_config,
+            )?
+        } else {
+            self.empty_background.clone()
+        };
+        
+        // Composite nebula background under trajectory foreground
+        Ok(composite_buffers(&nebula_background, &trajectory_pixels))
+    }
+    
+    /// Check if we should emit a frame at this step
+    #[inline]
+    fn should_emit_frame(&self, step: usize) -> bool {
+        let is_final = step == self.total_steps - 1;
+        (step > 0 && step % self.frame_interval == 0) || is_final
+    }
+    
+    /// Check if this is the final step
+    #[inline]
+    fn is_final_step(&self, step: usize) -> bool {
+        step == self.total_steps - 1
+    }
+}
 
-        let is_final = step == total_steps - 1;
-        if (step > 0 && step % frame_interval == 0) || is_final {
-            // Apply energy density wavelength shift before conversion
-            apply_energy_density_shift(&mut accum_spd, special_mode);
-            
-            // convert SPD -> RGBA
-            convert_spd_buffer_to_rgba(&accum_spd, &mut accum_rgba);
+// ====================== PASS 1 (SPECTRAL) ===========================
+/// Pass 1: gather global histogram for final color leveling (spectral)
+///
+/// This function renders all frames and collects color histogram data
+/// for computing optimal black/white levels.
+///
+/// # Arguments
+///
+/// * `params` - Grouped rendering parameters (scene, config, etc.)
+/// * `all_r` - Output buffer for red channel histogram values
+/// * `all_g` - Output buffer for green channel histogram values
+/// * `all_b` - Output buffer for blue channel histogram values
+///
+/// # Returns
+///
+/// * `Ok(())` on success
+/// * `Err(RenderError)` if rendering fails
+pub fn pass_1_build_histogram_spectral(
+    params: &RenderParams<'_>,
+    all_r: &mut Vec<f64>,
+    all_g: &mut Vec<f64>,
+    all_b: &mut Vec<f64>,
+) -> Result<()> {
+    let positions = params.scene.positions;
+    let colors = params.scene.colors;
+    let body_alphas = params.scene.body_alphas;
+    let resolved_config = params.resolved_config;
+    
+    // Use shared render loop context
+    let mut loop_ctx = RenderLoopContext::new(params);
+    
+    // Create histogram storage
+    let mut histogram = HistogramData::with_capacity(loop_ctx.ctx.pixel_count() * 10);
 
-            // Process with persistent effect chain
-            let frame_params = FrameParams { _frame_number: step / frame_interval, _density: None };
+    for step in 0..loop_ctx.total_steps {
+        // Progress logging
+        if step % loop_ctx.chunk_line == 0 {
+            let pct = (step as f64 / loop_ctx.total_steps as f64) * constants::PERCENT_FACTOR;
+            debug!(progress = pct, pass = 1, mode = "spectral", "Histogram pass progress");
+        }
+        
+        // Draw step using shared context
+        loop_ctx.draw_step(step, positions, colors, body_alphas);
 
-            // Take ownership of accum_rgba to avoid clone
-            let rgba_buffer = std::mem::take(&mut accum_rgba);
-            let trajectory_pixels = effect_chain
-                .process_frame(rgba_buffer, width as usize, height as usize, &frame_params)
-                .map_err(|e| RenderError::EffectError(e.to_string()))?;
-            // Reuse the buffer instead of reallocating - clear and resize to avoid allocation
-            accum_rgba.clear();
-            accum_rgba.resize(ctx.pixel_count(), (0.0, 0.0, 0.0, 0.0));
+        // Emit frame if needed
+        if loop_ctx.should_emit_frame(step) {
+            let frame_number = step / loop_ctx.frame_interval;
+            let final_frame_pixels = loop_ctx.process_frame(frame_number, resolved_config)?;
 
-            // Generate nebula background separately (with zero-overhead check)
-            let nebula_background = if special_mode && resolved_config.nebula_strength > 0.0 {
-                generate_nebula_background(
-                    width as usize,
-                    height as usize,
-                    step / frame_interval,
-                    &nebula_config,
-                )?
-            } else {
-                empty_background.clone()  // Reuse pre-allocated empty buffer (zero overhead)
-            };
-
-            // Composite nebula background UNDER trajectory foreground
-            let final_frame_pixels = composite_buffers(&nebula_background, &trajectory_pixels);
-
-            // Collect histogram data efficiently
-            histogram.reserve(ctx.pixel_count());
+            // Collect histogram data
+            histogram.reserve(loop_ctx.ctx.pixel_count());
             for &(r, g, b, a) in &final_frame_pixels {
                 histogram.push(r * a, g * a, b * a);
             }
         }
     }
 
-    // Extract channels efficiently without intermediate copying
+    // Extract channels
     let (extracted_r, extracted_g, extracted_b) = histogram.extract_channels();
     *all_r = extracted_r;
     *all_g = extracted_g;
@@ -713,148 +806,63 @@ pub fn pass_1_build_histogram_spectral(
 
 // ====================== PASS 2 (SPECTRAL) ===========================
 /// Pass 2: final frames => color mapping => write frames (spectral, 16-bit output)
-#[allow(clippy::too_many_arguments)] // Low-level rendering primitive requires all parameters
+///
+/// This function renders all frames with color level adjustments and writes
+/// them to the provided frame sink.
+///
+/// # Arguments
+///
+/// * `params` - Grouped rendering parameters (scene, config, etc.)
+/// * `levels` - Per-channel black/white levels for tonemapping
+/// * `frame_sink` - Callback to receive encoded frame data
+/// * `last_frame_out` - Output buffer for the final frame (for PNG export)
+///
+/// # Returns
+///
+/// * `Ok(())` on success
+/// * `Err(RenderError)` if rendering fails
 pub fn pass_2_write_frames_spectral(
-    positions: &[Vec<Vector3<f64>>],
-    colors: &[Vec<OklabColor>],
-    body_alphas: &[f64],
-    resolved_config: &randomizable_config::ResolvedEffectConfig,
-    frame_interval: usize,
-    black_r: f64,
-    white_r: f64,
-    black_g: f64,
-    white_g: f64,
-    black_b: f64,
-    white_b: f64,
-    noise_seed: i32,
+    params: &RenderParams<'_>,
+    levels: &ChannelLevels,
     mut frame_sink: impl FnMut(&[u8]) -> Result<()>,
     last_frame_out: &mut Option<ImageBuffer<Rgb<u16>, Vec<u16>>>,
-    render_config: &RenderConfig,
 ) -> Result<()> {
-    let width = resolved_config.width;
-    let height = resolved_config.height;
-    let special_mode = resolved_config.special_mode;
+    let positions = params.scene.positions;
+    let colors = params.scene.colors;
+    let body_alphas = params.scene.body_alphas;
+    let resolved_config = params.resolved_config;
     
-    // Create render context
-    let ctx = RenderContext::new(width, height, positions);
-    let mut accum_spd = vec![[0.0f64; NUM_BINS]; ctx.pixel_count()];
-    let mut accum_rgba = vec![(0.0, 0.0, 0.0, 0.0); ctx.pixel_count()];
+    // Use shared render loop context
+    let mut loop_ctx = RenderLoopContext::new(params);
+    let pixel_count = loop_ctx.ctx.pixel_count();
 
-    // Build effect configuration from resolved config
-    let effect_config = build_effect_config_from_resolved(resolved_config);
-    let effect_chain = EffectChainBuilder::new(effect_config);
-    
-    // Create nebula configuration (rendered separately, not in effect chain)
-    let nebula_config = NebulaCloudConfig {
-        strength: resolved_config.nebula_strength,
-        octaves: resolved_config.nebula_octaves,
-        base_frequency: resolved_config.nebula_base_frequency,
-        lacunarity: 2.0, // Fixed
-        persistence: 0.5, // Fixed
-        noise_seed: noise_seed as i64,
-        colors: [
-            [0.08, 0.12, 0.22],  // Deep blue
-            [0.15, 0.08, 0.25],  // Purple
-            [0.25, 0.12, 0.18],  // Magenta
-            [0.12, 0.15, 0.28],  // Blue-violet
-        ],
-        time_scale: 1.0, // Fixed
-        edge_fade: 0.3, // Fixed
-    };
-
-    let total_steps = positions[0].len();
-    let chunk_line = (total_steps / 10).max(1);
-    let dt = constants::DEFAULT_DT;
-    
-    // Create velocity HDR calculator for efficient multiplier computation
-    let velocity_calc = velocity_hdr::VelocityHdrCalculator::new(positions, dt, special_mode);
-    
-    // Pre-allocate empty background buffer for reuse (optimization: saves 60× 2MB allocations)
-    let empty_background = vec![(0.0, 0.0, 0.0, 0.0); ctx.pixel_count()];
-
-    let levels = ChannelLevels::new(black_r, white_r, black_g, white_g, black_b, white_b);
-
-    for step in 0..total_steps {
-        if step % chunk_line == 0 {
-            let pct = (step as f64 / total_steps as f64) * constants::PERCENT_FACTOR;
+    for step in 0..loop_ctx.total_steps {
+        // Progress logging
+        if step % loop_ctx.chunk_line == 0 {
+            let pct = (step as f64 / loop_ctx.total_steps as f64) * constants::PERCENT_FACTOR;
             debug!(progress = pct, pass = 2, mode = "spectral", "Render pass progress");
         }
-        // Prepare triangle vertices with batched data access (better cache locality)
-        let vertices = prepare_triangle_vertices(
-            positions,
-            colors,
-            &[body_alphas[0], body_alphas[1], body_alphas[2]],
-            step,
-            &ctx,
-        );
+        
+        // Draw step using shared context
+        loop_ctx.draw_step(step, positions, colors, body_alphas);
 
-        // Compute velocity-based HDR multipliers using the calculator
-        let hdr_mult_01 = velocity_calc.compute_segment_multiplier(step, 0, 1);
-        let hdr_mult_12 = velocity_calc.compute_segment_multiplier(step, 1, 2);
-        let hdr_mult_20 = velocity_calc.compute_segment_multiplier(step, 2, 0);
+        // Emit frame if needed
+        if loop_ctx.should_emit_frame(step) {
+            let frame_number = step / loop_ctx.frame_interval;
+            let final_frame_pixels = loop_ctx.process_frame(frame_number, resolved_config)?;
 
-        // Draw entire triangle in batch (10-20% faster than individual calls)
-        draw_triangle_batch_spectral(
-            &mut accum_spd,
-            width,
-            height,
-            vertices[0],
-            vertices[1],
-            vertices[2],
-            hdr_mult_01,
-            hdr_mult_12,
-            hdr_mult_20,
-            render_config.hdr_scale,
-            special_mode,
-        );
-
-        let is_final = step == total_steps - 1;
-        if (step > 0 && step % frame_interval == 0) || is_final {
-            // Apply energy density wavelength shift before conversion
-            apply_energy_density_shift(&mut accum_spd, special_mode);
-            
-            // Convert SPD -> RGBA
-            convert_spd_buffer_to_rgba(&accum_spd, &mut accum_rgba);
-
-            // Process with persistent effect chain
-            let frame_params = FrameParams { _frame_number: step / frame_interval, _density: None };
-
-            // Take ownership of accum_rgba to avoid clone
-            let rgba_buffer = std::mem::take(&mut accum_rgba);
-            let trajectory_pixels = effect_chain
-                .process_frame(rgba_buffer, width as usize, height as usize, &frame_params)
-                .map_err(|e| RenderError::EffectError(e.to_string()))?;
-            // Reuse the buffer instead of reallocating - clear and resize to avoid allocation
-            accum_rgba.clear();
-            accum_rgba.resize(ctx.pixel_count(), (0.0, 0.0, 0.0, 0.0));
-
-            // Generate nebula background separately (with zero-overhead check)
-            let nebula_background = if special_mode && resolved_config.nebula_strength > 0.0 {
-                generate_nebula_background(
-                    width as usize,
-                    height as usize,
-                    step / frame_interval,
-                    &nebula_config,
-                )?
-            } else {
-                empty_background.clone()  // Reuse pre-allocated empty buffer (zero overhead)
-            };
-
-            // Composite nebula background UNDER trajectory foreground
-            let final_frame_pixels = composite_buffers(&nebula_background, &trajectory_pixels);
-
-            // levels + ACES tonemapping to 16-bit
-            let mut buf_16bit = vec![0u16; ctx.pixel_count() * 3];
+            // Tonemap to 16-bit
+            let mut buf_16bit = vec![0u16; pixel_count * 3];
             buf_16bit.par_chunks_mut(3).zip(final_frame_pixels.par_iter()).for_each(
                 |(chunk, &(fr, fg, fb, fa))| {
-                    let mapped = tonemap_to_16bit(fr, fg, fb, fa, &levels);
+                    let mapped = tonemap_to_16bit(fr, fg, fb, fa, levels);
                     chunk[0] = mapped[0];
                     chunk[1] = mapped[1];
                     chunk[2] = mapped[2];
                 },
             );
 
-            // Convert u16 buffer to bytes for FFmpeg (little-endian rgb48le format)
+            // Convert to bytes for FFmpeg (little-endian rgb48le format)
             let buf_bytes = unsafe {
                 std::slice::from_raw_parts(
                     buf_16bit.as_ptr() as *const u8,
@@ -863,8 +871,9 @@ pub fn pass_2_write_frames_spectral(
             };
 
             frame_sink(buf_bytes)?;
-            if is_final {
-                *last_frame_out = ImageBuffer::from_raw(width, height, buf_16bit);
+            
+            if loop_ctx.is_final_step(step) {
+                *last_frame_out = ImageBuffer::from_raw(loop_ctx.width, loop_ctx.height, buf_16bit);
             }
         }
     }
@@ -874,22 +883,29 @@ pub fn pass_2_write_frames_spectral(
 
 // ====================== SINGLE FRAME RENDERING ===========================
 /// Render a single test frame (first frame only) for quick testing (16-bit output)
-#[allow(clippy::too_many_arguments)] // Low-level rendering primitive requires all parameters
+///
+/// # Arguments
+///
+/// * `params` - Grouped rendering parameters (scene, config, etc.)
+/// * `levels` - Per-channel black/white levels for tonemapping
+///
+/// # Returns
+///
+/// * `Ok(ImageBuffer)` containing the rendered frame
+/// * `Err(RenderError)` if rendering fails
 pub fn render_single_frame_spectral(
-    positions: &[Vec<Vector3<f64>>],
-    colors: &[Vec<OklabColor>],
-    body_alphas: &[f64],
-    resolved_config: &randomizable_config::ResolvedEffectConfig,
-    black_r: f64,
-    white_r: f64,
-    black_g: f64,
-    white_g: f64,
-    black_b: f64,
-    white_b: f64,
-    noise_seed: i32,
-    render_config: &RenderConfig,
+    params: &RenderParams<'_>,
+    levels: &ChannelLevels,
 ) -> Result<ImageBuffer<Rgb<u16>, Vec<u16>>> {
     info!("   Rendering first frame only (test mode)...");
+    
+    // Extract commonly-used parameters
+    let positions = params.scene.positions;
+    let colors = params.scene.colors;
+    let body_alphas = params.scene.body_alphas;
+    let resolved_config = params.resolved_config;
+    let noise_seed = params.noise_seed;
+    let render_config = params.render_config;
     
     let width = resolved_config.width;
     let height = resolved_config.height;
@@ -930,8 +946,6 @@ pub fn render_single_frame_spectral(
     
     // Pre-allocate empty background buffer for reuse (optimization)
     let empty_background = vec![(0.0, 0.0, 0.0, 0.0); ctx.pixel_count()];
-    
-    let levels = ChannelLevels::new(black_r, white_r, black_g, white_g, black_b, white_b);
 
     // Render all trajectory steps up to and including the first frame
     let frame_interval = (total_steps / constants::DEFAULT_TARGET_FRAMES as usize).max(1);

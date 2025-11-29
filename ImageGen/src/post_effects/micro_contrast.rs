@@ -296,7 +296,7 @@ mod tests {
 
     #[test]
     fn test_buffer_processing() {
-        let config = MicroContrastConfig::standard_mode();
+        let config = MicroContrastConfig::special_mode();
         let mc = MicroContrast::new(config);
 
         // Create test buffer with gradient

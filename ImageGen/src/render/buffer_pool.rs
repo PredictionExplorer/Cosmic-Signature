@@ -1,19 +1,17 @@
-//! Buffer pool for zero-allocation effect chain processing
+//! Buffer pool for zero-allocation effect chain processing.
 //!
 //! This module provides a buffer pool that eliminates allocations during
 //! effect chain processing by maintaining a pool of reusable buffers.
 //!
 //! # Performance
+//!
 //! - Eliminates ~12 allocations per frame
 //! - Reduces GC pressure
 //! - Better memory locality
 //!
-//! # Usage
-//! Enable with `--features advanced-optimizations` flag
-//!
 //! This is experimental infrastructure for future effect chain refactoring.
 
-#![cfg_attr(not(feature = "advanced-optimizations"), allow(dead_code))]
+#![allow(dead_code)] // Experimental infrastructure for future optimization
 
 use super::context::PixelBuffer;
 

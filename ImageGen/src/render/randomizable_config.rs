@@ -689,9 +689,6 @@ fn apply_conflict_detection(mut config: ResolvedEffectConfig, log: &mut Randomiz
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::sim::Sha3RandomByteStream;
-
     // Tests omitted for brevity as they just need to be updated to match the struct fields
     // The compiler will catch any missing fields in struct initialization in other files
 }

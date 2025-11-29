@@ -1,20 +1,18 @@
-//! Struct-of-Arrays (SoA) data layout for cache-friendly position access
+//! Struct-of-Arrays (SoA) data layout for cache-friendly position access.
 //!
 //! This module provides an alternative data layout that improves cache locality
 //! by storing coordinates in separate contiguous arrays instead of nested vectors.
 //!
 //! # Performance
+//!
 //! - 5-10% better cache hit rate
 //! - Better prefetching by CPU
 //! - More vectorization-friendly
 //!
-//! # Usage
-//! Enable with `--features advanced-optimizations` flag
-//!
 //! This is experimental infrastructure for future data layout refactoring.
 //! Currently available but not yet integrated into the main rendering pipeline.
 
-#![cfg_attr(not(feature = "advanced-optimizations"), allow(dead_code))]
+#![allow(dead_code)] // Experimental infrastructure for future optimization
 
 use nalgebra::Vector3;
 

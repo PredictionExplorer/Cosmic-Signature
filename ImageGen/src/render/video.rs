@@ -2,11 +2,24 @@
 //!
 //! Provides high-quality H.265 encoding with 10-bit color depth by default,
 //! plus a fast encoding mode using hardware acceleration.
+//!
+//! # Encoding Strategies
+//!
+//! The module provides multiple encoding strategies with automatic fallback:
+//!
+//! 1. **Default (H.265 software)**: Maximum quality with 10-bit color
+//! 2. **Fast (Hardware accelerated)**: 3-5× faster using VideoToolbox/NVENC
+//! 3. **Fallback (H.264)**: Maximum compatibility when H.265 fails
+//!
+//! # Retry Logic
+//!
+//! When encoding fails, the system automatically tries fallback encoders
+//! to maximize the chance of successful video output.
 
 use std::error::Error;
 use std::io::Write;
 use std::process::{Command, Stdio};
-use tracing::info;
+use tracing::{info, warn};
 
 use crate::render::error::{RenderError, Result};
 
@@ -321,6 +334,213 @@ pub fn create_video_from_frames_singlepass(
     Ok(())
 }
 
+/// Encoding strategy with automatic fallback options.
+///
+/// When the primary encoder fails, fallback encoders are tried in order
+/// until one succeeds. This provides resilience against FFmpeg configuration
+/// issues or codec availability problems.
+#[derive(Debug, Clone)]
+#[allow(dead_code)] // Public API for library consumers
+pub struct EncodingStrategy {
+    /// Primary encoding options (tried first)
+    pub primary: VideoEncodingOptions,
+    /// Fallback options (tried in order if primary fails)
+    pub fallbacks: Vec<VideoEncodingOptions>,
+}
+
+impl Default for EncodingStrategy {
+    /// Create a strategy with sensible fallbacks.
+    ///
+    /// Order of fallbacks:
+    /// 1. Primary: H.265 software encoder (maximum quality)
+    /// 2. Fallback 1: H.265 with faster preset (reduced quality, same codec)
+    /// 3. Fallback 2: H.264 (maximum compatibility)
+    fn default() -> Self {
+        Self::default_with_fallbacks()
+    }
+}
+
+#[allow(dead_code)] // Public API for library consumers
+impl EncodingStrategy {
+    /// Create an encoding strategy with default fallbacks.
+    ///
+    /// This is the recommended strategy for production use, providing
+    /// a balance of quality and reliability.
+    #[must_use]
+    pub fn default_with_fallbacks() -> Self {
+        Self {
+            primary: VideoEncodingOptions::default(),
+            fallbacks: vec![
+                // Fallback 1: Software H.265 with faster preset
+                VideoEncodingOptions {
+                    preset: "fast".to_string(),
+                    crf: 21, // Slightly lower quality for speed
+                    ..VideoEncodingOptions::default()
+                },
+                // Fallback 2: H.264 for maximum compatibility
+                Self::h264_fallback(),
+            ],
+        }
+    }
+
+    /// Create an encoding strategy using fast hardware encoding with fallbacks.
+    #[must_use]
+    pub fn fast_with_fallbacks() -> Self {
+        Self {
+            primary: VideoEncodingOptions::fast_encode(),
+            fallbacks: vec![
+                // Fallback 1: Software H.265 fast preset
+                VideoEncodingOptions {
+                    codec: "libx265".to_string(),
+                    preset: "fast".to_string(),
+                    crf: 22,
+                    ..VideoEncodingOptions::default()
+                },
+                // Fallback 2: H.264 for compatibility
+                Self::h264_fallback(),
+            ],
+        }
+    }
+
+    /// Create a strategy with no fallbacks (fail fast).
+    #[must_use]
+    pub fn no_fallback(options: VideoEncodingOptions) -> Self {
+        Self {
+            primary: options,
+            fallbacks: vec![],
+        }
+    }
+
+    /// H.264 fallback configuration for maximum compatibility.
+    fn h264_fallback() -> VideoEncodingOptions {
+        VideoEncodingOptions {
+            codec: "libx264".to_string(),
+            preset: "medium".to_string(),
+            crf: 18,
+            bitrate: String::new(),
+            pixel_format: "yuv420p".to_string(), // 8-bit for max compat
+            input_pixel_format: "rgb48le".to_string(),
+            extra_args: vec![
+                "-tune".to_string(),
+                "film".to_string(),
+                "-movflags".to_string(),
+                "+faststart".to_string(),
+                "-colorspace".to_string(),
+                "bt709".to_string(),
+                "-color_primaries".to_string(),
+                "bt709".to_string(),
+                "-color_trc".to_string(),
+                "bt709".to_string(),
+            ],
+        }
+    }
+}
+
+/// Create video with automatic retry on encoder failures.
+///
+/// This function attempts encoding with the primary encoder first, then
+/// falls back to alternative encoders if the primary fails. This provides
+/// resilience against FFmpeg configuration issues.
+///
+/// # Arguments
+///
+/// * `width` - Frame width in pixels
+/// * `height` - Frame height in pixels
+/// * `frame_rate` - Output video framerate (fps)
+/// * `frames_iter` - Closure that writes raw RGB frame data (must be cloneable for retries)
+/// * `output_file` - Path to the output video file
+/// * `strategy` - Encoding strategy with fallback options
+///
+/// # Returns
+///
+/// * `Ok(())` on success (with any encoder)
+/// * `Err(RenderError)` if all encoding strategies failed
+///
+/// # Example
+///
+/// ```ignore
+/// let strategy = EncodingStrategy::default_with_fallbacks();
+/// create_video_with_retry(
+///     1920, 1080, 60,
+///     |writer| write_frames_to(writer),
+///     "output.mp4",
+///     &strategy
+/// )?;
+/// ```
+#[allow(dead_code)] // Public API for library consumers
+pub fn create_video_with_retry<F>(
+    width: u32,
+    height: u32,
+    frame_rate: u32,
+    frames_iter: F,
+    output_file: &str,
+    strategy: &EncodingStrategy,
+) -> Result<()>
+where
+    F: FnMut(&mut dyn Write) -> std::result::Result<(), Box<dyn Error>> + Clone,
+{
+    // Try primary encoder
+    match create_video_from_frames_singlepass(
+        width,
+        height,
+        frame_rate,
+        frames_iter.clone(),
+        output_file,
+        &strategy.primary,
+    ) {
+        Ok(()) => return Ok(()),
+        Err(e) => {
+            if strategy.fallbacks.is_empty() {
+                return Err(e);
+            }
+            warn!(
+                codec = %strategy.primary.codec,
+                error = %e,
+                "Primary encoder failed, trying fallbacks"
+            );
+        }
+    }
+
+    // Try fallbacks in order
+    for (i, fallback) in strategy.fallbacks.iter().enumerate() {
+        info!(
+            fallback_num = i + 1,
+            codec = %fallback.codec,
+            "Attempting fallback encoder"
+        );
+
+        match create_video_from_frames_singlepass(
+            width,
+            height,
+            frame_rate,
+            frames_iter.clone(),
+            output_file,
+            fallback,
+        ) {
+            Ok(()) => {
+                info!(
+                    fallback_num = i + 1,
+                    codec = %fallback.codec,
+                    "Fallback encoder succeeded"
+                );
+                return Ok(());
+            }
+            Err(e) => {
+                warn!(
+                    fallback_num = i + 1,
+                    codec = %fallback.codec,
+                    error = %e,
+                    "Fallback encoder failed"
+                );
+            }
+        }
+    }
+
+    Err(RenderError::VideoEncoding(std::io::Error::other(
+        "all encoding strategies failed: check FFmpeg installation and codec availability",
+    )))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -394,5 +614,49 @@ mod tests {
         assert!(params.contains("aq-mode=3"));
         assert!(params.contains("psy-rd=2.5"));
         assert!(params.contains("rc-lookahead=250"));
+    }
+
+    #[test]
+    fn test_encoding_strategy_default() {
+        let strategy = EncodingStrategy::default();
+        
+        // Primary should be H.265
+        assert_eq!(strategy.primary.codec, "libx265");
+        
+        // Should have fallbacks
+        assert!(!strategy.fallbacks.is_empty());
+        
+        // Last fallback should be H.264 for compatibility
+        let last_fallback = strategy.fallbacks.last().unwrap();
+        assert_eq!(last_fallback.codec, "libx264");
+    }
+
+    #[test]
+    fn test_encoding_strategy_fast() {
+        let strategy = EncodingStrategy::fast_with_fallbacks();
+        
+        // Should have hardware encoder primary on macOS
+        #[cfg(target_os = "macos")]
+        assert_eq!(strategy.primary.codec, "hevc_videotoolbox");
+        
+        // Should have fallbacks
+        assert!(!strategy.fallbacks.is_empty());
+    }
+
+    #[test]
+    fn test_encoding_strategy_no_fallback() {
+        let options = VideoEncodingOptions::default();
+        let strategy = EncodingStrategy::no_fallback(options);
+        
+        assert!(strategy.fallbacks.is_empty());
+    }
+
+    #[test]
+    fn test_h264_fallback_is_compatible() {
+        let fallback = EncodingStrategy::h264_fallback();
+        
+        // H.264 with 8-bit color for maximum compatibility
+        assert_eq!(fallback.codec, "libx264");
+        assert_eq!(fallback.pixel_format, "yuv420p");
     }
 }

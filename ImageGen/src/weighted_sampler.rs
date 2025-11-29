@@ -21,6 +21,7 @@ use std::f64::consts::PI;
 /// 1. Normal rejection sampling (up to 1000 attempts)
 /// 2. Fallback to clamped mean
 /// 3. Final safety clamp
+#[must_use = "sampling result should not be discarded"]
 pub fn sample_truncated_normal(
     rng: &mut Sha3RandomByteStream,
     mean: f64,
@@ -110,6 +111,7 @@ pub fn sample_categorical(rng: &mut Sha3RandomByteStream, weights: &[f64]) -> us
 ///
 /// # Safety
 /// ALWAYS returns a value in [min, max]. Never panics.
+#[must_use = "sampling result should not be discarded"]
 pub fn sample_uniform(rng: &mut Sha3RandomByteStream, min: f64, max: f64) -> f64 {
     if !min.is_finite() || !max.is_finite() || min >= max {
         return min;
@@ -132,6 +134,7 @@ pub fn sample_uniform(rng: &mut Sha3RandomByteStream, min: f64, max: f64) -> f64
 /// 2. Fall back to uniform if no distribution
 /// 3. Fall back to uniform if sampling fails
 /// 4. Final safety clamp to guarantee bounds
+#[must_use = "sampling result should not be discarded"]
 pub fn sample_parameter(
     rng: &mut Sha3RandomByteStream,
     param_name: &str,
@@ -159,6 +162,7 @@ pub fn sample_parameter(
 ///
 /// # Safety
 /// ALWAYS returns a value in [min, max]. Never panics.
+#[must_use = "sampling result should not be discarded"]
 pub fn sample_parameter_int(
     rng: &mut Sha3RandomByteStream,
     param_name: &str,
@@ -241,6 +245,144 @@ mod tests {
         for _ in 0..100 {
             let value = sample_truncated_normal(&mut rng, 10.0, 0.5, 0.0, 1.0);
             assert!(value >= 0.0 && value <= 1.0);
+        }
+    }
+
+    #[test]
+    fn test_sample_parameter_with_unknown_param() {
+        let mut rng = Sha3RandomByteStream::new(&[5, 6, 7, 8], 1.0, 2.0, 1.0, 1.0);
+        
+        // Unknown parameter should fall back to uniform sampling
+        for _ in 0..100 {
+            let value = sample_parameter(&mut rng, "unknown_param_xyz", 0.0, 1.0);
+            assert!(value >= 0.0 && value <= 1.0);
+        }
+    }
+
+    #[test]
+    fn test_sample_parameter_int_bounds() {
+        let mut rng = Sha3RandomByteStream::new(&[9, 10, 11, 12], 1.0, 2.0, 1.0, 1.0);
+        
+        for _ in 0..100 {
+            let value = sample_parameter_int(&mut rng, "unknown_int_param", 5, 10);
+            assert!(value >= 5 && value <= 10);
+        }
+    }
+
+    #[test]
+    fn test_sample_uniform_edge_cases() {
+        let mut rng = Sha3RandomByteStream::new(&[1, 2, 3, 4], 1.0, 2.0, 1.0, 1.0);
+        
+        // Equal min and max should return min
+        let value = sample_uniform(&mut rng, 0.5, 0.5);
+        assert!((value - 0.5).abs() < 1e-10);
+        
+        // Inverted range should return min
+        let value = sample_uniform(&mut rng, 1.0, 0.0);
+        assert!((value - 1.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_truncated_normal_edge_cases() {
+        let mut rng = Sha3RandomByteStream::new(&[1, 2, 3, 4], 1.0, 2.0, 1.0, 1.0);
+        
+        // Zero std should return clamped mean
+        let value = sample_truncated_normal(&mut rng, 0.5, 0.0, 0.0, 1.0);
+        assert!((value - 0.5).abs() < 1e-10);
+        
+        // Inverted range should return min
+        let value = sample_truncated_normal(&mut rng, 0.5, 0.1, 1.0, 0.0);
+        assert!((value - 1.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_sample_parameter_int_single_value() {
+        let mut rng = Sha3RandomByteStream::new(&[1, 2, 3, 4], 1.0, 2.0, 1.0, 1.0);
+        
+        // When min == max, should return that value
+        let value = sample_parameter_int(&mut rng, "test", 5, 5);
+        assert_eq!(value, 5);
+    }
+}
+
+/// Property-based tests for sampling functions.
+///
+/// These tests use random inputs to verify invariants hold across
+/// a wide range of parameter values.
+#[cfg(test)]
+mod proptests {
+    use super::*;
+    use proptest::prelude::*;
+
+    proptest! {
+        /// Truncated normal always returns values within bounds.
+        #[test]
+        fn truncated_normal_always_in_bounds(
+            mean in -100.0f64..100.0,
+            std in 0.01f64..50.0,
+            bound1 in -100.0f64..100.0,
+            bound2 in -100.0f64..100.0,
+            seed in 0u8..255u8,
+        ) {
+            let min = bound1.min(bound2);
+            let max = (bound1.max(bound2) + 0.01).max(min + 0.01); // Ensure min < max
+            
+            let mut rng = Sha3RandomByteStream::new(&[seed, seed.wrapping_add(1), seed.wrapping_add(2), seed.wrapping_add(3)], 1.0, 2.0, 1.0, 1.0);
+            let value = sample_truncated_normal(&mut rng, mean, std, min, max);
+            
+            prop_assert!(value >= min, "Value {} below min {}", value, min);
+            prop_assert!(value <= max, "Value {} above max {}", value, max);
+            prop_assert!(value.is_finite(), "Value is not finite");
+        }
+
+        /// Uniform sampling always returns values within bounds.
+        #[test]
+        fn uniform_always_in_bounds(
+            bound1 in -100.0f64..100.0,
+            bound2 in -100.0f64..100.0,
+            seed in 0u8..255u8,
+        ) {
+            let min = bound1.min(bound2);
+            let max = bound1.max(bound2);
+            
+            let mut rng = Sha3RandomByteStream::new(&[seed, seed.wrapping_add(1), seed.wrapping_add(2), seed.wrapping_add(3)], 1.0, 2.0, 1.0, 1.0);
+            let value = sample_uniform(&mut rng, min, max);
+            
+            prop_assert!(value >= min, "Value {} below min {}", value, min);
+            prop_assert!(value <= max, "Value {} above max {}", value, max);
+            prop_assert!(value.is_finite(), "Value is not finite");
+        }
+
+        /// Integer sampling always returns values within bounds.
+        #[test]
+        fn int_sampling_always_in_bounds(
+            bound1 in 0usize..1000,
+            bound2 in 0usize..1000,
+            seed in 0u8..255u8,
+        ) {
+            let min = bound1.min(bound2);
+            let max = bound1.max(bound2);
+            
+            let mut rng = Sha3RandomByteStream::new(&[seed, seed.wrapping_add(1), seed.wrapping_add(2), seed.wrapping_add(3)], 1.0, 2.0, 1.0, 1.0);
+            let value = sample_parameter_int(&mut rng, "test_param", min, max);
+            
+            prop_assert!(value >= min, "Value {} below min {}", value, min);
+            prop_assert!(value <= max, "Value {} above max {}", value, max);
+        }
+
+        /// Parameter sampling never returns NaN or Infinity.
+        #[test]
+        fn parameter_sampling_finite(
+            min in -1000.0f64..1000.0,
+            max in -1000.0f64..1000.0,
+            seed in 0u8..255u8,
+        ) {
+            let (min, max) = if min <= max { (min, max) } else { (max, min) };
+            
+            let mut rng = Sha3RandomByteStream::new(&[seed, seed.wrapping_add(1), seed.wrapping_add(2), seed.wrapping_add(3)], 1.0, 2.0, 1.0, 1.0);
+            let value = sample_parameter(&mut rng, "blur_strength", min, max);
+            
+            prop_assert!(value.is_finite(), "Parameter sampling returned non-finite value");
         }
     }
 }

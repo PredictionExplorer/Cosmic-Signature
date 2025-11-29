@@ -12,9 +12,26 @@
 #![allow(dead_code)] // Public API types for library consumers
 
 use super::color::OklabColor;
+use super::constants;
 use super::effects::DogBloomConfig;
+use super::randomizable_config::ResolvedEffectConfig;
 use crate::post_effects::PerceptualBlurConfig;
 use nalgebra::Vector3;
+
+/// Rendering configuration parameters
+///
+/// Controls global rendering behavior like HDR scaling.
+#[derive(Clone, Copy, Debug)]
+pub struct RenderConfig {
+    /// HDR scale factor (1.0 = no HDR boost)
+    pub hdr_scale: f64,
+}
+
+impl Default for RenderConfig {
+    fn default() -> Self {
+        Self { hdr_scale: constants::DEFAULT_HDR_SCALE }
+    }
+}
 
 /// Image resolution dimensions
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -167,7 +184,7 @@ impl PerceptualBlurSettings {
     }
 }
 
-/// Complete scene data for rendering
+/// Complete scene data for rendering (owned version)
 ///
 /// Part of the public rendering API.
 #[derive(Clone)]
@@ -199,6 +216,53 @@ impl SceneData {
     /// Get number of timesteps
     ///
     /// Part of the public API for scene inspection.
+    pub fn num_steps(&self) -> usize {
+        if self.positions.is_empty() {
+            0
+        } else {
+            self.positions[0].len()
+        }
+    }
+    
+    /// Create a borrowed reference to this scene data
+    pub fn as_ref(&self) -> SceneDataRef<'_> {
+        SceneDataRef {
+            positions: &self.positions,
+            colors: &self.colors,
+            body_alphas: &self.body_alphas,
+        }
+    }
+}
+
+/// Scene data reference for rendering (borrowed version)
+///
+/// Used by rendering functions that don't need ownership of the data.
+/// This reduces the number of parameters in function signatures.
+#[derive(Clone, Copy)]
+pub struct SceneDataRef<'a> {
+    pub positions: &'a [Vec<Vector3<f64>>],
+    pub colors: &'a [Vec<OklabColor>],
+    pub body_alphas: &'a [f64],
+}
+
+impl<'a> SceneDataRef<'a> {
+    /// Create a new scene data reference
+    pub fn new(
+        positions: &'a [Vec<Vector3<f64>>],
+        colors: &'a [Vec<OklabColor>],
+        body_alphas: &'a [f64],
+    ) -> Self {
+        Self { positions, colors, body_alphas }
+    }
+    
+    /// Get number of bodies
+    #[inline]
+    pub fn num_bodies(&self) -> usize {
+        self.positions.len()
+    }
+    
+    /// Get number of timesteps
+    #[inline]
     pub fn num_steps(&self) -> usize {
         if self.positions.is_empty() {
             0
@@ -250,6 +314,100 @@ impl ChannelLevels {
     #[inline]
     pub fn range(&self, channel: usize) -> f64 {
         self.range[channel]
+    }
+}
+
+/// Common rendering parameters shared between pass functions
+///
+/// This struct groups together frequently-used parameters to reduce
+/// function signature complexity. Functions taking 8+ parameters can
+/// instead take a single `RenderParams` reference.
+///
+/// # Example
+///
+/// ```ignore
+/// let params = RenderParams::new(
+///     &scene,
+///     &resolved_config,
+///     frame_interval,
+///     noise_seed,
+///     &render_config,
+/// );
+/// pass_1_build_histogram(&params, &mut histogram)?;
+/// ```
+#[derive(Clone, Copy)]
+pub struct RenderParams<'a> {
+    /// Scene data (positions, colors, body alphas)
+    pub scene: SceneDataRef<'a>,
+    /// Resolved effect configuration
+    pub resolved_config: &'a ResolvedEffectConfig,
+    /// Frame interval (simulation steps per output frame)
+    pub frame_interval: usize,
+    /// Random seed for noise effects
+    pub noise_seed: i32,
+    /// General render configuration
+    pub render_config: &'a RenderConfig,
+}
+
+impl<'a> RenderParams<'a> {
+    /// Create new render parameters
+    pub fn new(
+        scene: SceneDataRef<'a>,
+        resolved_config: &'a ResolvedEffectConfig,
+        frame_interval: usize,
+        noise_seed: i32,
+        render_config: &'a RenderConfig,
+    ) -> Self {
+        Self {
+            scene,
+            resolved_config,
+            frame_interval,
+            noise_seed,
+            render_config,
+        }
+    }
+    
+    /// Create render params from individual scene components
+    pub fn from_components(
+        positions: &'a [Vec<Vector3<f64>>],
+        colors: &'a [Vec<OklabColor>],
+        body_alphas: &'a [f64],
+        resolved_config: &'a ResolvedEffectConfig,
+        frame_interval: usize,
+        noise_seed: i32,
+        render_config: &'a RenderConfig,
+    ) -> Self {
+        Self {
+            scene: SceneDataRef::new(positions, colors, body_alphas),
+            resolved_config,
+            frame_interval,
+            noise_seed,
+            render_config,
+        }
+    }
+    
+    /// Get image width from resolved config
+    #[inline]
+    pub fn width(&self) -> u32 {
+        self.resolved_config.width
+    }
+    
+    /// Get image height from resolved config
+    #[inline]
+    pub fn height(&self) -> u32 {
+        self.resolved_config.height
+    }
+    
+    /// Check if special mode is enabled
+    #[inline]
+    pub fn is_special_mode(&self) -> bool {
+        self.resolved_config.special_mode
+    }
+    
+    /// Get total number of simulation steps
+    #[inline]
+    pub fn total_steps(&self) -> usize {
+        self.scene.num_steps()
     }
 }
 
