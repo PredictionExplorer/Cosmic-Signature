@@ -8,14 +8,17 @@ use super::context::PixelBuffer;
 use super::drawing::parallel_blur_2d_rgba;
 use super::error::{RenderError, Result};
 use crate::post_effects::{
-    AutoExposure, ChampleveConfig, ChromaticBloom, ChromaticBloomConfig, CinematicColorGrade,
-    ColorGradeParams, CrepuscularRays, CrepuscularRaysConfig, DogBloom, GaussianBloom,
-    GlowEnhancement, GlowEnhancementConfig, GradientMap, GradientMapConfig, MicroContrast,
-    MicroContrastConfig, PerceptualBlur, PerceptualBlurConfig, PostEffect, PostEffectChain,
+    AutoExposure, AuroraVeils, AuroraVeilsConfig, ChampleveConfig, Cherenkov, CherenkovConfig,
+    ChromaticBloom, ChromaticBloomConfig, CinematicColorGrade, ColorGradeParams,
+    CosmicInk, CosmicInkConfig, CrepuscularRays, CrepuscularRaysConfig, DimensionalGlitch,
+    DimensionalGlitchConfig, DogBloom, EdgeLuminance, EdgeLuminanceConfig, EventHorizon,
+    EventHorizonConfig, FineTexture, FineTextureConfig, GaussianBloom, GlowEnhancement,
+    GlowEnhancementConfig, GradientMap, GradientMapConfig, MicroContrast, MicroContrastConfig,
+    Opalescence, OpalescenceConfig, PerceptualBlur, PerceptualBlurConfig, PostEffect,
+    PostEffectChain, PrismaticHalos, PrismaticHalosConfig, RefractiveCaustics,
+    RefractiveCausticsConfig, VolumetricOcclusion, VolumetricOcclusionConfig,
     aether::AetherConfig, apply_aether_weave, apply_champleve_iridescence, AtmosphericDepth,
-    AtmosphericDepthConfig, RefractiveCaustics, RefractiveCausticsConfig, EdgeLuminance, EdgeLuminanceConfig,
-    FineTexture, FineTextureConfig, Opalescence, OpalescenceConfig, VolumetricOcclusion,
-    VolumetricOcclusionConfig,
+    AtmosphericDepthConfig,
 };
 use crate::spectrum::{NUM_BINS, spd_to_rgba};
 use rayon::prelude::*;
@@ -77,6 +80,20 @@ pub struct EffectConfig {
     pub refractive_caustics_config: RefractiveCausticsConfig,
     pub fine_texture_enabled: bool,
     pub fine_texture_config: FineTextureConfig,
+    
+    // New "Masterpiece" physics and artistic effects
+    pub event_horizon_enabled: bool,
+    pub event_horizon_config: EventHorizonConfig,
+    pub cherenkov_enabled: bool,
+    pub cherenkov_config: CherenkovConfig,
+    pub cosmic_ink_enabled: bool,
+    pub cosmic_ink_config: CosmicInkConfig,
+    pub aurora_veils_enabled: bool,
+    pub aurora_veils_config: AuroraVeilsConfig,
+    pub prismatic_halos_enabled: bool,
+    pub prismatic_halos_config: PrismaticHalosConfig,
+    pub dimensional_glitch_enabled: bool,
+    pub dimensional_glitch_config: DimensionalGlitchConfig,
 }
 
 /// Per-frame parameters that may vary
@@ -205,32 +222,73 @@ impl EffectChainBuilder {
             chain.add(Box::new(EdgeLuminance::new(config.edge_luminance_config.clone())));
         }
 
-        // ===== PHASE 7: ATMOSPHERIC & SURFACE =====
-        // Final spatial and material qualities
+        // ===== PHASE 7: ATMOSPHERIC & PHYSICS EFFECTS =====
+        // Background and environmental layers (apply early for proper layering)
         
-        // 7a. Crepuscular Rays (God Rays) - Light scattering through volume
-        if config.crepuscular_rays_enabled {
-            chain.add(Box::new(CrepuscularRays::new(config.crepuscular_rays_config.clone())));
+        // 7a. Aurora Veils (background atmospheric curtains) [NEW - MASTERPIECE]
+        if config.aurora_veils_enabled {
+            chain.add(Box::new(AuroraVeils::new(config.aurora_veils_config.clone())));
         }
-
-        // 7b. Volumetric Occlusion (Self-Shadowing)
+        
+        // 7b. Cosmic Ink (fluid-like space medium) [NEW - MASTERPIECE]
+        if config.cosmic_ink_enabled {
+            chain.add(Box::new(CosmicInk::new(config.cosmic_ink_config.clone())));
+        }
+        
+        // ===== PHASE 8: PHYSICS VISUALIZATION =====
+        // Effects that reveal the invisible forces
+        
+        // 8a. Event Horizon Lensing (gravity distortion) [NEW - MASTERPIECE]
+        // Replaces refractive_caustics for thematically superior gravity visualization
+        if config.event_horizon_enabled {
+            chain.add(Box::new(EventHorizon::new(config.event_horizon_config.clone())));
+        } else if config.refractive_caustics_enabled {
+            // Legacy fallback: Refractive Caustics (Glass/Gem look)
+            chain.add(Box::new(RefractiveCaustics::new(config.refractive_caustics_config.clone())));
+        }
+        
+        // 8b. Volumetric Occlusion (Self-Shadowing for depth)
         if config.volumetric_occlusion_enabled {
             chain.add(Box::new(VolumetricOcclusion::new(config.volumetric_occlusion_config.clone())));
         }
-
-        // 7c. Refractive Caustics (Lensing)
-        if config.refractive_caustics_enabled {
-            chain.add(Box::new(RefractiveCaustics::new(config.refractive_caustics_config.clone())));
+        
+        // 8c. Crepuscular Rays (God Rays - Light scattering)
+        if config.crepuscular_rays_enabled {
+            chain.add(Box::new(CrepuscularRays::new(config.crepuscular_rays_config.clone())));
         }
-
-        // 7d. Atmospheric depth (spatial perspective + fog)
+        
+        // ===== PHASE 9: ENERGY & VELOCITY EFFECTS =====
+        // High-energy event visualization
+        
+        // 9a. Cherenkov Radiation (velocity-based blue glow) [NEW - MASTERPIECE]
+        if config.cherenkov_enabled {
+            chain.add(Box::new(Cherenkov::new(config.cherenkov_config.clone())));
+        }
+        
+        // 9b. Prismatic Halos (optical phenomena around bright spots) [NEW - MASTERPIECE]
+        if config.prismatic_halos_enabled {
+            chain.add(Box::new(PrismaticHalos::new(config.prismatic_halos_config.clone())));
+        }
+        
+        // ===== PHASE 10: ATMOSPHERIC DEPTH & SURFACE =====
+        // Final spatial qualities
+        
+        // 10a. Atmospheric depth (spatial perspective + fog)
         if config.atmospheric_depth_enabled {
             chain.add(Box::new(AtmosphericDepth::new(config.atmospheric_depth_config.clone())));
         }
 
-        // 7e. Fine texture (surface quality: canvas, linen, etc. - preserves all prior work)
+        // 10b. Fine texture (surface quality: canvas, linen, etc. - preserves all prior work)
         if config.fine_texture_enabled {
             chain.add(Box::new(FineTexture::new(config.fine_texture_config.clone())));
+        }
+        
+        // ===== PHASE 11: DIGITAL AESTHETICS =====
+        // Meta-layer: the computational medium itself
+        
+        // 11. Dimensional Glitch (digital artifacts at peak energy) [NEW - MASTERPIECE]
+        if config.dimensional_glitch_enabled {
+            chain.add(Box::new(DimensionalGlitch::new(config.dimensional_glitch_config.clone())));
         }
 
         chain
@@ -289,6 +347,20 @@ impl Default for EffectConfig {
             refractive_caustics_config: RefractiveCausticsConfig::default(),
             fine_texture_enabled: false,
             fine_texture_config: FineTextureConfig::default(),
+            
+            // New "Masterpiece" effects (disabled by default)
+            event_horizon_enabled: false,
+            event_horizon_config: EventHorizonConfig::default(),
+            cherenkov_enabled: false,
+            cherenkov_config: CherenkovConfig::default(),
+            cosmic_ink_enabled: false,
+            cosmic_ink_config: CosmicInkConfig::default(),
+            aurora_veils_enabled: false,
+            aurora_veils_config: AuroraVeilsConfig::default(),
+            prismatic_halos_enabled: false,
+            prismatic_halos_config: PrismaticHalosConfig::default(),
+            dimensional_glitch_enabled: false,
+            dimensional_glitch_config: DimensionalGlitchConfig::default(),
         }
     }
 }

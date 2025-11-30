@@ -191,6 +191,32 @@ fn build_randomizable_config(args: &EffectArgs) -> render::randomizable_config::
         nebula_strength: args.param_nebula_strength,
         nebula_octaves: args.param_nebula_octaves,
         nebula_base_frequency: args.param_nebula_base_frequency,
+        
+        // New "Masterpiece" effects - all randomized by default
+        enable_event_horizon: if args.disable_all_effects { Some(false) } else { None },
+        event_horizon_strength: None,
+        event_horizon_mass_scale: None,
+        
+        enable_cherenkov: if args.disable_all_effects { Some(false) } else { None },
+        cherenkov_strength: None,
+        cherenkov_threshold: None,
+        cherenkov_blur_radius: None,
+        
+        enable_cosmic_ink: if args.disable_all_effects { Some(false) } else { None },
+        cosmic_ink_strength: None,
+        cosmic_ink_swirl_intensity: None,
+        
+        enable_aurora_veils: if args.disable_all_effects { Some(false) } else { None },
+        aurora_veils_strength: None,
+        aurora_veils_curtain_count: None,
+        
+        enable_prismatic_halos: if args.disable_all_effects { Some(false) } else { None },
+        prismatic_halos_strength: None,
+        prismatic_halos_threshold: None,
+        
+        enable_dimensional_glitch: if args.disable_all_effects { Some(false) } else { None },
+        dimensional_glitch_strength: None,
+        dimensional_glitch_threshold: None,
     }
 }
 

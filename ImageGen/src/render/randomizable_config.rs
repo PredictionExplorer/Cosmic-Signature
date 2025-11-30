@@ -31,6 +31,14 @@ pub struct RandomizableEffectConfig {
     pub enable_volumetric_occlusion: Option<bool>,
     pub enable_refractive_caustics: Option<bool>,
     pub enable_fine_texture: Option<bool>,
+    
+    // New "Masterpiece" effects (Phase 2024 enhancements)
+    pub enable_event_horizon: Option<bool>,
+    pub enable_cherenkov: Option<bool>,
+    pub enable_cosmic_ink: Option<bool>,
+    pub enable_aurora_veils: Option<bool>,
+    pub enable_prismatic_halos: Option<bool>,
+    pub enable_dimensional_glitch: Option<bool>,
 
     // Bloom & Glow parameters
     pub blur_strength: Option<f64>,
@@ -141,6 +149,32 @@ pub struct RandomizableEffectConfig {
     pub nebula_strength: Option<f64>,
     pub nebula_octaves: Option<usize>,
     pub nebula_base_frequency: Option<f64>,
+    
+    // New "Masterpiece" effect parameters
+    // Event Horizon Lensing
+    pub event_horizon_strength: Option<f64>,
+    pub event_horizon_mass_scale: Option<f64>,
+    
+    // Cherenkov Radiation
+    pub cherenkov_strength: Option<f64>,
+    pub cherenkov_threshold: Option<f64>,
+    pub cherenkov_blur_radius: Option<f64>,
+    
+    // Cosmic Ink
+    pub cosmic_ink_strength: Option<f64>,
+    pub cosmic_ink_swirl_intensity: Option<f64>,
+    
+    // Aurora Veils
+    pub aurora_veils_strength: Option<f64>,
+    pub aurora_veils_curtain_count: Option<usize>,
+    
+    // Prismatic Halos
+    pub prismatic_halos_strength: Option<f64>,
+    pub prismatic_halos_threshold: Option<f64>,
+    
+    // Dimensional Glitch
+    pub dimensional_glitch_strength: Option<f64>,
+    pub dimensional_glitch_threshold: Option<f64>,
 }
 
 impl RandomizableEffectConfig {
@@ -245,6 +279,44 @@ impl RandomizableEffectConfig {
                 &mut randomizer,
                 &mut log,
             ),
+            
+            // New "Masterpiece" effects
+            enable_event_horizon: self.resolve_enable(
+                "event_horizon",
+                self.enable_event_horizon,
+                &mut randomizer,
+                &mut log,
+            ),
+            enable_cherenkov: self.resolve_enable(
+                "cherenkov",
+                self.enable_cherenkov,
+                &mut randomizer,
+                &mut log,
+            ),
+            enable_cosmic_ink: self.resolve_enable(
+                "cosmic_ink",
+                self.enable_cosmic_ink,
+                &mut randomizer,
+                &mut log,
+            ),
+            enable_aurora_veils: self.resolve_enable(
+                "aurora_veils",
+                self.enable_aurora_veils,
+                &mut randomizer,
+                &mut log,
+            ),
+            enable_prismatic_halos: self.resolve_enable(
+                "prismatic_halos",
+                self.enable_prismatic_halos,
+                &mut randomizer,
+                &mut log,
+            ),
+            enable_dimensional_glitch: self.resolve_enable(
+                "dimensional_glitch",
+                self.enable_dimensional_glitch,
+                &mut randomizer,
+                &mut log,
+            ),
 
             // Resolve all float/int parameters
             blur_strength: self.resolve_float("blur_strength", self.blur_strength, &pd::BLUR_STRENGTH, &mut randomizer, &mut log),
@@ -326,6 +398,21 @@ impl RandomizableEffectConfig {
             nebula_strength: self.resolve_float("nebula_strength", self.nebula_strength, &pd::NEBULA_STRENGTH, &mut randomizer, &mut log),
             nebula_octaves: self.resolve_int("nebula_octaves", self.nebula_octaves, &pd::NEBULA_OCTAVES, &mut randomizer, &mut log),
             nebula_base_frequency: self.resolve_float("nebula_base_frequency", self.nebula_base_frequency, &pd::NEBULA_BASE_FREQUENCY, &mut randomizer, &mut log),
+            
+            // New "Masterpiece" effect parameters (using simple fixed ranges for now)
+            event_horizon_strength: self.event_horizon_strength.unwrap_or(if special_mode { 0.45 } else { 0.25 }),
+            event_horizon_mass_scale: self.event_horizon_mass_scale.unwrap_or(2.5),
+            cherenkov_strength: self.cherenkov_strength.unwrap_or(if special_mode { 0.55 } else { 0.30 }),
+            cherenkov_threshold: self.cherenkov_threshold.unwrap_or(if special_mode { 0.65 } else { 0.72 }),
+            cherenkov_blur_radius: self.cherenkov_blur_radius.unwrap_or(if special_mode { 8.0 } else { 5.0 }),
+            cosmic_ink_strength: self.cosmic_ink_strength.unwrap_or(if special_mode { 0.40 } else { 0.22 }),
+            cosmic_ink_swirl_intensity: self.cosmic_ink_swirl_intensity.unwrap_or(0.75),
+            aurora_veils_strength: self.aurora_veils_strength.unwrap_or(if special_mode { 0.35 } else { 0.18 }),
+            aurora_veils_curtain_count: self.aurora_veils_curtain_count.unwrap_or(if special_mode { 5 } else { 3 }),
+            prismatic_halos_strength: self.prismatic_halos_strength.unwrap_or(0.42),
+            prismatic_halos_threshold: self.prismatic_halos_threshold.unwrap_or(0.70),
+            dimensional_glitch_strength: self.dimensional_glitch_strength.unwrap_or(0.35),
+            dimensional_glitch_threshold: self.dimensional_glitch_threshold.unwrap_or(0.75),
             
             // Resolve constrained pair (clip_black < clip_white)
             clip_black: 0.0, // Will be set below
@@ -523,6 +610,14 @@ pub struct ResolvedEffectConfig {
     pub enable_volumetric_occlusion: bool,
     pub enable_refractive_caustics: bool,
     pub enable_fine_texture: bool,
+    
+    // New "Masterpiece" effects
+    pub enable_event_horizon: bool,
+    pub enable_cherenkov: bool,
+    pub enable_cosmic_ink: bool,
+    pub enable_aurora_veils: bool,
+    pub enable_prismatic_halos: bool,
+    pub enable_dimensional_glitch: bool,
 
     // Parameters
     pub blur_strength: f64,
@@ -601,6 +696,21 @@ pub struct ResolvedEffectConfig {
     pub nebula_strength: f64,
     pub nebula_octaves: usize,
     pub nebula_base_frequency: f64,
+    
+    // New "Masterpiece" effect parameters
+    pub event_horizon_strength: f64,
+    pub event_horizon_mass_scale: f64,
+    pub cherenkov_strength: f64,
+    pub cherenkov_threshold: f64,
+    pub cherenkov_blur_radius: f64,
+    pub cosmic_ink_strength: f64,
+    pub cosmic_ink_swirl_intensity: f64,
+    pub aurora_veils_strength: f64,
+    pub aurora_veils_curtain_count: usize,
+    pub prismatic_halos_strength: f64,
+    pub prismatic_halos_threshold: f64,
+    pub dimensional_glitch_strength: f64,
+    pub dimensional_glitch_threshold: f64,
 }
 
 /// Apply essential constraints to prevent performance catastrophes and mathematical impossibilities.

@@ -330,10 +330,11 @@ fn build_effect_config_from_resolved(
 ) -> EffectConfig {
     use crate::oklab::GamutMapMode;
     use crate::post_effects::{
-        AetherConfig, AtmosphericDepthConfig, RefractiveCausticsConfig, ChampleveConfig, ColorGradeParams,
-        CrepuscularRaysConfig, EdgeLuminanceConfig, FineTextureConfig, GlowEnhancementConfig,
-        MicroContrastConfig, OpalescenceConfig, VolumetricOcclusionConfig,
-        fine_texture::TextureType,
+        AetherConfig, AtmosphericDepthConfig, AuroraVeilsConfig, CherenkovConfig,
+        ChampleveConfig, ColorGradeParams, CosmicInkConfig, CrepuscularRaysConfig,
+        DimensionalGlitchConfig, EdgeLuminanceConfig, EventHorizonConfig, FineTextureConfig,
+        GlowEnhancementConfig, MicroContrastConfig, OpalescenceConfig, PrismaticHalosConfig,
+        RefractiveCausticsConfig, VolumetricOcclusionConfig, fine_texture::TextureType,
     };
     
     let width = resolved.width as usize;
@@ -526,6 +527,79 @@ fn build_effect_config_from_resolved(
             angle: 0.0, // Fixed
             light_angle: resolved.fine_texture_light_angle,
             specular_strength: resolved.fine_texture_specular,
+        },
+        
+        // New "Masterpiece" effects configuration
+        event_horizon_enabled: resolved.enable_event_horizon,
+        event_horizon_config: EventHorizonConfig {
+            strength: resolved.event_horizon_strength,
+            mass_scale: resolved.event_horizon_mass_scale,
+            gravity_constant: 150.0, // Fixed
+            max_displacement: 35.0, // Fixed
+            chromatic_aberration: 0.008, // Fixed
+            mass_threshold: 0.15, // Fixed
+            softening: 3.0, // Fixed
+        },
+        
+        cherenkov_enabled: resolved.enable_cherenkov,
+        cherenkov_config: CherenkovConfig {
+            strength: resolved.cherenkov_strength,
+            threshold: resolved.cherenkov_threshold,
+            blur_radius: resolved.cherenkov_blur_radius,
+            blue_intensity: 0.85, // Fixed
+            uv_intensity: 0.45, // Fixed
+            cone_angle: 25.0, // Fixed
+            falloff: 2.2, // Fixed
+        },
+        
+        cosmic_ink_enabled: resolved.enable_cosmic_ink,
+        cosmic_ink_config: CosmicInkConfig {
+            strength: resolved.cosmic_ink_strength,
+            octaves: 4, // Fixed
+            scale: 0.015, // Fixed
+            swirl_intensity: resolved.cosmic_ink_swirl_intensity,
+            diffusion: 0.35, // Fixed
+            ink_color: (0.08, 0.12, 0.18), // Fixed
+            vorticity_strength: 0.55, // Fixed
+        },
+        
+        aurora_veils_enabled: resolved.enable_aurora_veils,
+        aurora_veils_config: AuroraVeilsConfig {
+            strength: resolved.aurora_veils_strength,
+            curtain_count: resolved.aurora_veils_curtain_count,
+            height_variation: 0.75, // Fixed
+            wave_amplitude: 0.12, // Fixed
+            vertical_falloff: 1.8, // Fixed
+            colors: [
+                (0.15, 0.45, 0.35),
+                (0.25, 0.65, 0.45),
+                (0.55, 0.35, 0.65),
+                (0.75, 0.55, 0.75),
+            ], // Fixed palette
+            shimmer_frequency: 0.8, // Fixed
+            edge_softness: 0.65, // Fixed
+        },
+        
+        prismatic_halos_enabled: resolved.enable_prismatic_halos,
+        prismatic_halos_config: PrismaticHalosConfig {
+            strength: resolved.prismatic_halos_strength,
+            threshold: resolved.prismatic_halos_threshold,
+            inner_radius: 25.0, // Fixed
+            outer_radius: 65.0, // Fixed
+            chromatic_separation: 0.35, // Fixed
+            sharpness: 2.5, // Fixed
+            ring_count: 3, // Fixed
+        },
+        
+        dimensional_glitch_enabled: resolved.enable_dimensional_glitch,
+        dimensional_glitch_config: DimensionalGlitchConfig {
+            strength: resolved.dimensional_glitch_strength,
+            threshold: resolved.dimensional_glitch_threshold,
+            block_displacement: 8.0, // Fixed
+            channel_separation: 4.0, // Fixed
+            scanline_intensity: 0.25, // Fixed
+            quantization_levels: 12.0, // Fixed
+            block_size: 8, // Fixed
         },
     }
 }

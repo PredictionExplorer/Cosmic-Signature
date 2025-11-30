@@ -66,15 +66,29 @@ impl<'a> EffectRandomizer<'a> {
     /// - edge_luminance: 29% vs 57% → 45% (balanced)
     fn get_enable_probability(&self, effect_name: &str) -> f64 {
         match effect_name {
+            // Legacy effects (deprecated - very low probability)
+            "refractive_caustics" => 0.05,   // Replaced by event_horizon
+            "champleve" => 0.05,              // Less interesting than new effects
+            "nebula_clouds" => 0.05,          // Replaced by aurora_veils + cosmic_ink
+            
             // Mostly disabled in Amazing images (15%)
             "opalescence" => 0.15,
             "aether" => 0.15,
-            "refractive_caustics" => 0.15,
+            
+            // New "Masterpiece" effects - Rare/Special (15-20%)
+            "dimensional_glitch" => 0.15,     // Very distinctive, rare signature effect
+            "prismatic_halos" => 0.20,        // Rare optical phenomena
             
             // Frequently disabled in Amazing images (25%)
             "atmospheric_depth" => 0.25,
             "gradient_map" => 0.25,
             "volumetric_occlusion" => 0.25,
+            "cherenkov" => 0.25,              // Distinctive blue glow, occasional
+            
+            // New "Masterpiece" effects - Moderate (30-40%)
+            "event_horizon" => 0.30,          // Gravity visualization, replaces caustics
+            "cosmic_ink" => 0.35,             // Beautiful fluid aesthetic
+            "aurora_veils" => 0.40,           // Background atmosphere, low conflict
             
             // Somewhat less in Amazing images (35%)
             "fine_texture" => 0.35,
@@ -92,7 +106,6 @@ impl<'a> EffectRandomizer<'a> {
             // More often enabled in Amazing images (60%+)
             "micro_contrast" => 0.60,
             "bloom" => 0.70,
-            "champleve" => 0.75,
             
             // Unknown effects default to neutral
             _ => 0.50,
