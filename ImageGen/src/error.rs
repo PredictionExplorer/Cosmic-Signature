@@ -21,6 +21,9 @@ pub enum AppError {
     /// Configuration and input validation errors
     Config(ConfigError),
     
+    /// Drift configuration errors
+    DriftConfig(crate::drift_config::DriftConfigError),
+    
     /// File I/O errors
     Io(std::io::Error),
 }
@@ -31,6 +34,7 @@ impl fmt::Display for AppError {
             Self::Simulation(e) => write!(f, "Simulation error: {}", e),
             Self::Render(e) => write!(f, "Rendering error: {}", e),
             Self::Config(e) => write!(f, "Configuration error: {}", e),
+            Self::DriftConfig(e) => write!(f, "Drift configuration error: {}", e),
             Self::Io(e) => write!(f, "I/O error: {}", e),
         }
     }
@@ -42,6 +46,7 @@ impl Error for AppError {
             Self::Simulation(e) => Some(e),
             Self::Render(e) => Some(e),
             Self::Config(e) => Some(e),
+            Self::DriftConfig(e) => Some(e),
             Self::Io(e) => Some(e),
         }
     }
@@ -74,6 +79,12 @@ impl From<ConfigError> for AppError {
 impl From<crate::render::error::RenderError> for AppError {
     fn from(error: crate::render::error::RenderError) -> Self {
         Self::Render(RenderError::Inner(error))
+    }
+}
+
+impl From<crate::drift_config::DriftConfigError> for AppError {
+    fn from(error: crate::drift_config::DriftConfigError) -> Self {
+        Self::DriftConfig(error)
     }
 }
 

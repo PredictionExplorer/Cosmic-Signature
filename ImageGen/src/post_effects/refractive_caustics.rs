@@ -274,3 +274,43 @@ impl PostEffect for RefractiveCaustics {
         Ok(output)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test_buffer(w: usize, h: usize, value: f64) -> PixelBuffer {
+        vec![(value, value, value, 1.0); w * h]
+    }
+
+    #[test]
+    fn test_refractive_caustics_basic() {
+        let config = RefractiveCausticsConfig::default();
+        let caustics = RefractiveCaustics::new(config);
+        let buffer = test_buffer(100, 100, 0.5);
+        
+        let result = caustics.process(&buffer, 100, 100);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), buffer.len());
+    }
+
+    #[test]
+    fn test_refractive_caustics_zero() {
+        let config = RefractiveCausticsConfig::default();
+        let caustics = RefractiveCaustics::new(config);
+        let buffer = test_buffer(50, 50, 0.0);
+        
+        let result = caustics.process(&buffer, 50, 50);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_refractive_caustics_hdr() {
+        let config = RefractiveCausticsConfig::default();
+        let caustics = RefractiveCaustics::new(config);
+        let buffer = test_buffer(50, 50, 5.0);
+        
+        let result = caustics.process(&buffer, 50, 50);
+        assert!(result.is_ok());
+    }
+}

@@ -175,3 +175,43 @@ impl PostEffect for VolumetricOcclusion {
         Ok(output)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test_buffer(w: usize, h: usize, value: f64) -> PixelBuffer {
+        vec![(value, value, value, 1.0); w * h]
+    }
+
+    #[test]
+    fn test_volumetric_occlusion_basic() {
+        let config = VolumetricOcclusionConfig::default();
+        let occlusion = VolumetricOcclusion::new(config);
+        let buffer = test_buffer(100, 100, 0.5);
+        
+        let result = occlusion.process(&buffer, 100, 100);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), buffer.len());
+    }
+
+    #[test]
+    fn test_volumetric_occlusion_zero() {
+        let config = VolumetricOcclusionConfig::default();
+        let occlusion = VolumetricOcclusion::new(config);
+        let buffer = test_buffer(50, 50, 0.0);
+        
+        let result = occlusion.process(&buffer, 50, 50);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_volumetric_occlusion_hdr() {
+        let config = VolumetricOcclusionConfig::default();
+        let occlusion = VolumetricOcclusion::new(config);
+        let buffer = test_buffer(50, 50, 5.0);
+        
+        let result = occlusion.process(&buffer, 50, 50);
+        assert!(result.is_ok());
+    }
+}

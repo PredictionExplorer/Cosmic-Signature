@@ -83,7 +83,14 @@ pub struct AppConfig {
     pub equil_weight: f64,
 }
 
-/// Initialize application directories
+/// Initialize application directories.
+///
+/// Creates the `pics/` and `vids/` output directories if they don't exist.
+///
+/// # Errors
+///
+/// Returns `ConfigError::FileSystem` if directory creation fails due to
+/// permissions or filesystem issues.
 pub fn setup_directories() -> Result<()> {
     fs::create_dir_all("pics").map_err(|e| ConfigError::FileSystem {
         operation: "create directory".to_string(),
@@ -100,7 +107,20 @@ pub fn setup_directories() -> Result<()> {
     Ok(())
 }
 
-/// Parse and validate hex seed
+/// Parse and validate hex seed.
+///
+/// Accepts seeds with or without the "0x" prefix.
+///
+/// # Errors
+///
+/// Returns `ConfigError::InvalidSeed` if the seed contains non-hexadecimal characters.
+///
+/// # Example
+///
+/// ```ignore
+/// let seed_bytes = parse_seed("0x100033")?;  // With prefix
+/// let seed_bytes = parse_seed("100033")?;    // Without prefix
+/// ```
 pub fn parse_seed(seed: &str) -> Result<Vec<u8>> {
     let hex_seed = seed.strip_prefix("0x").unwrap_or(seed);
     
@@ -121,7 +141,28 @@ pub fn derive_noise_seed(seed_bytes: &[u8]) -> i32 {
     ])
 }
 
-/// Run Borda selection to find the best orbit
+/// Run Borda selection to find the best orbit.
+///
+/// This function evaluates thousands of random 3-body configurations and selects
+/// the most aesthetically interesting one using a two-criterion Borda count voting system.
+///
+/// # Errors
+///
+/// Returns `SimulationError::NoValidOrbits` if all candidate orbits are filtered out
+/// due to high energy, low angular momentum, or escaping bodies.
+///
+/// # Example
+///
+/// ```ignore
+/// let (best_bodies, metrics) = run_borda_selection(
+///     &mut rng,
+///     30_000,  // Try 30k random configs
+///     1_000_000,  // Simulate for 1M steps
+///     0.75,  // Chaos weight
+///     11.0,  // Equilateral weight  
+///     -0.3,  // Escape threshold
+/// )?;
+/// ```
 pub fn run_borda_selection(
     rng: &mut Sha3RandomByteStream,
     num_sims: usize,
@@ -154,6 +195,10 @@ pub fn simulate_best_orbit(
 }
 
 /// Apply drift transformation to positions
+///
+/// # Errors
+///
+/// Returns an error if drift parameters are partially specified (all or none must be provided).
 pub fn apply_drift_transformation(
     positions: &mut [Vec<Vector3<f64>>],
     drift_mode: &str,
@@ -162,7 +207,7 @@ pub fn apply_drift_transformation(
     drift_orbit_eccentricity: Option<f64>,
     rng: &mut Sha3RandomByteStream,
     special: bool,
-) -> Option<ResolvedDriftConfig> {
+) -> Result<Option<ResolvedDriftConfig>> {
     info!("STAGE 2.5/7: Resolving drift configuration...");
     
     let resolved = resolve_drift_config(
@@ -171,7 +216,7 @@ pub fn apply_drift_transformation(
         drift_orbit_eccentricity,
         rng,
         special,
-    );
+    )?;
     
     info!("Applying {} drift...", drift_mode);
     let num_steps = positions[0].len();
@@ -187,7 +232,7 @@ pub fn apply_drift_transformation(
     drift_transform.apply(positions, constants::DEFAULT_DT);
     
     info!("   => Drift applied successfully");
-    Some(resolved)
+    Ok(Some(resolved))
 }
 
 /// Generate color sequences and alpha values for bodies
@@ -201,7 +246,29 @@ pub fn generate_colors(
     generate_body_color_sequences(rng, num_steps_sim, alpha_value)
 }
 
-/// Build histogram and determine color levels
+/// Build histogram and determine color levels.
+///
+/// This function renders all frames in Pass 1, collecting color histogram data
+/// to compute optimal black/white points for tonemapping. This ensures consistent
+/// exposure across the entire video.
+///
+/// # Errors
+///
+/// Returns `RenderError` if the rendering pipeline fails during histogram collection.
+///
+/// # Example
+///
+/// ```ignore
+/// let levels = build_histogram_and_levels(
+///     &positions,
+///     &colors,
+///     &body_alphas,
+///     &resolved_config,
+///     noise_seed,
+///     &render_config,
+/// )?;
+/// // levels now contains per-channel black/white points
+/// ```
 pub fn build_histogram_and_levels(
     positions: &[Vec<Vector3<f64>>],
     colors: &[Vec<render::OklabColor>],
@@ -258,9 +325,30 @@ pub fn generate_filename(base_name: &str, profile_tag: &str) -> String {
 }
 
 /// Render test frame (first frame only)
-/// Render test frame (first frame only)
+/// Render test frame (first frame only).
 ///
-/// This function uses grouped parameters to reduce argument count.
+/// Renders only the first frame for quick testing and debugging. This is useful
+/// for verifying effect parameters without waiting for the full video to render.
+///
+/// # Errors
+///
+/// Returns `RenderError` if frame rendering or PNG encoding fails.
+///
+/// # Example
+///
+/// ```ignore
+/// render_test_frame(
+///     &positions,
+///     &colors,
+///     &body_alphas,
+///     &resolved_config,
+///     &levels,
+///     noise_seed,
+///     &render_config,
+///     "pics/test.png",
+///     &best_info,
+/// )?;
+/// ```
 pub fn render_test_frame(
     positions: &[Vec<Vector3<f64>>],
     colors: &[Vec<render::OklabColor>],
@@ -301,10 +389,34 @@ pub fn render_test_frame(
     Ok(())
 }
 
-/// Render full video
-/// Render full video with all frames
+/// Render full video with all frames.
 ///
-/// This function uses grouped parameters to reduce argument count.
+/// Performs Pass 2 rendering, applying tonemapping with the histogram-derived levels
+/// and encoding the final video using FFmpeg.
+///
+/// # Errors
+///
+/// Returns `RenderError` if:
+/// - Frame rendering fails
+/// - FFmpeg encoding fails (with automatic fallback to other codecs)
+/// - PNG export of final frame fails
+///
+/// # Example
+///
+/// ```ignore
+/// render_video(
+///     &positions,
+///     &colors,
+///     &body_alphas,
+///     &resolved_config,
+///     &levels,
+///     noise_seed,
+///     &render_config,
+///     "vids/output.mp4",
+///     "pics/output.png",
+///     false,  // high quality mode
+/// )?;
+/// ```
 pub fn render_video(
     positions: &[Vec<Vector3<f64>>],
     colors: &[Vec<render::OklabColor>],

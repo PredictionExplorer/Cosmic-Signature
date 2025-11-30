@@ -22,6 +22,7 @@ path = "src/main.rs"
 warnings = "deny"
 
 [dependencies]
+bytemuck = "1.14"
 chrono   = "0.4.42"
 clap     = { version = "4.5.48", features = ["derive"] }
 hex      = "0.4.3"
@@ -49,6 +50,7 @@ default = []
 criterion = "0.7"
 proptest = "1.4"
 tempfile = "3.14"
+insta = { version = "1.41", features = ["yaml"] }
 
 [[bench]]
 name = "rendering_benchmark"

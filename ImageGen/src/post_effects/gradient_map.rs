@@ -476,3 +476,76 @@ impl PostEffect for GradientMap {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test_buffer(w: usize, h: usize, value: f64) -> PixelBuffer {
+        vec![(value, value, value, 1.0); w * h]
+    }
+
+    #[test]
+    fn test_gradient_map_basic() {
+        let config = GradientMapConfig {
+            palette: LuxuryPalette::GoldPurple,
+            strength: 0.5,
+            hue_preservation: 0.0,
+        };
+        let map = GradientMap::new(config);
+        let buffer = test_buffer(100, 100, 0.5);
+        
+        let result = map.process(&buffer, 100, 100);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), buffer.len());
+    }
+
+    #[test]
+    fn test_gradient_map_all_palettes() {
+        use std::mem::discriminant;
+        
+        let palettes = [
+            LuxuryPalette::GoldPurple,
+            LuxuryPalette::CosmicTealPink,
+            LuxuryPalette::AmberCyan,
+            LuxuryPalette::IndigoGold,
+            LuxuryPalette::BlueOrange,
+        ];
+        
+        for palette in &palettes {
+            let config = GradientMapConfig {
+                palette: palette.clone(),
+                strength: 0.5,
+                hue_preservation: 0.0,
+            };
+            let map = GradientMap::new(config);
+            let buffer = test_buffer(50, 50, 0.5);
+            
+            let result = map.process(&buffer, 50, 50);
+            assert!(result.is_ok(), "Palette {:?} should process successfully", discriminant(palette));
+        }
+    }
+
+    #[test]
+    fn test_gradient_map_from_index() {
+        let palette0 = LuxuryPalette::from_index(0);
+        let palette1 = LuxuryPalette::from_index(1);
+        
+        // Different indices should give different palettes
+        assert!(std::mem::discriminant(&palette0) != std::mem::discriminant(&palette1));
+    }
+
+    #[test]
+    fn test_gradient_map_handles_zero() {
+        let config = GradientMapConfig {
+            palette: LuxuryPalette::GoldPurple,
+            strength: 0.5,
+            hue_preservation: 0.0,
+        };
+        let map = GradientMap::new(config);
+        let buffer = test_buffer(50, 50, 0.0);
+        
+        let result = map.process(&buffer, 50, 50);
+        assert!(result.is_ok());
+    }
+}
+

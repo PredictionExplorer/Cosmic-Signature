@@ -672,5 +672,160 @@ fog_color = [0.1, 0.15, 0.2]
         
         assert_eq!(config.effects.atmospheric.fog_color, Some([0.1, 0.15, 0.2]));
     }
+    
+    /// Fuzz-style robustness test: parser should never panic on arbitrary input
+    ///
+    /// This test exercises the parser with various malformed inputs to ensure
+    /// it always returns an error gracefully rather than panicking.
+    #[test]
+    fn test_parser_robustness_fuzz_style() {
+        // Pre-allocate long strings to satisfy borrow checker
+        let long_x_string = "x".repeat(10000);
+        let long_a_string = format!("[{}]\nkey = 1", "a".repeat(1000));
+        
+        // Collection of malformed inputs that should be handled gracefully
+        let malformed_inputs = vec![
+            // Empty and whitespace
+            "",
+            "   ",
+            "\n\n\n",
+            "\t\t\t",
+            
+            // Invalid TOML syntax
+            "[[[",
+            "]]]",
+            "===",
+            "....",
+            "{{{",
+            "}}}",
+            "<<<",
+            ">>>",
+            
+            // Unclosed brackets
+            "[simulation",
+            "[simulation]seed",
+            "[effects.bloom",
+            "[[effects",
+            
+            // Invalid key-value pairs
+            "key = ",
+            "= value",
+            "key value",
+            "key == value",
+            
+            // Invalid numbers
+            "[simulation]\nseed = 0xGGGG",
+            "[simulation]\nnum_sims = -1",
+            "[render]\nwidth = NaN",
+            "[render]\nheight = Infinity",
+            
+            // Type mismatches
+            "[simulation]\nseed = 12345",  // seed expects string
+            "[render]\nwidth = \"not a number\"",
+            "[effects]\nspecial = \"maybe\"",  // bool expected
+            
+            // Invalid array syntax
+            "[effects.atmospheric]\nfog_color = [0.1, 0.2",  // unclosed
+            "[effects.atmospheric]\nfog_color = 0.1, 0.2, 0.3",  // missing brackets
+            "[effects.atmospheric]\nfog_color = [\"a\", \"b\", \"c\"]",  // wrong type
+            
+            // Nested section errors
+            "[effects.unknown_section]\nvalue = 1",
+            "[simulation.nested.too.deep]\nvalue = 1",
+            
+            // Unicode and special characters
+            "seed = \"🚀\"",
+            "[§invalid§]",
+            "key = \"val\nue\"",
+            
+            // Extremely long inputs (potential DoS)
+            &long_x_string,
+            &long_a_string,
+            
+            // Mixed valid and invalid
+            "[simulation]\nseed = \"0x123\"\n[[[\ninvalid",
+            
+            // Duplicate keys (TOML spec allows, but last wins)
+            "[simulation]\nseed = \"0x123\"\nseed = \"0x456\"",
+        ];
+        
+        for input in malformed_inputs.iter() {
+            let file = create_temp_config(input);
+            let result = ConfigFile::load(file.path());
+            
+            // The key requirement: should not panic, should return Result
+            // We don't care if it succeeds or fails, just that it doesn't crash
+            match result {
+                Ok(_) => {
+                    // Some malformed inputs might actually be valid TOML
+                    // (e.g., empty file, whitespace, duplicate keys)
+                    // That's fine - we just verify no panic occurred
+                }
+                Err(e) => {
+                    // Should be a proper error, not a panic
+                    // Verify error can be displayed (also exercises Display impl)
+                    let _ = format!("{}", e);
+                    let _ = format!("{:?}", e);
+                }
+            }
+            
+            // If we get here, no panic occurred for this input
+        }
+    }
+    
+    /// Test parser handles extremely nested or pathological structures
+    #[test]
+    fn test_parser_pathological_structures() {
+        // Deeply nested tables (TOML allows this)
+        let deep_nesting = "[a.b.c.d.e.f.g.h.i.j.k.l.m.n.o.p]\nvalue = 1";
+        let file = create_temp_config(deep_nesting);
+        let _ = ConfigFile::load(file.path());
+        
+        // Very long keys
+        let long_key = format!("{} = 1", "a".repeat(1000));
+        let file = create_temp_config(&long_key);
+        let _ = ConfigFile::load(file.path());
+        
+        // Very long values
+        let long_value = format!("key = \"{}\"", "x".repeat(10000));
+        let file = create_temp_config(&long_value);
+        let _ = ConfigFile::load(file.path());
+        
+        // Many sections
+        let many_sections = (0..1000)
+            .map(|i| format!("[section{}]\nkey = {}", i, i))
+            .collect::<Vec<_>>()
+            .join("\n");
+        let file = create_temp_config(&many_sections);
+        let _ = ConfigFile::load(file.path());
+        
+        // All of these should complete without panic
+    }
+    
+    /// Test parser handles all control characters and special bytes
+    #[test]
+    fn test_parser_control_characters() {
+        // Test all ASCII control characters
+        for byte in 0u8..32u8 {
+            let input = format!("key = \"value{}\"", byte as char);
+            let file = create_temp_config(&input);
+            let _ = ConfigFile::load(file.path());
+        }
+        
+        // Test common special bytes
+        let special_bytes = vec![
+            b'\0',  // null
+            b'\x7F',  // DEL
+            b'\xFF',  // invalid UTF-8
+        ];
+        
+        for &byte in &special_bytes {
+            // Create byte string (might be invalid UTF-8)
+            let bytes = vec![b'k', b'e', b'y', b'=', byte];
+            let file = tempfile::NamedTempFile::new().unwrap();
+            std::fs::write(file.path(), &bytes).unwrap();
+            let _ = ConfigFile::load(file.path());
+        }
+    }
 }
 

@@ -203,3 +203,46 @@ impl PostEffect for CrepuscularRays {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test_buffer(w: usize, h: usize, value: f64) -> PixelBuffer {
+        vec![(value, value, value, 1.0); w * h]
+    }
+
+    #[test]
+    fn test_crepuscular_rays_basic() {
+        let config = CrepuscularRaysConfig::default();
+        let rays = CrepuscularRays::new(config);
+        let buffer = test_buffer(100, 100, 0.5);
+        
+        let result = rays.process(&buffer, 100, 100);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), buffer.len());
+    }
+
+    #[test]
+    fn test_crepuscular_rays_handles_zero() {
+        let config = CrepuscularRaysConfig::default();
+        let rays = CrepuscularRays::new(config);
+        let buffer = test_buffer(50, 50, 0.0);
+        
+        let result = rays.process(&buffer, 50, 50);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_crepuscular_rays_handles_hdr() {
+        let config = CrepuscularRaysConfig::default();
+        let rays = CrepuscularRays::new(config);
+        let buffer = test_buffer(50, 50, 5.0);
+        
+        let result = rays.process(&buffer, 50, 50);
+        assert!(result.is_ok());
+        for &(r, _, _, _) in &result.unwrap() {
+            assert!(r.is_finite());
+        }
+    }
+}
+

@@ -58,3 +58,51 @@ impl PostEffect for DogBloom {
         Ok(output)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test_buffer(w: usize, h: usize, value: f64) -> PixelBuffer {
+        vec![(value, value, value, 1.0); w * h]
+    }
+
+    #[test]
+    fn test_dog_bloom_basic() {
+        let config = DogBloomConfig::default();
+        let bloom = DogBloom::new(config, 1.0);
+        let buffer = test_buffer(100, 100, 0.5);
+        
+        let result = bloom.process(&buffer, 100, 100);
+        assert!(result.is_ok());
+        
+        let output = result.unwrap();
+        assert_eq!(output.len(), buffer.len());
+        for &(r, g, b, a) in &output {
+            assert!(r.is_finite() && g.is_finite() && b.is_finite() && a.is_finite());
+        }
+    }
+
+    #[test]
+    fn test_dog_bloom_handles_zero() {
+        let config = DogBloomConfig::default();
+        let bloom = DogBloom::new(config, 1.0);
+        let buffer = test_buffer(50, 50, 0.0);
+        
+        let result = bloom.process(&buffer, 50, 50);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_dog_bloom_handles_hdr() {
+        let config = DogBloomConfig::default();
+        let bloom = DogBloom::new(config, 1.0);
+        let buffer = test_buffer(50, 50, 5.0);
+        
+        let result = bloom.process(&buffer, 50, 50);
+        assert!(result.is_ok());
+        for &(r, _, _, _) in &result.unwrap() {
+            assert!(r.is_finite());
+        }
+    }
+}

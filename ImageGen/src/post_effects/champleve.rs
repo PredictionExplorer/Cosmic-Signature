@@ -166,3 +166,42 @@ pub fn apply_champleve_iridescence(
         *pixel = (sr.max(0.0) * a, sg.max(0.0) * a, sb.max(0.0) * a, a);
     });
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test_buffer(w: usize, h: usize, value: f64) -> PixelBuffer {
+        vec![(value, value, value, 1.0); w * h]
+    }
+
+    #[test]
+    fn test_champleve_basic() {
+        let config = ChampleveConfig::default();
+        let mut buffer = test_buffer(100, 100, 0.5);
+        apply_champleve_iridescence(&mut buffer, 100, 100, &config);
+        
+        assert_eq!(buffer.len(), 100 * 100);
+        for &(r, g, b, a) in &buffer {
+            assert!(r.is_finite() && g.is_finite() && b.is_finite() && a.is_finite());
+        }
+    }
+
+    #[test]
+    fn test_champleve_handles_zero() {
+        let config = ChampleveConfig::default();
+        let mut buffer = test_buffer(50, 50, 0.0);
+        apply_champleve_iridescence(&mut buffer, 50, 50, &config);
+        assert_eq!(buffer.len(), 50 * 50);
+    }
+
+    #[test]
+    fn test_champleve_handles_hdr() {
+        let config = ChampleveConfig::default();
+        let mut buffer = test_buffer(50, 50, 5.0);
+        apply_champleve_iridescence(&mut buffer, 50, 50, &config);
+        for &(r, g, b, _) in &buffer {
+            assert!(r.is_finite() && g.is_finite() && b.is_finite());
+        }
+    }
+}

@@ -31,3 +31,42 @@ pub fn calculate_gradients(buffer: &PixelBuffer, width: usize, height: usize) ->
     });
     gradients
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test_buffer(w: usize, h: usize, value: f64) -> PixelBuffer {
+        vec![(value, value, value, 1.0); w * h]
+    }
+
+    #[test]
+    fn test_calculate_gradients_uniform() {
+        let buffer = test_buffer(50, 50, 0.5);
+        let gradients = calculate_gradients(&buffer, 50, 50);
+        
+        assert_eq!(gradients.len(), buffer.len());
+        // Uniform buffer should have near-zero gradients
+        for &(gx, gy) in &gradients {
+            assert!(gx.is_finite() && gy.is_finite());
+            assert!(gx.abs() < 0.1 && gy.abs() < 0.1);
+        }
+    }
+
+    #[test]
+    fn test_calculate_gradients_size() {
+        let buffer = test_buffer(100, 100, 0.5);
+        let gradients = calculate_gradients(&buffer, 100, 100);
+        assert_eq!(gradients.len(), 100 * 100);
+    }
+
+    #[test]
+    fn test_calculate_gradients_handles_zero() {
+        let buffer = test_buffer(50, 50, 0.0);
+        let gradients = calculate_gradients(&buffer, 50, 50);
+        
+        for &(gx, gy) in &gradients {
+            assert!(gx.is_finite() && gy.is_finite());
+        }
+    }
+}

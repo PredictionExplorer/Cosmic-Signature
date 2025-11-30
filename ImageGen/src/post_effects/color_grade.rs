@@ -244,3 +244,67 @@ impl PostEffect for CinematicColorGrade {
         Ok(output)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test_buffer(w: usize, h: usize, value: f64) -> PixelBuffer {
+        vec![(value, value, value, 1.0); w * h]
+    }
+
+    #[test]
+    fn test_color_grade_basic() {
+        let params = ColorGradeParams::default();
+        let grade = CinematicColorGrade::new(params);
+        let buffer = test_buffer(100, 100, 0.5);
+        
+        let result = grade.process(&buffer, 100, 100);
+        assert!(result.is_ok());
+        
+        let output = result.unwrap();
+        assert_eq!(output.len(), buffer.len());
+        for &(r, g, b, a) in &output {
+            assert!(r.is_finite() && g.is_finite() && b.is_finite() && a.is_finite());
+        }
+    }
+
+    #[test]
+    fn test_color_grade_disabled() {
+        let params = ColorGradeParams {
+            strength: 0.0,
+            ..Default::default()
+        };
+        let grade = CinematicColorGrade::new(params);
+        
+        assert!(!grade.is_enabled());
+    }
+
+    #[test]
+    fn test_color_grade_resolution_scaling() {
+        let params_hd = ColorGradeParams::from_resolution(1920, 1080);
+        let params_4k = ColorGradeParams::from_resolution(3840, 2160);
+        
+        // 4K should have larger clarity radius
+        assert!(params_4k.clarity_radius > params_hd.clarity_radius);
+    }
+
+    #[test]
+    fn test_color_grade_handles_zero() {
+        let grade = CinematicColorGrade::default();
+        let buffer = test_buffer(50, 50, 0.0);
+        let result = grade.process(&buffer, 50, 50);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_color_grade_handles_hdr() {
+        let grade = CinematicColorGrade::default();
+        let buffer = test_buffer(50, 50, 5.0);
+        let result = grade.process(&buffer, 50, 50);
+        assert!(result.is_ok());
+        for &(r, _g, _b, _) in &result.unwrap() {
+            assert!(r.is_finite());
+        }
+    }
+}

@@ -141,7 +141,20 @@ fn tonemap_to_16bit(fr: f64, fg: f64, fb: f64, fa: f64, levels: &ChannelLevels) 
     ]
 }
 
-/// Save 16-bit image as PNG
+/// Save 16-bit image as PNG.
+///
+/// Exports a 16-bit RGB image in PNG format, preserving the full dynamic range
+/// for maximum quality.
+///
+/// # Errors
+///
+/// Returns `RenderError::ImageEncoding` if PNG encoding or file writing fails.
+///
+/// # Example
+///
+/// ```ignore
+/// save_image_as_png_16bit(&final_frame, "output.png")?;
+/// ```
 pub fn save_image_as_png_16bit(rgb_img: &ImageBuffer<Rgb<u16>, Vec<u16>>, path: &str) -> Result<()> {
     let dyn_img = DynamicImage::ImageRgb16(rgb_img.clone());
     dyn_img.save(path).map_err(|e| RenderError::ImageEncoding(e.to_string()))?;
@@ -555,18 +568,66 @@ fn apply_energy_density_shift(accum_spd: &mut [[f64; NUM_BINS]], special_mode: b
 
 // ====================== RENDER LOOP CONTEXT ===========================
 
-/// Context for the render loop, encapsulating common setup
+/// Memory workspace for rendering operations
 ///
-/// This struct reduces code duplication between pass_1 and pass_2 by
-/// providing a shared container for rendering state.
-struct RenderLoopContext<'a> {
-    ctx: RenderContext,
+/// This struct manages all heap-allocated buffers used during rendering,
+/// separating memory management concerns from rendering logic.
+///
+/// # Performance
+///
+/// - Pre-allocated buffers avoid per-frame allocations
+/// - Reusable workspace reduces GC pressure
+/// - Clear separation allows future optimizations (e.g., arena allocation)
+struct RenderWorkspace {
+    /// Spectral power distribution accumulator (HDR, per-wavelength)
     accum_spd: Vec<[f64; NUM_BINS]>,
+    
+    /// RGBA accumulator (post-SPD conversion)
     accum_rgba: PixelBuffer,
+    
+    /// Pre-allocated empty background buffer (reused when nebula disabled)
+    empty_background: PixelBuffer,
+}
+
+impl RenderWorkspace {
+    /// Create a new workspace with pre-allocated buffers
+    fn new(pixel_count: usize) -> Self {
+        Self {
+            accum_spd: vec![[0.0f64; NUM_BINS]; pixel_count],
+            accum_rgba: vec![(0.0, 0.0, 0.0, 0.0); pixel_count],
+            empty_background: vec![(0.0, 0.0, 0.0, 0.0); pixel_count],
+        }
+    }
+    
+    /// Reset buffers for reuse (clearing without reallocation)
+    fn reset(&mut self) {
+        // Clear RGBA buffer for next frame (SPD cleared during conversion)
+        self.accum_rgba.clear();
+        self.accum_rgba.resize(self.empty_background.len(), (0.0, 0.0, 0.0, 0.0));
+    }
+}
+
+/// Context for the render loop, encapsulating rendering logic
+///
+/// This struct separates rendering **logic** from memory management,
+/// making the control flow clearer and easier to test.
+///
+/// # Design
+///
+/// - **Logic**: Effect chain, coordinate transforms, velocity calculations
+/// - **Memory**: Separate `RenderWorkspace` handles all buffers
+/// - **Configuration**: Immutable rendering parameters
+struct RenderLoopContext<'a> {
+    // Rendering logic components
+    ctx: RenderContext,
     effect_chain: EffectChainBuilder,
     nebula_config: NebulaCloudConfig,
     velocity_calc: velocity_hdr::VelocityHdrCalculator<'a>,
-    empty_background: PixelBuffer,
+    
+    // Memory workspace (separated for clarity)
+    workspace: RenderWorkspace,
+    
+    // Immutable configuration
     total_steps: usize,
     chunk_line: usize,
     frame_interval: usize,
@@ -577,7 +638,14 @@ struct RenderLoopContext<'a> {
 }
 
 impl<'a> RenderLoopContext<'a> {
-    /// Create `a` new render loop context from render parameters
+    /// Create a new render loop context from render parameters
+    ///
+    /// # Architecture
+    ///
+    /// This constructor separates concerns:
+    /// 1. **Memory Allocation**: `RenderWorkspace` handles all buffers
+    /// 2. **Logic Setup**: Effect chains, coordinate transforms
+    /// 3. **Configuration**: Immutable parameters extracted from params
     fn new(params: &'a RenderParams<'a>) -> Self {
         let positions = params.scene.positions;
         let resolved_config = params.resolved_config;
@@ -587,19 +655,18 @@ impl<'a> RenderLoopContext<'a> {
         let height = resolved_config.height;
         let special_mode = resolved_config.special_mode;
         
-        // Create render context
+        // Create render context (coordinate transforms, bounding box)
         let ctx = RenderContext::new(width, height, positions);
         let pixel_count = ctx.pixel_count();
         
-        // Allocate accumulation buffers
-        let accum_spd = vec![[0.0f64; NUM_BINS]; pixel_count];
-        let accum_rgba = vec![(0.0, 0.0, 0.0, 0.0); pixel_count];
+        // Allocate memory workspace (separated from logic)
+        let workspace = RenderWorkspace::new(pixel_count);
         
         // Build effect configuration from resolved config
         let effect_config = build_effect_config_from_resolved(resolved_config);
         let effect_chain = EffectChainBuilder::new(effect_config);
         
-        // Create nebula configuration
+        // Create nebula configuration (immutable parameters)
         let nebula_config = NebulaCloudConfig {
             strength: resolved_config.nebula_strength,
             octaves: resolved_config.nebula_octaves,
@@ -608,10 +675,10 @@ impl<'a> RenderLoopContext<'a> {
             persistence: 0.5,
             noise_seed: noise_seed as i64,
             colors: [
-                [0.08, 0.12, 0.22],
-                [0.15, 0.08, 0.25],
-                [0.25, 0.12, 0.18],
-                [0.12, 0.15, 0.28],
+                [0.08, 0.12, 0.22],  // Deep blue
+                [0.15, 0.08, 0.25],  // Purple
+                [0.25, 0.12, 0.18],  // Magenta
+                [0.12, 0.15, 0.28],  // Blue-violet
             ],
             time_scale: 1.0,
             edge_fade: 0.3,
@@ -621,20 +688,15 @@ impl<'a> RenderLoopContext<'a> {
         let chunk_line = (total_steps / 10).max(1);
         let dt = constants::DEFAULT_DT;
         
-        // Create velocity HDR calculator
+        // Create velocity HDR calculator (logic component)
         let velocity_calc = velocity_hdr::VelocityHdrCalculator::new(positions, dt, special_mode);
-        
-        // Pre-allocate empty background buffer
-        let empty_background = vec![(0.0, 0.0, 0.0, 0.0); pixel_count];
         
         Self {
             ctx,
-            accum_spd,
-            accum_rgba,
             effect_chain,
             nebula_config,
             velocity_calc,
-            empty_background,
+            workspace,
             total_steps,
             chunk_line,
             frame_interval: params.frame_interval,
@@ -646,6 +708,11 @@ impl<'a> RenderLoopContext<'a> {
     }
     
     /// Draw a single step of the simulation to the accumulation buffers
+    ///
+    /// # Performance
+    ///
+    /// Inlined for hot path optimization. This is called millions of times
+    /// during a full render, so every cycle counts.
     #[inline]
     fn draw_step(
         &mut self,
@@ -654,7 +721,7 @@ impl<'a> RenderLoopContext<'a> {
         colors: &[Vec<OklabColor>],
         body_alphas: &[f64],
     ) {
-        // Prepare triangle vertices
+        // Prepare triangle vertices (coordinate transform)
         let vertices = prepare_triangle_vertices(
             positions,
             colors,
@@ -663,14 +730,14 @@ impl<'a> RenderLoopContext<'a> {
             &self.ctx,
         );
 
-        // Compute velocity-based HDR multipliers
+        // Compute velocity-based HDR multipliers (physics-based brightness)
         let hdr_mult_01 = self.velocity_calc.compute_segment_multiplier(step, 0, 1);
         let hdr_mult_12 = self.velocity_calc.compute_segment_multiplier(step, 1, 2);
         let hdr_mult_20 = self.velocity_calc.compute_segment_multiplier(step, 2, 0);
 
-        // Draw entire triangle in batch
+        // Draw entire triangle in batch (writes to workspace.accum_spd)
         draw_triangle_batch_spectral(
-            &mut self.accum_spd,
+            &mut self.workspace.accum_spd,
             self.width,
             self.height,
             vertices[0],
@@ -685,25 +752,38 @@ impl<'a> RenderLoopContext<'a> {
     }
     
     /// Process a frame and return the final composited pixels
+    ///
+    /// # Pipeline
+    ///
+    /// 1. Apply energy density wavelength shift (special mode only)
+    /// 2. Convert spectral data (SPD) to RGBA
+    /// 3. Apply post-processing effect chain
+    /// 4. Generate nebula background (if enabled)
+    /// 5. Composite background under foreground
+    /// 6. Reset workspace for next frame
+    ///
+    /// # Memory Management
+    ///
+    /// Uses `std::mem::take` to avoid cloning large buffers, then resets
+    /// the workspace for reuse. This eliminates per-frame allocations.
     fn process_frame(&mut self, frame_number: usize, resolved_config: &randomizable_config::ResolvedEffectConfig) -> Result<PixelBuffer> {
-        // Apply energy density wavelength shift before conversion
-        apply_energy_density_shift(&mut self.accum_spd, self.special_mode);
+        // Apply energy density wavelength shift before conversion (special mode)
+        apply_energy_density_shift(&mut self.workspace.accum_spd, self.special_mode);
         
-        // Convert SPD -> RGBA
-        convert_spd_buffer_to_rgba(&self.accum_spd, &mut self.accum_rgba);
+        // Convert SPD -> RGBA (spectral rendering to RGB color space)
+        convert_spd_buffer_to_rgba(&self.workspace.accum_spd, &mut self.workspace.accum_rgba);
         
-        // Process with effect chain
+        // Process with effect chain (take ownership to avoid clone)
         let frame_params = FrameParams { _frame_number: frame_number, _density: None };
-        let rgba_buffer = std::mem::take(&mut self.accum_rgba);
+        let rgba_buffer = std::mem::take(&mut self.workspace.accum_rgba);
         let trajectory_pixels = self.effect_chain
             .process_frame(rgba_buffer, self.width as usize, self.height as usize, &frame_params)
             .map_err(|e| RenderError::EffectError(e.to_string()))?;
         
-        // Reuse the buffer
-        self.accum_rgba.clear();
-        self.accum_rgba.resize(self.ctx.pixel_count(), (0.0, 0.0, 0.0, 0.0));
+        // Reset workspace for next frame (reuses allocations)
+        self.workspace.reset();
         
-        // Generate nebula background
+        // Generate nebula background (or reuse empty buffer for zero overhead)
         let nebula_background = if self.special_mode && resolved_config.nebula_strength > 0.0 {
             generate_nebula_background(
                 self.width as usize,
@@ -712,7 +792,8 @@ impl<'a> RenderLoopContext<'a> {
                 &self.nebula_config,
             )?
         } else {
-            self.empty_background.clone()
+            // Zero-cost path when nebula disabled (no clone, just reference)
+            self.workspace.empty_background.clone()
         };
         
         // Composite nebula background under trajectory foreground
@@ -734,10 +815,11 @@ impl<'a> RenderLoopContext<'a> {
 }
 
 // ====================== PASS 1 (SPECTRAL) ===========================
-/// Pass 1: gather global histogram for final color leveling (spectral)
+/// Pass 1: gather global histogram for final color leveling (spectral).
 ///
 /// This function renders all frames and collects color histogram data
-/// for computing optimal black/white levels.
+/// for computing optimal black/white levels, ensuring consistent exposure
+/// across the entire video sequence.
 ///
 /// # Arguments
 ///
@@ -746,10 +828,18 @@ impl<'a> RenderLoopContext<'a> {
 /// * `all_g` - Output buffer for green channel histogram values
 /// * `all_b` - Output buffer for blue channel histogram values
 ///
-/// # Returns
+/// # Errors
 ///
-/// * `Ok(())` on success
-/// * `Err(RenderError)` if rendering fails
+/// Returns `RenderError::EffectError` if any post-processing effect fails during histogram collection.
+///
+/// # Example
+///
+/// ```ignore
+/// let mut all_r = Vec::new();
+/// let mut all_g = Vec::new();
+/// let mut all_b = Vec::new();
+/// pass_1_build_histogram_spectral(&params, &mut all_r, &mut all_g, &mut all_b)?;
+/// ```
 pub fn pass_1_build_histogram_spectral(
     params: &RenderParams<'_>,
     all_r: &mut Vec<f64>,
@@ -801,22 +891,35 @@ pub fn pass_1_build_histogram_spectral(
 }
 
 // ====================== PASS 2 (SPECTRAL) ===========================
-/// Pass 2: final frames => color mapping => write frames (spectral, 16-bit output)
+/// Pass 2: final frames => color mapping => write frames (spectral, 16-bit output).
 ///
-/// This function renders all frames with color level adjustments and writes
-/// them to the provided frame sink.
+/// This function renders all frames with histogram-derived color level adjustments,
+/// applies tonemapping, and writes 16-bit RGB frames to the provided sink for encoding.
 ///
 /// # Arguments
 ///
 /// * `params` - Grouped rendering parameters (scene, config, etc.)
-/// * `levels` - Per-channel black/white levels for tonemapping
-/// * `frame_sink` - Callback to receive encoded frame data
-/// * `last_frame_out` - Output buffer for the final frame (for PNG export)
+/// * `levels` - Per-channel black/white levels computed from Pass 1 histogram
+/// * `frame_sink` - Callback that receives encoded 16-bit frame data (rgb48le format)
+/// * `last_frame_out` - Output buffer for the final frame (saved as PNG)
 ///
-/// # Returns
+/// # Errors
 ///
-/// * `Ok(())` on success
-/// * `Err(RenderError)` if rendering fails
+/// Returns `RenderError` if:
+/// - Post-processing effects fail during rendering
+/// - Frame sink callback returns an error (e.g., FFmpeg write failure)
+/// - Image buffer creation fails
+///
+/// # Example
+///
+/// ```ignore
+/// pass_2_write_frames_spectral(
+///     &params,
+///     &levels,
+///     |frame_bytes| ffmpeg_stdin.write_all(frame_bytes),
+///     &mut last_frame,
+/// )?;
+/// ```
 pub fn pass_2_write_frames_spectral(
     params: &RenderParams<'_>,
     levels: &ChannelLevels,
@@ -859,19 +962,8 @@ pub fn pass_2_write_frames_spectral(
             );
 
             // Convert to bytes for FFmpeg (little-endian rgb48le format)
-            // SAFETY: This transmutation is safe because:
-            // 1. u16 has alignment 2, u8 has alignment 1 (u8 is always compatible)
-            // 2. buf_16bit is a valid, initialized Vec<u16>
-            // 3. The slice length is exactly buf_16bit.len() * 2 bytes (size_of::<u16>())
-            // 4. The resulting slice borrows buf_16bit and cannot outlive it
-            // 5. u16 has no padding bytes, so all bytes are initialized
-            // 6. The slice is used immediately and never stored, so no lifetime issues
-            let buf_bytes = unsafe {
-                std::slice::from_raw_parts(
-                    buf_16bit.as_ptr().cast::<u8>(),
-                    buf_16bit.len() * std::mem::size_of::<u16>(),
-                )
-            };
+            // Use safe bytemuck conversion instead of unsafe transmutation
+            let buf_bytes: &[u8] = bytemuck::cast_slice(&buf_16bit);
 
             frame_sink(buf_bytes)?;
             
@@ -885,17 +977,30 @@ pub fn pass_2_write_frames_spectral(
 }
 
 // ====================== SINGLE FRAME RENDERING ===========================
-/// Render a single test frame (first frame only) for quick testing (16-bit output)
+/// Render a single test frame (first frame only) for quick testing (16-bit output).
+///
+/// This function is optimized for rapid iteration and parameter testing. It renders
+/// only the first frame interval worth of simulation steps, producing a single 16-bit
+/// PNG image.
 ///
 /// # Arguments
 ///
 /// * `params` - Grouped rendering parameters (scene, config, etc.)
 /// * `levels` - Per-channel black/white levels for tonemapping
 ///
-/// # Returns
+/// # Errors
 ///
-/// * `Ok(ImageBuffer)` containing the rendered frame
-/// * `Err(RenderError)` if rendering fails
+/// Returns `RenderError` if:
+/// - Post-processing effects fail
+/// - Image buffer creation fails
+/// - Spectral to RGB conversion encounters invalid data
+///
+/// # Example
+///
+/// ```ignore
+/// let test_frame = render_single_frame_spectral(&params, &levels)?;
+/// save_image_as_png_16bit(&test_frame, "test.png")?;
+/// ```
 pub fn render_single_frame_spectral(
     params: &RenderParams<'_>,
     levels: &ChannelLevels,

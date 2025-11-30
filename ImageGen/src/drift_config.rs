@@ -5,7 +5,20 @@
 
 use crate::drift::DriftParameters;
 use crate::sim::Sha3RandomByteStream;
+use thiserror::Error;
 use tracing::info;
+
+/// Errors that can occur during drift configuration resolution.
+#[derive(Debug, Error)]
+pub enum DriftConfigError {
+    /// Drift parameters were partially specified - all or none must be provided.
+    #[error("Drift parameters must be either all specified or all omitted. Provided: scale={scale:?}, arc_fraction={arc_fraction:?}, eccentricity={eccentricity:?}")]
+    PartialSpecification {
+        scale: Option<f64>,
+        arc_fraction: Option<f64>,
+        eccentricity: Option<f64>,
+    },
+}
 
 /// Resolved drift configuration ready for use
 #[derive(Debug, Clone)]
@@ -77,14 +90,33 @@ impl ResolvedDriftConfig {
     }
 }
 
-/// Helper to resolve drift configuration from optional command-line args
+/// Helper to resolve drift configuration from optional command-line args.
+///
+/// # Errors
+///
+/// Returns `DriftConfigError::PartialSpecification` if some but not all drift parameters
+/// are provided. All parameters must be specified together, or none at all.
+///
+/// # Example
+///
+/// ```ignore
+/// // All parameters specified (valid)
+/// let config = resolve_drift_config(Some(1.5), Some(0.3), Some(0.2), &mut rng, false)?;
+///
+/// // No parameters specified (valid - will randomize)
+/// let config = resolve_drift_config(None, None, None, &mut rng, false)?;
+///
+/// // Partial specification (error)
+/// let result = resolve_drift_config(Some(1.5), None, None, &mut rng, false);
+/// assert!(result.is_err());
+/// ```
 pub fn resolve_drift_config(
     scale_opt: Option<f64>,
     arc_fraction_opt: Option<f64>,
     eccentricity_opt: Option<f64>,
     rng: &mut Sha3RandomByteStream,
     special_mode: bool,
-) -> ResolvedDriftConfig {
+) -> Result<ResolvedDriftConfig, DriftConfigError> {
     match (scale_opt, arc_fraction_opt, eccentricity_opt) {
         (Some(scale), Some(arc), Some(ecc)) => {
             // All parameters provided
@@ -92,20 +124,20 @@ pub fn resolve_drift_config(
             info!("  scale: {:.3}", scale);
             info!("  arc_fraction: {:.3}", arc);
             info!("  orbit_eccentricity: {:.3}", ecc);
-            ResolvedDriftConfig::from_values(scale, arc, ecc)
+            Ok(ResolvedDriftConfig::from_values(scale, arc, ecc))
         }
         (None, None, None) => {
             // No parameters provided - generate random
             info!("No drift parameters specified, generating random values...");
-            ResolvedDriftConfig::generate_random(rng, special_mode)
+            Ok(ResolvedDriftConfig::generate_random(rng, special_mode))
         }
         _ => {
             // Partial specification - this is an error condition
-            panic!(
-                "Drift parameters must be either all specified or all omitted. \
-                 Provided: scale={:?}, arc_fraction={:?}, eccentricity={:?}",
-                scale_opt, arc_fraction_opt, eccentricity_opt
-            );
+            Err(DriftConfigError::PartialSpecification {
+                scale: scale_opt,
+                arc_fraction: arc_fraction_opt,
+                eccentricity: eccentricity_opt,
+            })
         }
     }
 }
@@ -155,7 +187,10 @@ mod tests {
     #[test]
     fn test_resolve_all_provided() {
         let mut rng = make_rng();
-        let config = resolve_drift_config(Some(1.0), Some(0.5), Some(0.3), &mut rng, false);
+        let result = resolve_drift_config(Some(1.0), Some(0.5), Some(0.3), &mut rng, false);
+        assert!(result.is_ok());
+        
+        let config = result.unwrap();
         assert_eq!(config.scale, 1.0);
         assert!(!config.was_randomized);
     }
@@ -163,15 +198,26 @@ mod tests {
     #[test]
     fn test_resolve_none_provided() {
         let mut rng = make_rng();
-        let config = resolve_drift_config(None, None, None, &mut rng, false);
+        let result = resolve_drift_config(None, None, None, &mut rng, false);
+        assert!(result.is_ok());
+        
+        let config = result.unwrap();
         assert!(config.was_randomized);
     }
     
     #[test]
-    #[should_panic(expected = "must be either all specified or all omitted")]
-    fn test_resolve_partial_panics() {
+    fn test_resolve_partial_returns_error() {
         let mut rng = make_rng();
-        resolve_drift_config(Some(1.0), None, None, &mut rng, false);
+        let result = resolve_drift_config(Some(1.0), None, None, &mut rng, false);
+        assert!(result.is_err());
+        
+        if let Err(DriftConfigError::PartialSpecification { scale, arc_fraction, eccentricity }) = result {
+            assert_eq!(scale, Some(1.0));
+            assert_eq!(arc_fraction, None);
+            assert_eq!(eccentricity, None);
+        } else {
+            panic!("Expected PartialSpecification error");
+        }
     }
 }
 

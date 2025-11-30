@@ -269,7 +269,7 @@ fn main() -> Result<()> {
             args.drift.drift_orbit_eccentricity,
             &mut rng,
             args.effects.special,
-        )
+        )?
     } else {
         info!("STAGE 2.5/7: Drift disabled (--no-drift flag)");
         None

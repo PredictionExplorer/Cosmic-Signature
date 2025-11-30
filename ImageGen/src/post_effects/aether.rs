@@ -161,3 +161,49 @@ pub fn apply_aether_weave(
         *pixel = (final_r.max(0.0) * a, final_g.max(0.0) * a, final_b.max(0.0) * a, a);
     });
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test_buffer(w: usize, h: usize, value: f64) -> PixelBuffer {
+        vec![(value, value, value, 1.0); w * h]
+    }
+
+    #[test]
+    fn test_aether_basic() {
+        let config = AetherConfig::default();
+        let mut buffer = test_buffer(100, 100, 0.5);
+        apply_aether_weave(&mut buffer, 100, 100, &config);
+        
+        assert_eq!(buffer.len(), 100 * 100);
+        for &(r, g, b, a) in &buffer {
+            assert!(r.is_finite() && g.is_finite() && b.is_finite() && a.is_finite());
+        }
+    }
+
+    #[test]
+    fn test_aether_handles_black() {
+        let config = AetherConfig::default();
+        let mut buffer = test_buffer(50, 50, 0.0);
+        apply_aether_weave(&mut buffer, 50, 50, &config);
+        assert_eq!(buffer.len(), 50 * 50);
+    }
+
+    #[test]
+    fn test_aether_handles_hdr() {
+        let config = AetherConfig::default();
+        let mut buffer = test_buffer(50, 50, 5.0);
+        apply_aether_weave(&mut buffer, 50, 50, &config);
+        for &(r, g, b, _) in &buffer {
+            assert!(r.is_finite() && g.is_finite() && b.is_finite());
+        }
+    }
+
+    #[test]
+    fn test_aether_modes() {
+        let luxury = AetherConfig::new(true);
+        let standard = AetherConfig::new(false);
+        assert!(luxury.flow_alignment > standard.flow_alignment);
+    }
+}
