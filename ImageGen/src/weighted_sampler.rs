@@ -16,7 +16,7 @@ use std::f64::consts::PI;
 /// Uses Box-Muller transform with rejection sampling.
 ///
 /// # Safety
-/// ALWAYS returns a value in [min, max]. Never panics, never returns NaN/Inf.
+/// ALWAYS returns `a` value in [`min`, `max`]. Never panics, never returns NaN/Inf.
 /// Multiple fallback strategies ensure robustness:
 /// 1. Normal rejection sampling (up to 1000 attempts)
 /// 2. Fallback to clamped mean
@@ -68,7 +68,7 @@ pub fn sample_truncated_normal(
     }
     
     // Fallback 2: Midpoint
-    let midpoint = (min + max) / 2.0;
+    let midpoint = f64::midpoint(min, max);
     if midpoint.is_finite() {
         return midpoint;
     }
@@ -110,7 +110,7 @@ pub fn sample_categorical(rng: &mut Sha3RandomByteStream, weights: &[f64]) -> us
 /// Sample from a uniform distribution in [min, max].
 ///
 /// # Safety
-/// ALWAYS returns a value in [min, max]. Never panics.
+/// ALWAYS returns `a` value in [`min`, `max`]. Never panics.
 #[must_use = "sampling result should not be discarded"]
 pub fn sample_uniform(rng: &mut Sha3RandomByteStream, min: f64, max: f64) -> f64 {
     if !min.is_finite() || !max.is_finite() || min >= max {
@@ -123,13 +123,13 @@ pub fn sample_uniform(rng: &mut Sha3RandomByteStream, min: f64, max: f64) -> f64
     value.clamp(min, max)
 }
 
-/// Sample a float parameter using distribution-based sampling.
+/// Sample `a` float parameter using distribution-based sampling.
 ///
 /// Attempts to sample from a truncated normal distribution if one is defined
 /// for this parameter. Falls back to uniform sampling if no distribution exists.
 ///
 /// # Safety
-/// ALWAYS returns a value in [min, max]. Never panics. Multiple fallback strategies:
+/// ALWAYS returns `a` value in [`min`, `max`]. Never panics. Multiple fallback strategies:
 /// 1. Sample from truncated normal (if distribution defined)
 /// 2. Fall back to uniform if no distribution
 /// 3. Fall back to uniform if sampling fails
@@ -161,7 +161,7 @@ pub fn sample_parameter(
 /// distribution is defined.
 ///
 /// # Safety
-/// ALWAYS returns a value in [min, max]. Never panics.
+/// ALWAYS returns `a` value in [`min`, `max`]. Never panics.
 #[must_use = "sampling result should not be discarded"]
 pub fn sample_parameter_int(
     rng: &mut Sha3RandomByteStream,
@@ -206,7 +206,7 @@ mod tests {
         
         for _ in 0..100 {
             let value = sample_uniform(&mut rng, 0.0, 1.0);
-            assert!(value >= 0.0 && value <= 1.0);
+            assert!((0.0..=1.0).contains(&value));
         }
     }
     
@@ -216,7 +216,7 @@ mod tests {
         
         for _ in 0..100 {
             let value = sample_truncated_normal(&mut rng, 0.5, 0.1, 0.0, 1.0);
-            assert!(value >= 0.0 && value <= 1.0);
+            assert!((0.0..=1.0).contains(&value));
         }
     }
     
@@ -225,7 +225,7 @@ mod tests {
         let mut rng = Sha3RandomByteStream::new(&[1, 2, 3, 4], 1.0, 2.0, 1.0, 1.0);
         let weights = vec![1.0, 2.0, 1.0];
         
-        let mut counts = vec![0; 3];
+        let mut counts = [0; 3];
         for _ in 0..1000 {
             let idx = sample_categorical(&mut rng, &weights);
             assert!(idx < 3);
@@ -244,7 +244,7 @@ mod tests {
         // Mean outside bounds - should clamp to bounds
         for _ in 0..100 {
             let value = sample_truncated_normal(&mut rng, 10.0, 0.5, 0.0, 1.0);
-            assert!(value >= 0.0 && value <= 1.0);
+            assert!((0.0..=1.0).contains(&value));
         }
     }
 
@@ -255,7 +255,7 @@ mod tests {
         // Unknown parameter should fall back to uniform sampling
         for _ in 0..100 {
             let value = sample_parameter(&mut rng, "unknown_param_xyz", 0.0, 1.0);
-            assert!(value >= 0.0 && value <= 1.0);
+            assert!((0.0..=1.0).contains(&value));
         }
     }
 
@@ -265,7 +265,7 @@ mod tests {
         
         for _ in 0..100 {
             let value = sample_parameter_int(&mut rng, "unknown_int_param", 5, 10);
-            assert!(value >= 5 && value <= 10);
+            assert!((5..=10).contains(&value));
         }
     }
 
@@ -308,7 +308,7 @@ mod tests {
 /// Property-based tests for sampling functions.
 ///
 /// These tests use random inputs to verify invariants hold across
-/// a wide range of parameter values.
+/// `a` wide range of parameter values.
 #[cfg(test)]
 mod proptests {
     use super::*;

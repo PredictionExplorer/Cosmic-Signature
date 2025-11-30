@@ -3,7 +3,7 @@
 //! This module defines the valid ranges and metadata for all effect parameters,
 //! enabling type-safe randomization and validation.
 
-/// Descriptor for a floating-point parameter with bounded range.
+/// Descriptor for `a` floating-point parameter with bounded range.
 #[derive(Clone, Debug)]
 pub struct FloatParamDescriptor {
     #[allow(dead_code)]

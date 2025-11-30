@@ -75,7 +75,7 @@ impl CrepuscularRays {
                 // Thresholding - only bright parts emit light
                 if lum > self.config.exposure {
                     // Boost the emitter brightness
-                    let boost = (lum - self.config.exposure) * 2.0;
+                    let boost = (lum - self.config.exposure) * crate::render::constants::RAY_EMITTER_BOOST_FACTOR;
                     (r * boost, g * boost, b * boost, a)
                 } else {
                     (0.0, 0.0, 0.0, 0.0)

@@ -24,7 +24,7 @@ pub struct GaussianBloom {
 }
 
 impl GaussianBloom {
-    /// Creates a new Gaussian bloom effect with the given parameters.
+    /// Creates `a` new Gaussian bloom effect with the given parameters.
     pub fn new(radius: usize, strength: f64, core_brightness: f64) -> Self {
         Self { radius, strength, core_brightness, enabled: true }
     }

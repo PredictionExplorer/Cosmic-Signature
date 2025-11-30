@@ -96,7 +96,7 @@ fn tonemap_core(fr: f64, fg: f64, fb: f64, fa: f64, levels: &ChannelLevels) -> [
 
     let straight_luma = 0.2126 * source[0] + 0.7152 * source[1] + 0.0722 * source[2];
     // Enhanced chroma preservation for vivid, saturated colors
-    let chroma_preserve = (alpha / (alpha + 0.06)).clamp(0.0, 1.0);  // Reduced from 0.1 for stronger saturation
+    let chroma_preserve = (alpha / (alpha + constants::CHROMA_PRESERVE_FACTOR)).clamp(0.0, 1.0);
 
     let mut final_channels = [0.0; 3];
     if straight_luma > 0.0 {
@@ -109,7 +109,8 @@ fn tonemap_core(fr: f64, fg: f64, fb: f64, fa: f64, levels: &ChannelLevels) -> [
     }
 
     // Reduced neutral mixing for more vibrant low-alpha regions
-    let neutral_mix = ((0.03 - alpha).max(0.0) / 0.03).clamp(0.0, 1.0) * 0.15;  // More aggressive preservation
+    let neutral_mix = ((constants::NEUTRAL_MIX_ALPHA_THRESHOLD - alpha).max(0.0) 
+        / constants::NEUTRAL_MIX_ALPHA_THRESHOLD).clamp(0.0, 1.0) * constants::NEUTRAL_MIX_MAX_STRENGTH;
     if neutral_mix > 0.0 {
         for c in &mut final_channels {
             *c = (*c * (1.0 - neutral_mix) + target_luma * neutral_mix).max(0.0);
@@ -244,17 +245,12 @@ fn composite_buffers(
     background: &PixelBuffer,
     foreground: &PixelBuffer,
 ) -> PixelBuffer {
-    // Constants for enhancement
-    const ALPHA_BOOST_FACTOR: f64 = 1.20;      // 20% stronger trajectory coverage
-    const SATURATION_BOOST_FACTOR: f64 = 1.20; // 20% more saturated colors
-    const SATURATION_THRESHOLD: f64 = 0.50;    // Only boost high-alpha pixels
-    
     background
         .par_iter()
         .zip(foreground.par_iter())
         .map(|(&(br, bg, bb, ba), &(fr, fg, fb, fa))| {
             // Stage 1: Apply alpha boost to strengthen trajectory coverage
-            let boosted_fa = (fa * ALPHA_BOOST_FACTOR).min(1.0);
+            let boosted_fa = (fa * constants::COMPOSITE_ALPHA_BOOST_FACTOR).min(1.0);
             
             if boosted_fa >= 1.0 {
                 // Foreground is fully opaque - completely covers background
@@ -279,7 +275,7 @@ fn composite_buffers(
                     
                     // Stage 2: Saturation boost for trajectory-dominant regions
                     // This restores gold richness that may be dulled by nebula bleed
-                    if alpha_out > SATURATION_THRESHOLD {
+                    if alpha_out > constants::COMPOSITE_SATURATION_THRESHOLD {
                         // Unpremultiply to get straight RGB
                         let sr = r_out / alpha_out;
                         let sg = g_out / alpha_out;
@@ -289,9 +285,9 @@ fn composite_buffers(
                         let mean = (sr + sg + sb) / 3.0;
                         
                         // Boost saturation: move colors away from mean
-                        let boosted_sr = mean + (sr - mean) * SATURATION_BOOST_FACTOR;
-                        let boosted_sg = mean + (sg - mean) * SATURATION_BOOST_FACTOR;
-                        let boosted_sb = mean + (sb - mean) * SATURATION_BOOST_FACTOR;
+                        let boosted_sr = mean + (sr - mean) * constants::COMPOSITE_SATURATION_BOOST_FACTOR;
+                        let boosted_sg = mean + (sg - mean) * constants::COMPOSITE_SATURATION_BOOST_FACTOR;
+                        let boosted_sb = mean + (sb - mean) * constants::COMPOSITE_SATURATION_BOOST_FACTOR;
                         
                         // Clamp to valid range
                         let clamped_sr = boosted_sr.clamp(0.0, 1.0);
@@ -345,7 +341,7 @@ fn build_effect_config_from_resolved(
         inner_sigma: dog_inner_sigma,
         outer_ratio: resolved.dog_ratio,
         strength: resolved.dog_strength,
-        threshold: 0.01, // Fixed threshold
+        threshold: constants::DOG_BLOOM_THRESHOLD,
     };
     
     // Build perceptual blur config if enabled
@@ -386,7 +382,7 @@ fn build_effect_config_from_resolved(
             vignette_softness: resolved.vignette_softness,
             vibrance: resolved.vibrance,
             clarity_strength: resolved.clarity_strength,
-            clarity_radius: (0.0028 * min_dim as f64).round().max(1.0) as usize,
+            clarity_radius: (constants::CLARITY_RADIUS_SCALE * min_dim as f64).round().max(1.0) as usize,
             tone_curve: resolved.tone_curve_strength,
             shadow_tint: constants::DEFAULT_COLOR_GRADE_SHADOW_TINT,
             highlight_tint: constants::DEFAULT_COLOR_GRADE_HIGHLIGHT_TINT,
@@ -581,7 +577,7 @@ struct RenderLoopContext<'a> {
 }
 
 impl<'a> RenderLoopContext<'a> {
-    /// Create a new render loop context from render parameters
+    /// Create `a` new render loop context from render parameters
     fn new(params: &'a RenderParams<'a>) -> Self {
         let positions = params.scene.positions;
         let resolved_config = params.resolved_config;
@@ -727,7 +723,7 @@ impl<'a> RenderLoopContext<'a> {
     #[inline]
     fn should_emit_frame(&self, step: usize) -> bool {
         let is_final = step == self.total_steps - 1;
-        (step > 0 && step % self.frame_interval == 0) || is_final
+        (step > 0 && step.is_multiple_of(self.frame_interval)) || is_final
     }
     
     /// Check if this is the final step
@@ -863,10 +859,17 @@ pub fn pass_2_write_frames_spectral(
             );
 
             // Convert to bytes for FFmpeg (little-endian rgb48le format)
+            // SAFETY: This transmutation is safe because:
+            // 1. u16 has alignment 2, u8 has alignment 1 (u8 is always compatible)
+            // 2. buf_16bit is a valid, initialized Vec<u16>
+            // 3. The slice length is exactly buf_16bit.len() * 2 bytes (size_of::<u16>())
+            // 4. The resulting slice borrows buf_16bit and cannot outlive it
+            // 5. u16 has no padding bytes, so all bytes are initialized
+            // 6. The slice is used immediately and never stored, so no lifetime issues
             let buf_bytes = unsafe {
                 std::slice::from_raw_parts(
-                    buf_16bit.as_ptr() as *const u8,
-                    buf_16bit.len() * 2,
+                    buf_16bit.as_ptr().cast::<u8>(),
+                    buf_16bit.len() * std::mem::size_of::<u16>(),
                 )
             };
 
@@ -1010,7 +1013,7 @@ pub fn render_single_frame_spectral(
     let mut buf_16bit = vec![0u16; ctx.pixel_count() * 3];
     buf_16bit.par_chunks_mut(3).zip(final_pixels.par_iter()).for_each(
         |(chunk, &(fr, fg, fb, fa))| {
-            let mapped = tonemap_to_16bit(fr, fg, fb, fa, &levels);
+            let mapped = tonemap_to_16bit(fr, fg, fb, fa, levels);
             chunk[0] = mapped[0];
             chunk[1] = mapped[1];
             chunk[2] = mapped[2];

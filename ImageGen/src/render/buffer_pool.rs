@@ -106,7 +106,7 @@ impl EffectBufferPool {
 ///
 /// This eliminates allocations by reusing buffers in a ping-pong pattern:
 /// Effect 1: buffer A → buffer B
-/// Effect 2: buffer B → buffer A  
+/// Effect 2: buffer B → buffer A
 /// Effect 3: buffer A → buffer B
 /// etc.
 pub struct PooledEffectExecutor {

@@ -8,7 +8,7 @@
 //! Tighter distributions (smaller std) focus on a narrow range.
 //! Looser distributions (larger std) explore more broadly.
 
-/// Distribution parameters for a single parameter.
+/// Distribution parameters for `a` single parameter.
 #[derive(Debug, Clone, Copy)]
 pub struct DistParams {
     pub mean: f64,
@@ -111,7 +111,7 @@ impl DefaultDistributions {
     pub const NEBULA_STRENGTH: DistParams = DistParams::new(0.0, 0.0);  // Disabled
     pub const NEBULA_BASE_FREQUENCY: DistParams = DistParams::new(0.0015, 0.0005);
     
-    /// Get distribution for a parameter by name.
+    /// Get distribution for `a` parameter by name.
     pub fn get(param_name: &str) -> Option<DistParams> {
         match param_name {
             "blur_strength" => Some(Self::BLUR_STRENGTH),
@@ -177,6 +177,7 @@ mod tests {
     use super::*;
     
     #[test]
+    #[allow(clippy::assertions_on_constants)] // Compile-time verification of distribution constants
     fn test_all_distributions_valid() {
         // Test that all distributions have positive std
         assert!(DefaultDistributions::GLOW_STRENGTH.std > 0.0);

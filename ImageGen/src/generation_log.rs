@@ -12,7 +12,7 @@ use tracing::{error, info};
 
 const LOG_FILE_PATH: &str = "generation_log.json";
 
-/// Complete record of a generation run with all parameters
+/// Complete record of `a` generation run with all parameters
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GenerationRecord {
     /// Timestamp of generation

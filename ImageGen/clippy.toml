@@ -12,3 +12,9 @@
 # Affected files: spectrum.rs, drawing.rs, color_grade.rs, sim.rs
 # Trade-off: Slight verbosity for measurable performance gain
 
+# Thresholds for complexity lints
+too-many-arguments-threshold = 8
+type-complexity-threshold = 300
+cognitive-complexity-threshold = 30
+single-char-binding-names-threshold = 5
+

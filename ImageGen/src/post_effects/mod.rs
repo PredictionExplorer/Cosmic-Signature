@@ -3,13 +3,18 @@
 //! This module provides a trait-based system for applying visual effects
 //! in a composable, modular fashion.
 
+// Allow common graphics code patterns
+#![allow(clippy::many_single_char_names)] // RGB/RGBA notation is standard
+#![allow(clippy::cast_precision_loss)] // Acceptable in graphics operations
+#![allow(clippy::cast_possible_truncation)] // Checked where necessary
+#![allow(clippy::cast_sign_loss)] // Acceptable in graphics code
+
 use std::error::Error;
 #[cfg(test)]
 use std::fmt;
 
-/// Type alias for pixel buffers used throughout the pipeline.
-/// Format: (R, G, B, A) in linear color space, premultiplied alpha.
-pub type PixelBuffer = Vec<(f64, f64, f64, f64)>;
+// Re-export PixelBuffer from central types module for consistency
+pub use crate::render::types::PixelBuffer;
 
 /// Error type for post-processing pipeline failures.
 #[derive(Debug)]
@@ -255,6 +260,6 @@ mod tests {
             message: "Test error".to_string(),
         };
 
-        assert_eq!(format!("{}", error), "PostEffect 'Test Effect' error: Test error");
+        assert_eq!(error.to_string(), "PostEffect 'Test Effect' error: Test error");
     }
 }

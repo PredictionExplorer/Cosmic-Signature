@@ -106,7 +106,7 @@ impl<'a> EffectRandomizer<'a> {
     /// uniform sampling while maintaining variety.
     ///
     /// # Safety
-    /// ALWAYS returns a value within [min, max]. Multiple fallback strategies
+    /// ALWAYS returns `a` value within [`min`, `max`]. Multiple fallback strategies
     /// ensure this function never panics and never returns invalid values.
     pub fn randomize_float(&mut self, descriptor: &FloatParamDescriptor) -> f64 {
         let (min, max) = descriptor.range(self.gallery_quality);
@@ -125,7 +125,7 @@ impl<'a> EffectRandomizer<'a> {
     /// truncated normal and rounds. Otherwise uses uniform sampling.
     ///
     /// # Safety
-    /// ALWAYS returns a value within [min, max]. Never panics.
+    /// ALWAYS returns `a` value within [`min`, `max`]. Never panics.
     pub fn randomize_int(&mut self, descriptor: &IntParamDescriptor) -> usize {
         let (min, max) = descriptor.range(self.gallery_quality);
         
@@ -224,7 +224,7 @@ impl RandomizationRecord {
     pub fn add_float(&mut self, name: String, value: f64, was_randomized: bool, range: (f64, f64)) {
         self.parameters.push(RandomizedParameter {
             name,
-            value: format!("{:.4}", value),
+            value: format!("{value:.4}"),
             was_randomized,
             range_used: format!("[{:.4}, {:.4}]", range.0, range.1),
         });

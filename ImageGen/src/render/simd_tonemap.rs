@@ -88,6 +88,12 @@ fn tonemap_batch_avx2(
     let chunks = pixels.len() / 4;
     let remainder = pixels.len() % 4;
     
+    // SAFETY: This unsafe block is safe because:
+    // 1. AVX2 intrinsics are only called when the CPU supports them (target_feature check)
+    // 2. All SIMD operations are on properly aligned and sized data
+    // 3. Array indices are bounds-checked (base + offset < pixels.len())
+    // 4. Output buffer is guaranteed to have sufficient size by caller
+    // 5. All _mm256_* intrinsics are standard Intel intrinsics with well-defined behavior
     unsafe {
         // Load channel levels into SIMD registers
         let black_r = _mm256_set1_pd(levels.black[0]);

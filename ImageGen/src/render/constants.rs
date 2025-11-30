@@ -238,7 +238,7 @@ pub const VELOCITY_HDR_BOOST_THRESHOLD: f64 = 0.15;
 /// - **0.08** (default): Affects dense crossings and overlaps
 /// - **0.25**: Restricts to extremely bright regions only
 ///
-/// Lower values create a more uniformly "heated" appearance.
+/// Lower values create `a` more uniformly "heated" appearance.
 pub const ENERGY_DENSITY_SHIFT_THRESHOLD: f64 = 0.08;
 
 /// Wavelength shift strength (fraction of bin to shift per density unit).
@@ -285,6 +285,75 @@ pub const KINETIC_ENERGY_FACTOR: f64 = 0.5;
 
 /// Two times PI (full circle in radians)
 pub const TWO_PI: f64 = 2.0 * std::f64::consts::PI;
+
+// ========== Tonemapping Constants ==========
+
+/// Chroma preservation factor for tonemapping.
+/// Controls how much original color saturation is preserved vs tone-mapped result.
+/// Lower values create more neutral low-alpha regions.
+pub const CHROMA_PRESERVE_FACTOR: f64 = 0.06;
+
+/// Neutral mixing threshold for low-alpha regions.
+/// Pixels with alpha below this receive neutral mixing to prevent color artifacts.
+pub const NEUTRAL_MIX_ALPHA_THRESHOLD: f64 = 0.03;
+
+/// Maximum neutral mix strength for low-alpha pixels.
+pub const NEUTRAL_MIX_MAX_STRENGTH: f64 = 0.15;
+
+/// Alpha boost factor for trajectory compositing (1.20 = 20% stronger coverage)
+pub const COMPOSITE_ALPHA_BOOST_FACTOR: f64 = 1.20;
+
+/// Saturation boost factor for trajectory compositing (1.20 = 20% more saturated)
+pub const COMPOSITE_SATURATION_BOOST_FACTOR: f64 = 1.20;
+
+/// Saturation threshold for compositing (only boost high-alpha pixels)
+pub const COMPOSITE_SATURATION_THRESHOLD: f64 = 0.50;
+
+// ========== Drawing Constants ==========
+
+/// Minimum line length threshold (lines shorter than this are not drawn)
+pub const MIN_LINE_LENGTH: f64 = 0.001;
+
+/// Default chroma value for spectral dispersion effect
+pub const DISPERSION_DEFAULT_CHROMA: f64 = 0.15;
+
+// ========== Effect-Specific Constants ==========
+
+/// Ray emitter boost factor for crepuscular rays
+pub const RAY_EMITTER_BOOST_FACTOR: f64 = 2.0;
+
+/// Clarity radius scale factor (relative to minimum dimension)
+pub const CLARITY_RADIUS_SCALE: f64 = 0.0028;
+
+/// Fixed threshold for DoG bloom effect
+pub const DOG_BLOOM_THRESHOLD: f64 = 0.01;
+
+// ========== Simulation Physics Constants ==========
+
+/// Gravity singularity prevention threshold
+/// Prevents division by zero when bodies get very close
+pub const GRAVITY_SINGULARITY_THRESHOLD: f64 = 1e-10;
+
+/// Energy threshold for quick rejection in Borda search (E > 10.0)
+pub const BORDA_ENERGY_REJECTION_THRESHOLD: f64 = 10.0;
+
+/// Angular momentum threshold for quick rejection in Borda search (L < 10.0)
+pub const BORDA_ANGULAR_MOMENTUM_THRESHOLD: f64 = 10.0;
+
+/// Minimum viable chaos score for trajectory acceptance
+pub const MIN_VIABLE_CHAOS: f64 = 0.1;
+
+/// Minimum viable equilateral score for trajectory acceptance
+pub const MIN_VIABLE_EQUILATERAL: f64 = 0.01;
+
+/// Mass check threshold for center-of-mass calculation
+pub const COM_MASS_THRESHOLD: f64 = 1e-14;
+
+/// Minimum distance threshold for gravitational force calculation
+pub const MIN_DISTANCE_THRESHOLD: f64 = 1e-12;
+
+/// Early-exit check interval for Borda search (check every N steps)
+pub const BORDA_CHECK_INTERVAL: usize = 10000;
 
 // ========== Progress Reporting Constants ==========
 

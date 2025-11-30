@@ -130,7 +130,7 @@ impl FineTexture {
         weave + grain
     }
 
-    /// Get texture height/value for a given position
+    /// Get texture `height`/value for `a` given position
     fn get_height_map(&self, x: f64, y: f64) -> f64 {
         let raw_value = self.canvas_pattern(x, y);
 

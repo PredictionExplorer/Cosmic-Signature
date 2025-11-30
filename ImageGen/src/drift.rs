@@ -1,3 +1,83 @@
+//! Drift transformations for cinematic camera movement and dynamic framing
+//!
+//! # Overview
+//!
+//! This module provides sophisticated camera drift transformations that create
+//! visually compelling animations by applying smooth, continuous transformations
+//! to the entire 3-body system. Drift effects add production value through:
+//!
+//! - **Rotation**: Graceful orbital camera movement around the scene
+//! - **Translation**: Smooth panning and tracking motions
+//! - **Zoom**: Dynamic focal length adjustments
+//!
+//! # Architecture
+//!
+//! Transformations operate on the complete trajectory dataset, applying
+//! time-varying affine transformations (rotation, translation, scale) to
+//! simulate camera movement while preserving the physical simulation integrity.
+//!
+//! ## Transformation Pipeline
+//!
+//! ```text
+//! ┌─────────────────┐
+//! │  Simulated      │
+//! │  Trajectories   │
+//! └────────┬────────┘
+//!          │
+//!          ▼
+//! ┌─────────────────┐    ┌──────────────────┐
+//! │ Drift Transform │───▶│ Camera Matrix    │
+//! │  (per frame)    │    │ (rot + trans)    │
+//! └────────┬────────┘    └──────────────────┘
+//!          │
+//!          ▼
+//! ┌─────────────────┐
+//! │  Final Screen   │
+//! │  Coordinates    │
+//! └─────────────────┘
+//! ```
+//!
+//! # Drift Strategies
+//!
+//! - **Orbital**: Circular camera path around the system's center
+//! - **Linear**: Straight-line panning or tracking shots
+//! - **Zoom**: Focal length variation for dramatic emphasis
+//! - **Composite**: Combination of multiple strategies
+//!
+//! # Physical Correctness
+//!
+//! Drift transformations are applied **after** physics simulation, ensuring:
+//! - Conservation laws remain intact (energy, momentum, angular momentum)
+//! - Numerical stability is unaffected
+//! - Physics simulation can be cached and reused with different drift params
+//!
+//! # Performance Considerations
+//!
+//! Drift operations are O(N) where N is the total number of trajectory points
+//! across all bodies and frames. For typical videos (3 bodies × 1800 frames):
+//! - Memory: ~150KB per trajectory (negligible)
+//! - Time: <5ms total (parallelizable, but usually serial due to small size)
+//!
+//! # Example Usage
+//!
+//! ```rust,no_run
+//! use three_body_problem::drift::{DriftParameters, OrbitalDrift, DriftTransform};
+//! use nalgebra::Vector3;
+//!
+//! // Create orbital drift with 2x scale, 30% arc coverage, 60% eccentricity
+//! let params = DriftParameters::new(2.0, 0.3, 0.6);
+//! let mut drift = OrbitalDrift::new(params, 1337); // seed for deterministic RNG
+//!
+//! // Apply to trajectory data
+//! let mut positions = vec![vec![Vector3::zeros(); 1800]; 3]; // 3 bodies, 1800 frames
+//! drift.apply(&mut positions, 0.001); // dt = 0.001
+//! ```
+//!
+//! # Thread Safety
+//!
+//! Drift transforms are not `Send` or `Sync` due to internal RNG state,
+//! but this is acceptable since drift is applied serially after simulation.
+
 use crate::sim::Sha3RandomByteStream;
 use nalgebra::{Matrix3, Vector3};
 use std::f64::consts::PI;

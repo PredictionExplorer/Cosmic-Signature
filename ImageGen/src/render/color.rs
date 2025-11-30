@@ -1,10 +1,13 @@
 //! Color space conversions and utilities
 
+// Allow common color space patterns
+#![allow(clippy::many_single_char_names)] // r, g, b are standard notation
+
 use crate::render::constants::*;
 use crate::sim::Sha3RandomByteStream;
 use tracing::info;
 
-/// Type alias for OKLab color (L, a, b components)
+/// Type alias for OKLab color (L, `a`, `b` components)
 pub type OklabColor = (f64, f64, f64);
 
 /// Small random hue variation for visual interest

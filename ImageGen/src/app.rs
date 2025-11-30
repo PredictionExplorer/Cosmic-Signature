@@ -24,28 +24,51 @@ use tracing::{info, warn};
 /// Application configuration derived from command-line arguments
 #[allow(dead_code)] // Some fields used in logging, others reserved for future use
 pub struct AppConfig {
+    /// Hex seed for deterministic RNG
     pub seed: String,
+    /// Output file name (without extension)
     pub file_name: String,
+    /// Number of random configurations to try in Borda search
     pub num_sims: usize,
+    /// Number of simulation timesteps for warmup and recording
     pub num_steps_sim: usize,
+    /// Output image/video width in pixels
     pub width: u32,
+    /// Output image/video height in pixels
     pub height: u32,
+    /// Enable special mode (spectral dispersion, energy density shift)
     pub special: bool,
+    /// Render only first frame (for quick testing)
     pub test_frame: bool,
+    /// Black point clipping percentile (e.g., 0.002 = clip darkest 0.2%)
     pub clip_black: f64,
+    /// White point clipping percentile (e.g., 0.001 = clip brightest 0.1%)
     pub clip_white: f64,
+    /// Alpha calculation denominator (controls body opacity)
     pub alpha_denom: usize,
+    /// Energy threshold for escape detection during Borda search
     pub escape_threshold: f64,
+    /// Enable drift transformations (camera movement)
     pub drift_enabled: bool,
+    /// Drift mode: "orbital", "linear", "zoom", etc.
     pub drift_mode: String,
+    /// Drift scale factor (amplitude of transformation)
     pub drift_scale: Option<f64>,
+    /// Arc fraction for orbital drift (0.0-1.0)
     pub drift_arc_fraction: Option<f64>,
+    /// Orbit eccentricity for drift path (0.0-0.95)
     pub drift_orbit_eccentricity: Option<f64>,
+    /// Profile tag for favorites system
     pub profile_tag: String,
+    /// Bloom mode: "dog" or "none"
     pub bloom_mode: String,
+    /// DoG bloom strength multiplier
     pub dog_strength: f64,
+    /// DoG inner sigma (None = auto-calculate from resolution)
     pub dog_sigma: Option<f64>,
+    /// DoG outer/inner sigma ratio
     pub dog_ratio: f64,
+    /// HDR mode: "auto", "velocity", or "none"
     pub hdr_mode: String,
     pub hdr_scale: f64,
     pub perceptual_blur: String,
@@ -356,7 +379,7 @@ pub fn render_video(
 pub fn log_generation(
     config: &AppConfig,
     file_name: &str,
-    seed: &str,
+    _seed: &str,
     drift_config: &Option<ResolvedDriftConfig>,
     num_sims: usize,
     best_info: &TrajectoryResult,
@@ -366,7 +389,7 @@ pub fn log_generation(
     
     let mut record = GenerationRecord::new(
         file_name.to_string(),
-        format!("0x{}", seed),
+        "0x".to_string(),
         config.special,
     );
     

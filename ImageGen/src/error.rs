@@ -207,7 +207,7 @@ pub mod validation {
             return Err(RenderError::InvalidDimensions {
                 width,
                 height,
-                reason: format!("Dimensions must not exceed {}", MAX_DIMENSION),
+                reason: format!("Dimensions must not exceed {MAX_DIMENSION}"),
             }
             .into());
         }
@@ -236,7 +236,7 @@ mod tests {
             reason: "All orbits escaped".to_string(),
         };
         
-        let display = format!("{}", err);
+        let display = err.to_string();
         assert!(display.contains("95/100"));
         assert!(display.contains("escaped"));
     }

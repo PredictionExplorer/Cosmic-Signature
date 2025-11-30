@@ -1,3 +1,10 @@
+//! Three Body Problem Visualization - Command Line Interface
+//!
+//! Main binary entry point for the three-body problem visualization system.
+
+// Apply same lint configuration as library
+#![allow(clippy::too_many_arguments)] // CLI functions need many parameters
+
 use clap::Parser;
 use tracing::info;
 use tracing_subscriber::EnvFilter;

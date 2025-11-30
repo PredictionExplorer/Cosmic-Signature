@@ -5,8 +5,8 @@
 
 use nalgebra::Vector3;
 
-/// Type alias for pixel buffer - RGBA premultiplied
-pub type PixelBuffer = Vec<(f64, f64, f64, f64)>;
+// Re-export PixelBuffer from central types module for consistency
+pub use super::types::PixelBuffer;
 
 /// Encapsulates common rendering operations and coordinate transformations
 pub struct RenderContext {

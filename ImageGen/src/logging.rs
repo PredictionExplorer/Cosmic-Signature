@@ -171,7 +171,7 @@ impl RenderProgress {
     /// Check if we should log progress at this step.
     #[must_use]
     pub fn should_log(&self, step: usize) -> bool {
-        step % self.chunk_size == 0
+        step.is_multiple_of(self.chunk_size)
     }
 
     /// Log progress for a given step.

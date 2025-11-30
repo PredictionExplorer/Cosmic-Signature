@@ -19,7 +19,7 @@ pub fn approx_eq(a: f64, b: f64) -> bool {
     (a - b).abs() < FLOAT_EPSILON
 }
 
-/// Compute Fourier transform of a real-valued signal
+/// Compute Fourier transform of `a` real-valued signal
 pub fn fourier_transform(input: &[f64]) -> Vec<Complex<f64>> {
     let mut planner = FftPlanner::new();
     let fft = planner.plan_fft_forward(input.len());

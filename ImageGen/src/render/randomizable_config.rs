@@ -8,7 +8,7 @@ use super::parameter_descriptors as pd;
 use crate::sim::Sha3RandomByteStream;
 
 /// Complete configuration for all randomizable effect parameters.
-/// Each field is Option<T>: None means "randomize this", Some(T) means "use explicit value".
+/// Each field is Option<T>: `None` means "randomize this", `Some`(T) means "use explicit value".
 #[derive(Clone, Debug, Default)]
 pub struct RandomizableEffectConfig {
     // Gallery quality mode
@@ -398,7 +398,7 @@ impl RandomizableEffectConfig {
         &self,
         name: &str,
         value: Option<bool>,
-        randomizer: &mut EffectRandomizer,
+        randomizer: &mut EffectRandomizer<'_>,
         log: &mut RandomizationLog,
     ) -> bool {
         let (enabled, was_randomized) = match value {
@@ -420,7 +420,7 @@ impl RandomizableEffectConfig {
         name: &str,
         value: Option<f64>,
         descriptor: &pd::FloatParamDescriptor,
-        randomizer: &mut EffectRandomizer,
+        randomizer: &mut EffectRandomizer<'_>,
         log: &mut RandomizationLog,
     ) -> f64 {
         let (resolved, was_randomized) = match value {
@@ -458,7 +458,7 @@ impl RandomizableEffectConfig {
         name: &str,
         value: Option<usize>,
         descriptor: &pd::IntParamDescriptor,
-        randomizer: &mut EffectRandomizer,
+        randomizer: &mut EffectRandomizer<'_>,
         log: &mut RandomizationLog,
     ) -> usize {
         let (resolved, was_randomized) = match value {
@@ -491,7 +491,7 @@ impl RandomizableEffectConfig {
         resolved
     }
 
-    /// Extract effect group name from parameter name (e.g., "glow_strength" -> "glow")
+    /// Extract effect group name from parameter name (e.`g`., "glow_strength" -> "glow")
     fn effect_group_name(param_name: &str) -> String {
         param_name.split('_').next().unwrap_or(param_name).to_string()
     }

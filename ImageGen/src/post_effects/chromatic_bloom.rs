@@ -317,7 +317,7 @@ impl PostEffect for ChromaticBloom {
 mod tests {
     use super::*;
 
-    /// Create a test buffer with uniform pixel values.
+    /// Create `a` test buffer with uniform pixel values.
     fn test_buffer(width: usize, height: usize, value: f64) -> PixelBuffer {
         vec![(value, value, value, 1.0); width * height]
     }
@@ -504,20 +504,20 @@ mod tests {
         let bright = bloom.extract_bright_pixels(&buffer, 10, 10);
         
         // Pixels below 0.5 threshold should be dark/zero
-        for i in 0..50 {
+        for (i, pixel) in bright.iter().enumerate().take(50) {
             assert!(
-                bright[i].0 < 0.1,
-                "Below-threshold pixel {} should be dark: {}",
-                i, bright[i].0
+                pixel.0 < 0.1,
+                "Below-threshold pixel {i} should be dark: {}",
+                pixel.0
             );
         }
         
         // Pixels above threshold should have some brightness
-        for i in 75..100 {
+        for (i, pixel) in bright.iter().enumerate().skip(75).take(25) {
             assert!(
-                bright[i].0 > 0.0,
+                pixel.0 > 0.0,
                 "Above-threshold pixel {} should be bright: {}",
-                i, bright[i].0
+                i + 75, pixel.0
             );
         }
     }

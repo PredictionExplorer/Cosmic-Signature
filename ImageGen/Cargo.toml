@@ -3,6 +3,12 @@ name         = "three_body_problem"
 version      = "1.0.0"
 edition      = "2024"
 rust-version = "1.90.0"
+description  = "High-quality visualization and simulation of the chaotic three-body problem with spectral rendering"
+repository   = "https://github.com/CosmicSignature/three-body-visualization"
+readme       = "README.md"
+license      = "MIT"
+keywords     = ["physics", "simulation", "visualization", "three-body", "n-body"]
+categories   = ["science", "simulation", "graphics", "visualization"]
 
 [lib]
 name = "three_body_problem"

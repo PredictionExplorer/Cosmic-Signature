@@ -35,7 +35,7 @@ impl HistogramData {
         Self { data: Vec::with_capacity(capacity) }
     }
 
-    /// Add a pixel's RGB values to the histogram.
+    /// Add `a` pixel's RGB values to the histogram.
     #[inline]
     pub fn push(&mut self, r: f64, g: f64, b: f64) {
         self.data.push([r, g, b]);

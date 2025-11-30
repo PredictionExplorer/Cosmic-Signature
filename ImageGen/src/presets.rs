@@ -16,7 +16,7 @@ use crate::render::randomizable_config::RandomizableEffectConfig;
 
 /// Available render presets for common use cases.
 ///
-/// Each preset provides a curated set of effect parameters optimized
+/// Each preset provides `a` curated set of effect parameters optimized
 /// for a specific rendering scenario.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub enum Preset {

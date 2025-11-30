@@ -18,6 +18,71 @@ use super::randomizable_config::ResolvedEffectConfig;
 use crate::post_effects::PerceptualBlurConfig;
 use nalgebra::Vector3;
 
+// ========== Core Pixel Type Definitions ==========
+
+/// Pixel buffer type - RGBA in premultiplied linear color space.
+///
+/// # Format
+///
+/// Each pixel is a tuple `(R, G, B, A)` where:
+/// - **R, G, B**: Linear RGB color channels (not gamma-corrected)
+/// - **A**: Alpha/opacity in range [0.0, 1.0]
+/// - **RGB values are premultiplied by alpha** for proper compositing
+///
+/// # Premultiplied Alpha
+///
+/// Premultiplication means RGB values already include alpha:
+/// - `premult_R = straight_R × A`
+/// - `premult_G = straight_G × A`
+/// - `premult_B = straight_B × A`
+///
+/// This format enables efficient "over" compositing without per-pixel division:
+/// ```text
+/// C_out = C_fg + C_bg × (1 - A_fg)
+/// ```
+///
+/// # Linear Color Space
+///
+/// RGB values are in linear space (not sRGB gamma 2.2):
+/// - Correct for physically-based light accumulation
+/// - Required for proper HDR bloom and glow
+/// - Gamma correction applied during final tonemapping
+///
+/// # Memory Layout
+///
+/// For a 1920×1080 image:
+/// - Memory: 1920 × 1080 × 4 × 8 = ~62MB
+/// - Cache-friendly: contiguous row-major layout
+pub type PixelBuffer = Vec<(f64, f64, f64, f64)>;
+
+/// Single pixel tuple type
+///
+/// Convenience alias for a single RGBA pixel in premultiplied linear space.
+pub type Pixel = (f64, f64, f64, f64);
+
+/// OkLab color representation: (Lightness, a, b)
+///
+/// # OkLab Color Space
+///
+/// OkLab is a perceptually uniform color space designed for image processing:
+/// - **L**: Lightness [0.0, 1.0] (0 = black, 1 = white)
+/// - **a**: Green (-) to Red (+) axis [-0.4, 0.4]
+/// - **b**: Blue (-) to Yellow (+) axis [-0.4, 0.4]
+///
+/// # Benefits Over RGB
+///
+/// - **Perceptually uniform**: Equal distances = equal perceived differences
+/// - **Hue-preserving**: Easy saturation and lightness adjustments
+/// - **Gamut-friendly**: Fits sRGB gamut better than Lab
+///
+/// # Usage
+///
+/// Primary color space for:
+/// - Body color generation and interpolation
+/// - Spectral wavelength mapping
+/// - Perceptual blur and color grading
+pub type OklabColorTuple = (f64, f64, f64);
+
 /// Rendering configuration parameters
 ///
 /// Controls global rendering behavior like HDR scaling.

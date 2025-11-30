@@ -25,6 +25,11 @@ pub fn spd_to_rgba_simd(spd: &[f64; NUM_BINS]) -> (f64, f64, f64, f64) {
         not(miri)
     ))]
     {
+        // SAFETY: This call is safe because:
+        // 1. We're inside a cfg guard that ensures AVX2 support exists
+        // 2. The spd_to_rgba_avx2 function only uses AVX2 intrinsics on aligned data
+        // 3. The input array has fixed size (NUM_BINS) known at compile time
+        // 4. All SIMD operations within the function are properly bounds-checked
         unsafe { spd_to_rgba_avx2(spd) }
     }
     
@@ -102,6 +107,13 @@ fn spd_to_rgba_scalar(spd: &[f64; NUM_BINS]) -> (f64, f64, f64, f64) {
 }
 
 /// AVX2 SIMD implementation (3-4x faster)
+///
+/// # Safety
+///
+/// This function is unsafe because it uses AVX2 SIMD intrinsics which require:
+/// - The CPU must support AVX2 instructions (checked by caller via cfg)
+/// - Input array must be properly aligned (guaranteed by fixed-size array)
+/// - All SIMD register operations must be on valid data (ensured by bounds checking)
 #[cfg(all(target_arch = "x86_64", target_feature = "avx2", not(miri)))]
 #[inline]
 unsafe fn spd_to_rgba_avx2(spd: &[f64; NUM_BINS]) -> (f64, f64, f64, f64) {
