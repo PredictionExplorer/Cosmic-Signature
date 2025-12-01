@@ -51,16 +51,16 @@ impl AuroraVeilsConfig {
     /// Configuration optimized for special mode (dramatic aurora)
     pub fn special_mode() -> Self {
         Self {
-            strength: 0.35,              // Visible but not overwhelming
-            curtain_count: 5,             // Multiple overlapping curtains
-            height_variation: 0.75,       // Strong vertical movement
-            wave_amplitude: 0.12,         // Noticeable horizontal undulation
-            vertical_falloff: 1.8,        // Concentrated in upper regions
+            strength: 0.35,         // Visible but not overwhelming
+            curtain_count: 5,       // Multiple overlapping curtains
+            height_variation: 0.75, // Strong vertical movement
+            wave_amplitude: 0.12,   // Noticeable horizontal undulation
+            vertical_falloff: 1.8,  // Concentrated in upper regions
             colors: [
-                (0.15, 0.45, 0.35),      // Deep teal base
-                (0.25, 0.65, 0.45),      // Emerald green mid
-                (0.55, 0.35, 0.65),      // Purple highlight
-                (0.75, 0.55, 0.75),      // Pale magenta peak
+                (0.15, 0.45, 0.35), // Deep teal base
+                (0.25, 0.65, 0.45), // Emerald green mid
+                (0.55, 0.35, 0.65), // Purple highlight
+                (0.75, 0.55, 0.75), // Pale magenta peak
             ],
             shimmer_frequency: 0.8,
             edge_softness: 0.65,
@@ -151,7 +151,13 @@ impl AuroraVeils {
     }
 
     /// Generate aurora curtain intensity at a given pixel
-    fn generate_aurora_intensity(&self, x: usize, y: usize, width: usize, height: usize) -> (f64, f64) {
+    fn generate_aurora_intensity(
+        &self,
+        x: usize,
+        y: usize,
+        width: usize,
+        height: usize,
+    ) -> (f64, f64) {
         let nx = x as f64 / width as f64;
         let ny = y as f64 / height as f64;
 
@@ -177,19 +183,14 @@ impl AuroraVeils {
             let vertical_intensity = (1.0 - ny).powf(self.config.vertical_falloff);
 
             // Height variation using noise
-            let height_noise = self.fbm_noise(
-                nx * 2.0 + curtain_offset * 5.0,
-                curtain_offset * 3.0,
-                3,
-            );
-            let height_modulation =
-                1.0 - (height_noise - 0.5).abs() * self.config.height_variation;
+            let height_noise =
+                self.fbm_noise(nx * 2.0 + curtain_offset * 5.0, curtain_offset * 3.0, 3);
+            let height_modulation = 1.0 - (height_noise - 0.5).abs() * self.config.height_variation;
 
             // Shimmer effect
-            let shimmer = self.perlin_noise(
-                ny * self.config.shimmer_frequency * 5.0,
-                curtain_offset * 7.0,
-            ) * 0.2
+            let shimmer = self
+                .perlin_noise(ny * self.config.shimmer_frequency * 5.0, curtain_offset * 7.0)
+                * 0.2
                 + 0.8;
 
             // Combine factors with soft edge
@@ -250,8 +251,7 @@ impl PostEffect for AuroraVeils {
                 let x = idx % width;
                 let y = idx / width;
 
-                let (intensity, variation) =
-                    self.generate_aurora_intensity(x, y, width, height);
+                let (intensity, variation) = self.generate_aurora_intensity(x, y, width, height);
 
                 if intensity < 0.01 {
                     return (r, g, b, a);
@@ -283,10 +283,7 @@ mod tests {
 
     #[test]
     fn test_aurora_veils_disabled() {
-        let config = AuroraVeilsConfig {
-            strength: 0.0,
-            ..AuroraVeilsConfig::default()
-        };
+        let config = AuroraVeilsConfig { strength: 0.0, ..AuroraVeilsConfig::default() };
         let effect = AuroraVeils::new(config);
         assert!(!effect.is_enabled());
     }
@@ -328,12 +325,11 @@ mod tests {
         let result = effect.process(&buffer, 100, 100).unwrap();
 
         // Aurora should add light (screen blending)
-        let has_added_light = result
-            .iter()
-            .zip(buffer.iter())
-            .any(|(&(r_out, g_out, b_out, _), &(r_in, g_in, b_in, _))| {
+        let has_added_light = result.iter().zip(buffer.iter()).any(
+            |(&(r_out, g_out, b_out, _), &(r_in, g_in, b_in, _))| {
                 r_out > r_in || g_out > g_in || b_out > b_in
-            });
+            },
+        );
 
         assert!(has_added_light);
     }
@@ -370,4 +366,3 @@ mod tests {
         }
     }
 }
-

@@ -175,7 +175,7 @@ mod tests {
         let config = AetherConfig::default();
         let mut buffer = test_buffer(100, 100, 0.5);
         apply_aether_weave(&mut buffer, 100, 100, &config);
-        
+
         assert_eq!(buffer.len(), 100 * 100);
         for &(r, g, b, a) in &buffer {
             assert!(r.is_finite() && g.is_finite() && b.is_finite() && a.is_finite());

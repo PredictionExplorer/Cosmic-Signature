@@ -50,13 +50,13 @@ impl CosmicInkConfig {
     /// Configuration optimized for special mode (dramatic fluid trails)
     pub fn special_mode() -> Self {
         Self {
-            strength: 0.40,                      // Noticeable but not overwhelming
-            octaves: 4,                           // Rich multi-scale detail
-            scale: 0.015,                         // Medium-scale patterns
-            swirl_intensity: 0.75,                // Strong flow following
-            diffusion: 0.35,                      // Moderate spread
-            ink_color: (0.08, 0.12, 0.18),       // Deep blue-gray ink
-            vorticity_strength: 0.55,             // Visible swirls
+            strength: 0.40,                // Noticeable but not overwhelming
+            octaves: 4,                    // Rich multi-scale detail
+            scale: 0.015,                  // Medium-scale patterns
+            swirl_intensity: 0.75,         // Strong flow following
+            diffusion: 0.35,               // Moderate spread
+            ink_color: (0.08, 0.12, 0.18), // Deep blue-gray ink
+            vorticity_strength: 0.55,      // Visible swirls
         }
     }
 
@@ -175,11 +175,7 @@ impl CosmicInk {
                     let nx = (x as i32 + dx).max(0).min((width - 1) as i32) as usize;
                     let ny = (y as i32 + dy).max(0).min((height - 1) as i32) as usize;
                     let (r, g, b, a) = input[ny * width + nx];
-                    if a <= 0.0 {
-                        0.0
-                    } else {
-                        0.2126 * r + 0.7152 * g + 0.0722 * b
-                    }
+                    if a <= 0.0 { 0.0 } else { 0.2126 * r + 0.7152 * g + 0.0722 * b }
                 };
 
                 let gx = get_lum(1, 0) - get_lum(-1, 0);
@@ -214,10 +210,8 @@ impl CosmicInk {
 
                 // Sample noise along flow direction
                 let offset = 3.0;
-                let density = self.fractal_noise(
-                    nx + combined_x * offset,
-                    ny + combined_y * offset,
-                );
+                let density =
+                    self.fractal_noise(nx + combined_x * offset, ny + combined_y * offset);
 
                 // Add vorticity (rotation) visualization
                 let vorticity = curl_x * curl_x + curl_y * curl_y;
@@ -281,10 +275,7 @@ mod tests {
 
     #[test]
     fn test_cosmic_ink_disabled() {
-        let config = CosmicInkConfig {
-            strength: 0.0,
-            ..CosmicInkConfig::default()
-        };
+        let config = CosmicInkConfig { strength: 0.0, ..CosmicInkConfig::default() };
         let effect = CosmicInk::new(config);
         assert!(!effect.is_enabled());
     }
@@ -397,4 +388,3 @@ mod tests {
         }
     }
 }
-

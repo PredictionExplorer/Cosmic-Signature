@@ -22,13 +22,7 @@ impl RenderContext {
     pub fn new(width: u32, height: u32, positions: &[Vec<Vector3<f64>>]) -> Self {
         let bounds = BoundingBox::from_positions(positions);
 
-        Self {
-            width,
-            height,
-            width_usize: width as usize,
-            height_usize: height as usize,
-            bounds,
-        }
+        Self { width, height, width_usize: width as usize, height_usize: height as usize, bounds }
     }
 
     /// Convert world coordinates to pixel coordinates
@@ -42,13 +36,12 @@ impl RenderContext {
     pub fn pixel_count(&self) -> usize {
         self.width_usize * self.height_usize
     }
-    
+
     /// Get the bounding box used for coordinate transformations
     #[inline]
     pub fn bounds(&self) -> &BoundingBox {
         &self.bounds
     }
-
 }
 
 /// Bounding box for coordinate transformations
@@ -93,4 +86,3 @@ impl BoundingBox {
         (px as f32, py as f32)
     }
 }
-

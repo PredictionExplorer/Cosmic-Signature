@@ -47,13 +47,13 @@ impl ChromaticBloomConfig {
         let min_dim = width.min(height) as f64;
         Self {
             // Enhanced radius for luxurious bloom spread: 14px @ 1080p, 28px @ 4K
-            radius: (0.013 * min_dim).round() as usize,  // Increased from 0.0111
+            radius: (0.013 * min_dim).round() as usize, // Increased from 0.0111
             // Enhanced separation for dramatic chromatic aberration: 3.2px @ 1080p
-            separation: 0.0030 * min_dim,  // Increased from 0.0023
+            separation: 0.0030 * min_dim, // Increased from 0.0023
             // Enhanced strength for vivid prismatic color
-            strength: 0.78,  // Increased from 0.65
+            strength: 0.78, // Increased from 0.65
             // Lower threshold for more magical bloom coverage
-            threshold: 0.12,  // Reduced from 0.15
+            threshold: 0.12, // Reduced from 0.15
         }
     }
 }
@@ -87,7 +87,8 @@ impl ChromaticBloom {
                 let lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
 
                 // Threshold-based extraction with smooth falloff
-                let brightness = (lum - self.config.threshold).max(0.0) / (1.0 - self.config.threshold);
+                let brightness =
+                    (lum - self.config.threshold).max(0.0) / (1.0 - self.config.threshold);
                 let factor = brightness.min(1.0).powf(1.5); // Smooth curve
 
                 (r * factor, g * factor, b * factor, a * factor)
@@ -164,20 +165,18 @@ impl ChromaticBloom {
                 let dx = x as f64 - cx;
                 let dy = y as f64 - cy;
                 let dist = (dx * dx + dy * dy).sqrt().max(1.0);
-                
+
                 let offset_x = x as f64 + (dx / dist) * sep;
                 let offset_y = y as f64 + (dy / dist) * sep;
-                
+
                 let (r, _, _, a) = Self::sample_bilinear(bright, width, height, offset_x, offset_y);
                 (r, 0.0, 0.0, a)
             })
             .collect();
 
         // Green channel: centered (no offset)
-        let green_buffer: PixelBuffer = bright
-            .par_iter()
-            .map(|&(_, g, _, a)| (0.0, g, 0.0, a))
-            .collect();
+        let green_buffer: PixelBuffer =
+            bright.par_iter().map(|&(_, g, _, a)| (0.0, g, 0.0, a)).collect();
 
         // Blue channel: offset inward toward center
         let blue_buffer: PixelBuffer = (0..size)
@@ -188,10 +187,10 @@ impl ChromaticBloom {
                 let dx = x as f64 - cx;
                 let dy = y as f64 - cy;
                 let dist = (dx * dx + dy * dy).sqrt().max(1.0);
-                
+
                 let offset_x = x as f64 - (dx / dist) * sep;
                 let offset_y = y as f64 - (dy / dist) * sep;
-                
+
                 let (_, _, b, a) = Self::sample_bilinear(bright, width, height, offset_x, offset_y);
                 (0.0, 0.0, b, a)
             })
@@ -207,7 +206,7 @@ impl ChromaticBloom {
         }
 
         let radius = self.config.radius;
-        
+
         // Horizontal pass
         let mut temp = buffer.clone();
         for y in 0..height {
@@ -226,12 +225,8 @@ impl ChromaticBloom {
                 }
 
                 let inv_count = 1.0 / count as f64;
-                temp[y * width + x] = (
-                    sum.0 * inv_count,
-                    sum.1 * inv_count,
-                    sum.2 * inv_count,
-                    sum.3 * inv_count,
-                );
+                temp[y * width + x] =
+                    (sum.0 * inv_count, sum.1 * inv_count, sum.2 * inv_count, sum.3 * inv_count);
             }
         }
 
@@ -252,12 +247,8 @@ impl ChromaticBloom {
                 }
 
                 let inv_count = 1.0 / count as f64;
-                buffer[y * width + x] = (
-                    sum.0 * inv_count,
-                    sum.1 * inv_count,
-                    sum.2 * inv_count,
-                    sum.3 * inv_count,
-                );
+                buffer[y * width + x] =
+                    (sum.0 * inv_count, sum.1 * inv_count, sum.2 * inv_count, sum.3 * inv_count);
             }
         }
     }
@@ -323,11 +314,16 @@ mod tests {
     }
 
     /// Create a test buffer with a bright center spot.
-    fn test_buffer_with_center_spot(width: usize, height: usize, bg: f64, spot: f64) -> PixelBuffer {
+    fn test_buffer_with_center_spot(
+        width: usize,
+        height: usize,
+        bg: f64,
+        spot: f64,
+    ) -> PixelBuffer {
         let cx = width / 2;
         let cy = height / 2;
         let radius = (width.min(height) / 4) as f64;
-        
+
         (0..height * width)
             .map(|idx| {
                 let x = idx % width;
@@ -335,23 +331,14 @@ mod tests {
                 let dx = x as f64 - cx as f64;
                 let dy = y as f64 - cy as f64;
                 let dist = (dx * dx + dy * dy).sqrt();
-                
-                if dist < radius {
-                    (spot, spot, spot, 1.0)
-                } else {
-                    (bg, bg, bg, 1.0)
-                }
+
+                if dist < radius { (spot, spot, spot, 1.0) } else { (bg, bg, bg, 1.0) }
             })
             .collect()
     }
 
     fn test_config() -> ChromaticBloomConfig {
-        ChromaticBloomConfig {
-            radius: 5,
-            strength: 0.5,
-            separation: 3.0,
-            threshold: 0.3,
-        }
+        ChromaticBloomConfig { radius: 5, strength: 0.5, separation: 3.0, threshold: 0.3 }
     }
 
     #[test]
@@ -359,9 +346,9 @@ mod tests {
         let config = ChromaticBloomConfig { strength: 0.0, ..test_config() };
         let bloom = ChromaticBloom::new(config);
         let input = test_buffer(10, 10, 0.5);
-        
+
         let result = bloom.process(&input, 10, 10).unwrap();
-        
+
         // With zero strength, output should match input
         for (orig, res) in input.iter().zip(result.iter()) {
             assert!((orig.0 - res.0).abs() < 1e-10, "Output differs from input with zero strength");
@@ -373,9 +360,9 @@ mod tests {
         let config = ChromaticBloomConfig { radius: 0, ..test_config() };
         let bloom = ChromaticBloom::new(config);
         let input = test_buffer(10, 10, 0.5);
-        
+
         let result = bloom.process(&input, 10, 10).unwrap();
-        
+
         // With zero radius, output should match input
         for (orig, res) in input.iter().zip(result.iter()) {
             assert!((orig.0 - res.0).abs() < 1e-10, "Output differs from input with zero radius");
@@ -386,17 +373,18 @@ mod tests {
     fn test_chromatic_bloom_respects_threshold() {
         let config = ChromaticBloomConfig { threshold: 0.8, ..test_config() };
         let bloom = ChromaticBloom::new(config);
-        
+
         // Create input below threshold
         let input = test_buffer(20, 20, 0.3); // Below 0.8 threshold
         let result = bloom.process(&input, 20, 20).unwrap();
-        
+
         // Below-threshold pixels should have minimal bloom added
         for (orig, res) in input.iter().zip(result.iter()) {
             assert!(
                 (orig.0 - res.0).abs() < 0.1,
                 "Below-threshold pixels changed too much: {} vs {}",
-                orig.0, res.0
+                orig.0,
+                res.0
             );
         }
     }
@@ -405,17 +393,18 @@ mod tests {
     fn test_chromatic_bloom_adds_color() {
         let config = test_config();
         let bloom = ChromaticBloom::new(config);
-        
+
         // Create high-luminance input with bright center
         let input = test_buffer_with_center_spot(50, 50, 0.1, 0.9);
         let result = bloom.process(&input, 50, 50).unwrap();
-        
+
         // Center pixels should have bloom added (brightness should increase or stay same)
         let center_idx = 25 * 50 + 25;
         assert!(
             result[center_idx].0 >= input[center_idx].0 - 0.01,
             "Bloom should not significantly reduce brightness at center: {} vs {}",
-            result[center_idx].0, input[center_idx].0
+            result[center_idx].0,
+            input[center_idx].0
         );
     }
 
@@ -423,12 +412,12 @@ mod tests {
     fn test_chromatic_bloom_preserves_alpha() {
         let config = test_config();
         let bloom = ChromaticBloom::new(config);
-        
+
         let mut input = test_buffer(10, 10, 0.9);
         input[50].3 = 0.5; // Set one pixel to 50% alpha
-        
+
         let result = bloom.process(&input, 10, 10).unwrap();
-        
+
         // Alpha should be preserved (bloom doesn't modify alpha)
         assert_eq!(result[50].3, input[50].3, "Alpha should be preserved");
     }
@@ -436,7 +425,7 @@ mod tests {
     #[test]
     fn test_bilinear_sampling_center() {
         let buffer = test_buffer(10, 10, 0.5);
-        
+
         let result = ChromaticBloom::sample_bilinear(&buffer, 10, 10, 5.0, 5.0);
         assert!((result.0 - 0.5).abs() < 1e-10, "Center sampling should return exact value");
     }
@@ -444,11 +433,11 @@ mod tests {
     #[test]
     fn test_bilinear_sampling_corners() {
         let buffer = test_buffer(10, 10, 0.5);
-        
+
         // Test corner sampling
         let corner_tl = ChromaticBloom::sample_bilinear(&buffer, 10, 10, 0.0, 0.0);
         assert!((corner_tl.0 - 0.5).abs() < 1e-10, "Top-left corner sampling failed");
-        
+
         let corner_br = ChromaticBloom::sample_bilinear(&buffer, 10, 10, 9.0, 9.0);
         assert!((corner_br.0 - 0.5).abs() < 1e-10, "Bottom-right corner sampling failed");
     }
@@ -456,11 +445,11 @@ mod tests {
     #[test]
     fn test_bilinear_sampling_oob_clamps() {
         let buffer = test_buffer(10, 10, 0.5);
-        
+
         // Out-of-bounds coordinates should clamp to valid range
         let oob_negative = ChromaticBloom::sample_bilinear(&buffer, 10, 10, -5.0, -5.0);
         assert!((oob_negative.0 - 0.5).abs() < 1e-10, "Negative coords should clamp to edge");
-        
+
         let oob_positive = ChromaticBloom::sample_bilinear(&buffer, 10, 10, 15.0, 15.0);
         assert!((oob_positive.0 - 0.5).abs() < 1e-10, "Large coords should clamp to edge");
     }
@@ -477,14 +466,15 @@ mod tests {
                 (value, value, value, 1.0)
             })
             .collect();
-        
+
         // Sampling between x=4 and x=5 should interpolate
         let result = ChromaticBloom::sample_bilinear(&buffer, width, height, 4.5, 5.0);
         let expected = 4.5 / 9.0; // Linearly interpolated
         assert!(
             (result.0 - expected).abs() < 0.01,
             "Bilinear interpolation failed: {} vs {}",
-            result.0, expected
+            result.0,
+            expected
         );
     }
 
@@ -492,7 +482,7 @@ mod tests {
     fn test_extract_bright_pixels_threshold() {
         let config = ChromaticBloomConfig { threshold: 0.5, ..test_config() };
         let bloom = ChromaticBloom::new(config);
-        
+
         // Create buffer with varying brightness
         let buffer: PixelBuffer = (0..100)
             .map(|i| {
@@ -500,24 +490,21 @@ mod tests {
                 (value, value, value, 1.0)
             })
             .collect();
-        
+
         let bright = bloom.extract_bright_pixels(&buffer, 10, 10);
-        
+
         // Pixels below 0.5 threshold should be dark/zero
         for (i, pixel) in bright.iter().enumerate().take(50) {
-            assert!(
-                pixel.0 < 0.1,
-                "Below-threshold pixel {i} should be dark: {}",
-                pixel.0
-            );
+            assert!(pixel.0 < 0.1, "Below-threshold pixel {i} should be dark: {}", pixel.0);
         }
-        
+
         // Pixels above threshold should have some brightness
         for (i, pixel) in bright.iter().enumerate().skip(75).take(25) {
             assert!(
                 pixel.0 > 0.0,
                 "Above-threshold pixel {} should be bright: {}",
-                i + 75, pixel.0
+                i + 75,
+                pixel.0
             );
         }
     }
@@ -526,16 +513,17 @@ mod tests {
     fn test_box_blur_uniform_unchanged() {
         let config = ChromaticBloomConfig { radius: 3, ..test_config() };
         let bloom = ChromaticBloom::new(config);
-        
+
         // Uniform buffer should remain uniform after blur
         let mut buffer = test_buffer(20, 20, 0.6);
         bloom.box_blur_channel(&mut buffer, 20, 20);
-        
+
         for (i, pixel) in buffer.iter().enumerate() {
             assert!(
                 (pixel.0 - 0.6).abs() < 0.01,
                 "Uniform blur result differs at {}: {}",
-                i, pixel.0
+                i,
+                pixel.0
             );
         }
     }
@@ -544,13 +532,10 @@ mod tests {
     fn test_config_from_resolution_scales() {
         let config_1080 = ChromaticBloomConfig::from_resolution(1920, 1080);
         let config_4k = ChromaticBloomConfig::from_resolution(3840, 2160);
-        
+
         // 4K should have approximately double the radius
-        assert!(
-            config_4k.radius > config_1080.radius,
-            "4K should have larger radius than 1080p"
-        );
-        
+        assert!(config_4k.radius > config_1080.radius, "4K should have larger radius than 1080p");
+
         // Separation should also scale
         assert!(
             config_4k.separation > config_1080.separation,
@@ -562,33 +547,32 @@ mod tests {
     fn test_output_values_reasonable() {
         let config = test_config();
         let bloom = ChromaticBloom::new(config);
-        
+
         // Create a bright test pattern
         let input = test_buffer_with_center_spot(50, 50, 0.1, 0.95);
         let result = bloom.process(&input, 50, 50).unwrap();
-        
+
         // All output values should be in reasonable HDR range
         for (i, pixel) in result.iter().enumerate() {
             assert!(
                 pixel.0 >= 0.0 && pixel.0 <= 10.0,
                 "R value out of range at {}: {}",
-                i, pixel.0
+                i,
+                pixel.0
             );
             assert!(
                 pixel.1 >= 0.0 && pixel.1 <= 10.0,
                 "G value out of range at {}: {}",
-                i, pixel.1
+                i,
+                pixel.1
             );
             assert!(
                 pixel.2 >= 0.0 && pixel.2 <= 10.0,
                 "B value out of range at {}: {}",
-                i, pixel.2
+                i,
+                pixel.2
             );
-            assert!(
-                pixel.3 >= 0.0 && pixel.3 <= 1.0,
-                "Alpha out of range at {}: {}",
-                i, pixel.3
-            );
+            assert!(pixel.3 >= 0.0 && pixel.3 <= 1.0, "Alpha out of range at {}: {}", i, pixel.3);
         }
     }
 
@@ -601,7 +585,7 @@ mod tests {
             ..Default::default()
         });
         assert!(enabled.is_enabled());
-        
+
         // Disabled when strength = 0
         let disabled_strength = ChromaticBloom::new(ChromaticBloomConfig {
             strength: 0.0,
@@ -609,7 +593,7 @@ mod tests {
             ..Default::default()
         });
         assert!(!disabled_strength.is_enabled());
-        
+
         // Disabled when radius = 0
         let disabled_radius = ChromaticBloom::new(ChromaticBloomConfig {
             strength: 0.5,
@@ -619,4 +603,3 @@ mod tests {
         assert!(!disabled_radius.is_enabled());
     }
 }
-

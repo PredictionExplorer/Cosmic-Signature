@@ -21,9 +21,8 @@ pub enum LuxuryPalette {
     IndigoGold,
     /// Ethereal blue to warm orange
     BlueOrange,
-    
+
     // === MUSEUM-QUALITY ADDITIONS ===
-    
     /// Venetian Renaissance: Deep crimson, burnt sienna, gold leaf, ultramarine
     VenetianRenaissance,
     /// Japanese Ukiyo-e: Prussian blue, vermillion, gold, ink black
@@ -60,7 +59,8 @@ impl LuxuryPalette {
     /// Convert an integer index (0-14) to a palette variant.
     /// Useful for randomized palette selection.
     pub fn from_index(index: usize) -> Self {
-        match index % 15 {  // Modulo ensures we always get a valid palette
+        match index % 15 {
+            // Modulo ensures we always get a valid palette
             0 => LuxuryPalette::GoldPurple,
             1 => LuxuryPalette::CosmicTealPink,
             2 => LuxuryPalette::AmberCyan,
@@ -94,11 +94,7 @@ pub struct GradientMapConfig {
 
 impl Default for GradientMapConfig {
     fn default() -> Self {
-        Self {
-            palette: LuxuryPalette::GoldPurple,
-            strength: 0.55,
-            hue_preservation: 0.25,
-        }
+        Self { palette: LuxuryPalette::GoldPurple, strength: 0.55, hue_preservation: 0.25 }
     }
 }
 
@@ -116,7 +112,7 @@ impl GradientMap {
     /// Get color from palette at normalized position (0.0 to 1.0)
     fn sample_palette(&self, t: f64) -> (f64, f64, f64) {
         let t = t.clamp(0.0, 1.0);
-        
+
         match self.config.palette {
             LuxuryPalette::GoldPurple => {
                 // Deep purple -> Rich gold
@@ -173,9 +169,8 @@ impl GradientMap {
                 ];
                 Self::interpolate_gradient(&colors, t)
             }
-            
+
             // === MUSEUM-QUALITY PALETTE DEFINITIONS ===
-            
             LuxuryPalette::VenetianRenaissance => {
                 // Inspired by Titian, Tintoretto: rich, warm, luxurious
                 let colors = [
@@ -350,10 +345,10 @@ impl GradientMap {
         let segment = (t * n as f64).min(n as f64 - 0.0001);
         let idx = segment.floor() as usize;
         let local_t = segment - idx as f64;
-        
+
         let c0 = colors[idx];
         let c1 = colors[(idx + 1).min(n)];
-        
+
         (
             c0.0 + (c1.0 - c0.0) * local_t,
             c0.1 + (c1.1 - c0.1) * local_t,
@@ -363,15 +358,15 @@ impl GradientMap {
 
     /// Convert RGB to HSV
     fn rgb_to_hsv(r: f64, g: f64, b: f64) -> (f64, f64, f64) {
-        use crate::utils::{is_zero, approx_eq};
-        
+        use crate::utils::{approx_eq, is_zero};
+
         let max = r.max(g).max(b);
         let min = r.min(g).min(b);
         let delta = max - min;
-        
+
         let v = max;
         let s = if max > 0.0 { delta / max } else { 0.0 };
-        
+
         let h = if is_zero(delta) {
             0.0
         } else if approx_eq(max, r) {
@@ -381,9 +376,9 @@ impl GradientMap {
         } else {
             60.0 * (((r - g) / delta) + 4.0)
         };
-        
+
         let h = if h < 0.0 { h + 360.0 } else { h };
-        
+
         (h, s, v)
     }
 
@@ -393,7 +388,7 @@ impl GradientMap {
         let h_prime = h / 60.0;
         let x = c * (1.0 - ((h_prime % 2.0) - 1.0).abs());
         let m = v - c;
-        
+
         let (r, g, b) = match h_prime as i32 {
             0 => (c, x, 0.0),
             1 => (x, c, 0.0),
@@ -402,7 +397,7 @@ impl GradientMap {
             4 => (x, 0.0, c),
             _ => (c, 0.0, x),
         };
-        
+
         (r + m, g + m, b + m)
     }
 }
@@ -444,13 +439,13 @@ impl PostEffect for GradientMap {
                 let (final_r, final_g, final_b) = if self.config.hue_preservation > 0.0 {
                     let (orig_h, orig_s, _) = Self::rgb_to_hsv(sr, sg, sb);
                     let (grad_h, grad_s, grad_v) = Self::rgb_to_hsv(gr, gg, gb);
-                    
+
                     // Blend hues
-                    let blended_h = orig_h * self.config.hue_preservation 
+                    let blended_h = orig_h * self.config.hue_preservation
                         + grad_h * (1.0 - self.config.hue_preservation);
-                    let blended_s = orig_s * self.config.hue_preservation 
+                    let blended_s = orig_s * self.config.hue_preservation
                         + grad_s * (1.0 - self.config.hue_preservation);
-                    
+
                     Self::hsv_to_rgb(blended_h, blended_s, grad_v)
                 } else {
                     (gr, gg, gb)
@@ -463,12 +458,7 @@ impl PostEffect for GradientMap {
                 let blended_b = sb * (1.0 - strength) + final_b * strength;
 
                 // Convert back to premultiplied alpha
-                (
-                    (blended_r * a).max(0.0),
-                    (blended_g * a).max(0.0),
-                    (blended_b * a).max(0.0),
-                    a,
-                )
+                ((blended_r * a).max(0.0), (blended_g * a).max(0.0), (blended_b * a).max(0.0), a)
             })
             .collect();
 
@@ -493,7 +483,7 @@ mod tests {
         };
         let map = GradientMap::new(config);
         let buffer = test_buffer(100, 100, 0.5);
-        
+
         let result = map.process(&buffer, 100, 100);
         assert!(result.is_ok());
         assert_eq!(result.unwrap().len(), buffer.len());
@@ -502,7 +492,7 @@ mod tests {
     #[test]
     fn test_gradient_map_all_palettes() {
         use std::mem::discriminant;
-        
+
         let palettes = [
             LuxuryPalette::GoldPurple,
             LuxuryPalette::CosmicTealPink,
@@ -510,7 +500,7 @@ mod tests {
             LuxuryPalette::IndigoGold,
             LuxuryPalette::BlueOrange,
         ];
-        
+
         for palette in &palettes {
             let config = GradientMapConfig {
                 palette: palette.clone(),
@@ -519,9 +509,13 @@ mod tests {
             };
             let map = GradientMap::new(config);
             let buffer = test_buffer(50, 50, 0.5);
-            
+
             let result = map.process(&buffer, 50, 50);
-            assert!(result.is_ok(), "Palette {:?} should process successfully", discriminant(palette));
+            assert!(
+                result.is_ok(),
+                "Palette {:?} should process successfully",
+                discriminant(palette)
+            );
         }
     }
 
@@ -529,7 +523,7 @@ mod tests {
     fn test_gradient_map_from_index() {
         let palette0 = LuxuryPalette::from_index(0);
         let palette1 = LuxuryPalette::from_index(1);
-        
+
         // Different indices should give different palettes
         assert!(std::mem::discriminant(&palette0) != std::mem::discriminant(&palette1));
     }
@@ -543,9 +537,8 @@ mod tests {
         };
         let map = GradientMap::new(config);
         let buffer = test_buffer(50, 50, 0.0);
-        
+
         let result = map.process(&buffer, 50, 50);
         assert!(result.is_ok());
     }
 }
-

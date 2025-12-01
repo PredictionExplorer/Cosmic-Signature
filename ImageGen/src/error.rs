@@ -14,16 +14,16 @@ pub type Result<T> = std::result::Result<T, AppError>;
 pub enum AppError {
     /// Simulation-related errors
     Simulation(SimulationError),
-    
+
     /// Rendering-related errors
     Render(RenderError),
-    
+
     /// Configuration and input validation errors
     Config(ConfigError),
-    
+
     /// Drift configuration errors
     DriftConfig(crate::drift_config::DriftConfigError),
-    
+
     /// File I/O errors
     Io(std::io::Error),
 }
@@ -92,11 +92,7 @@ impl From<crate::drift_config::DriftConfigError> for AppError {
 #[derive(Debug)]
 pub enum SimulationError {
     /// No valid orbits found after filtering and escape checks
-    NoValidOrbits {
-        total_attempted: usize,
-        discarded: usize,
-        reason: String,
-    },
+    NoValidOrbits { total_attempted: usize, discarded: usize, reason: String },
 }
 
 impl fmt::Display for SimulationError {
@@ -120,13 +116,9 @@ impl Error for SimulationError {}
 pub enum RenderError {
     /// Wraps the existing render::error::RenderError
     Inner(crate::render::error::RenderError),
-    
+
     /// Invalid rendering dimensions
-    InvalidDimensions {
-        width: u32,
-        height: u32,
-        reason: String,
-    },
+    InvalidDimensions { width: u32, height: u32, reason: String },
 }
 
 impl fmt::Display for RenderError {
@@ -153,23 +145,14 @@ impl Error for RenderError {
 #[derive(Debug)]
 pub enum ConfigError {
     /// Invalid seed format
-    InvalidSeed {
-        seed: String,
-        error: hex::FromHexError,
-    },
-    
+    InvalidSeed { seed: String, error: hex::FromHexError },
+
     /// File system error
-    FileSystem {
-        operation: String,
-        path: String,
-        error: std::io::Error,
-    },
-    
+    FileSystem { operation: String, path: String, error: std::io::Error },
+
     /// Favorites profile loading/validation error (currently unused, kept for future extensions)
     #[allow(dead_code)]
-    InvalidProfile {
-        message: String,
-    },
+    InvalidProfile { message: String },
 }
 
 impl fmt::Display for ConfigError {
@@ -201,7 +184,7 @@ impl Error for ConfigError {
 /// Helper functions for common validation patterns
 pub mod validation {
     use super::*;
-    
+
     /// Validate that dimensions are non-zero and reasonable
     pub fn validate_dimensions(width: u32, height: u32) -> Result<()> {
         if width == 0 || height == 0 {
@@ -212,7 +195,7 @@ pub mod validation {
             }
             .into());
         }
-        
+
         const MAX_DIMENSION: u32 = 16384; // 16K
         if width > MAX_DIMENSION || height > MAX_DIMENSION {
             return Err(RenderError::InvalidDimensions {
@@ -222,7 +205,7 @@ pub mod validation {
             }
             .into());
         }
-        
+
         Ok(())
     }
 }
@@ -230,7 +213,7 @@ pub mod validation {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_validate_dimensions() {
         assert!(validation::validate_dimensions(1920, 1080).is_ok());
@@ -238,7 +221,7 @@ mod tests {
         assert!(validation::validate_dimensions(1920, 0).is_err());
         assert!(validation::validate_dimensions(20000, 1080).is_err());
     }
-    
+
     #[test]
     fn test_error_display() {
         let err = SimulationError::NoValidOrbits {
@@ -246,10 +229,9 @@ mod tests {
             discarded: 95,
             reason: "All orbits escaped".to_string(),
         };
-        
+
         let display = err.to_string();
         assert!(display.contains("95/100"));
         assert!(display.contains("escaped"));
     }
 }
-

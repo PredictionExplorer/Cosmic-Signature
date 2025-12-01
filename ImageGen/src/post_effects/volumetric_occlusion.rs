@@ -39,7 +39,7 @@ impl VolumetricOcclusionConfig {
             strength: 0.65,
             steps: 16,
             density_scale: 1.2,
-            light_angle: 135.0, // Top-left lighting default
+            light_angle: 135.0,             // Top-left lighting default
             shadow_color: (0.0, 0.0, 0.05), // Very deep blue-black shadows
             decay: 0.85,
             shadow_threshold: 0.1,
@@ -68,11 +68,7 @@ impl VolumetricOcclusion {
                 // Combine alpha coverage with luminance
                 // Brighter areas are assumed to be "thicker" or "denser" light emitters
                 let lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-                if lum < threshold {
-                    0.0
-                } else {
-                    (a * 0.5 + lum * 0.5).min(1.0)
-                }
+                if lum < threshold { 0.0 } else { (a * 0.5 + lum * 0.5).min(1.0) }
             })
             .collect()
     }
@@ -135,7 +131,8 @@ impl PostEffect for VolumetricOcclusion {
                     ray_y += step_y;
 
                     // Boundary check
-                    if ray_x < 0.0 || ray_x >= width as f64 || ray_y < 0.0 || ray_y >= height as f64 {
+                    if ray_x < 0.0 || ray_x >= width as f64 || ray_y < 0.0 || ray_y >= height as f64
+                    {
                         break;
                     }
 
@@ -143,14 +140,14 @@ impl PostEffect for VolumetricOcclusion {
                     let ix = ray_x as usize;
                     let iy = ray_y as usize;
                     let s_idx = iy * width + ix;
-                    
+
                     // Accumulate occlusion based on density of blocking pixels
                     // We decay the contribution with distance (weight)
                     let density = density_map[s_idx] * density_mult;
                     occlusion += density * weight;
-                    
+
                     weight *= decay; // Falloff
-                    
+
                     if occlusion >= 1.0 {
                         occlusion = 1.0;
                         break;
@@ -189,7 +186,7 @@ mod tests {
         let config = VolumetricOcclusionConfig::default();
         let occlusion = VolumetricOcclusion::new(config);
         let buffer = test_buffer(100, 100, 0.5);
-        
+
         let result = occlusion.process(&buffer, 100, 100);
         assert!(result.is_ok());
         assert_eq!(result.unwrap().len(), buffer.len());
@@ -200,7 +197,7 @@ mod tests {
         let config = VolumetricOcclusionConfig::default();
         let occlusion = VolumetricOcclusion::new(config);
         let buffer = test_buffer(50, 50, 0.0);
-        
+
         let result = occlusion.process(&buffer, 50, 50);
         assert!(result.is_ok());
     }
@@ -210,7 +207,7 @@ mod tests {
         let config = VolumetricOcclusionConfig::default();
         let occlusion = VolumetricOcclusion::new(config);
         let buffer = test_buffer(50, 50, 5.0);
-        
+
         let result = occlusion.process(&buffer, 50, 50);
         assert!(result.is_ok());
     }

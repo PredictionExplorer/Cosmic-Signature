@@ -100,7 +100,9 @@ impl Preset {
     #[must_use]
     pub fn description(&self) -> &'static str {
         match self {
-            Preset::Gallery => "High-quality gallery exhibition output with stable, polished effects",
+            Preset::Gallery => {
+                "High-quality gallery exhibition output with stable, polished effects"
+            }
             Preset::Preview => "Fast preview renders for rapid iteration (3-5× faster)",
             Preset::Cinematic => "Film-like aesthetic with dramatic vignettes and color grading",
             Preset::Exploratory => "Maximum exploration with all effects enabled",
@@ -111,7 +113,7 @@ impl Preset {
 
     fn apply_gallery(&self, config: &mut RandomizableEffectConfig) {
         config.gallery_quality = true;
-        
+
         // Enable core exhibition-ready effects
         config.enable_chromatic_bloom = Some(true);
         config.enable_champleve = Some(true);
@@ -120,14 +122,14 @@ impl Preset {
         config.enable_glow = Some(true);
         config.enable_perceptual_blur = Some(true);
         config.enable_edge_luminance = Some(true);
-        
+
         // Disable experimental/unstable effects
         config.enable_aether = Some(false);
         config.enable_opalescence = Some(false);
         config.enable_crepuscular_rays = Some(false);
         config.enable_volumetric_occlusion = Some(false);
         config.enable_refractive_caustics = Some(false);
-        
+
         // Conservative parameter ranges
         config.chromatic_bloom_strength = Some(0.55);
         config.color_grade_strength = Some(0.45);
@@ -146,14 +148,14 @@ impl Preset {
         config.enable_aether = Some(false);
         config.enable_champleve = Some(false);
         config.enable_atmospheric_depth = Some(false);
-        
+
         // Keep basic effects for visibility
         config.enable_bloom = Some(true);
         config.enable_glow = Some(true);
         config.enable_color_grade = Some(true);
         config.enable_edge_luminance = Some(true);
         config.enable_micro_contrast = Some(false);
-        
+
         // Lighter settings for speed
         config.blur_radius_scale = Some(0.01);
         config.blur_strength = Some(5.0);
@@ -167,22 +169,22 @@ impl Preset {
         config.vignette_strength = Some(0.55);
         config.vignette_softness = Some(2.8);
         config.tone_curve_strength = Some(0.70);
-        
+
         // Atmospheric effects for depth
         config.enable_atmospheric_depth = Some(true);
         config.atmospheric_depth_strength = Some(0.35);
         config.atmospheric_desaturation = Some(0.40);
-        
+
         // Rich bloom
         config.enable_bloom = Some(true);
         config.enable_glow = Some(true);
         config.glow_strength = Some(0.50);
         config.blur_strength = Some(10.0);
-        
+
         // Subtle chromatic effects
         config.enable_chromatic_bloom = Some(true);
         config.chromatic_bloom_strength = Some(0.45);
-        
+
         // Disable distracting effects
         config.enable_opalescence = Some(false);
         config.enable_crepuscular_rays = Some(false);
@@ -207,7 +209,7 @@ impl Preset {
         config.enable_volumetric_occlusion = Some(true);
         config.enable_refractive_caustics = Some(true);
         config.enable_fine_texture = Some(true);
-        
+
         // Wide exploration - let randomization decide parameters
         config.gallery_quality = false;
     }
@@ -228,7 +230,7 @@ impl Preset {
         config.enable_volumetric_occlusion = Some(false);
         config.enable_refractive_caustics = Some(false);
         config.enable_fine_texture = Some(false);
-        
+
         // Keep minimal bloom for visibility
         config.enable_bloom = Some(true);
         config.enable_glow = Some(true);
@@ -245,7 +247,7 @@ impl Preset {
         config.enable_color_grade = Some(true);
         config.enable_edge_luminance = Some(true);
         config.enable_micro_contrast = Some(true);
-        
+
         // Disable subtle effects that get lost in compression
         config.enable_perceptual_blur = Some(false);
         config.enable_fine_texture = Some(false);
@@ -256,7 +258,7 @@ impl Preset {
         config.enable_crepuscular_rays = Some(false);
         config.enable_volumetric_occlusion = Some(false);
         config.enable_refractive_caustics = Some(false);
-        
+
         // Strong, punchy values
         config.chromatic_bloom_strength = Some(0.65);
         config.color_grade_strength = Some(0.55);
@@ -363,7 +365,7 @@ mod tests {
     fn test_gallery_preset_applies_correctly() {
         let mut config = RandomizableEffectConfig::default();
         Preset::Gallery.apply(&mut config);
-        
+
         assert!(config.gallery_quality);
         assert_eq!(config.enable_chromatic_bloom, Some(true));
         assert_eq!(config.enable_champleve, Some(true));
@@ -375,7 +377,7 @@ mod tests {
     fn test_preview_preset_disables_expensive() {
         let mut config = RandomizableEffectConfig::default();
         Preset::Preview.apply(&mut config);
-        
+
         assert_eq!(config.enable_chromatic_bloom, Some(false));
         assert_eq!(config.enable_perceptual_blur, Some(false));
         assert_eq!(config.enable_fine_texture, Some(false));
@@ -386,7 +388,7 @@ mod tests {
     fn test_minimal_preset_mostly_disabled() {
         let mut config = RandomizableEffectConfig::default();
         Preset::Minimal.apply(&mut config);
-        
+
         assert_eq!(config.enable_color_grade, Some(false));
         assert_eq!(config.enable_champleve, Some(false));
         assert_eq!(config.enable_aether, Some(false));
@@ -397,7 +399,7 @@ mod tests {
     fn test_exploratory_enables_all() {
         let mut config = RandomizableEffectConfig::default();
         Preset::Exploratory.apply(&mut config);
-        
+
         assert_eq!(config.enable_bloom, Some(true));
         assert_eq!(config.enable_chromatic_bloom, Some(true));
         assert_eq!(config.enable_champleve, Some(true));
@@ -411,7 +413,7 @@ mod tests {
     fn test_cinematic_preset_film_look() {
         let mut config = RandomizableEffectConfig::default();
         Preset::Cinematic.apply(&mut config);
-        
+
         assert_eq!(config.enable_color_grade, Some(true));
         assert_eq!(config.vignette_strength, Some(0.55));
         assert_eq!(config.tone_curve_strength, Some(0.70));
@@ -422,11 +424,11 @@ mod tests {
     fn test_web_preset_punchy() {
         let mut config = RandomizableEffectConfig::default();
         Preset::Web.apply(&mut config);
-        
+
         // Punchy effects enabled
         assert_eq!(config.enable_micro_contrast, Some(true));
         assert!(config.vibrance.unwrap_or(1.0) > 1.0);
-        
+
         // Subtle effects disabled
         assert_eq!(config.enable_fine_texture, Some(false));
         assert_eq!(config.enable_perceptual_blur, Some(false));
@@ -445,4 +447,3 @@ mod tests {
         assert_eq!(Preset::default(), Preset::Gallery);
     }
 }
-

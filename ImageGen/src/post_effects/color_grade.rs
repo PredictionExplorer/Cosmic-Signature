@@ -10,8 +10,6 @@ use rayon::prelude::*;
 use std::error::Error;
 use std::f64::consts::TAU;
 
-
-
 fn luminance(r: f64, g: f64, b: f64) -> f64 {
     0.2126 * r + 0.7152 * g + 0.0722 * b
 }
@@ -56,7 +54,7 @@ impl ColorGradeParams {
     /// Create parameters with special mode flag to control color biasing
     pub fn from_resolution_and_mode(width: usize, height: usize, special_mode: bool) -> Self {
         let min_dim = width.min(height) as f64;
-        
+
         if special_mode {
             // Full cinematic grading for special mode
             Self {
@@ -85,7 +83,7 @@ impl ColorGradeParams {
                 shadow_tint: [-0.04, -0.01, 0.08], // Reduced from original
                 // Neutral highlight tint - no red/yellow bias
                 highlight_tint: [0.03, 0.02, 0.0], // Greatly reduced from original
-                palette_wave_strength: 0.0, // Disable palette wave to prevent red bias
+                palette_wave_strength: 0.0,        // Disable palette wave to prevent red bias
             }
         }
     }
@@ -168,7 +166,8 @@ impl CinematicColorGrade {
         }
 
         // Shadow and highlight tinting
-        #[allow(clippy::needless_range_loop)] // Direct indexing clearer for color channel manipulation
+        #[allow(clippy::needless_range_loop)]
+        // Direct indexing clearer for color channel manipulation
         for i in 0..3 {
             vibrant[i] += self.params.shadow_tint[i];
             vibrant[i] += self.params.highlight_tint[i];
@@ -258,10 +257,10 @@ mod tests {
         let params = ColorGradeParams::default();
         let grade = CinematicColorGrade::new(params);
         let buffer = test_buffer(100, 100, 0.5);
-        
+
         let result = grade.process(&buffer, 100, 100);
         assert!(result.is_ok());
-        
+
         let output = result.unwrap();
         assert_eq!(output.len(), buffer.len());
         for &(r, g, b, a) in &output {
@@ -271,12 +270,9 @@ mod tests {
 
     #[test]
     fn test_color_grade_disabled() {
-        let params = ColorGradeParams {
-            strength: 0.0,
-            ..Default::default()
-        };
+        let params = ColorGradeParams { strength: 0.0, ..Default::default() };
         let grade = CinematicColorGrade::new(params);
-        
+
         assert!(!grade.is_enabled());
     }
 
@@ -284,7 +280,7 @@ mod tests {
     fn test_color_grade_resolution_scaling() {
         let params_hd = ColorGradeParams::from_resolution(1920, 1080);
         let params_4k = ColorGradeParams::from_resolution(3840, 2160);
-        
+
         // 4K should have larger clarity radius
         assert!(params_4k.clarity_radius > params_hd.clarity_radius);
     }

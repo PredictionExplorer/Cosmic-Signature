@@ -62,13 +62,7 @@ impl EdgeLuminance {
 
     /// Get pixel luminance safely
     #[inline]
-    fn get_pixel_lum(
-        buffer: &PixelBuffer,
-        width: usize,
-        height: usize,
-        x: isize,
-        y: isize,
-    ) -> f64 {
+    fn get_pixel_lum(buffer: &PixelBuffer, width: usize, height: usize, x: isize, y: isize) -> f64 {
         if x < 0 || y < 0 || x >= width as isize || y >= height as isize {
             return 0.0;
         }
@@ -144,8 +138,7 @@ impl EdgeLuminance {
         }
 
         // Calculate enhancement factor
-        let edge_factor = ((edge_strength - self.config.threshold)
-            / (1.0 - self.config.threshold))
+        let edge_factor = ((edge_strength - self.config.threshold) / (1.0 - self.config.threshold))
             .clamp(0.0, 1.0);
 
         let enhancement = edge_factor * self.config.strength * self.config.brightness_boost;
@@ -227,10 +220,7 @@ mod tests {
 
     #[test]
     fn test_edge_luminance_disabled() {
-        let config = EdgeLuminanceConfig {
-            strength: 0.0,
-            ..EdgeLuminanceConfig::default()
-        };
+        let config = EdgeLuminanceConfig { strength: 0.0, ..EdgeLuminanceConfig::default() };
         let edge = EdgeLuminance::new(config);
         assert!(!edge.is_enabled());
     }
@@ -261,7 +251,7 @@ mod tests {
     fn test_edge_detection() {
         // Create a buffer with a clear edge
         let mut buffer = vec![(0.0, 0.0, 0.0, 1.0); 100];
-        
+
         // Make right half bright (creates vertical edge)
         for i in 0..10 {
             for j in 5..10 {
@@ -295,4 +285,3 @@ mod tests {
         assert_eq!(result.len(), buffer.len());
     }
 }
-

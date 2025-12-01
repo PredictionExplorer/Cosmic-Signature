@@ -72,10 +72,10 @@ mod tests {
         let config = DogBloomConfig::default();
         let bloom = DogBloom::new(config, 1.0);
         let buffer = test_buffer(100, 100, 0.5);
-        
+
         let result = bloom.process(&buffer, 100, 100);
         assert!(result.is_ok());
-        
+
         let output = result.unwrap();
         assert_eq!(output.len(), buffer.len());
         for &(r, g, b, a) in &output {
@@ -88,7 +88,7 @@ mod tests {
         let config = DogBloomConfig::default();
         let bloom = DogBloom::new(config, 1.0);
         let buffer = test_buffer(50, 50, 0.0);
-        
+
         let result = bloom.process(&buffer, 50, 50);
         assert!(result.is_ok());
     }
@@ -98,7 +98,7 @@ mod tests {
         let config = DogBloomConfig::default();
         let bloom = DogBloom::new(config, 1.0);
         let buffer = test_buffer(50, 50, 5.0);
-        
+
         let result = bloom.process(&buffer, 50, 50);
         assert!(result.is_ok());
         for &(r, _, _, _) in &result.unwrap() {

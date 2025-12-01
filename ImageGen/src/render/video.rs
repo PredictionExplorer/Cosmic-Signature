@@ -97,16 +97,14 @@ impl Default for VideoEncodingOptions {
                  deblock=-1,-1:\
                  no-sao=0:\
                  qg-size=8:\
-                 rdoq-level=2".to_string(),
-                
+                 rdoq-level=2"
+                    .to_string(),
                 // Content tuning for gradients and smooth motion
                 "-tune".to_string(),
                 "grain".to_string(),
-                
                 // Web optimization (instant playback while streaming)
                 "-movflags".to_string(),
                 "+faststart".to_string(),
-                
                 // Color accuracy metadata (critical for correct reproduction)
                 "-colorspace".to_string(),
                 "bt709".to_string(),
@@ -141,8 +139,8 @@ impl VideoEncodingOptions {
     pub fn fast_encode() -> Self {
         Self {
             codec: "hevc_videotoolbox".to_string(),
-            preset: String::new(), // Not used by hardware encoder
-            crf: 0, // Not used by hardware encoder
+            preset: String::new(),  // Not used by hardware encoder
+            crf: 0,                 // Not used by hardware encoder
             bitrate: String::new(), // VBR mode with -q:v
             pixel_format: "yuv420p10le".to_string(),
             input_pixel_format: "rgb48le".to_string(),
@@ -150,15 +148,12 @@ impl VideoEncodingOptions {
                 // Hardware encoder quality (0-100 scale, 65 ≈ CRF 20-22)
                 "-q:v".to_string(),
                 "60".to_string(),
-                
                 // Allow B-frames for better compression
                 "-allow_sw".to_string(),
                 "1".to_string(),
-                
                 // Web optimization
                 "-movflags".to_string(),
                 "+faststart".to_string(),
-                
                 // Color metadata
                 "-colorspace".to_string(),
                 "bt709".to_string(),
@@ -168,7 +163,6 @@ impl VideoEncodingOptions {
                 "iec61966-2-1".to_string(),
                 "-color_range".to_string(),
                 "tv".to_string(),
-                
                 // Compatibility tag
                 "-tag:v".to_string(),
                 "hvc1".to_string(),
@@ -203,7 +197,6 @@ impl VideoEncodingOptions {
         }
     }
 }
-
 
 /// Create video in a single pass using FFmpeg with configurable options
 ///
@@ -303,7 +296,7 @@ pub fn create_video_from_frames_singlepass(
     let mut child = cmd
         .stdin(Stdio::piped())
         .stdout(Stdio::null())
-        .stderr(Stdio::inherit()) 
+        .stderr(Stdio::inherit())
         .spawn()
         .map_err(RenderError::VideoEncoding)?;
 
@@ -312,12 +305,12 @@ pub fn create_video_from_frames_singlepass(
         if let Err(e) = frames_iter(&mut stdin) {
             let _ = stdin.flush();
             let _ = child.kill();
-		return Err(RenderError::VideoEncoding(std::io::Error::other(e.to_string())));
-	}
-	// Ensure stdin is closed so ffmpeg sees EOF
-	let _ = stdin.flush();
-	drop(stdin);
-}
+            return Err(RenderError::VideoEncoding(std::io::Error::other(e.to_string())));
+        }
+        // Ensure stdin is closed so ffmpeg sees EOF
+        let _ = stdin.flush();
+        drop(stdin);
+    }
 
     // Wait for FFmpeg to complete
     let output = child.wait_with_output().map_err(RenderError::VideoEncoding)?;
@@ -405,10 +398,7 @@ impl EncodingStrategy {
     /// Create a strategy with no fallbacks (fail fast).
     #[must_use]
     pub fn no_fallback(options: VideoEncodingOptions) -> Self {
-        Self {
-            primary: options,
-            fallbacks: vec![],
-        }
+        Self { primary: options, fallbacks: vec![] }
     }
 
     /// H.264 fallback configuration for maximum compatibility.
@@ -592,10 +582,10 @@ mod tests {
         let args = &options.extra_args;
         let colorspace_idx = args.iter().position(|s| s == "-colorspace").unwrap();
         assert_eq!(args[colorspace_idx + 1], "bt709");
-        
+
         let primaries_idx = args.iter().position(|s| s == "-color_primaries").unwrap();
         assert_eq!(args[primaries_idx + 1], "bt709");
-        
+
         let trc_idx = args.iter().position(|s| s == "-color_trc").unwrap();
         assert_eq!(args[trc_idx + 1], "iec61966-2-1");
     }
@@ -604,10 +594,12 @@ mod tests {
     fn test_perceptual_optimization() {
         let options = VideoEncodingOptions::default();
         // Verify x265-params contains perceptual optimizations
-        let x265_params = options.extra_args.iter()
+        let x265_params = options
+            .extra_args
+            .iter()
             .position(|s| s == "-x265-params")
             .map(|idx| &options.extra_args[idx + 1]);
-        
+
         assert!(x265_params.is_some());
         let params = x265_params.unwrap();
         assert!(params.contains("profile=main10"));
@@ -619,13 +611,13 @@ mod tests {
     #[test]
     fn test_encoding_strategy_default() {
         let strategy = EncodingStrategy::default();
-        
+
         // Primary should be H.265
         assert_eq!(strategy.primary.codec, "libx265");
-        
+
         // Should have fallbacks
         assert!(!strategy.fallbacks.is_empty());
-        
+
         // Last fallback should be H.264 for compatibility
         let last_fallback = strategy.fallbacks.last().unwrap();
         assert_eq!(last_fallback.codec, "libx264");
@@ -634,11 +626,11 @@ mod tests {
     #[test]
     fn test_encoding_strategy_fast() {
         let strategy = EncodingStrategy::fast_with_fallbacks();
-        
+
         // Should have hardware encoder primary on macOS
         #[cfg(target_os = "macos")]
         assert_eq!(strategy.primary.codec, "hevc_videotoolbox");
-        
+
         // Should have fallbacks
         assert!(!strategy.fallbacks.is_empty());
     }
@@ -647,14 +639,14 @@ mod tests {
     fn test_encoding_strategy_no_fallback() {
         let options = VideoEncodingOptions::default();
         let strategy = EncodingStrategy::no_fallback(options);
-        
+
         assert!(strategy.fallbacks.is_empty());
     }
 
     #[test]
     fn test_h264_fallback_is_compatible() {
         let fallback = EncodingStrategy::h264_fallback();
-        
+
         // H.264 with 8-bit color for maximum compatibility
         assert_eq!(fallback.codec, "libx264");
         assert_eq!(fallback.pixel_format, "yuv420p");

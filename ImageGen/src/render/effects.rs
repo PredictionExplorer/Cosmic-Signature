@@ -8,23 +8,22 @@ use super::context::PixelBuffer;
 use super::drawing::parallel_blur_2d_rgba;
 use super::error::{RenderError, Result};
 use crate::post_effects::{
-    AutoExposure, AuroraVeils, AuroraVeilsConfig, ChampleveConfig, Cherenkov, CherenkovConfig,
-    ChromaticBloom, ChromaticBloomConfig, CinematicColorGrade, ColorGradeParams,
-    CosmicInk, CosmicInkConfig, CrepuscularRays, CrepuscularRaysConfig, DimensionalGlitch,
-    DimensionalGlitchConfig, DogBloom, EdgeLuminance, EdgeLuminanceConfig, EventHorizon,
-    EventHorizonConfig, FineTexture, FineTextureConfig, GaussianBloom, GlowEnhancement,
-    GlowEnhancementConfig, GradientMap, GradientMapConfig, MicroContrast, MicroContrastConfig,
-    Opalescence, OpalescenceConfig, PerceptualBlur, PerceptualBlurConfig, PostEffect,
-    PostEffectChain, PrismaticHalos, PrismaticHalosConfig, RefractiveCaustics,
-    RefractiveCausticsConfig, VolumetricOcclusion, VolumetricOcclusionConfig,
-    aether::AetherConfig, apply_aether_weave, apply_champleve_iridescence, AtmosphericDepth,
-    AtmosphericDepthConfig,
+    AtmosphericDepth, AtmosphericDepthConfig, AuroraVeils, AuroraVeilsConfig, AutoExposure,
+    ChampleveConfig, Cherenkov, CherenkovConfig, ChromaticBloom, ChromaticBloomConfig,
+    CinematicColorGrade, ColorGradeParams, CosmicInk, CosmicInkConfig, CrepuscularRays,
+    CrepuscularRaysConfig, DimensionalGlitch, DimensionalGlitchConfig, DogBloom, EdgeLuminance,
+    EdgeLuminanceConfig, EventHorizon, EventHorizonConfig, FineTexture, FineTextureConfig,
+    GaussianBloom, GlowEnhancement, GlowEnhancementConfig, GradientMap, GradientMapConfig,
+    MicroContrast, MicroContrastConfig, Opalescence, OpalescenceConfig, PerceptualBlur,
+    PerceptualBlurConfig, PostEffect, PostEffectChain, PrismaticHalos, PrismaticHalosConfig,
+    RefractiveCaustics, RefractiveCausticsConfig, VolumetricOcclusion, VolumetricOcclusionConfig,
+    aether::AetherConfig, apply_aether_weave, apply_champleve_iridescence,
 };
 use crate::spectrum::{NUM_BINS, spd_to_rgba};
 use rayon::prelude::*;
 
 /// Configuration for effect chain creation
-/// 
+///
 /// Controls which effects are enabled and their parameters. Effects are applied
 /// in a carefully ordered sequence for optimal visual quality:
 /// 1. Bloom effects (diffuse glow)
@@ -44,13 +43,13 @@ pub struct EffectConfig {
     pub hdr_mode: String,
     pub perceptual_blur_enabled: bool,
     pub perceptual_blur_config: Option<PerceptualBlurConfig>,
-    
+
     // Color manipulation effects
     pub color_grade_enabled: bool,
     pub color_grade_params: ColorGradeParams,
     pub gradient_map_enabled: bool,
     pub gradient_map_config: GradientMapConfig,
-    
+
     // Material and iridescence effects
     pub champleve_enabled: bool,
     pub champleve_config: ChampleveConfig,
@@ -60,7 +59,7 @@ pub struct EffectConfig {
     pub chromatic_bloom_config: ChromaticBloomConfig,
     pub opalescence_enabled: bool,
     pub opalescence_config: OpalescenceConfig,
-    
+
     // Detail and clarity effects
     pub edge_luminance_enabled: bool,
     pub edge_luminance_config: EdgeLuminanceConfig,
@@ -68,7 +67,7 @@ pub struct EffectConfig {
     pub micro_contrast_config: MicroContrastConfig,
     pub glow_enhancement_enabled: bool,
     pub glow_enhancement_config: GlowEnhancementConfig,
-    
+
     // Atmospheric and surface effects
     pub atmospheric_depth_enabled: bool,
     pub atmospheric_depth_config: AtmosphericDepthConfig,
@@ -80,7 +79,7 @@ pub struct EffectConfig {
     pub refractive_caustics_config: RefractiveCausticsConfig,
     pub fine_texture_enabled: bool,
     pub fine_texture_config: FineTextureConfig,
-    
+
     // New "Masterpiece" physics and artistic effects
     pub event_horizon_enabled: bool,
     pub event_horizon_config: EventHorizonConfig,
@@ -117,7 +116,7 @@ impl EffectChainBuilder {
     }
 
     /// Build the effect chain based on configuration
-    /// 
+    ///
     /// Effects are applied in a carefully optimized order:
     /// 1. Bloom effects (diffuse and tight glow)
     /// 2. Tone mapping and perceptual smoothing
@@ -131,7 +130,7 @@ impl EffectChainBuilder {
 
         // ===== PHASE 1: BLOOM & GLOW =====
         // Base lighting effects that work on bright areas
-        
+
         // 1a. Traditional bloom (large diffuse glow)
         if config.blur_radius_px > 0 {
             chain.add(Box::new(GaussianBloom::new(
@@ -163,7 +162,7 @@ impl EffectChainBuilder {
 
         // ===== PHASE 2: TONE MAPPING & BLUR =====
         // Perceptual processing for smooth, natural appearance
-        
+
         // 2a. Perceptual blur (OKLab space smoothing)
         if config.perceptual_blur_enabled && config.perceptual_blur_config.is_some() {
             let blur_config = config.perceptual_blur_config.as_ref().unwrap();
@@ -177,7 +176,7 @@ impl EffectChainBuilder {
 
         // ===== PHASE 3: DETAIL ENHANCEMENT =====
         // Clarity and definition improvements
-        
+
         // 3. Micro-contrast (local contrast enhancement for detail clarity) [NEW]
         if config.micro_contrast_enabled {
             chain.add(Box::new(MicroContrast::new(config.micro_contrast_config.clone())));
@@ -185,7 +184,7 @@ impl EffectChainBuilder {
 
         // ===== PHASE 4: COLOR MANIPULATION =====
         // Artistic color transformations
-        
+
         // 4a. Gradient mapping (luxury color palettes)
         if config.gradient_map_enabled {
             chain.add(Box::new(GradientMap::new(config.gradient_map_config.clone())));
@@ -198,7 +197,7 @@ impl EffectChainBuilder {
 
         // ===== PHASE 5: MATERIAL PROPERTIES =====
         // Iridescence and material quality (layered for depth)
-        
+
         // 5a. Opalescence (base gem-like shimmer layer) [MOVED EARLIER]
         if config.opalescence_enabled {
             chain.add(Box::new(Opalescence::new(config.opalescence_config.clone())));
@@ -216,7 +215,7 @@ impl EffectChainBuilder {
 
         // ===== PHASE 6: FORM REFINEMENT =====
         // Edge and shape definition
-        
+
         // 6. Edge luminance (selective edge brightening for refined forms)
         if config.edge_luminance_enabled {
             chain.add(Box::new(EdgeLuminance::new(config.edge_luminance_config.clone())));
@@ -224,20 +223,20 @@ impl EffectChainBuilder {
 
         // ===== PHASE 7: ATMOSPHERIC & PHYSICS EFFECTS =====
         // Background and environmental layers (apply early for proper layering)
-        
+
         // 7a. Aurora Veils (background atmospheric curtains) [NEW - MASTERPIECE]
         if config.aurora_veils_enabled {
             chain.add(Box::new(AuroraVeils::new(config.aurora_veils_config.clone())));
         }
-        
+
         // 7b. Cosmic Ink (fluid-like space medium) [NEW - MASTERPIECE]
         if config.cosmic_ink_enabled {
             chain.add(Box::new(CosmicInk::new(config.cosmic_ink_config.clone())));
         }
-        
+
         // ===== PHASE 8: PHYSICS VISUALIZATION =====
         // Effects that reveal the invisible forces
-        
+
         // 8a. Event Horizon Lensing (gravity distortion) [NEW - MASTERPIECE]
         // Replaces refractive_caustics for thematically superior gravity visualization
         if config.event_horizon_enabled {
@@ -246,33 +245,35 @@ impl EffectChainBuilder {
             // Legacy fallback: Refractive Caustics (Glass/Gem look)
             chain.add(Box::new(RefractiveCaustics::new(config.refractive_caustics_config.clone())));
         }
-        
+
         // 8b. Volumetric Occlusion (Self-Shadowing for depth)
         if config.volumetric_occlusion_enabled {
-            chain.add(Box::new(VolumetricOcclusion::new(config.volumetric_occlusion_config.clone())));
+            chain.add(Box::new(VolumetricOcclusion::new(
+                config.volumetric_occlusion_config.clone(),
+            )));
         }
-        
+
         // 8c. Crepuscular Rays (God Rays - Light scattering)
         if config.crepuscular_rays_enabled {
             chain.add(Box::new(CrepuscularRays::new(config.crepuscular_rays_config.clone())));
         }
-        
+
         // ===== PHASE 9: ENERGY & VELOCITY EFFECTS =====
         // High-energy event visualization
-        
+
         // 9a. Cherenkov Radiation (velocity-based blue glow) [NEW - MASTERPIECE]
         if config.cherenkov_enabled {
             chain.add(Box::new(Cherenkov::new(config.cherenkov_config.clone())));
         }
-        
+
         // 9b. Prismatic Halos (optical phenomena around bright spots) [NEW - MASTERPIECE]
         if config.prismatic_halos_enabled {
             chain.add(Box::new(PrismaticHalos::new(config.prismatic_halos_config.clone())));
         }
-        
+
         // ===== PHASE 10: ATMOSPHERIC DEPTH & SURFACE =====
         // Final spatial qualities
-        
+
         // 10a. Atmospheric depth (spatial perspective + fog)
         if config.atmospheric_depth_enabled {
             chain.add(Box::new(AtmosphericDepth::new(config.atmospheric_depth_config.clone())));
@@ -282,10 +283,10 @@ impl EffectChainBuilder {
         if config.fine_texture_enabled {
             chain.add(Box::new(FineTexture::new(config.fine_texture_config.clone())));
         }
-        
+
         // ===== PHASE 11: DIGITAL AESTHETICS =====
         // Meta-layer: the computational medium itself
-        
+
         // 11. Dimensional Glitch (digital artifacts at peak energy) [NEW - MASTERPIECE]
         if config.dimensional_glitch_enabled {
             chain.add(Box::new(DimensionalGlitch::new(config.dimensional_glitch_config.clone())));
@@ -347,7 +348,7 @@ impl Default for EffectConfig {
             refractive_caustics_config: RefractiveCausticsConfig::default(),
             fine_texture_enabled: false,
             fine_texture_config: FineTextureConfig::default(),
-            
+
             // New "Masterpiece" effects (disabled by default)
             event_horizon_enabled: false,
             event_horizon_config: EventHorizonConfig::default(),
@@ -407,9 +408,7 @@ impl EffectConfigBuilder {
     /// Create a new builder with default configuration.
     #[must_use]
     pub fn new() -> Self {
-        Self {
-            config: EffectConfig::default(),
-        }
+        Self { config: EffectConfig::default() }
     }
 
     /// Set the bloom mode ("dog", "gaussian", or "none").
@@ -624,7 +623,7 @@ impl EffectConfigBuilder {
     }
 
     /// Disable all effects (minimal rendering).
-    /// 
+    ///
     /// This creates a passthrough chain that returns input unchanged.
     #[must_use]
     pub fn disable_all_effects(mut self) -> Self {
@@ -771,7 +770,6 @@ impl MipPyramid {
 
         pyramid
     }
-
 }
 
 /// Standalone bilinear upsampling function for arbitrary data
@@ -979,7 +977,7 @@ mod tests {
     #[test]
     fn test_effect_config_default() {
         let config = EffectConfig::default();
-        
+
         assert_eq!(config.bloom_mode, "dog");
         assert!(config.blur_radius_px > 0);
         assert!(config.perceptual_blur_enabled);
@@ -990,33 +988,25 @@ mod tests {
     fn test_effect_config_builder_default() {
         let config = EffectConfig::builder().build();
         let default = EffectConfig::default();
-        
+
         assert_eq!(config.bloom_mode, default.bloom_mode);
         assert_eq!(config.blur_radius_px, default.blur_radius_px);
     }
 
     #[test]
     fn test_builder_bloom_mode() {
-        let config = EffectConfig::builder()
-            .bloom_mode("gaussian")
-            .build();
-        
+        let config = EffectConfig::builder().bloom_mode("gaussian").build();
+
         assert_eq!(config.bloom_mode, "gaussian");
     }
 
     #[test]
     fn test_builder_with_dog_bloom() {
-        let dog_config = DogBloomConfig {
-            inner_sigma: 10.0,
-            outer_ratio: 3.0,
-            strength: 0.5,
-            threshold: 0.02,
-        };
-        
-        let config = EffectConfig::builder()
-            .with_dog_bloom(dog_config.clone())
-            .build();
-        
+        let dog_config =
+            DogBloomConfig { inner_sigma: 10.0, outer_ratio: 3.0, strength: 0.5, threshold: 0.02 };
+
+        let config = EffectConfig::builder().with_dog_bloom(dog_config.clone()).build();
+
         assert_eq!(config.bloom_mode, "dog");
         assert!((config.dog_config.inner_sigma - 10.0).abs() < 1e-10);
         assert!((config.dog_config.outer_ratio - 3.0).abs() < 1e-10);
@@ -1024,10 +1014,8 @@ mod tests {
 
     #[test]
     fn test_builder_blur_settings() {
-        let config = EffectConfig::builder()
-            .blur(20, 15.0, 12.0)
-            .build();
-        
+        let config = EffectConfig::builder().blur(20, 15.0, 12.0).build();
+
         assert_eq!(config.blur_radius_px, 20);
         assert!((config.blur_strength - 15.0).abs() < 1e-10);
         assert!((config.blur_core_brightness - 12.0).abs() < 1e-10);
@@ -1035,23 +1023,17 @@ mod tests {
 
     #[test]
     fn test_builder_enable_chromatic_bloom() {
-        let enabled = EffectConfig::builder()
-            .enable_chromatic_bloom(true)
-            .build();
+        let enabled = EffectConfig::builder().enable_chromatic_bloom(true).build();
         assert!(enabled.chromatic_bloom_enabled);
-        
-        let disabled = EffectConfig::builder()
-            .enable_chromatic_bloom(false)
-            .build();
+
+        let disabled = EffectConfig::builder().enable_chromatic_bloom(false).build();
         assert!(!disabled.chromatic_bloom_enabled);
     }
 
     #[test]
     fn test_builder_disable_all() {
-        let config = EffectConfig::builder()
-            .disable_all_effects()
-            .build();
-        
+        let config = EffectConfig::builder().disable_all_effects().build();
+
         assert_eq!(config.bloom_mode, "none");
         assert!(!config.chromatic_bloom_enabled);
         assert!(!config.perceptual_blur_enabled);
@@ -1076,7 +1058,7 @@ mod tests {
             .enable_aether(false)
             .hdr_mode("auto")
             .build();
-        
+
         assert_eq!(config.bloom_mode, "dog");
         assert!(config.chromatic_bloom_enabled);
         assert!(config.color_grade_enabled);
@@ -1088,7 +1070,7 @@ mod tests {
     #[test]
     fn test_dog_bloom_config_default() {
         let config = DogBloomConfig::default();
-        
+
         assert!((config.inner_sigma - 6.0).abs() < 1e-10);
         assert!((config.outer_ratio - 2.5).abs() < 1e-10);
         assert!((config.strength - 0.35).abs() < 1e-10);
@@ -1098,7 +1080,7 @@ mod tests {
     #[test]
     fn test_exposure_calculator_default() {
         let calc = ExposureCalculator::default();
-        
+
         assert!((calc.target_percentile - 0.95).abs() < 1e-10);
         assert!((calc.min_exposure - 0.1).abs() < 1e-10);
         assert!((calc.max_exposure - 10.0).abs() < 1e-10);
@@ -1108,7 +1090,7 @@ mod tests {
     fn test_exposure_calculator_empty_pixels() {
         let calc = ExposureCalculator::default();
         let pixels: Vec<(f64, f64, f64, f64)> = vec![];
-        
+
         let exposure = calc.calculate_exposure(&pixels);
         assert!((exposure - 1.0).abs() < 1e-10);
     }
@@ -1117,7 +1099,7 @@ mod tests {
     fn test_exposure_calculator_uniform_gray() {
         let calc = ExposureCalculator::default();
         let pixels = vec![(0.5, 0.5, 0.5, 1.0); 100];
-        
+
         let exposure = calc.calculate_exposure(&pixels);
         assert!(exposure > 0.0 && exposure.is_finite());
     }
@@ -1126,11 +1108,11 @@ mod tests {
     fn test_effect_chain_builder_creates_chain() {
         let config = EffectConfig::default();
         let chain = EffectChainBuilder::new(config);
-        
+
         // Basic test - just verify chain can be created
         let buffer = vec![(0.5, 0.5, 0.5, 1.0); 100];
         let params = FrameParams { _frame_number: 0, _density: None };
-        
+
         let result = chain.process_frame(buffer, 10, 10, &params);
         assert!(result.is_ok());
     }
@@ -1144,9 +1126,9 @@ mod tests {
             (0.0, 0.0, 1.0, 1.0),
             (1.0, 1.0, 1.0, 1.0),
         ];
-        
+
         let result = upsample_bilinear(&src, 2, 2, 2, 2);
-        
+
         for (orig, res) in src.iter().zip(result.iter()) {
             assert!((orig.0 - res.0).abs() < 0.01);
             assert!((orig.1 - res.1).abs() < 0.01);
@@ -1159,9 +1141,9 @@ mod tests {
     fn test_upsample_bilinear_doubles_size() {
         let src = vec![(0.5, 0.5, 0.5, 1.0); 4];
         let result = upsample_bilinear(&src, 2, 2, 4, 4);
-        
+
         assert_eq!(result.len(), 16);
-        
+
         // Uniform input should produce uniform output
         for pixel in &result {
             assert!((pixel.0 - 0.5).abs() < 0.1);
@@ -1172,9 +1154,9 @@ mod tests {
     fn test_apply_dog_bloom_uniform() {
         let config = DogBloomConfig::default();
         let input = vec![(0.5, 0.5, 0.5, 1.0); 64 * 64];
-        
+
         let result = apply_dog_bloom(&input, 64, 64, &config);
-        
+
         // Uniform input should produce relatively uniform output
         assert_eq!(result.len(), 64 * 64);
         for pixel in &result {

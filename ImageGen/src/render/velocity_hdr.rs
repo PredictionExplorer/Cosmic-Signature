@@ -61,7 +61,7 @@ impl<'a> VelocityHdrCalculator<'a> {
     fn compute_single_velocity_multiplier(&self, step: usize, body: usize) -> f64 {
         let p0 = self.positions[body][step];
         let p1 = self.positions[body][step + 1];
-        
+
         compute_velocity_hdr_multiplier(&p0, &p1, self.dt)
     }
 }
@@ -82,10 +82,10 @@ fn compute_velocity_hdr_multiplier(p0: &Vector3<f64>, p1: &Vector3<f64>, dt: f64
     // Compute velocity magnitude
     let delta = p1 - p0;
     let velocity = delta.norm() / dt;
-    
+
     // Normalize velocity and apply boost
     let normalized_velocity = (velocity / VELOCITY_HDR_BOOST_THRESHOLD).min(1.0);
-    
+
     // Linear interpolation: 1.0 at zero velocity, BOOST_FACTOR at threshold velocity
     1.0 + normalized_velocity * (VELOCITY_HDR_BOOST_FACTOR - 1.0)
 }
@@ -117,7 +117,7 @@ mod tests {
             vec![Vector3::new(0.0, 0.0, 0.0), Vector3::new(1.0, 0.0, 0.0)],
             vec![Vector3::new(0.0, 1.0, 0.0), Vector3::new(1.0, 1.0, 0.0)],
         ];
-        
+
         let calc = VelocityHdrCalculator::new(&positions, 0.001, false);
         let mult = calc.compute_segment_multiplier(0, 0, 1);
         assert_eq!(mult, 1.0, "Special mode disabled should return 1.0");
@@ -129,10 +129,9 @@ mod tests {
             vec![Vector3::new(0.0, 0.0, 0.0), Vector3::new(1.0, 0.0, 0.0)],
             vec![Vector3::new(0.0, 1.0, 0.0), Vector3::new(1.0, 1.0, 0.0)],
         ];
-        
+
         let calc = VelocityHdrCalculator::new(&positions, 0.001, true);
         let mult = calc.compute_segment_multiplier(0, 0, 1);
         assert!(mult > 1.0, "Fast movement in special mode should boost HDR");
     }
 }
-

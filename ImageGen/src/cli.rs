@@ -138,11 +138,11 @@ pub struct EffectArgs {
     pub special: bool,
 
     /// Enable gallery quality mode (narrower randomization ranges for exhibition-ready results)
-    #[arg(long, default_value_t = false)]
+    /// Default is TRUE for best quality. Use --gallery-quality=false for wider exploration.
+    #[arg(long, default_value_t = true)]
     pub gallery_quality: bool,
 
     // ==== Effect Control Flags (All effects enabled by default) ====
-    
     /// Disable ALL post-processing effects (show pure spectral rendering + basic bloom)
     #[arg(long, default_value_t = false)]
     pub disable_all_effects: bool,
@@ -204,7 +204,6 @@ pub struct EffectArgs {
     pub disable_temporal_smoothing: bool,
 
     // ==== Bloom & Glow Parameters ====
-    
     /// Gaussian blur strength (if not specified, randomized in range 4.0-18.0)
     #[arg(long)]
     pub param_blur_strength: Option<f64>,
@@ -266,7 +265,6 @@ pub struct EffectArgs {
     pub param_glow_saturation_boost: Option<f64>,
 
     // ==== Chromatic Bloom Parameters ====
-    
     /// Chromatic bloom strength (if not specified, randomized in range 0.35-0.85)
     #[arg(long)]
     pub param_chromatic_bloom_strength: Option<f64>,
@@ -284,7 +282,6 @@ pub struct EffectArgs {
     pub param_chromatic_bloom_threshold: Option<f64>,
 
     // ==== Perceptual Blur Parameters ====
-    
     /// Enable perceptual blur in OKLab space: off or on
     #[arg(long, default_value = "on")]
     pub perceptual_blur: String,
@@ -306,7 +303,6 @@ pub struct EffectArgs {
     pub param_perceptual_blur_strength: Option<f64>,
 
     // ==== Color Grading Parameters ====
-    
     /// Color grading strength (if not specified, randomized in range 0.0-0.75)
     #[arg(long)]
     pub param_color_grade_strength: Option<f64>,
@@ -332,7 +328,6 @@ pub struct EffectArgs {
     pub param_tone_curve_strength: Option<f64>,
 
     // ==== Gradient Mapping Parameters ====
-    
     /// Gradient map strength (if not specified, randomized in range 0.40-1.0)
     #[arg(long)]
     pub param_gradient_map_strength: Option<f64>,
@@ -346,7 +341,6 @@ pub struct EffectArgs {
     pub param_gradient_map_palette: Option<usize>,
 
     // ==== Opalescence Parameters ====
-    
     /// Opalescence strength (if not specified, randomized in range 0.0-0.35)
     #[arg(long)]
     pub param_opalescence_strength: Option<f64>,
@@ -360,7 +354,6 @@ pub struct EffectArgs {
     pub param_opalescence_layers: Option<usize>,
 
     // ==== Champlevé Parameters ====
-    
     /// Champlevé flow alignment (if not specified, randomized in range 0.20-0.85)
     #[arg(long)]
     pub param_champleve_flow_alignment: Option<f64>,
@@ -382,7 +375,6 @@ pub struct EffectArgs {
     pub param_champleve_interior_lift: Option<f64>,
 
     // ==== Aether Parameters ====
-    
     /// Aether flow alignment (if not specified, randomized in range 0.30-0.95)
     #[arg(long)]
     pub param_aether_flow_alignment: Option<f64>,
@@ -400,7 +392,6 @@ pub struct EffectArgs {
     pub param_aether_caustic_strength: Option<f64>,
 
     // ==== Micro-Contrast Parameters ====
-    
     /// Micro-contrast strength (if not specified, randomized in range 0.10-0.45)
     #[arg(long)]
     pub param_micro_contrast_strength: Option<f64>,
@@ -410,7 +401,6 @@ pub struct EffectArgs {
     pub param_micro_contrast_radius: Option<usize>,
 
     // ==== Edge Luminance Parameters ====
-    
     /// Edge luminance strength (if not specified, randomized in range 0.08-0.40)
     #[arg(long)]
     pub param_edge_luminance_strength: Option<f64>,
@@ -424,7 +414,6 @@ pub struct EffectArgs {
     pub param_edge_luminance_brightness_boost: Option<f64>,
 
     // ==== Atmospheric Depth Parameters ====
-    
     /// Atmospheric depth strength (if not specified, randomized in range 0.0-0.45)
     #[arg(long)]
     pub param_atmospheric_depth_strength: Option<f64>,
@@ -450,7 +439,6 @@ pub struct EffectArgs {
     pub param_atmospheric_fog_color_b: Option<f64>,
 
     // ==== Fine Texture Parameters ====
-    
     /// Fine texture strength (if not specified, randomized in range 0.02-0.25)
     #[arg(long)]
     pub param_fine_texture_strength: Option<f64>,
@@ -464,13 +452,11 @@ pub struct EffectArgs {
     pub param_fine_texture_contrast: Option<f64>,
 
     // ==== HDR Parameters ====
-    
     /// HDR scale (if not specified, randomized in range 0.06-0.25)
     #[arg(long)]
     pub param_hdr_scale: Option<f64>,
 
     // ==== Clipping Parameters ====
-    
     /// Black point clipping (if not specified, randomized in range 0.005-0.025, constrained < clip_white)
     #[arg(long)]
     pub param_clip_black: Option<f64>,
@@ -480,7 +466,6 @@ pub struct EffectArgs {
     pub param_clip_white: Option<f64>,
 
     // ==== Nebula Parameters ====
-    
     /// Nebula strength (if not specified, randomized in range 0.0-0.30)
     #[arg(long)]
     pub param_nebula_strength: Option<f64>,
@@ -493,4 +478,3 @@ pub struct EffectArgs {
     #[arg(long)]
     pub param_nebula_base_frequency: Option<f64>,
 }
-

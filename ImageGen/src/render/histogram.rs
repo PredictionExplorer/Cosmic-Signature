@@ -48,7 +48,7 @@ impl HistogramData {
     pub fn len(&self) -> usize {
         self.data.len()
     }
-    
+
     /// Check if the histogram is empty.
     ///
     /// Returns true if no samples have been collected yet.
@@ -71,7 +71,7 @@ impl HistogramData {
     pub fn data(&self) -> &[[f64; 3]] {
         &self.data
     }
-    
+
     /// Extract channels into separate vectors efficiently.
     ///
     /// Returns (all_r, all_g, all_b) for use in black/white computation.
@@ -82,13 +82,13 @@ impl HistogramData {
         let mut all_r = Vec::with_capacity(len);
         let mut all_g = Vec::with_capacity(len);
         let mut all_b = Vec::with_capacity(len);
-        
+
         for [r, g, b] in self.data {
             all_r.push(r);
             all_g.push(g);
             all_b.push(b);
         }
-        
+
         (all_r, all_g, all_b)
     }
 }
@@ -139,4 +139,3 @@ pub fn compute_black_white_gamma(
 
     (black_r, white_r, black_g, white_g, black_b, white_b)
 }
-

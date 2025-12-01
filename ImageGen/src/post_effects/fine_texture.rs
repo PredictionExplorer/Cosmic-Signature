@@ -54,13 +54,13 @@ impl FineTextureConfig {
         let base_scale = (width as f64 * height as f64).sqrt();
         Self {
             texture_type: TextureType::Impasto, // Upgraded to Impasto by default for "Museum Quality"
-            strength: 0.25,                    // Stronger for 3D effect
-            scale: base_scale * 0.0016,        
-            contrast: 0.42,                    
-            anisotropy: 0.32,                  
+            strength: 0.25,                     // Stronger for 3D effect
+            scale: base_scale * 0.0016,
+            contrast: 0.42,
+            anisotropy: 0.32,
             angle: 45.0,
-            light_angle: 135.0,                // Top-left lighting
-            specular_strength: 0.15,           // Subtle gloss
+            light_angle: 135.0,      // Top-left lighting
+            specular_strength: 0.15, // Subtle gloss
         }
     }
 }
@@ -110,7 +110,7 @@ impl FineTexture {
     /// Canvas weave pattern (two perpendicular wave patterns)
     fn canvas_pattern(&self, x: f64, y: f64) -> f64 {
         let scale = 1.0 / self.config.scale;
-        
+
         // Horizontal threads
         let h_wave = (y * scale * 8.0).sin();
         let h_noise = self.value_noise(x * scale * 0.5, y * scale * 8.0);
@@ -123,10 +123,10 @@ impl FineTexture {
 
         // Combine with slight offset for weave pattern
         let weave = (h_thread + v_thread) * 0.5 + h_thread * v_thread * 0.3;
-        
+
         // Add fine grain
         let grain = self.value_noise(x * scale * 20.0, y * scale * 20.0) * 0.2;
-        
+
         weave + grain
     }
 
@@ -136,7 +136,7 @@ impl FineTexture {
 
         // Apply contrast
         let centered = raw_value * self.config.contrast;
-        
+
         // Apply anisotropy (makes texture more directional)
         if self.config.anisotropy > 0.0 {
             let angle_rad = self.config.angle.to_radians();
@@ -169,8 +169,8 @@ impl PostEffect for FineTexture {
         let ly = light_rad.sin();
         let lz = 0.5; // Light slightly coming from front
         // Normalize
-        let len = (lx*lx + ly*ly + lz*lz).sqrt();
-        let light_dir = (lx/len, ly/len, lz/len);
+        let len = (lx * lx + ly * ly + lz * lz).sqrt();
+        let light_dir = (lx / len, ly / len, lz / len);
 
         let output: PixelBuffer = input
             .par_iter()
@@ -185,7 +185,7 @@ impl PostEffect for FineTexture {
 
                 // 1. Get base texture modulation
                 let texture_val = self.get_height_map(x, y);
-                
+
                 if self.config.texture_type == TextureType::Canvas {
                     // Classic 2D multiply mode
                     let modulation = 1.0 + texture_val * self.config.strength;
@@ -193,7 +193,7 @@ impl PostEffect for FineTexture {
                         (r * modulation).max(0.0),
                         (g * modulation).max(0.0),
                         (b * modulation).max(0.0),
-                        a
+                        a,
                     );
                 }
 
@@ -202,44 +202,48 @@ impl PostEffect for FineTexture {
                 let h_center = texture_val;
                 let h_right = self.get_height_map(x + 1.0, y);
                 let h_down = self.get_height_map(x, y + 1.0);
-                
+
                 // Add image luminance to height (paint thickness matches brightness)
                 let lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
                 let thickness = lum * 0.5; // Bright areas = thicker paint
-                
+
                 let total_h = h_center + thickness;
                 let total_h_r = h_right + thickness; // Approximation (using center lum)
                 let total_h_d = h_down + thickness;
-                
+
                 let dx = (total_h_r - total_h) * self.config.strength * 10.0;
                 let dy = (total_h_d - total_h) * self.config.strength * 10.0;
-                
+
                 // Normal vector (-dx, -dy, 1)
                 let nz = 1.0;
-                let n_len = (dx*dx + dy*dy + nz*nz).sqrt();
-                let normal = (-dx/n_len, -dy/n_len, nz/n_len);
+                let n_len = (dx * dx + dy * dy + nz * nz).sqrt();
+                let normal = (-dx / n_len, -dy / n_len, nz / n_len);
 
                 // Diffuse lighting (Lambert)
-                let diffuse = (normal.0 * light_dir.0 + normal.1 * light_dir.1 + normal.2 * light_dir.2).max(0.0);
-                
+                let diffuse =
+                    (normal.0 * light_dir.0 + normal.1 * light_dir.1 + normal.2 * light_dir.2)
+                        .max(0.0);
+
                 // Specular lighting (Blinn-Phong)
                 // View vector is (0,0,1), Half vector is bisector of Light and View
                 let hx = light_dir.0;
                 let hy = light_dir.1;
                 let hz = light_dir.2 + 1.0;
-                let h_len = (hx*hx + hy*hy + hz*hz).sqrt();
-                let half_vec = (hx/h_len, hy/h_len, hz/h_len);
-                
-                let spec_angle = (normal.0 * half_vec.0 + normal.1 * half_vec.1 + normal.2 * half_vec.2).max(0.0);
+                let h_len = (hx * hx + hy * hy + hz * hz).sqrt();
+                let half_vec = (hx / h_len, hy / h_len, hz / h_len);
+
+                let spec_angle =
+                    (normal.0 * half_vec.0 + normal.1 * half_vec.1 + normal.2 * half_vec.2)
+                        .max(0.0);
                 let specular = spec_angle.powf(32.0) * self.config.specular_strength;
 
                 // Combine: Ambient + Diffuse + Specular
                 // Ambient is the original color
                 // Diffuse modulates the original color
                 // Specular adds white highlight
-                
+
                 let light_intensity = 0.8 + diffuse * 0.4; // Base ambient + diffuse
-                
+
                 let final_r = r * light_intensity + specular;
                 let final_g = g * light_intensity + specular;
                 let final_b = b * light_intensity + specular;
@@ -258,10 +262,7 @@ mod tests {
 
     #[test]
     fn test_texture_disabled() {
-        let config = FineTextureConfig {
-            strength: 0.0,
-            ..FineTextureConfig::default()
-        };
+        let config = FineTextureConfig { strength: 0.0, ..FineTextureConfig::default() };
         let texture = FineTexture::new(config);
         assert!(!texture.is_enabled());
     }
@@ -272,26 +273,23 @@ mod tests {
         let texture = FineTexture::new(config);
         assert!(texture.is_enabled());
     }
-    
+
     #[test]
     fn test_impasto_mode() {
         let mut config = FineTextureConfig::special_mode_canvas(100, 100);
         config.texture_type = TextureType::Impasto;
         let texture = FineTexture::new(config);
-        
+
         let buffer = vec![(0.5, 0.5, 0.5, 1.0); 100];
         let result = texture.process(&buffer, 10, 10).unwrap();
-        
+
         // Should not be identical to input (lighting applied)
         assert!((result[0].0 - 0.5).abs() > 0.0001);
     }
 
     #[test]
     fn test_all_texture_types() {
-        let types = [
-            TextureType::Canvas,
-            TextureType::Impasto,
-        ];
+        let types = [TextureType::Canvas, TextureType::Impasto];
 
         for texture_type in types {
             let config = FineTextureConfig {
@@ -305,10 +303,10 @@ mod tests {
                 specular_strength: 0.5,
             };
             let texture = FineTexture::new(config);
-            
+
             // Should be enabled
             assert!(texture.is_enabled());
-            
+
             // Should produce varying values (or at least run without panic)
             let _ = texture.get_height_map(0.0, 0.0);
         }

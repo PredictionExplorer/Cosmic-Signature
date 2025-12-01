@@ -109,11 +109,7 @@ impl FilterStats {
     /// Create a new filter stats tracker.
     #[must_use]
     pub fn new(total: usize) -> Self {
-        Self {
-            total,
-            discarded: 0,
-            reason: None,
-        }
+        Self { total, discarded: 0, reason: None }
     }
 
     /// Record discarded items with a reason.
@@ -124,11 +120,8 @@ impl FilterStats {
 
     /// Log the filter results with structured fields.
     pub fn log_results(&self) {
-        let percent = if self.total > 0 {
-            100.0 * self.discarded as f64 / self.total as f64
-        } else {
-            0.0
-        };
+        let percent =
+            if self.total > 0 { 100.0 * self.discarded as f64 / self.total as f64 } else { 0.0 };
 
         info!(
             discarded = self.discarded,
@@ -160,12 +153,7 @@ impl RenderProgress {
     #[must_use]
     pub fn new(pass: usize, mode: &'static str, total_steps: usize) -> Self {
         let chunk_size = (total_steps / 10).max(1);
-        Self {
-            pass,
-            mode,
-            total_steps,
-            chunk_size,
-        }
+        Self { pass, mode, total_steps, chunk_size }
     }
 
     /// Check if we should log progress at this step.
@@ -242,7 +230,7 @@ mod tests {
     fn test_filter_stats_percent() {
         let mut stats = FilterStats::new(100);
         stats.record_discards(25, "test reason");
-        
+
         assert_eq!(stats.total, 100);
         assert_eq!(stats.discarded, 25);
         assert_eq!(stats.reason, Some("test reason".to_string()));
@@ -251,7 +239,7 @@ mod tests {
     #[test]
     fn test_render_progress_should_log() {
         let progress = RenderProgress::new(1, "spectral", 100);
-        
+
         // Should log every 10 steps (chunk_size = 10)
         assert!(progress.should_log(0));
         assert!(progress.should_log(10));
@@ -267,4 +255,3 @@ mod tests {
         assert!(progress.chunk_size >= 1);
     }
 }
-

@@ -71,7 +71,7 @@ mod tests {
     fn test_auto_exposure_basic() {
         let exposure = AutoExposure::new();
         let buffer = test_buffer(100, 100, 0.5);
-        
+
         let result = exposure.process(&buffer, 100, 100);
         assert!(result.is_ok());
         assert_eq!(result.unwrap().len(), buffer.len());
@@ -81,7 +81,7 @@ mod tests {
     fn test_auto_exposure_handles_zero() {
         let exposure = AutoExposure::new();
         let buffer = test_buffer(50, 50, 0.0);
-        
+
         let result = exposure.process(&buffer, 50, 50);
         assert!(result.is_ok());
     }
@@ -90,7 +90,7 @@ mod tests {
     fn test_auto_exposure_handles_hdr() {
         let exposure = AutoExposure::new();
         let buffer = test_buffer(50, 50, 5.0);
-        
+
         let result = exposure.process(&buffer, 50, 50);
         assert!(result.is_ok());
     }

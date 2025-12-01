@@ -19,12 +19,7 @@
 //! - [`weighted_sampler`]: Distribution-based parameter sampling
 
 // Comprehensive lint configuration for maximum code quality
-#![warn(
-    clippy::all,
-    clippy::pedantic,
-    clippy::nursery,
-    clippy::cargo,
-)]
+#![warn(clippy::all, clippy::pedantic, clippy::nursery, clippy::cargo)]
 #![allow(
     // Module name repetitions are intentional for clarity
     clippy::module_name_repetitions,
@@ -184,5 +179,5 @@ pub mod utils;
 pub mod weighted_sampler;
 
 // Re-export common types for convenience
-pub use error::{AppError, ConfigError, RenderError, SimulationError, Result};
+pub use error::{AppError, ConfigError, RenderError, Result, SimulationError};
 pub use presets::Preset;

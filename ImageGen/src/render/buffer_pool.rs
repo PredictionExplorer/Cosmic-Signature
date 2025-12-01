@@ -33,65 +33,62 @@ impl EffectBufferPool {
     /// * `capacity` - Number of pixels (width × height)
     pub fn new(capacity: usize) -> Self {
         Self {
-            buffers: [
-                vec![(0.0, 0.0, 0.0, 0.0); capacity],
-                vec![(0.0, 0.0, 0.0, 0.0); capacity],
-            ],
+            buffers: [vec![(0.0, 0.0, 0.0, 0.0); capacity], vec![(0.0, 0.0, 0.0, 0.0); capacity]],
             current: 0,
             capacity,
         }
     }
-    
+
     /// Get the current buffer (for reading)
     #[inline]
     pub fn current(&self) -> &PixelBuffer {
         &self.buffers[self.current]
     }
-    
+
     /// Get the current buffer mutably (for writing)
     #[inline]
     pub fn current_mut(&mut self) -> &mut PixelBuffer {
         &mut self.buffers[self.current]
     }
-    
+
     /// Get the alternate buffer (for writing during effect processing)
     #[inline]
     pub fn alternate_mut(&mut self) -> &mut PixelBuffer {
         &mut self.buffers[1 - self.current]
     }
-    
+
     /// Swap buffers (after processing an effect)
     #[inline]
     pub fn swap(&mut self) {
         self.current = 1 - self.current;
     }
-    
+
     /// Load data into current buffer
     pub fn load(&mut self, data: PixelBuffer) {
         let current_buf = &mut self.buffers[self.current];
-        
+
         // Resize if capacity changed
         if data.len() != current_buf.len() {
             current_buf.resize(data.len(), (0.0, 0.0, 0.0, 0.0));
             self.capacity = data.len();
         }
-        
+
         current_buf.copy_from_slice(&data);
     }
-    
+
     /// Take ownership of current buffer (consumes the pool temporarily)
     pub fn take_current(self) -> PixelBuffer {
         let mut buffers = self.buffers;
         std::mem::take(&mut buffers[self.current])
     }
-    
+
     /// Clear current buffer for reuse
     pub fn clear_current(&mut self) {
         for pixel in self.buffers[self.current].iter_mut() {
             *pixel = (0.0, 0.0, 0.0, 0.0);
         }
     }
-    
+
     /// Ensure buffers have correct capacity
     pub fn ensure_capacity(&mut self, capacity: usize) {
         if self.capacity != capacity {
@@ -116,26 +113,20 @@ pub struct PooledEffectExecutor {
 impl PooledEffectExecutor {
     /// Create a new pooled executor
     pub fn new(capacity: usize) -> Self {
-        Self {
-            pool: EffectBufferPool::new(capacity),
-        }
+        Self { pool: EffectBufferPool::new(capacity) }
     }
-    
+
     /// Process buffer through effects using pool (zero allocation)
     ///
     /// # Performance
     /// Eliminates all intermediate allocations during effect processing
-    pub fn process_with_pool<F>(
-        &mut self,
-        input: PixelBuffer,
-        mut process_fn: F,
-    ) -> PixelBuffer
+    pub fn process_with_pool<F>(&mut self, input: PixelBuffer, mut process_fn: F) -> PixelBuffer
     where
         F: FnMut(&PixelBuffer, &mut PixelBuffer),
     {
         // Load input into pool
         self.pool.load(input);
-        
+
         // Process using ping-pong buffers with safe borrowing
         {
             let current_idx = self.pool.current;
@@ -149,7 +140,7 @@ impl PooledEffectExecutor {
             process_fn(src, dest);
         }
         self.pool.swap();
-        
+
         // Clone current buffer (pool retains ownership)
         self.pool.current().clone()
     }
@@ -165,47 +156,46 @@ mod tests {
         assert_eq!(pool.current().len(), 100);
         assert_eq!(pool.capacity, 100);
     }
-    
+
     #[test]
     fn test_buffer_pool_swap() {
         let mut pool = EffectBufferPool::new(10);
         pool.current_mut()[0] = (1.0, 0.0, 0.0, 1.0);
-        
+
         let initial_current = pool.current;
         pool.swap();
         assert_eq!(pool.current, 1 - initial_current);
     }
-    
+
     #[test]
     fn test_buffer_pool_load() {
         let mut pool = EffectBufferPool::new(5);
         let data = vec![(0.5, 0.5, 0.5, 1.0); 5];
-        
+
         pool.load(data.clone());
         assert_eq!(pool.current()[0], (0.5, 0.5, 0.5, 1.0));
     }
-    
+
     #[test]
     fn test_pooled_executor() {
         let mut executor = PooledEffectExecutor::new(10);
         let input = vec![(0.5, 0.5, 0.5, 1.0); 10];
-        
+
         let output = executor.process_with_pool(input, |src, dest| {
             // Simple copy operation
             dest.copy_from_slice(src);
         });
-        
+
         assert_eq!(output.len(), 10);
         assert_eq!(output[0], (0.5, 0.5, 0.5, 1.0));
     }
-    
+
     #[test]
     fn test_ensure_capacity() {
         let mut pool = EffectBufferPool::new(10);
         pool.ensure_capacity(20);
-        
+
         assert_eq!(pool.capacity, 20);
         assert_eq!(pool.current().len(), 20);
     }
 }
-

@@ -44,7 +44,7 @@ mod tests {
     fn test_calculate_gradients_uniform() {
         let buffer = test_buffer(50, 50, 0.5);
         let gradients = calculate_gradients(&buffer, 50, 50);
-        
+
         assert_eq!(gradients.len(), buffer.len());
         // Uniform buffer should have near-zero gradients
         for &(gx, gy) in &gradients {
@@ -64,7 +64,7 @@ mod tests {
     fn test_calculate_gradients_handles_zero() {
         let buffer = test_buffer(50, 50, 0.0);
         let gradients = calculate_gradients(&buffer, 50, 50);
-        
+
         for &(gx, gy) in &gradients {
             assert!(gx.is_finite() && gy.is_finite());
         }

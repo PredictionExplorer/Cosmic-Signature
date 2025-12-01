@@ -399,7 +399,7 @@ mod proptests {
         ) {
             let (l, a, b_ch) = linear_srgb_to_oklab(r, g, b);
             let (r2, g2, b2) = oklab_to_linear_srgb(l, a, b_ch);
-            
+
             prop_assert!((r - r2).abs() < 1e-6, "R mismatch: {} vs {}", r, r2);
             prop_assert!((g - g2).abs() < 1e-6, "G mismatch: {} vs {}", g, g2);
             prop_assert!((b - b2).abs() < 1e-6, "B mismatch: {} vs {}", b, b2);
@@ -434,7 +434,7 @@ mod proptests {
             b in -2.0f64..=2.0,
         ) {
             let (r_out, g_out, b_out) = GamutMapMode::PreserveHue.map_to_gamut(r, g, b);
-            
+
             prop_assert!((0.0..=1.0).contains(&r_out), "R out of gamut: {}", r_out);
             prop_assert!((0.0..=1.0).contains(&g_out), "G out of gamut: {}", g_out);
             prop_assert!((0.0..=1.0).contains(&b_out), "B out of gamut: {}", b_out);
@@ -450,9 +450,9 @@ mod proptests {
         ) {
             let pixels = vec![(r, g, b, a)];
             let batch_result = linear_srgb_to_oklab_batch(&pixels);
-            
+
             let (l, a_ch, b_ch) = linear_srgb_to_oklab(r, g, b);
-            
+
             prop_assert!((batch_result[0].0 - l).abs() < 1e-10, "Batch L mismatch");
             prop_assert!((batch_result[0].1 - a_ch).abs() < 1e-10, "Batch a mismatch");
             prop_assert!((batch_result[0].2 - b_ch).abs() < 1e-10, "Batch b mismatch");
@@ -467,7 +467,7 @@ mod proptests {
             b in -10.0f64..=10.0,
         ) {
             let (l, a, b_ch) = linear_srgb_to_oklab(r, g, b);
-            
+
             prop_assert!(l.is_finite(), "L is not finite for input ({}, {}, {})", r, g, b);
             prop_assert!(a.is_finite(), "a is not finite for input ({}, {}, {})", r, g, b);
             prop_assert!(b_ch.is_finite(), "b is not finite for input ({}, {}, {})", r, g, b);

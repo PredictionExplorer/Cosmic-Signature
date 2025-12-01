@@ -35,11 +35,11 @@ impl GlowEnhancementConfig {
     pub fn special_mode(width: usize, height: usize) -> Self {
         let min_dim = width.min(height) as f64;
         Self {
-            strength: 0.62,                           // Dramatically increased for magical glow
-            threshold: 0.58,                          // Lower threshold for more glow coverage
+            strength: 0.62,                             // Dramatically increased for magical glow
+            threshold: 0.58,                            // Lower threshold for more glow coverage
             radius: (0.010 * min_dim).round() as usize, // Larger radius for dreamy halos
-            sharpness: 2.2,                           // Softer glow for ethereal quality
-            saturation_boost: 0.38,                   // Strong color boost for jewel-like sparkle
+            sharpness: 2.2,                             // Softer glow for ethereal quality
+            saturation_boost: 0.38,                     // Strong color boost for jewel-like sparkle
         }
     }
 }
@@ -111,12 +111,7 @@ impl GlowEnhancement {
     }
 
     /// Apply tight radial blur for glow (simpler than full Gaussian)
-    fn apply_radial_glow(
-        &self,
-        input: &PixelBuffer,
-        width: usize,
-        height: usize,
-    ) -> PixelBuffer {
+    fn apply_radial_glow(&self, input: &PixelBuffer, width: usize, height: usize) -> PixelBuffer {
         let radius = self.config.radius;
         if radius == 0 {
             return input.clone();
@@ -220,10 +215,7 @@ mod tests {
 
     #[test]
     fn test_glow_disabled() {
-        let config = GlowEnhancementConfig {
-            strength: 0.0,
-            ..GlowEnhancementConfig::default()
-        };
+        let config = GlowEnhancementConfig { strength: 0.0, ..GlowEnhancementConfig::default() };
         let glow = GlowEnhancement::new(config);
         assert!(!glow.is_enabled());
     }
@@ -291,4 +283,3 @@ mod tests {
         assert_eq!(result.len(), buffer.len());
     }
 }
-

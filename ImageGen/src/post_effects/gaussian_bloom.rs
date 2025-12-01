@@ -101,7 +101,7 @@ mod tests {
     fn test_gaussian_bloom_basic() {
         let bloom = GaussianBloom::new(5, 0.5, 1.0);
         let buffer = test_buffer(100, 100, 0.5);
-        
+
         let result = bloom.process(&buffer, 100, 100);
         assert!(result.is_ok());
         assert_eq!(result.unwrap().len(), buffer.len());
@@ -111,7 +111,7 @@ mod tests {
     fn test_gaussian_bloom_zero_radius() {
         let bloom = GaussianBloom::new(0, 0.5, 1.0);
         let buffer = test_buffer(50, 50, 0.5);
-        
+
         let result = bloom.process(&buffer, 50, 50);
         assert!(result.is_ok());
     }
@@ -120,7 +120,7 @@ mod tests {
     fn test_gaussian_bloom_handles_zero() {
         let bloom = GaussianBloom::new(5, 0.5, 1.0);
         let buffer = test_buffer(50, 50, 0.0);
-        
+
         let result = bloom.process(&buffer, 50, 50);
         assert!(result.is_ok());
     }

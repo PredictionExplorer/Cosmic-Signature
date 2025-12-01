@@ -166,8 +166,8 @@ pub const G: f64 = 9.8;
 /// Perfect for deterministic simulation where reproducibility is critical.
 pub struct Sha3RandomByteStream {
     hasher: Sha3_256,
-    seed: [u8; 32],         // Fixed-size seed (no allocation)
-    buffer: [u8; 32],       // Fixed-size buffer (no allocation)
+    seed: [u8; 32],   // Fixed-size seed (no allocation)
+    buffer: [u8; 32], // Fixed-size buffer (no allocation)
     index: usize,
     min_mass: f64,
     max_mass: f64,
@@ -192,17 +192,17 @@ impl Sha3RandomByteStream {
     pub fn new(seed: &[u8], min_mass: f64, max_mass: f64, location: f64, velocity: f64) -> Self {
         let mut hasher = Sha3_256::new();
         hasher.update(seed);
-        
+
         // Initial hash to seed buffer (SHA3-256 produces exactly 32 bytes)
         let initial_hash = hasher.clone().finalize_reset();
         let mut buffer = [0u8; 32];
         buffer.copy_from_slice(&initial_hash);
-        
+
         // Hash seed to fixed size for storage
         let mut seed_array = [0u8; 32];
         let seed_hash = Sha3_256::digest(seed);
         seed_array.copy_from_slice(&seed_hash);
-        
+
         Self {
             hasher,
             seed: seed_array,
@@ -214,7 +214,7 @@ impl Sha3RandomByteStream {
             velocity_range: velocity,
         }
     }
-    
+
     /// Get the next random byte from the stream
     ///
     /// # Performance
@@ -226,7 +226,7 @@ impl Sha3RandomByteStream {
             // Refill buffer: hash(seed || previous_buffer)
             self.hasher.update(self.seed);
             self.hasher.update(self.buffer);
-            
+
             // Write directly into fixed-size buffer (zero allocation!)
             let hash_result = self.hasher.finalize_reset();
             self.buffer.copy_from_slice(&hash_result);
@@ -285,30 +285,30 @@ impl Body {
 }
 
 /// Basic Verlet step (optimized for 3-body problem with zero-allocation)
-/// 
+///
 /// # Safety Guarantees
-/// 
+///
 /// This function is **compile-time safe** - it only accepts exactly 3 bodies.
 /// The fixed-size array type prevents misuse and allows the compiler to:
 /// - Eliminate all bounds checks
 /// - Unroll loops completely
 /// - Optimize away the array allocations
-/// 
+///
 /// # Performance
-/// 
+///
 /// Zero heap allocations, fully inlinable, ~2M allocation savings during Borda search.
 fn verlet_step(bodies: &mut [Body; 3], dt: f64) {
     // Stack-allocated arrays (zero heap allocation!)
     // With compile-time size, compiler can eliminate bounds checks entirely
     let mut pos = [Vector3::zeros(); 3];
     let mut mass = [0.0; 3];
-    
+
     // Extract positions and masses (compiler unrolls this completely)
     for (i, body) in bodies.iter().enumerate().take(3) {
         pos[i] = body.position;
         mass[i] = body.mass;
     }
-    
+
     // First acceleration calculation (compiler unrolls both loops)
     for (i, body) in bodies.iter_mut().enumerate().take(3) {
         body.reset_acceleration();
@@ -318,17 +318,17 @@ fn verlet_step(bodies: &mut [Body; 3], dt: f64) {
             }
         }
     }
-    
+
     // Update positions (compiler unrolls)
     for b in bodies.iter_mut() {
         b.position += b.velocity * dt + 0.5 * b.acceleration * dt * dt;
     }
-    
+
     // Update positions array for second pass (compiler unrolls)
     for (i, body) in bodies.iter().enumerate().take(3) {
         pos[i] = body.position;
     }
-    
+
     // Second acceleration calculation (compiler unrolls both loops)
     for (i, body) in bodies.iter_mut().enumerate().take(3) {
         body.reset_acceleration();
@@ -338,7 +338,7 @@ fn verlet_step(bodies: &mut [Body; 3], dt: f64) {
             }
         }
     }
-    
+
     // Update velocities (compiler unrolls)
     for b in bodies.iter_mut() {
         b.velocity += b.acceleration * dt;
@@ -371,24 +371,20 @@ pub struct FullSim {
 #[must_use = "simulation results should be used"]
 pub fn get_positions(mut bodies: Vec<Body>, steps: usize) -> FullSim {
     assert_eq!(bodies.len(), 3, "get_positions requires exactly 3 bodies");
-    
+
     // Ensure the initial state is expressed in the centre-of-mass (COM) frame
     shift_bodies_to_com(&mut bodies);
-    
+
     // Convert to fixed-size array for compile-time safety
-    let mut bodies_array: [Body; 3] = [
-        bodies[0].clone(),
-        bodies[1].clone(),
-        bodies[2].clone(),
-    ];
-    
+    let mut bodies_array: [Body; 3] = [bodies[0].clone(), bodies[1].clone(), bodies[2].clone()];
+
     let dt = crate::render::constants::DEFAULT_DT;
-    
+
     // Warmup phase
     for _ in 0..steps {
         verlet_step(&mut bodies_array, dt);
     }
-    
+
     // Recording phase
     let mut b2 = bodies_array.clone();
     let mut all = vec![vec![Vector3::zeros(); steps]; 3];
@@ -398,7 +394,7 @@ pub fn get_positions(mut bodies: Vec<Body>, steps: usize) -> FullSim {
         }
         verlet_step(&mut b2, dt);
     }
-    
+
     FullSim { positions: all }
 }
 
@@ -428,23 +424,19 @@ pub fn get_positions_with_early_exit(
     escape_threshold: f64,
 ) -> Option<FullSim> {
     assert_eq!(bodies.len(), 3, "get_positions_with_early_exit requires exactly 3 bodies");
-    
+
     // Ensure the initial state is expressed in the centre-of-mass (COM) frame
     shift_bodies_to_com(&mut bodies);
-    
+
     // Convert to fixed-size array for compile-time safety
-    let mut bodies_array: [Body; 3] = [
-        bodies[0].clone(),
-        bodies[1].clone(),
-        bodies[2].clone(),
-    ];
-    
+    let mut bodies_array: [Body; 3] = [bodies[0].clone(), bodies[1].clone(), bodies[2].clone()];
+
     let dt = crate::render::constants::DEFAULT_DT;
-    
+
     // Warmup phase with periodic escape checks
     for step in 0..steps {
         verlet_step(&mut bodies_array, dt);
-        
+
         // Early-exit check: detect escaping bodies during warmup
         // Convert back to slice for escape detection (no allocation overhead)
         if step % crate::render::constants::BORDA_CHECK_INTERVAL == 0 && step > 0 {
@@ -454,13 +446,13 @@ pub fn get_positions_with_early_exit(
             }
         }
     }
-    
+
     // Final escape check after warmup
     let bodies_slice: &[Body] = &bodies_array;
     if is_definitely_escaping(bodies_slice, escape_threshold) {
         return None;
     }
-    
+
     // Record phase - body configuration is good, record the full trajectory
     let mut b2 = bodies_array.clone();
     let mut all = vec![vec![Vector3::zeros(); steps]; 3];
@@ -470,7 +462,7 @@ pub fn get_positions_with_early_exit(
         }
         verlet_step(&mut b2, dt);
     }
-    
+
     Some(FullSim { positions: all })
 }
 
@@ -595,7 +587,7 @@ pub struct TrajectoryResult {
 ///     11.0,      // Equilateral weight
 ///     -0.3,      // Escape threshold
 /// )?;
-/// println!("Best orbit: chaos={:.3}, equilateral={:.3}", 
+/// println!("Best orbit: chaos={:.3}, equilateral={:.3}",
 ///          metrics.chaos, metrics.equilateralness);
 /// ```
 pub fn select_best_trajectory(
@@ -673,12 +665,13 @@ pub fn select_best_trajectory(
             // Quick rejection: check energy and angular momentum first
             let e = calculate_total_energy(b);
             let ang = calculate_total_angular_momentum(b).norm();
-            if e > crate::render::constants::BORDA_ENERGY_REJECTION_THRESHOLD 
-                || ang < crate::render::constants::BORDA_ANGULAR_MOMENTUM_THRESHOLD {
+            if e > crate::render::constants::BORDA_ENERGY_REJECTION_THRESHOLD
+                || ang < crate::render::constants::BORDA_ANGULAR_MOMENTUM_THRESHOLD
+            {
                 dc.fetch_add(1, Ordering::Relaxed);
                 return None;
             }
-            
+
             // Run simulation with early-exit checks for escaping bodies
             let simr = match get_positions_with_early_exit(b.clone(), steps, th) {
                 Some(result) => result,
@@ -688,24 +681,25 @@ pub fn select_best_trajectory(
                     return None;
                 }
             };
-            
+
             let pos = simr.positions;
             let m1 = b[0].mass;
             let m2 = b[1].mass;
             let m3 = b[2].mass;
-            
+
             // Compute quality metrics
             let c = non_chaoticness(m1, m2, m3, &pos);
             let eq = equilateralness_score(&pos);
-            
+
             // Early rejection: if both metrics are terrible, skip
             // This saves time on Borda ranking for clearly unsuitable candidates
-            if c < crate::render::constants::MIN_VIABLE_CHAOS 
-                && eq < crate::render::constants::MIN_VIABLE_EQUILATERAL {
+            if c < crate::render::constants::MIN_VIABLE_CHAOS
+                && eq < crate::render::constants::MIN_VIABLE_EQUILATERAL
+            {
                 dc.fetch_add(1, Ordering::Relaxed);
                 return None;
             }
-            
+
             Some((
                 TrajectoryResult {
                     chaos: c,
@@ -774,7 +768,7 @@ pub fn select_best_trajectory(
             .unwrap_or(std::cmp::Ordering::Equal)
     });
     let bi = iv[0].1;
-        let bt = iv[0].0.clone();
+    let bt = iv[0].0.clone();
     info!("\n   => Chosen orbit idx {bi} with weighted score {:.3}", bt.total_score_weighted);
     Ok((many[bi].clone(), bt))
 }
@@ -783,7 +777,7 @@ pub fn select_best_trajectory(
 mod tests {
     use super::*;
     use proptest::prelude::*;
-    
+
     /// Helper to create a simple 3-body system for testing
     fn test_system(m1: f64, m2: f64, m3: f64) -> Vec<Body> {
         vec![
@@ -792,12 +786,12 @@ mod tests {
             Body::new(m3, Vector3::new(0.0, 1.0, 0.0), Vector3::new(-0.1, 0.0, 0.0)),
         ]
     }
-    
+
     #[test]
     fn test_center_of_mass_zero() {
         let mut bodies = test_system(100.0, 150.0, 200.0);
         shift_bodies_to_com(&mut bodies);
-        
+
         // Check that COM is at origin
         let total_mass: f64 = bodies.iter().map(|b| b.mass).sum();
         let mut com = Vector3::zeros();
@@ -805,15 +799,15 @@ mod tests {
             com += b.mass * b.position;
         }
         com /= total_mass;
-        
+
         assert!(com.norm() < 1e-10, "COM should be at origin after shift, got {:?}", com);
     }
-    
+
     #[test]
     fn test_center_of_mass_velocity_zero() {
         let mut bodies = test_system(100.0, 150.0, 200.0);
         shift_bodies_to_com(&mut bodies);
-        
+
         // Check that COM velocity is zero
         let total_mass: f64 = bodies.iter().map(|b| b.mass).sum();
         let mut com_vel = Vector3::zeros();
@@ -821,63 +815,67 @@ mod tests {
             com_vel += b.mass * b.velocity;
         }
         com_vel /= total_mass;
-        
-        assert!(com_vel.norm() < 1e-10, "COM velocity should be zero after shift, got {:?}", com_vel);
+
+        assert!(
+            com_vel.norm() < 1e-10,
+            "COM velocity should be zero after shift, got {:?}",
+            com_vel
+        );
     }
-    
+
     #[test]
     fn test_verlet_deterministic() {
         let bodies1 = test_system(100.0, 150.0, 200.0);
         let bodies2 = bodies1.clone();
-        
+
         let sim1 = get_positions(bodies1, 100);
         let sim2 = get_positions(bodies2, 100);
-        
+
         // Same initial conditions should produce identical trajectories
         for body_idx in 0..3 {
             for step in 0..100 {
                 let p1 = sim1.positions[body_idx][step];
                 let p2 = sim2.positions[body_idx][step];
-                assert!((p1 - p2).norm() < 1e-14, 
-                    "Deterministic simulation failed at body {} step {}", body_idx, step);
+                assert!(
+                    (p1 - p2).norm() < 1e-14,
+                    "Deterministic simulation failed at body {} step {}",
+                    body_idx,
+                    step
+                );
             }
         }
     }
-    
+
     #[test]
     fn test_verlet_step_compile_time_safety() {
         // Verify that verlet_step works with fixed-size array
         let mut bodies = test_system(100.0, 150.0, 200.0);
         shift_bodies_to_com(&mut bodies);
-        
-        let mut bodies_array: [Body; 3] = [
-            bodies[0].clone(),
-            bodies[1].clone(),
-            bodies[2].clone(),
-        ];
-        
+
+        let mut bodies_array: [Body; 3] = [bodies[0].clone(), bodies[1].clone(), bodies[2].clone()];
+
         let dt = crate::render::constants::DEFAULT_DT;
-        
+
         // This should compile and work correctly
         verlet_step(&mut bodies_array, dt);
-        
+
         // Verify positions changed (simulation advanced)
         let changed = bodies_array.iter().any(|b| b.position != Vector3::zeros());
         assert!(changed, "Verlet step should update positions");
     }
-    
+
     #[test]
     fn test_rng_deterministic() {
         let seed = b"test_seed_12345";
         let mut rng1 = Sha3RandomByteStream::new(seed, 100.0, 300.0, 25.0, 10.0);
         let mut rng2 = Sha3RandomByteStream::new(seed, 100.0, 300.0, 25.0, 10.0);
-        
+
         // Same seed should produce identical random values
         for _ in 0..100 {
             assert_eq!(rng1.next_f64(), rng2.next_f64(), "RNG not deterministic");
         }
     }
-    
+
     #[test]
     fn test_escape_detection() {
         // Create a system with one body moving very fast (escaping)
@@ -887,10 +885,10 @@ mod tests {
             Body::new(100.0, Vector3::new(-100.0, 0.0, 0.0), Vector3::new(0.0, 0.0, 0.0)),
         ];
         shift_bodies_to_com(&mut bodies);
-        
+
         assert!(is_definitely_escaping(&bodies, 0.0), "Should detect escaping body");
     }
-    
+
     // Property-based tests using proptest
     proptest! {
         /// Total mass should be conserved exactly (no numerical drift)
@@ -902,16 +900,16 @@ mod tests {
         ) {
             let initial_bodies = test_system(m1, m2, m3);
             let initial_mass: f64 = initial_bodies.iter().map(|b| b.mass).sum();
-            
+
             // Simulate for some steps
             let _sim = get_positions(initial_bodies.clone(), 1000);
-            
+
             // Reconstruct final bodies (masses should be unchanged)
             let final_mass: f64 = initial_bodies.iter().map(|b| b.mass).sum();
-            
+
             prop_assert!((initial_mass - final_mass).abs() < 1e-14, "Mass not conserved");
         }
-        
+
         /// Energy should be bounded in chaotic systems (not strictly conserved due to chaos)
         #[test]
         fn prop_energy_bounded(
@@ -921,12 +919,12 @@ mod tests {
         ) {
             let initial_bodies = test_system(m1, m2, m3);
             let initial_energy = calculate_total_energy(&initial_bodies);
-            
+
             // For chaotic systems, we mainly verify the simulation doesn't diverge wildly
             // Symplectic integrator should keep energy bounded
             // Note: Exact conservation requires storing velocities, which we don't do here
             let sim_result = get_positions(initial_bodies.clone(), 1000);
-            
+
             // Just verify simulation completed without NaN/infinity
             for body_idx in 0..3 {
                 for step in 0..1000 {
@@ -934,11 +932,11 @@ mod tests {
                     prop_assert!(pos.norm().is_finite(), "Position became non-finite");
                 }
             }
-            
+
             // Verify energy is reasonable order of magnitude
             prop_assert!(initial_energy.is_finite(), "Initial energy should be finite");
         }
-        
+
         /// Angular momentum conservation from position data
         /// Note: Disabled due to chaotic amplification of numerical errors
         /// Angular momentum is conserved in the actual simulation, but reconstructing
@@ -951,17 +949,17 @@ mod tests {
             m3 in 100.0f64..300.0,
         ) {
             let initial_bodies = test_system(m1, m2, m3);
-            
+
             // Simulate short trajectory
             let sim_result = get_positions(initial_bodies.clone(), 100);
-            
+
             // Angular momentum L = r × p can be computed from position differences
             // For small timesteps: v ≈ (r[i+1] - r[i]) / dt
             // This is approximate but should show conservation trend
-            
+
             let dt = crate::render::constants::DEFAULT_DT;
             let masses = &[m1, m2, m3];
-            
+
             // Compute L at step 10
             let mut l_early = Vector3::zeros();
             for (body_idx, &mass) in masses.iter().enumerate() {
@@ -969,7 +967,7 @@ mod tests {
                 let v = (sim_result.positions[body_idx][11] - sim_result.positions[body_idx][10]) / dt;
                 l_early += r.cross(&(mass * v));
             }
-            
+
             // Compute L at step 90
             let mut l_late = Vector3::zeros();
             for (body_idx, &mass) in masses.iter().enumerate() {
@@ -977,32 +975,32 @@ mod tests {
                 let v = (sim_result.positions[body_idx][91] - sim_result.positions[body_idx][90]) / dt;
                 l_late += r.cross(&(mass * v));
             }
-            
+
             // Should be approximately conserved (within numerical precision + chaos effects)
             // Note: For chaotic systems, small numerical errors can amplify
             let error = (l_late - l_early).norm();
             let magnitude = l_early.norm();
             let relative_error = if magnitude > 0.0 { error / magnitude } else { error };
-            
+
             // Very loose bound for chaotic systems - mainly verifies no catastrophic divergence
             // Chaotic amplification of numerical errors can be significant
-            prop_assert!(relative_error < 5.0, 
+            prop_assert!(relative_error < 5.0,
                 "Angular momentum drift catastrophic: {:.6} relative error", relative_error);
         }
-        
+
         /// RNG should produce values in expected ranges
         #[test]
         fn prop_rng_ranges(seed_val in 0u64..1_000_000u64) {
             let seed = seed_val.to_le_bytes();
             let mut rng = Sha3RandomByteStream::new(&seed, 100.0, 300.0, 25.0, 10.0);
-            
+
             for _ in 0..100 {
                 let mass = rng.random_mass();
                 prop_assert!((100.0..=300.0).contains(&mass), "Mass out of range: {mass}");
-                
+
                 let loc = rng.random_location();
                 prop_assert!((-25.0..=25.0).contains(&loc), "Location out of range: {loc}");
-                
+
                 let vel = rng.random_velocity();
                 prop_assert!((-10.0..=10.0).contains(&vel), "Velocity out of range: {vel}");
             }

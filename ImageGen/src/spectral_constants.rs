@@ -50,7 +50,7 @@ mod tests {
         // Test boundaries
         assert_eq!(wavelength_to_bin(LAMBDA_START), 0.0);
         assert!(wavelength_to_bin(LAMBDA_END) <= (NUM_BINS - 1) as f64);
-        
+
         // Test middle of spectrum
         let mid_wavelength = (LAMBDA_START + LAMBDA_END) / 2.0;
         let mid_bin = wavelength_to_bin(mid_wavelength);
@@ -62,7 +62,7 @@ mod tests {
         // Test boundaries
         assert!(bin_to_wavelength(0) >= LAMBDA_START);
         assert!(bin_to_wavelength(NUM_BINS - 1) <= LAMBDA_END);
-        
+
         // Test that bins are evenly spaced
         let w0 = bin_to_wavelength(0);
         let w1 = bin_to_wavelength(1);
@@ -81,4 +81,3 @@ mod tests {
         }
     }
 }
-

@@ -427,16 +427,11 @@ impl ConfigFile {
     ///
     /// Returns an error if the file cannot be read or parsed.
     pub fn load(path: &Path) -> Result<Self, ConfigFileError> {
-        let contents = std::fs::read_to_string(path).map_err(|e| ConfigFileError::Io {
-            path: path.display().to_string(),
-            error: e,
-        })?;
+        let contents = std::fs::read_to_string(path)
+            .map_err(|e| ConfigFileError::Io { path: path.display().to_string(), error: e })?;
 
-        let config: ConfigFile =
-            toml::from_str(&contents).map_err(|e| ConfigFileError::Parse {
-                path: path.display().to_string(),
-                error: e,
-            })?;
+        let config: ConfigFile = toml::from_str(&contents)
+            .map_err(|e| ConfigFileError::Parse { path: path.display().to_string(), error: e })?;
 
         info!(
             path = %path.display(),
@@ -473,15 +468,9 @@ impl ConfigFile {
 #[derive(Debug)]
 pub enum ConfigFileError {
     /// I/O error reading the file
-    Io {
-        path: String,
-        error: std::io::Error,
-    },
+    Io { path: String, error: std::io::Error },
     /// TOML parsing error
-    Parse {
-        path: String,
-        error: toml::de::Error,
-    },
+    Parse { path: String, error: toml::de::Error },
 }
 
 impl std::fmt::Display for ConfigFileError {
@@ -526,7 +515,7 @@ seed = "0x12345"
 "#;
         let file = create_temp_config(content);
         let config = ConfigFile::load(file.path()).unwrap();
-        
+
         assert_eq!(config.simulation.seed, Some("0x12345".to_string()));
         assert!(config.simulation.num_sims.is_none());
     }
@@ -545,7 +534,7 @@ max_mass = 300.0
 "#;
         let file = create_temp_config(content);
         let config = ConfigFile::load(file.path()).unwrap();
-        
+
         assert_eq!(config.simulation.seed, Some("0xABCDEF".to_string()));
         assert_eq!(config.simulation.num_sims, Some(50000));
         assert_eq!(config.simulation.num_steps_sim, Some(1_000_000));
@@ -562,7 +551,7 @@ fast_encode = true
 "#;
         let file = create_temp_config(content);
         let config = ConfigFile::load(file.path()).unwrap();
-        
+
         assert_eq!(config.render.width, Some(3840));
         assert_eq!(config.render.height, Some(2160));
         assert_eq!(config.render.fast_encode, Some(true));
@@ -587,7 +576,7 @@ vignette_strength = 0.5
 "#;
         let file = create_temp_config(content);
         let config = ConfigFile::load(file.path()).unwrap();
-        
+
         assert_eq!(config.effects.special, Some(true));
         assert_eq!(config.effects.gallery_quality, Some(true));
         assert_eq!(config.effects.preset, Some("cinematic".to_string()));
@@ -608,7 +597,7 @@ orbit_eccentricity = 0.3
 "#;
         let file = create_temp_config(content);
         let config = ConfigFile::load(file.path()).unwrap();
-        
+
         assert_eq!(config.drift.enabled, Some(true));
         assert_eq!(config.drift.mode, Some("elliptical".to_string()));
         assert_eq!(config.drift.scale, Some(1.5));
@@ -623,7 +612,7 @@ seed = "0x123"
 "#;
         let file = create_temp_config(content);
         let config = ConfigFile::load(file.path()).unwrap();
-        
+
         assert!(config.has_simulation_settings());
         assert!(!config.has_render_settings());
         assert!(!config.has_effect_settings());
@@ -634,7 +623,7 @@ seed = "0x123"
         let content = "";
         let file = create_temp_config(content);
         let config = ConfigFile::load(file.path()).unwrap();
-        
+
         assert!(!config.has_simulation_settings());
         assert!(!config.has_render_settings());
         assert!(!config.has_effect_settings());
@@ -645,7 +634,7 @@ seed = "0x123"
         let content = "this is not valid toml [";
         let file = create_temp_config(content);
         let result = ConfigFile::load(file.path());
-        
+
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert!(matches!(err, ConfigFileError::Parse { .. }));
@@ -654,7 +643,7 @@ seed = "0x123"
     #[test]
     fn test_nonexistent_file_error() {
         let result = ConfigFile::load(Path::new("/nonexistent/path/config.toml"));
-        
+
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert!(matches!(err, ConfigFileError::Io { .. }));
@@ -669,10 +658,10 @@ fog_color = [0.1, 0.15, 0.2]
 "#;
         let file = create_temp_config(content);
         let config = ConfigFile::load(file.path()).unwrap();
-        
+
         assert_eq!(config.effects.atmospheric.fog_color, Some([0.1, 0.15, 0.2]));
     }
-    
+
     /// Fuzz-style robustness test: parser should never panic on arbitrary input
     ///
     /// This test exercises the parser with various malformed inputs to ensure
@@ -682,7 +671,7 @@ fog_color = [0.1, 0.15, 0.2]
         // Pre-allocate long strings to satisfy borrow checker
         let long_x_string = "x".repeat(10000);
         let long_a_string = format!("[{}]\nkey = 1", "a".repeat(1000));
-        
+
         // Collection of malformed inputs that should be handled gracefully
         let malformed_inputs = vec![
             // Empty and whitespace
@@ -690,7 +679,6 @@ fog_color = [0.1, 0.15, 0.2]
             "   ",
             "\n\n\n",
             "\t\t\t",
-            
             // Invalid TOML syntax
             "[[[",
             "]]]",
@@ -700,59 +688,49 @@ fog_color = [0.1, 0.15, 0.2]
             "}}}",
             "<<<",
             ">>>",
-            
             // Unclosed brackets
             "[simulation",
             "[simulation]seed",
             "[effects.bloom",
             "[[effects",
-            
             // Invalid key-value pairs
             "key = ",
             "= value",
             "key value",
             "key == value",
-            
             // Invalid numbers
             "[simulation]\nseed = 0xGGGG",
             "[simulation]\nnum_sims = -1",
             "[render]\nwidth = NaN",
             "[render]\nheight = Infinity",
-            
             // Type mismatches
-            "[simulation]\nseed = 12345",  // seed expects string
+            "[simulation]\nseed = 12345", // seed expects string
             "[render]\nwidth = \"not a number\"",
-            "[effects]\nspecial = \"maybe\"",  // bool expected
-            
+            "[effects]\nspecial = \"maybe\"", // bool expected
             // Invalid array syntax
-            "[effects.atmospheric]\nfog_color = [0.1, 0.2",  // unclosed
-            "[effects.atmospheric]\nfog_color = 0.1, 0.2, 0.3",  // missing brackets
-            "[effects.atmospheric]\nfog_color = [\"a\", \"b\", \"c\"]",  // wrong type
-            
+            "[effects.atmospheric]\nfog_color = [0.1, 0.2", // unclosed
+            "[effects.atmospheric]\nfog_color = 0.1, 0.2, 0.3", // missing brackets
+            "[effects.atmospheric]\nfog_color = [\"a\", \"b\", \"c\"]", // wrong type
             // Nested section errors
             "[effects.unknown_section]\nvalue = 1",
             "[simulation.nested.too.deep]\nvalue = 1",
-            
             // Unicode and special characters
             "seed = \"🚀\"",
             "[§invalid§]",
             "key = \"val\nue\"",
-            
             // Extremely long inputs (potential DoS)
             &long_x_string,
             &long_a_string,
-            
             // Mixed valid and invalid
             "[simulation]\nseed = \"0x123\"\n[[[\ninvalid",
-            
             // Duplicate keys (TOML spec allows, but last wins)
             "[simulation]\nseed = \"0x123\"\nseed = \"0x456\"",
         ];
-        
+
         for input in malformed_inputs.iter() {
             let file = create_temp_config(input);
             let result = ConfigFile::load(file.path());
-            
+
             // The key requirement: should not panic, should return Result
             // We don't care if it succeeds or fails, just that it doesn't crash
             match result {
@@ -768,11 +746,11 @@ fog_color = [0.1, 0.15, 0.2]
                     let _ = format!("{:?}", e);
                 }
             }
-            
+
             // If we get here, no panic occurred for this input
         }
     }
-    
+
     /// Test parser handles extremely nested or pathological structures
     #[test]
     fn test_parser_pathological_structures() {
@@ -780,17 +758,17 @@ fog_color = [0.1, 0.15, 0.2]
         let deep_nesting = "[a.b.c.d.e.f.g.h.i.j.k.l.m.n.o.p]\nvalue = 1";
         let file = create_temp_config(deep_nesting);
         let _ = ConfigFile::load(file.path());
-        
+
         // Very long keys
         let long_key = format!("{} = 1", "a".repeat(1000));
         let file = create_temp_config(&long_key);
         let _ = ConfigFile::load(file.path());
-        
+
         // Very long values
         let long_value = format!("key = \"{}\"", "x".repeat(10000));
         let file = create_temp_config(&long_value);
         let _ = ConfigFile::load(file.path());
-        
+
         // Many sections
         let many_sections = (0..1000)
             .map(|i| format!("[section{}]\nkey = {}", i, i))
@@ -798,10 +776,10 @@ fog_color = [0.1, 0.15, 0.2]
             .join("\n");
         let file = create_temp_config(&many_sections);
         let _ = ConfigFile::load(file.path());
-        
+
         // All of these should complete without panic
     }
-    
+
     /// Test parser handles all control characters and special bytes
     #[test]
     fn test_parser_control_characters() {
@@ -811,14 +789,14 @@ fog_color = [0.1, 0.15, 0.2]
             let file = create_temp_config(&input);
             let _ = ConfigFile::load(file.path());
         }
-        
+
         // Test common special bytes
         let special_bytes = vec![
-            b'\0',  // null
-            b'\x7F',  // DEL
-            b'\xFF',  // invalid UTF-8
+            b'\0',   // null
+            b'\x7F', // DEL
+            b'\xFF', // invalid UTF-8
         ];
-        
+
         for &byte in &special_bytes {
             // Create byte string (might be invalid UTF-8)
             let bytes = vec![b'k', b'e', b'y', b'=', byte];
@@ -828,4 +806,3 @@ fog_color = [0.1, 0.15, 0.2]
         }
     }
 }
-

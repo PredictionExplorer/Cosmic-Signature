@@ -55,11 +55,11 @@ impl DimensionalGlitchConfig {
     pub fn special_mode() -> Self {
         Self {
             strength: 0.35,
-            threshold: 0.75,        // High energy triggers glitches
+            threshold: 0.75, // High energy triggers glitches
             block_displacement: 8.0,
             channel_separation: 4.0,
             scanline_intensity: 0.25,
-            quantization_levels: 12.0,  // Moderate posterization
+            quantization_levels: 12.0, // Moderate posterization
             block_size: 8,
         }
     }
@@ -158,8 +158,11 @@ impl DimensionalGlitch {
 
                 // Displace this block randomly
                 let hash_val = Self::hash(block_x, block_y);
-                let disp_x = ((hash_val * 2.0 - 1.0) * self.config.block_displacement * block_glitch) as i32;
-                let disp_y = (((hash_val * 17.0).fract() * 2.0 - 1.0) * self.config.block_displacement * block_glitch) as i32;
+                let disp_x =
+                    ((hash_val * 2.0 - 1.0) * self.config.block_displacement * block_glitch) as i32;
+                let disp_y = (((hash_val * 17.0).fract() * 2.0 - 1.0)
+                    * self.config.block_displacement
+                    * block_glitch) as i32;
 
                 let src_x = (x as i32 + disp_x).clamp(0, (width - 1) as i32) as usize;
                 let src_y = (y as i32 + disp_y).clamp(0, (height - 1) as i32) as usize;
@@ -208,7 +211,13 @@ impl DimensionalGlitch {
     }
 
     /// Apply scanline artifacts
-    fn apply_scanlines(&self, buffer: &mut PixelBuffer, glitch_map: &[f64], width: usize, _height: usize) {
+    fn apply_scanlines(
+        &self,
+        buffer: &mut PixelBuffer,
+        glitch_map: &[f64],
+        width: usize,
+        _height: usize,
+    ) {
         buffer.par_iter_mut().enumerate().for_each(|(idx, pixel)| {
             let y = idx / width;
             let glitch = glitch_map[idx];
@@ -286,10 +295,8 @@ mod tests {
 
     #[test]
     fn test_dimensional_glitch_disabled() {
-        let config = DimensionalGlitchConfig {
-            strength: 0.0,
-            ..DimensionalGlitchConfig::default()
-        };
+        let config =
+            DimensionalGlitchConfig { strength: 0.0, ..DimensionalGlitchConfig::default() };
         let effect = DimensionalGlitch::new(config);
         assert!(!effect.is_enabled());
     }
@@ -359,4 +366,3 @@ mod tests {
         }
     }
 }
-

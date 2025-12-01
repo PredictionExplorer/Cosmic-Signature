@@ -53,13 +53,13 @@ impl CherenkovConfig {
     /// Configuration optimized for special mode (dramatic blue trails)
     pub fn special_mode() -> Self {
         Self {
-            strength: 0.55,        // Strong but not overwhelming
-            threshold: 0.65,       // Only very bright/fast regions emit
-            blur_radius: 8.0,      // Noticeable directional blur
-            blue_intensity: 0.85,  // Strong blue component
-            uv_intensity: 0.45,    // Moderate violet for variety
-            cone_angle: 25.0,      // Focused cone
-            falloff: 2.2,          // Sharp falloff from center
+            strength: 0.55,       // Strong but not overwhelming
+            threshold: 0.65,      // Only very bright/fast regions emit
+            blur_radius: 8.0,     // Noticeable directional blur
+            blue_intensity: 0.85, // Strong blue component
+            uv_intensity: 0.45,   // Moderate violet for variety
+            cone_angle: 25.0,     // Focused cone
+            falloff: 2.2,         // Sharp falloff from center
         }
     }
 
@@ -111,8 +111,8 @@ impl Cherenkov {
                 }
 
                 // Boost factor based on how far above threshold
-                let energy = ((lum - self.config.threshold) / (1.0 - self.config.threshold))
-                    .clamp(0.0, 1.0);
+                let energy =
+                    ((lum - self.config.threshold) / (1.0 - self.config.threshold)).clamp(0.0, 1.0);
                 let boost = energy.powf(self.config.falloff);
 
                 // Emit pure blue/UV light (not original color)
@@ -152,11 +152,7 @@ impl Cherenkov {
                     let nx = (x as i32 + dx).max(0).min((width - 1) as i32) as usize;
                     let ny = (y as i32 + dy).max(0).min((height - 1) as i32) as usize;
                     let (r, g, b, a) = emitters[ny * width + nx];
-                    if a <= 0.0 {
-                        0.0
-                    } else {
-                        0.2126 * r + 0.7152 * g + 0.0722 * b
-                    }
+                    if a <= 0.0 { 0.0 } else { 0.2126 * r + 0.7152 * g + 0.0722 * b }
                 };
 
                 let gx = get_lum(1, 0) - get_lum(-1, 0);
@@ -203,10 +199,8 @@ impl Cherenkov {
                     // Sample along direction with cone spread
                     for j in -1..=1 {
                         let spread = (j as f64) * cone_rad;
-                        let sample_x =
-                            x as f64 - dir_x * t + dir_y * spread * t / samples as f64;
-                        let sample_y =
-                            y as f64 - dir_y * t - dir_x * spread * t / samples as f64;
+                        let sample_x = x as f64 - dir_x * t + dir_y * spread * t / samples as f64;
+                        let sample_y = y as f64 - dir_y * t - dir_x * spread * t / samples as f64;
 
                         if sample_x < 0.0
                             || sample_x >= (width - 1) as f64
@@ -232,12 +226,7 @@ impl Cherenkov {
                 }
 
                 // Normalize
-                (
-                    acc_r / weight_sum,
-                    acc_g / weight_sum,
-                    acc_b / weight_sum,
-                    acc_a / weight_sum,
-                )
+                (acc_r / weight_sum, acc_g / weight_sum, acc_b / weight_sum, acc_a / weight_sum)
             })
             .collect()
     }
@@ -270,12 +259,7 @@ impl PostEffect for Cherenkov {
             .zip(cherenkov_glow.par_iter())
             .map(|(&(r, g, b, a), &(cr, cg, cb, _))| {
                 let strength = self.config.strength;
-                (
-                    r + cr * strength,
-                    g + cg * strength,
-                    b + cb * strength,
-                    a,
-                )
+                (r + cr * strength, g + cg * strength, b + cb * strength, a)
             })
             .collect();
 
@@ -293,10 +277,7 @@ mod tests {
 
     #[test]
     fn test_cherenkov_disabled() {
-        let config = CherenkovConfig {
-            strength: 0.0,
-            ..CherenkovConfig::default()
-        };
+        let config = CherenkovConfig { strength: 0.0, ..CherenkovConfig::default() };
         let effect = Cherenkov::new(config);
         assert!(!effect.is_enabled());
     }
@@ -346,10 +327,7 @@ mod tests {
 
     #[test]
     fn test_emitter_extraction_respects_threshold() {
-        let config = CherenkovConfig {
-            threshold: 0.5,
-            ..CherenkovConfig::default()
-        };
+        let config = CherenkovConfig { threshold: 0.5, ..CherenkovConfig::default() };
         let effect = Cherenkov::new(config);
 
         // Create buffer with varying brightness
@@ -418,4 +396,3 @@ mod tests {
         }
     }
 }
-

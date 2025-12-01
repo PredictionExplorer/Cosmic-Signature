@@ -10,14 +10,14 @@
 //! - **Simulation**: Physics simulation throughput
 //! - **Utility Functions**: Kernel generation and helper functions
 
-use criterion::{criterion_group, criterion_main, Criterion, BenchmarkId, Throughput};
+use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
 use nalgebra::Vector3;
 use std::hint::black_box;
 use three_body_problem::{
-    oklab::{linear_srgb_to_oklab, oklab_to_linear_srgb, linear_srgb_to_oklab_batch},
+    oklab::{linear_srgb_to_oklab, linear_srgb_to_oklab_batch, oklab_to_linear_srgb},
     render::{
         drawing::draw_line_segment_aa_spectral_with_dispersion,
-        effects::{EffectConfig, EffectChainBuilder, FrameParams},
+        effects::{EffectChainBuilder, EffectConfig, FrameParams},
     },
     sim::{Body, Sha3RandomByteStream, get_positions},
     spectrum::{NUM_BINS, spd_to_rgba},
@@ -126,9 +126,11 @@ fn bench_oklab_conversion(c: &mut Criterion) {
             .collect();
 
         group.throughput(Throughput::Elements(*size as u64));
-        group.bench_with_input(BenchmarkId::new("batch_rgb_to_oklab", size), &pixels, |b, pixels| {
-            b.iter(|| linear_srgb_to_oklab_batch(black_box(pixels)))
-        });
+        group.bench_with_input(
+            BenchmarkId::new("batch_rgb_to_oklab", size),
+            &pixels,
+            |b, pixels| b.iter(|| linear_srgb_to_oklab_batch(black_box(pixels))),
+        );
     }
 
     group.finish();
@@ -143,9 +145,7 @@ fn bench_spd_conversion(c: &mut Criterion) {
 
     let spd = [0.1; NUM_BINS];
 
-    group.bench_function("spd_to_rgba", |b| {
-        b.iter(|| spd_to_rgba(black_box(&spd)))
-    });
+    group.bench_function("spd_to_rgba", |b| b.iter(|| spd_to_rgba(black_box(&spd))));
 
     // Batch SPD conversion
     for size in [100, 1000, 10000].iter() {
@@ -182,12 +182,10 @@ fn bench_effect_chain(c: &mut Criterion) {
 
     let config = EffectConfig::default();
     let chain = EffectChainBuilder::new(config);
-    let params = FrameParams {
-        _frame_number: 0,
-        _density: None,
-    };
+    let params = FrameParams { _frame_number: 0, _density: None };
 
-    for (name, (w, h)) in [("720p", (1280usize, 720usize)), ("1080p", (1920usize, 1080usize))].iter()
+    for (name, (w, h)) in
+        [("720p", (1280usize, 720usize)), ("1080p", (1920usize, 1080usize))].iter()
     {
         let buffer: Vec<(f64, f64, f64, f64)> = vec![(0.5, 0.5, 0.5, 1.0); w * h];
 
@@ -207,9 +205,7 @@ fn bench_effect_chain(c: &mut Criterion) {
     let buffer_1080: Vec<(f64, f64, f64, f64)> = vec![(0.5, 0.5, 0.5, 1.0); 1920 * 1080];
 
     group.bench_function("minimal_chain_1080p", |b| {
-        b.iter(|| {
-            minimal_chain.process_frame(black_box(buffer_1080.clone()), 1920, 1080, &params)
-        })
+        b.iter(|| minimal_chain.process_frame(black_box(buffer_1080.clone()), 1920, 1080, &params))
     });
 
     group.finish();
@@ -223,11 +219,9 @@ fn bench_gaussian_kernel(c: &mut Criterion) {
     let mut group = c.benchmark_group("gaussian_kernel");
 
     for radius in [5, 10, 20, 30, 50].iter() {
-        group.bench_with_input(
-            BenchmarkId::from_parameter(radius),
-            radius,
-            |b, &radius| b.iter(|| build_gaussian_kernel(black_box(radius))),
-        );
+        group.bench_with_input(BenchmarkId::from_parameter(radius), radius, |b, &radius| {
+            b.iter(|| build_gaussian_kernel(black_box(radius)))
+        });
     }
 
     group.finish();
@@ -247,52 +241,26 @@ fn bench_simulation(c: &mut Criterion) {
     let bodies = vec![
         Body::new(
             rng.random_mass(),
-            Vector3::new(
-                rng.random_location(),
-                rng.random_location(),
-                rng.random_location(),
-            ),
-            Vector3::new(
-                rng.random_velocity(),
-                rng.random_velocity(),
-                rng.random_velocity(),
-            ),
+            Vector3::new(rng.random_location(), rng.random_location(), rng.random_location()),
+            Vector3::new(rng.random_velocity(), rng.random_velocity(), rng.random_velocity()),
         ),
         Body::new(
             rng.random_mass(),
-            Vector3::new(
-                rng.random_location(),
-                rng.random_location(),
-                rng.random_location(),
-            ),
-            Vector3::new(
-                rng.random_velocity(),
-                rng.random_velocity(),
-                rng.random_velocity(),
-            ),
+            Vector3::new(rng.random_location(), rng.random_location(), rng.random_location()),
+            Vector3::new(rng.random_velocity(), rng.random_velocity(), rng.random_velocity()),
         ),
         Body::new(
             rng.random_mass(),
-            Vector3::new(
-                rng.random_location(),
-                rng.random_location(),
-                rng.random_location(),
-            ),
-            Vector3::new(
-                rng.random_velocity(),
-                rng.random_velocity(),
-                rng.random_velocity(),
-            ),
+            Vector3::new(rng.random_location(), rng.random_location(), rng.random_location()),
+            Vector3::new(rng.random_velocity(), rng.random_velocity(), rng.random_velocity()),
         ),
     ];
 
     for steps in [1000, 10_000, 100_000].iter() {
         group.throughput(Throughput::Elements(*steps as u64));
-        group.bench_with_input(
-            BenchmarkId::new("orbit_simulation", steps),
-            steps,
-            |b, &steps| b.iter(|| get_positions(black_box(bodies.clone()), steps)),
-        );
+        group.bench_with_input(BenchmarkId::new("orbit_simulation", steps), steps, |b, &steps| {
+            b.iter(|| get_positions(black_box(bodies.clone()), steps))
+        });
     }
 
     group.finish();
@@ -308,17 +276,11 @@ fn bench_rng(c: &mut Criterion) {
     let seed = [0x42u8; 32];
     let mut rng = Sha3RandomByteStream::new(&seed, 100.0, 300.0, 300.0, 1.0);
 
-    group.bench_function("next_f64", |b| {
-        b.iter(|| rng.next_f64())
-    });
+    group.bench_function("next_f64", |b| b.iter(|| rng.next_f64()));
 
-    group.bench_function("random_mass", |b| {
-        b.iter(|| rng.random_mass())
-    });
+    group.bench_function("random_mass", |b| b.iter(|| rng.random_mass()));
 
-    group.bench_function("random_location", |b| {
-        b.iter(|| rng.random_location())
-    });
+    group.bench_function("random_location", |b| b.iter(|| rng.random_location()));
 
     group.finish();
 }
@@ -334,4 +296,3 @@ criterion_group!(
     bench_rng,
 );
 criterion_main!(benches);
-

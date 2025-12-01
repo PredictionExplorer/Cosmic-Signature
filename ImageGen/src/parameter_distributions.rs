@@ -41,16 +41,16 @@ impl DefaultDistributions {
     pub const GLOW_RADIUS_SCALE: DistParams = DistParams::new(0.007, 0.003);
     pub const GLOW_SHARPNESS: DistParams = DistParams::new(2.5, 0.8);
     pub const GLOW_SATURATION_BOOST: DistParams = DistParams::new(0.20, 0.10);
-    
+
     // ==== Chromatic Effects ====
     pub const CHROMATIC_BLOOM_STRENGTH: DistParams = DistParams::new(0.60, 0.15);
     pub const CHROMATIC_BLOOM_RADIUS_SCALE: DistParams = DistParams::new(0.012, 0.004);
     pub const CHROMATIC_BLOOM_SEPARATION_SCALE: DistParams = DistParams::new(0.0030, 0.0010);
     pub const CHROMATIC_BLOOM_THRESHOLD: DistParams = DistParams::new(0.18, 0.06);
-    
+
     // ==== Perceptual Blur ====
     pub const PERCEPTUAL_BLUR_STRENGTH: DistParams = DistParams::new(0.65, 0.12);
-    
+
     // ==== Color Grading ====
     pub const COLOR_GRADE_STRENGTH: DistParams = DistParams::new(0.50, 0.15);
     pub const VIGNETTE_STRENGTH: DistParams = DistParams::new(0.40, 0.15);
@@ -58,37 +58,37 @@ impl DefaultDistributions {
     pub const VIBRANCE: DistParams = DistParams::new(1.10, 0.15);
     pub const CLARITY_STRENGTH: DistParams = DistParams::new(0.30, 0.12);
     pub const TONE_CURVE_STRENGTH: DistParams = DistParams::new(0.50, 0.15);
-    
+
     // ==== Gradient Mapping ====
     pub const GRADIENT_MAP_STRENGTH: DistParams = DistParams::new(0.75, 0.12);
     pub const GRADIENT_MAP_HUE_PRESERVATION: DistParams = DistParams::new(0.20, 0.08);
     // Gradient palette is discrete (0-14), no distribution needed
-    
+
     // ==== Material Effects - Opalescence ====
     pub const OPALESCENCE_STRENGTH: DistParams = DistParams::new(0.20, 0.10);
     pub const OPALESCENCE_SCALE: DistParams = DistParams::new(0.010, 0.004);
     // Opalescence layers is discrete (1-6), no distribution needed
-    
+
     // ==== Material Effects - Champlevé ====
     pub const CHAMPLEVE_FLOW_ALIGNMENT: DistParams = DistParams::new(0.65, 0.12);
     pub const CHAMPLEVE_INTERFERENCE_AMPLITUDE: DistParams = DistParams::new(0.55, 0.15);
     pub const CHAMPLEVE_RIM_INTENSITY: DistParams = DistParams::new(2.0, 0.6);
     pub const CHAMPLEVE_RIM_WARMTH: DistParams = DistParams::new(0.60, 0.15);
     pub const CHAMPLEVE_INTERIOR_LIFT: DistParams = DistParams::new(0.65, 0.15);
-    
+
     // ==== Material Effects - Aether ====
     pub const AETHER_FLOW_ALIGNMENT: DistParams = DistParams::new(0.75, 0.12);
     pub const AETHER_SCATTERING_STRENGTH: DistParams = DistParams::new(0.90, 0.25);
     pub const AETHER_IRIDESCENCE_AMPLITUDE: DistParams = DistParams::new(0.60, 0.15);
     pub const AETHER_CAUSTIC_STRENGTH: DistParams = DistParams::new(0.30, 0.12);
-    
+
     // ==== Detail & Clarity ====
     pub const MICRO_CONTRAST_STRENGTH: DistParams = DistParams::new(0.25, 0.10);
     // Micro contrast radius is discrete (2-12), no distribution needed
     pub const EDGE_LUMINANCE_STRENGTH: DistParams = DistParams::new(0.20, 0.10);
     pub const EDGE_LUMINANCE_THRESHOLD: DistParams = DistParams::new(0.20, 0.06);
     pub const EDGE_LUMINANCE_BRIGHTNESS_BOOST: DistParams = DistParams::new(0.30, 0.10);
-    
+
     // ==== Atmospheric ====
     pub const ATMOSPHERIC_DEPTH_STRENGTH: DistParams = DistParams::new(0.25, 0.12);
     pub const ATMOSPHERIC_DESATURATION: DistParams = DistParams::new(0.40, 0.12);
@@ -99,18 +99,18 @@ impl DefaultDistributions {
     pub const FINE_TEXTURE_STRENGTH: DistParams = DistParams::new(0.12, 0.05);
     pub const FINE_TEXTURE_SCALE: DistParams = DistParams::new(0.0017, 0.0006);
     pub const FINE_TEXTURE_CONTRAST: DistParams = DistParams::new(0.35, 0.10);
-    
+
     // ==== HDR & Exposure ====
     pub const HDR_SCALE: DistParams = DistParams::new(0.12, 0.04);
-    
+
     // ==== Clipping ====
     pub const CLIP_BLACK: DistParams = DistParams::new(0.012, 0.004);
     pub const CLIP_WHITE: DistParams = DistParams::new(0.990, 0.006);
-    
+
     // ==== Nebula (currently disabled, but defined for completeness) ====
-    pub const NEBULA_STRENGTH: DistParams = DistParams::new(0.0, 0.0);  // Disabled
+    pub const NEBULA_STRENGTH: DistParams = DistParams::new(0.0, 0.0); // Disabled
     pub const NEBULA_BASE_FREQUENCY: DistParams = DistParams::new(0.0015, 0.0005);
-    
+
     /// Get distribution for `a` parameter by name.
     pub fn get(param_name: &str) -> Option<DistParams> {
         match param_name {
@@ -175,17 +175,16 @@ impl DefaultDistributions {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     #[allow(clippy::assertions_on_constants)] // Compile-time verification of distribution constants
     fn test_all_distributions_valid() {
         // Test that all distributions have positive std
         assert!(DefaultDistributions::GLOW_STRENGTH.std > 0.0);
         assert!(DefaultDistributions::VIGNETTE_STRENGTH.std > 0.0);
-        
+
         // Test lookup works
         assert!(DefaultDistributions::get("glow_strength").is_some());
         assert!(DefaultDistributions::get("invalid_param").is_none());
     }
 }
-

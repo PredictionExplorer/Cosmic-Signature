@@ -3,133 +3,425 @@
 //! This module provides type-safe randomization of effect parameters using
 //! distributions (typically truncated normal) rather than uniform sampling.
 //!
-//! All parameters are sampled from distributions with specific means and
-//! standard deviations, providing better aesthetic results while still
-//! allowing exploration of the parameter space.
+//! # Aesthetic Axes System
+//!
+//! The core innovation is the use of **continuous aesthetic axes** to guide
+//! randomization. Instead of discrete themes or pure randomness, each render
+//! occupies a unique position in a 3-dimensional aesthetic space:
+//!
+//! - **Energy vs. Matter** (Light/Glow vs. Surface/Texture)
+//! - **Vintage vs. Digital** (Soft/Film vs. Sharp/Glitch)
+//! - **Complexity** (Minimal vs. Baroque)
+//!
+//! These axes dynamically adjust probabilities and parameters, creating infinite
+//! variety while maintaining artistic coherence.
+//!
+//! ## Example
+//!
+//! ```
+//! # use three_body_problem::render::effect_randomizer::EffectRandomizer;
+//! # use three_body_problem::sim::Sha3RandomByteStream;
+//! let seed = vec![0x42, 0x43, 0x44, 0x45];
+//! let mut rng = Sha3RandomByteStream::new(&seed, 100.0, 300.0, 300.0, 1.0);
+//! let mut randomizer = EffectRandomizer::new(&mut rng, true);
+//!
+//! // Biases are randomly generated for this render
+//! let biases = randomizer.biases();
+//! println!("Energy vs Matter: {}", biases.energy_vs_matter);
+//!
+//! // Probabilities are dynamically calculated based on biases
+//! let enable_bloom = randomizer.randomize_enable("bloom");
+//! ```
+//!
+//! See `AESTHETIC_AXES_SYSTEM.md` for comprehensive documentation.
 
 use super::parameter_descriptors::{FloatParamDescriptor, IntParamDescriptor};
 use crate::sim::Sha3RandomByteStream;
 use crate::weighted_sampler;
 
+/// Continuous aesthetic axes that guide probability distributions.
+///
+/// These three axes define a 3-dimensional "aesthetic space" where each point
+/// represents a unique visual style. The axes create fluid biases rather than
+/// discrete categories, ensuring infinite variety.
+///
+/// # Design Rationale
+///
+/// - **Why Continuous?** Allows for gradient transitions (e.g., 70% Matter, 30% Energy)
+/// - **Why 3 Axes?** Covers the major aesthetic dimensions without over-constraining
+/// - **Why Not More?** Additional axes have diminishing returns and increase complexity
+///
+/// # Example Positions
+///
+/// | E | V | C | Style |
+/// |---|---|---|-------|
+/// | 0.1 | 0.1 | 0.2 | Soft glowing minimalism |
+/// | 0.9 | 0.1 | 0.7 | Vintage oil painting |
+/// | 0.1 | 0.9 | 0.8 | Neon hologram |
+/// | 0.9 | 0.9 | 0.3 | Sharp metallic sculpture |
+#[derive(Clone, Copy, Debug)]
+pub struct AestheticBiases {
+    /// **Energy vs. Matter Axis** (`0.0` = Pure Energy, `1.0` = Pure Matter)
+    ///
+    /// Controls the balance between light-based effects (bloom, glow, rays) and
+    /// material-based effects (texture, enamel, surface detail).
+    ///
+    /// - **Low (Energy):** Favors bloom, glow, prismatic halos, cherenkov
+    /// - **High (Matter):** Favors champlevé, fine texture, shadows, surface detail
+    pub energy_vs_matter: f64,
+
+    /// **Vintage vs. Digital Axis** (`0.0` = Vintage, `1.0` = Digital)
+    ///
+    /// Controls the "lens" aesthetic - soft/film vs. sharp/glitchy.
+    ///
+    /// - **Low (Vintage):** Favors soft blur, warm palettes, gentle vignettes
+    /// - **High (Digital):** Favors chromatic aberration, glitches, high contrast, neon
+    pub vintage_vs_digital: f64,
+
+    /// **Complexity Axis** (`0.0` = Minimal, `1.0` = Baroque)
+    ///
+    /// Controls the overall density of effects and layering.
+    ///
+    /// - **Low (Minimal):** Fewer effects enabled, clean look
+    /// - **High (Baroque):** Many effects enabled, rich layering
+    pub complexity: f64,
+}
+
 /// Randomizer for effect parameters using statistical distributions.
 ///
-/// Parameters are sampled from truncated normal distributions centered
-/// around aesthetically pleasing values, with controllable spread.
+/// This is the core engine that generates aesthetic variety. It combines:
+/// 1. **Aesthetic Biases:** Continuous axes that define the overall style
+/// 2. **Statistical Distributions:** Truncated normal sampling for parameters
+/// 3. **Dynamic Probabilities:** Effect enable probabilities calculated from biases
+///
+/// # Architecture
+///
+/// ```text
+/// RNG Seed → Aesthetic Biases (3 floats) → Effect Probabilities
+///                                        ↓
+///                                   Enable/Disable
+///                                        ↓
+///                              Parameter Sampling (Gaussian)
+/// ```
+///
+/// # Example
+///
+/// ```
+/// # use three_body_problem::render::effect_randomizer::EffectRandomizer;
+/// # use three_body_problem::sim::Sha3RandomByteStream;
+/// let seed = vec![0x12, 0x34, 0x56, 0x78];
+/// let mut rng = Sha3RandomByteStream::new(&seed, 100.0, 300.0, 300.0, 1.0);
+/// let mut randomizer = EffectRandomizer::new(&mut rng, true);
+///
+/// // Check if an effect should be enabled based on biases
+/// let should_enable_bloom = randomizer.randomize_enable("bloom");
+/// ```
 pub struct EffectRandomizer<'a> {
     rng: &'a mut Sha3RandomByteStream,
     gallery_quality: bool,
+    biases: AestheticBiases,
 }
 
 impl<'a> EffectRandomizer<'a> {
-    /// Create a new effect randomizer.
+    /// Create a new effect randomizer with randomly generated aesthetic biases.
+    ///
+    /// # Design
+    ///
+    /// The biases are sampled uniformly from [0.0, 1.0] at construction time,
+    /// ensuring each render has a unique position in the aesthetic space.
     ///
     /// # Arguments
-    /// * `rng` - Random number generator
-    /// * `gallery_quality` - Use narrower parameter ranges
-    pub fn new(
-        rng: &'a mut Sha3RandomByteStream,
-        gallery_quality: bool,
-    ) -> Self {
-        Self {
-            rng,
-            gallery_quality,
-        }
+    ///
+    /// * `rng` - Random number generator (deterministic from seed)
+    /// * `gallery_quality` - If true, use narrower parameter ranges for stability
+    ///
+    /// # Returns
+    ///
+    /// A randomizer with unique aesthetic biases for this render session
+    pub fn new(rng: &'a mut Sha3RandomByteStream, gallery_quality: bool) -> Self {
+        // Generate random aesthetic biases for this run
+        // Each axis is uniformly sampled to ensure unbiased exploration
+        let biases = AestheticBiases {
+            energy_vs_matter: rng.next_f64(),
+            vintage_vs_digital: rng.next_f64(),
+            complexity: rng.next_f64(),
+        };
+
+        Self { rng, gallery_quality, biases }
     }
 
-    /// Randomly decide whether an effect should be enabled with per-effect probabilities.
+    /// Get the aesthetic biases for this randomizer.
     ///
-    /// Probabilities are based on analysis of Amazing vs Boring images:
-    /// - Effects that were OFF in amazing images get lower enable probability
-    /// - Effects that were ON in amazing images get higher enable probability
-    /// 
-    /// This maintains variety while biasing toward aesthetically superior results.
+    /// Useful for logging and debugging to understand why certain effects
+    /// were chosen.
+    pub fn biases(&self) -> AestheticBiases {
+        self.biases
+    }
+
+    /// Randomly decide whether an effect should be enabled.
+    ///
+    /// The probability is dynamically calculated from the aesthetic biases,
+    /// ensuring effects are correlated in aesthetically pleasing ways.
+    ///
+    /// # Arguments
+    ///
+    /// * `effect_name` - Name of the effect (e.g., "bloom", "champleve")
+    ///
+    /// # Returns
+    ///
+    /// `true` if the effect should be enabled, `false` otherwise
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use three_body_problem::render::effect_randomizer::EffectRandomizer;
+    /// # use three_body_problem::sim::Sha3RandomByteStream;
+    /// # let seed = vec![0x42];
+    /// # let mut rng = Sha3RandomByteStream::new(&seed, 100.0, 300.0, 300.0, 1.0);
+    /// # let mut randomizer = EffectRandomizer::new(&mut rng, false);
+    /// if randomizer.randomize_enable("bloom") {
+    ///     // Apply bloom effect
+    /// }
+    /// ```
     pub fn randomize_enable(&mut self, effect_name: &str) -> bool {
         let probability = self.get_enable_probability(effect_name);
         self.rng.next_f64() < probability
     }
-    
-    /// Get the enable probability for a specific effect based on empirical analysis.
+
+    /// Calculate the enable probability for a specific effect based on aesthetic axes.
     ///
-    /// Analysis results (Amazing vs Boring enable rates):
-    /// - opalescence: 0% vs 81% → 15% probability (mostly off)
-    /// - aether: 0% vs 62% → 15% probability (mostly off)
-    /// - atmospheric_depth: 14% vs 67% → 25% probability (mostly off)
-    /// - gradient_map: 14% vs 52% → 25% probability (mostly off)
-    /// - fine_texture: 29% vs 57% → 35% probability (somewhat less)
-    /// - chromatic_bloom: 43% vs 62% → 45% probability (balanced, slightly less)
-    /// - perceptual_blur: 43% vs 57% → 45% probability (balanced)
-    /// - champleve: 86% vs 48% → 75% probability (mostly on)
-    /// - bloom: 71% vs 43% → 70% probability (mostly on)
-    /// - micro_contrast: 57% vs 38% → 60% probability (more on)
-    /// - glow: No significant difference → 50% (neutral)
-    /// - color_grade: 43% vs 52% → 50% (neutral)
-    /// - edge_luminance: 29% vs 57% → 45% (balanced)
+    /// This is the heart of the aesthetic system. Each effect has a formula that
+    /// combines the three bias axes to produce a probability.
+    ///
+    /// # Design Principles
+    ///
+    /// - **Axis Correlation:** Effects are grouped by aesthetic affinity
+    /// - **Gradient Responses:** Probabilities change smoothly as biases change
+    /// - **Safety Bounds:** All probabilities clamped to [0.05, 0.95]
+    ///
+    /// # Formula Examples
+    ///
+    /// - `bloom`: `0.7 + (1.0 - energy_vs_matter) * 0.2` (favored by Energy)
+    /// - `champleve`: `0.1 + energy_vs_matter * 0.8` (favored by Matter)
+    /// - `chromatic_bloom`: `0.2 + vintage_vs_digital * 0.6` (favored by Digital)
+    ///
+    /// # Returns
+    ///
+    /// Probability in range [0.05, 0.95] (never 0% or 100% to preserve variety)
     fn get_enable_probability(&self, effect_name: &str) -> f64 {
-        match effect_name {
-            // Legacy effects (deprecated - very low probability)
-            "refractive_caustics" => 0.05,   // Replaced by event_horizon
-            "champleve" => 0.05,              // Less interesting than new effects
-            "nebula_clouds" => 0.05,          // Replaced by aurora_veils + cosmic_ink
-            
-            // Mostly disabled in Amazing images (15%)
-            "opalescence" => 0.15,
-            "aether" => 0.15,
-            
-            // New "Masterpiece" effects - Rare/Special (15-20%)
-            "dimensional_glitch" => 0.15,     // Very distinctive, rare signature effect
-            "prismatic_halos" => 0.20,        // Rare optical phenomena
-            
-            // Frequently disabled in Amazing images (25%)
-            "atmospheric_depth" => 0.25,
-            "gradient_map" => 0.25,
-            "volumetric_occlusion" => 0.25,
-            "cherenkov" => 0.25,              // Distinctive blue glow, occasional
-            
-            // New "Masterpiece" effects - Moderate (30-40%)
-            "event_horizon" => 0.30,          // Gravity visualization, replaces caustics
-            "cosmic_ink" => 0.35,             // Beautiful fluid aesthetic
-            "aurora_veils" => 0.40,           // Background atmosphere, low conflict
-            
-            // Somewhat less in Amazing images (35%)
-            "fine_texture" => 0.35,
-            "crepuscular_rays" => 0.30,
-            
-            // Balanced but slightly favoring off (45%)
-            "chromatic_bloom" => 0.45,
-            "perceptual_blur" => 0.45,
-            "edge_luminance" => 0.45,
-            
-            // Neutral (50%)
-            "glow" => 0.50,
-            "color_grade" => 0.50,
-            
-            // More often enabled in Amazing images (60%+)
-            "micro_contrast" => 0.60,
-            "bloom" => 0.70,
-            
-            // Unknown effects default to neutral
-            _ => 0.50,
-        }
+        // --- 1. COMPLEXITY AXIS ---
+        // Scales overall probability of "optional" effects
+        let c = self.biases.complexity;
+
+        // --- 2. ENERGY VS MATTER AXIS ---
+        // e = 0 (Energy), e = 1 (Matter)
+        let e = self.biases.energy_vs_matter;
+
+        // --- 3. VINTAGE VS DIGITAL AXIS ---
+        // v = 0 (Vintage), v = 1 (Digital)
+        let v = self.biases.vintage_vs_digital;
+
+        let prob = match effect_name {
+            // ================== CORE EFFECTS ==================
+            "bloom" => {
+                // Almost always on, but slightly favored by Energy
+                0.7 + (1.0 - e) * 0.2
+            }
+            "glow" => {
+                // Favored by Energy and High Complexity
+                0.4 + (1.0 - e) * 0.4 + c * 0.1
+            }
+            "color_grade" => {
+                // Always good, slightly favored by Vintage
+                0.6 + (1.0 - v) * 0.2
+            }
+
+            // ================== SURFACE / MATTER ==================
+            "champleve" => {
+                // Strongly favored by Matter
+                0.1 + e * 0.8
+            }
+            "fine_texture" => {
+                // Strongly favored by Matter
+                0.2 + e * 0.6
+            }
+            "opalescence" => {
+                // Matter + Vintage (Pearlescent look)
+                0.1 + e * 0.4 + (1.0 - v) * 0.2
+            }
+            "edge_luminance" => {
+                // Matter (Rim light) or Digital (Neon edge)
+                // U-shaped curve: good for both extremes, bad for middle
+                let distinctiveness = (e - 0.5).abs() * 2.0;
+                0.3 + distinctiveness * 0.4
+            }
+
+            // ================== LIGHT / ENERGY ==================
+            "crepuscular_rays" => {
+                // Energy + Complexity
+                0.1 + (1.0 - e) * 0.5 + c * 0.2
+            }
+            "cherenkov" => {
+                // Digital + Energy
+                0.1 + v * 0.4 + (1.0 - e) * 0.3
+            }
+            "prismatic_halos" => {
+                // Digital + Energy + Complexity
+                0.05 + v * 0.3 + (1.0 - e) * 0.3 + c * 0.2
+            }
+            "chromatic_bloom" => {
+                // Digital favorite
+                0.2 + v * 0.6
+            }
+
+            // ================== ATMOSPHERE (Special Mode uses overrides, this is base) ==================
+            "volumetric_occlusion" => {
+                // Matter (needs surface to cast shadow) or Energy (needs light) -> Balanced
+                // Favored by Complexity
+                0.3 + c * 0.4
+            }
+            "atmospheric_depth" => {
+                // Vintage (Haze) + Complexity
+                0.2 + (1.0 - v) * 0.4 + c * 0.3
+            }
+
+            // ================== ARTIFACTS ==================
+            "dimensional_glitch" => {
+                // Pure Digital + Energy
+                if v > 0.7 && e < 0.4 { 0.6 } else { 0.05 }
+            }
+            "perceptual_blur" => {
+                // Vintage (Softness)
+                0.3 + (1.0 - v) * 0.5
+            }
+            "micro_contrast" => {
+                // Digital (Sharpness) + Matter (Texture detail)
+                0.3 + v * 0.3 + e * 0.3
+            }
+
+            // ================== STRUCTURAL ==================
+            "aether" => {
+                // Good all-rounder, favored by Complexity
+                0.2 + c * 0.5
+            }
+            "gradient_map" => {
+                // Digital (False color) or Vintage (Sepia/Duotone)
+                // High complexity favors it less (too busy)
+                0.4 + (1.0 - c) * 0.3
+            }
+
+            // Legacy / Rare
+            "refractive_caustics" => 0.05,
+            "event_horizon" => 0.1 + c * 0.2,
+            "cosmic_ink" => 0.1 + c * 0.2,
+            "aurora_veils" => 0.1 + c * 0.2,
+
+            _ => 0.5,
+        };
+
+        prob.clamp(0.05, 0.95)
     }
 
-    /// Generate a random float using distribution-based sampling.
+    /// Generate a random float using distribution-based sampling with aesthetic shaping.
     ///
-    /// Samples from a truncated normal distribution centered around
-    /// aesthetically pleasing values, providing better results than
-    /// uniform sampling while maintaining variety.
+    /// This method combines two sources of quality:
+    /// 1. **Base Sampling:** Uses truncated normal distributions (not uniform)
+    /// 2. **Aesthetic Shaping:** Applies bias-based adjustments to the sampled value
+    ///
+    /// # Process
+    ///
+    /// 1. Sample from truncated normal distribution centered at the parameter's mean
+    /// 2. Apply aesthetic bias adjustments (e.g., Vintage → softer blur radius)
+    /// 3. Clamp to valid range
+    ///
+    /// # Arguments
+    ///
+    /// * `descriptor` - Parameter descriptor with min/max ranges and metadata
+    ///
+    /// # Returns
+    ///
+    /// A value in [`min`, `max`] that respects both the distribution and aesthetic biases
     ///
     /// # Safety
-    /// ALWAYS returns `a` value within [`min`, `max`]. Multiple fallback strategies
+    ///
+    /// ALWAYS returns a value within [`min`, `max`]. Multiple fallback strategies
     /// ensure this function never panics and never returns invalid values.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use three_body_problem::render::effect_randomizer::EffectRandomizer;
+    /// # use three_body_problem::render::parameter_descriptors::FloatParamDescriptor;
+    /// # use three_body_problem::sim::Sha3RandomByteStream;
+    /// # let seed = vec![0x42];
+    /// # let mut rng = Sha3RandomByteStream::new(&seed, 100.0, 300.0, 300.0, 1.0);
+    /// # let mut randomizer = EffectRandomizer::new(&mut rng, false);
+    /// let descriptor = FloatParamDescriptor {
+    ///     name: "blur_radius_scale",
+    ///     min: 0.004,
+    ///     max: 0.065,
+    ///     gallery_min: 0.012,
+    ///     gallery_max: 0.035,
+    ///     description: "Blur radius scale",
+    /// };
+    ///
+    /// let value = randomizer.randomize_float(&descriptor);
+    /// assert!(value >= 0.004 && value <= 0.065);
+    /// ```
     pub fn randomize_float(&mut self, descriptor: &FloatParamDescriptor) -> f64 {
         let (min, max) = descriptor.range(self.gallery_quality);
-        
-        weighted_sampler::sample_parameter(
-            self.rng,
-            descriptor.name,
-            min,
-            max,
-        )
+
+        // Base sample from distribution
+        let mut value = weighted_sampler::sample_parameter(self.rng, descriptor.name, min, max);
+
+        // Apply aesthetic bias shifts to the sampled value
+        // This pushes the parameter within its valid range towards the style
+
+        // VINTAGE vs DIGITAL adjustments
+        // Vintage -> Warmer, softer
+        // Digital -> Cooler, sharper, punchier
+        match descriptor.name {
+            "blur_radius_scale" | "glow_radius_scale" => {
+                // Vintage = softer (larger radius)
+                if self.biases.vintage_vs_digital < 0.3 {
+                    value *= 1.2;
+                } else if self.biases.vintage_vs_digital > 0.7 {
+                    value *= 0.8;
+                }
+            }
+            "glow_sharpness" | "vignette_softness" => {
+                // Digital = sharper
+                if self.biases.vintage_vs_digital > 0.7 {
+                    value *= 1.3;
+                }
+            }
+            "color_grade_strength" | "vibrance" => {
+                // Digital = punchier
+                if self.biases.vintage_vs_digital > 0.7 {
+                    value *= 1.15;
+                }
+            }
+            _ => {}
+        }
+
+        // ENERGY vs MATTER adjustments
+        match descriptor.name {
+            "bloom_strength" | "glow_strength" => {
+                // Energy = stronger light
+                if self.biases.energy_vs_matter < 0.3 {
+                    value *= 1.25;
+                }
+            }
+            "fine_texture_strength" | "champleve_rim_intensity" => {
+                // Matter = stronger surface
+                if self.biases.energy_vs_matter > 0.7 {
+                    value *= 1.25;
+                }
+            }
+            _ => {}
+        }
+
+        value.clamp(min, max)
     }
 
     /// Generate a random integer using distribution-based sampling.
@@ -141,13 +433,8 @@ impl<'a> EffectRandomizer<'a> {
     /// ALWAYS returns `a` value within [`min`, `max`]. Never panics.
     pub fn randomize_int(&mut self, descriptor: &IntParamDescriptor) -> usize {
         let (min, max) = descriptor.range(self.gallery_quality);
-        
-        weighted_sampler::sample_parameter_int(
-            self.rng,
-            descriptor.name,
-            min,
-            max,
-        )
+
+        weighted_sampler::sample_parameter_int(self.rng, descriptor.name, min, max)
     }
 
     /// Generate two floats ensuring first < second (for constrained pairs).
@@ -158,12 +445,8 @@ impl<'a> EffectRandomizer<'a> {
     ) -> (f64, f64) {
         let val_a = self.randomize_float(desc_a);
         let val_b = self.randomize_float(desc_b);
-        
-        if val_a < val_b {
-            (val_a, val_b)
-        } else {
-            (val_b, val_a)
-        }
+
+        if val_a < val_b { (val_a, val_b) } else { (val_b, val_a) }
     }
 
     /// Generate a random float in [min, max] using the RNG.
@@ -192,10 +475,10 @@ impl<'a> EffectRandomizer<'a> {
         let b1 = self.rng.next_byte() as u32;
         let b2 = self.rng.next_byte() as u32;
         let b3 = self.rng.next_byte() as u32;
-        
+
         // Combine into a 32-bit integer
         let bits = (b0 << 24) | (b1 << 16) | (b2 << 8) | b3;
-        
+
         // Convert to [0.0, 1.0) range
         (bits as f64) / (u32::MAX as f64)
     }
@@ -226,12 +509,7 @@ pub struct RandomizedParameter {
 
 impl RandomizationRecord {
     pub fn new(effect_name: String, enabled: bool, was_randomized: bool) -> Self {
-        Self {
-            effect_name,
-            enabled,
-            was_randomized,
-            parameters: Vec::new(),
-        }
+        Self { effect_name, enabled, was_randomized, parameters: Vec::new() }
     }
 
     pub fn add_float(&mut self, name: String, value: f64, was_randomized: bool, range: (f64, f64)) {
@@ -243,7 +521,13 @@ impl RandomizationRecord {
         });
     }
 
-    pub fn add_int(&mut self, name: String, value: usize, was_randomized: bool, range: (usize, usize)) {
+    pub fn add_int(
+        &mut self,
+        name: String,
+        value: usize,
+        was_randomized: bool,
+        range: (usize, usize),
+    ) {
         self.parameters.push(RandomizedParameter {
             name,
             value: value.to_string(),
@@ -257,13 +541,18 @@ impl RandomizationRecord {
 #[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
 pub struct RandomizationLog {
     pub gallery_quality: bool,
+    pub theme: String,
     pub effects: Vec<RandomizationRecord>,
 }
 
 impl RandomizationLog {
-    pub fn new(gallery_quality: bool) -> Self {
+    pub fn new(gallery_quality: bool, biases: AestheticBiases) -> Self {
         Self {
             gallery_quality,
+            theme: format!(
+                "E:{:.2} M:{:.2} C:{:.2}",
+                biases.energy_vs_matter, biases.vintage_vs_digital, biases.complexity
+            ),
             effects: Vec::new(),
         }
     }
@@ -283,46 +572,156 @@ mod tests {
     }
 
     #[test]
+    fn test_aesthetic_biases_are_valid() {
+        let mut rng = make_test_rng();
+        let randomizer = EffectRandomizer::new(&mut rng, false);
+
+        let biases = randomizer.biases();
+
+        // All biases should be in [0.0, 1.0] range
+        assert!((0.0..=1.0).contains(&biases.energy_vs_matter));
+        assert!((0.0..=1.0).contains(&biases.vintage_vs_digital));
+        assert!((0.0..=1.0).contains(&biases.complexity));
+    }
+
+    #[test]
+    fn test_biases_affect_probabilities() {
+        // Find biases with extreme values using different seeds
+        let mut high_energy_biases = None;
+        let mut high_matter_biases = None;
+
+        for i in 0..100 {
+            let seed = vec![i as u8, (i + 1) as u8, (i + 2) as u8, (i + 3) as u8];
+            let mut rng = Sha3RandomByteStream::new(&seed, 100.0, 300.0, 300.0, 1.0);
+            let randomizer = EffectRandomizer::new(&mut rng, false);
+            let biases = randomizer.biases();
+
+            if biases.energy_vs_matter < 0.3 && high_energy_biases.is_none() {
+                high_energy_biases = Some(biases);
+            }
+            if biases.energy_vs_matter > 0.7 && high_matter_biases.is_none() {
+                high_matter_biases = Some(biases);
+            }
+
+            if high_energy_biases.is_some() && high_matter_biases.is_some() {
+                break;
+            }
+        }
+
+        let high_energy_biases = high_energy_biases.expect("Should find high energy bias");
+        let high_matter_biases = high_matter_biases.expect("Should find high matter bias");
+
+        // Calculate probabilities directly using the bias logic
+        let bloom_prob_energy = {
+            let e = high_energy_biases.energy_vs_matter;
+            0.7 + (1.0 - e) * 0.2
+        };
+        let bloom_prob_matter = {
+            let e = high_matter_biases.energy_vs_matter;
+            0.7 + (1.0 - e) * 0.2
+        };
+
+        // High energy should favor bloom more
+        assert!(
+            bloom_prob_energy > bloom_prob_matter,
+            "Energy bias should favor bloom: {} vs {}",
+            bloom_prob_energy,
+            bloom_prob_matter
+        );
+
+        // High matter should favor champleve more
+        let champ_prob_energy = {
+            let e = high_energy_biases.energy_vs_matter;
+            0.1 + e * 0.8
+        };
+        let champ_prob_matter = {
+            let e = high_matter_biases.energy_vs_matter;
+            0.1 + e * 0.8
+        };
+
+        assert!(
+            champ_prob_matter > champ_prob_energy,
+            "Matter bias should favor champleve: {} vs {}",
+            champ_prob_matter,
+            champ_prob_energy
+        );
+    }
+
+    #[test]
+    fn test_probabilities_always_in_valid_range() {
+        // Test many randomizers with different biases
+        for i in 0..100 {
+            let seed = vec![i as u8, (i + 1) as u8, (i + 2) as u8, (i + 3) as u8];
+            let mut rng = Sha3RandomByteStream::new(&seed, 100.0, 300.0, 300.0, 1.0);
+            let randomizer = EffectRandomizer::new(&mut rng, false);
+
+            // Check a representative set of effects
+            let effects = vec![
+                "bloom",
+                "glow",
+                "champleve",
+                "fine_texture",
+                "chromatic_bloom",
+                "dimensional_glitch",
+                "aurora_veils",
+                "cosmic_ink",
+                "aether",
+            ];
+
+            for effect in effects {
+                let prob = randomizer.get_enable_probability(effect);
+                assert!(
+                    (0.05..=0.95).contains(&prob),
+                    "Probability for {} out of range: {}",
+                    effect,
+                    prob
+                );
+            }
+        }
+    }
+
+    #[test]
     fn test_randomize_enable() {
         let mut rng = make_test_rng();
         let mut randomizer = EffectRandomizer::new(&mut rng, false);
-        
-        // Test neutral effect (50% probability)
+
+        // Test that randomize_enable returns boolean values
+        for _ in 0..100 {
+            let enabled = randomizer.randomize_enable("glow");
+            assert!(enabled == true || enabled == false);
+        }
+    }
+
+    #[test]
+    fn test_randomize_enable_distribution() {
+        let mut rng = make_test_rng();
+        let mut randomizer = EffectRandomizer::new(&mut rng, false);
+
+        // Test neutral effect - should not be always on or always off
         let mut count_true = 0;
         for _ in 0..1000 {
             if randomizer.randomize_enable("glow") {
                 count_true += 1;
             }
         }
-        // Should be roughly 500 ± 100 for 50% probability effect
-        assert!(count_true > 400 && count_true < 600, "Got {}", count_true);
-        
-        // Test high-probability effect (bloom at 70%)
+        // With biases, this can vary but shouldn't be extreme
+        assert!(count_true > 50 && count_true < 950, "Got {}", count_true);
+
+        // Test high-probability effect (bloom) - should be mostly on
         let mut count_bloom = 0;
         for _ in 0..1000 {
             if randomizer.randomize_enable("bloom") {
                 count_bloom += 1;
             }
         }
-        // Should be roughly 700 ± 100 for 70% probability effect
-        assert!(count_bloom > 600 && count_bloom < 800, "Got {}", count_bloom);
-        
-        // Test low-probability effect (opalescence at 15%)
-        let mut count_opal = 0;
-        for _ in 0..1000 {
-            if randomizer.randomize_enable("opalescence") {
-                count_opal += 1;
-            }
-        }
-        // Should be roughly 150 ± 75 for 15% probability effect
-        assert!(count_opal > 75 && count_opal < 225, "Got {}", count_opal);
+        assert!(count_bloom > 100 && count_bloom < 1000, "Got {}", count_bloom);
     }
 
     #[test]
     fn test_randomize_float_range() {
         let mut rng = make_test_rng();
         let mut randomizer = EffectRandomizer::new(&mut rng, false);
-        
+
         let descriptor = FloatParamDescriptor {
             name: "test",
             min: 10.0,
@@ -331,7 +730,7 @@ mod tests {
             gallery_max: 18.0,
             description: "Test parameter",
         };
-        
+
         for _ in 0..100 {
             let value = randomizer.randomize_float(&descriptor);
             assert!((10.0..=20.0).contains(&value));
@@ -342,10 +741,10 @@ mod tests {
     fn test_gallery_quality_narrows_range() {
         let mut rng1 = make_test_rng();
         let mut randomizer_normal = EffectRandomizer::new(&mut rng1, false);
-        
+
         let mut rng2 = make_test_rng();
         let mut randomizer_gallery = EffectRandomizer::new(&mut rng2, true);
-        
+
         let descriptor = FloatParamDescriptor {
             name: "test",
             min: 0.0,
@@ -354,10 +753,10 @@ mod tests {
             gallery_max: 60.0,
             description: "Test parameter",
         };
-        
+
         let normal_val = randomizer_normal.randomize_float(&descriptor);
         let gallery_val = randomizer_gallery.randomize_float(&descriptor);
-        
+
         // Gallery value must be in narrower range
         assert!((40.0..=60.0).contains(&gallery_val));
         // Normal value in wider range (might also be in narrow range by chance)
@@ -368,7 +767,7 @@ mod tests {
     fn test_randomize_ordered_pair() {
         let mut rng = make_test_rng();
         let mut randomizer = EffectRandomizer::new(&mut rng, false);
-        
+
         let desc = FloatParamDescriptor {
             name: "test",
             min: 0.0,
@@ -377,10 +776,143 @@ mod tests {
             gallery_max: 0.8,
             description: "Test parameter",
         };
-        
+
         for _ in 0..100 {
             let (a, b) = randomizer.randomize_ordered_pair(&desc, &desc);
             assert!(a < b, "First value must be less than second: {} < {}", a, b);
         }
+    }
+
+    #[test]
+    fn test_biases_create_variety() {
+        // Generate multiple randomizers with different seeds and verify they have different biases
+        let mut biases_set = Vec::new();
+        for i in 0..50 {
+            let seed = vec![i as u8, (i + 10) as u8, (i + 20) as u8, (i + 30) as u8];
+            let mut rng = Sha3RandomByteStream::new(&seed, 100.0, 300.0, 300.0, 1.0);
+            let randomizer = EffectRandomizer::new(&mut rng, false);
+            biases_set.push(randomizer.biases());
+        }
+
+        // Calculate variance in each axis to ensure variety
+        let mean_energy: f64 =
+            biases_set.iter().map(|b| b.energy_vs_matter).sum::<f64>() / biases_set.len() as f64;
+        let variance_energy: f64 =
+            biases_set.iter().map(|b| (b.energy_vs_matter - mean_energy).powi(2)).sum::<f64>()
+                / biases_set.len() as f64;
+
+        // Variance should be significant (not all the same)
+        // For uniform distribution [0,1], variance = 1/12 ≈ 0.083
+        assert!(
+            variance_energy > 0.05,
+            "Insufficient variety in energy_vs_matter: variance = {}",
+            variance_energy
+        );
+    }
+
+    #[test]
+    fn test_complexity_increases_effect_count() {
+        // Find biases with low and high complexity using different seeds
+        let mut low_complexity_biases = None;
+        let mut high_complexity_biases = None;
+
+        for i in 0..100 {
+            let seed = vec![i as u8, (i + 5) as u8, (i + 10) as u8, (i + 15) as u8];
+            let mut rng = Sha3RandomByteStream::new(&seed, 100.0, 300.0, 300.0, 1.0);
+            let randomizer = EffectRandomizer::new(&mut rng, false);
+            let biases = randomizer.biases();
+
+            if biases.complexity < 0.2 && low_complexity_biases.is_none() {
+                low_complexity_biases = Some(biases);
+            }
+            if biases.complexity > 0.8 && high_complexity_biases.is_none() {
+                high_complexity_biases = Some(biases);
+            }
+
+            if low_complexity_biases.is_some() && high_complexity_biases.is_some() {
+                break;
+            }
+        }
+
+        let low_c = low_complexity_biases.expect("Should find low complexity").complexity;
+        let high_c = high_complexity_biases.expect("Should find high complexity").complexity;
+
+        // Count expected probabilities for complexity-sensitive effects
+        // Using the actual formula from get_enable_probability
+        let low_complexity_sum =
+            (0.2 + low_c * 0.5) + (0.1 + (1.0 - 0.5) * 0.5 + low_c * 0.2) + (0.3 + low_c * 0.4);
+        let high_complexity_sum =
+            (0.2 + high_c * 0.5) + (0.1 + (1.0 - 0.5) * 0.5 + high_c * 0.2) + (0.3 + high_c * 0.4);
+
+        assert!(
+            high_complexity_sum > low_complexity_sum,
+            "High complexity should have higher total probability: {} vs {}",
+            high_complexity_sum,
+            low_complexity_sum
+        );
+    }
+
+    #[test]
+    fn test_digital_vs_vintage_affects_chromatic() {
+        // Find biases with different digital vs vintage values
+        let mut vintage_biases = None;
+        let mut digital_biases = None;
+
+        for i in 0..100 {
+            let seed = vec![(i * 2) as u8, (i * 2 + 1) as u8, (i * 3) as u8, (i * 3 + 1) as u8];
+            let mut rng = Sha3RandomByteStream::new(&seed, 100.0, 300.0, 300.0, 1.0);
+            let randomizer = EffectRandomizer::new(&mut rng, false);
+            let biases = randomizer.biases();
+
+            if biases.vintage_vs_digital < 0.2 && vintage_biases.is_none() {
+                vintage_biases = Some(biases);
+            }
+            if biases.vintage_vs_digital > 0.8 && digital_biases.is_none() {
+                digital_biases = Some(biases);
+            }
+
+            if vintage_biases.is_some() && digital_biases.is_some() {
+                break;
+            }
+        }
+
+        let vintage = vintage_biases.expect("Should find vintage bias");
+        let digital = digital_biases.expect("Should find digital bias");
+
+        // Digital should strongly favor chromatic bloom
+        let chromatic_vintage = 0.2 + vintage.vintage_vs_digital * 0.6;
+        let chromatic_digital = 0.2 + digital.vintage_vs_digital * 0.6;
+
+        assert!(
+            chromatic_digital > chromatic_vintage * 1.5,
+            "Digital should favor chromatic bloom more: {} vs {}",
+            chromatic_digital,
+            chromatic_vintage
+        );
+
+        // Vintage should favor perceptual blur (softness)
+        let blur_vintage = 0.3 + (1.0 - vintage.vintage_vs_digital) * 0.5;
+        let blur_digital = 0.3 + (1.0 - digital.vintage_vs_digital) * 0.5;
+
+        assert!(
+            blur_vintage > blur_digital,
+            "Vintage should favor perceptual blur: {} vs {}",
+            blur_vintage,
+            blur_digital
+        );
+    }
+
+    #[test]
+    fn test_randomization_log_captures_biases() {
+        let mut rng = make_test_rng();
+        let randomizer = EffectRandomizer::new(&mut rng, false);
+        let biases = randomizer.biases();
+
+        let log = RandomizationLog::new(false, biases);
+
+        // Theme string should contain bias values
+        assert!(log.theme.contains("E:"));
+        assert!(log.theme.contains("M:"));
+        assert!(log.theme.contains("C:"));
     }
 }

@@ -17,28 +17,28 @@ const LOG_FILE_PATH: &str = "generation_log.json";
 pub struct GenerationRecord {
     /// Timestamp of generation
     pub timestamp: String,
-    
+
     /// Output file name (without extension)
     pub file_name: String,
-    
+
     /// Hex seed used for generation
     pub seed: String,
-    
+
     /// Whether special mode was enabled
     pub special_mode: bool,
-    
+
     /// Rendering configuration
     pub render_config: LoggedRenderConfig,
-    
+
     /// Drift configuration
     pub drift_config: DriftConfig,
-    
+
     /// Simulation parameters
     pub simulation_config: SimulationConfig,
-    
+
     /// Selected orbit information from Borda selection
     pub orbit_info: OrbitInfo,
-    
+
     /// Randomization log (if any parameters were randomized)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub randomization_log: Option<crate::render::effect_randomizer::RandomizationLog>,
@@ -100,7 +100,7 @@ impl GenerationRecord {
     /// Create a new generation record with the current timestamp
     pub fn new(file_name: String, seed: String, special_mode: bool) -> Self {
         let timestamp = Local::now().to_rfc3339();
-        
+
         Self {
             timestamp,
             file_name,
@@ -169,12 +169,7 @@ impl Default for SimulationConfig {
 
 impl Default for OrbitInfo {
     fn default() -> Self {
-        Self {
-            selected_index: 0,
-            weighted_score: 0.0,
-            total_candidates: 0,
-            discarded_count: 0,
-        }
+        Self { selected_index: 0, weighted_score: 0.0, total_candidates: 0, discarded_count: 0 }
     }
 }
 
@@ -188,15 +183,15 @@ impl GenerationLogger {
     pub fn new() -> Self {
         Self { log_file_path: LOG_FILE_PATH.to_string() }
     }
-    
+
     /// Load all existing records from the log file
     fn load_records(&self) -> Vec<GenerationRecord> {
         let path = Path::new(&self.log_file_path);
-        
+
         if !path.exists() {
             return Vec::new();
         }
-        
+
         match File::open(path) {
             Ok(file) => {
                 let reader = BufReader::new(file);
@@ -214,26 +209,23 @@ impl GenerationLogger {
             }
         }
     }
-    
+
     /// Save all records to the log file
     fn save_records(&self, records: &[GenerationRecord]) -> std::io::Result<()> {
-        let file = OpenOptions::new()
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .open(&self.log_file_path)?;
-        
+        let file =
+            OpenOptions::new().write(true).create(true).truncate(true).open(&self.log_file_path)?;
+
         let writer = BufWriter::new(file);
         serde_json::to_writer_pretty(writer, records)?;
-        
+
         Ok(())
     }
-    
+
     /// Append a new generation record to the log
     pub fn log_generation(&self, record: GenerationRecord) {
         let mut records = self.load_records();
         records.push(record.clone());
-        
+
         match self.save_records(&records) {
             Ok(_) => {
                 info!("Generation logged to {}", self.log_file_path);

@@ -57,7 +57,7 @@ impl ChampleveConfig {
                 rim_warmth: constants::DEFAULT_CHAMPLEVE_RIM_WARMTH * 0.1, // Greatly reduced warm tint
                 rim_sharpness: constants::DEFAULT_CHAMPLEVE_RIM_SHARPNESS,
                 interior_lift: constants::DEFAULT_CHAMPLEVE_INTERIOR_LIFT * 0.3, // Reduced
-                anisotropy: constants::DEFAULT_CHAMPLEVE_ANISOTROPY * 0.2, // Greatly reduced
+                anisotropy: constants::DEFAULT_CHAMPLEVE_ANISOTROPY * 0.2,       // Greatly reduced
                 cell_softness: constants::DEFAULT_CHAMPLEVE_CELL_SOFTNESS,
             }
         }
@@ -180,7 +180,7 @@ mod tests {
         let config = ChampleveConfig::default();
         let mut buffer = test_buffer(100, 100, 0.5);
         apply_champleve_iridescence(&mut buffer, 100, 100, &config);
-        
+
         assert_eq!(buffer.len(), 100 * 100);
         for &(r, g, b, a) in &buffer {
             assert!(r.is_finite() && g.is_finite() && b.is_finite() && a.is_finite());

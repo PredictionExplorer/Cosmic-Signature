@@ -190,10 +190,7 @@ mod tests {
 
     #[test]
     fn test_perceptual_blur_zero_radius() {
-        let config = PerceptualBlurConfig {
-            radius: 0,
-            ..Default::default()
-        };
+        let config = PerceptualBlurConfig { radius: 0, ..Default::default() };
         let blur = PerceptualBlur::new(config);
 
         let input = vec![(0.5, 0.5, 0.5, 1.0); 100];
@@ -226,8 +223,11 @@ mod tests {
 
     #[test]
     fn test_gamut_mapping_applied() {
-        let config =
-            PerceptualBlurConfig { radius: 1, strength: 1.0, gamut_mode: GamutMapMode::PreserveHue };
+        let config = PerceptualBlurConfig {
+            radius: 1,
+            strength: 1.0,
+            gamut_mode: GamutMapMode::PreserveHue,
+        };
         let blur = PerceptualBlur::new(config);
 
         // Create input that might produce out-of-gamut colors after blur

@@ -204,7 +204,7 @@ pub static BIN_COMBINED_LUT: LazyLock<[(f64, f64, f64, f64); NUM_BINS]> = LazyLo
     for i in 0..NUM_BINS {
         let (r, g, b) = wavelength_to_rgb(wavelength_nm_for_bin(i));
         let lambda = wavelength_nm_for_bin(i);
-        
+
         // Compute tone-mapping strength inline
         let k = if lambda < 450.0 {
             2.2 + 0.3 * (450.0 - lambda) / 70.0
@@ -219,7 +219,7 @@ pub static BIN_COMBINED_LUT: LazyLock<[(f64, f64, f64, f64); NUM_BINS]> = LazyLo
         } else {
             1.2 - 0.2 * (lambda - 650.0) / 50.0
         };
-        
+
         arr[i] = (r, g, b, k);
     }
     arr
@@ -228,7 +228,7 @@ pub static BIN_COMBINED_LUT: LazyLock<[(f64, f64, f64, f64); NUM_BINS]> = LazyLo
 /// Convert an SPD sample (per-bin energy) to linear-sRGB premultiplied RGBA.
 /// Alpha equals total energy (capped at 1.0) so downstream blending treats it
 /// similarly to our old pipeline.
-/// 
+///
 /// Optimized with combined LUT for better cache locality (3-5% faster).
 /// For SIMD-accelerated version, use `spectrum_simd::spd_to_rgba_simd` (3-4x faster).
 #[inline]

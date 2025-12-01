@@ -86,11 +86,7 @@ impl AtmosphericDepth {
             }
         }
 
-        if count > 0 {
-            sum / count as f64
-        } else {
-            0.0
-        }
+        if count > 0 { sum / count as f64 } else { 0.0 }
     }
 
     /// Convert RGB to HSL for saturation manipulation
@@ -105,11 +101,7 @@ impl AtmosphericDepth {
             return (0.0, 0.0, l);
         }
 
-        let s = if l < 0.5 {
-            delta / (max + min)
-        } else {
-            delta / (2.0 - max - min)
-        };
+        let s = if l < 0.5 { delta / (max + min) } else { delta / (2.0 - max - min) };
 
         let h = if (max - r).abs() < 1e-10 {
             ((g - b) / delta + if g < b { 6.0 } else { 0.0 }) / 6.0
@@ -146,11 +138,7 @@ impl AtmosphericDepth {
             }
         };
 
-        let q = if l < 0.5 {
-            l * (1.0 + s)
-        } else {
-            l + s - l * s
-        };
+        let q = if l < 0.5 { l * (1.0 + s) } else { l + s - l * s };
         let p = 2.0 * l - q;
 
         let r = hue_to_rgb(p, q, h + 1.0 / 3.0);
@@ -240,12 +228,7 @@ impl PostEffect for AtmosphericDepth {
                 let final_b = tinted_b * dark_factor;
 
                 // Convert back to premultiplied alpha
-                (
-                    (final_r * a).max(0.0),
-                    (final_g * a).max(0.0),
-                    (final_b * a).max(0.0),
-                    a,
-                )
+                ((final_r * a).max(0.0), (final_g * a).max(0.0), (final_b * a).max(0.0), a)
             })
             .collect();
 
@@ -259,10 +242,7 @@ mod tests {
 
     #[test]
     fn test_atmospheric_depth_disabled() {
-        let config = AtmosphericDepthConfig {
-            strength: 0.0,
-            ..AtmosphericDepthConfig::default()
-        };
+        let config = AtmosphericDepthConfig { strength: 0.0, ..AtmosphericDepthConfig::default() };
         let atmos = AtmosphericDepth::new(config);
         assert!(!atmos.is_enabled());
     }
@@ -306,4 +286,3 @@ mod tests {
         assert!(density_far < 0.5); // Should be low in empty area
     }
 }
-

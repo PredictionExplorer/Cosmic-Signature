@@ -52,12 +52,12 @@ impl PrismaticHalosConfig {
     pub fn special_mode() -> Self {
         Self {
             strength: 0.42,
-            threshold: 0.70,        // Only very bright regions create halos
-            inner_radius: 25.0,     // Start of halo
-            outer_radius: 65.0,     // End of halo
+            threshold: 0.70,    // Only very bright regions create halos
+            inner_radius: 25.0, // Start of halo
+            outer_radius: 65.0, // End of halo
             chromatic_separation: 0.35,
             sharpness: 2.5,
-            ring_count: 3,          // Multiple overlapping rings
+            ring_count: 3, // Multiple overlapping rings
         }
     }
 
@@ -90,7 +90,12 @@ impl PrismaticHalos {
     }
 
     /// Find bright spots that should emit halos
-    fn find_emitters(&self, input: &PixelBuffer, width: usize, _height: usize) -> Vec<(usize, usize, f64)> {
+    fn find_emitters(
+        &self,
+        input: &PixelBuffer,
+        width: usize,
+        _height: usize,
+    ) -> Vec<(usize, usize, f64)> {
         let threshold = self.config.threshold;
 
         input
@@ -209,7 +214,8 @@ impl PostEffect for PrismaticHalos {
 
                 // Accumulate halos from all emitters
                 for &(emit_x, emit_y, brightness) in &emitters {
-                    let (hr, hg, hb) = self.calculate_halo_at_pixel(px, py, emit_x, emit_y, brightness);
+                    let (hr, hg, hb) =
+                        self.calculate_halo_at_pixel(px, py, emit_x, emit_y, brightness);
                     halo_r += hr;
                     halo_g += hg;
                     halo_b += hb;
@@ -217,12 +223,7 @@ impl PostEffect for PrismaticHalos {
 
                 // Apply strength and composite (additive)
                 let strength = self.config.strength;
-                (
-                    r + halo_r * strength,
-                    g + halo_g * strength,
-                    b + halo_b * strength,
-                    a,
-                )
+                (r + halo_r * strength, g + halo_g * strength, b + halo_b * strength, a)
             })
             .collect();
 
@@ -240,10 +241,7 @@ mod tests {
 
     #[test]
     fn test_prismatic_halos_disabled() {
-        let config = PrismaticHalosConfig {
-            strength: 0.0,
-            ..PrismaticHalosConfig::default()
-        };
+        let config = PrismaticHalosConfig { strength: 0.0, ..PrismaticHalosConfig::default() };
         let effect = PrismaticHalos::new(config);
         assert!(!effect.is_enabled());
     }
@@ -282,10 +280,7 @@ mod tests {
 
     #[test]
     fn test_find_emitters_respects_threshold() {
-        let config = PrismaticHalosConfig {
-            threshold: 0.5,
-            ..PrismaticHalosConfig::default()
-        };
+        let config = PrismaticHalosConfig { threshold: 0.5, ..PrismaticHalosConfig::default() };
         let effect = PrismaticHalos::new(config);
 
         let mut buffer = test_buffer(100, 100, 0.3);
@@ -316,4 +311,3 @@ mod tests {
         }
     }
 }
-

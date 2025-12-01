@@ -37,12 +37,12 @@ impl OpalescenceConfig {
     pub fn special_mode(width: usize, height: usize) -> Self {
         let base_scale = (width as f64 * height as f64).sqrt();
         Self {
-            strength: 0.26,                    // Enhanced for dramatic opalescence
-            scale: base_scale * 0.0072,        // Finer patterns for delicate detail
-            layers: 4,                         // Maximum layers for rich depth
-            chromatic_shift: 0.48,             // Strong rainbow shimmer
-            angle_sensitivity: 1.50,           // Dramatic angle-dependent color play
-            pearl_sheen: 0.32,                 // Luminous pearl highlights
+            strength: 0.26,             // Enhanced for dramatic opalescence
+            scale: base_scale * 0.0072, // Finer patterns for delicate detail
+            layers: 4,                  // Maximum layers for rich depth
+            chromatic_shift: 0.48,      // Strong rainbow shimmer
+            angle_sensitivity: 1.50,    // Dramatic angle-dependent color play
+            pearl_sheen: 0.32,          // Luminous pearl highlights
         }
     }
 }
@@ -223,10 +223,7 @@ mod tests {
 
     #[test]
     fn test_opalescence_disabled() {
-        let config = OpalescenceConfig {
-            strength: 0.0,
-            ..OpalescenceConfig::default()
-        };
+        let config = OpalescenceConfig { strength: 0.0, ..OpalescenceConfig::default() };
         let opal = Opalescence::new(config);
         assert!(!opal.is_enabled());
     }
@@ -269,15 +266,11 @@ mod tests {
 
         // Verify colors have been shifted
         assert_eq!(result.len(), buffer.len());
-        let has_shift = buffer
-            .iter()
-            .zip(result.iter())
-            .any(|(&orig, &proc)| {
-                (orig.0 - proc.0).abs() > 0.001
-                    || (orig.1 - proc.1).abs() > 0.001
-                    || (orig.2 - proc.2).abs() > 0.001
-            });
+        let has_shift = buffer.iter().zip(result.iter()).any(|(&orig, &proc)| {
+            (orig.0 - proc.0).abs() > 0.001
+                || (orig.1 - proc.1).abs() > 0.001
+                || (orig.2 - proc.2).abs() > 0.001
+        });
         assert!(has_shift, "Opalescence should modify colors");
     }
 }
-

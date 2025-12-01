@@ -56,26 +56,76 @@ fn setup_logging(json: bool, level: &str) {
 
 /// Build randomizable effect configuration from command-line arguments.
 /// Any unspecified parameter will be randomized during resolution.
-fn build_randomizable_config(args: &EffectArgs) -> render::randomizable_config::RandomizableEffectConfig {
+fn build_randomizable_config(
+    args: &EffectArgs,
+) -> render::randomizable_config::RandomizableEffectConfig {
     use render::randomizable_config::RandomizableEffectConfig;
 
     RandomizableEffectConfig {
         gallery_quality: args.gallery_quality,
 
         // Effect enables (convert disable flags to enable options)
-        enable_bloom: if args.disable_all_effects || args.disable_bloom { Some(false) } else { None },
+        enable_bloom: if args.disable_all_effects || args.disable_bloom {
+            Some(false)
+        } else {
+            None
+        },
         enable_glow: if args.disable_all_effects || args.disable_glow { Some(false) } else { None },
-        enable_chromatic_bloom: if args.disable_all_effects || args.disable_chromatic_bloom { Some(false) } else { None },
-        enable_perceptual_blur: if args.disable_all_effects || args.disable_perceptual_blur { Some(false) } else { None },
-        enable_micro_contrast: if args.disable_all_effects || args.disable_micro_contrast { Some(false) } else { None },
-        enable_gradient_map: if args.disable_all_effects || args.disable_gradient_map { Some(false) } else { None },
-        enable_color_grade: if args.disable_all_effects || args.disable_color_grade { Some(false) } else { None },
-        enable_champleve: if args.disable_all_effects || args.disable_champleve { Some(false) } else { None },
-        enable_aether: if args.disable_all_effects || args.disable_aether { Some(false) } else { None },
-        enable_opalescence: if args.disable_all_effects || args.disable_opalescence { Some(false) } else { None },
-        enable_edge_luminance: if args.disable_all_effects || args.disable_edge_luminance { Some(false) } else { None },
-        enable_atmospheric_depth: if args.disable_all_effects || args.disable_atmospheric_depth { Some(false) } else { None },
-        enable_fine_texture: if args.disable_all_effects || args.disable_fine_texture { Some(false) } else { None },
+        enable_chromatic_bloom: if args.disable_all_effects || args.disable_chromatic_bloom {
+            Some(false)
+        } else {
+            None
+        },
+        enable_perceptual_blur: if args.disable_all_effects || args.disable_perceptual_blur {
+            Some(false)
+        } else {
+            None
+        },
+        enable_micro_contrast: if args.disable_all_effects || args.disable_micro_contrast {
+            Some(false)
+        } else {
+            None
+        },
+        enable_gradient_map: if args.disable_all_effects || args.disable_gradient_map {
+            Some(false)
+        } else {
+            None
+        },
+        enable_color_grade: if args.disable_all_effects || args.disable_color_grade {
+            Some(false)
+        } else {
+            None
+        },
+        enable_champleve: if args.disable_all_effects || args.disable_champleve {
+            Some(false)
+        } else {
+            None
+        },
+        enable_aether: if args.disable_all_effects || args.disable_aether {
+            Some(false)
+        } else {
+            None
+        },
+        enable_opalescence: if args.disable_all_effects || args.disable_opalescence {
+            Some(false)
+        } else {
+            None
+        },
+        enable_edge_luminance: if args.disable_all_effects || args.disable_edge_luminance {
+            Some(false)
+        } else {
+            None
+        },
+        enable_atmospheric_depth: if args.disable_all_effects || args.disable_atmospheric_depth {
+            Some(false)
+        } else {
+            None
+        },
+        enable_fine_texture: if args.disable_all_effects || args.disable_fine_texture {
+            Some(false)
+        } else {
+            None
+        },
 
         // Bloom & Glow parameters
         blur_strength: args.param_blur_strength,
@@ -191,29 +241,29 @@ fn build_randomizable_config(args: &EffectArgs) -> render::randomizable_config::
         nebula_strength: args.param_nebula_strength,
         nebula_octaves: args.param_nebula_octaves,
         nebula_base_frequency: args.param_nebula_base_frequency,
-        
+
         // New "Masterpiece" effects - all randomized by default
         enable_event_horizon: if args.disable_all_effects { Some(false) } else { None },
         event_horizon_strength: None,
         event_horizon_mass_scale: None,
-        
+
         enable_cherenkov: if args.disable_all_effects { Some(false) } else { None },
         cherenkov_strength: None,
         cherenkov_threshold: None,
         cherenkov_blur_radius: None,
-        
+
         enable_cosmic_ink: if args.disable_all_effects { Some(false) } else { None },
         cosmic_ink_strength: None,
         cosmic_ink_swirl_intensity: None,
-        
+
         enable_aurora_veils: if args.disable_all_effects { Some(false) } else { None },
         aurora_veils_strength: None,
         aurora_veils_curtain_count: None,
-        
+
         enable_prismatic_halos: if args.disable_all_effects { Some(false) } else { None },
         prismatic_halos_strength: None,
         prismatic_halos_threshold: None,
-        
+
         enable_dimensional_glitch: if args.disable_all_effects { Some(false) } else { None },
         dimensional_glitch_strength: None,
         dimensional_glitch_threshold: None,
@@ -232,11 +282,12 @@ fn main() -> Result<()> {
     // Setup
     app::setup_directories()?;
     error::validation::validate_dimensions(args.render.width, args.render.height)?;
-    
+
     let seed_bytes = app::parse_seed(&args.sim.seed)?;
-    let hex_seed = if args.sim.seed.starts_with("0x") { &args.sim.seed[2..] } else { &args.sim.seed };
+    let hex_seed =
+        if args.sim.seed.starts_with("0x") { &args.sim.seed[2..] } else { &args.sim.seed };
     let noise_seed = app::derive_noise_seed(&seed_bytes);
-    
+
     let mut rng = Sha3RandomByteStream::new(
         &seed_bytes,
         args.sim.min_mass,
@@ -254,20 +305,21 @@ fn main() -> Result<()> {
         args.render.height,
         args.effects.special,
     );
-    
-    let num_randomized = randomization_log.effects.iter()
+
+    let num_randomized = randomization_log
+        .effects
+        .iter()
         .map(|e| e.parameters.iter().filter(|p| p.was_randomized).count())
         .sum::<usize>();
-    
+
     info!(
         "   => Resolved {} effects ({} parameters randomized, {} explicit)",
         randomization_log.effects.len(),
         num_randomized,
-        randomization_log.effects.iter()
-            .map(|e| e.parameters.len())
-            .sum::<usize>() - num_randomized
+        randomization_log.effects.iter().map(|e| e.parameters.len()).sum::<usize>()
+            - num_randomized
     );
-    
+
     if args.effects.gallery_quality {
         info!("   => Gallery quality mode enabled (conservative randomization ranges)");
     }
@@ -302,24 +354,29 @@ fn main() -> Result<()> {
     };
 
     // Stage 3: Generate colors
-    let (colors, body_alphas) = app::generate_colors(
-        &mut rng,
-        args.sim.num_steps_sim,
-        args.render.alpha_denom,
-    );
+    let (colors, body_alphas) =
+        app::generate_colors(&mut rng, args.sim.num_steps_sim, args.render.alpha_denom);
 
     // Using OKLab color space
     info!("   => Using OKLab color space for accumulation");
 
     // Stage 4: Bounding box
     info!("STAGE 4/7: Determining bounding box...");
-    let render_ctx = render::context::RenderContext::new(args.render.width, args.render.height, &positions);
+    let render_ctx =
+        render::context::RenderContext::new(args.render.width, args.render.height, &positions);
     let bbox = render_ctx.bounds();
-    info!("   => X: [{:.3}, {:.3}], Y: [{:.3}, {:.3}]", bbox.min_x, bbox.max_x, bbox.min_y, bbox.max_y);
+    info!(
+        "   => X: [{:.3}, {:.3}], Y: [{:.3}, {:.3}]",
+        bbox.min_x, bbox.max_x, bbox.min_y, bbox.max_y
+    );
 
     // Configure rendering from resolved parameters
     let render_config = RenderConfig {
-        hdr_scale: if args.render.hdr_mode == "auto" { resolved_effect_config.hdr_scale } else { 1.0 },
+        hdr_scale: if args.render.hdr_mode == "auto" {
+            resolved_effect_config.hdr_scale
+        } else {
+            1.0
+        },
     };
 
     // Stage 5-6: Build histogram and compute levels
@@ -353,7 +410,7 @@ fn main() -> Result<()> {
 
     // Normal mode: Render full video
     let output_vid = format!("vids/{}.mp4", base_filename);
-    
+
     app::render_video(
         &positions,
         &colors,
@@ -371,7 +428,7 @@ fn main() -> Result<()> {
         "Done! Best orbit => Weighted Borda = {:.3}\nHave a nice day!",
         best_info.total_score_weighted
     );
-    
+
     // Log generation parameters for reproducibility
     let app_config = app::AppConfig {
         seed: args.sim.seed.clone(),
@@ -409,7 +466,7 @@ fn main() -> Result<()> {
         chaos_weight: args.sim.chaos_weight,
         equil_weight: args.sim.equil_weight,
     };
-    
+
     app::log_generation(
         &app_config,
         &base_filename,
@@ -419,6 +476,6 @@ fn main() -> Result<()> {
         &best_info,
         Some(&randomization_log),
     );
-    
+
     Ok(())
 }

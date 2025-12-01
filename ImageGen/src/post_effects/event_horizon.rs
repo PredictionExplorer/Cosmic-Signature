@@ -53,12 +53,12 @@ impl EventHorizonConfig {
     pub fn special_mode() -> Self {
         Self {
             strength: 0.45,              // Visible but not overwhelming
-            mass_scale: 2.5,              // Bright regions have strong gravitational effect
-            gravity_constant: 150.0,      // Controls how quickly effect falls off with distance
-            max_displacement: 35.0,       // Maximum pixel shift (prevents extreme distortion)
-            chromatic_aberration: 0.008,  // Subtle rainbow fringing at lens edges
-            mass_threshold: 0.15,         // Only moderately bright regions contribute mass
-            softening: 3.0,               // Prevents singularities at point masses
+            mass_scale: 2.5,             // Bright regions have strong gravitational effect
+            gravity_constant: 150.0,     // Controls how quickly effect falls off with distance
+            max_displacement: 35.0,      // Maximum pixel shift (prevents extreme distortion)
+            chromatic_aberration: 0.008, // Subtle rainbow fringing at lens edges
+            mass_threshold: 0.15,        // Only moderately bright regions contribute mass
+            softening: 3.0,              // Prevents singularities at point masses
         }
     }
 
@@ -109,8 +109,8 @@ impl EventHorizon {
                 if lum < self.config.mass_threshold {
                     0.0
                 } else {
-                    let mass_contribution = (lum - self.config.mass_threshold)
-                        / (1.0 - self.config.mass_threshold);
+                    let mass_contribution =
+                        (lum - self.config.mass_threshold) / (1.0 - self.config.mass_threshold);
                     mass_contribution.powf(1.5) * self.config.mass_scale
                 }
             })
@@ -303,10 +303,7 @@ mod tests {
 
     #[test]
     fn test_event_horizon_disabled() {
-        let config = EventHorizonConfig {
-            strength: 0.0,
-            ..EventHorizonConfig::default()
-        };
+        let config = EventHorizonConfig { strength: 0.0, ..EventHorizonConfig::default() };
         let effect = EventHorizon::new(config);
         assert!(!effect.is_enabled());
     }
@@ -434,4 +431,3 @@ mod tests {
         }
     }
 }
-

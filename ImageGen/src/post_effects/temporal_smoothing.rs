@@ -32,15 +32,15 @@ impl TemporalSmoothingConfig {
     /// Create configuration for special mode (stronger smoothing)
     pub fn special_mode() -> Self {
         Self {
-            blend_factor: 0.25,      // 25% of previous frame
-            alpha_threshold: 0.01,    // Only smooth visible pixels
+            blend_factor: 0.25,    // 25% of previous frame
+            alpha_threshold: 0.01, // Only smooth visible pixels
         }
     }
 
     /// Create configuration for standard mode (subtle smoothing)
     pub fn standard_mode() -> Self {
         Self {
-            blend_factor: 0.15,      // 15% of previous frame
+            blend_factor: 0.15, // 15% of previous frame
             alpha_threshold: 0.01,
         }
     }
@@ -60,11 +60,7 @@ pub struct TemporalSmoothing {
 impl TemporalSmoothing {
     pub fn new(config: TemporalSmoothingConfig) -> Self {
         let enabled = config.blend_factor > 0.0;
-        Self {
-            config,
-            enabled,
-            previous_frame: Mutex::new(None),
-        }
+        Self { config, enabled, previous_frame: Mutex::new(None) }
     }
 
     /// Process a frame with temporal smoothing
@@ -138,10 +134,7 @@ mod tests {
 
     #[test]
     fn test_temporal_smoothing_disabled() {
-        let config = TemporalSmoothingConfig {
-            blend_factor: 0.0,
-            alpha_threshold: 0.01,
-        };
+        let config = TemporalSmoothingConfig { blend_factor: 0.0, alpha_threshold: 0.01 };
         let smoother = TemporalSmoothing::new(config);
         assert!(!smoother.is_enabled());
     }
@@ -227,4 +220,3 @@ mod tests {
         assert_eq!(result2, frame2);
     }
 }
-

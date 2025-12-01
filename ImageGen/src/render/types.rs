@@ -110,19 +110,19 @@ impl Resolution {
     pub fn new(width: u32, height: u32) -> Self {
         Self { width, height }
     }
-    
+
     /// Get pixel count
     #[inline]
     pub fn pixel_count(&self) -> usize {
         (self.width as usize) * (self.height as usize)
     }
-    
+
     /// Get minimum dimension
     #[inline]
     pub fn min_dimension(&self) -> u32 {
         self.width.min(self.height)
     }
-    
+
     /// Get aspect ratio (width / height)
     #[inline]
     pub fn aspect_ratio(&self) -> f64 {
@@ -149,7 +149,7 @@ impl BlurConfig {
             core_brightness: 7.0,
         }
     }
-    
+
     /// Create blur config optimized for special mode
     pub fn special(resolution: Resolution) -> Self {
         Self {
@@ -178,7 +178,7 @@ impl BloomConfig {
             // Default: 0.0065 of min dimension = 7px @ 1080p, 14px @ 4K
             0.0065 * resolution.min_dimension() as f64
         });
-        
+
         Self {
             mode: "dog".to_string(),
             dog_config: DogBloomConfig {
@@ -189,7 +189,7 @@ impl BloomConfig {
             },
         }
     }
-    
+
     /// Create Gaussian bloom configuration
     ///
     /// Public API for library consumers.
@@ -221,10 +221,7 @@ impl HdrConfig {
     /// Public API for library consumers.
     pub fn new(mode: impl Into<String>, scale: f64) -> Self {
         let mode_str = mode.into();
-        Self {
-            mode: mode_str.clone(),
-            scale: if mode_str == "auto" { scale } else { 1.0 },
-        }
+        Self { mode: mode_str.clone(), scale: if mode_str == "auto" { scale } else { 1.0 } }
     }
 }
 
@@ -241,10 +238,7 @@ impl PerceptualBlurSettings {
     /// Create settings from CLI arguments
     ///
     /// Public API for library consumers.
-    pub fn from_args(
-        enabled: bool,
-        config: Option<PerceptualBlurConfig>,
-    ) -> Self {
+    pub fn from_args(enabled: bool, config: Option<PerceptualBlurConfig>) -> Self {
         Self { enabled, config }
     }
 }
@@ -270,25 +264,21 @@ impl SceneData {
     ) -> Self {
         Self { positions, colors, body_alphas }
     }
-    
+
     /// Get number of bodies
     ///
     /// Part of the public API for scene inspection.
     pub fn num_bodies(&self) -> usize {
         self.positions.len()
     }
-    
+
     /// Get number of timesteps
     ///
     /// Part of the public API for scene inspection.
     pub fn num_steps(&self) -> usize {
-        if self.positions.is_empty() {
-            0
-        } else {
-            self.positions[0].len()
-        }
+        if self.positions.is_empty() { 0 } else { self.positions[0].len() }
     }
-    
+
     /// Create a borrowed reference to this scene data
     pub fn as_ref(&self) -> SceneDataRef<'_> {
         SceneDataRef {
@@ -319,21 +309,17 @@ impl<'a> SceneDataRef<'a> {
     ) -> Self {
         Self { positions, colors, body_alphas }
     }
-    
+
     /// Get number of bodies
     #[inline]
     pub fn num_bodies(&self) -> usize {
         self.positions.len()
     }
-    
+
     /// Get number of timesteps
     #[inline]
     pub fn num_steps(&self) -> usize {
-        if self.positions.is_empty() {
-            0
-        } else {
-            self.positions[0].len()
-        }
+        if self.positions.is_empty() { 0 } else { self.positions[0].len() }
     }
 }
 
@@ -364,7 +350,7 @@ impl ChannelLevels {
             ],
         }
     }
-    
+
     /// Get black point for channel (0=R, 1=G, 2=B)
     ///
     /// Part of the public API for color level inspection.
@@ -372,7 +358,7 @@ impl ChannelLevels {
     pub fn black_point(&self, channel: usize) -> f64 {
         self.black[channel]
     }
-    
+
     /// Get range for channel (0=R, 1=G, 2=B)
     ///
     /// Part of the public API for color level inspection.
@@ -423,15 +409,9 @@ impl<'a> RenderParams<'a> {
         noise_seed: i32,
         render_config: &'a RenderConfig,
     ) -> Self {
-        Self {
-            scene,
-            resolved_config,
-            frame_interval,
-            noise_seed,
-            render_config,
-        }
+        Self { scene, resolved_config, frame_interval, noise_seed, render_config }
     }
-    
+
     /// Create render params from individual scene components
     pub fn from_components(
         positions: &'a [Vec<Vector3<f64>>],
@@ -450,25 +430,25 @@ impl<'a> RenderParams<'a> {
             render_config,
         }
     }
-    
+
     /// Get image width from resolved config
     #[inline]
     pub fn width(&self) -> u32 {
         self.resolved_config.width
     }
-    
+
     /// Get image height from resolved config
     #[inline]
     pub fn height(&self) -> u32 {
         self.resolved_config.height
     }
-    
+
     /// Check if special mode is enabled
     #[inline]
     pub fn is_special_mode(&self) -> bool {
         self.resolved_config.special_mode
     }
-    
+
     /// Get total number of simulation steps
     #[inline]
     pub fn total_steps(&self) -> usize {
@@ -492,14 +472,14 @@ mod tests {
     #[test]
     fn test_resolution_aspect_ratio() {
         let res = Resolution::new(1920, 1080);
-        assert!((res.aspect_ratio() - 16.0/9.0).abs() < 0.01);
+        assert!((res.aspect_ratio() - 16.0 / 9.0).abs() < 0.01);
     }
 
     #[test]
     fn test_blur_config_standard() {
         let res = Resolution::new(1920, 1080);
         let blur = BlurConfig::standard(res);
-        
+
         assert_eq!(blur.radius_px, (0.014_f64 * 1080.0).round() as usize);
         assert_eq!(blur.strength, 7.0);
     }
@@ -508,7 +488,7 @@ mod tests {
     fn test_blur_config_special() {
         let res = Resolution::new(1920, 1080);
         let blur = BlurConfig::special(res);
-        
+
         assert_eq!(blur.radius_px, (0.032_f64 * 1080.0).round() as usize);
         assert_eq!(blur.strength, 12.0);
     }
@@ -528,7 +508,7 @@ mod tests {
     #[test]
     fn test_scene_data_dimensions() {
         use nalgebra::Vector3;
-        
+
         let positions = vec![
             vec![Vector3::zeros(); 100],
             vec![Vector3::zeros(); 100],
@@ -536,7 +516,7 @@ mod tests {
         ];
         let colors = vec![vec![(0.5, 0.0, 0.0); 100]; 3];
         let alphas = vec![0.5, 0.5, 0.5];
-        
+
         let scene = SceneData::new(positions, colors, alphas);
         assert_eq!(scene.num_bodies(), 3);
         assert_eq!(scene.num_steps(), 100);
@@ -545,14 +525,13 @@ mod tests {
     #[test]
     fn test_channel_levels() {
         let levels = ChannelLevels::new(0.0, 1.0, 0.1, 0.9, 0.2, 0.8);
-        
+
         assert_eq!(levels.black_point(0), 0.0);
         assert_eq!(levels.black_point(1), 0.1);
         assert_eq!(levels.black_point(2), 0.2);
-        
+
         assert!((levels.range(0) - 1.0).abs() < 1e-10);
         assert!((levels.range(1) - 0.8).abs() < 1e-10);
         assert!((levels.range(2) - 0.6).abs() < 1e-10);
     }
 }
-
