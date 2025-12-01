@@ -101,7 +101,12 @@ impl ResolvedDriftConfig {
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```
+/// # use three_body_problem::drift_config::resolve_drift_config;
+/// # use three_body_problem::sim::Sha3RandomByteStream;
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # let seed = b"test_seed";
+/// # let mut rng = Sha3RandomByteStream::new(seed, 100.0, 300.0, 25.0, 10.0);
 /// // All parameters specified (valid)
 /// let config = resolve_drift_config(Some(1.5), Some(0.3), Some(0.2), &mut rng, false)?;
 ///
@@ -111,6 +116,8 @@ impl ResolvedDriftConfig {
 /// // Partial specification (error)
 /// let result = resolve_drift_config(Some(1.5), None, None, &mut rng, false);
 /// assert!(result.is_err());
+/// # Ok(())
+/// # }
 /// ```
 pub fn resolve_drift_config(
     scale_opt: Option<f64>,

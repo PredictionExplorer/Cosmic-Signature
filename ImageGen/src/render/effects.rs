@@ -374,11 +374,13 @@ impl EffectConfig {
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```
+    /// # use three_body_problem::render::effects::{EffectConfig, DogBloomConfig};
+    /// # use three_body_problem::post_effects::color_grade::ColorGradeParams;
     /// let config = EffectConfig::builder()
     ///     .with_dog_bloom(DogBloomConfig::default())
     ///     .enable_chromatic_bloom(true)
-    ///     .with_color_grade(ColorGradeParams::cinematic())
+    ///     .with_color_grade(ColorGradeParams::from_resolution(1920, 1080))
     ///     .build();
     /// ```
     #[must_use]

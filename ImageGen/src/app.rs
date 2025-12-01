@@ -119,9 +119,16 @@ pub fn setup_directories() -> Result<()> {
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```
+/// # use three_body_problem::app::parse_seed;
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let seed_bytes = parse_seed("0x100033")?;  // With prefix
+/// assert_eq!(seed_bytes, vec![0x10, 0x00, 0x33]);
+/// 
 /// let seed_bytes = parse_seed("100033")?;    // Without prefix
+/// assert_eq!(seed_bytes, vec![0x10, 0x00, 0x33]);
+/// # Ok(())
+/// # }
 /// ```
 pub fn parse_seed(seed: &str) -> Result<Vec<u8>> {
     let hex_seed = seed.strip_prefix("0x").unwrap_or(seed);
@@ -148,7 +155,12 @@ pub fn derive_noise_seed(seed_bytes: &[u8]) -> i32 {
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```no_run
+/// # use three_body_problem::app::run_borda_selection;
+/// # use three_body_problem::sim::Sha3RandomByteStream;
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # let seed = b"test_seed";
+/// # let mut rng = Sha3RandomByteStream::new(seed, 100.0, 300.0, 25.0, 10.0);
 /// let (best_bodies, metrics) = run_borda_selection(
 ///     &mut rng,
 ///     30_000,  // Try 30k random configs
@@ -157,6 +169,8 @@ pub fn derive_noise_seed(seed_bytes: &[u8]) -> i32 {
 ///     11.0,  // Equilateral weight  
 ///     -0.3,  // Escape threshold
 /// )?;
+/// # Ok(())
+/// # }
 /// ```
 pub fn run_borda_selection(
     rng: &mut Sha3RandomByteStream,
@@ -250,7 +264,21 @@ pub fn generate_colors(
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```no_run
+/// # use three_body_problem::app::build_histogram_and_levels;
+/// # use three_body_problem::render::RenderConfig;
+/// # use three_body_problem::render::randomizable_config::RandomizableEffectConfig;
+/// # use three_body_problem::sim::Sha3RandomByteStream;
+/// # use nalgebra::Vector3;
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # let positions = vec![vec![Vector3::zeros(); 1000]; 3];
+/// # let colors = vec![vec![(0.5, 0.0, 0.0); 1000]; 3];
+/// # let body_alphas = vec![1.0; 3];
+/// # let seed = b"test";
+/// # let mut rng = Sha3RandomByteStream::new(seed, 100.0, 300.0, 25.0, 10.0);
+/// # let (resolved_config, _log) = RandomizableEffectConfig::default().resolve(&mut rng, 1920, 1080, false);
+/// # let noise_seed = 0i32;
+/// # let render_config = RenderConfig::default();
 /// let levels = build_histogram_and_levels(
 ///     &positions,
 ///     &colors,
@@ -260,6 +288,8 @@ pub fn generate_colors(
 ///     &render_config,
 /// )?;
 /// // levels now contains per-channel black/white points
+/// # Ok(())
+/// # }
 /// ```
 pub fn build_histogram_and_levels(
     positions: &[Vec<Vector3<f64>>],
@@ -323,7 +353,23 @@ pub fn generate_filename(base_name: &str, profile_tag: &str) -> String {
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```no_run
+/// # use three_body_problem::app::render_test_frame;
+/// # use three_body_problem::render::{RenderConfig, ChannelLevels};
+/// # use three_body_problem::render::randomizable_config::RandomizableEffectConfig;
+/// # use three_body_problem::sim::{Sha3RandomByteStream, TrajectoryResult};
+/// # use nalgebra::Vector3;
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # let positions = vec![vec![Vector3::zeros(); 1000]; 3];
+/// # let colors = vec![vec![(0.5, 0.0, 0.0); 1000]; 3];
+/// # let body_alphas = vec![1.0; 3];
+/// # let seed = b"test";
+/// # let mut rng = Sha3RandomByteStream::new(seed, 100.0, 300.0, 25.0, 10.0);
+/// # let (resolved_config, _log) = RandomizableEffectConfig::default().resolve(&mut rng, 1920, 1080, false);
+/// # let levels = ChannelLevels::new(0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
+/// # let noise_seed = 0i32;
+/// # let render_config = RenderConfig::default();
+/// # let best_info = TrajectoryResult { chaos: 0.5, equilateralness: 0.5, chaos_pts: 1, equil_pts: 1, total_score: 2, total_score_weighted: 1.0 };
 /// render_test_frame(
 ///     &positions,
 ///     &colors,
@@ -335,6 +381,8 @@ pub fn generate_filename(base_name: &str, profile_tag: &str) -> String {
 ///     "pics/test.png",
 ///     &best_info,
 /// )?;
+/// # Ok(())
+/// # }
 /// ```
 pub fn render_test_frame(
     positions: &[Vec<Vector3<f64>>],
@@ -382,7 +430,22 @@ pub fn render_test_frame(
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```no_run
+/// # use three_body_problem::app::render_video;
+/// # use three_body_problem::render::{RenderConfig, ChannelLevels};
+/// # use three_body_problem::render::randomizable_config::RandomizableEffectConfig;
+/// # use three_body_problem::sim::Sha3RandomByteStream;
+/// # use nalgebra::Vector3;
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # let positions = vec![vec![Vector3::zeros(); 1000]; 3];
+/// # let colors = vec![vec![(0.5, 0.0, 0.0); 1000]; 3];
+/// # let body_alphas = vec![1.0; 3];
+/// # let seed = b"test";
+/// # let mut rng = Sha3RandomByteStream::new(seed, 100.0, 300.0, 25.0, 10.0);
+/// # let (resolved_config, _log) = RandomizableEffectConfig::default().resolve(&mut rng, 1920, 1080, false);
+/// # let levels = ChannelLevels::new(0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
+/// # let noise_seed = 0i32;
+/// # let render_config = RenderConfig::default();
 /// render_video(
 ///     &positions,
 ///     &colors,
@@ -395,6 +458,8 @@ pub fn render_test_frame(
 ///     "pics/output.png",
 ///     false,  // high quality mode
 /// )?;
+/// # Ok(())
+/// # }
 /// ```
 pub fn render_video(
     positions: &[Vec<Vector3<f64>>],
@@ -542,6 +607,7 @@ pub fn log_generation(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use proptest::prelude::*;
 
     #[test]
     fn test_parse_seed_valid() {
@@ -581,5 +647,77 @@ mod tests {
     fn test_generate_filename_with_tag() {
         let name = generate_filename("test", "profile1");
         assert_eq!(name, "test_profile1");
+    }
+
+    // Property-based fuzz tests
+    proptest! {
+        /// Fuzz test: parse_seed must never panic on arbitrary strings
+        ///
+        /// This verifies that malformed hex strings are handled gracefully.
+        /// Security-critical: seeds come from user input (CLI/config files).
+        #[test]
+        fn prop_parse_seed_never_panics(s in "\\PC*") {
+            let _result = parse_seed(&s);
+            // Either Ok or Err, never panic
+            prop_assert!(true);
+        }
+
+        /// Fuzz test: parse_seed handles strings with/without prefix correctly
+        #[test]
+        fn prop_parse_seed_prefix_variations(
+            has_prefix in any::<bool>(),
+            hex_chars in "[0-9a-fA-F]{0,100}",
+        ) {
+            let input = if has_prefix {
+                format!("0x{}", hex_chars)
+            } else {
+                hex_chars
+            };
+            
+            let result = parse_seed(&input);
+            
+            // Should succeed for valid hex, fail gracefully for invalid
+            prop_assert!(result.is_ok() || result.is_err());
+        }
+
+        /// Fuzz test: parse_seed handles unicode and special characters
+        #[test]
+        fn prop_parse_seed_unicode(s in "[\\u{0}-\\u{10FFFF}]{0,50}") {
+            let _result = parse_seed(&s);
+            prop_assert!(true);
+        }
+
+        /// Fuzz test: derive_noise_seed handles arbitrary byte sequences
+        #[test]
+        fn prop_derive_noise_seed_any_bytes(bytes in prop::collection::vec(any::<u8>(), 0..1000)) {
+            let noise = derive_noise_seed(&bytes);
+            
+            // Output must always be a valid i32 (no panic)
+            prop_assert!(true); // If we got here, it succeeded
+            let _ = noise; // Use the value
+        }
+
+        /// Fuzz test: derive_noise_seed is deterministic
+        #[test]
+        fn prop_derive_noise_seed_deterministic(bytes in prop::collection::vec(any::<u8>(), 0..100)) {
+            let noise1 = derive_noise_seed(&bytes);
+            let noise2 = derive_noise_seed(&bytes);
+            
+            prop_assert_eq!(noise1, noise2);
+        }
+
+        /// Fuzz test: generate_filename handles arbitrary strings
+        #[test]
+        fn prop_generate_filename(
+            base in "\\PC{0,100}",
+            tag in "\\PC{0,100}",
+        ) {
+            let filename = generate_filename(&base, &tag);
+            
+            // Output must be non-empty if base is non-empty
+            if !base.is_empty() {
+                prop_assert!(!filename.is_empty());
+            }
+        }
     }
 }

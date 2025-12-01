@@ -149,8 +149,14 @@ fn tonemap_to_16bit(fr: f64, fg: f64, fb: f64, fa: f64, levels: &ChannelLevels) 
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```no_run
+/// # use three_body_problem::render::save_image_as_png_16bit;
+/// # use image::{ImageBuffer, Rgb};
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # let final_frame: ImageBuffer<Rgb<u16>, Vec<u16>> = ImageBuffer::new(100, 100);
 /// save_image_as_png_16bit(&final_frame, "output.png")?;
+/// # Ok(())
+/// # }
 /// ```
 pub fn save_image_as_png_16bit(
     rgb_img: &ImageBuffer<Rgb<u16>, Vec<u16>>,
@@ -918,11 +924,27 @@ impl<'a> RenderLoopContext<'a> {
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```no_run
+/// # use three_body_problem::render::{pass_1_build_histogram_spectral, RenderParams, SceneDataRef, RenderConfig};
+/// # use three_body_problem::render::randomizable_config::RandomizableEffectConfig;
+/// # use three_body_problem::sim::Sha3RandomByteStream;
+/// # use nalgebra::Vector3;
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # let positions = vec![vec![Vector3::zeros(); 100]; 3];
+/// # let colors = vec![vec![(0.5, 0.0, 0.0); 100]; 3];
+/// # let body_alphas = vec![1.0; 3];
+/// # let scene = SceneDataRef::new(&positions, &colors, &body_alphas);
+/// # let seed = b"test";
+/// # let mut rng = Sha3RandomByteStream::new(seed, 100.0, 300.0, 25.0, 10.0);
+/// # let (resolved_config, _log) = RandomizableEffectConfig::default().resolve(&mut rng, 1920, 1080, false);
+/// # let render_config = RenderConfig::default();
+/// # let params = RenderParams::new(scene, &resolved_config, 1, 0, &render_config);
 /// let mut all_r = Vec::new();
 /// let mut all_g = Vec::new();
 /// let mut all_b = Vec::new();
 /// pass_1_build_histogram_spectral(&params, &mut all_r, &mut all_g, &mut all_b)?;
+/// # Ok(())
+/// # }
 /// ```
 pub fn pass_1_build_histogram_spectral(
     params: &RenderParams<'_>,
@@ -996,13 +1018,32 @@ pub fn pass_1_build_histogram_spectral(
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```no_run
+/// # use three_body_problem::render::{pass_2_write_frames_spectral, RenderParams, SceneDataRef, RenderConfig, ChannelLevels};
+/// # use three_body_problem::render::randomizable_config::RandomizableEffectConfig;
+/// # use three_body_problem::sim::Sha3RandomByteStream;
+/// # use image::{ImageBuffer, Rgb};
+/// # use nalgebra::Vector3;
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # let positions = vec![vec![Vector3::zeros(); 100]; 3];
+/// # let colors = vec![vec![(0.5, 0.0, 0.0); 100]; 3];
+/// # let body_alphas = vec![1.0; 3];
+/// # let scene = SceneDataRef::new(&positions, &colors, &body_alphas);
+/// # let seed = b"test";
+/// # let mut rng = Sha3RandomByteStream::new(seed, 100.0, 300.0, 25.0, 10.0);
+/// # let (resolved_config, _log) = RandomizableEffectConfig::default().resolve(&mut rng, 1920, 1080, false);
+/// # let render_config = RenderConfig::default();
+/// # let params = RenderParams::new(scene, &resolved_config, 1, 0, &render_config);
+/// # let levels = ChannelLevels::new(0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
+/// # let mut last_frame: Option<ImageBuffer<Rgb<u16>, Vec<u16>>> = None;
 /// pass_2_write_frames_spectral(
 ///     &params,
 ///     &levels,
-///     |frame_bytes| ffmpeg_stdin.write_all(frame_bytes),
+///     |_frame_bytes| Ok(()),
 ///     &mut last_frame,
 /// )?;
+/// # Ok(())
+/// # }
 /// ```
 pub fn pass_2_write_frames_spectral(
     params: &RenderParams<'_>,
@@ -1081,9 +1122,27 @@ pub fn pass_2_write_frames_spectral(
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```no_run
+/// # use three_body_problem::render::{render_single_frame_spectral, save_image_as_png_16bit};
+/// # use three_body_problem::render::{RenderParams, SceneDataRef, RenderConfig, ChannelLevels};
+/// # use three_body_problem::render::randomizable_config::RandomizableEffectConfig;
+/// # use three_body_problem::sim::Sha3RandomByteStream;
+/// # use nalgebra::Vector3;
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # let positions = vec![vec![Vector3::zeros(); 100]; 3];
+/// # let colors = vec![vec![(0.5, 0.0, 0.0); 100]; 3];
+/// # let body_alphas = vec![1.0; 3];
+/// # let scene = SceneDataRef::new(&positions, &colors, &body_alphas);
+/// # let seed = b"test";
+/// # let mut rng = Sha3RandomByteStream::new(seed, 100.0, 300.0, 25.0, 10.0);
+/// # let (resolved_config, _log) = RandomizableEffectConfig::default().resolve(&mut rng, 1920, 1080, false);
+/// # let render_config = RenderConfig::default();
+/// # let params = RenderParams::new(scene, &resolved_config, 1, 0, &render_config);
+/// # let levels = ChannelLevels::new(0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
 /// let test_frame = render_single_frame_spectral(&params, &levels)?;
 /// save_image_as_png_16bit(&test_frame, "test.png")?;
+/// # Ok(())
+/// # }
 /// ```
 pub fn render_single_frame_spectral(
     params: &RenderParams<'_>,

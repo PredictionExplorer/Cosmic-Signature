@@ -5,13 +5,18 @@
 //!
 //! # Usage
 //!
-//! ```ignore
-//! let mut histogram = HistogramData::with_capacity(pixel_count);
-//! for pixel in frame_pixels {
-//!     histogram.push(pixel.r, pixel.g, pixel.b);
+//! ```
+//! use three_body_problem::render::histogram::{HistogramData, compute_black_white_gamma};
+//!
+//! let mut histogram = HistogramData::with_capacity(100);
+//! // Simulate some pixel data
+//! for i in 0..100 {
+//!     let intensity = i as f64 / 100.0;
+//!     histogram.push(intensity, intensity * 0.9, intensity * 0.8);
 //! }
-//! let (all_r, all_g, all_b) = histogram.extract_channels();
+//! let (mut all_r, mut all_g, mut all_b) = histogram.extract_channels();
 //! let levels = compute_black_white_gamma(&mut all_r, &mut all_g, &mut all_b, 0.01, 0.99);
+//! assert!(levels.0 >= 0.0 && levels.0 <= levels.1); // black_r < white_r
 //! ```
 
 use rayon::prelude::*;

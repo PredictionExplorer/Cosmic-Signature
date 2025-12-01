@@ -376,15 +376,27 @@ impl ChannelLevels {
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```
+/// # use three_body_problem::render::{RenderParams, SceneDataRef, RenderConfig};
+/// # use three_body_problem::render::randomizable_config::RandomizableEffectConfig;
+/// # use three_body_problem::sim::Sha3RandomByteStream;
+/// # use nalgebra::Vector3;
+/// # let positions = vec![vec![Vector3::zeros(); 100]; 3];
+/// # let colors = vec![vec![(0.5, 0.0, 0.0); 100]; 3];
+/// # let body_alphas = vec![1.0; 3];
+/// let scene = SceneDataRef::new(&positions, &colors, &body_alphas);
+/// # let seed = b"test";
+/// # let mut rng = Sha3RandomByteStream::new(seed, 100.0, 300.0, 25.0, 10.0);
+/// let (resolved_config, _log) = RandomizableEffectConfig::default().resolve(&mut rng, 1920, 1080, false);
+/// let render_config = RenderConfig::default();
 /// let params = RenderParams::new(
-///     &scene,
+///     scene,
 ///     &resolved_config,
-///     frame_interval,
-///     noise_seed,
+///     1,     // frame_interval
+///     0,     // noise_seed
 ///     &render_config,
 /// );
-/// pass_1_build_histogram(&params, &mut histogram)?;
+/// assert_eq!(params.frame_interval, 1);
 /// ```
 #[derive(Clone, Copy)]
 pub struct RenderParams<'a> {

@@ -61,12 +61,15 @@
 //! # Example Usage
 //!
 //! ```rust,no_run
-//! use three_body_problem::drift::{DriftParameters, OrbitalDrift, DriftTransform};
+//! use three_body_problem::drift::{DriftParameters, EllipticalDrift, DriftTransform};
+//! use three_body_problem::sim::Sha3RandomByteStream;
 //! use nalgebra::Vector3;
 //!
-//! // Create orbital drift with 2x scale, 30% arc coverage, 60% eccentricity
+//! // Create elliptical drift with 2x scale, 30% arc coverage, 60% eccentricity
 //! let params = DriftParameters::new(2.0, 0.3, 0.6);
-//! let mut drift = OrbitalDrift::new(params, 1337); // seed for deterministic RNG
+//! let seed = 1337u64.to_le_bytes();
+//! let mut rng = Sha3RandomByteStream::new(&seed, 100.0, 300.0, 25.0, 10.0);
+//! let mut drift = EllipticalDrift::new(&mut rng, params);
 //!
 //! // Apply to trajectory data
 //! let mut positions = vec![vec![Vector3::zeros(); 1800]; 3]; // 3 bodies, 1800 frames

@@ -217,14 +217,22 @@ impl VideoEncodingOptions {
 /// * `Err(RenderError)` if FFmpeg fails or encoding parameters are invalid
 ///
 /// # Example
-/// ```ignore
+/// ```no_run
+/// # use three_body_problem::render::video::{create_video_from_frames_singlepass, VideoEncodingOptions};
+/// # use std::io::Write;
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let options = VideoEncodingOptions::default();
 /// create_video_from_frames_singlepass(
 ///     1920, 1080, 60,
-///     |writer| write_frames_to(writer),
+///     |writer: &mut dyn Write| {
+///         // Write frame data here
+///         Ok(())
+///     },
 ///     "output.mp4",
 ///     &options
 /// )?;
+/// # Ok(())
+/// # }
 /// ```
 pub fn create_video_from_frames_singlepass(
     width: u32,
@@ -448,14 +456,22 @@ impl EncodingStrategy {
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```no_run
+/// # use three_body_problem::render::video::{create_video_with_retry, EncodingStrategy};
+/// # use std::io::Write;
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let strategy = EncodingStrategy::default_with_fallbacks();
 /// create_video_with_retry(
 ///     1920, 1080, 60,
-///     |writer| write_frames_to(writer),
+///     |writer: &mut dyn Write| {
+///         // Write frame data here
+///         Ok(())
+///     },
 ///     "output.mp4",
 ///     &strategy
 /// )?;
+/// # Ok(())
+/// # }
 /// ```
 #[allow(dead_code)] // Public API for library consumers
 pub fn create_video_with_retry<F>(

@@ -13,7 +13,8 @@ use tracing::{debug, info};
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```
+/// # use three_body_problem::logging::StageProgress;
 /// let stage = StageProgress::new(1, 7, "borda_selection");
 /// stage.log_start("Searching through 50000 random orbits");
 /// // ... do work ...

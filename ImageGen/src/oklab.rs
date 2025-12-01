@@ -472,5 +472,124 @@ mod proptests {
             prop_assert!(a.is_finite(), "a is not finite for input ({}, {}, {})", r, g, b);
             prop_assert!(b_ch.is_finite(), "b is not finite for input ({}, {}, {})", r, g, b);
         }
+
+        /// Fuzz test: Extreme RGB values produce finite OkLab output
+        ///
+        /// Critical for HDR rendering where RGB values can exceed [0,1].
+        #[test]
+        fn prop_extreme_rgb_to_oklab(
+            r in -1e100f64..1e100,
+            g in -1e100f64..1e100,
+            b in -1e100f64..1e100,
+        ) {
+            // Skip non-finite inputs
+            if !r.is_finite() || !g.is_finite() || !b.is_finite() {
+                return Ok(());
+            }
+
+            let (l, a, b_ch) = linear_srgb_to_oklab(r, g, b);
+            
+            prop_assert!(l.is_finite(), "L not finite for extreme RGB ({}, {}, {})", r, g, b);
+            prop_assert!(a.is_finite(), "a not finite for extreme RGB ({}, {}, {})", r, g, b);
+            prop_assert!(b_ch.is_finite(), "b not finite for extreme RGB ({}, {}, {})", r, g, b);
+        }
+
+        /// Fuzz test: Extreme OkLab values produce finite RGB output
+        #[test]
+        fn prop_extreme_oklab_to_rgb(
+            l in -100.0f64..100.0,
+            a in -100.0f64..100.0,
+            b in -100.0f64..100.0,
+        ) {
+            let (r, g, b_ch) = oklab_to_linear_srgb(l, a, b);
+            
+            prop_assert!(r.is_finite(), "R not finite for OkLab ({}, {}, {})", l, a, b);
+            prop_assert!(g.is_finite(), "G not finite for OkLab ({}, {}, {})", l, a, b);
+            prop_assert!(b_ch.is_finite(), "B not finite for OkLab ({}, {}, {})", l, a, b);
+        }
+
+        /// Fuzz test: Gamut mapping always produces valid RGB
+        #[test]
+        fn prop_gamut_mapping_produces_valid_rgb(
+            r in -100.0f64..100.0,
+            g in -100.0f64..100.0,
+            b in -100.0f64..100.0,
+        ) {
+            let mode = GamutMapMode::PreserveHue;
+            let (r_out, g_out, b_out) = mode.map_to_gamut(r, g, b);
+            
+            // Output must be finite
+            prop_assert!(r_out.is_finite());
+            prop_assert!(g_out.is_finite());
+            prop_assert!(b_out.is_finite());
+            
+            // Output must be in [0, 1] range
+            prop_assert!(r_out >= 0.0 && r_out <= 1.0, "R {} out of gamut", r_out);
+            prop_assert!(g_out >= 0.0 && g_out <= 1.0, "G {} out of gamut", g_out);
+            prop_assert!(b_out >= 0.0 && b_out <= 1.0, "B {} out of gamut", b_out);
+        }
+
+        /// Fuzz test: Batch conversion matches single-pixel conversion
+        ///
+        /// Differential fuzzing to ensure parallel version is correct.
+        #[test]
+        fn prop_batch_matches_single_pixel(
+            pixels in prop::collection::vec((0.0f64..1.0, 0.0f64..1.0, 0.0f64..1.0, 0.0f64..1.0), 1..100),
+        ) {
+            let batch_result = linear_srgb_to_oklab_batch(&pixels);
+            
+            for (i, &(r, g, b, alpha)) in pixels.iter().enumerate() {
+                let (l, a, b_ch) = linear_srgb_to_oklab(r, g, b);
+                let batch_pixel = batch_result[i];
+                
+                prop_assert!((batch_pixel.0 - l).abs() < 1e-10, "Batch L mismatch at pixel {}", i);
+                prop_assert!((batch_pixel.1 - a).abs() < 1e-10, "Batch a mismatch at pixel {}", i);
+                prop_assert!((batch_pixel.2 - b_ch).abs() < 1e-10, "Batch b mismatch at pixel {}", i);
+                prop_assert!((batch_pixel.3 - alpha).abs() < 1e-10, "Batch alpha mismatch at pixel {}", i);
+            }
+        }
+
+        /// Fuzz test: Inverse batch conversion matches forward conversion
+        #[test]
+        fn prop_batch_inverse_matches(
+            pixels in prop::collection::vec((0.0f64..1.0, 0.0f64..1.0, 0.0f64..1.0, 0.0f64..1.0), 1..100),
+        ) {
+            let oklab_pixels = linear_srgb_to_oklab_batch(&pixels);
+            let rgb_pixels = oklab_to_linear_srgb_batch(&oklab_pixels);
+            
+            for (i, &original) in pixels.iter().enumerate() {
+                let converted = rgb_pixels[i];
+                
+                prop_assert!((converted.0 - original.0).abs() < 1e-6, "R roundtrip error at pixel {}", i);
+                prop_assert!((converted.1 - original.1).abs() < 1e-6, "G roundtrip error at pixel {}", i);
+                prop_assert!((converted.2 - original.2).abs() < 1e-6, "B roundtrip error at pixel {}", i);
+                prop_assert!((converted.3 - original.3).abs() < 1e-10, "Alpha roundtrip error at pixel {}", i);
+            }
+        }
+
+        /// Fuzz test: Subnormal floats are handled correctly
+        #[test]
+        fn prop_handles_subnormal_floats(
+            r_exp in -1074i32..=-1022,
+            g_exp in -1074i32..=-1022,
+            b_exp in -1074i32..=-1022,
+        ) {
+            // Create subnormal values (very small positive numbers)
+            let r = 2.0f64.powi(r_exp);
+            let g = 2.0f64.powi(g_exp);
+            let b = 2.0f64.powi(b_exp);
+            
+            let (l, a, b_ch) = linear_srgb_to_oklab(r, g, b);
+            
+            prop_assert!(l.is_finite());
+            prop_assert!(a.is_finite());
+            prop_assert!(b_ch.is_finite());
+            
+            // Verify roundtrip
+            let (r2, g2, b2) = oklab_to_linear_srgb(l, a, b_ch);
+            prop_assert!(r2.is_finite());
+            prop_assert!(g2.is_finite());
+            prop_assert!(b2.is_finite());
+        }
     }
 }

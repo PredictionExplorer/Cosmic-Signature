@@ -100,21 +100,38 @@
 //!
 //! # Example Workflow
 //!
-//! ```rust,no_run
-//! use three_body_problem::spectrum::{NUM_BINS, wavelength_nm_for_bin};
-//! use three_body_problem::render::effects::convert_spd_buffer_to_rgba;
+//! ```
+//! use three_body_problem::spectrum::{NUM_BINS, wavelength_nm_for_bin, spd_to_rgba};
 //!
-//! // Create SPD accumulation buffer
-//! let mut spd_buffer = vec![[0.0; NUM_BINS]; 1920 * 1080];
+//! // Create a small SPD accumulation buffer (100x100 pixels for this example)
+//! let width = 100;
+//! let height = 100;
+//! let mut spd_buffer = vec![[0.0; NUM_BINS]; width * height];
 //!
-//! // Draw lines, accumulating energy in spectral bins
-//! // (happens during line drawing - see drawing.rs)
+//! // Accumulate some energy in spectral bins
+//! // (In real usage, this happens during line drawing - see drawing.rs)
+//! for pixel in &mut spd_buffer {
+//!     // Example: add some energy at 550nm (green-ish)
+//!     pixel[8] = 0.5;
+//! }
 //!
-//! // Convert spectral data to RGB
-//! let mut rgba_buffer = vec![(0.0, 0.0, 0.0, 0.0); 1920 * 1080];
-//! convert_spd_buffer_to_rgba(&spd_buffer, &mut rgba_buffer);
+//! // Convert spectral data to RGBA
+//! let mut rgba_buffer = Vec::with_capacity(spd_buffer.len());
+//! for spd in &spd_buffer {
+//!     let (r, g, b, a) = spd_to_rgba(spd);
+//!     rgba_buffer.push((r, g, b, a));
+//! }
 //!
-//! // rgba_buffer now contains linear RGB, ready for effects and tonemapping
+//! // Verify conversion produced valid output
+//! assert!(rgba_buffer.len() == width * height);
+//! assert!(rgba_buffer[0].0.is_finite()); // R is finite
+//! assert!(rgba_buffer[0].1.is_finite()); // G is finite
+//! assert!(rgba_buffer[0].2.is_finite()); // B is finite
+//! assert!(rgba_buffer[0].3.is_finite()); // A is finite
+//!
+//! // Get wavelength for a bin
+//! let wavelength = wavelength_nm_for_bin(8);
+//! assert!(wavelength > 0.0 && wavelength < 1000.0);
 //! ```
 //!
 //! # Thread Safety

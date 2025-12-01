@@ -498,6 +498,7 @@ impl std::error::Error for ConfigFileError {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use proptest::prelude::*;
     use std::io::Write;
 
     fn create_temp_config(content: &str) -> tempfile::NamedTempFile {
@@ -803,6 +804,73 @@ fog_color = [0.1, 0.15, 0.2]
             let file = tempfile::NamedTempFile::new().unwrap();
             std::fs::write(file.path(), &bytes).unwrap();
             let _ = ConfigFile::load(file.path());
+        }
+    }
+
+    // Property-based fuzz tests using proptest
+    proptest! {
+        /// Fuzz test: Parser must never panic on arbitrary byte sequences
+        ///
+        /// This property test verifies that the TOML parser gracefully handles
+        /// any arbitrary byte sequence without crashing. This is critical for
+        /// security - malformed config files should never cause a panic.
+        #[test]
+        fn prop_parser_never_panics_on_arbitrary_bytes(bytes in prop::collection::vec(any::<u8>(), 0..10000)) {
+            let file = tempfile::NamedTempFile::new().unwrap();
+            std::fs::write(file.path(), &bytes).unwrap();
+            
+            // This should either succeed or return an error, but NEVER panic
+            let _result = ConfigFile::load(file.path());
+            
+            // If we get here without panic, the test passes
+            prop_assert!(true);
+        }
+
+        /// Fuzz test: Parser handles arbitrary UTF-8 strings
+        #[test]
+        fn prop_parser_handles_arbitrary_strings(s in "\\PC*") {
+            let file = create_temp_config(&s);
+            let _result = ConfigFile::load(file.path());
+            prop_assert!(true); // No panic is success
+        }
+
+        /// Fuzz test: Repeated section headers don't cause issues
+        #[test]
+        fn prop_repeated_sections(
+            section_name in "[a-z]{1,20}",
+            repeat_count in 1usize..100,
+        ) {
+            let mut content = String::new();
+            for _ in 0..repeat_count {
+                content.push_str(&format!("[{}]\n", section_name));
+                content.push_str("key = 1\n");
+            }
+            let file = create_temp_config(&content);
+            let _result = ConfigFile::load(file.path());
+            prop_assert!(true);
+        }
+
+        /// Fuzz test: Extreme numeric values are handled correctly
+        #[test]
+        fn prop_extreme_numeric_values(value in any::<i64>()) {
+            let content = format!("[simulation]\nnum_sims = {}", value);
+            let file = create_temp_config(&content);
+            let _result = ConfigFile::load(file.path());
+            prop_assert!(true);
+        }
+
+        /// Fuzz test: Very long keys and values don't cause buffer issues
+        #[test]
+        fn prop_long_keys_and_values(
+            key_length in 1usize..1000,
+            value_length in 1usize..10000,
+        ) {
+            let key = "a".repeat(key_length);
+            let value = "x".repeat(value_length);
+            let content = format!("[test]\n{} = \"{}\"", key, value);
+            let file = create_temp_config(&content);
+            let _result = ConfigFile::load(file.path());
+            prop_assert!(true);
         }
     }
 }

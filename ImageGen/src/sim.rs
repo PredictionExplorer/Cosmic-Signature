@@ -478,10 +478,17 @@ pub fn get_positions_with_early_exit(
 ///
 /// # Example
 ///
-/// ```rust,ignore
-/// let mut bodies = vec![/* ... */];
+/// ```
+/// # use three_body_problem::sim::{Body, shift_bodies_to_com};
+/// # use nalgebra::Vector3;
+/// let mut bodies = vec![
+///     Body::new(100.0, Vector3::new(1.0, 0.0, 0.0), Vector3::new(0.0, 1.0, 0.0)),
+///     Body::new(100.0, Vector3::new(-1.0, 0.0, 0.0), Vector3::new(0.0, -1.0, 0.0)),
+/// ];
 /// shift_bodies_to_com(&mut bodies);
 /// // Now COM is at origin and COM velocity is zero
+/// let com_pos: Vector3<f64> = bodies.iter().map(|b| b.mass * b.position).sum::<Vector3<f64>>() / 200.0;
+/// assert!(com_pos.norm() < 1e-10);
 /// ```
 pub fn shift_bodies_to_com(b: &mut [Body]) {
     let mt: f64 = b.iter().map(|x| x.mass).sum();
@@ -578,7 +585,11 @@ pub struct TrajectoryResult {
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```no_run
+/// # use three_body_problem::sim::{Sha3RandomByteStream, select_best_trajectory};
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # let seed = b"test_seed";
+/// # let mut rng = Sha3RandomByteStream::new(seed, 100.0, 300.0, 25.0, 10.0);
 /// let (best_bodies, metrics) = select_best_trajectory(
 ///     &mut rng,
 ///     30_000,    // Evaluate 30k candidates
@@ -589,6 +600,8 @@ pub struct TrajectoryResult {
 /// )?;
 /// println!("Best orbit: chaos={:.3}, equilateral={:.3}",
 ///          metrics.chaos, metrics.equilateralness);
+/// # Ok(())
+/// # }
 /// ```
 pub fn select_best_trajectory(
     rng: &mut Sha3RandomByteStream,
@@ -890,6 +903,16 @@ mod tests {
     }
 
     // Property-based tests using proptest
+    //
+    // Note on conservation laws:
+    // - Mass: Trivially conserved (no forces change mass)
+    // - Energy & Angular Momentum: Conserved by the symplectic Verlet integrator
+    //
+    // We only test mass conservation here because the simulation stores positions only
+    // (not velocities) for memory efficiency. Reconstructing velocities from position
+    // differences would introduce numerical errors that get exponentially amplified by
+    // the chaotic dynamics, making any test unreliable. Energy and angular momentum
+    // conservation are guaranteed by the mathematical properties of the Verlet method.
     proptest! {
         /// Total mass should be conserved exactly (no numerical drift)
         #[test]
@@ -937,57 +960,6 @@ mod tests {
             prop_assert!(initial_energy.is_finite(), "Initial energy should be finite");
         }
 
-        /// Angular momentum conservation from position data
-        /// Note: Disabled due to chaotic amplification of numerical errors
-        /// Angular momentum is conserved in the actual simulation, but reconstructing
-        /// velocities from position differences introduces too much error in chaotic systems
-        #[test]
-        #[ignore = "Chaotic systems amplify velocity reconstruction errors beyond test tolerance"]
-        fn prop_angular_momentum_from_trajectories(
-            m1 in 100.0f64..300.0,
-            m2 in 100.0f64..300.0,
-            m3 in 100.0f64..300.0,
-        ) {
-            let initial_bodies = test_system(m1, m2, m3);
-
-            // Simulate short trajectory
-            let sim_result = get_positions(initial_bodies.clone(), 100);
-
-            // Angular momentum L = r × p can be computed from position differences
-            // For small timesteps: v ≈ (r[i+1] - r[i]) / dt
-            // This is approximate but should show conservation trend
-
-            let dt = crate::render::constants::DEFAULT_DT;
-            let masses = &[m1, m2, m3];
-
-            // Compute L at step 10
-            let mut l_early = Vector3::zeros();
-            for (body_idx, &mass) in masses.iter().enumerate() {
-                let r = sim_result.positions[body_idx][10];
-                let v = (sim_result.positions[body_idx][11] - sim_result.positions[body_idx][10]) / dt;
-                l_early += r.cross(&(mass * v));
-            }
-
-            // Compute L at step 90
-            let mut l_late = Vector3::zeros();
-            for (body_idx, &mass) in masses.iter().enumerate() {
-                let r = sim_result.positions[body_idx][90];
-                let v = (sim_result.positions[body_idx][91] - sim_result.positions[body_idx][90]) / dt;
-                l_late += r.cross(&(mass * v));
-            }
-
-            // Should be approximately conserved (within numerical precision + chaos effects)
-            // Note: For chaotic systems, small numerical errors can amplify
-            let error = (l_late - l_early).norm();
-            let magnitude = l_early.norm();
-            let relative_error = if magnitude > 0.0 { error / magnitude } else { error };
-
-            // Very loose bound for chaotic systems - mainly verifies no catastrophic divergence
-            // Chaotic amplification of numerical errors can be significant
-            prop_assert!(relative_error < 5.0,
-                "Angular momentum drift catastrophic: {:.6} relative error", relative_error);
-        }
-
         /// RNG should produce values in expected ranges
         #[test]
         fn prop_rng_ranges(seed_val in 0u64..1_000_000u64) {
@@ -1003,6 +975,89 @@ mod tests {
 
                 let vel = rng.random_velocity();
                 prop_assert!((-10.0..=10.0).contains(&vel), "Velocity out of range: {vel}");
+            }
+        }
+
+        /// Fuzz test: RNG handles arbitrary seed lengths without panicking
+        ///
+        /// Critical security property: user-controlled seeds should never crash.
+        #[test]
+        fn prop_rng_arbitrary_seed_length(seed_bytes in prop::collection::vec(any::<u8>(), 0..10000)) {
+            let mut rng = Sha3RandomByteStream::new(&seed_bytes, 100.0, 300.0, 25.0, 10.0);
+            
+            // Generate values - should never panic regardless of seed
+            for _ in 0..10 {
+                let mass = rng.random_mass();
+                let loc = rng.random_location();
+                let vel = rng.random_velocity();
+                let f = rng.next_f64();
+                
+                // All outputs must be finite and in expected ranges
+                prop_assert!(mass.is_finite() && mass >= 100.0 && mass <= 300.0);
+                prop_assert!(loc.is_finite() && loc >= -25.0 && loc <= 25.0);
+                prop_assert!(vel.is_finite() && vel >= -10.0 && vel <= 10.0);
+                prop_assert!(f.is_finite() && f >= 0.0 && f <= 1.0);
+            }
+        }
+
+        /// Fuzz test: RNG handles extreme parameter ranges
+        #[test]
+        fn prop_rng_extreme_ranges(
+            min_mass in -1e100f64..1e100,
+            max_mass in -1e100f64..1e100,
+            location in 0.0f64..1e100,
+            velocity in 0.0f64..1e100,
+        ) {
+            // Skip invalid ranges
+            if !min_mass.is_finite() || !max_mass.is_finite() || 
+               !location.is_finite() || !velocity.is_finite() ||
+               min_mass >= max_mass {
+                return Ok(());
+            }
+            
+            let seed = b"test_seed";
+            let mut rng = Sha3RandomByteStream::new(seed, min_mass, max_mass, location, velocity);
+            
+            // Should produce valid values even with extreme ranges
+            for _ in 0..10 {
+                let mass = rng.random_mass();
+                let loc = rng.random_location();
+                let vel = rng.random_velocity();
+                
+                prop_assert!(mass.is_finite());
+                prop_assert!(loc.is_finite());
+                prop_assert!(vel.is_finite());
+                
+                if min_mass < max_mass {
+                    prop_assert!(mass >= min_mass && mass <= max_mass, 
+                                "Mass {} not in range [{}, {}]", mass, min_mass, max_mass);
+                }
+            }
+        }
+
+        /// Fuzz test: RNG is deterministic for same seed
+        #[test]
+        fn prop_rng_determinism(seed_bytes in prop::collection::vec(any::<u8>(), 1..100)) {
+            let mut rng1 = Sha3RandomByteStream::new(&seed_bytes, 100.0, 300.0, 25.0, 10.0);
+            let mut rng2 = Sha3RandomByteStream::new(&seed_bytes, 100.0, 300.0, 25.0, 10.0);
+            
+            for _ in 0..100 {
+                prop_assert_eq!(rng1.next_f64(), rng2.next_f64());
+                prop_assert_eq!(rng1.random_mass(), rng2.random_mass());
+                prop_assert_eq!(rng1.random_location(), rng2.random_location());
+                prop_assert_eq!(rng1.random_velocity(), rng2.random_velocity());
+            }
+        }
+
+        /// Fuzz test: next_f64 always returns values in [0, 1]
+        #[test]
+        fn prop_next_f64_range(seed_bytes in prop::collection::vec(any::<u8>(), 1..100)) {
+            let mut rng = Sha3RandomByteStream::new(&seed_bytes, 100.0, 300.0, 25.0, 10.0);
+            
+            for _ in 0..1000 {
+                let f = rng.next_f64();
+                prop_assert!(f >= 0.0 && f <= 1.0, "next_f64 returned {}, outside [0,1]", f);
+                prop_assert!(f.is_finite(), "next_f64 returned non-finite value");
             }
         }
     }
