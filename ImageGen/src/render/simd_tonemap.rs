@@ -158,73 +158,17 @@ fn tonemap_batch_avx2(pixels: &[(f64, f64, f64, f64)], levels: &ChannelLevels, o
 }
 
 /// Tone map a single pixel (full path including level adjustment)
+///
+/// Now uses the shared tonemap_core function for consistency across the codebase.
 #[inline]
 fn tonemap_single_pixel(fr: f64, fg: f64, fb: f64, fa: f64, levels: &ChannelLevels) -> [u8; 3] {
-    // Import ACES LUT from parent module
-    use super::ACES_LUT;
+    use super::tonemap::tonemap_core;
 
-    let alpha = fa.clamp(0.0, 1.0);
-    if alpha <= 0.0 {
-        return [0, 0, 0];
-    }
-
-    let source = [fr.max(0.0), fg.max(0.0), fb.max(0.0)];
-    let premult = [source[0] * alpha, source[1] * alpha, source[2] * alpha];
-    if premult[0] <= 0.0 && premult[1] <= 0.0 && premult[2] <= 0.0 {
-        return [0, 0, 0];
-    }
-
-    let mut leveled = [0.0; 3];
-    for i in 0..3 {
-        leveled[i] = ((premult[i] - levels.black[i]).max(0.0)) / levels.range[i];
-    }
-
-    let mut channel_curves = [0.0; 3];
-    for i in 0..3 {
-        channel_curves[i] = ACES_LUT.apply(leveled[i]);
-    }
-
-    let target_luma =
-        0.2126 * channel_curves[0] + 0.7152 * channel_curves[1] + 0.0722 * channel_curves[2];
-
-    if target_luma <= 0.0 {
-        return [0, 0, 0];
-    }
-
-    let straight_luma = 0.2126 * source[0] + 0.7152 * source[1] + 0.0722 * source[2];
-    let chroma_preserve = (alpha / (alpha + 0.1)).clamp(0.0, 1.0);
-
-    let mut final_channels = [0.0; 3];
-    if straight_luma > 0.0 {
-        for i in 0..3 {
-            final_channels[i] = channel_curves[i] * (1.0 - chroma_preserve)
-                + (source[i] / straight_luma) * target_luma * chroma_preserve;
-        }
-    } else {
-        final_channels = channel_curves;
-    }
-
-    let neutral_mix = ((0.05 - alpha).max(0.0) / 0.05).clamp(0.0, 1.0) * 0.2;
-    if neutral_mix > 0.0 {
-        for c in &mut final_channels {
-            *c = (*c * (1.0 - neutral_mix) + target_luma * neutral_mix).max(0.0);
-        }
-    }
-
-    let final_luma =
-        0.2126 * final_channels[0] + 0.7152 * final_channels[1] + 0.0722 * final_channels[2];
-
-    if final_luma > 0.0 {
-        let scale = target_luma / final_luma;
-        for c in &mut final_channels {
-            *c *= scale;
-        }
-    }
-
+    let channels = tonemap_core(fr, fg, fb, fa, levels);
     [
-        (final_channels[0] * 255.0).round().clamp(0.0, 255.0) as u8,
-        (final_channels[1] * 255.0).round().clamp(0.0, 255.0) as u8,
-        (final_channels[2] * 255.0).round().clamp(0.0, 255.0) as u8,
+        (channels[0] * 255.0).round().clamp(0.0, 255.0) as u8,
+        (channels[1] * 255.0).round().clamp(0.0, 255.0) as u8,
+        (channels[2] * 255.0).round().clamp(0.0, 255.0) as u8,
     ]
 }
 
@@ -232,7 +176,7 @@ fn tonemap_single_pixel(fr: f64, fg: f64, fb: f64, fa: f64, levels: &ChannelLeve
 #[inline]
 #[cfg(all(target_arch = "x86_64", target_feature = "avx2", not(miri)))]
 fn tonemap_single_pixel_normalized(r: f64, g: f64, b: f64, alpha: f64) -> [u8; 3] {
-    use super::ACES_LUT;
+    use super::tonemap::ACES_LUT;
 
     let alpha = alpha.clamp(0.0, 1.0);
     if alpha <= 0.0 {

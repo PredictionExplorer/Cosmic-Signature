@@ -984,19 +984,19 @@ mod tests {
         #[test]
         fn prop_rng_arbitrary_seed_length(seed_bytes in prop::collection::vec(any::<u8>(), 0..10000)) {
             let mut rng = Sha3RandomByteStream::new(&seed_bytes, 100.0, 300.0, 25.0, 10.0);
-            
+
             // Generate values - should never panic regardless of seed
             for _ in 0..10 {
                 let mass = rng.random_mass();
                 let loc = rng.random_location();
                 let vel = rng.random_velocity();
                 let f = rng.next_f64();
-                
+
                 // All outputs must be finite and in expected ranges
-                prop_assert!(mass.is_finite() && mass >= 100.0 && mass <= 300.0);
-                prop_assert!(loc.is_finite() && loc >= -25.0 && loc <= 25.0);
-                prop_assert!(vel.is_finite() && vel >= -10.0 && vel <= 10.0);
-                prop_assert!(f.is_finite() && f >= 0.0 && f <= 1.0);
+                prop_assert!(mass.is_finite() && (100.0..=300.0).contains(&mass));
+                prop_assert!(loc.is_finite() && (-25.0..=25.0).contains(&loc));
+                prop_assert!(vel.is_finite() && (-10.0..=10.0).contains(&vel));
+                prop_assert!(f.is_finite() && (0.0..=1.0).contains(&f));
             }
         }
 
@@ -1009,27 +1009,27 @@ mod tests {
             velocity in 0.0f64..1e100,
         ) {
             // Skip invalid ranges
-            if !min_mass.is_finite() || !max_mass.is_finite() || 
+            if !min_mass.is_finite() || !max_mass.is_finite() ||
                !location.is_finite() || !velocity.is_finite() ||
                min_mass >= max_mass {
                 return Ok(());
             }
-            
+
             let seed = b"test_seed";
             let mut rng = Sha3RandomByteStream::new(seed, min_mass, max_mass, location, velocity);
-            
+
             // Should produce valid values even with extreme ranges
             for _ in 0..10 {
                 let mass = rng.random_mass();
                 let loc = rng.random_location();
                 let vel = rng.random_velocity();
-                
+
                 prop_assert!(mass.is_finite());
                 prop_assert!(loc.is_finite());
                 prop_assert!(vel.is_finite());
-                
+
                 if min_mass < max_mass {
-                    prop_assert!(mass >= min_mass && mass <= max_mass, 
+                    prop_assert!(mass >= min_mass && mass <= max_mass,
                                 "Mass {} not in range [{}, {}]", mass, min_mass, max_mass);
                 }
             }
@@ -1040,7 +1040,7 @@ mod tests {
         fn prop_rng_determinism(seed_bytes in prop::collection::vec(any::<u8>(), 1..100)) {
             let mut rng1 = Sha3RandomByteStream::new(&seed_bytes, 100.0, 300.0, 25.0, 10.0);
             let mut rng2 = Sha3RandomByteStream::new(&seed_bytes, 100.0, 300.0, 25.0, 10.0);
-            
+
             for _ in 0..100 {
                 prop_assert_eq!(rng1.next_f64(), rng2.next_f64());
                 prop_assert_eq!(rng1.random_mass(), rng2.random_mass());
@@ -1053,10 +1053,10 @@ mod tests {
         #[test]
         fn prop_next_f64_range(seed_bytes in prop::collection::vec(any::<u8>(), 1..100)) {
             let mut rng = Sha3RandomByteStream::new(&seed_bytes, 100.0, 300.0, 25.0, 10.0);
-            
+
             for _ in 0..1000 {
                 let f = rng.next_f64();
-                prop_assert!(f >= 0.0 && f <= 1.0, "next_f64 returned {}, outside [0,1]", f);
+                prop_assert!((0.0..=1.0).contains(&f), "next_f64 returned {}, outside [0,1]", f);
                 prop_assert!(f.is_finite(), "next_f64 returned non-finite value");
             }
         }

@@ -287,18 +287,7 @@ pub const KINETIC_ENERGY_FACTOR: f64 = 0.5;
 pub const TWO_PI: f64 = 2.0 * std::f64::consts::PI;
 
 // ========== Tonemapping Constants ==========
-
-/// Chroma preservation factor for tonemapping.
-/// Controls how much original color saturation is preserved vs tone-mapped result.
-/// Lower values create more neutral low-alpha regions.
-pub const CHROMA_PRESERVE_FACTOR: f64 = 0.06;
-
-/// Neutral mixing threshold for low-alpha regions.
-/// Pixels with alpha below this receive neutral mixing to prevent color artifacts.
-pub const NEUTRAL_MIX_ALPHA_THRESHOLD: f64 = 0.03;
-
-/// Maximum neutral mix strength for low-alpha pixels.
-pub const NEUTRAL_MIX_MAX_STRENGTH: f64 = 0.15;
+// Note: Main tonemapping constants have been moved to render/tonemap.rs
 
 /// Alpha boost factor for trajectory compositing (1.20 = 20% stronger coverage)
 pub const COMPOSITE_ALPHA_BOOST_FACTOR: f64 = 1.20;

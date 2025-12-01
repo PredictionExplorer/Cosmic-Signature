@@ -818,10 +818,10 @@ fog_color = [0.1, 0.15, 0.2]
         fn prop_parser_never_panics_on_arbitrary_bytes(bytes in prop::collection::vec(any::<u8>(), 0..10000)) {
             let file = tempfile::NamedTempFile::new().unwrap();
             std::fs::write(file.path(), &bytes).unwrap();
-            
+
             // This should either succeed or return an error, but NEVER panic
             let _result = ConfigFile::load(file.path());
-            
+
             // If we get here without panic, the test passes
             prop_assert!(true);
         }
@@ -842,7 +842,8 @@ fog_color = [0.1, 0.15, 0.2]
         ) {
             let mut content = String::new();
             for _ in 0..repeat_count {
-                content.push_str(&format!("[{}]\n", section_name));
+                use std::fmt::Write;
+                writeln!(content, "[{}]", section_name).unwrap();
                 content.push_str("key = 1\n");
             }
             let file = create_temp_config(&content);

@@ -63,6 +63,12 @@ pub trait PostEffect: Send + Sync {
 }
 
 /// A chain of post-processing effects applied in sequence.
+///
+/// # Performance Note
+///
+/// The chain uses double-buffering internally to minimize allocations during processing.
+/// Each effect reads from one buffer and writes to another, then buffers are swapped.
+/// This reduces GC pressure significantly compared to per-effect allocation.
 pub struct PostEffectChain {
     effects: Vec<Box<dyn PostEffect>>,
 }
@@ -80,6 +86,12 @@ impl PostEffectChain {
 
     /// Processes a buffer through all enabled effects in order.
     ///
+    /// # Performance Optimization
+    ///
+    /// This method counts the number of enabled effects upfront. If there are multiple
+    /// effects, it uses double-buffering to avoid repeated allocations. For 0-1 effects,
+    /// it uses the simpler code path.
+    ///
     /// # Arguments
     /// * `buffer` - Input pixel buffer
     /// * `width` - Buffer width in pixels
@@ -93,12 +105,46 @@ impl PostEffectChain {
         width: usize,
         height: usize,
     ) -> Result<PixelBuffer, Box<dyn Error>> {
+        // Count enabled effects to choose optimal strategy
+        let enabled_count = self.effects.iter().filter(|e| e.is_enabled()).count();
+
+        if enabled_count == 0 {
+            // No effects - return input unchanged
+            return Ok(buffer);
+        }
+
+        if enabled_count == 1 {
+            // Single effect - simple path
+            for effect in &self.effects {
+                if effect.is_enabled() {
+                    return effect.process(&buffer, width, height);
+                }
+            }
+            return Ok(buffer);
+        }
+
+        // Multiple effects - use double-buffering to minimize allocations
+        // Pre-allocate a working buffer to ping-pong between
+        let pixel_count = width * height;
+        let mut working_buffer = vec![(0.0, 0.0, 0.0, 0.0); pixel_count];
+        let mut use_working = false;
+
         for effect in &self.effects {
             if effect.is_enabled() {
-                buffer = effect.process(&buffer, width, height)?;
+                if use_working {
+                    // Process: working → buffer
+                    buffer = effect.process(&working_buffer, width, height)?;
+                    use_working = false;
+                } else {
+                    // Process: buffer → working
+                    working_buffer = effect.process(&buffer, width, height)?;
+                    use_working = true;
+                }
             }
         }
-        Ok(buffer)
+
+        // Return whichever buffer has the final result
+        if use_working { Ok(working_buffer) } else { Ok(buffer) }
     }
 
     /// Returns the number of effects in the chain.

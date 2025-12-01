@@ -488,7 +488,7 @@ mod proptests {
             }
 
             let (l, a, b_ch) = linear_srgb_to_oklab(r, g, b);
-            
+
             prop_assert!(l.is_finite(), "L not finite for extreme RGB ({}, {}, {})", r, g, b);
             prop_assert!(a.is_finite(), "a not finite for extreme RGB ({}, {}, {})", r, g, b);
             prop_assert!(b_ch.is_finite(), "b not finite for extreme RGB ({}, {}, {})", r, g, b);
@@ -502,7 +502,7 @@ mod proptests {
             b in -100.0f64..100.0,
         ) {
             let (r, g, b_ch) = oklab_to_linear_srgb(l, a, b);
-            
+
             prop_assert!(r.is_finite(), "R not finite for OkLab ({}, {}, {})", l, a, b);
             prop_assert!(g.is_finite(), "G not finite for OkLab ({}, {}, {})", l, a, b);
             prop_assert!(b_ch.is_finite(), "B not finite for OkLab ({}, {}, {})", l, a, b);
@@ -517,16 +517,16 @@ mod proptests {
         ) {
             let mode = GamutMapMode::PreserveHue;
             let (r_out, g_out, b_out) = mode.map_to_gamut(r, g, b);
-            
+
             // Output must be finite
             prop_assert!(r_out.is_finite());
             prop_assert!(g_out.is_finite());
             prop_assert!(b_out.is_finite());
-            
+
             // Output must be in [0, 1] range
-            prop_assert!(r_out >= 0.0 && r_out <= 1.0, "R {} out of gamut", r_out);
-            prop_assert!(g_out >= 0.0 && g_out <= 1.0, "G {} out of gamut", g_out);
-            prop_assert!(b_out >= 0.0 && b_out <= 1.0, "B {} out of gamut", b_out);
+            prop_assert!((0.0..=1.0).contains(&r_out), "R {} out of gamut", r_out);
+            prop_assert!((0.0..=1.0).contains(&g_out), "G {} out of gamut", g_out);
+            prop_assert!((0.0..=1.0).contains(&b_out), "B {} out of gamut", b_out);
         }
 
         /// Fuzz test: Batch conversion matches single-pixel conversion
@@ -537,11 +537,11 @@ mod proptests {
             pixels in prop::collection::vec((0.0f64..1.0, 0.0f64..1.0, 0.0f64..1.0, 0.0f64..1.0), 1..100),
         ) {
             let batch_result = linear_srgb_to_oklab_batch(&pixels);
-            
+
             for (i, &(r, g, b, alpha)) in pixels.iter().enumerate() {
                 let (l, a, b_ch) = linear_srgb_to_oklab(r, g, b);
                 let batch_pixel = batch_result[i];
-                
+
                 prop_assert!((batch_pixel.0 - l).abs() < 1e-10, "Batch L mismatch at pixel {}", i);
                 prop_assert!((batch_pixel.1 - a).abs() < 1e-10, "Batch a mismatch at pixel {}", i);
                 prop_assert!((batch_pixel.2 - b_ch).abs() < 1e-10, "Batch b mismatch at pixel {}", i);
@@ -556,10 +556,10 @@ mod proptests {
         ) {
             let oklab_pixels = linear_srgb_to_oklab_batch(&pixels);
             let rgb_pixels = oklab_to_linear_srgb_batch(&oklab_pixels);
-            
+
             for (i, &original) in pixels.iter().enumerate() {
                 let converted = rgb_pixels[i];
-                
+
                 prop_assert!((converted.0 - original.0).abs() < 1e-6, "R roundtrip error at pixel {}", i);
                 prop_assert!((converted.1 - original.1).abs() < 1e-6, "G roundtrip error at pixel {}", i);
                 prop_assert!((converted.2 - original.2).abs() < 1e-6, "B roundtrip error at pixel {}", i);
@@ -578,13 +578,13 @@ mod proptests {
             let r = 2.0f64.powi(r_exp);
             let g = 2.0f64.powi(g_exp);
             let b = 2.0f64.powi(b_exp);
-            
+
             let (l, a, b_ch) = linear_srgb_to_oklab(r, g, b);
-            
+
             prop_assert!(l.is_finite());
             prop_assert!(a.is_finite());
             prop_assert!(b_ch.is_finite());
-            
+
             // Verify roundtrip
             let (r2, g2, b2) = oklab_to_linear_srgb(l, a, b_ch);
             prop_assert!(r2.is_finite());

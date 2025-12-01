@@ -687,8 +687,8 @@ mod tests {
 
         // Test that randomize_enable returns boolean values
         for _ in 0..100 {
-            let enabled = randomizer.randomize_enable("glow");
-            assert!(enabled == true || enabled == false);
+            let _enabled = randomizer.randomize_enable("glow");
+            // Test that randomize_enable returns a valid boolean
         }
     }
 

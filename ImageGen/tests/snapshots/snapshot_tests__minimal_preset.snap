@@ -1,0 +1,30 @@
+---
+source: tests/snapshot_tests.rs
+expression: signature
+---
+width: 640
+height: 480
+center:
+  - 0
+  - 0
+  - 0
+top_left:
+  - 7993
+  - 2952
+  - 658
+top_right:
+  - 0
+  - 0
+  - 0
+bottom_left:
+  - 0
+  - 0
+  - 0
+bottom_right:
+  - 0
+  - 0
+  - 0
+avg_r: 75
+avg_g: 31
+avg_b: 6
+non_black_pixels: 11714

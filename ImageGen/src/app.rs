@@ -124,7 +124,7 @@ pub fn setup_directories() -> Result<()> {
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let seed_bytes = parse_seed("0x100033")?;  // With prefix
 /// assert_eq!(seed_bytes, vec![0x10, 0x00, 0x33]);
-/// 
+///
 /// let seed_bytes = parse_seed("100033")?;    // Without prefix
 /// assert_eq!(seed_bytes, vec![0x10, 0x00, 0x33]);
 /// # Ok(())
@@ -673,9 +673,9 @@ mod tests {
             } else {
                 hex_chars
             };
-            
+
             let result = parse_seed(&input);
-            
+
             // Should succeed for valid hex, fail gracefully for invalid
             prop_assert!(result.is_ok() || result.is_err());
         }
@@ -691,7 +691,7 @@ mod tests {
         #[test]
         fn prop_derive_noise_seed_any_bytes(bytes in prop::collection::vec(any::<u8>(), 0..1000)) {
             let noise = derive_noise_seed(&bytes);
-            
+
             // Output must always be a valid i32 (no panic)
             prop_assert!(true); // If we got here, it succeeded
             let _ = noise; // Use the value
@@ -702,7 +702,7 @@ mod tests {
         fn prop_derive_noise_seed_deterministic(bytes in prop::collection::vec(any::<u8>(), 0..100)) {
             let noise1 = derive_noise_seed(&bytes);
             let noise2 = derive_noise_seed(&bytes);
-            
+
             prop_assert_eq!(noise1, noise2);
         }
 
@@ -713,7 +713,7 @@ mod tests {
             tag in "\\PC{0,100}",
         ) {
             let filename = generate_filename(&base, &tag);
-            
+
             // Output must be non-empty if base is non-empty
             if !base.is_empty() {
                 prop_assert!(!filename.is_empty());
