@@ -299,9 +299,8 @@ contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, S
 	///    `CosmicSignatureEvents.FundTransferFailed`.
 	///    `numStakedNfts`.
 	///    `onlyOwner`.
-	/// I have made this method `nonReentrant`. Although doing so probably was unnecessary if we assumed
-	/// that the owner is not malicious.
-	/// todo-1 Does ToDo-202507148-1 relate?
+	/// I have made this method `nonReentrant`. Although that could be unnecessary if we assumed
+	/// that the owner is not malicious. But at least this is helpful to silence Certora.
 	function tryPerformMaintenance(address charityAddress_) external override nonReentrant onlyOwner returns (bool) {
 		// #region
 

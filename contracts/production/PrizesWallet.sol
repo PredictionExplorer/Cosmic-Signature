@@ -123,11 +123,6 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 	// #region `_registerRoundEnd`
 
 	function _registerRoundEnd(uint256 roundNum_, address mainPrizeBeneficiaryAddress_) private returns (uint256) {
-		// [ToDo-202507148-1]
-		// Should I make at least one of these (maybe the 1st one) a `require`,
-		// so that a potentially malicious upgraded Game contract could not rewrite history.
-		// But then all `_onlyGame` methods in all our contracts will have to be reviewed and possibly uglified.
-		// [/ToDo-202507148-1]
 		// #enable_asserts assert(mainPrizeBeneficiaryAddresses[roundNum_] == address(0));
 		// #enable_asserts assert(roundNum_ == 0 || mainPrizeBeneficiaryAddresses[roundNum_ - 1] != address(0));
 		// #enable_asserts assert(roundTimeoutTimesToWithdrawPrizes[roundNum_] == 0);
