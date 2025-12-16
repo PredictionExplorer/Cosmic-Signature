@@ -21,7 +21,7 @@ function calculateDivisor(desiredValue_, divisorName_) {
 
 // function prototype1(desiredValue_) {
 // 	let output_ = "";
-// 	for ( let counter_ = 0; counter_ < 100; ++counter_ ) {
+// 	for ( let counter_ = 0; counter_ < 100; ++ counter_ ) {
 // 		const divisor_ =
 // 			// input.mainPrizeTimeIncrementInMicroSeconds / desiredValue_ - 1n;
 // 			// (input.mainPrizeTimeIncrementInMicroSeconds - desiredValue_ / 2n) / desiredValue_;

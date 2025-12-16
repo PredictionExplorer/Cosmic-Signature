@@ -27,7 +27,7 @@ If you observe a test failure or some parts of the codebase not covered, execute
 
 #### Benevolent Owner
 
-We assume that the contract owner is not malicious. One implication is that we assume that they will not upgrade the Game contract to one doing anything malicious, such as stealing assets held in `PrizesWallet`. ToDo-202507148-1 relates.
+We assume that the contract owner is not malicious. One implication is that we assume that they will not upgrade the Game contract to one doing anything malicious, such as stealing assets held in `PrizesWallet`.
 
 #### Other Important Notes
 
