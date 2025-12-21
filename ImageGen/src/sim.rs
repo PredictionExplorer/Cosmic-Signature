@@ -345,6 +345,36 @@ fn verlet_step(bodies: &mut [Body; 3], dt: f64) {
     }
 }
 
+/// Calculate adaptive timestep based on current system state
+///
+/// Uses the minimum "time-to-collision" across all body pairs to determine
+/// a timestep that ensures stability during close encounters.
+fn calculate_adaptive_dt(bodies: &[Body; 3]) -> f64 {
+    let mut min_time = f64::MAX;
+
+    for i in 0..3 {
+        for j in i + 1..3 {
+            let rel_pos = bodies[i].position - bodies[j].position;
+            let dist = rel_pos.norm();
+
+            let rel_vel = bodies[i].velocity - bodies[j].velocity;
+            let speed = rel_vel.norm();
+
+            // Safety factor to prevent division by zero and handle static bodies
+            let characteristic_speed = speed.max(1e-5);
+            let time_scale = dist / characteristic_speed;
+
+            if time_scale < min_time {
+                min_time = time_scale;
+            }
+        }
+    }
+
+    // Apply precision factor and clamp to allowable range
+    let dt = min_time * crate::render::constants::ADAPTIVE_PRECISION;
+    dt.clamp(crate::render::constants::MIN_DT, crate::render::constants::MAX_DT)
+}
+
 /// Recorded positions from a complete simulation
 pub struct FullSim {
     /// Position trajectories: outer vec is per-body, inner vec is per-timestep
@@ -378,10 +408,9 @@ pub fn get_positions(mut bodies: Vec<Body>, steps: usize) -> FullSim {
     // Convert to fixed-size array for compile-time safety
     let mut bodies_array: [Body; 3] = [bodies[0].clone(), bodies[1].clone(), bodies[2].clone()];
 
-    let dt = crate::render::constants::DEFAULT_DT;
-
     // Warmup phase
     for _ in 0..steps {
+        let dt = calculate_adaptive_dt(&bodies_array);
         verlet_step(&mut bodies_array, dt);
     }
 
@@ -392,6 +421,7 @@ pub fn get_positions(mut bodies: Vec<Body>, steps: usize) -> FullSim {
         for j in 0..3 {
             all[j][i] = b2[j].position;
         }
+        let dt = calculate_adaptive_dt(&b2);
         verlet_step(&mut b2, dt);
     }
 
@@ -431,10 +461,9 @@ pub fn get_positions_with_early_exit(
     // Convert to fixed-size array for compile-time safety
     let mut bodies_array: [Body; 3] = [bodies[0].clone(), bodies[1].clone(), bodies[2].clone()];
 
-    let dt = crate::render::constants::DEFAULT_DT;
-
     // Warmup phase with periodic escape checks
     for step in 0..steps {
+        let dt = calculate_adaptive_dt(&bodies_array);
         verlet_step(&mut bodies_array, dt);
 
         // Early-exit check: detect escaping bodies during warmup
@@ -460,6 +489,7 @@ pub fn get_positions_with_early_exit(
         for j in 0..3 {
             all[j][i] = b2[j].position;
         }
+        let dt = calculate_adaptive_dt(&b2);
         verlet_step(&mut b2, dt);
     }
 

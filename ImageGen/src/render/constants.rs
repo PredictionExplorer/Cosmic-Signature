@@ -278,6 +278,15 @@ pub const DEFAULT_PIXEL_FORMAT: &str = "yuv420p";
 /// Default simulation timestep
 pub const DEFAULT_DT: f64 = 0.001;
 
+/// Minimum allowable timestep for adaptive simulation
+pub const MIN_DT: f64 = 1e-7;
+
+/// Maximum allowable timestep for adaptive simulation
+pub const MAX_DT: f64 = 0.005;
+
+/// Target precision for adaptive time-stepping (lower = more precise)
+pub const ADAPTIVE_PRECISION: f64 = 0.015;
+
 /// Kinetic energy factor (1/2 in KE = 1/2 * m * v²)
 pub const KINETIC_ENERGY_FACTOR: f64 = 0.5;
 
