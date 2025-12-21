@@ -18,7 +18,7 @@
 //! We simplify by creating circular halos around bright spots with chromatic
 //! separation, giving a prismatic, jewel-like quality to high-energy regions.
 
-use super::{PixelBuffer, PostEffect};
+use super::{FrameParams, PixelBuffer, PostEffect};
 use rayon::prelude::*;
 use std::error::Error;
 
@@ -188,6 +188,7 @@ impl PostEffect for PrismaticHalos {
         input: &PixelBuffer,
         width: usize,
         height: usize,
+        _params: &FrameParams,
     ) -> Result<PixelBuffer, Box<dyn Error>> {
         if !self.is_enabled() {
             return Ok(input.clone());
@@ -262,7 +263,7 @@ mod tests {
         let mut buffer = test_buffer(100, 100, 0.1);
         buffer[50 * 100 + 50] = (1.0, 1.0, 1.0, 1.0); // Bright center
 
-        let result = effect.process(&buffer, 100, 100);
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = effect.process(&buffer, 100, 100, &params);
         assert!(result.is_ok());
         assert_eq!(result.unwrap().len(), buffer.len());
     }
@@ -274,7 +275,7 @@ mod tests {
 
         // Buffer too dark to emit halos
         let buffer = test_buffer(100, 100, 0.3);
-        let result = effect.process(&buffer, 100, 100);
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = effect.process(&buffer, 100, 100, &params);
         assert!(result.is_ok());
     }
 
@@ -301,7 +302,7 @@ mod tests {
         buffer[30 * 100 + 30] = (1.5, 1.5, 1.5, 1.0);
         buffer[70 * 100 + 70] = (2.0, 2.0, 2.0, 1.0);
 
-        let result = effect.process(&buffer, 100, 100).unwrap();
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = effect.process(&buffer, 100, 100, &params).unwrap();
 
         for &(r, g, b, a) in &result {
             assert!(r.is_finite(), "Red channel not finite");

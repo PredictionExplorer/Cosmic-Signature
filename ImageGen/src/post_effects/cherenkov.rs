@@ -20,7 +20,7 @@
 //! 2. Directional blur creates the "wake" effect
 //! 3. Blue/UV color shift emphasizes the cold, high-energy nature
 
-use super::{PixelBuffer, PostEffect};
+use super::{FrameParams, PixelBuffer, PostEffect};
 use rayon::prelude::*;
 use std::error::Error;
 
@@ -242,6 +242,7 @@ impl PostEffect for Cherenkov {
         input: &PixelBuffer,
         width: usize,
         height: usize,
+        _params: &FrameParams,
     ) -> Result<PixelBuffer, Box<dyn Error>> {
         if !self.is_enabled() {
             return Ok(input.clone());
@@ -295,7 +296,7 @@ mod tests {
         let effect = Cherenkov::new(config);
         let buffer = test_buffer(100, 100, 0.5);
 
-        let result = effect.process(&buffer, 100, 100);
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = effect.process(&buffer, 100, 100, &params);
         assert!(result.is_ok());
         assert_eq!(result.unwrap().len(), buffer.len());
     }
@@ -306,7 +307,7 @@ mod tests {
         let effect = Cherenkov::new(config);
         let buffer = test_buffer(50, 50, 0.0);
 
-        let result = effect.process(&buffer, 50, 50);
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = effect.process(&buffer, 50, 50, &params);
         assert!(result.is_ok());
     }
 
@@ -316,7 +317,7 @@ mod tests {
         let effect = Cherenkov::new(config);
         let buffer = test_buffer(50, 50, 5.0);
 
-        let result = effect.process(&buffer, 50, 50);
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = effect.process(&buffer, 50, 50, &params);
         assert!(result.is_ok());
         for &(r, g, b, _) in &result.unwrap() {
             assert!(r.is_finite());
@@ -359,7 +360,7 @@ mod tests {
 
         // Create bright test buffer (well above threshold)
         let buffer = test_buffer(50, 50, 0.9);
-        let result = effect.process(&buffer, 50, 50).unwrap();
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = effect.process(&buffer, 50, 50, &params).unwrap();
 
         // Cherenkov should add blue tint
         let center_idx = 25 * 50 + 25;
@@ -385,7 +386,7 @@ mod tests {
             })
             .collect();
 
-        let result = effect.process(&buffer, 100, 100).unwrap();
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = effect.process(&buffer, 100, 100, &params).unwrap();
 
         // All outputs should be finite
         for &(r, g, b, a) in &result {

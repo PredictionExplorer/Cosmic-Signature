@@ -1,6 +1,6 @@
 //! Difference of Gaussians (DoG) bloom effect implementation.
 
-use super::{PixelBuffer, PostEffect};
+use super::{FrameParams, PixelBuffer, PostEffect};
 use crate::render::{DogBloomConfig, apply_dog_bloom};
 use rayon::prelude::*;
 use std::error::Error;
@@ -37,6 +37,7 @@ impl PostEffect for DogBloom {
         input: &PixelBuffer,
         width: usize,
         height: usize,
+        _params: &FrameParams,
     ) -> Result<PixelBuffer, Box<dyn Error>> {
         // Apply DoG bloom to get the bloom component
         let dog_bloom = apply_dog_bloom(input, width, height, &self.config);
@@ -73,7 +74,7 @@ mod tests {
         let bloom = DogBloom::new(config, 1.0);
         let buffer = test_buffer(100, 100, 0.5);
 
-        let result = bloom.process(&buffer, 100, 100);
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = bloom.process(&buffer, 100, 100, &params);
         assert!(result.is_ok());
 
         let output = result.unwrap();
@@ -89,7 +90,7 @@ mod tests {
         let bloom = DogBloom::new(config, 1.0);
         let buffer = test_buffer(50, 50, 0.0);
 
-        let result = bloom.process(&buffer, 50, 50);
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = bloom.process(&buffer, 50, 50, &params);
         assert!(result.is_ok());
     }
 
@@ -99,7 +100,7 @@ mod tests {
         let bloom = DogBloom::new(config, 1.0);
         let buffer = test_buffer(50, 50, 5.0);
 
-        let result = bloom.process(&buffer, 50, 50);
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = bloom.process(&buffer, 50, 50, &params);
         assert!(result.is_ok());
         for &(r, _, _, _) in &result.unwrap() {
             assert!(r.is_finite());

@@ -16,6 +16,14 @@ use std::fmt;
 // Re-export PixelBuffer from central types module for consistency
 pub use crate::render::types::PixelBuffer;
 
+/// Per-frame parameters that may vary
+#[derive(Clone, Debug)]
+pub struct FrameParams {
+    pub frame_number: usize,
+    pub _density: Option<f64>,
+    pub body_positions: Option<Vec<(f64, f64)>>, // Screen-space positions
+}
+
 /// Error type for post-processing pipeline failures.
 #[derive(Debug)]
 #[cfg(test)]
@@ -45,6 +53,7 @@ pub trait PostEffect: Send + Sync {
     /// * `input` - Input pixel buffer
     /// * `width` - Buffer width in pixels
     /// * `height` - Buffer height in pixels
+    /// * `params` - Per-frame parameters
     ///
     /// # Returns
     /// Processed pixel buffer or error
@@ -53,6 +62,7 @@ pub trait PostEffect: Send + Sync {
         input: &PixelBuffer,
         width: usize,
         height: usize,
+        params: &FrameParams,
     ) -> Result<PixelBuffer, Box<dyn Error>>;
 
     /// Returns whether this effect is currently enabled.
@@ -96,6 +106,7 @@ impl PostEffectChain {
     /// * `buffer` - Input pixel buffer
     /// * `width` - Buffer width in pixels
     /// * `height` - Buffer height in pixels
+    /// * `params` - Per-frame parameters
     ///
     /// # Returns
     /// Final processed buffer or first error encountered
@@ -104,6 +115,7 @@ impl PostEffectChain {
         mut buffer: PixelBuffer,
         width: usize,
         height: usize,
+        params: &FrameParams,
     ) -> Result<PixelBuffer, Box<dyn Error>> {
         // Count enabled effects to choose optimal strategy
         let enabled_count = self.effects.iter().filter(|e| e.is_enabled()).count();
@@ -117,7 +129,7 @@ impl PostEffectChain {
             // Single effect - simple path
             for effect in &self.effects {
                 if effect.is_enabled() {
-                    return effect.process(&buffer, width, height);
+                    return effect.process(&buffer, width, height, params);
                 }
             }
             return Ok(buffer);
@@ -133,11 +145,11 @@ impl PostEffectChain {
             if effect.is_enabled() {
                 if use_working {
                     // Process: working → buffer
-                    buffer = effect.process(&working_buffer, width, height)?;
+                    buffer = effect.process(&working_buffer, width, height, params)?;
                     use_working = false;
                 } else {
                     // Process: buffer → working
-                    working_buffer = effect.process(&buffer, width, height)?;
+                    working_buffer = effect.process(&buffer, width, height, params)?;
                     use_working = true;
                 }
             }
@@ -176,6 +188,7 @@ pub mod chromatic_bloom;
 pub mod color_grade;
 pub mod cosmic_ink;
 pub mod crepuscular_rays;
+pub mod deep_space;
 pub mod dimensional_glitch;
 pub mod dog_bloom;
 pub mod edge_luminance;
@@ -205,6 +218,7 @@ pub use chromatic_bloom::{ChromaticBloom, ChromaticBloomConfig};
 pub use color_grade::{CinematicColorGrade, ColorGradeParams};
 pub use cosmic_ink::{CosmicInk, CosmicInkConfig};
 pub use crepuscular_rays::{CrepuscularRays, CrepuscularRaysConfig};
+pub use deep_space::{DeepSpace, DeepSpaceConfig};
 pub use dimensional_glitch::{DimensionalGlitch, DimensionalGlitchConfig};
 pub use dog_bloom::DogBloom;
 pub use edge_luminance::{EdgeLuminance, EdgeLuminanceConfig};
@@ -245,6 +259,7 @@ mod tests {
             input: &PixelBuffer,
             _width: usize,
             _height: usize,
+            _params: &FrameParams,
         ) -> Result<PixelBuffer, Box<dyn Error>> {
             let mut output = input.clone();
             for pixel in &mut output {
@@ -264,7 +279,8 @@ mod tests {
         assert_eq!(chain.len(), 0);
 
         let input = vec![(0.5, 0.5, 0.5, 1.0)];
-        let result = chain.process(input.clone(), 1, 1).unwrap();
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None };
+        let result = chain.process(input.clone(), 1, 1, &params).unwrap();
         assert_eq!(result, input);
     }
 
@@ -277,7 +293,8 @@ mod tests {
         assert!(!chain.is_empty());
 
         let input = vec![(0.5, 0.5, 0.5, 1.0)];
-        let result = chain.process(input, 1, 1).unwrap();
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None };
+        let result = chain.process(input, 1, 1, &params).unwrap();
         assert_eq!(result[0].0, 0.6);
         assert_eq!(result[0].1, 0.6);
         assert_eq!(result[0].2, 0.6);
@@ -291,7 +308,8 @@ mod tests {
         chain.add(Box::new(AddEffect { value: 0.2, enabled: true }));
 
         let input = vec![(0.5, 0.5, 0.5, 1.0)];
-        let result = chain.process(input, 1, 1).unwrap();
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None };
+        let result = chain.process(input, 1, 1, &params).unwrap();
         assert_eq!(result[0].0, 0.8); // 0.5 + 0.1 + 0.2
         assert_eq!(result[0].1, 0.8);
         assert_eq!(result[0].2, 0.8);
@@ -305,7 +323,8 @@ mod tests {
         chain.add(Box::new(AddEffect { value: 0.2, enabled: true }));
 
         let input = vec![(0.5, 0.5, 0.5, 1.0)];
-        let result = chain.process(input, 1, 1).unwrap();
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None };
+        let result = chain.process(input, 1, 1, &params).unwrap();
         assert_eq!(result[0].0, 0.7); // 0.5 + 0.2 (first effect disabled)
         assert_eq!(result[0].1, 0.7);
         assert_eq!(result[0].2, 0.7);

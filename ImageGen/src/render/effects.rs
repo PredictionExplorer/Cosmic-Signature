@@ -17,7 +17,8 @@ use crate::post_effects::{
     MicroContrast, MicroContrastConfig, Opalescence, OpalescenceConfig, PerceptualBlur,
     PerceptualBlurConfig, PostEffect, PostEffectChain, PrismaticHalos, PrismaticHalosConfig,
     RefractiveCaustics, RefractiveCausticsConfig, VolumetricOcclusion, VolumetricOcclusionConfig,
-    aether::AetherConfig, apply_aether_weave, apply_champleve_iridescence,
+    aether::AetherConfig, apply_aether_weave, apply_champleve_iridescence, DeepSpace,
+    DeepSpaceConfig, FrameParams,
 };
 use crate::spectrum::{NUM_BINS, spd_to_rgba};
 use rayon::prelude::*;
@@ -93,14 +94,10 @@ pub struct EffectConfig {
     pub prismatic_halos_config: PrismaticHalosConfig,
     pub dimensional_glitch_enabled: bool,
     pub dimensional_glitch_config: DimensionalGlitchConfig,
+    pub deep_space_enabled: bool,
+    pub deep_space_config: DeepSpaceConfig,
 }
 
-/// Per-frame parameters that may vary
-#[derive(Clone, Debug)]
-pub struct FrameParams {
-    pub _frame_number: usize,
-    pub _density: Option<f64>,
-}
 
 /// Persistent effect chain builder
 pub struct EffectChainBuilder {
@@ -234,6 +231,11 @@ impl EffectChainBuilder {
             chain.add(Box::new(CosmicInk::new(config.cosmic_ink_config.clone())));
         }
 
+        // 7c. Deep Space (volumetric scattering) [NEW]
+        if config.deep_space_enabled {
+            chain.add(Box::new(DeepSpaceFinish::new(config.deep_space_config.clone())));
+        }
+
         // ===== PHASE 8: PHYSICS VISUALIZATION =====
         // Effects that reveal the invisible forces
 
@@ -301,10 +303,10 @@ impl EffectChainBuilder {
         buffer: PixelBuffer,
         width: usize,
         height: usize,
-        _params: &FrameParams,
+        params: &FrameParams,
     ) -> Result<PixelBuffer> {
         self.chain
-            .process(buffer, width, height)
+            .process(buffer, width, height, params)
             .map_err(|e| RenderError::EffectChain(e.to_string()))
     }
 }
@@ -362,6 +364,8 @@ impl Default for EffectConfig {
             prismatic_halos_config: PrismaticHalosConfig::default(),
             dimensional_glitch_enabled: false,
             dimensional_glitch_config: DimensionalGlitchConfig::default(),
+            deep_space_enabled: false,
+            deep_space_config: DeepSpaceConfig::default(),
         }
     }
 }
@@ -617,6 +621,13 @@ impl EffectConfigBuilder {
         self
     }
 
+    /// Enable or disable Deep Space effect.
+    #[must_use]
+    pub fn enable_deep_space(mut self, enabled: bool) -> Self {
+        self.config.deep_space_enabled = enabled;
+        self
+    }
+
     /// Set HDR mode ("auto" or "off").
     #[must_use]
     pub fn hdr_mode(mut self, mode: impl Into<String>) -> Self {
@@ -650,6 +661,7 @@ impl EffectConfigBuilder {
         self.config.volumetric_occlusion_enabled = false;
         self.config.refractive_caustics_enabled = false;
         self.config.fine_texture_enabled = false;
+        self.config.deep_space_enabled = false;
         self
     }
 
@@ -942,6 +954,7 @@ impl PostEffect for ChampleveFinish {
         input: &PixelBuffer,
         width: usize,
         height: usize,
+        _params: &FrameParams,
     ) -> std::result::Result<PixelBuffer, Box<dyn std::error::Error>> {
         let mut buffer = input.clone();
         apply_champleve_iridescence(&mut buffer, width, height, &self.config);
@@ -965,10 +978,36 @@ impl PostEffect for AetherFinish {
         input: &PixelBuffer,
         width: usize,
         height: usize,
+        _params: &FrameParams,
     ) -> std::result::Result<PixelBuffer, Box<dyn std::error::Error>> {
         let mut buffer = input.clone();
         apply_aether_weave(&mut buffer, width, height, &self.config);
         Ok(buffer)
+    }
+}
+
+struct DeepSpaceFinish {
+    config: DeepSpaceConfig,
+}
+
+impl DeepSpaceFinish {
+    fn new(config: DeepSpaceConfig) -> Self {
+        Self { config }
+    }
+}
+
+impl PostEffect for DeepSpaceFinish {
+    fn process(
+        &self,
+        input: &PixelBuffer,
+        width: usize,
+        height: usize,
+        params: &FrameParams,
+    ) -> std::result::Result<PixelBuffer, Box<dyn std::error::Error>> {
+        let body_positions = params.body_positions.clone().unwrap_or_default();
+        let time = params.frame_number as f64 * 0.01; // Simple time evolution
+        let effect = DeepSpace::new(self.config.clone(), body_positions, time);
+        effect.process(input, width, height, params)
     }
 }
 
@@ -1113,7 +1152,7 @@ mod tests {
 
         // Basic test - just verify chain can be created
         let buffer = vec![(0.5, 0.5, 0.5, 1.0); 100];
-        let params = FrameParams { _frame_number: 0, _density: None };
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None };
 
         let result = chain.process_frame(buffer, 10, 10, &params);
         assert!(result.is_ok());

@@ -8,7 +8,7 @@
 //!
 //! These textures add a sense of physicality and craftsmanship to digital renders.
 
-use super::{PixelBuffer, PostEffect};
+use super::{FrameParams, PixelBuffer, PostEffect};
 use rayon::prelude::*;
 use std::error::Error;
 
@@ -158,6 +158,7 @@ impl PostEffect for FineTexture {
         input: &PixelBuffer,
         width: usize,
         _height: usize,
+        _params: &FrameParams,
     ) -> Result<PixelBuffer, Box<dyn Error>> {
         if !self.is_enabled() {
             return Ok(input.clone());
@@ -281,7 +282,7 @@ mod tests {
         let texture = FineTexture::new(config);
 
         let buffer = vec![(0.5, 0.5, 0.5, 1.0); 100];
-        let result = texture.process(&buffer, 10, 10).unwrap();
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = texture.process(&buffer, 10, 10, &params).unwrap();
 
         // Should not be identical to input (lighting applied)
         assert!((result[0].0 - 0.5).abs() > 0.0001);

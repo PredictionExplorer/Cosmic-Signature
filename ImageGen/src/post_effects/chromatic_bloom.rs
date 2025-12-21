@@ -16,7 +16,7 @@
 //! The effect scales with resolution to maintain consistent appearance across
 //! different output sizes.
 
-use super::{PixelBuffer, PostEffect};
+use super::{FrameParams, PixelBuffer, PostEffect};
 use rayon::prelude::*;
 use std::error::Error;
 
@@ -264,6 +264,7 @@ impl PostEffect for ChromaticBloom {
         input: &PixelBuffer,
         width: usize,
         height: usize,
+        _params: &FrameParams,
     ) -> Result<PixelBuffer, Box<dyn Error>> {
         if !self.is_enabled() {
             return Ok(input.clone());
@@ -347,7 +348,7 @@ mod tests {
         let bloom = ChromaticBloom::new(config);
         let input = test_buffer(10, 10, 0.5);
 
-        let result = bloom.process(&input, 10, 10).unwrap();
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = bloom.process(&input, 10, 10, &params).unwrap();
 
         // With zero strength, output should match input
         for (orig, res) in input.iter().zip(result.iter()) {
@@ -361,7 +362,7 @@ mod tests {
         let bloom = ChromaticBloom::new(config);
         let input = test_buffer(10, 10, 0.5);
 
-        let result = bloom.process(&input, 10, 10).unwrap();
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = bloom.process(&input, 10, 10, &params).unwrap();
 
         // With zero radius, output should match input
         for (orig, res) in input.iter().zip(result.iter()) {
@@ -376,7 +377,7 @@ mod tests {
 
         // Create input below threshold
         let input = test_buffer(20, 20, 0.3); // Below 0.8 threshold
-        let result = bloom.process(&input, 20, 20).unwrap();
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = bloom.process(&input, 20, 20, &params).unwrap();
 
         // Below-threshold pixels should have minimal bloom added
         for (orig, res) in input.iter().zip(result.iter()) {
@@ -396,7 +397,7 @@ mod tests {
 
         // Create high-luminance input with bright center
         let input = test_buffer_with_center_spot(50, 50, 0.1, 0.9);
-        let result = bloom.process(&input, 50, 50).unwrap();
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = bloom.process(&input, 50, 50, &params).unwrap();
 
         // Center pixels should have bloom added (brightness should increase or stay same)
         let center_idx = 25 * 50 + 25;
@@ -416,7 +417,7 @@ mod tests {
         let mut input = test_buffer(10, 10, 0.9);
         input[50].3 = 0.5; // Set one pixel to 50% alpha
 
-        let result = bloom.process(&input, 10, 10).unwrap();
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = bloom.process(&input, 10, 10, &params).unwrap();
 
         // Alpha should be preserved (bloom doesn't modify alpha)
         assert_eq!(result[50].3, input[50].3, "Alpha should be preserved");
@@ -550,7 +551,7 @@ mod tests {
 
         // Create a bright test pattern
         let input = test_buffer_with_center_spot(50, 50, 0.1, 0.95);
-        let result = bloom.process(&input, 50, 50).unwrap();
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = bloom.process(&input, 50, 50, &params).unwrap();
 
         // All output values should be in reasonable HDR range
         for (i, pixel) in result.iter().enumerate() {

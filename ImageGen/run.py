@@ -78,7 +78,7 @@ async def worker(semaphore: asyncio.Semaphore, stats: dict):
         # Generate random seed and mode
         seed = generate_random_seed()
         is_special = random.choice([True, False])
-        is_special = False  # Override to standard mode
+        is_special = True  # Override to standard mode
 
         async with semaphore:
             if not stats['running']:

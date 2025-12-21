@@ -3,7 +3,7 @@
 //! This effect performs blur operations in the perceptually uniform OKLab color space,
 //! resulting in more natural and vibrant color mixing compared to RGB blur.
 
-use super::{PixelBuffer, PostEffect};
+use super::{FrameParams, PixelBuffer, PostEffect};
 use crate::oklab::{self, GamutMapMode};
 use crate::render::parallel_blur_2d_rgba;
 use rayon::prelude::*;
@@ -70,6 +70,7 @@ impl PostEffect for PerceptualBlur {
         input: &PixelBuffer,
         width: usize,
         height: usize,
+        _params: &FrameParams,
     ) -> Result<PixelBuffer, Box<dyn Error>> {
         // Early exit if effect is disabled or has no strength
         if !self.enabled || self.config.strength <= 0.0 || self.config.radius == 0 {
@@ -182,7 +183,7 @@ mod tests {
         blur.enabled = false;
 
         let input = vec![(0.5, 0.5, 0.5, 1.0); 100];
-        let result = blur.process(&input, 10, 10).unwrap();
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = blur.process(&input, 10, 10, &params).unwrap();
 
         // Should return unchanged input when disabled
         assert_eq!(result, input);
@@ -194,7 +195,7 @@ mod tests {
         let blur = PerceptualBlur::new(config);
 
         let input = vec![(0.5, 0.5, 0.5, 1.0); 100];
-        let result = blur.process(&input, 10, 10).unwrap();
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = blur.process(&input, 10, 10, &params).unwrap();
 
         // Should return unchanged input when radius is 0
         assert_eq!(result, input);
@@ -213,7 +214,7 @@ mod tests {
         let mut input = vec![(0.0, 0.0, 0.0, 0.0); 25]; // 5x5 image
         input[12] = (1.0, 0.0, 0.0, 1.0); // Red pixel in center
 
-        let result = blur.process(&input, 5, 5).unwrap();
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = blur.process(&input, 5, 5, &params).unwrap();
 
         // Check that originally transparent pixels have valid alpha
         for pixel in &result {
@@ -238,7 +239,7 @@ mod tests {
             (1.0, 1.0, 0.0, 1.0), // Yellow
         ];
 
-        let result = blur.process(&input, 2, 2).unwrap();
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = blur.process(&input, 2, 2, &params).unwrap();
 
         // Verify all colors are in gamut after processing
         for (i, &(r, g, b, a)) in result.iter().enumerate() {

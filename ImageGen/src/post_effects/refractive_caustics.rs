@@ -5,7 +5,7 @@
 //! 2. Caustics: Accumulates light intensity where refractive rays converge, creating sharp, realistic highlights.
 //! 3. Chromatic Aberration: Splits the refractive rays for a realistic glass look.
 
-use super::{PixelBuffer, PostEffect};
+use super::{FrameParams, PixelBuffer, PostEffect};
 use rayon::prelude::*;
 use std::error::Error;
 
@@ -157,6 +157,7 @@ impl PostEffect for RefractiveCaustics {
         input: &PixelBuffer,
         width: usize,
         height: usize,
+        _params: &FrameParams,
     ) -> Result<PixelBuffer, Box<dyn Error>> {
         if !self.is_enabled() {
             return Ok(input.clone());
@@ -318,7 +319,7 @@ mod tests {
         let caustics = RefractiveCaustics::new(config);
         let buffer = test_buffer(100, 100, 0.5);
 
-        let result = caustics.process(&buffer, 100, 100);
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = caustics.process(&buffer, 100, 100, &params);
         assert!(result.is_ok());
         assert_eq!(result.unwrap().len(), buffer.len());
     }
@@ -329,7 +330,7 @@ mod tests {
         let caustics = RefractiveCaustics::new(config);
         let buffer = test_buffer(50, 50, 0.0);
 
-        let result = caustics.process(&buffer, 50, 50);
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = caustics.process(&buffer, 50, 50, &params);
         assert!(result.is_ok());
     }
 
@@ -339,7 +340,7 @@ mod tests {
         let caustics = RefractiveCaustics::new(config);
         let buffer = test_buffer(50, 50, 5.0);
 
-        let result = caustics.process(&buffer, 50, 50);
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = caustics.process(&buffer, 50, 50, &params);
         assert!(result.is_ok());
     }
 }

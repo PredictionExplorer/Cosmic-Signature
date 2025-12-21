@@ -14,7 +14,8 @@ use super::batch_drawing::{draw_triangle_batch_spectral, prepare_triangle_vertic
 use super::color::OklabColor;
 use super::constants;
 use super::context::{PixelBuffer, RenderContext};
-use super::effects::{EffectChainBuilder, FrameParams, convert_spd_buffer_to_rgba};
+use crate::post_effects::FrameParams;
+use super::effects::{EffectChainBuilder, convert_spd_buffer_to_rgba};
 use super::error::{RenderError, Result};
 use super::randomizable_config::ResolvedEffectConfig;
 use super::types::RenderParams;
@@ -96,6 +97,7 @@ pub(crate) struct RenderLoopContext<'a> {
     height: u32,
     special_mode: bool,
     hdr_scale: f64,
+    current_body_positions: Vec<(f64, f64)>,
 }
 
 impl<'a> RenderLoopContext<'a> {
@@ -165,6 +167,7 @@ impl<'a> RenderLoopContext<'a> {
             height,
             special_mode,
             hdr_scale: params.render_config.hdr_scale,
+            current_body_positions: Vec::with_capacity(3),
         }
     }
 
@@ -210,6 +213,16 @@ impl<'a> RenderLoopContext<'a> {
             self.hdr_scale,
             self.special_mode,
         );
+
+        // Store body positions if we are about to emit a frame
+        if self.should_emit_frame(step) {
+            self.current_body_positions.clear();
+            for i in 0..3 {
+                let p = positions[i][step];
+                let (px, py) = self.ctx.to_pixel(p[0], p[1]);
+                self.current_body_positions.push((px as f64, py as f64));
+            }
+        }
     }
 
     /// Process a frame and return the final composited pixels
@@ -240,7 +253,11 @@ impl<'a> RenderLoopContext<'a> {
         convert_spd_buffer_to_rgba(&self.workspace.accum_spd, &mut self.workspace.accum_rgba);
 
         // Process with effect chain (take ownership to avoid clone)
-        let frame_params = FrameParams { _frame_number: frame_number, _density: None };
+        let frame_params = FrameParams {
+            frame_number,
+            _density: None,
+            body_positions: Some(self.current_body_positions.clone()),
+        };
         let rgba_buffer = std::mem::take(&mut self.workspace.accum_rgba);
         let trajectory_pixels = self
             .effect_chain

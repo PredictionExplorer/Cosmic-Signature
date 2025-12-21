@@ -267,6 +267,7 @@ fn build_randomizable_config(
         enable_dimensional_glitch: if args.disable_all_effects { Some(false) } else { None },
         dimensional_glitch_strength: None,
         dimensional_glitch_threshold: None,
+        enable_deep_space: if args.disable_all_effects { Some(false) } else { None },
     }
 }
 
@@ -304,6 +305,7 @@ fn main() -> Result<()> {
         args.render.width,
         args.render.height,
         args.effects.special,
+        noise_seed,
     );
 
     let num_randomized = randomization_log

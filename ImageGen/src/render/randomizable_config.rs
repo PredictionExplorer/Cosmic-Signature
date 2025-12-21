@@ -39,6 +39,7 @@ pub struct RandomizableEffectConfig {
     pub enable_aurora_veils: Option<bool>,
     pub enable_prismatic_halos: Option<bool>,
     pub enable_dimensional_glitch: Option<bool>,
+    pub enable_deep_space: Option<bool>,
 
     // Bloom & Glow parameters
     pub blur_strength: Option<f64>,
@@ -216,6 +217,7 @@ impl RandomizableEffectConfig {
         width: u32,
         height: u32,
         special_mode: bool,
+        noise_seed: i32,
     ) -> (ResolvedEffectConfig, RandomizationLog) {
         // 1. Resolve Global Light Angle for Coherent Lighting FIRST (before creating randomizer)
         // We pick one angle for the whole scene to ensure shadows and textures match.
@@ -324,6 +326,7 @@ impl RandomizableEffectConfig {
             height,
             gallery_quality: self.gallery_quality,
             special_mode,
+            noise_seed,
 
             // Effect enables
             enable_bloom,
@@ -455,6 +458,12 @@ impl RandomizableEffectConfig {
             enable_dimensional_glitch: self.resolve_enable(
                 "dimensional_glitch",
                 self.enable_dimensional_glitch,
+                &mut randomizer,
+                &mut log,
+            ),
+            enable_deep_space: self.resolve_enable(
+                "deep_space",
+                self.enable_deep_space,
                 &mut randomizer,
                 &mut log,
             ),
@@ -1199,6 +1208,7 @@ pub struct ResolvedEffectConfig {
     #[allow(dead_code)] // Stored for logging purposes
     pub gallery_quality: bool,
     pub special_mode: bool,
+    pub noise_seed: i32,
 
     // Effect enables
     pub enable_bloom: bool,
@@ -1225,6 +1235,7 @@ pub struct ResolvedEffectConfig {
     pub enable_aurora_veils: bool,
     pub enable_prismatic_halos: bool,
     pub enable_dimensional_glitch: bool,
+    pub enable_deep_space: bool,
 
     // Parameters
     pub blur_strength: f64,

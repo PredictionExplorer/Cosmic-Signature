@@ -19,7 +19,7 @@
 //! - Pixel value quantization
 //! - Scanline artifacts
 
-use super::{PixelBuffer, PostEffect};
+use super::{FrameParams, PixelBuffer, PostEffect};
 use rayon::prelude::*;
 use std::error::Error;
 
@@ -247,6 +247,7 @@ impl PostEffect for DimensionalGlitch {
         input: &PixelBuffer,
         width: usize,
         height: usize,
+        _params: &FrameParams,
     ) -> Result<PixelBuffer, Box<dyn Error>> {
         if !self.is_enabled() {
             return Ok(input.clone());
@@ -316,7 +317,7 @@ mod tests {
         // Create high-energy buffer to trigger glitches
         let buffer = test_buffer(100, 100, 0.9);
 
-        let result = effect.process(&buffer, 100, 100);
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = effect.process(&buffer, 100, 100, &params);
         assert!(result.is_ok());
         assert_eq!(result.unwrap().len(), buffer.len());
     }
@@ -328,7 +329,7 @@ mod tests {
 
         // Low energy should not trigger glitches
         let buffer = test_buffer(100, 100, 0.3);
-        let result = effect.process(&buffer, 100, 100).unwrap();
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = effect.process(&buffer, 100, 100, &params).unwrap();
 
         // Should be nearly identical to input
         assert_eq!(result.len(), buffer.len());
@@ -356,7 +357,7 @@ mod tests {
             })
             .collect();
 
-        let result = effect.process(&buffer, 100, 100).unwrap();
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = effect.process(&buffer, 100, 100, &params).unwrap();
 
         for &(r, g, b, a) in &result {
             assert!(r.is_finite(), "Red channel not finite");

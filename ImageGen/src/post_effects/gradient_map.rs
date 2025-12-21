@@ -3,7 +3,7 @@
 //! This effect remaps the luminance values of the image through carefully
 //! crafted gradient palettes to create stunning, professional color treatments.
 
-use super::{PixelBuffer, PostEffect};
+use super::{FrameParams, PixelBuffer, PostEffect};
 use rayon::prelude::*;
 use std::error::Error;
 
@@ -412,6 +412,7 @@ impl PostEffect for GradientMap {
         input: &PixelBuffer,
         _width: usize,
         _height: usize,
+        _params: &FrameParams,
     ) -> Result<PixelBuffer, Box<dyn Error>> {
         if !self.is_enabled() {
             return Ok(input.clone());
@@ -484,7 +485,7 @@ mod tests {
         let map = GradientMap::new(config);
         let buffer = test_buffer(100, 100, 0.5);
 
-        let result = map.process(&buffer, 100, 100);
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = map.process(&buffer, 100, 100, &params);
         assert!(result.is_ok());
         assert_eq!(result.unwrap().len(), buffer.len());
     }
@@ -510,7 +511,7 @@ mod tests {
             let map = GradientMap::new(config);
             let buffer = test_buffer(50, 50, 0.5);
 
-            let result = map.process(&buffer, 50, 50);
+            let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = map.process(&buffer, 50, 50, &params);
             assert!(
                 result.is_ok(),
                 "Palette {:?} should process successfully",
@@ -538,7 +539,7 @@ mod tests {
         let map = GradientMap::new(config);
         let buffer = test_buffer(50, 50, 0.0);
 
-        let result = map.process(&buffer, 50, 50);
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = map.process(&buffer, 50, 50, &params);
         assert!(result.is_ok());
     }
 }

@@ -16,7 +16,7 @@
 //! gentle animation potential (via time parameter) and color gradients that
 //! evoke natural aurora colors (green, purple, pink, blue).
 
-use super::{PixelBuffer, PostEffect};
+use super::{FrameParams, PixelBuffer, PostEffect};
 use rayon::prelude::*;
 use std::error::Error;
 
@@ -238,6 +238,7 @@ impl PostEffect for AuroraVeils {
         input: &PixelBuffer,
         width: usize,
         height: usize,
+        _params: &FrameParams,
     ) -> Result<PixelBuffer, Box<dyn Error>> {
         if !self.is_enabled() {
             return Ok(input.clone());
@@ -301,7 +302,7 @@ mod tests {
         let effect = AuroraVeils::new(config);
         let buffer = test_buffer(100, 100, 0.2);
 
-        let result = effect.process(&buffer, 100, 100);
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = effect.process(&buffer, 100, 100, &params);
         assert!(result.is_ok());
         assert_eq!(result.unwrap().len(), buffer.len());
     }
@@ -312,7 +313,7 @@ mod tests {
         let effect = AuroraVeils::new(config);
         let buffer = test_buffer(50, 50, 0.0);
 
-        let result = effect.process(&buffer, 50, 50);
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = effect.process(&buffer, 50, 50, &params);
         assert!(result.is_ok());
     }
 
@@ -322,7 +323,7 @@ mod tests {
         let effect = AuroraVeils::new(config);
         let buffer = test_buffer(100, 100, 0.1);
 
-        let result = effect.process(&buffer, 100, 100).unwrap();
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = effect.process(&buffer, 100, 100, &params).unwrap();
 
         // Aurora should add light (screen blending)
         let has_added_light = result.iter().zip(buffer.iter()).any(
@@ -356,7 +357,7 @@ mod tests {
             })
             .collect();
 
-        let result = effect.process(&buffer, 100, 100).unwrap();
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = effect.process(&buffer, 100, 100, &params).unwrap();
 
         for &(r, g, b, a) in &result {
             assert!(r.is_finite(), "Red channel not finite");

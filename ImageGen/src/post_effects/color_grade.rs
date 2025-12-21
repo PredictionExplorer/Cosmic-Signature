@@ -4,7 +4,7 @@
 //! the renders a more photographic, gallery-ready look while preserving
 //! the existing dynamic range and hue relationships.
 
-use super::{PixelBuffer, PostEffect};
+use super::{FrameParams, PixelBuffer, PostEffect};
 use crate::render::{constants, parallel_blur_2d_rgba};
 use rayon::prelude::*;
 use std::error::Error;
@@ -208,6 +208,7 @@ impl PostEffect for CinematicColorGrade {
         input: &PixelBuffer,
         width: usize,
         height: usize,
+        _params: &FrameParams,
     ) -> Result<PixelBuffer, Box<dyn Error>> {
         if !self.is_enabled() {
             return Ok(input.clone());
@@ -258,7 +259,7 @@ mod tests {
         let grade = CinematicColorGrade::new(params);
         let buffer = test_buffer(100, 100, 0.5);
 
-        let result = grade.process(&buffer, 100, 100);
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = grade.process(&buffer, 100, 100, &params);
         assert!(result.is_ok());
 
         let output = result.unwrap();
@@ -289,7 +290,7 @@ mod tests {
     fn test_color_grade_handles_zero() {
         let grade = CinematicColorGrade::default();
         let buffer = test_buffer(50, 50, 0.0);
-        let result = grade.process(&buffer, 50, 50);
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = grade.process(&buffer, 50, 50, &params);
         assert!(result.is_ok());
     }
 
@@ -297,7 +298,7 @@ mod tests {
     fn test_color_grade_handles_hdr() {
         let grade = CinematicColorGrade::default();
         let buffer = test_buffer(50, 50, 5.0);
-        let result = grade.process(&buffer, 50, 50);
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = grade.process(&buffer, 50, 50, &params);
         assert!(result.is_ok());
         for &(r, _g, _b, _) in &result.unwrap() {
             assert!(r.is_finite());

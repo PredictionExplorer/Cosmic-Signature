@@ -1,6 +1,6 @@
 //! Gaussian blur-based bloom effect implementation.
 
-use super::{PixelBuffer, PostEffect};
+use super::{FrameParams, PixelBuffer, PostEffect};
 use crate::render::parallel_blur_2d_rgba;
 use rayon::prelude::*;
 use std::error::Error;
@@ -40,6 +40,7 @@ impl PostEffect for GaussianBloom {
         input: &PixelBuffer,
         width: usize,
         height: usize,
+        _params: &FrameParams,
     ) -> Result<PixelBuffer, Box<dyn Error>> {
         if self.radius == 0 {
             // No blur, just apply core brightness
@@ -102,7 +103,7 @@ mod tests {
         let bloom = GaussianBloom::new(5, 0.5, 1.0);
         let buffer = test_buffer(100, 100, 0.5);
 
-        let result = bloom.process(&buffer, 100, 100);
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = bloom.process(&buffer, 100, 100, &params);
         assert!(result.is_ok());
         assert_eq!(result.unwrap().len(), buffer.len());
     }
@@ -112,7 +113,7 @@ mod tests {
         let bloom = GaussianBloom::new(0, 0.5, 1.0);
         let buffer = test_buffer(50, 50, 0.5);
 
-        let result = bloom.process(&buffer, 50, 50);
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = bloom.process(&buffer, 50, 50, &params);
         assert!(result.is_ok());
     }
 
@@ -121,7 +122,7 @@ mod tests {
         let bloom = GaussianBloom::new(5, 0.5, 1.0);
         let buffer = test_buffer(50, 50, 0.0);
 
-        let result = bloom.process(&buffer, 50, 50);
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = bloom.process(&buffer, 50, 50, &params);
         assert!(result.is_ok());
     }
 }

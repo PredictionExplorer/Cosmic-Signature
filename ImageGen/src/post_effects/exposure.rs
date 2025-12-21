@@ -1,6 +1,6 @@
 //! Auto-exposure post-processing effect.
 
-use super::{PixelBuffer, PostEffect};
+use super::{FrameParams, PixelBuffer, PostEffect};
 use crate::render::ExposureCalculator;
 use rayon::prelude::*;
 use std::error::Error;
@@ -40,6 +40,7 @@ impl PostEffect for AutoExposure {
         input: &PixelBuffer,
         _width: usize,
         _height: usize,
+        _params: &FrameParams,
     ) -> Result<PixelBuffer, Box<dyn Error>> {
         // Calculate the exposure multiplier
         let exposure = self.calculator.calculate_exposure(input);
@@ -71,8 +72,9 @@ mod tests {
     fn test_auto_exposure_basic() {
         let exposure = AutoExposure::new();
         let buffer = test_buffer(100, 100, 0.5);
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None };
 
-        let result = exposure.process(&buffer, 100, 100);
+        let result = exposure.process(&buffer, 100, 100, &params);
         assert!(result.is_ok());
         assert_eq!(result.unwrap().len(), buffer.len());
     }
@@ -81,8 +83,9 @@ mod tests {
     fn test_auto_exposure_handles_zero() {
         let exposure = AutoExposure::new();
         let buffer = test_buffer(50, 50, 0.0);
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None };
 
-        let result = exposure.process(&buffer, 50, 50);
+        let result = exposure.process(&buffer, 50, 50, &params);
         assert!(result.is_ok());
     }
 
@@ -90,8 +93,9 @@ mod tests {
     fn test_auto_exposure_handles_hdr() {
         let exposure = AutoExposure::new();
         let buffer = test_buffer(50, 50, 5.0);
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None };
 
-        let result = exposure.process(&buffer, 50, 50);
+        let result = exposure.process(&buffer, 50, 50, &params);
         assert!(result.is_ok());
     }
 }

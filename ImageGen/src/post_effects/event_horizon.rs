@@ -19,7 +19,7 @@
 //! 3. **Lensing Distortion**: Warp background pixels toward mass centers
 //! 4. **Chromatic Separation**: Simulate wavelength-dependent bending
 
-use super::{PixelBuffer, PostEffect};
+use super::{FrameParams, PixelBuffer, PostEffect};
 use rayon::prelude::*;
 use std::error::Error;
 
@@ -228,6 +228,7 @@ impl PostEffect for EventHorizon {
         input: &PixelBuffer,
         width: usize,
         height: usize,
+        _params: &FrameParams,
     ) -> Result<PixelBuffer, Box<dyn Error>> {
         if !self.is_enabled() {
             return Ok(input.clone());
@@ -321,7 +322,7 @@ mod tests {
         let effect = EventHorizon::new(config);
         let buffer = test_buffer(100, 100, 0.5);
 
-        let result = effect.process(&buffer, 100, 100);
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = effect.process(&buffer, 100, 100, &params);
         assert!(result.is_ok());
         assert_eq!(result.unwrap().len(), buffer.len());
     }
@@ -332,7 +333,7 @@ mod tests {
         let effect = EventHorizon::new(config);
         let buffer = test_buffer(50, 50, 0.0);
 
-        let result = effect.process(&buffer, 50, 50);
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = effect.process(&buffer, 50, 50, &params);
         assert!(result.is_ok());
     }
 
@@ -342,7 +343,7 @@ mod tests {
         let effect = EventHorizon::new(config);
         let buffer = test_buffer(50, 50, 5.0);
 
-        let result = effect.process(&buffer, 50, 50);
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = effect.process(&buffer, 50, 50, &params);
         assert!(result.is_ok());
         for &(r, g, b, _) in &result.unwrap() {
             assert!(r.is_finite());
@@ -420,7 +421,7 @@ mod tests {
             })
             .collect();
 
-        let result = effect.process(&buffer, 100, 100).unwrap();
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = effect.process(&buffer, 100, 100, &params).unwrap();
 
         // All outputs should be finite
         for &(r, g, b, a) in &result {

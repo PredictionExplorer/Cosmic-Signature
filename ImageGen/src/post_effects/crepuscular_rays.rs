@@ -4,7 +4,7 @@
 //! creating dramatic "god rays" emanating from bright sources. It adds a sense of
 //! majesty, volume, and divine atmosphere to the image.
 
-use super::{PixelBuffer, PostEffect};
+use super::{FrameParams, PixelBuffer, PostEffect};
 use rayon::prelude::*;
 use std::error::Error;
 
@@ -166,6 +166,7 @@ impl PostEffect for CrepuscularRays {
         input: &PixelBuffer,
         width: usize,
         height: usize,
+        _params: &FrameParams,
     ) -> Result<PixelBuffer, Box<dyn Error>> {
         if !self.is_enabled() {
             return Ok(input.clone());
@@ -213,7 +214,7 @@ mod tests {
         let rays = CrepuscularRays::new(config);
         let buffer = test_buffer(100, 100, 0.5);
 
-        let result = rays.process(&buffer, 100, 100);
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = rays.process(&buffer, 100, 100, &params);
         assert!(result.is_ok());
         assert_eq!(result.unwrap().len(), buffer.len());
     }
@@ -224,7 +225,7 @@ mod tests {
         let rays = CrepuscularRays::new(config);
         let buffer = test_buffer(50, 50, 0.0);
 
-        let result = rays.process(&buffer, 50, 50);
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = rays.process(&buffer, 50, 50, &params);
         assert!(result.is_ok());
     }
 
@@ -234,7 +235,7 @@ mod tests {
         let rays = CrepuscularRays::new(config);
         let buffer = test_buffer(50, 50, 5.0);
 
-        let result = rays.process(&buffer, 50, 50);
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = rays.process(&buffer, 50, 50, &params);
         assert!(result.is_ok());
         for &(r, _, _, _) in &result.unwrap() {
             assert!(r.is_finite());

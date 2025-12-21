@@ -4,7 +4,7 @@
 //! OpenSimplex2S noise. The clouds slowly drift and evolve over time, adding
 //! atmospheric depth and cosmic beauty without overpowering the trajectories.
 
-use super::{PixelBuffer, PostEffect};
+use super::{FrameParams, PixelBuffer, PostEffect};
 use opensimplex2::smooth;
 use rayon::prelude::*;
 use std::error::Error;
@@ -241,9 +241,10 @@ impl PostEffect for NebulaClouds {
         buffer: &PixelBuffer,
         width: usize,
         height: usize,
+        params: &FrameParams,
     ) -> Result<PixelBuffer, Box<dyn Error>> {
         // For static images, use frame 0
-        self.process_with_time(buffer, width, height, 0)
+        self.process_with_time(buffer, width, height, params.frame_number)
     }
 
     fn is_enabled(&self) -> bool {
@@ -354,7 +355,7 @@ mod tests {
 
         // Create test buffer (all black)
         let buffer = vec![(0.0, 0.0, 0.0, 0.0); 10000];
-        let result = nebula.process(&buffer, 100, 100).unwrap();
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = nebula.process(&buffer, 100, 100, &params).unwrap();
 
         // Result should have nebula colors added
         let has_color = result.iter().any(|&(r, g, b, _a)| r > 0.0 || g > 0.0 || b > 0.0);

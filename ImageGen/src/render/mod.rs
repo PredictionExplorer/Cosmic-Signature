@@ -31,7 +31,8 @@ pub mod velocity_hdr;
 pub mod video;
 
 // Import from our submodules
-use self::effects::{EffectChainBuilder, EffectConfig, FrameParams, convert_spd_buffer_to_rgba};
+use crate::post_effects::FrameParams;
+use self::effects::{EffectChainBuilder, EffectConfig, convert_spd_buffer_to_rgba};
 use self::error::{RenderError, Result};
 use self::histogram::HistogramData;
 use self::pipeline::RenderLoopContext;
@@ -83,10 +84,10 @@ pub(crate) fn build_effect_config_from_resolved(
     use crate::oklab::GamutMapMode;
     use crate::post_effects::{
         AetherConfig, AtmosphericDepthConfig, AuroraVeilsConfig, ChampleveConfig, CherenkovConfig,
-        ColorGradeParams, CosmicInkConfig, CrepuscularRaysConfig, DimensionalGlitchConfig,
-        EdgeLuminanceConfig, EventHorizonConfig, FineTextureConfig, GlowEnhancementConfig,
-        MicroContrastConfig, OpalescenceConfig, PrismaticHalosConfig, RefractiveCausticsConfig,
-        VolumetricOcclusionConfig, fine_texture::TextureType,
+        ColorGradeParams, CosmicInkConfig, CrepuscularRaysConfig, DeepSpaceConfig,
+        DimensionalGlitchConfig, EdgeLuminanceConfig, EventHorizonConfig, FineTextureConfig,
+        GlowEnhancementConfig, MicroContrastConfig, OpalescenceConfig, PrismaticHalosConfig,
+        RefractiveCausticsConfig, VolumetricOcclusionConfig, fine_texture::TextureType,
     };
 
     let width = resolved.width as usize;
@@ -359,6 +360,19 @@ pub(crate) fn build_effect_config_from_resolved(
             quantization_levels: 12.0,
             block_size: 8,
         },
+        deep_space_enabled: resolved.enable_deep_space,
+        deep_space_config: DeepSpaceConfig {
+            strength: if resolved.enable_deep_space { 0.35 } else { 0.0 },
+            gas_density: 0.65,
+            scattering_coeff: 0.85,
+            absorption_coeff: 0.12,
+            gas_color: [0.06, 0.12, 0.24],
+            noise_seed: resolved.noise_seed as i64,
+            base_frequency: 0.0018,
+            octaves: 4,
+            illumination_scale: 1.8,
+            illumination_radius: (0.15 * min_dim as f64).max(100.0),
+        },
     }
 }
 
@@ -607,7 +621,19 @@ pub fn render_single_frame_spectral(
     pipeline::apply_energy_density_shift(&mut accum_spd, special_mode);
     convert_spd_buffer_to_rgba(&accum_spd, &mut accum_rgba);
 
-    let frame_params = FrameParams { _frame_number: 0, _density: None };
+    // Get current body positions for the test frame
+    let mut current_body_positions = Vec::with_capacity(3);
+    for i in 0..3 {
+        let p = positions[i][first_frame_step];
+        let (px, py) = ctx.to_pixel(p[0], p[1]);
+        current_body_positions.push((px as f64, py as f64));
+    }
+
+    let frame_params = FrameParams {
+        frame_number: 0,
+        _density: None,
+        body_positions: Some(current_body_positions),
+    };
     let trajectory_pixels = effect_chain
         .process_frame(accum_rgba, width as usize, height as usize, &frame_params)
         .map_err(|e| RenderError::EffectError(e.to_string()))?;

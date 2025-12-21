@@ -4,7 +4,7 @@
 //! without over-sharpening or creating halos. Uses an edge-aware approach
 //! to boost detail perception while preserving smooth gradients.
 
-use super::{PixelBuffer, PostEffect};
+use super::{FrameParams, PixelBuffer, PostEffect};
 use rayon::prelude::*;
 use std::error::Error;
 
@@ -150,6 +150,7 @@ impl PostEffect for MicroContrast {
         input: &PixelBuffer,
         width: usize,
         height: usize,
+        _params: &FrameParams,
     ) -> Result<PixelBuffer, Box<dyn Error>> {
         if !self.is_enabled() {
             return Ok(input.clone());
@@ -295,7 +296,7 @@ mod tests {
             })
             .collect();
 
-        let result = mc.process(&buffer, 100, 100).unwrap();
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = mc.process(&buffer, 100, 100, &params).unwrap();
         assert_eq!(result.len(), buffer.len());
     }
 }
