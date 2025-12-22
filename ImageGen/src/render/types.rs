@@ -387,7 +387,7 @@ impl ChannelLevels {
 /// let scene = SceneDataRef::new(&positions, &colors, &body_alphas);
 /// # let seed = b"test";
 /// # let mut rng = Sha3RandomByteStream::new(seed, 100.0, 300.0, 25.0, 10.0);
-/// let (resolved_config, _log) = RandomizableEffectConfig::default().resolve(&mut rng, 1920, 1080, false);
+/// let (resolved_config, _log) = RandomizableEffectConfig::default().resolve(&mut rng, 1920, 1080, false, 42);
 /// let render_config = RenderConfig::default();
 /// let params = RenderParams::new(
 ///     scene,

@@ -276,7 +276,7 @@ pub fn generate_colors(
 /// # let body_alphas = vec![1.0; 3];
 /// # let seed = b"test";
 /// # let mut rng = Sha3RandomByteStream::new(seed, 100.0, 300.0, 25.0, 10.0);
-/// # let (resolved_config, _log) = RandomizableEffectConfig::default().resolve(&mut rng, 1920, 1080, false);
+/// # let (resolved_config, _log) = RandomizableEffectConfig::default().resolve(&mut rng, 1920, 1080, false, 42);
 /// # let noise_seed = 0i32;
 /// # let render_config = RenderConfig::default();
 /// let levels = build_histogram_and_levels(
@@ -365,7 +365,7 @@ pub fn generate_filename(base_name: &str, profile_tag: &str) -> String {
 /// # let body_alphas = vec![1.0; 3];
 /// # let seed = b"test";
 /// # let mut rng = Sha3RandomByteStream::new(seed, 100.0, 300.0, 25.0, 10.0);
-/// # let (resolved_config, _log) = RandomizableEffectConfig::default().resolve(&mut rng, 1920, 1080, false);
+/// # let (resolved_config, _log) = RandomizableEffectConfig::default().resolve(&mut rng, 1920, 1080, false, 42);
 /// # let levels = ChannelLevels::new(0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
 /// # let noise_seed = 0i32;
 /// # let render_config = RenderConfig::default();
@@ -442,7 +442,7 @@ pub fn render_test_frame(
 /// # let body_alphas = vec![1.0; 3];
 /// # let seed = b"test";
 /// # let mut rng = Sha3RandomByteStream::new(seed, 100.0, 300.0, 25.0, 10.0);
-/// # let (resolved_config, _log) = RandomizableEffectConfig::default().resolve(&mut rng, 1920, 1080, false);
+/// # let (resolved_config, _log) = RandomizableEffectConfig::default().resolve(&mut rng, 1920, 1080, false, 42);
 /// # let levels = ChannelLevels::new(0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
 /// # let noise_seed = 0i32;
 /// # let render_config = RenderConfig::default();

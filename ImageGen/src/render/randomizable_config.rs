@@ -209,7 +209,7 @@ impl RandomizableEffectConfig {
     /// let seed = vec![0x42, 0x43, 0x44, 0x45];
     /// let mut rng = Sha3RandomByteStream::new(&seed, 100.0, 300.0, 300.0, 1.0);
     /// let config = RandomizableEffectConfig::default();
-    /// let (resolved, log) = config.resolve(&mut rng, 1920, 1080, false);
+    /// let (resolved, log) = config.resolve(&mut rng, 1920, 1080, false, 42);
     /// ```
     pub fn resolve(
         &self,
@@ -1056,15 +1056,38 @@ impl RandomizableEffectConfig {
         // Apply conflict detection and adjustments
         let mut resolved = apply_conflict_detection(resolved, &mut log);
 
-        // 4. SPECIAL MODE GUARANTEE (Post-Resolve Enforcement)
-        // Ensure that at least ONE atmospheric effect is active if special_mode is true.
-        // This prevents the RNG from accidentally rolling "False" for both and making a "boring" special image.
-        if resolved.special_mode {
-            if !resolved.enable_cosmic_ink && !resolved.enable_aurora_veils {
-                // If neither was selected, force one based on Biases
-                // Low complexity -> Aurora (cleaner), High complexity -> Ink (swirly)
-                // Energy -> Aurora (light), Matter -> Ink (fluid)
+        // =========================================================================
+        // MUSEUM QUALITY ENFORCEMENT
+        // =========================================================================
+        // Post-resolve enforcement ensures every image meets exhibition standards.
+        // This section implements the "gallery floor" quality baseline.
+        // =========================================================================
 
+        // 4. REGULAR MODE: Depth Cue Guarantee
+        // Volumetric occlusion is essential for professional 3D depth perception.
+        // Without it, images appear flat and amateur. Force-enable if disabled.
+        if !resolved.special_mode && !resolved.enable_volumetric_occlusion {
+            // 85% chance to force-enable volumetric occlusion in regular mode
+            // This ensures most images have depth, while allowing some flat geometric pieces
+            let force_depth = rng.next_f64() < 0.85;
+            if force_depth {
+                resolved.enable_volumetric_occlusion = true;
+                log.add_record(RandomizationRecord::new(
+                    "volumetric_occlusion".to_string(),
+                    true,
+                    false,
+                ));
+            }
+        }
+
+        // 5. GALLERY/SPECIAL MODE: Maximum Beauty Enforcement
+        // Gallery mode (--special) should maximize all beauty effects for cinematic impact.
+        // This is the "exhibition showpiece" mode - no compromises on visual richness.
+        if resolved.special_mode {
+            // 5a. Atmospheric Effect Guarantee
+            // At least ONE atmospheric effect must be active for gallery-worthy depth.
+            if !resolved.enable_cosmic_ink && !resolved.enable_aurora_veils {
+                // Select based on aesthetic biases for coherent visual language
                 let ink_score = biases.complexity * 0.5 + biases.energy_vs_matter * 0.8;
                 let aurora_score =
                     (1.0 - biases.energy_vs_matter) * 0.8 + (1.0 - biases.vintage_vs_digital) * 0.3;
@@ -1082,19 +1105,80 @@ impl RandomizableEffectConfig {
                 }
             }
 
-            // Atmospheric Coherence: If we have atmosphere, we MUST have volumetric shadows.
-            // Shadows give volume to the fog/ink.
-            if (resolved.enable_cosmic_ink
-                || resolved.enable_aurora_veils
-                || resolved.enable_atmospheric_depth)
-                && !resolved.enable_volumetric_occlusion
-            {
+            // 5b. Volumetric Occlusion is MANDATORY in gallery mode
+            // 3D depth is non-negotiable for exhibition-quality renders.
+            if !resolved.enable_volumetric_occlusion {
                 resolved.enable_volumetric_occlusion = true;
                 log.add_record(RandomizationRecord::new(
                     "volumetric_occlusion".to_string(),
                     true,
                     false,
                 ));
+            }
+
+            // 5c. Atmospheric Depth is MANDATORY in gallery mode
+            // Aerial perspective is essential for spatial grandeur.
+            if !resolved.enable_atmospheric_depth {
+                resolved.enable_atmospheric_depth = true;
+                log.add_record(RandomizationRecord::new(
+                    "atmospheric_depth".to_string(),
+                    true,
+                    false,
+                ));
+            }
+
+            // 5d. Chromatic Bloom is HIGHLY encouraged in gallery mode
+            // Prismatic color separation is a luxury signature effect.
+            if !resolved.enable_chromatic_bloom {
+                let force_chromatic = rng.next_f64() < 0.80;
+                if force_chromatic {
+                    resolved.enable_chromatic_bloom = true;
+                    log.add_record(RandomizationRecord::new(
+                        "chromatic_bloom".to_string(),
+                        true,
+                        false,
+                    ));
+                }
+            }
+
+            // 5e. Opalescence is HIGHLY encouraged in gallery mode
+            // Gem-like iridescence adds precious material quality.
+            if !resolved.enable_opalescence {
+                let force_opal = rng.next_f64() < 0.75;
+                if force_opal {
+                    resolved.enable_opalescence = true;
+                    log.add_record(RandomizationRecord::new(
+                        "opalescence".to_string(),
+                        true,
+                        false,
+                    ));
+                }
+            }
+
+            // 5f. Edge Luminance refines form in gallery mode
+            if !resolved.enable_edge_luminance {
+                let force_edge = rng.next_f64() < 0.70;
+                if force_edge {
+                    resolved.enable_edge_luminance = true;
+                    log.add_record(RandomizationRecord::new(
+                        "edge_luminance".to_string(),
+                        true,
+                        false,
+                    ));
+                }
+            }
+
+            // 5g. Deep Space volumetric scattering adds cosmic atmosphere
+            if !resolved.enable_deep_space {
+                let force_deep = rng.next_f64() < 0.60;
+                if force_deep {
+                    resolved.enable_deep_space = true;
+                    log.add_record(RandomizationRecord::new(
+                        "deep_space".to_string(),
+                        true,
+                        false,
+                    ));
+                }
             }
         }
 
@@ -1419,6 +1503,246 @@ fn apply_conflict_detection(
 
 #[cfg(test)]
 mod tests {
-    // Tests omitted for brevity as they just need to be updated to match the struct fields
-    // The compiler will catch any missing fields in struct initialization in other files
+    use super::*;
+    use crate::sim::Sha3RandomByteStream;
+
+    /// Helper to create a test RNG with a fixed seed
+    fn test_rng() -> Sha3RandomByteStream {
+        Sha3RandomByteStream::new(b"test_museum_quality_v1", 100.0, 300.0, 25.0, 10.0)
+    }
+
+    // =========================================================================
+    // MUSEUM QUALITY GUARANTEE TESTS
+    // =========================================================================
+    // These tests verify that both modes produce exhibition-ready output.
+
+    #[test]
+    fn test_gallery_mode_guarantees_volumetric_occlusion() {
+        // Gallery/special mode MUST have volumetric occlusion for 3D depth
+        let mut rng = test_rng();
+        let config = RandomizableEffectConfig {
+            enable_volumetric_occlusion: Some(false), // Explicitly disabled
+            ..Default::default()
+        };
+
+        let (resolved, _log) = config.resolve(&mut rng, 1920, 1080, true, 42);
+
+        assert!(
+            resolved.enable_volumetric_occlusion,
+            "Gallery mode MUST force-enable volumetric_occlusion for depth perception"
+        );
+    }
+
+    #[test]
+    fn test_gallery_mode_guarantees_atmospheric_depth() {
+        // Gallery/special mode MUST have atmospheric depth for spatial grandeur
+        let mut rng = test_rng();
+        let config = RandomizableEffectConfig {
+            enable_atmospheric_depth: Some(false), // Explicitly disabled
+            ..Default::default()
+        };
+
+        let (resolved, _log) = config.resolve(&mut rng, 1920, 1080, true, 42);
+
+        assert!(
+            resolved.enable_atmospheric_depth,
+            "Gallery mode MUST force-enable atmospheric_depth for aerial perspective"
+        );
+    }
+
+    #[test]
+    fn test_gallery_mode_guarantees_atmospheric_effect() {
+        // Gallery mode guarantees at least ONE atmospheric effect (cosmic_ink or aurora_veils)
+        let mut rng = test_rng();
+        let config = RandomizableEffectConfig {
+            enable_cosmic_ink: Some(false),
+            enable_aurora_veils: Some(false),
+            ..Default::default()
+        };
+
+        let (resolved, _log) = config.resolve(&mut rng, 1920, 1080, true, 42);
+
+        assert!(
+            resolved.enable_cosmic_ink || resolved.enable_aurora_veils,
+            "Gallery mode MUST have at least one atmospheric effect enabled"
+        );
+    }
+
+    #[test]
+    fn test_regular_mode_high_probability_volumetric_occlusion() {
+        // Regular mode should have high probability of volumetric occlusion
+        // Run multiple times to verify statistical guarantee (~85% expected)
+        let mut enabled_count = 0;
+        let iterations = 100;
+
+        for i in 0..iterations {
+            let seed = format!("test_regular_depth_{}", i);
+            let mut rng = Sha3RandomByteStream::new(seed.as_bytes(), 100.0, 300.0, 25.0, 10.0);
+            let config = RandomizableEffectConfig::default();
+            let (resolved, _log) = config.resolve(&mut rng, 1920, 1080, false, i as i32);
+
+            if resolved.enable_volumetric_occlusion {
+                enabled_count += 1;
+            }
+        }
+
+        // Should be enabled in roughly 85%+ of cases due to base probability + enforcement
+        let enable_rate = enabled_count as f64 / iterations as f64;
+        assert!(
+            enable_rate > 0.75,
+            "Regular mode volumetric_occlusion enable rate ({:.0}%) should be >75% for depth quality",
+            enable_rate * 100.0
+        );
+    }
+
+    #[test]
+    fn test_gallery_mode_chromatic_bloom_highly_likely() {
+        // Gallery mode should have very high chromatic bloom probability
+        let mut enabled_count = 0;
+        let iterations = 50;
+
+        for i in 0..iterations {
+            let seed = format!("test_gallery_chromatic_{}", i);
+            let mut rng = Sha3RandomByteStream::new(seed.as_bytes(), 100.0, 300.0, 25.0, 10.0);
+            let config = RandomizableEffectConfig::default();
+            let (resolved, _log) = config.resolve(&mut rng, 1920, 1080, true, i as i32);
+
+            if resolved.enable_chromatic_bloom {
+                enabled_count += 1;
+            }
+        }
+
+        let enable_rate = enabled_count as f64 / iterations as f64;
+        assert!(
+            enable_rate > 0.70,
+            "Gallery mode chromatic_bloom should be >70% enabled ({:.0}%)",
+            enable_rate * 100.0
+        );
+    }
+
+    #[test]
+    fn test_gallery_mode_opalescence_highly_likely() {
+        // Gallery mode should have very high opalescence probability
+        let mut enabled_count = 0;
+        let iterations = 50;
+
+        for i in 0..iterations {
+            let seed = format!("test_gallery_opal_{}", i);
+            let mut rng = Sha3RandomByteStream::new(seed.as_bytes(), 100.0, 300.0, 25.0, 10.0);
+            let config = RandomizableEffectConfig::default();
+            let (resolved, _log) = config.resolve(&mut rng, 1920, 1080, true, i as i32);
+
+            if resolved.enable_opalescence {
+                enabled_count += 1;
+            }
+        }
+
+        let enable_rate = enabled_count as f64 / iterations as f64;
+        assert!(
+            enable_rate > 0.65,
+            "Gallery mode opalescence should be >65% enabled ({:.0}%)",
+            enable_rate * 100.0
+        );
+    }
+
+    #[test]
+    fn test_regular_mode_no_atmospheric_effects() {
+        // Regular mode should NOT enable cosmic_ink or aurora_veils
+        // These are gallery-mode exclusive for the "clean vs atmospheric" distinction
+        let mut rng = test_rng();
+        let config = RandomizableEffectConfig::default();
+        let (resolved, _log) = config.resolve(&mut rng, 1920, 1080, false, 42);
+
+        assert!(
+            !resolved.enable_cosmic_ink,
+            "Regular mode should NOT enable cosmic_ink (gallery-mode exclusive)"
+        );
+        assert!(
+            !resolved.enable_aurora_veils,
+            "Regular mode should NOT enable aurora_veils (gallery-mode exclusive)"
+        );
+    }
+
+    #[test]
+    fn test_gradient_map_available_in_both_modes() {
+        // Gradient map (luxury palettes) should be available in BOTH modes
+        let mut rng = test_rng();
+
+        // Test regular mode
+        let config = RandomizableEffectConfig {
+            enable_gradient_map: Some(true),
+            ..Default::default()
+        };
+        let (resolved_regular, _) = config.resolve(&mut rng, 1920, 1080, false, 42);
+
+        // Test gallery mode
+        let mut rng2 = test_rng();
+        let config2 = RandomizableEffectConfig {
+            enable_gradient_map: Some(true),
+            ..Default::default()
+        };
+        let (resolved_gallery, _) = config2.resolve(&mut rng2, 1920, 1080, true, 42);
+
+        assert!(
+            resolved_regular.enable_gradient_map,
+            "Gradient map should be available in regular mode"
+        );
+        assert!(
+            resolved_gallery.enable_gradient_map,
+            "Gradient map should be available in gallery mode"
+        );
+    }
+
+    #[test]
+    fn test_special_mode_stores_flag_correctly() {
+        let mut rng = test_rng();
+        let config = RandomizableEffectConfig::default();
+
+        let (resolved_regular, _) = config.resolve(&mut rng, 1920, 1080, false, 42);
+        let mut rng2 = test_rng();
+        let (resolved_special, _) = config.resolve(&mut rng2, 1920, 1080, true, 42);
+
+        assert!(!resolved_regular.special_mode, "Regular mode should have special_mode=false");
+        assert!(resolved_special.special_mode, "Special mode should have special_mode=true");
+    }
+
+    #[test]
+    fn test_nebula_strength_in_valid_range() {
+        // Nebula strength should now be in a valid non-zero range (was disabled)
+        let mut rng = test_rng();
+        let config = RandomizableEffectConfig::default();
+        let (resolved, _) = config.resolve(&mut rng, 1920, 1080, true, 42);
+
+        assert!(
+            resolved.nebula_strength >= 0.12 && resolved.nebula_strength <= 0.35,
+            "Nebula strength ({}) should be in range [0.12, 0.35]",
+            resolved.nebula_strength
+        );
+    }
+
+    #[test]
+    fn test_deep_space_elevated_probability() {
+        // Deep space should have elevated probability due to museum quality boost
+        let mut enabled_count = 0;
+        let iterations = 100;
+
+        for i in 0..iterations {
+            let seed = format!("test_deep_space_{}", i);
+            let mut rng = Sha3RandomByteStream::new(seed.as_bytes(), 100.0, 300.0, 25.0, 10.0);
+            let config = RandomizableEffectConfig::default();
+            let (resolved, _log) = config.resolve(&mut rng, 1920, 1080, true, i as i32);
+
+            if resolved.enable_deep_space {
+                enabled_count += 1;
+            }
+        }
+
+        let enable_rate = enabled_count as f64 / iterations as f64;
+        // Base probability 0.40 + gallery enforcement = should be well over 50%
+        assert!(
+            enable_rate > 0.50,
+            "Gallery mode deep_space should be >50% enabled ({:.0}%)",
+            enable_rate * 100.0
+        );
+    }
 }

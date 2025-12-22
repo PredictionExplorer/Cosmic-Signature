@@ -739,15 +739,16 @@ pub const CLIP_WHITE: FloatParamDescriptor = FloatParamDescriptor {
 };
 
 // ==================== NEBULA ====================
-// Note: Currently disabled but parameters defined for potential future use
+// Background Perlin noise clouds (3D OpenSimplex2S noise)
+// Only visible when special_mode is enabled
 
 pub const NEBULA_STRENGTH: FloatParamDescriptor = FloatParamDescriptor {
     name: "nebula_strength",
-    min: 0.0, // Disabled completely (was 0.30)
-    max: 0.0, // Disabled completely
-    gallery_min: 0.0,
-    gallery_max: 0.0,
-    description: "Nebula cloud background opacity (currently disabled)",
+    min: 0.12,
+    max: 0.35,
+    gallery_min: 0.15,
+    gallery_max: 0.28,
+    description: "Nebula cloud background opacity (special mode only)",
 };
 
 pub const NEBULA_OCTAVES: IntParamDescriptor = IntParamDescriptor {

@@ -125,7 +125,7 @@ fn snapshot_render_default_preset() {
 
     let mut rng = Sha3RandomByteStream::new(seed, 100.0, 300.0, 25.0, 10.0);
     let (resolved_config, _log) =
-        RandomizableEffectConfig::default().resolve(&mut rng, 640, 480, false);
+        RandomizableEffectConfig::default().resolve(&mut rng, 640, 480, false, 42);
 
     // Build histogram (simplified - use mock levels for test speed)
     let levels = ChannelLevels::new(0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
@@ -148,7 +148,7 @@ fn snapshot_render_gallery_preset() {
     let mut rng = Sha3RandomByteStream::new(seed, 100.0, 300.0, 25.0, 10.0);
     let mut config = RandomizableEffectConfig::default();
     Preset::Gallery.apply(&mut config);
-    let (resolved_config, _log) = config.resolve(&mut rng, 640, 480, false);
+    let (resolved_config, _log) = config.resolve(&mut rng, 640, 480, false, 42);
 
     let levels = ChannelLevels::new(0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
 
@@ -170,7 +170,7 @@ fn snapshot_render_minimal_preset() {
     let mut rng = Sha3RandomByteStream::new(seed, 100.0, 300.0, 25.0, 10.0);
     let mut config = RandomizableEffectConfig::default();
     Preset::Minimal.apply(&mut config);
-    let (resolved_config, _log) = config.resolve(&mut rng, 640, 480, false);
+    let (resolved_config, _log) = config.resolve(&mut rng, 640, 480, false, 42);
 
     let levels = ChannelLevels::new(0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
 
@@ -191,7 +191,7 @@ fn snapshot_render_special_mode() {
 
     let mut rng = Sha3RandomByteStream::new(seed, 100.0, 300.0, 25.0, 10.0);
     let (resolved_config, _log) =
-        RandomizableEffectConfig::default().resolve(&mut rng, 640, 480, true);
+        RandomizableEffectConfig::default().resolve(&mut rng, 640, 480, true, 42);
 
     let levels = ChannelLevels::new(0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
 
@@ -212,7 +212,7 @@ fn snapshot_histogram_computation() {
 
     let mut rng = Sha3RandomByteStream::new(seed, 100.0, 300.0, 25.0, 10.0);
     let (resolved_config, _log) =
-        RandomizableEffectConfig::default().resolve(&mut rng, 320, 240, false);
+        RandomizableEffectConfig::default().resolve(&mut rng, 320, 240, false, 42);
 
     let scene = SceneDataRef::new(&positions, &colors, &alphas);
     let render_config = RenderConfig::default();

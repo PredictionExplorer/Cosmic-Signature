@@ -164,6 +164,51 @@ pub const DEFAULT_AETHER_CAUSTIC_STRENGTH: f64 = 0.45; // Increased from 0.35 fo
 /// Refined caustic softness for elegant bleed and bloom
 pub const DEFAULT_AETHER_CAUSTIC_SOFTNESS: f64 = 3.5; // Increased from 3.0 for smoother transitions
 
+// ========== Gallery & Regular Mode Constants ==========
+//
+// Both modes produce museum-quality output with different aesthetics:
+// - Regular Mode: Elegant, refined, geometric precision
+// - Gallery/Special Mode: Dramatic, atmospheric, cinematic depth
+
+/// Palette wave strength for gallery/special mode (full cinematic color harmony).
+///
+/// Palette waves create flowing color gradients that tie the image together
+/// visually, producing a harmonious, cohesive aesthetic reminiscent of
+/// Renaissance chiaroscuro or high-end art photography.
+///
+/// # Value
+///
+/// - **1.0** (gallery mode): Full strength for maximum color harmony
+pub const GALLERY_PALETTE_WAVE_STRENGTH: f64 = 1.0;
+
+/// Palette wave strength for regular mode (subtle refinement).
+///
+/// Even in regular mode, a subtle palette wave adds sophistication without
+/// overwhelming the clean geometric aesthetic. This creates a "gallery floor"
+/// quality baseline where all images are exhibition-ready.
+///
+/// # Value
+///
+/// - **0.4** (regular mode): Subtle enhancement for refined elegance
+pub const REGULAR_PALETTE_WAVE_STRENGTH: f64 = 0.4;
+
+/// Velocity HDR boost factor for regular mode.
+///
+/// While gallery/special mode uses full velocity HDR (8.0×), regular mode
+/// benefits from a subtle velocity-based brightness enhancement that adds
+/// life and dynamism without the dramatic flares.
+///
+/// # Physical Basis
+///
+/// Fast-moving celestial bodies create motion blur and light concentration.
+/// This subtle effect preserves the geometric elegance of regular mode while
+/// adding a hint of physics-based visual interest.
+///
+/// # Value
+///
+/// - **3.0** (regular mode): Subtle but perceptible motion enhancement
+pub const REGULAR_VELOCITY_HDR_BOOST_FACTOR: f64 = 3.0;
+
 // ========== Special Mode Enhancement Constants ==========
 
 /// Spectral dispersion strength controls prismatic trail separation.

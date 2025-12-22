@@ -221,102 +221,130 @@ impl<'a> EffectRandomizer<'a> {
         // v = 0 (Vintage), v = 1 (Digital)
         let v = self.biases.vintage_vs_digital;
 
+        // =========================================================================
+        // MUSEUM QUALITY PROBABILITY TUNING
+        // =========================================================================
+        // All base probabilities are set to ensure exhibition-ready output.
+        // Effects that add beauty without visual clutter have elevated baselines.
+        // The goal: every image could hang in a high-end gallery.
+        // =========================================================================
+
         let prob = match effect_name {
-            // ================== CORE EFFECTS ==================
+            // ================== CORE EFFECTS (Essential Beauty) ==================
             "bloom" => {
-                // Almost always on, but slightly favored by Energy
-                0.7 + (1.0 - e) * 0.2
+                // Almost always on - the foundation of luminous beauty
+                0.75 + (1.0 - e) * 0.20
             }
             "glow" => {
-                // Favored by Energy and High Complexity
-                0.4 + (1.0 - e) * 0.4 + c * 0.1
+                // Elevated baseline for ethereal sparkle on bright areas
+                0.50 + (1.0 - e) * 0.35 + c * 0.10
             }
             "color_grade" => {
-                // Always good, slightly favored by Vintage
-                0.6 + (1.0 - v) * 0.2
+                // Essential for cinematic quality - very high baseline
+                0.70 + (1.0 - v) * 0.20
             }
 
-            // ================== SURFACE / MATTER ==================
+            // ================== SURFACE / MATTER (Tactile Richness) ==================
             "champleve" => {
-                // Strongly favored by Matter
-                0.1 + e * 0.8
+                // Metallic enamel beauty - elevated for material richness
+                0.25 + e * 0.60
             }
             "fine_texture" => {
-                // Strongly favored by Matter
-                0.2 + e * 0.6
+                // Canvas/surface quality - elevated for museum-print feel
+                0.35 + e * 0.50
             }
             "opalescence" => {
-                // Matter + Vintage (Pearlescent look)
-                0.1 + e * 0.4 + (1.0 - v) * 0.2
+                // BOOSTED: Gem-like iridescent shimmer is essential for luxury feel
+                // Elevated from 0.1 to 0.35 baseline for consistent exhibition quality
+                0.35 + e * 0.30 + (1.0 - v) * 0.20
             }
             "edge_luminance" => {
-                // Matter (Rim light) or Digital (Neon edge)
-                // U-shaped curve: good for both extremes, bad for middle
+                // Form refinement - elevated baseline for sculptural definition
                 let distinctiveness = (e - 0.5).abs() * 2.0;
-                0.3 + distinctiveness * 0.4
+                0.40 + distinctiveness * 0.35
             }
 
-            // ================== LIGHT / ENERGY ==================
+            // ================== LIGHT / ENERGY (Dramatic Beauty) ==================
             "crepuscular_rays" => {
-                // Energy + Complexity
-                0.1 + (1.0 - e) * 0.5 + c * 0.2
+                // God rays - elevated for divine lighting quality
+                0.25 + (1.0 - e) * 0.45 + c * 0.20
             }
             "cherenkov" => {
-                // Digital + Energy
-                0.1 + v * 0.4 + (1.0 - e) * 0.3
+                // BOOSTED: Blue velocity glow creates stunning physics visualization
+                // Elevated from 0.1 to 0.30 baseline for consistent energy rendering
+                0.30 + v * 0.35 + (1.0 - e) * 0.25
             }
             "prismatic_halos" => {
-                // Digital + Energy + Complexity
-                0.05 + v * 0.3 + (1.0 - e) * 0.3 + c * 0.2
+                // BOOSTED: Rainbow halos around bright spots are gallery showstoppers
+                // Elevated from 0.05 to 0.25 baseline for optical phenomenon beauty
+                0.25 + v * 0.25 + (1.0 - e) * 0.25 + c * 0.15
             }
             "chromatic_bloom" => {
-                // Digital favorite
-                0.2 + v * 0.6
+                // BOOSTED: Prismatic color separation is a signature luxury effect
+                // Elevated from 0.2 to 0.40 baseline for consistent color richness
+                0.40 + v * 0.45
             }
 
-            // ================== ATMOSPHERE (Special Mode uses overrides, this is base) ==================
+            // ================== ATMOSPHERE (Depth & Space) ==================
             "volumetric_occlusion" => {
-                // Matter (needs surface to cast shadow) or Energy (needs light) -> Balanced
-                // Favored by Complexity
-                0.3 + c * 0.4
+                // BOOSTED: Self-shadowing is CRITICAL for 3D depth perception
+                // Elevated to ensure almost all images have professional depth cues
+                // This is what separates amateur from gallery-quality renders
+                0.55 + c * 0.30
             }
             "atmospheric_depth" => {
-                // Vintage (Haze) + Complexity
-                0.2 + (1.0 - v) * 0.4 + c * 0.3
+                // BOOSTED: Spatial perspective creates exhibition-quality depth
+                // Elevated for consistent aerial perspective in all renders
+                0.45 + (1.0 - v) * 0.30 + c * 0.20
             }
 
-            // ================== ARTIFACTS ==================
+            // ================== ARTIFACTS (Selective Drama) ==================
             "dimensional_glitch" => {
-                // Pure Digital + Energy
-                if v > 0.7 && e < 0.4 { 0.6 } else { 0.05 }
+                // Keep selective - only for specific aesthetic contexts
+                if v > 0.7 && e < 0.4 { 0.55 } else { 0.08 }
             }
             "perceptual_blur" => {
-                // Vintage (Softness)
-                0.3 + (1.0 - v) * 0.5
+                // Smooth blending - elevated for refined softness
+                0.40 + (1.0 - v) * 0.45
             }
             "micro_contrast" => {
-                // Digital (Sharpness) + Matter (Texture detail)
-                0.3 + v * 0.3 + e * 0.3
+                // Detail clarity - elevated for exhibition sharpness
+                0.40 + v * 0.25 + e * 0.25
             }
 
-            // ================== STRUCTURAL ==================
+            // ================== STRUCTURAL (Form & Flow) ==================
             "aether" => {
-                // Good all-rounder, favored by Complexity
-                0.2 + c * 0.5
+                // Woven light filaments - elevated for ethereal beauty
+                0.35 + c * 0.45
             }
             "gradient_map" => {
-                // Digital (False color) or Vintage (Sepia/Duotone)
-                // High complexity favors it less (too busy)
-                0.4 + (1.0 - c) * 0.3
+                // Luxury color palettes - higher baseline now that it's in both modes
+                0.50 + (1.0 - c) * 0.25
             }
 
-            // Legacy / Rare
-            "refractive_caustics" => 0.05,
-            "event_horizon" => 0.1 + c * 0.2,
-            "cosmic_ink" => 0.1 + c * 0.2,
-            "aurora_veils" => 0.1 + c * 0.2,
+            // ================== PHYSICS VISUALIZATION (Gallery Showpieces) ==================
+            "event_horizon" => {
+                // BOOSTED: Gravity lensing is a stunning centerpiece effect
+                // Elevated from 0.1 to 0.30 baseline for physics-based drama
+                0.30 + c * 0.25
+            }
+            "cosmic_ink" => {
+                // Fluid space medium - elevated for atmospheric presence
+                0.25 + c * 0.30
+            }
+            "aurora_veils" => {
+                // Atmospheric curtains - elevated for majestic scale
+                0.25 + c * 0.30
+            }
+            "deep_space" => {
+                // Volumetric scattering - elevated for cosmic atmosphere
+                0.40 + c * 0.25
+            }
 
-            _ => 0.5,
+            // Legacy effects (kept low intentionally)
+            "refractive_caustics" => 0.08,
+
+            _ => 0.50,
         };
 
         prob.clamp(0.05, 0.95)

@@ -124,7 +124,8 @@ pub(crate) fn build_effect_config_from_resolved(
     };
 
     // Determine gradient map settings
-    let gradient_map_enabled = resolved.enable_gradient_map && resolved.special_mode;
+    // Luxury color palettes are available in both modes for museum-quality output
+    let gradient_map_enabled = resolved.enable_gradient_map;
     let gradient_map_config = GradientMapConfig {
         palette: LuxuryPalette::from_index(resolved.gradient_map_palette),
         strength: resolved.gradient_map_strength,
@@ -155,7 +156,13 @@ pub(crate) fn build_effect_config_from_resolved(
             tone_curve: resolved.tone_curve_strength,
             shadow_tint: constants::DEFAULT_COLOR_GRADE_SHADOW_TINT,
             highlight_tint: constants::DEFAULT_COLOR_GRADE_HIGHLIGHT_TINT,
-            palette_wave_strength: if resolved.special_mode { 1.0 } else { 0.0 },
+            // Palette wave adds color harmony; full strength in gallery/special mode,
+            // subtle enhancement in regular mode for refined elegance
+            palette_wave_strength: if resolved.special_mode {
+                constants::GALLERY_PALETTE_WAVE_STRENGTH
+            } else {
+                constants::REGULAR_PALETTE_WAVE_STRENGTH
+            },
         },
         gradient_map_enabled,
         gradient_map_config,

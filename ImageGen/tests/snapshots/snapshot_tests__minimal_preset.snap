@@ -9,9 +9,9 @@ center:
   - 0
   - 0
 top_left:
-  - 7993
-  - 2952
-  - 658
+  - 2
+  - 1
+  - 0
 top_right:
   - 0
   - 0
@@ -24,7 +24,7 @@ bottom_right:
   - 0
   - 0
   - 0
-avg_r: 75
-avg_g: 31
-avg_b: 6
-non_black_pixels: 11714
+avg_r: 977
+avg_g: 601
+avg_b: 169
+non_black_pixels: 15196

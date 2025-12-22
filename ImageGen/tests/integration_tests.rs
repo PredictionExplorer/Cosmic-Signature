@@ -12,11 +12,12 @@
 
 use nalgebra::Vector3;
 use three_body_problem::{
+    post_effects::FrameParams,
     presets::Preset,
     render::{
         color::generate_body_color_sequences,
         context::RenderContext,
-        effects::{DogBloomConfig, EffectChainBuilder, EffectConfig, FrameParams},
+        effects::{DogBloomConfig, EffectChainBuilder, EffectConfig},
         types::{BlurConfig, ChannelLevels, Resolution},
     },
     sim::{Body, Sha3RandomByteStream, get_positions},
@@ -182,7 +183,7 @@ fn test_effect_chain_default_processes_buffer() {
     let height = 32;
     let buffer = vec![(0.5, 0.5, 0.5, 1.0); width * height];
 
-    let params = FrameParams { _frame_number: 0, _density: None };
+    let params = FrameParams { frame_number: 0, _density: None, body_positions: None };
 
     let result = chain.process_frame(buffer, width, height, &params);
     assert!(result.is_ok(), "Effect chain should succeed: {:?}", result.err());
@@ -213,7 +214,7 @@ fn test_effect_chain_with_builder() {
     let height = 16;
     let buffer = vec![(0.8, 0.7, 0.6, 1.0); width * height];
 
-    let params = FrameParams { _frame_number: 0, _density: None };
+    let params = FrameParams { frame_number: 0, _density: None, body_positions: None };
     let result = chain.process_frame(buffer, width, height, &params);
 
     assert!(result.is_ok(), "Builder-configured chain should succeed");
@@ -229,7 +230,7 @@ fn test_effect_chain_disabled_effects() {
     let height = 16;
     let input = vec![(0.5, 0.5, 0.5, 1.0); width * height];
 
-    let params = FrameParams { _frame_number: 0, _density: None };
+    let params = FrameParams { frame_number: 0, _density: None, body_positions: None };
     let result = chain.process_frame(input.clone(), width, height, &params);
 
     assert!(result.is_ok());
@@ -252,7 +253,7 @@ fn test_effect_chain_handles_black_buffer() {
     let height = 32;
     let buffer = vec![(0.0, 0.0, 0.0, 0.0); width * height];
 
-    let params = FrameParams { _frame_number: 0, _density: None };
+    let params = FrameParams { frame_number: 0, _density: None, body_positions: None };
     let result = chain.process_frame(buffer, width, height, &params);
 
     assert!(result.is_ok(), "Should handle black buffer");
@@ -268,7 +269,7 @@ fn test_effect_chain_handles_bright_buffer() {
     let height = 32;
     let buffer = vec![(5.0, 5.0, 5.0, 1.0); width * height];
 
-    let params = FrameParams { _frame_number: 0, _density: None };
+    let params = FrameParams { frame_number: 0, _density: None, body_positions: None };
     let result = chain.process_frame(buffer, width, height, &params);
 
     assert!(result.is_ok(), "Should handle bright buffer");
