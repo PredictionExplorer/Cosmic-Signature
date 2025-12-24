@@ -117,7 +117,7 @@ pub(crate) static ACES_LUT: LazyLock<AcesLut> = LazyLock::new(AcesLut::new);
 /// Core tonemapping function (shared logic for both 8-bit and 16-bit)
 ///
 /// This function performs the complete tonemapping pipeline:
-/// 1. Alpha premultiplication check
+/// 1. Alpha validation
 /// 2. Black/white level adjustment
 /// 3. ACES curve application
 /// 4. Chroma preservation for vivid colors
@@ -126,13 +126,19 @@ pub(crate) static ACES_LUT: LazyLock<AcesLut> = LazyLock::new(AcesLut::new);
 ///
 /// # Arguments
 ///
-/// * `fr, fg, fb` - Linear RGB input (premultiplied)
+/// * `fr, fg, fb` - Linear RGB input (already premultiplied by alpha)
 /// * `fa` - Alpha channel [0.0, 1.0]
 /// * `levels` - Per-channel black/white points from histogram
 ///
 /// # Returns
 ///
 /// Final RGB channels in 0.0-1.0 range (ready for quantization)
+///
+/// # Note on Premultiplied Alpha
+///
+/// Input RGB values are expected to already be premultiplied (R×α, G×α, B×α).
+/// This is the standard format from composite_buffers and the effect chain.
+/// We do NOT multiply by alpha again to avoid double-premultiplication.
 #[inline]
 pub(crate) fn tonemap_core(fr: f64, fg: f64, fb: f64, fa: f64, levels: &ChannelLevels) -> [f64; 3] {
     let alpha = fa.clamp(0.0, 1.0);
@@ -140,11 +146,15 @@ pub(crate) fn tonemap_core(fr: f64, fg: f64, fb: f64, fa: f64, levels: &ChannelL
         return [0.0, 0.0, 0.0];
     }
 
-    let source = [fr.max(0.0), fg.max(0.0), fb.max(0.0)];
-    let premult = [source[0] * alpha, source[1] * alpha, source[2] * alpha];
+    // Input is already premultiplied (RGB × alpha), use directly
+    // DO NOT multiply by alpha again - that was causing nebula to be invisible!
+    let premult = [fr.max(0.0), fg.max(0.0), fb.max(0.0)];
     if premult[0] <= 0.0 && premult[1] <= 0.0 && premult[2] <= 0.0 {
         return [0.0, 0.0, 0.0];
     }
+
+    // Compute straight (unpremultiplied) RGB for chroma calculations
+    let source = [premult[0] / alpha, premult[1] / alpha, premult[2] / alpha];
 
     let mut leveled = [0.0; 3];
     for i in 0..3 {
@@ -299,5 +309,200 @@ mod tests {
         assert!(result[0] >= 0.0); // Must be non-negative
         assert!(result[1] >= 0.0);
         assert!(result[2] >= 0.0);
+    }
+
+    // ==================== PREMULTIPLIED ALPHA TESTS ====================
+    // These tests verify the fix for the double-premultiplication bug that
+    // was causing nebula clouds to be invisible.
+
+    #[test]
+    fn test_premultiplied_input_no_double_multiplication() {
+        // This test verifies that premultiplied input is NOT multiplied by alpha again.
+        // Bug: Previously, input was multiplied by alpha twice, making low-alpha regions ~α² darker.
+        //
+        // Scenario: Nebula with straight RGB [0.12, 0.06, 0.28] and alpha 0.13
+        // After composite_buffers premultiplication: [0.0156, 0.0078, 0.0364, 0.13]
+        //
+        // OLD BUG: Would compute 0.0156 * 0.13 = 0.002 (nearly invisible!)
+        // FIX: Uses 0.0156 directly (visible as intended)
+
+        let levels = ChannelLevels::new(0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
+
+        // Simulate nebula-like premultiplied input
+        let alpha = 0.13;
+        let straight_r = 0.12;
+        let straight_g = 0.06;
+        let straight_b = 0.28;
+
+        // Premultiplied values (as output by composite_buffers)
+        let premult_r = straight_r * alpha; // 0.0156
+        let premult_g = straight_g * alpha; // 0.0078
+        let premult_b = straight_b * alpha; // 0.0364
+
+        let result = tonemap_core(premult_r, premult_g, premult_b, alpha, &levels);
+
+        // Result should be visible (not near-zero)
+        // With the bug, these would be ~0.002, now they should be ~0.01-0.03
+        assert!(
+            result[0] > 0.005,
+            "Red channel too dark: {} (was double-premultiplied?)",
+            result[0]
+        );
+        assert!(
+            result[2] > 0.01,
+            "Blue channel too dark: {} (was double-premultiplied?)",
+            result[2]
+        );
+
+        // Verify the output is proportional to input, not squared
+        // If double-premultiplied, blue would be ~13x darker than expected
+        let blue_to_red_ratio = result[2] / result[0];
+        let expected_ratio = straight_b / straight_r; // ~2.33
+        assert!(
+            (blue_to_red_ratio - expected_ratio).abs() < 1.0,
+            "Color ratios wrong: got {}, expected ~{}",
+            blue_to_red_ratio,
+            expected_ratio
+        );
+    }
+
+    #[test]
+    fn test_low_alpha_produces_visible_output() {
+        // Nebula clouds have alpha ~0.13-0.35
+        // Even with low alpha, the output should be clearly visible
+        let levels = ChannelLevels::new(0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
+
+        for alpha in [0.10, 0.15, 0.20, 0.25, 0.30, 0.35] {
+            // Premultiplied purple color (typical nebula)
+            let premult_r = 0.15 * alpha;
+            let premult_g = 0.08 * alpha;
+            let premult_b = 0.25 * alpha;
+
+            let result = tonemap_core(premult_r, premult_g, premult_b, alpha, &levels);
+            let result_16bit = tonemap_to_16bit(premult_r, premult_g, premult_b, alpha, &levels);
+
+            // Should produce visible 16-bit values (at least a few hundred out of 65535)
+            assert!(
+                result_16bit[2] > 500,
+                "Alpha {} produced invisible blue: {} (16-bit)",
+                alpha,
+                result_16bit[2]
+            );
+
+            // Float result should be meaningful
+            assert!(
+                result[0] > 0.001 && result[1] > 0.001 && result[2] > 0.001,
+                "Alpha {} produced near-zero output: {:?}",
+                alpha,
+                result
+            );
+        }
+    }
+
+    #[test]
+    fn test_alpha_scaling_is_linear_not_quadratic() {
+        // If double-premultiplication bug exists, halving alpha would quarter the output (α²).
+        // With the fix, halving alpha should roughly halve the output (linear).
+        let levels = ChannelLevels::new(0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
+
+        let straight_rgb = (0.5, 0.5, 0.5);
+
+        let alpha_high = 0.4;
+        let alpha_low = 0.2; // Half of high
+
+        // Premultiplied inputs
+        let result_high = tonemap_core(
+            straight_rgb.0 * alpha_high,
+            straight_rgb.1 * alpha_high,
+            straight_rgb.2 * alpha_high,
+            alpha_high,
+            &levels,
+        );
+        let result_low = tonemap_core(
+            straight_rgb.0 * alpha_low,
+            straight_rgb.1 * alpha_low,
+            straight_rgb.2 * alpha_low,
+            alpha_low,
+            &levels,
+        );
+
+        // Ratio should be closer to 2 (linear) than to 4 (quadratic bug)
+        let ratio = result_high[0] / result_low[0];
+
+        assert!(
+            ratio < 3.0,
+            "Ratio {} suggests quadratic scaling (bug). Expected closer to 2.0 (linear).",
+            ratio
+        );
+        assert!(
+            ratio > 1.2,
+            "Ratio {} is too low, higher alpha should produce brighter output.",
+            ratio
+        );
+    }
+
+    #[test]
+    fn test_nebula_composite_scenario() {
+        // End-to-end test simulating the exact nebula rendering scenario:
+        // 1. Nebula generates straight alpha: color=[0.12, 0.06, 0.28], alpha=0.18
+        // 2. composite_buffers premultiplies for "no trajectory" pixels
+        // 3. tonemap_core receives premultiplied values
+        let levels = ChannelLevels::new(0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
+
+        // Nebula cloud colors (from NebulaCloudConfig::special_mode)
+        let nebula_colors = [
+            [0.12, 0.06, 0.28], // Rich purple
+            [0.05, 0.20, 0.24], // Vibrant teal
+            [0.22, 0.05, 0.24], // Vibrant magenta
+            [0.03, 0.08, 0.20], // Deep blue
+        ];
+        let nebula_alpha = 0.18; // Typical nebula strength
+
+        for (i, color) in nebula_colors.iter().enumerate() {
+            // Simulate composite_buffers output for no-trajectory pixel
+            let premult_r = color[0] * nebula_alpha;
+            let premult_g = color[1] * nebula_alpha;
+            let premult_b = color[2] * nebula_alpha;
+
+            let result_16bit =
+                tonemap_to_16bit(premult_r, premult_g, premult_b, nebula_alpha, &levels);
+
+            // Each nebula color should produce visible output (not black)
+            let max_channel = result_16bit.iter().max().unwrap();
+            assert!(
+                *max_channel > 1000,
+                "Nebula color {} produced nearly invisible output: {:?} (max={})",
+                i,
+                result_16bit,
+                max_channel
+            );
+        }
+    }
+
+    #[test]
+    fn test_straight_alpha_equivalent() {
+        // Verify that premultiplied input with alpha produces same result as
+        // would be expected from the straight (unpremultiplied) values
+        let levels = ChannelLevels::new(0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
+
+        let straight = [0.3, 0.5, 0.7];
+        let alpha = 0.25;
+
+        // Premultiplied input (what tonemap_core receives)
+        let premult = [straight[0] * alpha, straight[1] * alpha, straight[2] * alpha];
+
+        let result = tonemap_core(premult[0], premult[1], premult[2], alpha, &levels);
+
+        // The result should preserve the relative color ratios from straight RGB
+        // (within tonemapping curve distortion)
+        let result_ratio_gb = result[1] / result[2];
+        let straight_ratio_gb = straight[1] / straight[2];
+
+        assert!(
+            (result_ratio_gb - straight_ratio_gb).abs() < 0.3,
+            "Color ratio G/B distorted: got {}, expected ~{}",
+            result_ratio_gb,
+            straight_ratio_gb
+        );
     }
 }

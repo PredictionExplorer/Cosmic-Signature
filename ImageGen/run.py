@@ -13,7 +13,7 @@ from pathlib import Path
 from datetime import datetime
 
 # Number of concurrent processes to run
-MAX_CONCURRENT = 1
+MAX_CONCURRENT = 4
 
 
 def generate_random_seed() -> str:

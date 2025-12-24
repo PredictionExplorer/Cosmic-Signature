@@ -5,9 +5,9 @@ expression: signature
 width: 640
 height: 480
 center:
-  - 0
-  - 0
-  - 0
+  - 13489
+  - 13244
+  - 11239
 top_left:
   - 0
   - 0
@@ -17,14 +17,14 @@ top_right:
   - 0
   - 0
 bottom_left:
-  - 108
-  - 109
-  - 94
+  - 12612
+  - 12691
+  - 10699
 bottom_right:
   - 0
   - 0
   - 0
-avg_r: 475
-avg_g: 391
-avg_b: 284
-non_black_pixels: 18031
+avg_r: 1537
+avg_g: 1295
+avg_b: 952
+non_black_pixels: 22977
