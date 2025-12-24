@@ -706,9 +706,14 @@ impl ExposureCalculator {
         let luminances: Vec<f64> = pixels
             .par_iter()
             .map(|(r, g, b, a)| {
-                // Rec. 709 luminance weights
-                let lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-                lum * a // Premultiplied
+                // NOTE: PixelBuffer is premultiplied (R×α, G×α, B×α, α).
+                // `r,g,b` already include alpha coverage, so do NOT multiply by alpha again.
+                // Doing so would make luminance scale as α² and crush low-alpha layers
+                // (nebula, atmospheric veils, subtle glow).
+                if *a <= 0.0 {
+                    return 0.0;
+                }
+                (0.2126 * r + 0.7152 * g + 0.0722 * b).max(0.0)
             })
             .filter(|&l| l > 0.0) // Ignore black pixels
             .collect();
@@ -1143,6 +1148,50 @@ mod tests {
 
         let exposure = calc.calculate_exposure(&pixels);
         assert!(exposure > 0.0 && exposure.is_finite());
+    }
+
+    #[test]
+    fn test_exposure_calculator_premultiplied_no_double_alpha() {
+        // Regression test for the α² bug:
+        // premult gray = 0.5 at alpha 0.5 should map to 0.8 with exposure 1.6.
+        let calc = ExposureCalculator::default();
+        let alpha = 0.5;
+        let premult = 1.0 * alpha;
+        let pixels = vec![(premult, premult, premult, alpha); 200];
+
+        let exposure = calc.calculate_exposure(&pixels);
+        assert!(
+            (exposure - 1.6).abs() < 1e-9,
+            "Exposure should be 1.6 for premult=0.5, got {}",
+            exposure
+        );
+    }
+
+    #[test]
+    fn test_exposure_calculator_alpha_scaling_linear_not_quadratic() {
+        // If the α² bug exists, halving alpha quarters measured luminance, so exposure quadruples.
+        // Correct behavior: exposure should scale ~1/alpha (i.e., halve alpha => ~2x exposure).
+        let calc = ExposureCalculator::default();
+
+        let straight = 1.0;
+        let alpha_hi = 0.4;
+        let alpha_lo = 0.2;
+
+        let premult_hi = straight * alpha_hi;
+        let premult_lo = straight * alpha_lo;
+
+        let pixels_hi = vec![(premult_hi, premult_hi, premult_hi, alpha_hi); 200];
+        let pixels_lo = vec![(premult_lo, premult_lo, premult_lo, alpha_lo); 200];
+
+        let exposure_hi = calc.calculate_exposure(&pixels_hi);
+        let exposure_lo = calc.calculate_exposure(&pixels_lo);
+
+        let ratio = exposure_lo / exposure_hi;
+        assert!(
+            ratio > 1.5 && ratio < 2.7,
+            "Exposure ratio should be ~2.0 when alpha halves (got {})",
+            ratio
+        );
     }
 
     #[test]

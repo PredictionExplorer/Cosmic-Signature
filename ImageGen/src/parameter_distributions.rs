@@ -107,8 +107,14 @@ impl DefaultDistributions {
     pub const CLIP_BLACK: DistParams = DistParams::new(0.012, 0.004);
     pub const CLIP_WHITE: DistParams = DistParams::new(0.990, 0.006);
 
-    // ==== Nebula (currently disabled, but defined for completeness) ====
-    pub const NEBULA_STRENGTH: DistParams = DistParams::new(0.0, 0.0); // Disabled
+    // ==== Nebula (special mode background) ====
+    //
+    // Nebula clouds are only visible in special mode; the render pipeline will skip
+    // background generation unless `special_mode` is enabled and strength > 0.0.
+    //
+    // This distribution is intentionally centered in the "clearly visible but elegant"
+    // region (roughly 0.18–0.25), with enough variation to keep results fresh.
+    pub const NEBULA_STRENGTH: DistParams = DistParams::new(0.22, 0.05);
     pub const NEBULA_BASE_FREQUENCY: DistParams = DistParams::new(0.0015, 0.0005);
 
     /// Get distribution for `a` parameter by name.
@@ -182,6 +188,7 @@ mod tests {
         // Test that all distributions have positive std
         assert!(DefaultDistributions::GLOW_STRENGTH.std > 0.0);
         assert!(DefaultDistributions::VIGNETTE_STRENGTH.std > 0.0);
+        assert!(DefaultDistributions::NEBULA_STRENGTH.std > 0.0);
 
         // Test lookup works
         assert!(DefaultDistributions::get("glow_strength").is_some());

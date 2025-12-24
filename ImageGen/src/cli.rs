@@ -466,15 +466,21 @@ pub struct EffectArgs {
     pub param_clip_white: Option<f64>,
 
     // ==== Nebula Parameters ====
-    /// Nebula strength (if not specified, randomized in range 0.0-0.30)
+    /// Nebula strength / opacity (special mode only).
+    ///
+    /// If not specified, randomized in range 0.12-0.35 (gallery-quality: 0.15-0.28).
     #[arg(long)]
     pub param_nebula_strength: Option<f64>,
 
-    /// Nebula octaves (if not specified, randomized in range 3-5)
+    /// Nebula octaves (noise detail).
+    ///
+    /// If not specified, randomized in range 2-7 (gallery-quality: 3-4).
     #[arg(long)]
     pub param_nebula_octaves: Option<usize>,
 
-    /// Nebula base frequency (if not specified, randomized in range 0.0008-0.0025)
+    /// Nebula base frequency (lower = larger cloud features).
+    ///
+    /// If not specified, randomized in range 0.0005-0.0035 (gallery-quality: 0.0010-0.0020).
     #[arg(long)]
     pub param_nebula_base_frequency: Option<f64>,
 }

@@ -143,7 +143,8 @@ impl<'a> RenderLoopContext<'a> {
                 [0.25, 0.12, 0.18], // Magenta
                 [0.12, 0.15, 0.28], // Blue-violet
             ],
-            time_scale: 1.0,
+            // Cinematic drift rate (avoid flicker/boiling noise in video)
+            time_scale: constants::NEBULA_TIME_SCALE,
             edge_fade: 0.3,
         };
 
@@ -434,6 +435,10 @@ pub(crate) fn composite_buffers(background: &PixelBuffer, foreground: &PixelBuff
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::render::randomizable_config::RandomizableEffectConfig;
+    use crate::render::RenderConfig;
+    use crate::sim::Sha3RandomByteStream;
+    use nalgebra::Vector3;
 
     #[test]
     fn test_workspace_creation() {
@@ -486,5 +491,45 @@ mod tests {
 
         // Should be unchanged in standard mode
         assert_eq!(spd, original);
+    }
+
+    #[test]
+    fn test_render_loop_context_uses_cinematic_nebula_time_scale() {
+        // Regression test: nebula animation must use a small time scale to avoid
+        // frame-to-frame noise boiling in special mode.
+        let steps = 12;
+        let positions: Vec<Vec<Vector3<f64>>> = (0..3)
+            .map(|b| {
+                (0..steps)
+                    .map(|i| Vector3::new(i as f64 * 0.01 + b as f64, i as f64 * 0.02, 0.0))
+                    .collect()
+            })
+            .collect();
+
+        let colors: Vec<Vec<OklabColor>> = vec![vec![(0.7, 0.08, 0.12); steps]; 3];
+        let body_alphas = vec![1.0; 3];
+
+        let mut rng = Sha3RandomByteStream::new(b"test_nebula_time_scale", 100.0, 300.0, 25.0, 10.0);
+        let config = RandomizableEffectConfig { gallery_quality: true, ..Default::default() };
+        let (resolved, _log) = config.resolve(&mut rng, 64, 64, true, 42);
+
+        let render_config = RenderConfig::default();
+        let params = RenderParams::from_components(
+            &positions,
+            &colors,
+            &body_alphas,
+            &resolved,
+            1,
+            42,
+            &render_config,
+        );
+
+        let ctx = RenderLoopContext::new(&params);
+        assert!(
+            (ctx.nebula_config.time_scale - constants::NEBULA_TIME_SCALE).abs() < 1e-12,
+            "nebula time_scale should be {}, got {}",
+            constants::NEBULA_TIME_SCALE,
+            ctx.nebula_config.time_scale
+        );
     }
 }

@@ -310,6 +310,23 @@ pub const DEFAULT_VIDEO_FPS: u32 = 60;
 /// Default target duration in frames (~30 seconds at 60 FPS)
 pub const DEFAULT_TARGET_FRAMES: u32 = 1800;
 
+// ========== Nebula Background Constants ==========
+//
+// The nebula is a subtle background layer intended to read as slow, cinematic drift.
+// If the time step is too large, the noise "boils" from frame to frame and looks like
+// TV static rather than atmospheric depth.
+
+/// Total noise-time span traversed by the nebula across `DEFAULT_TARGET_FRAMES`.
+///
+/// A span of ~4.0 produces gentle motion over a ~30s / 1800-frame render.
+pub const NEBULA_NOISE_TIME_RANGE: f64 = 4.0;
+
+/// Nebula noise time scale per output frame.
+///
+/// Computed from `NEBULA_NOISE_TIME_RANGE` and `DEFAULT_TARGET_FRAMES` for consistency
+/// if target duration changes.
+pub const NEBULA_TIME_SCALE: f64 = NEBULA_NOISE_TIME_RANGE / (DEFAULT_TARGET_FRAMES as f64);
+
 /// Default video codec (legacy, no longer used - now using H.265)
 #[allow(dead_code)]
 pub const DEFAULT_VIDEO_CODEC: &str = "libx264";

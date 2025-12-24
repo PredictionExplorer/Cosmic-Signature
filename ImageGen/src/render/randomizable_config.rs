@@ -1721,6 +1721,40 @@ mod tests {
     }
 
     #[test]
+    fn test_nebula_strength_not_pinned_to_min_in_gallery_quality() {
+        // Regression test: nebula strength must not be pinned to the descriptor minimum.
+        // This used to happen when the distribution was disabled (mean=0,std=0),
+        // causing strength to clamp to the minimum every time.
+        let iterations = 60;
+        let mut min_val = f64::INFINITY;
+        let mut max_val = f64::NEG_INFINITY;
+
+        for i in 0..iterations {
+            let seed = format!("test_nebula_strength_variety_{}", i);
+            let mut rng = Sha3RandomByteStream::new(seed.as_bytes(), 100.0, 300.0, 25.0, 10.0);
+            let config = RandomizableEffectConfig { gallery_quality: true, ..Default::default() };
+            let (resolved, _log) = config.resolve(&mut rng, 1920, 1080, true, i as i32);
+
+            min_val = min_val.min(resolved.nebula_strength);
+            max_val = max_val.max(resolved.nebula_strength);
+
+            // Gallery-quality range guard (tighten expectations for museum output)
+            assert!(
+                resolved.nebula_strength >= 0.15 && resolved.nebula_strength <= 0.28,
+                "Gallery nebula strength ({}) should be in range [0.15, 0.28]",
+                resolved.nebula_strength
+            );
+        }
+
+        assert!(
+            (max_val - min_val) > 0.005,
+            "Nebula strength appears pinned or nearly constant (min={}, max={})",
+            min_val,
+            max_val
+        );
+    }
+
+    #[test]
     fn test_deep_space_elevated_probability() {
         // Deep space should have elevated probability due to museum quality boost
         let mut enabled_count = 0;

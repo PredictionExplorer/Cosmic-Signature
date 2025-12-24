@@ -424,9 +424,7 @@ pub fn pass_1_build_histogram_spectral(
 
             // Collect histogram data
             histogram.reserve(loop_ctx.ctx().pixel_count());
-            for &(r, g, b, a) in &final_frame_pixels {
-                histogram.push(r * a, g * a, b * a);
-            }
+            push_pixels_to_histogram(&mut histogram, &final_frame_pixels);
         }
     }
 
@@ -438,6 +436,20 @@ pub fn pass_1_build_histogram_spectral(
 
     info!("   pass 1 (spectral histogram): 100% done");
     Ok(())
+}
+
+/// Push premultiplied RGB samples into the histogram.
+///
+/// The rendering pipeline uses premultiplied alpha throughout (`PixelBuffer` is premultiplied),
+/// so the correct values for percentile-based black/white point estimation are the premultiplied
+/// channels themselves.
+///
+/// IMPORTANT: Do NOT multiply by alpha again (that would scale as α² and crush low-alpha layers).
+#[inline]
+fn push_pixels_to_histogram(histogram: &mut HistogramData, pixels: &[(f64, f64, f64, f64)]) {
+    for &(r, g, b, _a) in pixels {
+        histogram.push(r, g, b);
+    }
 }
 
 // ====================== PASS 2 (SPECTRAL) ===========================
@@ -541,7 +553,8 @@ pub fn render_single_frame_spectral(
         persistence: 0.5,
         noise_seed: noise_seed as i64,
         colors: [[0.08, 0.12, 0.22], [0.15, 0.08, 0.25], [0.25, 0.12, 0.18], [0.12, 0.15, 0.28]],
-        time_scale: 1.0,
+        // Cinematic drift rate (avoid flicker/boiling noise in video)
+        time_scale: constants::NEBULA_TIME_SCALE,
         edge_fade: 0.3,
     };
 
@@ -672,4 +685,28 @@ pub fn render_single_frame_spectral(
     })?;
 
     Ok(image)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_histogram_collection_uses_premultiplied_rgb() {
+        // Regression test for the α² bug in histogram sampling.
+        // If we mistakenly multiply premultiplied RGB by alpha again, values scale as α².
+        let mut histogram = HistogramData::with_capacity(4);
+        let pixels: Vec<(f64, f64, f64, f64)> = vec![
+            // Straight red=1.0 with alpha=0.5 => premult red=0.5
+            (0.5, 0.0, 0.0, 0.5),
+        ];
+
+        push_pixels_to_histogram(&mut histogram, &pixels);
+        let (r, g, b) = histogram.extract_channels();
+
+        assert_eq!(r.len(), 1);
+        assert!((r[0] - 0.5).abs() < 1e-12, "Expected premult R=0.5, got {}", r[0]);
+        assert!((g[0] - 0.0).abs() < 1e-12);
+        assert!((b[0] - 0.0).abs() < 1e-12);
+    }
 }
