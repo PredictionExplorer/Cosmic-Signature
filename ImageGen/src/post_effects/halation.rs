@@ -17,6 +17,7 @@
 //! but before color grading, to create a photochemical "film" quality.
 
 use super::{FrameParams, PixelBuffer, PostEffect};
+use super::utils::{downsample_2x, upsample_bilinear};
 use crate::render::drawing::parallel_blur_2d_rgba;
 use rayon::prelude::*;
 use std::error::Error;
@@ -46,6 +47,10 @@ pub struct HalationConfig {
     /// Controls how smoothly highlights transition into halation.
     /// Typical values: 1.5-3.0.
     pub softness: f64,
+
+    /// Resolution scale for performance (1 = full res, 2 = half res, 4 = quarter res).
+    /// Typical values: 2 for soft effects.
+    pub downsample_factor: usize,
 }
 
 impl Default for HalationConfig {
@@ -56,6 +61,7 @@ impl Default for HalationConfig {
             radius_scale: 0.03,
             warmth: 0.35,
             softness: 2.0,
+            downsample_factor: 2,
         }
     }
 }
@@ -89,13 +95,20 @@ impl PostEffect for Halation {
             return Ok(input.to_vec());
         }
 
-        let min_dim = width.min(height);
+        // PERFORMANCE OPTIMIZATION: Process soft effects at lower resolution
+        let (downsampled, ds_w, ds_h) = if self.config.downsample_factor > 1 {
+            downsample_2x(input, width, height)
+        } else {
+            (input.to_vec(), width, height)
+        };
+
+        let min_dim = ds_w.min(ds_h);
         let radius = (self.config.radius_scale * min_dim as f64).round().max(1.0) as usize;
         let threshold = self.config.threshold;
         let softness = self.config.softness;
 
         // Step 1: Extract highlights above threshold with soft shoulder
-        let mut highlights: PixelBuffer = input
+        let mut highlights: PixelBuffer = downsampled
             .par_iter()
             .map(|&(r, g, b, a)| {
                 // Compute luminance (Rec. 709 coefficients)
@@ -116,28 +129,33 @@ impl PostEffect for Halation {
 
         // Step 2: Blur the highlights (two-pass box blur for smoother result)
         // First pass
-        parallel_blur_2d_rgba(&mut highlights, width, height, radius);
+        parallel_blur_2d_rgba(&mut highlights, ds_w, ds_h, radius);
         // Second pass for smoother falloff
-        parallel_blur_2d_rgba(&mut highlights, width, height, radius);
+        parallel_blur_2d_rgba(&mut highlights, ds_w, ds_h, radius);
 
         // Step 3: Apply warm bias to blurred highlights
         let warmth = self.config.warmth;
         highlights.par_iter_mut().for_each(|pixel| {
             // Shift color toward red/orange (characteristic of film halation)
-            // Red gets boosted, green gets slight boost, blue gets reduced
-            pixel.0 *= 1.0 + warmth * 0.30; // Red boost
-            pixel.1 *= 1.0 + warmth * 0.10; // Slight green boost (for orange tint)
-            pixel.2 *= 1.0 - warmth * 0.20; // Blue reduction
+            pixel.0 *= 1.0 + warmth * 0.30;
+            pixel.1 *= 1.0 + warmth * 0.10;
+            pixel.2 *= 1.0 - warmth * 0.20;
         });
+
+        // Upscale highlights back to original resolution
+        let full_res_highlights = if self.config.downsample_factor > 1 {
+            upsample_bilinear(&highlights, ds_w, ds_h, width, height)
+        } else {
+            highlights
+        };
 
         // Step 4: Composite halation back to original using screen blend
         let strength = self.config.strength;
         let output: PixelBuffer = input
             .par_iter()
-            .zip(highlights.par_iter())
+            .zip(full_res_highlights.par_iter())
             .map(|(&(r, g, b, a), &(hr, hg, hb, _ha))| {
                 // Screen blend: result = base + highlight * (1 - base)
-                // This prevents over-brightening while maintaining the glow
                 let r_out = r + hr * strength * (1.0 - r.clamp(0.0, 1.0));
                 let g_out = g + hg * strength * (1.0 - g.clamp(0.0, 1.0));
                 let b_out = b + hb * strength * (1.0 - b.clamp(0.0, 1.0));
@@ -229,6 +247,7 @@ mod tests {
             strength: 1.0,
             threshold: 0.5,
             warmth: 0.5,
+            downsample_factor: 1,
             ..Default::default()
         };
         let effect = Halation::new(config);
@@ -253,6 +272,7 @@ mod tests {
             radius_scale: 0.2, // Large radius for visible spread
             warmth: 0.0,       // No warmth for easier testing
             softness: 1.0,
+            downsample_factor: 1,
             ..Default::default()
         };
         let effect = Halation::new(config);
@@ -275,11 +295,13 @@ mod tests {
         let low_threshold = HalationConfig {
             strength: 1.0,
             threshold: 0.3,
+            downsample_factor: 1,
             ..Default::default()
         };
         let high_threshold = HalationConfig {
             strength: 1.0,
             threshold: 0.9,
+            downsample_factor: 1,
             ..Default::default()
         };
 
@@ -306,8 +328,8 @@ mod tests {
 
     #[test]
     fn test_halation_strength_scales_effect() {
-        let weak = HalationConfig { strength: 0.1, threshold: 0.3, ..Default::default() };
-        let strong = HalationConfig { strength: 1.0, threshold: 0.3, ..Default::default() };
+        let weak = HalationConfig { strength: 0.1, threshold: 0.3, downsample_factor: 1, ..Default::default() };
+        let strong = HalationConfig { strength: 1.0, threshold: 0.3, downsample_factor: 1, ..Default::default() };
 
         let weak_effect = Halation::new(weak);
         let strong_effect = Halation::new(strong);
@@ -331,7 +353,7 @@ mod tests {
 
     #[test]
     fn test_halation_preserves_alpha() {
-        let config = HalationConfig::default();
+        let config = HalationConfig { downsample_factor: 1, ..Default::default() };
         let effect = Halation::new(config);
 
         let input = vec![
@@ -350,7 +372,7 @@ mod tests {
 
     #[test]
     fn test_halation_larger_image() {
-        let config = HalationConfig::default();
+        let config = HalationConfig { downsample_factor: 2, ..Default::default() };
         let effect = Halation::new(config);
 
         // Test on a larger image to ensure no panics
@@ -362,7 +384,7 @@ mod tests {
 
     #[test]
     fn test_halation_non_square_image() {
-        let config = HalationConfig::default();
+        let config = HalationConfig { downsample_factor: 2, ..Default::default() };
         let effect = Halation::new(config);
 
         // Wide image
@@ -431,6 +453,7 @@ mod tests {
             strength: 1.0,
             threshold: 0.3,
             warmth: 1.0, // Maximum warmth
+            downsample_factor: 1,
             ..Default::default()
         };
         let effect = Halation::new(config);
@@ -448,8 +471,8 @@ mod tests {
 
     #[test]
     fn test_halation_warmth_color_shift() {
-        let neutral = HalationConfig { warmth: 0.0, threshold: 0.3, strength: 1.0, radius_scale: 0.2, ..Default::default() };
-        let warm = HalationConfig { warmth: 1.0, threshold: 0.3, strength: 1.0, radius_scale: 0.2, ..Default::default() };
+        let neutral = HalationConfig { warmth: 0.0, threshold: 0.3, strength: 1.0, radius_scale: 0.2, downsample_factor: 1, ..Default::default() };
+        let warm = HalationConfig { warmth: 1.0, threshold: 0.3, strength: 1.0, radius_scale: 0.2, downsample_factor: 1, ..Default::default() };
 
         let neutral_effect = Halation::new(neutral);
         let warm_effect = Halation::new(warm);

@@ -101,8 +101,6 @@ impl NebulaClouds {
         let mut max_amplitude = 0.0;
 
         for _ in 0..self.config.octaves {
-            // Use noise3_ImproveXY for best visual isotropy in XY plane
-            // This is recommended for time-varied animations
             let noise_val = smooth::noise3_ImproveXY(
                 self.config.noise_seed,
                 x * frequency,
@@ -116,23 +114,27 @@ impl NebulaClouds {
             frequency *= self.config.lacunarity;
         }
 
-        // Normalize to [0, 1] accounting for actual amplitude sum
         let normalized = total / max_amplitude;
-        (normalized + 1.0) * 0.5
+        let val = (normalized + 1.0) * 0.5;
+
+        // MUSEUM QUALITY: Power-Fractal mapping for deep voids and sharp filaments.
+        // val^2 or val^3 creates much more interesting structures than linear noise.
+        val.powf(2.2)
     }
 
-    /// Map noise value to nebula color using smooth interpolation
+    /// Map noise value to nebula color using smooth interpolation with chromatic drift.
     #[inline]
-    fn noise_to_color(&self, noise_value: f64) -> [f64; 3] {
-        // Map noise [0,1] across all 4 colors with smooth cycling
-        let scaled = noise_value * 4.0;
+    fn noise_to_color(&self, noise_value: f64, drift: f64) -> [f64; 3] {
+        // Apply chromatic drift: shift color lookup based on secondary noise
+        let shifted_noise = (noise_value + drift * 0.15).clamp(0.0, 1.0);
+        
+        let scaled = shifted_noise * 4.0;
         let idx = scaled.floor() as usize;
         let t = scaled.fract();
 
         let color1 = self.config.colors[idx.min(3)];
-        let color2 = self.config.colors[(idx + 1) % 4]; // Wrap to first color
+        let color2 = self.config.colors[(idx + 1) % 4];
 
-        // Smooth interpolation (cosine for organic transitions)
         let smooth_t = (1.0 - (t * std::f64::consts::PI).cos()) * 0.5;
 
         [
@@ -201,34 +203,35 @@ impl NebulaClouds {
             let x = (idx % width) as f64;
             let y = (idx / width) as f64;
 
+            // Secondary noise layer for layered motion and chromatic drift
+            let drift_noise = smooth::noise3_ImproveXY(
+                self.config.noise_seed + 1, // Offset seed
+                x * self.config.base_frequency * 0.5,
+                y * self.config.base_frequency * 0.5,
+                time * 0.45,
+            ) as f64;
+
             // Evaluate primary noise for color selection
             let noise_value = self.evaluate_noise(x, y, time);
 
-            // Map to nebula color
-            let nebula_color = self.noise_to_color(noise_value);
+            // Map to nebula color with chromatic drift
+            let nebula_color = self.noise_to_color(noise_value, drift_noise);
 
             // Calculate base opacity with edge fade
             let edge_fade = self.calculate_edge_fade(x, y, width_f, height_f);
-            let base_opacity = self.config.strength * edge_fade;
+            
+            // MUSEUM QUALITY: Lower overall strength to avoid overpowering
+            let base_opacity = self.config.strength * 0.75 * edge_fade;
 
-            // Secondary noise layer for organic opacity variation
-            // Use different seed offset and parameters for decorrelation
-            let opacity_noise = self.evaluate_noise(
-                x * 1.41 + 1234.56, // Offset and slightly different scale
-                y * 1.41 + 6789.01,
-                time * 0.77, // Different time rate for layered motion
-            );
+            // Final opacity creates wispy, organic structure
+            let opacity_variation = 0.40 + noise_value * 1.20;
+            let final_opacity = (base_opacity * opacity_variation).clamp(0.0, 1.0);
 
-            // Opacity variation: [0.60, 1.40] - creates wispy, organic structure
-            let opacity_variation = 0.60 + opacity_noise * 0.80;
-            let final_opacity = base_opacity * opacity_variation;
-
-            // Apply nebula as pure RGB color with coverage (straight alpha, not premultiplied)
-            // This will be composited UNDER the trajectories, so no alpha tricks needed
+            // Apply nebula as pure RGB color with coverage
             pixel.0 = nebula_color[0];
             pixel.1 = nebula_color[1];
             pixel.2 = nebula_color[2];
-            pixel.3 = final_opacity; // Alpha represents nebula coverage
+            pixel.3 = final_opacity;
         });
 
         Ok(result)
@@ -276,11 +279,11 @@ mod tests {
         let nebula = NebulaClouds::new(config);
 
         // Test color interpolation at different noise values
-        let color_0 = nebula.noise_to_color(0.0);
-        let color_quarter = nebula.noise_to_color(0.25);
-        let color_mid = nebula.noise_to_color(0.5);
-        let color_three_quarter = nebula.noise_to_color(0.75);
-        let color_1 = nebula.noise_to_color(1.0);
+        let color_0 = nebula.noise_to_color(0.0, 0.0);
+        let color_quarter = nebula.noise_to_color(0.25, 0.0);
+        let color_mid = nebula.noise_to_color(0.5, 0.0);
+        let color_three_quarter = nebula.noise_to_color(0.75, 0.0);
+        let color_1 = nebula.noise_to_color(1.0, 0.0);
 
         // All colors should be valid RGB
         for color in [color_0, color_quarter, color_mid, color_three_quarter, color_1] {

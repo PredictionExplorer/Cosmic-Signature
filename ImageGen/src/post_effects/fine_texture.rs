@@ -204,29 +204,30 @@ impl PostEffect for FineTexture {
                 let h_right = self.get_height_map(x + 1.0, y);
                 let h_down = self.get_height_map(x, y + 1.0);
 
+                // MUSEUM QUALITY UPGRADE: Adaptive Materiality
                 // Add image luminance to height (paint thickness matches brightness)
+                // This creates a subtle "3D relief" where trajectories appear physical.
                 let lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-                let thickness = lum * 0.5; // Bright areas = thicker paint
+                let thickness = lum * 0.65; // Bright areas = thicker paint
 
                 let total_h = h_center + thickness;
-                let total_h_r = h_right + thickness; // Approximation (using center lum)
+                let total_h_r = h_right + thickness;
                 let total_h_d = h_down + thickness;
 
-                let dx = (total_h_r - total_h) * self.config.strength * 10.0;
-                let dy = (total_h_d - total_h) * self.config.strength * 10.0;
+                let dx = (total_h_r - total_h) * self.config.strength * 12.0;
+                let dy = (total_h_d - total_h) * self.config.strength * 12.0;
 
                 // Normal vector (-dx, -dy, 1)
                 let nz = 1.0;
                 let n_len = (dx * dx + dy * dy + nz * nz).sqrt();
                 let normal = (-dx / n_len, -dy / n_len, nz / n_len);
 
-                // Diffuse lighting (Lambert)
+                // Diffuse lighting (Lambert) with slight warm shift
                 let diffuse =
                     (normal.0 * light_dir.0 + normal.1 * light_dir.1 + normal.2 * light_dir.2)
                         .max(0.0);
 
-                // Specular lighting (Blinn-Phong)
-                // View vector is (0,0,1), Half vector is bisector of Light and View
+                // Specular lighting (Blinn-Phong) - museum quality "sheen"
                 let hx = light_dir.0;
                 let hy = light_dir.1;
                 let hz = light_dir.2 + 1.0;
@@ -236,14 +237,11 @@ impl PostEffect for FineTexture {
                 let spec_angle =
                     (normal.0 * half_vec.0 + normal.1 * half_vec.1 + normal.2 * half_vec.2)
                         .max(0.0);
-                let specular = spec_angle.powf(32.0) * self.config.specular_strength;
+                
+                // Adaptive specular: only highlights catch the gloss
+                let specular = spec_angle.powf(48.0) * self.config.specular_strength * (0.2 + lum * 0.8);
 
-                // Combine: Ambient + Diffuse + Specular
-                // Ambient is the original color
-                // Diffuse modulates the original color
-                // Specular adds white highlight
-
-                let light_intensity = 0.8 + diffuse * 0.4; // Base ambient + diffuse
+                let light_intensity = 0.85 + diffuse * 0.35;
 
                 let final_r = r * light_intensity + specular;
                 let final_g = g * light_intensity + specular;

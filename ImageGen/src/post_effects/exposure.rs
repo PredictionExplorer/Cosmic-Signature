@@ -9,6 +9,9 @@ use std::error::Error;
 ///
 /// Analyzes the image luminance distribution and applies exposure
 /// compensation to achieve optimal brightness.
+/// 
+/// [DEPRECATED] Use global histogram authority instead.
+#[allow(dead_code)]
 pub struct AutoExposure {
     /// The exposure calculator configuration.
     pub calculator: ExposureCalculator,
@@ -17,6 +20,7 @@ pub struct AutoExposure {
     pub enabled: bool,
 }
 
+#[allow(dead_code)]
 impl AutoExposure {
     /// Creates a new auto-exposure effect with default settings.
     pub fn new() -> Self {

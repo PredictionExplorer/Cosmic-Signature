@@ -410,6 +410,8 @@ pub struct RenderParams<'a> {
     pub noise_seed: i32,
     /// General render configuration
     pub render_config: &'a RenderConfig,
+    /// Histogram levels for exposure normalization (optional)
+    pub levels: Option<&'a ChannelLevels>,
 }
 
 impl<'a> RenderParams<'a> {
@@ -421,7 +423,13 @@ impl<'a> RenderParams<'a> {
         noise_seed: i32,
         render_config: &'a RenderConfig,
     ) -> Self {
-        Self { scene, resolved_config, frame_interval, noise_seed, render_config }
+        Self { scene, resolved_config, frame_interval, noise_seed, render_config, levels: None }
+    }
+
+    /// Set channel levels for exposure normalization
+    pub fn with_levels(mut self, levels: &'a ChannelLevels) -> Self {
+        self.levels = Some(levels);
+        self
     }
 
     /// Create render params from individual scene components
@@ -440,6 +448,7 @@ impl<'a> RenderParams<'a> {
             frame_interval,
             noise_seed,
             render_config,
+            levels: None,
         }
     }
 

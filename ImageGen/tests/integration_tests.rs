@@ -185,10 +185,13 @@ fn test_effect_chain_default_processes_buffer() {
 
     let params = FrameParams { frame_number: 0, _density: None, body_positions: None };
 
-    let result = chain.process_frame(buffer, width, height, &params);
-    assert!(result.is_ok(), "Effect chain should succeed: {:?}", result.err());
+    let traj_result = chain.process_trajectories(buffer, width, height, &params);
+    assert!(traj_result.is_ok(), "Trajectory chain should succeed");
+    
+    let finishing_result = chain.process_finishing(traj_result.unwrap(), width, height, &params);
+    assert!(finishing_result.is_ok(), "Finishing chain should succeed: {:?}", finishing_result.err());
 
-    let output = result.unwrap();
+    let output = finishing_result.unwrap();
     assert_eq!(output.len(), width * height, "Output size should match input");
 
     // Verify output has valid values
@@ -215,9 +218,10 @@ fn test_effect_chain_with_builder() {
     let buffer = vec![(0.8, 0.7, 0.6, 1.0); width * height];
 
     let params = FrameParams { frame_number: 0, _density: None, body_positions: None };
-    let result = chain.process_frame(buffer, width, height, &params);
+    let traj_result = chain.process_trajectories(buffer, width, height, &params);
+    let finishing_result = chain.process_finishing(traj_result.unwrap(), width, height, &params);
 
-    assert!(result.is_ok(), "Builder-configured chain should succeed");
+    assert!(finishing_result.is_ok(), "Builder-configured chain should succeed");
 }
 
 #[test]
@@ -231,12 +235,12 @@ fn test_effect_chain_disabled_effects() {
     let input = vec![(0.5, 0.5, 0.5, 1.0); width * height];
 
     let params = FrameParams { frame_number: 0, _density: None, body_positions: None };
-    let result = chain.process_frame(input.clone(), width, height, &params);
+    let traj_result = chain.process_trajectories(input.clone(), width, height, &params);
+    let finishing_result = chain.process_finishing(traj_result.unwrap(), width, height, &params);
 
-    assert!(result.is_ok());
+    assert!(finishing_result.is_ok());
     // With no effects, output should be reasonably close to input
-    // Note: Some minimal processing may occur even with effects disabled (exposure, tonemapping)
-    let output = result.unwrap();
+    let output = finishing_result.unwrap();
     let total_diff: f64 =
         input.iter().zip(output.iter()).map(|(inp, out)| (inp.0 - out.0).abs()).sum();
     let avg_diff = total_diff / input.len() as f64;
@@ -254,9 +258,10 @@ fn test_effect_chain_handles_black_buffer() {
     let buffer = vec![(0.0, 0.0, 0.0, 0.0); width * height];
 
     let params = FrameParams { frame_number: 0, _density: None, body_positions: None };
-    let result = chain.process_frame(buffer, width, height, &params);
+    let traj_result = chain.process_trajectories(buffer, width, height, &params);
+    let finishing_result = chain.process_finishing(traj_result.unwrap(), width, height, &params);
 
-    assert!(result.is_ok(), "Should handle black buffer");
+    assert!(finishing_result.is_ok(), "Should handle black buffer");
 }
 
 #[test]
@@ -270,11 +275,12 @@ fn test_effect_chain_handles_bright_buffer() {
     let buffer = vec![(5.0, 5.0, 5.0, 1.0); width * height];
 
     let params = FrameParams { frame_number: 0, _density: None, body_positions: None };
-    let result = chain.process_frame(buffer, width, height, &params);
+    let traj_result = chain.process_trajectories(buffer, width, height, &params);
+    let finishing_result = chain.process_finishing(traj_result.unwrap(), width, height, &params);
 
-    assert!(result.is_ok(), "Should handle bright buffer");
+    assert!(finishing_result.is_ok(), "Should handle bright buffer");
 
-    let output = result.unwrap();
+    let output = finishing_result.unwrap();
     for pixel in &output {
         assert!(pixel.0.is_finite(), "Output should be finite");
     }

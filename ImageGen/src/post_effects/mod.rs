@@ -212,13 +212,13 @@ pub mod volumetric_occlusion;
 
 // Export all public types
 pub use aether::{AetherConfig, apply_aether_weave};
-pub use atmospheric_depth::{AtmosphericDepth, AtmosphericDepthConfig};
-pub use aurora_veils::{AuroraVeils, AuroraVeilsConfig};
+pub use atmospheric_depth::AtmosphericDepthConfig;
+pub use aurora_veils::AuroraVeilsConfig;
 pub use champleve::{ChampleveConfig, apply_champleve_iridescence};
 pub use cherenkov::{Cherenkov, CherenkovConfig};
 pub use chromatic_bloom::{ChromaticBloom, ChromaticBloomConfig};
 pub use color_grade::{CinematicColorGrade, ColorGradeParams};
-pub use cosmic_ink::{CosmicInk, CosmicInkConfig};
+pub use cosmic_ink::CosmicInkConfig;
 pub use crepuscular_rays::{CrepuscularRays, CrepuscularRaysConfig};
 pub use deep_space::{DeepSpace, DeepSpaceConfig};
 pub use dimensional_glitch::{DimensionalGlitch, DimensionalGlitchConfig};
@@ -226,7 +226,6 @@ pub use dodge_burn::{DodgeBurn, DodgeBurnConfig};
 pub use dog_bloom::DogBloom;
 pub use edge_luminance::{EdgeLuminance, EdgeLuminanceConfig};
 pub use event_horizon::{EventHorizon, EventHorizonConfig};
-pub use exposure::AutoExposure;
 pub use fine_texture::{FineTexture, FineTextureConfig};
 pub use gaussian_bloom::GaussianBloom;
 pub use glow_enhancement::{GlowEnhancement, GlowEnhancementConfig};
@@ -238,10 +237,10 @@ pub use opalescence::{Opalescence, OpalescenceConfig};
 pub use perceptual_blur::{PerceptualBlur, PerceptualBlurConfig};
 pub use prismatic_halos::{PrismaticHalos, PrismaticHalosConfig};
 pub use refractive_caustics::{RefractiveCaustics, RefractiveCausticsConfig};
-#[allow(unused_imports)]
-// Temporal smoothing requires special video integration (stateful effect)
-pub use temporal_smoothing::{TemporalSmoothing, TemporalSmoothingConfig};
 pub use volumetric_occlusion::{VolumetricOcclusion, VolumetricOcclusionConfig};
+pub use atmospheric_depth::AtmosphericDepth;
+pub use aurora_veils::AuroraVeils;
+pub use cosmic_ink::CosmicInk;
 
 #[cfg(test)]
 mod tests {

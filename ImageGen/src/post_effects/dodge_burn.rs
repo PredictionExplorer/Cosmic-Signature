@@ -17,6 +17,7 @@
 //! effects add their own structure, to establish focal hierarchy.
 
 use super::{FrameParams, PixelBuffer, PostEffect};
+use super::utils::{downsample_2x, upsample_bilinear};
 use rayon::prelude::*;
 use std::error::Error;
 
@@ -46,6 +47,10 @@ pub struct DodgeBurnConfig {
     /// 1.0 = only luminance, 0.0 = only alpha/density.
     /// Typical values: 0.5-0.7.
     pub luminance_weight: f64,
+
+    /// Resolution scale for performance (1 = full res, 2 = half res, 4 = quarter res).
+    /// Typical values: 2 or 4 for low-frequency saliency masks.
+    pub downsample_factor: usize,
 }
 
 impl Default for DodgeBurnConfig {
@@ -56,6 +61,7 @@ impl Default for DodgeBurnConfig {
             burn_amount: 0.10,
             saliency_radius_scale: 0.08,
             luminance_weight: 0.6,
+            downsample_factor: 2,
         }
     }
 }
@@ -126,32 +132,48 @@ impl PostEffect for DodgeBurn {
             return Ok(input.to_vec());
         }
 
-        // Build saliency map
-        let saliency = self.build_saliency_map(input, width, height);
+        // PERFORMANCE OPTIMIZATION: Build saliency map at lower resolution
+        let (ds_input, ds_w, ds_h) = if self.config.downsample_factor > 1 {
+            downsample_2x(input, width, height)
+        } else {
+            (input.to_vec(), width, height)
+        };
+
+        // Build saliency map at reduced resolution
+        let ds_saliency = self.build_saliency_map(&ds_input, ds_w, ds_h);
+
+        // Upscale saliency map back to original resolution
+        // (Convert Vec<f64> to PixelBuffer for the upsample utility)
+        let ds_saliency_rgba: PixelBuffer = ds_saliency.iter().map(|&s| (s, s, s, 1.0)).collect();
+        let full_res_saliency_rgba = if self.config.downsample_factor > 1 {
+            upsample_bilinear(&ds_saliency_rgba, ds_w, ds_h, width, height)
+        } else {
+            ds_saliency_rgba
+        };
 
         let dodge_amount = self.config.dodge_amount;
         let burn_amount = self.config.burn_amount;
         let strength = self.config.strength;
 
-        // Apply dodge/burn based on saliency
+        // Apply dodge/burn based on full-res saliency
         let output: PixelBuffer = input
             .par_iter()
-            .zip(saliency.par_iter())
-            .map(|(&(r, g, b, a), &sal)| {
+            .zip(full_res_saliency_rgba.par_iter())
+            .map(|(&(r, g, b, a), &sal_rgba)| {
+                let sal = sal_rgba.0; // Use any channel, they're all the same
+                
                 // Map saliency to exposure adjustment:
                 // - High saliency (>0.5) = dodge (lighten)
                 // - Low saliency (<0.5) = burn (darken)
                 let adjustment = if sal > 0.5 {
-                    // Dodge: saliency 0.5-1.0 maps to 0.0-dodge_amount
                     let t = (sal - 0.5) * 2.0;
                     dodge_amount * t * strength
                 } else {
-                    // Burn: saliency 0.0-0.5 maps to -burn_amount-0.0
                     let t = (0.5 - sal) * 2.0;
                     -burn_amount * t * strength
                 };
 
-                // Apply adjustment (additive, clamped to non-negative)
+                // Apply adjustment
                 (
                     (r + adjustment).max(0.0),
                     (g + adjustment).max(0.0),
@@ -279,11 +301,12 @@ mod tests {
         assert!((config.burn_amount - 0.10).abs() < 1e-10);
         assert!((config.saliency_radius_scale - 0.08).abs() < 1e-10);
         assert!((config.luminance_weight - 0.6).abs() < 1e-10);
+        assert_eq!(config.downsample_factor, 2);
     }
 
     #[test]
     fn test_dodge_burn_disabled_passthrough() {
-        let config = DodgeBurnConfig { strength: 0.0, ..Default::default() };
+        let config = DodgeBurnConfig { strength: 0.0, downsample_factor: 1, ..Default::default() };
         let effect = DodgeBurn::new(config);
 
         let input = vec![(0.5, 0.5, 0.5, 1.0); 100];
@@ -293,16 +316,16 @@ mod tests {
 
     #[test]
     fn test_dodge_burn_is_enabled() {
-        let enabled = DodgeBurn::new(DodgeBurnConfig { strength: 0.5, ..Default::default() });
+        let enabled = DodgeBurn::new(DodgeBurnConfig { strength: 0.5, downsample_factor: 1, ..Default::default() });
         assert!(enabled.is_enabled());
 
-        let disabled = DodgeBurn::new(DodgeBurnConfig { strength: 0.0, ..Default::default() });
+        let disabled = DodgeBurn::new(DodgeBurnConfig { strength: 0.0, downsample_factor: 1, ..Default::default() });
         assert!(!disabled.is_enabled());
     }
 
     #[test]
     fn test_dodge_burn_uniform_image_minimal_change() {
-        let config = DodgeBurnConfig::default();
+        let config = DodgeBurnConfig { downsample_factor: 1, ..Default::default() };
         let effect = DodgeBurn::new(config);
 
         // Uniform image should have uniform saliency (~0.5 everywhere)
@@ -325,6 +348,7 @@ mod tests {
             burn_amount: 0.3,
             saliency_radius_scale: 0.15,
             luminance_weight: 1.0, // Only use luminance
+            downsample_factor: 1,
         };
         let effect = DodgeBurn::new(config);
 
@@ -348,8 +372,8 @@ mod tests {
 
     #[test]
     fn test_dodge_burn_strength_scales_effect() {
-        let weak = DodgeBurnConfig { strength: 0.1, ..Default::default() };
-        let strong = DodgeBurnConfig { strength: 1.0, ..Default::default() };
+        let weak = DodgeBurnConfig { strength: 0.1, downsample_factor: 1, ..Default::default() };
+        let strong = DodgeBurnConfig { strength: 1.0, downsample_factor: 1, ..Default::default() };
 
         let weak_effect = DodgeBurn::new(weak);
         let strong_effect = DodgeBurn::new(strong);
@@ -378,7 +402,7 @@ mod tests {
 
     #[test]
     fn test_dodge_burn_preserves_alpha() {
-        let config = DodgeBurnConfig::default();
+        let config = DodgeBurnConfig { downsample_factor: 1, ..Default::default() };
         let effect = DodgeBurn::new(config);
 
         let input = vec![
@@ -400,6 +424,7 @@ mod tests {
         let config = DodgeBurnConfig {
             strength: 1.0,
             burn_amount: 0.5, // Strong burn
+            downsample_factor: 1,
             ..Default::default()
         };
         let effect = DodgeBurn::new(config);
@@ -417,7 +442,7 @@ mod tests {
 
     #[test]
     fn test_dodge_burn_larger_image() {
-        let config = DodgeBurnConfig::default();
+        let config = DodgeBurnConfig { downsample_factor: 2, ..Default::default() };
         let effect = DodgeBurn::new(config);
 
         // Test on a larger image to ensure no panics
@@ -429,7 +454,7 @@ mod tests {
 
     #[test]
     fn test_dodge_burn_non_square_image() {
-        let config = DodgeBurnConfig::default();
+        let config = DodgeBurnConfig { downsample_factor: 2, ..Default::default() };
         let effect = DodgeBurn::new(config);
 
         // Wide image
@@ -448,10 +473,12 @@ mod tests {
         // Test that luminance_weight is stored correctly
         let lum_only = DodgeBurnConfig {
             luminance_weight: 1.0,
+            downsample_factor: 1,
             ..Default::default()
         };
         let alpha_only = DodgeBurnConfig {
             luminance_weight: 0.0,
+            downsample_factor: 1,
             ..Default::default()
         };
 
@@ -471,6 +498,7 @@ mod tests {
         let config = DodgeBurnConfig {
             luminance_weight: 0.5, // Equal weight
             strength: 1.0,
+            downsample_factor: 1,
             ..Default::default()
         };
         let effect = DodgeBurn::new(config);
@@ -635,6 +663,7 @@ mod tests {
             burn_amount: 0.2,
             saliency_radius_scale: 0.1,
             luminance_weight: 1.0,
+            downsample_factor: 1,
         };
         let effect = DodgeBurn::new(config);
 
@@ -668,4 +697,3 @@ mod tests {
         );
     }
 }
-

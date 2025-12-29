@@ -8,11 +8,11 @@ use super::context::PixelBuffer;
 use super::drawing::parallel_blur_2d_rgba;
 use super::error::{RenderError, Result};
 use crate::post_effects::{
-    AtmosphericDepth, AtmosphericDepthConfig, AuroraVeils, AuroraVeilsConfig, AutoExposure,
-    ChampleveConfig, Cherenkov, CherenkovConfig, ChromaticBloom, ChromaticBloomConfig,
-    CinematicColorGrade, ColorGradeParams, CosmicInk, CosmicInkConfig, CrepuscularRays,
-    CrepuscularRaysConfig, DimensionalGlitch, DimensionalGlitchConfig, DodgeBurn, DodgeBurnConfig,
-    DogBloom, EdgeLuminance, EdgeLuminanceConfig, EventHorizon, EventHorizonConfig, FineTexture,
+    AtmosphericDepth, AtmosphericDepthConfig, AuroraVeils, AuroraVeilsConfig, ChampleveConfig,
+    Cherenkov, CherenkovConfig, ChromaticBloom, ChromaticBloomConfig, CinematicColorGrade,
+    ColorGradeParams, CosmicInk, CosmicInkConfig, CrepuscularRays, CrepuscularRaysConfig,
+    DimensionalGlitch, DimensionalGlitchConfig, DodgeBurn, DodgeBurnConfig, DogBloom,
+    EdgeLuminance, EdgeLuminanceConfig, EventHorizon, EventHorizonConfig, FineTexture,
     FineTextureConfig, GaussianBloom, GlowEnhancement, GlowEnhancementConfig, GradientMap,
     GradientMapConfig, Halation, HalationConfig, MicroContrast, MicroContrastConfig, Opalescence,
     OpalescenceConfig, PerceptualBlur, PerceptualBlurConfig, PostEffect, PostEffectChain,
@@ -107,34 +107,25 @@ pub struct EffectConfig {
 
 /// Persistent effect chain builder
 pub struct EffectChainBuilder {
-    chain: PostEffectChain,
+    trajectory_chain: PostEffectChain,
+    finishing_chain: PostEffectChain,
     _config: EffectConfig,
 }
 
 impl EffectChainBuilder {
     /// Create a new effect chain builder with given configuration
     pub fn new(config: EffectConfig) -> Self {
-        let chain = Self::build_chain(&config);
-        Self { chain, _config: config }
+        let trajectory_chain = Self::build_trajectory_chain(&config);
+        let finishing_chain = Self::build_finishing_chain(&config);
+        Self { trajectory_chain, finishing_chain, _config: config }
     }
 
-    /// Build the effect chain based on configuration
-    ///
-    /// Effects are applied in a carefully optimized order:
-    /// 1. Bloom effects (diffuse and tight glow)
-    /// 2. Tone mapping and perceptual smoothing
-    /// 3. Detail enhancement (contrast, clarity)
-    /// 4. Color manipulation (palettes, grading)
-    /// 5. Material properties (iridescence layers)
-    /// 6. Form refinement (edges)
-    /// 7. Atmospheric effects (depth, texture)
-    fn build_chain(config: &EffectConfig) -> PostEffectChain {
+    /// Build the trajectory-specific effect chain.
+    /// These effects are applied ONLY to the trajectories before compositing.
+    fn build_trajectory_chain(config: &EffectConfig) -> PostEffectChain {
         let mut chain = PostEffectChain::new();
 
-        // ===== PHASE 1: BLOOM & GLOW =====
-        // Base lighting effects that work on bright areas
-
-        // 1a. Traditional bloom (large diffuse glow)
+        // ===== PHASE 1: BLOOM & GLOW (Trajectory specific) =====
         if config.blur_radius_px > 0 {
             chain.add(Box::new(GaussianBloom::new(
                 config.blur_radius_px,
@@ -143,173 +134,127 @@ impl EffectChainBuilder {
             )));
         }
 
-        // 1b. DoG bloom (edge-detected glow, mutually exclusive with Gaussian)
         match config.bloom_mode.as_str() {
             "dog" => chain.add(Box::new(DogBloom::new(
                 config.dog_config.clone(),
                 config.blur_core_brightness,
             ))),
-            "gaussian" => {}
             _ => {}
         }
 
-        // 1c. Glow enhancement (tight sparkle on very bright areas) [NEW]
         if config.glow_enhancement_enabled {
             chain.add(Box::new(GlowEnhancement::new(config.glow_enhancement_config.clone())));
         }
 
-        // 1d. Chromatic bloom (prismatic color separation)
         if config.chromatic_bloom_enabled {
             chain.add(Box::new(ChromaticBloom::new(config.chromatic_bloom_config.clone())));
         }
 
-        // ===== PHASE 2: TONE MAPPING & BLUR =====
-        // Perceptual processing for smooth, natural appearance
-
-        // 2a. Perceptual blur (OKLab space smoothing)
+        // ===== PHASE 2: PERCEPTUAL SMOOTHING =====
         if config.perceptual_blur_enabled && config.perceptual_blur_config.is_some() {
             let blur_config = config.perceptual_blur_config.as_ref().unwrap();
             chain.add(Box::new(PerceptualBlur::new(blur_config.clone())));
         }
 
-        // 2b. Auto-exposure (HDR tone mapping)
-        if config.hdr_mode == "auto" {
-            chain.add(Box::new(AutoExposure::default()));
-        }
-
-        // ===== PHASE 3: DETAIL ENHANCEMENT =====
-        // Clarity and definition improvements
-
-        // 3. Micro-contrast (local contrast enhancement for detail clarity) [NEW]
-        if config.micro_contrast_enabled {
-            chain.add(Box::new(MicroContrast::new(config.micro_contrast_config.clone())));
-        }
-
-        // ===== PHASE 4: COLOR MANIPULATION =====
-        // Artistic color transformations
-
-        // 4a. Gradient mapping (luxury color palettes)
-        if config.gradient_map_enabled {
-            chain.add(Box::new(GradientMap::new(config.gradient_map_config.clone())));
-        }
-
-        // 4b. Cinematic color grading (film-like look)
-        if config.color_grade_enabled && config.color_grade_params.strength > 0.0 {
-            chain.add(Box::new(CinematicColorGrade::new(config.color_grade_params.clone())));
-        }
-
-        // ===== PHASE 5: MATERIAL PROPERTIES =====
-        // Iridescence and material quality (layered for depth)
-
-        // 5a. Opalescence (base gem-like shimmer layer) [MOVED EARLIER]
+        // ===== PHASE 3: MATERIAL & IRIDESCENCE =====
         if config.opalescence_enabled {
             chain.add(Box::new(Opalescence::new(config.opalescence_config.clone())));
         }
 
-        // 5b. Champlevé (structure layer: Voronoi cells + metallic rims)
         if config.champleve_enabled {
             chain.add(Box::new(ChampleveFinish::new(config.champleve_config.clone())));
         }
 
-        // 5c. Aether (flow layer: woven filaments + volumetric scattering)
         if config.aether_enabled {
             chain.add(Box::new(AetherFinish::new(config.aether_config.clone())));
         }
 
-        // ===== PHASE 6: FORM REFINEMENT =====
-        // Edge and shape definition
-
-        // 6. Edge luminance (selective edge brightening for refined forms)
-        if config.edge_luminance_enabled {
-            chain.add(Box::new(EdgeLuminance::new(config.edge_luminance_config.clone())));
+        // ===== PHASE 4: PHYSICS VISUALIZATION =====
+        if config.event_horizon_enabled {
+            chain.add(Box::new(EventHorizon::new(config.event_horizon_config.clone())));
+        } else if config.refractive_caustics_enabled {
+            chain.add(Box::new(RefractiveCaustics::new(config.refractive_caustics_config.clone())));
         }
 
-        // ===== PHASE 7: ATMOSPHERIC & PHYSICS EFFECTS =====
-        // Background and environmental layers (apply early for proper layering)
-
-        // 7a. Aurora Veils (background atmospheric curtains) [NEW - MASTERPIECE]
-        if config.aurora_veils_enabled {
-            chain.add(Box::new(AuroraVeils::new(config.aurora_veils_config.clone())));
+        if config.cherenkov_enabled {
+            chain.add(Box::new(Cherenkov::new(config.cherenkov_config.clone())));
         }
 
-        // 7b. Cosmic Ink (fluid-like space medium) [NEW - MASTERPIECE]
-        if config.cosmic_ink_enabled {
-            chain.add(Box::new(CosmicInk::new(config.cosmic_ink_config.clone())));
-        }
-
-        // 7c. Deep Space (volumetric scattering) [NEW]
         if config.deep_space_enabled {
             chain.add(Box::new(DeepSpaceFinish::new(config.deep_space_config.clone())));
         }
 
-        // ===== PHASE 8: PHYSICS VISUALIZATION =====
-        // Effects that reveal the invisible forces
-
-        // 8a. Event Horizon Lensing (gravity distortion) [NEW - MASTERPIECE]
-        // Replaces refractive_caustics for thematically superior gravity visualization
-        if config.event_horizon_enabled {
-            chain.add(Box::new(EventHorizon::new(config.event_horizon_config.clone())));
-        } else if config.refractive_caustics_enabled {
-            // Legacy fallback: Refractive Caustics (Glass/Gem look)
-            chain.add(Box::new(RefractiveCaustics::new(config.refractive_caustics_config.clone())));
+        if config.prismatic_halos_enabled {
+            chain.add(Box::new(PrismaticHalos::new(config.prismatic_halos_config.clone())));
         }
 
-        // 8b. Dodge & Burn (saliency-guided focal shaping) [NEW - MUSEUM QUALITY]
-        // Placed early in scene-level effects to establish focal hierarchy
-        // before atmospheric effects add their own structure
-        if config.dodge_burn_enabled {
-            chain.add(Box::new(DodgeBurn::new(config.dodge_burn_config.clone())));
+        chain
+    }
+
+    /// Build the scene-level finishing chain.
+    /// These effects are applied to the WHOLE image AFTER background compositing.
+    fn build_finishing_chain(config: &EffectConfig) -> PostEffectChain {
+        let mut chain = PostEffectChain::new();
+
+        // ===== PHASE 1: BACKGROUND & ATMOSPHERIC LAYERS =====
+        if config.aurora_veils_enabled {
+            chain.add(Box::new(AuroraVeils::new(config.aurora_veils_config.clone())));
         }
 
-        // 8c. Volumetric Occlusion (Self-Shadowing for depth)
+        if config.cosmic_ink_enabled {
+            chain.add(Box::new(CosmicInk::new(config.cosmic_ink_config.clone())));
+        }
+
+        // ===== PHASE 2: COLOR & GRADING =====
+        if config.gradient_map_enabled {
+            chain.add(Box::new(GradientMap::new(config.gradient_map_config.clone())));
+        }
+
+        if config.color_grade_enabled && config.color_grade_params.strength > 0.0 {
+            chain.add(Box::new(CinematicColorGrade::new(config.color_grade_params.clone())));
+        }
+
+        // ===== PHASE 2: DETAIL & DEPTH =====
+        if config.micro_contrast_enabled {
+            chain.add(Box::new(MicroContrast::new(config.micro_contrast_config.clone())));
+        }
+
+        if config.edge_luminance_enabled {
+            chain.add(Box::new(EdgeLuminance::new(config.edge_luminance_config.clone())));
+        }
+
         if config.volumetric_occlusion_enabled {
             chain.add(Box::new(VolumetricOcclusion::new(
                 config.volumetric_occlusion_config.clone(),
             )));
         }
 
-        // 8d. Crepuscular Rays (God Rays - Light scattering)
         if config.crepuscular_rays_enabled {
             chain.add(Box::new(CrepuscularRays::new(config.crepuscular_rays_config.clone())));
         }
 
-        // ===== PHASE 9: ENERGY & VELOCITY EFFECTS =====
-        // High-energy event visualization
-
-        // 9a. Cherenkov Radiation (velocity-based blue glow) [NEW - MASTERPIECE]
-        if config.cherenkov_enabled {
-            chain.add(Box::new(Cherenkov::new(config.cherenkov_config.clone())));
-        }
-
-        // 9b. Prismatic Halos (optical phenomena around bright spots) [NEW - MASTERPIECE]
-        if config.prismatic_halos_enabled {
-            chain.add(Box::new(PrismaticHalos::new(config.prismatic_halos_config.clone())));
-        }
-
-        // ===== PHASE 10: ATMOSPHERIC DEPTH & SURFACE =====
-        // Final spatial qualities
-
-        // 10a. Atmospheric depth (spatial perspective + fog)
+        // ===== PHASE 3: PHOTOCHEMICAL FINISHING [MUSEUM QUALITY] =====
+        // Atmospheric depth establishes spatial scale for the whole scene
         if config.atmospheric_depth_enabled {
             chain.add(Box::new(AtmosphericDepth::new(config.atmospheric_depth_config.clone())));
         }
 
-        // 10b. Halation (photochemical highlight glow) [NEW - MUSEUM QUALITY]
-        // Placed after atmospheric effects but before surface texture
-        // Creates warm, soft glow that simulates expensive film emulsion
+        // Dodge & Burn establishes focal hierarchy across the whole scene
+        if config.dodge_burn_enabled {
+            chain.add(Box::new(DodgeBurn::new(config.dodge_burn_config.clone())));
+        }
+
+        // Halation creates light interaction between foreground and background
         if config.halation_enabled {
             chain.add(Box::new(Halation::new(config.halation_config.clone())));
         }
 
-        // 10c. Fine texture (surface quality: canvas, linen, etc. - preserves all prior work)
+        // Fine texture adds material physicalness to the entire "print"
         if config.fine_texture_enabled {
             chain.add(Box::new(FineTexture::new(config.fine_texture_config.clone())));
         }
 
-        // ===== PHASE 11: DIGITAL AESTHETICS =====
-        // Meta-layer: the computational medium itself
-
-        // 11. Dimensional Glitch (digital artifacts at peak energy) [NEW - MASTERPIECE]
+        // Meta-layer
         if config.dimensional_glitch_enabled {
             chain.add(Box::new(DimensionalGlitch::new(config.dimensional_glitch_config.clone())));
         }
@@ -317,17 +262,30 @@ impl EffectChainBuilder {
         chain
     }
 
-    /// Process a frame with the persistent effect chain
-    pub fn process_frame(
+    /// Process a frame with the trajectory effect chain
+    pub fn process_trajectories(
         &self,
         buffer: PixelBuffer,
         width: usize,
         height: usize,
         params: &FrameParams,
     ) -> Result<PixelBuffer> {
-        self.chain
+        self.trajectory_chain
             .process(buffer, width, height, params)
-            .map_err(|e| RenderError::EffectChain(e.to_string()))
+            .map_err(|e| RenderError::EffectChain(format!("Trajectory Chain: {}", e)))
+    }
+
+    /// Process a frame with the finishing effect chain
+    pub fn process_finishing(
+        &self,
+        buffer: PixelBuffer,
+        width: usize,
+        height: usize,
+        params: &FrameParams,
+    ) -> Result<PixelBuffer> {
+        self.finishing_chain
+            .process(buffer, width, height, params)
+            .map_err(|e| RenderError::EffectChain(format!("Finishing Chain: {}", e)))
     }
 }
 
@@ -751,6 +709,7 @@ impl Default for DogBloomConfig {
 }
 
 /// Auto-exposure calculator for HDR tone mapping
+#[allow(dead_code)]
 pub struct ExposureCalculator {
     target_percentile: f64,
     min_exposure: f64,
@@ -764,6 +723,7 @@ impl Default for ExposureCalculator {
 }
 
 impl ExposureCalculator {
+    #[allow(dead_code)]
     pub fn calculate_exposure(&self, pixels: &[(f64, f64, f64, f64)]) -> f64 {
         // Compute luminance values
         let luminances: Vec<f64> = pixels
@@ -1262,12 +1222,15 @@ mod tests {
         let config = EffectConfig::default();
         let chain = EffectChainBuilder::new(config);
 
-        // Basic test - just verify chain can be created
+        // Basic test - just verify chains can be created and run
         let buffer = vec![(0.5, 0.5, 0.5, 1.0); 100];
         let params = FrameParams { frame_number: 0, _density: None, body_positions: None };
 
-        let result = chain.process_frame(buffer, 10, 10, &params);
-        assert!(result.is_ok());
+        let result_traj = chain.process_trajectories(buffer.clone(), 10, 10, &params);
+        let result_fin = chain.process_finishing(buffer, 10, 10, &params);
+        
+        assert!(result_traj.is_ok());
+        assert!(result_fin.is_ok());
     }
 
     #[test]

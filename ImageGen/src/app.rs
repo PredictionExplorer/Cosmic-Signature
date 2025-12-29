@@ -403,7 +403,8 @@ pub fn render_test_frame(
     // Create grouped render parameters
     let scene = SceneDataRef::new(positions, colors, body_alphas);
     let params =
-        RenderParams::new(scene, resolved_config, frame_interval, noise_seed, render_config);
+        RenderParams::new(scene, resolved_config, frame_interval, noise_seed, render_config)
+            .with_levels(levels);
 
     let test_frame = render_single_frame_spectral(&params, levels)?;
 
@@ -486,7 +487,8 @@ pub fn render_video(
     // Create grouped render parameters
     let scene = SceneDataRef::new(positions, colors, body_alphas);
     let params =
-        RenderParams::new(scene, resolved_config, frame_interval, noise_seed, render_config);
+        RenderParams::new(scene, resolved_config, frame_interval, noise_seed, render_config)
+            .with_levels(levels);
 
     let mut last_frame_png: Option<ImageBuffer<Rgb<u16>, Vec<u16>>> = None;
     let video_options = if fast_encode {

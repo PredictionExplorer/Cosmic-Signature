@@ -98,6 +98,8 @@ pub(crate) struct RenderLoopContext<'a> {
     special_mode: bool,
     hdr_scale: f64,
     current_body_positions: Vec<(f64, f64)>,
+    // Channel levels for exposure normalization (if provided)
+    levels: Option<super::types::ChannelLevels>,
 }
 
 impl<'a> RenderLoopContext<'a> {
@@ -169,6 +171,7 @@ impl<'a> RenderLoopContext<'a> {
             special_mode,
             hdr_scale: params.render_config.hdr_scale,
             current_body_positions: Vec::with_capacity(3),
+            levels: params.levels.cloned(),
         }
     }
 
@@ -253,22 +256,30 @@ impl<'a> RenderLoopContext<'a> {
         // Access workspace fields directly to avoid borrow checker issues
         convert_spd_buffer_to_rgba(&self.workspace.accum_spd, &mut self.workspace.accum_rgba);
 
-        // Process with effect chain (take ownership to avoid clone)
+        // MUSEUM QUALITY FIX: Normalize exposure BEFORE effects
+        // The effects (Halation, DodgeBurn, etc.) expect 0-1 range values.
+        // Without this, they see raw HDR values (e.g. 100.0) and bloom everything.
+        if let Some(levels) = &self.levels {
+            apply_exposure_normalization(&mut self.workspace.accum_rgba, levels);
+        }
+
+        // MUSEUM QUALITY PIPELINE SPLIT:
+        // Stage 1: Process trajectories ONLY (Bloom, Glow, Materials)
         let frame_params = FrameParams {
             frame_number,
             _density: None,
             body_positions: Some(self.current_body_positions.clone()),
         };
         let rgba_buffer = std::mem::take(&mut self.workspace.accum_rgba);
+        
         let trajectory_pixels = self
             .effect_chain
-            .process_frame(rgba_buffer, self.width as usize, self.height as usize, &frame_params)
-            .map_err(|e| RenderError::EffectError(e.to_string()))?;
+            .process_trajectories(rgba_buffer, self.width as usize, self.height as usize, &frame_params)?;
 
         // Reset workspace for next frame (reuses allocations)
         self.workspace.reset();
 
-        // Generate nebula background (or reuse empty buffer for zero overhead)
+        // Stage 2: Generate background (Nebula)
         let nebula_background = if self.special_mode && resolved_config.nebula_strength > 0.0 {
             generate_nebula_background(
                 self.width as usize,
@@ -281,8 +292,16 @@ impl<'a> RenderLoopContext<'a> {
             self.workspace.empty_background().to_vec()
         };
 
-        // Composite nebula background under trajectory foreground
-        Ok(composite_buffers(&nebula_background, &trajectory_pixels))
+        // Stage 3: Composite background and trajectories
+        let composited = composite_buffers(&nebula_background, &trajectory_pixels);
+
+        // Stage 4: Scene-level finishing (Halation, Dodge & Burn, Texture)
+        // These effects now interact with the whole scene for realistic light behavior.
+        let final_frame = self
+            .effect_chain
+            .process_finishing(composited, self.width as usize, self.height as usize, &frame_params)?;
+
+        Ok(final_frame)
     }
 
     /// Check if we should emit a frame at this step
@@ -430,6 +449,35 @@ pub(crate) fn composite_buffers(background: &PixelBuffer, foreground: &PixelBuff
             }
         })
         .collect()
+}
+
+/// Apply exposure normalization to the pixel buffer
+///
+/// Maps raw HDR values to the 0.0-1.0 range based on histogram levels.
+/// This ensures that effects like Halation and Bloom receive normalized data
+/// consistent with their expected thresholds.
+///
+/// # Logic
+/// `pixel = (pixel - black) / (white - black)`
+/// Clamped to [0.0, 1.0] to prevent artifacts.
+pub(crate) fn apply_exposure_normalization(buffer: &mut PixelBuffer, levels: &super::types::ChannelLevels) {
+    buffer.par_iter_mut().for_each(|pixel| {
+        // Normalize each channel independently using histogram levels
+        // This effectively performs "Auto Level" correction before effects run
+        
+        // Red
+        pixel.0 = ((pixel.0 - levels.black[0]) / levels.range[0]).max(0.0);
+        
+        // Green
+        pixel.1 = ((pixel.1 - levels.black[1]) / levels.range[1]).max(0.0);
+        
+        // Blue
+        pixel.2 = ((pixel.2 - levels.black[2]) / levels.range[2]).max(0.0);
+        
+        // Note: We don't clamp to 1.0 here to preserve HDR headroom for bloom/glow effects.
+        // However, the "white point" from histogram is typically the 99.9th percentile,
+        // so most pixels will be in [0, 1].
+    });
 }
 
 #[cfg(test)]

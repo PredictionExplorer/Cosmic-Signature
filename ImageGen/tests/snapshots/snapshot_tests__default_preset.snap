@@ -17,14 +17,14 @@ top_right:
   - 0
   - 0
 bottom_left:
-  - 63953
-  - 63953
-  - 63954
+  - 62849
+  - 62850
+  - 62851
 bottom_right:
   - 0
   - 0
   - 0
-avg_r: 3880
-avg_g: 3787
-avg_b: 3449
+avg_r: 3602
+avg_g: 3427
+avg_b: 3292
 non_black_pixels: 18731

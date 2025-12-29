@@ -24,7 +24,7 @@ bottom_right:
   - 0
   - 0
   - 0
-avg_r: 1052
+avg_r: 651
 avg_g: 626
-avg_b: 351
-non_black_pixels: 43257
+avg_b: 294
+non_black_pixels: 39759

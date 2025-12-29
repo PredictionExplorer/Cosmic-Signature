@@ -1372,6 +1372,29 @@ impl RandomizableEffectConfig {
             ));
         }
 
+        // MUSEUM QUALITY PIPELINE:
+        // Apply artifact budget at the end of resolution to prevent "plugin soup" aesthetic.
+        let artifact_budget = ArtifactBudget::museum_quality();
+        
+        // Auto-disable dimensional glitch for museum quality (unless specifically requested)
+        if artifact_budget.should_disable_glitch() && self.enable_dimensional_glitch.is_none() {
+            resolved.enable_dimensional_glitch = false;
+            log.add_record(RandomizationRecord::new(
+                "dimensional_glitch_auto_disabled".to_string(),
+                false,
+                false,
+            ));
+        }
+
+        // Apply budget - scales down artifact-prone effects if over budget
+        if let Some(scale_factor) = artifact_budget.apply(&mut resolved) {
+            log.add_record(RandomizationRecord::new(
+                format!("artifact_budget_applied: scale={:.3}", scale_factor),
+                true,
+                false,
+            ));
+        }
+
         (resolved, log)
     }
 

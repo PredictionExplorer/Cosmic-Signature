@@ -38,7 +38,7 @@ use crate::post_effects::FrameParams;
 use self::effects::{EffectChainBuilder, EffectConfig, convert_spd_buffer_to_rgba};
 use self::error::{RenderError, Result};
 use self::histogram::HistogramData;
-use self::pipeline::RenderLoopContext;
+use self::pipeline::{RenderLoopContext, apply_exposure_normalization};
 use self::tonemap::tonemap_to_16bit;
 
 // Re-export core types and functions for public API compatibility
@@ -397,6 +397,7 @@ pub(crate) fn build_effect_config_from_resolved(
             radius_scale: resolved.halation_radius_scale,
             warmth: resolved.halation_warmth,
             softness: resolved.halation_softness,
+            downsample_factor: 2,
         },
 
         dodge_burn_enabled: resolved.enable_dodge_burn,
@@ -406,6 +407,7 @@ pub(crate) fn build_effect_config_from_resolved(
             burn_amount: resolved.dodge_burn_burn_amount,
             saliency_radius_scale: resolved.dodge_burn_saliency_radius,
             luminance_weight: resolved.dodge_burn_luminance_weight,
+            downsample_factor: 2,
         },
     }
 }
@@ -487,7 +489,7 @@ fn push_pixels_to_histogram(histogram: &mut HistogramData, pixels: &[(f64, f64, 
 /// applies tonemapping, and writes 16-bit RGB frames to the provided sink for encoding.
 pub fn pass_2_write_frames_spectral(
     params: &RenderParams<'_>,
-    levels: &ChannelLevels,
+    _levels: &ChannelLevels,
     mut frame_sink: impl FnMut(&[u8]) -> Result<()>,
     last_frame_out: &mut Option<ImageBuffer<Rgb<u16>, Vec<u16>>>,
 ) -> Result<()> {
@@ -515,11 +517,15 @@ pub fn pass_2_write_frames_spectral(
             let frame_number = step / loop_ctx.frame_interval();
             let final_frame_pixels = loop_ctx.process_frame(frame_number, resolved_config)?;
 
+            // MUSEUM QUALITY FIX: Data is already normalized [0, 1] in process_frame.
+            // We pass identity levels to tonemapping to avoid double-normalization.
+            let identity_levels = ChannelLevels::new(0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
+
             // Tonemap to 16-bit
             let mut buf_16bit = vec![0u16; pixel_count * 3];
             buf_16bit.par_chunks_mut(3).zip(final_frame_pixels.par_iter()).for_each(
                 |(chunk, &(fr, fg, fb, fa))| {
-                    let mapped = tonemap_to_16bit(fr, fg, fb, fa, levels);
+                    let mapped = tonemap_to_16bit(fr, fg, fb, fa, &identity_levels);
                     chunk[0] = mapped[0];
                     chunk[1] = mapped[1];
                     chunk[2] = mapped[2];
@@ -668,6 +674,10 @@ pub fn render_single_frame_spectral(
     pipeline::apply_energy_density_shift(&mut accum_spd, special_mode);
     convert_spd_buffer_to_rgba(&accum_spd, &mut accum_rgba);
 
+    // MUSEUM QUALITY FIX: Normalize exposure BEFORE effects
+    // This is the manual path for test frames (RenderLoopContext not used here)
+    apply_exposure_normalization(&mut accum_rgba, levels);
+
     // Get current body positions for the test frame
     let mut current_body_positions = Vec::with_capacity(3);
     for i in 0..3 {
@@ -681,25 +691,34 @@ pub fn render_single_frame_spectral(
         _density: None,
         body_positions: Some(current_body_positions),
     };
-    let trajectory_pixels = effect_chain
-        .process_frame(accum_rgba, width as usize, height as usize, &frame_params)
-        .map_err(|e| RenderError::EffectError(e.to_string()))?;
 
-    // Generate nebula background
+    // MUSEUM QUALITY PIPELINE SPLIT:
+    // Stage 1: Process trajectories ONLY
+    let trajectory_pixels = effect_chain
+        .process_trajectories(accum_rgba, width as usize, height as usize, &frame_params)?;
+
+    // Stage 2: Generate nebula background
     let nebula_background = if special_mode && resolved_config.nebula_strength > 0.0 {
         pipeline::generate_nebula_background(width as usize, height as usize, 0, &nebula_config)?
     } else {
         empty_background
     };
 
-    // Composite
-    let final_pixels = pipeline::composite_buffers(&nebula_background, &trajectory_pixels);
+    // Stage 3: Composite
+    let composited = pipeline::composite_buffers(&nebula_background, &trajectory_pixels);
+
+    // Stage 4: Scene-level finishing
+    let final_pixels = effect_chain
+        .process_finishing(composited, width as usize, height as usize, &frame_params)?;
+
+    // Tonemap to 16-bit
+    let identity_levels = ChannelLevels::new(0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
 
     // Tonemap to 16-bit
     let mut buf_16bit = vec![0u16; ctx.pixel_count() * 3];
     buf_16bit.par_chunks_mut(3).zip(final_pixels.par_iter()).for_each(
         |(chunk, &(fr, fg, fb, fa))| {
-            let mapped = tonemap_to_16bit(fr, fg, fb, fa, levels);
+            let mapped = tonemap_to_16bit(fr, fg, fb, fa, &identity_levels);
             chunk[0] = mapped[0];
             chunk[1] = mapped[1];
             chunk[2] = mapped[2];
