@@ -11,14 +11,14 @@ use crate::post_effects::{
     AtmosphericDepth, AtmosphericDepthConfig, AuroraVeils, AuroraVeilsConfig, AutoExposure,
     ChampleveConfig, Cherenkov, CherenkovConfig, ChromaticBloom, ChromaticBloomConfig,
     CinematicColorGrade, ColorGradeParams, CosmicInk, CosmicInkConfig, CrepuscularRays,
-    CrepuscularRaysConfig, DimensionalGlitch, DimensionalGlitchConfig, DogBloom, EdgeLuminance,
-    EdgeLuminanceConfig, EventHorizon, EventHorizonConfig, FineTexture, FineTextureConfig,
-    GaussianBloom, GlowEnhancement, GlowEnhancementConfig, GradientMap, GradientMapConfig,
-    MicroContrast, MicroContrastConfig, Opalescence, OpalescenceConfig, PerceptualBlur,
-    PerceptualBlurConfig, PostEffect, PostEffectChain, PrismaticHalos, PrismaticHalosConfig,
-    RefractiveCaustics, RefractiveCausticsConfig, VolumetricOcclusion, VolumetricOcclusionConfig,
-    aether::AetherConfig, apply_aether_weave, apply_champleve_iridescence, DeepSpace,
-    DeepSpaceConfig, FrameParams,
+    CrepuscularRaysConfig, DimensionalGlitch, DimensionalGlitchConfig, DodgeBurn, DodgeBurnConfig,
+    DogBloom, EdgeLuminance, EdgeLuminanceConfig, EventHorizon, EventHorizonConfig, FineTexture,
+    FineTextureConfig, GaussianBloom, GlowEnhancement, GlowEnhancementConfig, GradientMap,
+    GradientMapConfig, Halation, HalationConfig, MicroContrast, MicroContrastConfig, Opalescence,
+    OpalescenceConfig, PerceptualBlur, PerceptualBlurConfig, PostEffect, PostEffectChain,
+    PrismaticHalos, PrismaticHalosConfig, RefractiveCaustics, RefractiveCausticsConfig,
+    VolumetricOcclusion, VolumetricOcclusionConfig, aether::AetherConfig, apply_aether_weave,
+    apply_champleve_iridescence, DeepSpace, DeepSpaceConfig, FrameParams,
 };
 use crate::spectrum::{NUM_BINS, spd_to_rgba};
 use rayon::prelude::*;
@@ -96,6 +96,12 @@ pub struct EffectConfig {
     pub dimensional_glitch_config: DimensionalGlitchConfig,
     pub deep_space_enabled: bool,
     pub deep_space_config: DeepSpaceConfig,
+
+    // NEW: Museum Quality Upgrade effects
+    pub halation_enabled: bool,
+    pub halation_config: HalationConfig,
+    pub dodge_burn_enabled: bool,
+    pub dodge_burn_config: DodgeBurnConfig,
 }
 
 
@@ -248,14 +254,21 @@ impl EffectChainBuilder {
             chain.add(Box::new(RefractiveCaustics::new(config.refractive_caustics_config.clone())));
         }
 
-        // 8b. Volumetric Occlusion (Self-Shadowing for depth)
+        // 8b. Dodge & Burn (saliency-guided focal shaping) [NEW - MUSEUM QUALITY]
+        // Placed early in scene-level effects to establish focal hierarchy
+        // before atmospheric effects add their own structure
+        if config.dodge_burn_enabled {
+            chain.add(Box::new(DodgeBurn::new(config.dodge_burn_config.clone())));
+        }
+
+        // 8c. Volumetric Occlusion (Self-Shadowing for depth)
         if config.volumetric_occlusion_enabled {
             chain.add(Box::new(VolumetricOcclusion::new(
                 config.volumetric_occlusion_config.clone(),
             )));
         }
 
-        // 8c. Crepuscular Rays (God Rays - Light scattering)
+        // 8d. Crepuscular Rays (God Rays - Light scattering)
         if config.crepuscular_rays_enabled {
             chain.add(Box::new(CrepuscularRays::new(config.crepuscular_rays_config.clone())));
         }
@@ -281,7 +294,14 @@ impl EffectChainBuilder {
             chain.add(Box::new(AtmosphericDepth::new(config.atmospheric_depth_config.clone())));
         }
 
-        // 10b. Fine texture (surface quality: canvas, linen, etc. - preserves all prior work)
+        // 10b. Halation (photochemical highlight glow) [NEW - MUSEUM QUALITY]
+        // Placed after atmospheric effects but before surface texture
+        // Creates warm, soft glow that simulates expensive film emulsion
+        if config.halation_enabled {
+            chain.add(Box::new(Halation::new(config.halation_config.clone())));
+        }
+
+        // 10c. Fine texture (surface quality: canvas, linen, etc. - preserves all prior work)
         if config.fine_texture_enabled {
             chain.add(Box::new(FineTexture::new(config.fine_texture_config.clone())));
         }
@@ -319,7 +339,9 @@ impl Default for EffectConfig {
             blur_strength: 10.0,
             blur_core_brightness: 10.0,
             dog_config: DogBloomConfig::default(),
-            hdr_mode: "auto".to_string(),
+            // MUSEUM QUALITY: Changed to "off" - histogram+ACES is now the sole exposure authority
+            // This prevents double-normalization that flattens nuance
+            hdr_mode: "off".to_string(),
             perceptual_blur_enabled: true,
             perceptual_blur_config: None,
             color_grade_enabled: true,
@@ -362,10 +384,18 @@ impl Default for EffectConfig {
             aurora_veils_config: AuroraVeilsConfig::default(),
             prismatic_halos_enabled: false,
             prismatic_halos_config: PrismaticHalosConfig::default(),
+            // MUSEUM QUALITY: Dimensional glitch removed from museum-quality pipeline
+            // It creates too "FX/music video" aesthetic that's not museum-appropriate
             dimensional_glitch_enabled: false,
             dimensional_glitch_config: DimensionalGlitchConfig::default(),
             deep_space_enabled: false,
             deep_space_config: DeepSpaceConfig::default(),
+
+            // NEW: Museum Quality Upgrade effects
+            halation_enabled: false,
+            halation_config: HalationConfig::default(),
+            dodge_burn_enabled: false,
+            dodge_burn_config: DodgeBurnConfig::default(),
         }
     }
 }
@@ -628,6 +658,36 @@ impl EffectConfigBuilder {
         self
     }
 
+    /// Configure halation effect with the given settings.
+    #[must_use]
+    pub fn with_halation(mut self, config: HalationConfig) -> Self {
+        self.config.halation_enabled = true;
+        self.config.halation_config = config;
+        self
+    }
+
+    /// Enable or disable halation effect.
+    #[must_use]
+    pub fn enable_halation(mut self, enabled: bool) -> Self {
+        self.config.halation_enabled = enabled;
+        self
+    }
+
+    /// Configure dodge & burn effect with the given settings.
+    #[must_use]
+    pub fn with_dodge_burn(mut self, config: DodgeBurnConfig) -> Self {
+        self.config.dodge_burn_enabled = true;
+        self.config.dodge_burn_config = config;
+        self
+    }
+
+    /// Enable or disable dodge & burn effect.
+    #[must_use]
+    pub fn enable_dodge_burn(mut self, enabled: bool) -> Self {
+        self.config.dodge_burn_enabled = enabled;
+        self
+    }
+
     /// Set HDR mode ("auto" or "off").
     #[must_use]
     pub fn hdr_mode(mut self, mode: impl Into<String>) -> Self {
@@ -662,6 +722,9 @@ impl EffectConfigBuilder {
         self.config.refractive_caustics_enabled = false;
         self.config.fine_texture_enabled = false;
         self.config.deep_space_enabled = false;
+        // NEW: Museum Quality effects
+        self.config.halation_enabled = false;
+        self.config.dodge_burn_enabled = false;
         self
     }
 

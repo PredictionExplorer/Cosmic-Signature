@@ -152,8 +152,9 @@ pub const CHROMATIC_BLOOM_STRENGTH: FloatParamDescriptor = FloatParamDescriptor 
     name: "chromatic_bloom_strength",
     min: 0.10, // Ultra-exploratory: barely visible chromatic aberration
     max: 1.0,  // Ultra-exploratory: full prismatic separation
-    gallery_min: 0.50,
-    gallery_max: 0.75,
+    // MUSEUM QUALITY: Tightened from 0.50-0.75 to prevent oversaturation
+    gallery_min: 0.30,
+    gallery_max: 0.55,
     description: "Prismatic color separation strength",
 };
 
@@ -419,8 +420,9 @@ pub const EDGE_LUMINANCE_STRENGTH: FloatParamDescriptor = FloatParamDescriptor {
     name: "edge_luminance_strength",
     min: 0.0,  // Already at natural minimum
     max: 0.75, // Ultra-exploratory: extreme edge brightness
-    gallery_min: 0.12,
-    gallery_max: 0.30,
+    // MUSEUM QUALITY: Tightened from 0.12-0.30 to prevent outline effects
+    gallery_min: 0.08,
+    gallery_max: 0.22,
     description: "Edge brightening strength",
 };
 
@@ -767,4 +769,102 @@ pub const NEBULA_BASE_FREQUENCY: FloatParamDescriptor = FloatParamDescriptor {
     gallery_min: 0.0010,
     gallery_max: 0.0020,
     description: "Nebula noise base frequency",
+};
+
+// ==================== HALATION (NEW - PHOTOCHEMICAL FINISHING) ====================
+// Creates warm, soft glow around highlights simulating film emulsion scatter.
+// Part of the Museum Quality Upgrade for photochemical "expensive film" look.
+
+pub const HALATION_STRENGTH: FloatParamDescriptor = FloatParamDescriptor {
+    name: "halation_strength",
+    min: 0.05,
+    max: 0.50,
+    gallery_min: 0.15,
+    gallery_max: 0.30,
+    description: "Overall halation effect strength",
+};
+
+pub const HALATION_THRESHOLD: FloatParamDescriptor = FloatParamDescriptor {
+    name: "halation_threshold",
+    min: 0.45,
+    max: 0.85,
+    gallery_min: 0.55,
+    gallery_max: 0.72,
+    description: "Luminance threshold for halation activation",
+};
+
+pub const HALATION_RADIUS_SCALE: FloatParamDescriptor = FloatParamDescriptor {
+    name: "halation_radius_scale",
+    min: 0.015,
+    max: 0.060,
+    gallery_min: 0.025,
+    gallery_max: 0.040,
+    description: "Halation blur radius as fraction of min dimension",
+};
+
+pub const HALATION_WARMTH: FloatParamDescriptor = FloatParamDescriptor {
+    name: "halation_warmth",
+    min: 0.15,
+    max: 0.55,
+    gallery_min: 0.25,
+    gallery_max: 0.42,
+    description: "Red/warm bias for halation glow",
+};
+
+pub const HALATION_SOFTNESS: FloatParamDescriptor = FloatParamDescriptor {
+    name: "halation_softness",
+    min: 1.2,
+    max: 3.5,
+    gallery_min: 1.8,
+    gallery_max: 2.5,
+    description: "Shoulder softness for halation falloff",
+};
+
+// ==================== DODGE & BURN (NEW - FOCAL SHAPING) ====================
+// Creates focal hierarchy by selectively lightening/darkening based on saliency.
+// Part of the Museum Quality Upgrade for professional darkroom-like finishing.
+
+pub const DODGE_BURN_STRENGTH: FloatParamDescriptor = FloatParamDescriptor {
+    name: "dodge_burn_strength",
+    min: 0.05,
+    max: 0.40,
+    gallery_min: 0.12,
+    gallery_max: 0.25,
+    description: "Overall dodge & burn effect strength",
+};
+
+pub const DODGE_BURN_DODGE_AMOUNT: FloatParamDescriptor = FloatParamDescriptor {
+    name: "dodge_burn_dodge_amount",
+    min: 0.05,
+    max: 0.30,
+    gallery_min: 0.10,
+    gallery_max: 0.20,
+    description: "Amount of lightening for salient regions",
+};
+
+pub const DODGE_BURN_BURN_AMOUNT: FloatParamDescriptor = FloatParamDescriptor {
+    name: "dodge_burn_burn_amount",
+    min: 0.03,
+    max: 0.25,
+    gallery_min: 0.06,
+    gallery_max: 0.15,
+    description: "Amount of darkening for non-salient regions",
+};
+
+pub const DODGE_BURN_SALIENCY_RADIUS: FloatParamDescriptor = FloatParamDescriptor {
+    name: "dodge_burn_saliency_radius",
+    min: 0.04,
+    max: 0.15,
+    gallery_min: 0.06,
+    gallery_max: 0.10,
+    description: "Blur radius for saliency map as fraction of min dimension",
+};
+
+pub const DODGE_BURN_LUMINANCE_WEIGHT: FloatParamDescriptor = FloatParamDescriptor {
+    name: "dodge_burn_luminance_weight",
+    min: 0.40,
+    max: 0.85,
+    gallery_min: 0.55,
+    gallery_max: 0.70,
+    description: "Weight for luminance vs alpha in saliency calculation",
 };

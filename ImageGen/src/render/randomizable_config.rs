@@ -2,9 +2,22 @@
 //!
 //! This module defines the complete parameter space for effect configuration,
 //! with support for explicit user values or random generation.
+//!
+//! # Museum Quality Pipeline
+//!
+//! The resolution pipeline implements a multi-stage approach to ensure both
+//! variety and quality:
+//!
+//! 1. **Style Genome**: 8 continuous aesthetic axes derived from seed
+//! 2. **Genome-Biased Randomization**: Effect probabilities influenced by genome
+//! 3. **Parameter Resolution**: All values determined (explicit or randomized)
+//! 4. **Artifact Budget**: Soft caps on artifact-prone effect combinations
+//! 5. **Museum Quality Enforcement**: Minimum quality guarantees for gallery mode
 
+use super::artifact_budget::ArtifactBudget;
 use super::effect_randomizer::{EffectRandomizer, RandomizationLog, RandomizationRecord};
 use super::parameter_descriptors as pd;
+use super::style_genome::StyleGenome;
 use crate::sim::Sha3RandomByteStream;
 
 /// Complete configuration for all randomizable effect parameters.
@@ -176,6 +189,22 @@ pub struct RandomizableEffectConfig {
     // Dimensional Glitch
     pub dimensional_glitch_strength: Option<f64>,
     pub dimensional_glitch_threshold: Option<f64>,
+
+    // NEW: Halation (Photochemical Highlight Glow) - Museum Quality Upgrade
+    pub enable_halation: Option<bool>,
+    pub halation_strength: Option<f64>,
+    pub halation_threshold: Option<f64>,
+    pub halation_radius_scale: Option<f64>,
+    pub halation_warmth: Option<f64>,
+    pub halation_softness: Option<f64>,
+
+    // NEW: Dodge & Burn (Saliency-Guided Focal Shaping) - Museum Quality Upgrade
+    pub enable_dodge_burn: Option<bool>,
+    pub dodge_burn_strength: Option<f64>,
+    pub dodge_burn_dodge_amount: Option<f64>,
+    pub dodge_burn_burn_amount: Option<f64>,
+    pub dodge_burn_saliency_radius: Option<f64>,
+    pub dodge_burn_luminance_weight: Option<f64>,
 }
 
 impl RandomizableEffectConfig {
@@ -219,6 +248,13 @@ impl RandomizableEffectConfig {
         special_mode: bool,
         noise_seed: i32,
     ) -> (ResolvedEffectConfig, RandomizationLog) {
+        // =========================================================================
+        // PHASE 1: Style Genome - Coherent Aesthetic DNA
+        // =========================================================================
+        // Generate 8-axis style fingerprint for this seed. This ensures
+        // coherent aesthetics across all effect choices.
+        let style_genome = StyleGenome::from_rng(rng);
+
         // 1. Resolve Global Light Angle for Coherent Lighting FIRST (before creating randomizer)
         // We pick one angle for the whole scene to ensure shadows and textures match.
         // 50% chance of standard studio lighting (top-left, 135 deg), 50% random.
@@ -231,13 +267,32 @@ impl RandomizableEffectConfig {
         let biases = randomizer.biases();
         let mut log = RandomizationLog::new(self.gallery_quality, biases);
 
-        // 2. Resolve key driving parameters (dependencies)
+        // Log style genome for reproducibility
+        log.add_record(RandomizationRecord::new(
+            format!(
+                "style_genome: photo={:.2} ornate={:.2} ethereal={:.2} chrom={:.2} crisp={:.2} dramatic={:.2} organic={:.2} lum={:.2}",
+                style_genome.photochemical, style_genome.ornate, style_genome.ethereal,
+                style_genome.chromatic, style_genome.crisp, style_genome.dramatic,
+                style_genome.organic, style_genome.luminous
+            ),
+            true,
+            false,
+        ));
+
+        // =========================================================================
+        // PHASE 2: Genome-Biased Effect Resolution
+        // =========================================================================
+        // Key aesthetic effects use genome-biased probabilities for coherence.
+        // A "photochemical" genome will favor halation over chromatic bloom, etc.
+
+        // Resolve key driving parameters (dependencies)
         // We resolve these first because other parameters depend on them for coherence.
 
-        let enable_gradient_map = self.resolve_enable(
+        let enable_gradient_map = self.resolve_enable_with_genome(
             "gradient_map",
             self.enable_gradient_map,
             &mut randomizer,
+            &style_genome,
             &mut log,
         );
         let gradient_map_palette = self.resolve_int(
@@ -330,11 +385,20 @@ impl RandomizableEffectConfig {
 
             // Effect enables
             enable_bloom,
-            enable_glow: self.resolve_enable("glow", self.enable_glow, &mut randomizer, &mut log),
-            enable_chromatic_bloom: self.resolve_enable(
+            // Glow uses genome biasing - luminous genomes favor glow effects
+            enable_glow: self.resolve_enable_with_genome(
+                "glow",
+                self.enable_glow,
+                &mut randomizer,
+                &style_genome,
+                &mut log,
+            ),
+            // Chromatic bloom uses genome biasing - chromatic genomes favor prismatic effects
+            enable_chromatic_bloom: self.resolve_enable_with_genome(
                 "chromatic_bloom",
                 self.enable_chromatic_bloom,
                 &mut randomizer,
+                &style_genome,
                 &mut log,
             ),
             enable_perceptual_blur: self.resolve_enable(
@@ -343,10 +407,12 @@ impl RandomizableEffectConfig {
                 &mut randomizer,
                 &mut log,
             ),
-            enable_micro_contrast: self.resolve_enable(
+            // Micro contrast uses genome biasing - crisp genomes favor sharpness
+            enable_micro_contrast: self.resolve_enable_with_genome(
                 "micro_contrast",
                 self.enable_micro_contrast,
                 &mut randomizer,
+                &style_genome,
                 &mut log,
             ),
             enable_gradient_map,
@@ -368,22 +434,28 @@ impl RandomizableEffectConfig {
                 &mut randomizer,
                 &mut log,
             ),
-            enable_opalescence: self.resolve_enable(
+            // Opalescence uses genome biasing - ornate genomes favor decorative effects
+            enable_opalescence: self.resolve_enable_with_genome(
                 "opalescence",
                 self.enable_opalescence,
                 &mut randomizer,
+                &style_genome,
                 &mut log,
             ),
-            enable_edge_luminance: self.resolve_enable(
+            // Edge luminance uses genome biasing - crisp + dramatic genomes favor edges
+            enable_edge_luminance: self.resolve_enable_with_genome(
                 "edge_luminance",
                 self.enable_edge_luminance,
                 &mut randomizer,
+                &style_genome,
                 &mut log,
             ),
-            enable_atmospheric_depth: self.resolve_enable(
+            // Atmospheric depth uses genome biasing - ethereal genomes favor atmosphere
+            enable_atmospheric_depth: self.resolve_enable_with_genome(
                 "atmospheric_depth",
                 self.enable_atmospheric_depth,
                 &mut randomizer,
+                &style_genome,
                 &mut log,
             ),
             enable_crepuscular_rays: self.resolve_enable(
@@ -404,10 +476,12 @@ impl RandomizableEffectConfig {
                 &mut randomizer,
                 &mut log,
             ),
-            enable_fine_texture: self.resolve_enable(
+            // Fine texture uses genome biasing - photochemical genomes favor surface detail
+            enable_fine_texture: self.resolve_enable_with_genome(
                 "fine_texture",
                 self.enable_fine_texture,
                 &mut randomizer,
+                &style_genome,
                 &mut log,
             ),
 
@@ -1008,6 +1082,96 @@ impl RandomizableEffectConfig {
             dimensional_glitch_strength: self.dimensional_glitch_strength.unwrap_or(0.35),
             dimensional_glitch_threshold: self.dimensional_glitch_threshold.unwrap_or(0.75),
 
+            // NEW: Halation (Photochemical Highlight Glow)
+            // Uses genome biasing - photochemical genomes strongly favor halation
+            enable_halation: self.resolve_enable_with_genome(
+                "halation",
+                self.enable_halation,
+                &mut randomizer,
+                &style_genome,
+                &mut log,
+            ),
+            halation_strength: self.resolve_float(
+                "halation_strength",
+                self.halation_strength,
+                &pd::HALATION_STRENGTH,
+                &mut randomizer,
+                &mut log,
+            ),
+            halation_threshold: self.resolve_float(
+                "halation_threshold",
+                self.halation_threshold,
+                &pd::HALATION_THRESHOLD,
+                &mut randomizer,
+                &mut log,
+            ),
+            halation_radius_scale: self.resolve_float(
+                "halation_radius_scale",
+                self.halation_radius_scale,
+                &pd::HALATION_RADIUS_SCALE,
+                &mut randomizer,
+                &mut log,
+            ),
+            halation_warmth: self.resolve_float(
+                "halation_warmth",
+                self.halation_warmth,
+                &pd::HALATION_WARMTH,
+                &mut randomizer,
+                &mut log,
+            ),
+            halation_softness: self.resolve_float(
+                "halation_softness",
+                self.halation_softness,
+                &pd::HALATION_SOFTNESS,
+                &mut randomizer,
+                &mut log,
+            ),
+
+            // NEW: Dodge & Burn (Saliency-Guided Focal Shaping)
+            // Uses genome biasing - dramatic + photochemical genomes favor dodge & burn
+            enable_dodge_burn: self.resolve_enable_with_genome(
+                "dodge_burn",
+                self.enable_dodge_burn,
+                &mut randomizer,
+                &style_genome,
+                &mut log,
+            ),
+            dodge_burn_strength: self.resolve_float(
+                "dodge_burn_strength",
+                self.dodge_burn_strength,
+                &pd::DODGE_BURN_STRENGTH,
+                &mut randomizer,
+                &mut log,
+            ),
+            dodge_burn_dodge_amount: self.resolve_float(
+                "dodge_burn_dodge_amount",
+                self.dodge_burn_dodge_amount,
+                &pd::DODGE_BURN_DODGE_AMOUNT,
+                &mut randomizer,
+                &mut log,
+            ),
+            dodge_burn_burn_amount: self.resolve_float(
+                "dodge_burn_burn_amount",
+                self.dodge_burn_burn_amount,
+                &pd::DODGE_BURN_BURN_AMOUNT,
+                &mut randomizer,
+                &mut log,
+            ),
+            dodge_burn_saliency_radius: self.resolve_float(
+                "dodge_burn_saliency_radius",
+                self.dodge_burn_saliency_radius,
+                &pd::DODGE_BURN_SALIENCY_RADIUS,
+                &mut randomizer,
+                &mut log,
+            ),
+            dodge_burn_luminance_weight: self.resolve_float(
+                "dodge_burn_luminance_weight",
+                self.dodge_burn_luminance_weight,
+                &pd::DODGE_BURN_LUMINANCE_WEIGHT,
+                &mut randomizer,
+                &mut log,
+            ),
+
             // Resolve constrained pair (clip_black < clip_white)
             clip_black: 0.0, // Will be set below
             clip_white: 0.0, // Will be set below
@@ -1182,6 +1346,32 @@ impl RandomizableEffectConfig {
             }
         }
 
+        // =========================================================================
+        // PHASE 3: Artifact Budget - Soft Quality Guardrails
+        // =========================================================================
+        // Apply artifact budget to prevent "plugin soup" aesthetic.
+        // When multiple artifact-prone effects are too strong, scale them back.
+        let artifact_budget = ArtifactBudget::museum_quality();
+
+        // Auto-disable dimensional glitch for museum quality (user preference)
+        if artifact_budget.should_disable_glitch() && resolved.enable_dimensional_glitch {
+            resolved.enable_dimensional_glitch = false;
+            log.add_record(RandomizationRecord::new(
+                "dimensional_glitch_disabled".to_string(),
+                false,
+                false,
+            ));
+        }
+
+        // Apply budget - scales down artifact-prone effects if over budget
+        if let Some(scale_factor) = artifact_budget.apply(&mut resolved) {
+            log.add_record(RandomizationRecord::new(
+                format!("artifact_budget_applied: scale={:.3}", scale_factor),
+                true,
+                false,
+            ));
+        }
+
         (resolved, log)
     }
 
@@ -1195,6 +1385,36 @@ impl RandomizableEffectConfig {
         let (enabled, was_randomized) = match value {
             Some(v) => (v, false),
             None => (randomizer.randomize_enable(name), true),
+        };
+
+        log.add_record(RandomizationRecord::new(name.to_string(), enabled, was_randomized));
+
+        enabled
+    }
+
+    /// Resolve enable with genome-biased probability.
+    ///
+    /// Uses the StyleGenome to adjust base probabilities for coherent aesthetics.
+    /// For example, a photochemical genome will favor halation over chromatic bloom.
+    fn resolve_enable_with_genome(
+        &self,
+        name: &str,
+        value: Option<bool>,
+        randomizer: &mut EffectRandomizer<'_>,
+        genome: &StyleGenome,
+        log: &mut RandomizationLog,
+    ) -> bool {
+        let (enabled, was_randomized) = match value {
+            Some(v) => (v, false),
+            None => {
+                // Get base probability from randomizer, then bias with genome
+                let base_prob = randomizer.base_probability(name);
+                let biased_prob = genome.effect_probability(name, base_prob);
+
+                // Resolve using biased probability
+                let roll = randomizer.rng().next_f64();
+                (roll < biased_prob, true)
+            }
         };
 
         log.add_record(RandomizationRecord::new(name.to_string(), enabled, was_randomized));
@@ -1413,6 +1633,22 @@ pub struct ResolvedEffectConfig {
     pub prismatic_halos_threshold: f64,
     pub dimensional_glitch_strength: f64,
     pub dimensional_glitch_threshold: f64,
+
+    // NEW: Halation (Photochemical Highlight Glow) - Museum Quality Upgrade
+    pub enable_halation: bool,
+    pub halation_strength: f64,
+    pub halation_threshold: f64,
+    pub halation_radius_scale: f64,
+    pub halation_warmth: f64,
+    pub halation_softness: f64,
+
+    // NEW: Dodge & Burn (Saliency-Guided Focal Shaping) - Museum Quality Upgrade
+    pub enable_dodge_burn: bool,
+    pub dodge_burn_strength: f64,
+    pub dodge_burn_dodge_amount: f64,
+    pub dodge_burn_burn_amount: f64,
+    pub dodge_burn_saliency_radius: f64,
+    pub dodge_burn_luminance_weight: f64,
 }
 
 /// Apply essential constraints to prevent performance catastrophes and mathematical impossibilities.

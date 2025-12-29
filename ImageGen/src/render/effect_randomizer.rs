@@ -300,8 +300,16 @@ impl<'a> EffectRandomizer<'a> {
 
             // ================== ARTIFACTS (Selective Drama) ==================
             "dimensional_glitch" => {
-                // Keep selective - only for specific aesthetic contexts
-                if v > 0.7 && e < 0.4 { 0.55 } else { 0.08 }
+                // MUSEUM QUALITY: Disabled by default - digital glitch aesthetic
+                // is not appropriate for museum/gallery output.
+                // Still available via artifact budget override for creative experiments.
+                if self.gallery_quality {
+                    0.0 // Completely disabled for museum quality
+                } else if v > 0.7 && e < 0.4 {
+                    0.55
+                } else {
+                    0.08
+                }
             }
             "perceptual_blur" => {
                 // Smooth blending - elevated for refined softness
@@ -514,6 +522,19 @@ impl<'a> EffectRandomizer<'a> {
     /// Get the gallery quality setting.
     pub fn gallery_quality(&self) -> bool {
         self.gallery_quality
+    }
+
+    /// Get base probability for an effect (public access for genome biasing).
+    ///
+    /// Returns the calculated probability before any random roll, allowing
+    /// external systems (like StyleGenome) to further bias the decision.
+    pub fn base_probability(&self, effect_name: &str) -> f64 {
+        self.get_enable_probability(effect_name)
+    }
+
+    /// Get mutable reference to the RNG (for genome-biased randomization).
+    pub fn rng(&mut self) -> &mut Sha3RandomByteStream {
+        self.rng
     }
 }
 

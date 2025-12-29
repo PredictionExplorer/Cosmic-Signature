@@ -268,6 +268,21 @@ fn build_randomizable_config(
         dimensional_glitch_strength: None,
         dimensional_glitch_threshold: None,
         enable_deep_space: if args.disable_all_effects { Some(false) } else { None },
+
+        // NEW: Museum Quality Upgrade effects - randomized by default
+        enable_halation: if args.disable_all_effects { Some(false) } else { None },
+        halation_strength: None,
+        halation_threshold: None,
+        halation_radius_scale: None,
+        halation_warmth: None,
+        halation_softness: None,
+
+        enable_dodge_burn: if args.disable_all_effects { Some(false) } else { None },
+        dodge_burn_strength: None,
+        dodge_burn_dodge_amount: None,
+        dodge_burn_burn_amount: None,
+        dodge_burn_saliency_radius: None,
+        dodge_burn_luminance_weight: None,
     }
 }
 

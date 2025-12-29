@@ -11,6 +11,7 @@ use rayon::prelude::*;
 use tracing::{debug, info};
 
 // Module declarations
+pub mod artifact_budget;
 pub mod batch_drawing;
 pub mod buffer_pool;
 pub mod color;
@@ -23,8 +24,10 @@ pub mod error;
 pub mod histogram;
 pub mod parameter_descriptors;
 pub mod pipeline;
+pub mod quality_metrics;
 pub mod randomizable_config;
 pub mod simd_tonemap;
+pub mod style_genome;
 pub mod tonemap;
 pub mod types;
 pub mod velocity_hdr;
@@ -44,6 +47,8 @@ pub use color::{OklabColor, generate_body_color_sequences};
 pub use drawing::{draw_line_segment_aa_spectral_with_dispersion, parallel_blur_2d_rgba};
 pub use effects::{DogBloomConfig, ExposureCalculator, apply_dog_bloom};
 pub use histogram::compute_black_white_gamma;
+#[allow(unused_imports)] // Public API for quality-based auto-adjustment
+pub use quality_metrics::{QualityMetrics, QualityAssessment};
 #[allow(unused_imports)] // Public API types - exported for library consumers
 pub use types::{
     BloomConfig, BlurConfig, ChannelLevels, HdrConfig, PerceptualBlurSettings, RenderConfig,
@@ -85,9 +90,10 @@ pub(crate) fn build_effect_config_from_resolved(
     use crate::post_effects::{
         AetherConfig, AtmosphericDepthConfig, AuroraVeilsConfig, ChampleveConfig, CherenkovConfig,
         ColorGradeParams, CosmicInkConfig, CrepuscularRaysConfig, DeepSpaceConfig,
-        DimensionalGlitchConfig, EdgeLuminanceConfig, EventHorizonConfig, FineTextureConfig,
-        GlowEnhancementConfig, MicroContrastConfig, OpalescenceConfig, PrismaticHalosConfig,
-        RefractiveCausticsConfig, VolumetricOcclusionConfig, fine_texture::TextureType,
+        DimensionalGlitchConfig, DodgeBurnConfig, EdgeLuminanceConfig, EventHorizonConfig,
+        FineTextureConfig, GlowEnhancementConfig, HalationConfig, MicroContrastConfig,
+        OpalescenceConfig, PrismaticHalosConfig, RefractiveCausticsConfig, VolumetricOcclusionConfig,
+        fine_texture::TextureType,
     };
 
     let width = resolved.width as usize;
@@ -139,7 +145,9 @@ pub(crate) fn build_effect_config_from_resolved(
         blur_strength: resolved.blur_strength,
         blur_core_brightness: resolved.blur_core_brightness,
         dog_config,
-        hdr_mode: "auto".to_string(),
+        // MUSEUM QUALITY: hdr_mode "off" - histogram+ACES is the sole exposure authority
+        // This prevents double-normalization that flattens tonal nuance
+        hdr_mode: "off".to_string(),
         perceptual_blur_enabled: resolved.enable_perceptual_blur,
         perceptual_blur_config,
 
@@ -379,6 +387,25 @@ pub(crate) fn build_effect_config_from_resolved(
             octaves: 4,
             illumination_scale: 1.8,
             illumination_radius: (0.15 * min_dim as f64).max(100.0),
+        },
+
+        // NEW: Museum Quality Upgrade effects
+        halation_enabled: resolved.enable_halation,
+        halation_config: HalationConfig {
+            strength: resolved.halation_strength,
+            threshold: resolved.halation_threshold,
+            radius_scale: resolved.halation_radius_scale,
+            warmth: resolved.halation_warmth,
+            softness: resolved.halation_softness,
+        },
+
+        dodge_burn_enabled: resolved.enable_dodge_burn,
+        dodge_burn_config: DodgeBurnConfig {
+            strength: resolved.dodge_burn_strength,
+            dodge_amount: resolved.dodge_burn_dodge_amount,
+            burn_amount: resolved.dodge_burn_burn_amount,
+            saliency_radius_scale: resolved.dodge_burn_saliency_radius,
+            luminance_weight: resolved.dodge_burn_luminance_weight,
         },
     }
 }
