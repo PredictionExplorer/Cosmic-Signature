@@ -142,6 +142,15 @@ pub struct EffectArgs {
     #[arg(long, default_value_t = true)]
     pub gallery_quality: bool,
 
+    /// Museum-quality curation: try K effect configurations and pick the best via preview scoring.
+    ///
+    /// - `1` disables curation (single config, fastest).
+    /// - `8` is a good default for gallery mode (much better quality floor).
+    ///
+    /// If not specified, curation defaults to 8 in gallery mode and 1 otherwise.
+    #[arg(long)]
+    pub curation_k: Option<usize>,
+
     // ==== Effect Control Flags (All effects enabled by default) ====
     /// Disable ALL post-processing effects (show pure spectral rendering + basic bloom)
     #[arg(long, default_value_t = false)]

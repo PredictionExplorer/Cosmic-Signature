@@ -34,6 +34,8 @@
 #![allow(dead_code)]
 
 use rayon::prelude::*;
+use super::tonemap::tonemap_core;
+use super::types::ChannelLevels;
 
 /// Quality metrics computed from rendered pixels.
 ///
@@ -353,6 +355,112 @@ impl QualityMetrics {
             self.mean_luminance,
             self.gamut_excursions
         )
+    }
+
+    /// Compute quality metrics from a pixel buffer after tonemapping (sampled).
+    ///
+    /// This is designed for **preview scoring / curation**, where we want display-referred
+    /// metrics (e.g., highlight clipping in SDR space) without processing every pixel.
+    ///
+    /// - Input pixels are premultiplied RGBA in linear space (as used throughout the pipeline).
+    /// - Tonemapping is applied per sample using `tonemap_core`.
+    /// - Sampling uses a grid stride: every `stride` pixels in X and Y.
+    ///
+    /// # Arguments
+    /// - `pixels`: Premultiplied RGBA buffer
+    /// - `width`, `height`: Buffer dimensions
+    /// - `stride`: Sampling stride (>= 1)
+    /// - `tonemap_levels`: Levels passed to tonemap. For the museum-quality pipeline, this is
+    ///   typically identity levels (0..1) because exposure normalization happens earlier.
+    pub fn from_tonemapped_pixel_buffer_sampled(
+        pixels: &[(f64, f64, f64, f64)],
+        width: usize,
+        height: usize,
+        stride: usize,
+        tonemap_levels: &ChannelLevels,
+    ) -> Self {
+        if pixels.is_empty() || width == 0 || height == 0 {
+            return Self::default();
+        }
+        debug_assert_eq!(pixels.len(), width * height);
+
+        let stride = stride.max(1);
+        let sample_w = width.div_ceil(stride);
+        let sample_h = height.div_ceil(stride);
+        let total_samples = sample_w * sample_h;
+
+        if total_samples == 0 {
+            return Self::default();
+        }
+
+        // Enumerate sampled indices (small enough for allocation in preview contexts).
+        let indices: Vec<usize> = (0..height)
+            .step_by(stride)
+            .flat_map(|y| (0..width).step_by(stride).map(move |x| y * width + x))
+            .collect();
+
+        let (highlight_count, shadow_count, gamut_excursions, visible_count, lum_sum, lum_sq_sum) =
+            indices
+                .par_iter()
+                .map(|&idx| {
+                    let (r, g, b, a) = pixels[idx];
+                    if a <= 0.01 {
+                        return (0usize, 0usize, 0usize, 0usize, 0.0, 0.0);
+                    }
+
+                    // Display-referred luminance from tonemapped RGB.
+                    let tm = tonemap_core(r, g, b, a, tonemap_levels);
+                    let lum = 0.2126 * tm[0] + 0.7152 * tm[1] + 0.0722 * tm[2];
+
+                    let highlight = if lum > 0.98 { 1usize } else { 0 };
+                    let shadow = if lum < 0.02 && a > 0.1 { 1usize } else { 0 };
+
+                    // Gamut excursions: measure pre-tonemap signal stress.
+                    let gamut = if r > 1.5 || g > 1.5 || b > 1.5 || r < -0.1 || g < -0.1 || b < -0.1
+                    {
+                        1usize
+                    } else {
+                        0
+                    };
+
+                    (highlight, shadow, gamut, 1usize, lum, lum * lum)
+                })
+                .reduce(
+                    || (0, 0, 0, 0, 0.0, 0.0),
+                    |a, b| (a.0 + b.0, a.1 + b.1, a.2 + b.2, a.3 + b.3, a.4 + b.4, a.5 + b.5),
+                );
+
+        let visible_pixels = visible_count;
+        if visible_pixels == 0 {
+            return Self { total_pixels: total_samples, ..Default::default() };
+        }
+
+        let n = visible_pixels as f64;
+        let mean_luminance = lum_sum / n;
+        let variance = (lum_sq_sum / n) - (mean_luminance * mean_luminance);
+        let contrast_spread = variance.max(0.0).sqrt();
+
+        let highlight_clip_pct = (highlight_count as f64 / n) * 100.0;
+        let shadow_crush_pct = (shadow_count as f64 / n) * 100.0;
+
+        let quality_score = Self::compute_quality_score(
+            highlight_clip_pct,
+            shadow_crush_pct,
+            contrast_spread,
+            gamut_excursions,
+            visible_pixels,
+        );
+
+        Self {
+            highlight_clip_pct,
+            shadow_crush_pct,
+            contrast_spread,
+            mean_luminance,
+            gamut_excursions,
+            total_pixels: total_samples,
+            visible_pixels,
+            quality_score,
+        }
     }
 }
 
@@ -711,6 +819,28 @@ mod tests {
         assert_eq!(format!("{}", QualityAssessment::Good), "Good");
         assert_eq!(format!("{}", QualityAssessment::Acceptable), "Acceptable");
         assert_eq!(format!("{}", QualityAssessment::Poor), "Poor");
+    }
+
+    #[test]
+    fn test_from_tonemapped_pixel_buffer_sampled_basic_counts() {
+        let width = 32;
+        let height = 32;
+        let pixels = vec![(0.5, 0.5, 0.5, 1.0); width * height];
+        let identity = ChannelLevels::new(0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
+
+        let metrics = QualityMetrics::from_tonemapped_pixel_buffer_sampled(
+            &pixels,
+            width,
+            height,
+            4,
+            &identity,
+        );
+
+        assert!(metrics.total_pixels > 0);
+        assert_eq!(metrics.visible_pixels, metrics.total_pixels);
+        assert!(metrics.mean_luminance.is_finite());
+        assert!(metrics.contrast_spread.is_finite());
+        assert!((0.0..=1.0).contains(&metrics.quality_score));
     }
 }
 

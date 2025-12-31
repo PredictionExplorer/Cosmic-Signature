@@ -5,6 +5,7 @@
 //! atmospheric depth and cosmic beauty without overpowering the trajectories.
 
 use super::{FrameParams, PixelBuffer, PostEffect};
+use super::utils::upsample_bilinear;
 use opensimplex2::smooth;
 use rayon::prelude::*;
 use std::error::Error;
@@ -188,7 +189,13 @@ impl NebulaClouds {
             return Ok(buffer.to_vec());
         }
 
-        let mut result = buffer.to_vec();
+        // PERFORMANCE OPTIMIZATION: Generate nebula at 50% resolution
+        // Nebula is low-frequency; full resolution is wasteful.
+        // This provides ~4x speedup for background generation.
+        let gen_width = width / 2;
+        let gen_height = height / 2;
+        
+        let mut gen_buffer = vec![(0.0, 0.0, 0.0, 0.0); gen_width * gen_height];
 
         // Calculate time offset for smooth animation
         // At 60fps over 30 seconds: frame_number goes 0 to 1800
@@ -199,9 +206,13 @@ impl NebulaClouds {
         let height_f = height as f64;
 
         // Process in parallel for maximum performance
-        result.par_iter_mut().enumerate().for_each(|(idx, pixel)| {
-            let x = (idx % width) as f64;
-            let y = (idx / width) as f64;
+        gen_buffer.par_iter_mut().enumerate().for_each(|(idx, pixel)| {
+            let x_gen = (idx % gen_width) as f64;
+            let y_gen = (idx / gen_width) as f64;
+            
+            // Map back to full resolution coordinates for noise continuity
+            let x = x_gen * 2.0;
+            let y = y_gen * 2.0;
 
             // Secondary noise layer for layered motion and chromatic drift
             let drift_noise = smooth::noise3_ImproveXY(
@@ -231,10 +242,13 @@ impl NebulaClouds {
             pixel.0 = nebula_color[0];
             pixel.1 = nebula_color[1];
             pixel.2 = nebula_color[2];
-            pixel.3 = final_opacity;
+            pixel.3 = final_opacity; // Alpha represents nebula coverage
         });
 
-        Ok(result)
+        // Upscale to full resolution
+        let upscaled = upsample_bilinear(&gen_buffer, gen_width, gen_height, width, height);
+        
+        Ok(upscaled)
     }
 }
 
@@ -358,7 +372,8 @@ mod tests {
 
         // Create test buffer (all black)
         let buffer = vec![(0.0, 0.0, 0.0, 0.0); 10000];
-        let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = nebula.process(&buffer, 100, 100, &params).unwrap();
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None };
+        let result = nebula.process(&buffer, 100, 100, &params).unwrap();
 
         // Result should have nebula colors added
         let has_color = result.iter().any(|&(r, g, b, _a)| r > 0.0 || g > 0.0 || b > 0.0);

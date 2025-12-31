@@ -212,9 +212,9 @@ pub const COLOR_GRADE_STRENGTH: FloatParamDescriptor = FloatParamDescriptor {
 pub const VIGNETTE_STRENGTH: FloatParamDescriptor = FloatParamDescriptor {
     name: "vignette_strength",
     min: 0.0,  // Already at natural minimum (no vignette)
-    max: 0.95, // Ultra-exploratory: near-total edge darkness
-    gallery_min: 0.25,
-    gallery_max: 0.55,
+    max: 0.50, // Tightened from 0.95 - prevent tunnel vision
+    gallery_min: 0.15,
+    gallery_max: 0.35,
     description: "Vignette darkness strength",
 };
 
@@ -468,9 +468,9 @@ pub const ATMOSPHERIC_DESATURATION: FloatParamDescriptor = FloatParamDescriptor 
 pub const ATMOSPHERIC_DARKENING: FloatParamDescriptor = FloatParamDescriptor {
     name: "atmospheric_darkening",
     min: 0.0,  // Already at natural minimum
-    max: 0.55, // Widened from 0.35 - extreme depth darkening
-    gallery_min: 0.08,
-    gallery_max: 0.25,
+    max: 0.30, // Tightened from 0.55 - prevent excessive gloom
+    gallery_min: 0.05,
+    gallery_max: 0.15,
     description: "Depth-based darkening",
 };
 
@@ -724,19 +724,19 @@ pub const HDR_SCALE: FloatParamDescriptor = FloatParamDescriptor {
 
 pub const CLIP_BLACK: FloatParamDescriptor = FloatParamDescriptor {
     name: "clip_black",
-    min: 0.001, // Widened from 0.005 - preserve deep shadows
-    max: 0.040, // Widened from 0.025 - aggressive shadow crush
-    gallery_min: 0.008,
-    gallery_max: 0.015,
+    min: 0.0005, // Widened from 0.001 - preserve faint nebula details
+    max: 0.010,  // Tightened from 0.015 - prevent crushing shadows
+    gallery_min: 0.001,
+    gallery_max: 0.005,
     description: "Black point percentile clipping",
 };
 
 pub const CLIP_WHITE: FloatParamDescriptor = FloatParamDescriptor {
     name: "clip_white",
-    min: 0.960, // Widened from 0.975 - preserve bright highlights
-    max: 0.999, // Widened from 0.998 - aggressive highlight clipping
-    gallery_min: 0.985,
-    gallery_max: 0.995,
+    min: 0.950, // More aggressive clipping to boost brightness
+    max: 0.980, // Ignore top 2% outliers (fireflies)
+    gallery_min: 0.960,
+    gallery_max: 0.975,
     description: "White point percentile clipping",
 };
 

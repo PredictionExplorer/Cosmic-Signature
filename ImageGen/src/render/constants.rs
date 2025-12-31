@@ -310,6 +310,39 @@ pub const DEFAULT_VIDEO_FPS: u32 = 60;
 /// Default target duration in frames (~30 seconds at 60 FPS)
 pub const DEFAULT_TARGET_FRAMES: u32 = 1800;
 
+// ========== Pass 1 Histogram Constants ==========
+//
+// Pass 1 exists to compute global exposure levels cheaply and deterministically.
+// It should be *much cheaper* than the full Pass 2 render, so we intentionally:
+// - sample fewer frames than the full video output
+// - sample pixels on a grid (stride) rather than storing every pixel
+
+/// Target number of frames to sample during Pass 1 histogram collection.
+///
+/// This does NOT affect output video length; it only affects how densely we sample
+/// the evolving trajectory for percentile estimation. A few hundred samples are
+/// sufficient for stable percentiles while keeping Pass 1 fast.
+pub const HISTOGRAM_TARGET_FRAMES: u32 = 240;
+
+/// Default pixel stride for Pass 1 histogram collection (grid sampling).
+///
+/// A stride of 16 samples ~1/256 of pixels per sampled frame, which is ample for
+/// percentile estimation while keeping memory usage very low.
+pub const DEFAULT_HISTOGRAM_PIXEL_STRIDE: usize = 16;
+
+// ========== Exposure Normalization Constants ==========
+
+/// Default exposure boost applied after normalization (pre-effects).
+///
+/// This is tuned to produce a rich working range for finishing effects without
+/// crushing midtones or turning the scene into constant bloom.
+pub const DEFAULT_EXPOSURE_BOOST: f64 = 2.2;
+
+// ========== Museum-Quality Curation ==========
+
+/// Default number of effect configurations to try for curated gallery output.
+pub const DEFAULT_CURATION_K: usize = 8;
+
 // ========== Nebula Background Constants ==========
 //
 // The nebula is a subtle background layer intended to read as slow, cinematic drift.

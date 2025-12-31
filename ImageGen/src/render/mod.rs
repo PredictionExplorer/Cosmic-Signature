@@ -12,11 +12,13 @@ use tracing::{debug, info};
 
 // Module declarations
 pub mod artifact_budget;
+pub mod auto_tune;
 pub mod batch_drawing;
 pub mod buffer_pool;
 pub mod color;
 pub mod constants;
 pub mod context;
+pub mod curation;
 pub mod drawing;
 pub mod effect_randomizer;
 pub mod effects;
@@ -39,7 +41,7 @@ use self::effects::{EffectChainBuilder, EffectConfig, convert_spd_buffer_to_rgba
 use self::error::{RenderError, Result};
 use self::histogram::HistogramData;
 use self::pipeline::{RenderLoopContext, apply_exposure_normalization};
-use self::tonemap::tonemap_to_16bit;
+use self::tonemap::tonemap_to_16bit_dithered;
 
 // Re-export core types and functions for public API compatibility
 pub use color::{OklabColor, generate_body_color_sequences};
@@ -428,13 +430,17 @@ pub fn pass_1_build_histogram_spectral(
     let positions = params.scene.positions;
     let colors = params.scene.colors;
     let body_alphas = params.scene.body_alphas;
-    let resolved_config = params.resolved_config;
 
     // Use shared render loop context
     let mut loop_ctx = RenderLoopContext::new(params);
 
     // Create histogram storage
-    let mut histogram = HistogramData::with_capacity(loop_ctx.ctx().pixel_count() * 10);
+    let pixel_stride = params.render_config.histogram_pixel_stride.max(1);
+    let samples_per_frame =
+        ((params.width() as usize).div_ceil(pixel_stride) * (params.height() as usize).div_ceil(pixel_stride))
+            .max(1);
+    // Conservative capacity estimate: a small multiple of one sampled frame.
+    let mut histogram = HistogramData::with_capacity(samples_per_frame * 16);
 
     for step in 0..loop_ctx.total_steps() {
         // Progress logging
@@ -448,12 +454,20 @@ pub fn pass_1_build_histogram_spectral(
 
         // Emit frame if needed
         if loop_ctx.should_emit_frame(step) {
-            let frame_number = step / loop_ctx.frame_interval();
-            let final_frame_pixels = loop_ctx.process_frame(frame_number, resolved_config)?;
+            // Histogram pass operates on the *raw trajectory RGBA* (premultiplied),
+            // before exposure normalization and before any post-processing effects.
+            // This keeps Pass 1 cheap and ensures levels represent the true source signal.
+            let trajectory_rgba = loop_ctx.snapshot_trajectory_rgba_for_histogram();
 
-            // Collect histogram data
-            histogram.reserve(loop_ctx.ctx().pixel_count());
-            push_pixels_to_histogram(&mut histogram, &final_frame_pixels);
+            // Collect sampled histogram data (grid sampling to keep memory bounded)
+            histogram.reserve(samples_per_frame);
+            push_pixels_to_histogram_sampled(
+                &mut histogram,
+                trajectory_rgba,
+                params.width() as usize,
+                params.height() as usize,
+                pixel_stride,
+            );
         }
     }
 
@@ -467,17 +481,25 @@ pub fn pass_1_build_histogram_spectral(
     Ok(())
 }
 
-/// Push premultiplied RGB samples into the histogram.
+/// Push sampled premultiplied RGB samples into the histogram.
 ///
-/// The rendering pipeline uses premultiplied alpha throughout (`PixelBuffer` is premultiplied),
-/// so the correct values for percentile-based black/white point estimation are the premultiplied
-/// channels themselves.
-///
-/// IMPORTANT: Do NOT multiply by alpha again (that would scale as α² and crush low-alpha layers).
+/// We use grid sampling (stride) to keep Pass 1 fast and memory-bounded.
+/// Percentiles are robust to this level of sampling for typical frame sizes.
 #[inline]
-fn push_pixels_to_histogram(histogram: &mut HistogramData, pixels: &[(f64, f64, f64, f64)]) {
-    for &(r, g, b, _a) in pixels {
-        histogram.push(r, g, b);
+fn push_pixels_to_histogram_sampled(
+    histogram: &mut HistogramData,
+    pixels: &[(f64, f64, f64, f64)],
+    width: usize,
+    height: usize,
+    stride: usize,
+) {
+    debug_assert!(stride >= 1);
+    for y in (0..height).step_by(stride) {
+        let row = y * width;
+        for x in (0..width).step_by(stride) {
+            let (r, g, b, _a) = pixels[row + x];
+            histogram.push(r, g, b);
+        }
     }
 }
 
@@ -501,6 +523,7 @@ pub fn pass_2_write_frames_spectral(
     // Use shared render loop context
     let mut loop_ctx = RenderLoopContext::new(params);
     let pixel_count = loop_ctx.ctx().pixel_count();
+    let width = params.width() as usize;
 
     for step in 0..loop_ctx.total_steps() {
         // Progress logging
@@ -523,14 +546,18 @@ pub fn pass_2_write_frames_spectral(
 
             // Tonemap to 16-bit
             let mut buf_16bit = vec![0u16; pixel_count * 3];
-            buf_16bit.par_chunks_mut(3).zip(final_frame_pixels.par_iter()).for_each(
-                |(chunk, &(fr, fg, fb, fa))| {
-                    let mapped = tonemap_to_16bit(fr, fg, fb, fa, &identity_levels);
+            buf_16bit
+                .par_chunks_mut(3)
+                .enumerate()
+                .zip(final_frame_pixels.par_iter())
+                .for_each(|((idx, chunk), &(fr, fg, fb, fa))| {
+                    let x = idx % width;
+                    let y = idx / width;
+                    let mapped = tonemap_to_16bit_dithered(fr, fg, fb, fa, &identity_levels, x, y);
                     chunk[0] = mapped[0];
                     chunk[1] = mapped[1];
                     chunk[2] = mapped[2];
-                },
-            );
+                });
 
             // Convert to bytes for FFmpeg (little-endian rgb48le format)
             let buf_bytes: &[u8] = bytemuck::cast_slice(&buf_16bit);
@@ -676,7 +703,7 @@ pub fn render_single_frame_spectral(
 
     // MUSEUM QUALITY FIX: Normalize exposure BEFORE effects
     // This is the manual path for test frames (RenderLoopContext not used here)
-    apply_exposure_normalization(&mut accum_rgba, levels);
+    apply_exposure_normalization(&mut accum_rgba, levels, render_config.exposure_normalization);
 
     // Get current body positions for the test frame
     let mut current_body_positions = Vec::with_capacity(3);
@@ -698,11 +725,20 @@ pub fn render_single_frame_spectral(
         .process_trajectories(accum_rgba, width as usize, height as usize, &frame_params)?;
 
     // Stage 2: Generate nebula background
-    let nebula_background = if special_mode && resolved_config.nebula_strength > 0.0 {
+    let mut nebula_background = if special_mode && resolved_config.nebula_strength > 0.0 {
         pipeline::generate_nebula_background(width as usize, height as usize, 0, &nebula_config)?
     } else {
         empty_background
     };
+
+    if special_mode && resolved_config.nebula_strength > 0.0 {
+        pipeline::apply_subject_aware_nebula_mask(
+            &mut nebula_background,
+            &trajectory_pixels,
+            width as usize,
+            height as usize,
+        );
+    }
 
     // Stage 3: Composite
     let composited = pipeline::composite_buffers(&nebula_background, &trajectory_pixels);
@@ -714,16 +750,22 @@ pub fn render_single_frame_spectral(
     // Tonemap to 16-bit
     let identity_levels = ChannelLevels::new(0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
 
-    // Tonemap to 16-bit
-    let mut buf_16bit = vec![0u16; ctx.pixel_count() * 3];
-    buf_16bit.par_chunks_mut(3).zip(final_pixels.par_iter()).for_each(
-        |(chunk, &(fr, fg, fb, fa))| {
-            let mapped = tonemap_to_16bit(fr, fg, fb, fa, &identity_levels);
+    // Tonemap to 16-bit with blue-noise dithering (sub-visible, prevents banding).
+    let pixel_count = ctx.pixel_count();
+    let mut buf_16bit = vec![0u16; pixel_count * 3];
+    let w_usize = width as usize;
+    buf_16bit
+        .par_chunks_mut(3)
+        .enumerate()
+        .zip(final_pixels.par_iter())
+        .for_each(|((idx, chunk), &(fr, fg, fb, fa))| {
+            let x = idx % w_usize;
+            let y = idx / w_usize;
+            let mapped = tonemap_to_16bit_dithered(fr, fg, fb, fa, &identity_levels, x, y);
             chunk[0] = mapped[0];
             chunk[1] = mapped[1];
             chunk[2] = mapped[2];
-        },
-    );
+        });
 
     // Create ImageBuffer and return
     let image = ImageBuffer::from_raw(width, height, buf_16bit).ok_or_else(|| {
@@ -747,7 +789,7 @@ mod tests {
             (0.5, 0.0, 0.0, 0.5),
         ];
 
-        push_pixels_to_histogram(&mut histogram, &pixels);
+        push_pixels_to_histogram_sampled(&mut histogram, &pixels, 1, 1, 1);
         let (r, g, b) = histogram.extract_channels();
 
         assert_eq!(r.len(), 1);

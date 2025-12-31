@@ -251,7 +251,7 @@ impl PostEffect for EventHorizon {
         let output: PixelBuffer = input
             .par_iter()
             .enumerate()
-            .map(|(idx, &(_r, _g, _b, a))| {
+            .map(|(idx, &(_r, _g, _b, _a_orig))| {
                 let x = (idx % width) as f64;
                 let y = (idx / width) as f64;
 
@@ -264,8 +264,16 @@ impl PostEffect for EventHorizon {
                 // Chromatic aberration: different wavelengths bend differently
                 let aberr = self.config.chromatic_aberration;
 
-                // Red (longest wavelength) bends least - sample closer
-                let (rr, _, _, _) = Self::sample_bilinear(
+                // Sample RGB at slightly different coordinates, but keep alpha coherent.
+                //
+                // IMPORTANT: The pipeline uses premultiplied alpha. `sample_bilinear()` returns premultiplied RGBA.
+                // When we take *channels* from different sample positions, we must convert those samples to straight
+                // (divide by their local alpha) and then re-premultiply by a single output alpha, otherwise we can
+                // create edge artifacts where RGB comes from an opaque sample but alpha is taken from a translucent
+                // pixel (a subtle “alpha mismatch” bug that manifests as bright fringes).
+
+                // Red (longest wavelength) bends least - sample closer.
+                let (r_pre_r, _, _, a_r) = Self::sample_bilinear(
                     input,
                     width,
                     height,
@@ -273,11 +281,11 @@ impl PostEffect for EventHorizon {
                     y + dy * (1.0 - aberr),
                 );
 
-                // Green (middle wavelength) - centered
-                let (_, gg, _, _) = Self::sample_bilinear(input, width, height, x + dx, y + dy);
+                // Green (middle wavelength) - centered.
+                let (_, g_pre_g, _, a_g) = Self::sample_bilinear(input, width, height, x + dx, y + dy);
 
-                // Blue (shortest wavelength) bends most - sample further
-                let (_, _, bb, _) = Self::sample_bilinear(
+                // Blue (shortest wavelength) bends most - sample further.
+                let (_, _, b_pre_b, a_b) = Self::sample_bilinear(
                     input,
                     width,
                     height,
@@ -285,8 +293,18 @@ impl PostEffect for EventHorizon {
                     y + dy * (1.0 + aberr),
                 );
 
-                // Preserve original alpha
-                (rr, gg, bb, a)
+                // Use the *center* sample's alpha as the geometric coverage for this warped pixel.
+                let a_out = a_g;
+                if a_out <= 1e-10 {
+                    return (0.0, 0.0, 0.0, 0.0);
+                }
+
+                // Convert each sampled channel to straight (local unpremultiply), then re-premultiply by a_out.
+                let r_straight = if a_r > 1e-10 { r_pre_r / a_r } else { 0.0 };
+                let g_straight = g_pre_g / a_out;
+                let b_straight = if a_b > 1e-10 { b_pre_b / a_b } else { 0.0 };
+
+                (r_straight * a_out, g_straight * a_out, b_straight * a_out, a_out)
             })
             .collect();
 
@@ -430,5 +448,36 @@ mod tests {
             assert!(b.is_finite(), "Blue channel not finite");
             assert!(a.is_finite(), "Alpha channel not finite");
         }
+    }
+
+    #[test]
+    fn test_event_horizon_keeps_alpha_coherent_with_sampled_rgb() {
+        // Regression test: when lensing samples RGB from a different location than the current pixel,
+        // we must not keep the original alpha (premultiplied mismatch => bright fringes / “alpha-squared” feel).
+        let config = EventHorizonConfig {
+            strength: 1.0,
+            mass_scale: 10.0,
+            gravity_constant: 1000.0,
+            max_displacement: 100.0,
+            chromatic_aberration: 0.0,
+            mass_threshold: 0.0,
+            softening: 0.01,
+        };
+        let effect = EventHorizon::new(config);
+
+        // Two-pixel strip: left is opaque red, right is mostly transparent black.
+        let buffer: PixelBuffer = vec![(1.0, 0.0, 0.0, 1.0), (0.0, 0.0, 0.0, 0.1)];
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None };
+        let out = effect.process(&buffer, 2, 1, &params).unwrap();
+
+        // The right pixel is strongly lensed toward the left, so it should sample the left pixel's alpha.
+        let (r, _g, _b, a) = out[1];
+        assert!(a > 0.9, "Expected warped alpha to come from the sampled source, got {a}");
+
+        let straight_r = r / a.max(1e-12);
+        assert!(
+            straight_r < 2.0,
+            "Premultiplied mismatch would create huge straight values; got straight_r={straight_r}"
+        );
     }
 }

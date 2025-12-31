@@ -388,13 +388,72 @@ fn main() -> Result<()> {
     );
 
     // Configure rendering from resolved parameters
-    let render_config = RenderConfig {
-        hdr_scale: if args.render.hdr_mode == "auto" {
-            resolved_effect_config.hdr_scale
-        } else {
-            1.0
-        },
+    let hdr_mode_auto = args.render.hdr_mode == "auto";
+    let mut render_config = RenderConfig {
+        hdr_scale: if hdr_mode_auto { resolved_effect_config.hdr_scale } else { 1.0 },
+        ..RenderConfig::default()
     };
+
+    // Stage 4.5: Museum-quality curation (K-try selection)
+    //
+    // We try K effect configurations and pick the best via a cheap preview render + metrics,
+    // without perturbing the simulation RNG sequence (orbit selection remains unchanged).
+    let curation_k = args.effects.curation_k.unwrap_or_else(|| {
+        if args.effects.gallery_quality {
+            render::constants::DEFAULT_CURATION_K
+        } else {
+            1
+        }
+    });
+
+    if curation_k > 1 {
+        info!("Curating effect configuration (K = {})...", curation_k);
+    }
+
+    let scene_for_curation = render::SceneDataRef::new(&positions, &colors, &body_alphas);
+    let curation_settings = render::curation::CurationSettings { k: curation_k, ..Default::default() };
+    let curated = render::curation::curate_effect_config(
+        &seed_bytes,
+        resolved_effect_config,
+        randomization_log,
+        &randomizable_config,
+        args.render.width,
+        args.render.height,
+        args.effects.special,
+        hdr_mode_auto,
+        noise_seed,
+        scene_for_curation,
+        &render_config,
+        curation_settings,
+    );
+
+    let mut resolved_effect_config = curated.resolved;
+    let mut randomization_log = curated.randomization_log;
+
+    if curation_k > 1 {
+        info!(
+            "   => Curated config chosen: idx={} score={:.3} quality={:.3} (mean_lum={:.3}, contrast={:.3})",
+            curated.summary.chosen_index,
+            curated.summary.chosen_score,
+            curated.summary.chosen_metrics.quality_score,
+            curated.summary.chosen_metrics.mean_luminance,
+            curated.summary.chosen_metrics.contrast_spread,
+        );
+    }
+
+    // Update HDR scale after curation (candidate may have different hdr_scale).
+    render_config.hdr_scale = if hdr_mode_auto { resolved_effect_config.hdr_scale } else { 1.0 };
+
+    // Stage 4.6: Quality auto-tuning (deterministic, metric-driven)
+    //
+    // Applies conservative adjustments (and exposure boost self-tuning) based on the preview
+    // `QualityMetrics`, then records the adjustments into the randomization log.
+    render::auto_tune::apply_quality_autotune(
+        &mut resolved_effect_config,
+        &mut render_config,
+        &curated.summary.chosen_metrics,
+        &mut randomization_log,
+    );
 
     // Stage 5-6: Build histogram and compute levels
     let levels = app::build_histogram_and_levels(

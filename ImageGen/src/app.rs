@@ -301,7 +301,8 @@ pub fn build_histogram_and_levels(
 ) -> Result<ChannelLevels> {
     info!("STAGE 5/7: PASS 1 => building global histogram...");
 
-    let target_frames = constants::DEFAULT_TARGET_FRAMES;
+    // Pass 1 is a sampling pass (not the full render). Keep it significantly cheaper than Pass 2.
+    let target_frames = constants::HISTOGRAM_TARGET_FRAMES;
     let frame_interval = (positions[0].len() / target_frames as usize).max(1);
 
     // Create grouped render parameters

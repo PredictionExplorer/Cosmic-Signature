@@ -259,8 +259,13 @@ impl PostEffect for RefractiveCaustics {
                 // Chromatic Aberration: Sample RGB at different offsets
                 let aberr = self.config.chromatic_aberration * 100.0;
 
+                // NOTE: The pipeline uses premultiplied alpha.
+                // We sample channels at slightly different coordinates for chromatic dispersion, but we must
+                // keep alpha coherent. Otherwise we'd be mixing premultiplied RGB from one sample with alpha
+                // from a different pixel, which can create bright edge artifacts.
+
                 // R: +offset
-                let (rr, _, _, _) = self.sample_bilinear(
+                let (r_pre_r, _, _, a_r) = self.sample_bilinear(
                     input,
                     width,
                     height,
@@ -268,9 +273,9 @@ impl PostEffect for RefractiveCaustics {
                     y + dy * (1.0 + aberr),
                 );
                 // G: center
-                let (_, gg, _, _) = self.sample_bilinear(input, width, height, x + dx, y + dy);
+                let (_, g_pre_g, _, a_g) = self.sample_bilinear(input, width, height, x + dx, y + dy);
                 // B: -offset
-                let (_, _, bb, _) = self.sample_bilinear(
+                let (_, _, b_pre_b, a_b) = self.sample_bilinear(
                     input,
                     width,
                     height,
@@ -286,18 +291,18 @@ impl PostEffect for RefractiveCaustics {
                 // Add Caustics
                 let caustic_val = caustic_map[idx] * self.config.brightness; // Use brightness as caustic strength
 
-                // Combine: Refracted Image + Caustic Highlights
-                // If alpha is low, we see background (black/nebula).
-                // If alpha is high, we see refracted texture.
+                // Combine: refracted sample + caustic highlights (added in *straight* space),
+                // then re-premultiply by a coherent output alpha.
+                let a_out = a_g;
+                if a_out <= 1e-10 {
+                    return (0.0, 0.0, 0.0, 0.0);
+                }
 
-                let final_r = rr + caustic_val;
-                let final_g = gg + caustic_val;
-                let final_b = bb + caustic_val;
+                let r_straight = if a_r > 1e-10 { r_pre_r / a_r } else { 0.0 } + caustic_val;
+                let g_straight = (g_pre_g / a_out) + caustic_val;
+                let b_straight = if a_b > 1e-10 { b_pre_b / a_b } else { 0.0 } + caustic_val;
 
-                // Preserve original alpha, maybe boost it for caustics
-                let final_a = (a + caustic_val).min(1.0);
-
-                (final_r, final_g, final_b, final_a)
+                (r_straight * a_out, g_straight * a_out, b_straight * a_out, a_out)
             })
             .collect();
 
@@ -342,5 +347,44 @@ mod tests {
 
         let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = caustics.process(&buffer, 50, 50, &params);
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_refractive_caustics_samples_alpha_consistently() {
+        // Regression test: refraction samples from displaced coordinates.
+        // Premultiplied correctness requires sampling alpha coherently with the warped sample.
+        let config = RefractiveCausticsConfig {
+            strength: 1.0,
+            scale: 1.0,
+            chromatic_aberration: 0.0,
+            brightness: 0.0, // isolate refraction (no caustic boost)
+            threshold: 0.0,  // apply everywhere
+            focus_sharpness: 1.0,
+            light_angle: 45.0,
+        };
+        let caustics = RefractiveCaustics::new(config);
+
+        // 3x3: strong luminance gradient left->right to generate a large normal at center.
+        //
+        // Center pixel has low alpha (0.1) but enough premult luminance to be processed.
+        // Right column is opaque red.
+        let mut buffer: PixelBuffer = vec![(0.0, 0.0, 0.0, 1.0); 9];
+        for y in 0..3 {
+            buffer[y * 3 + 2] = (1.0, 0.0, 0.0, 1.0);
+        }
+        buffer[1 * 3 + 1] = (0.5, 0.0, 0.0, 0.1);
+
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None };
+        let out = caustics.process(&buffer, 3, 3, &params).unwrap();
+
+        // Center pixel should refract toward the opaque right column; alpha should follow the sample.
+        let (r, _g, _b, a) = out[1 * 3 + 1];
+        assert!(a > 0.9, "Expected refracted alpha to come from the sampled source, got {a}");
+
+        let straight_r = r / a.max(1e-12);
+        assert!(
+            straight_r < 2.0,
+            "Premultiplied mismatch would create huge straight values; got straight_r={straight_r}"
+        );
     }
 }

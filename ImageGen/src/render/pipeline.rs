@@ -19,8 +19,10 @@ use super::effects::{EffectChainBuilder, convert_spd_buffer_to_rgba};
 use super::error::{RenderError, Result};
 use super::randomizable_config::ResolvedEffectConfig;
 use super::types::RenderParams;
+use super::types::{ExposureNormalizationConfig, ExposureNormalizationMode};
 use super::velocity_hdr;
 use crate::post_effects::{NebulaCloudConfig, NebulaClouds};
+use crate::post_effects::utils::upsample_bilinear;
 use crate::spectrum::NUM_BINS;
 use rayon::prelude::*;
 
@@ -100,6 +102,7 @@ pub(crate) struct RenderLoopContext<'a> {
     current_body_positions: Vec<(f64, f64)>,
     // Channel levels for exposure normalization (if provided)
     levels: Option<super::types::ChannelLevels>,
+    exposure_normalization: ExposureNormalizationConfig,
 }
 
 impl<'a> RenderLoopContext<'a> {
@@ -172,6 +175,7 @@ impl<'a> RenderLoopContext<'a> {
             hdr_scale: params.render_config.hdr_scale,
             current_body_positions: Vec::with_capacity(3),
             levels: params.levels.cloned(),
+            exposure_normalization: params.render_config.exposure_normalization,
         }
     }
 
@@ -229,6 +233,104 @@ impl<'a> RenderLoopContext<'a> {
         }
     }
 
+    /// Snapshot the current accumulated trajectory buffer as premultiplied RGBA for histogram use.
+    ///
+    /// This intentionally does **not** run post-processing effects. Pass 1 should estimate
+    /// black/white points from the true source signal so that exposure normalization can
+    /// produce a stable working range for downstream effects.
+    #[inline]
+    pub(crate) fn snapshot_trajectory_rgba_for_histogram(&mut self) -> &PixelBuffer {
+        apply_energy_density_shift(&mut self.workspace.accum_spd, self.special_mode);
+        convert_spd_buffer_to_rgba(&self.workspace.accum_spd, &mut self.workspace.accum_rgba);
+        &self.workspace.accum_rgba
+    }
+
+    /// Set histogram-derived channel levels for pre-effects exposure normalization.
+    ///
+    /// This is primarily used by the curation/preview pipeline, which computes levels
+    /// from a cheap sampled histogram and then wants to run the finishing chain with
+    /// normalization enabled.
+    pub(crate) fn set_levels_for_exposure(&mut self, levels: super::types::ChannelLevels) {
+        self.levels = Some(levels);
+    }
+
+    /// Process the current frame assuming SPD→RGBA conversion has already occurred.
+    ///
+    /// This is a shared helper used by:
+    /// - `process_frame()` (normal render path), after doing energy shift + SPD→RGBA conversion
+    /// - curation/preview code, which wants to compute histogram levels from the converted RGBA
+    ///   and then run the effect chains without applying the energy shift twice.
+    pub(crate) fn process_frame_from_converted_rgba(
+        &mut self,
+        frame_number: usize,
+        resolved_config: &ResolvedEffectConfig,
+    ) -> Result<PixelBuffer> {
+        // MUSEUM QUALITY FIX: Normalize exposure BEFORE effects
+        // The effects (Halation, DodgeBurn, etc.) expect 0-1-ish range values.
+        if let Some(levels) = &self.levels {
+            apply_exposure_normalization(
+                &mut self.workspace.accum_rgba,
+                levels,
+                self.exposure_normalization,
+            );
+        }
+
+        // MUSEUM QUALITY PIPELINE SPLIT:
+        // Stage 1: Process trajectories ONLY (Bloom, Glow, Materials)
+        let frame_params = FrameParams {
+            frame_number,
+            _density: None,
+            body_positions: Some(self.current_body_positions.clone()),
+        };
+        let rgba_buffer = std::mem::take(&mut self.workspace.accum_rgba);
+
+        let trajectory_pixels = self.effect_chain.process_trajectories(
+            rgba_buffer,
+            self.width as usize,
+            self.height as usize,
+            &frame_params,
+        )?;
+
+        // Reset workspace for next frame (reuses allocations)
+        self.workspace.reset();
+
+        // Stage 2: Generate background (Nebula)
+        let mut nebula_background = if self.special_mode && resolved_config.nebula_strength > 0.0 {
+            generate_nebula_background(
+                self.width as usize,
+                self.height as usize,
+                frame_number,
+                &self.nebula_config,
+            )?
+        } else {
+            // Zero-cost path when nebula disabled (no clone, just reference)
+            self.workspace.empty_background().to_vec()
+        };
+
+        // Museum-quality: keep the background present but subordinate to the subject.
+        if self.special_mode && resolved_config.nebula_strength > 0.0 {
+            apply_subject_aware_nebula_mask(
+                &mut nebula_background,
+                &trajectory_pixels,
+                self.width as usize,
+                self.height as usize,
+            );
+        }
+
+        // Stage 3: Composite background and trajectories
+        let composited = composite_buffers(&nebula_background, &trajectory_pixels);
+
+        // Stage 4: Scene-level finishing (Halation, Dodge & Burn, Texture)
+        let final_frame = self.effect_chain.process_finishing(
+            composited,
+            self.width as usize,
+            self.height as usize,
+            &frame_params,
+        )?;
+
+        Ok(final_frame)
+    }
+
     /// Process a frame and return the final composited pixels
     ///
     /// # Pipeline
@@ -253,55 +355,9 @@ impl<'a> RenderLoopContext<'a> {
         apply_energy_density_shift(&mut self.workspace.accum_spd, self.special_mode);
 
         // Convert SPD -> RGBA (spectral rendering to RGB color space)
-        // Access workspace fields directly to avoid borrow checker issues
         convert_spd_buffer_to_rgba(&self.workspace.accum_spd, &mut self.workspace.accum_rgba);
 
-        // MUSEUM QUALITY FIX: Normalize exposure BEFORE effects
-        // The effects (Halation, DodgeBurn, etc.) expect 0-1 range values.
-        // Without this, they see raw HDR values (e.g. 100.0) and bloom everything.
-        if let Some(levels) = &self.levels {
-            apply_exposure_normalization(&mut self.workspace.accum_rgba, levels);
-        }
-
-        // MUSEUM QUALITY PIPELINE SPLIT:
-        // Stage 1: Process trajectories ONLY (Bloom, Glow, Materials)
-        let frame_params = FrameParams {
-            frame_number,
-            _density: None,
-            body_positions: Some(self.current_body_positions.clone()),
-        };
-        let rgba_buffer = std::mem::take(&mut self.workspace.accum_rgba);
-        
-        let trajectory_pixels = self
-            .effect_chain
-            .process_trajectories(rgba_buffer, self.width as usize, self.height as usize, &frame_params)?;
-
-        // Reset workspace for next frame (reuses allocations)
-        self.workspace.reset();
-
-        // Stage 2: Generate background (Nebula)
-        let nebula_background = if self.special_mode && resolved_config.nebula_strength > 0.0 {
-            generate_nebula_background(
-                self.width as usize,
-                self.height as usize,
-                frame_number,
-                &self.nebula_config,
-            )?
-        } else {
-            // Zero-cost path when nebula disabled (no clone, just reference)
-            self.workspace.empty_background().to_vec()
-        };
-
-        // Stage 3: Composite background and trajectories
-        let composited = composite_buffers(&nebula_background, &trajectory_pixels);
-
-        // Stage 4: Scene-level finishing (Halation, Dodge & Burn, Texture)
-        // These effects now interact with the whole scene for realistic light behavior.
-        let final_frame = self
-            .effect_chain
-            .process_finishing(composited, self.width as usize, self.height as usize, &frame_params)?;
-
-        Ok(final_frame)
+        self.process_frame_from_converted_rgba(frame_number, resolved_config)
     }
 
     /// Check if we should emit a frame at this step
@@ -394,6 +450,74 @@ pub(crate) fn generate_nebula_background(
         .map_err(|e| RenderError::EffectError(e.to_string()))
 }
 
+/// Apply a subject-aware opacity mask to the nebula background.
+///
+/// The nebula background is generated as a straight RGB + alpha layer (not premultiplied).
+/// This function modulates nebula alpha based on the trajectory layer so the background
+/// frames the subject instead of overpowering it.
+pub(crate) fn apply_subject_aware_nebula_mask(
+    nebula_background: &mut PixelBuffer,
+    trajectory_pixels: &PixelBuffer,
+    width: usize,
+    height: usize,
+) {
+    if nebula_background.len() != trajectory_pixels.len() || nebula_background.is_empty() {
+        return;
+    }
+
+    // Downsampled subject mask for speed (nebula is low-frequency).
+    const DOWNSAMPLE: usize = 4;
+    let ds_w = width.div_ceil(DOWNSAMPLE);
+    let ds_h = height.div_ceil(DOWNSAMPLE);
+    let min_dim = width.min(height);
+
+    // Build low-res subject proximity map in [0, 1].
+    let mut mask_ds = vec![(0.0, 0.0, 0.0, 0.0); ds_w * ds_h];
+    mask_ds.par_iter_mut().enumerate().for_each(|(idx, out)| {
+        let dx = idx % ds_w;
+        let dy = idx / ds_w;
+
+        let x0 = dx * DOWNSAMPLE;
+        let y0 = dy * DOWNSAMPLE;
+        let x1 = ((dx + 1) * DOWNSAMPLE).min(width);
+        let y1 = ((dy + 1) * DOWNSAMPLE).min(height);
+
+        let mut m = 0.0f64;
+        for y in y0..y1 {
+            let row = y * width;
+            for x in x0..x1 {
+                let (r, g, b, a) = trajectory_pixels[row + x];
+                let premult_luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+                let coverage = (a * 0.90 + premult_luma * 0.10).clamp(0.0, 1.0);
+                m = m.max(coverage);
+            }
+        }
+
+        // Store in all channels to reuse RGBA blur implementation.
+        *out = (m, m, m, m);
+    });
+
+    // Blur for a soft falloff around the subject (approximate distance field).
+    let blur_radius = ((0.06 * min_dim as f64) / (DOWNSAMPLE as f64)).round().max(1.0) as usize;
+    super::drawing::parallel_blur_2d_rgba(&mut mask_ds, ds_w, ds_h, blur_radius);
+
+    // Upsample to full resolution.
+    let mask_full = upsample_bilinear(&mask_ds, ds_w, ds_h, width, height);
+
+    // Opacity modulation: suppress strongly near subject, preserve far away.
+    const MIN_FACTOR: f64 = 0.20; // leave a whisper of atmosphere even near dense subject
+    const GAMMA: f64 = 1.35;
+    nebula_background
+        .par_iter_mut()
+        .zip(mask_full.par_iter())
+        .for_each(|(neb, mask)| {
+            let subject = mask.3.clamp(0.0, 1.0);
+            let t = (1.0 - subject).clamp(0.0, 1.0);
+            let factor = (MIN_FACTOR + (1.0 - MIN_FACTOR) * t).powf(GAMMA);
+            neb.3 = (neb.3 * factor).clamp(0.0, 1.0);
+        });
+}
+
 /// Composite background and foreground buffers using enhanced "over" operator
 ///
 /// Background goes first (underneath), then foreground on top.
@@ -458,26 +582,46 @@ pub(crate) fn composite_buffers(background: &PixelBuffer, foreground: &PixelBuff
 /// consistent with their expected thresholds.
 ///
 /// # Logic
-/// `pixel = (pixel - black) / (white - black)`
-/// Clamped to [0.0, 1.0] to prevent artifacts.
-pub(crate) fn apply_exposure_normalization(buffer: &mut PixelBuffer, levels: &super::types::ChannelLevels) {
-    buffer.par_iter_mut().for_each(|pixel| {
-        // Normalize each channel independently using histogram levels
-        // This effectively performs "Auto Level" correction before effects run
-        
-        // Red
-        pixel.0 = ((pixel.0 - levels.black[0]) / levels.range[0]).max(0.0);
-        
-        // Green
-        pixel.1 = ((pixel.1 - levels.black[1]) / levels.range[1]).max(0.0);
-        
-        // Blue
-        pixel.2 = ((pixel.2 - levels.black[2]) / levels.range[2]).max(0.0);
-        
-        // Note: We don't clamp to 1.0 here to preserve HDR headroom for bloom/glow effects.
-        // However, the "white point" from histogram is typically the 99.9th percentile,
-        // so most pixels will be in [0, 1].
-    });
+/// `pixel = (pixel - black) * scale * boost`
+///
+/// Note: We intentionally do **not** clamp to 1.0 here to preserve headroom for bloom/glow.
+pub(crate) fn apply_exposure_normalization(
+    buffer: &mut PixelBuffer,
+    levels: &super::types::ChannelLevels,
+    config: ExposureNormalizationConfig,
+) {
+    let boost = config.boost.max(0.0);
+    if boost == 0.0 {
+        return;
+    }
+
+    match config.mode {
+        ExposureNormalizationMode::PerChannel => {
+            // Legacy behavior: normalize each channel independently.
+            buffer.par_iter_mut().for_each(|pixel| {
+                pixel.0 = ((pixel.0 - levels.black[0]).max(0.0) / levels.range[0] * boost).max(0.0);
+                pixel.1 = ((pixel.1 - levels.black[1]).max(0.0) / levels.range[1] * boost).max(0.0);
+                pixel.2 = ((pixel.2 - levels.black[2]).max(0.0) / levels.range[2] * boost).max(0.0);
+            });
+        }
+        ExposureNormalizationMode::PreserveHue => {
+            // Museum-quality behavior: preserve hue by using a single luminance-derived scale.
+            //
+            // We still subtract per-channel black points (to remove percentile "lift"),
+            // but we scale all channels equally to avoid hue shifts.
+            let white_r = levels.black[0] + levels.range[0];
+            let white_g = levels.black[1] + levels.range[1];
+            let white_b = levels.black[2] + levels.range[2];
+            let white_luma = (0.2126 * white_r + 0.7152 * white_g + 0.0722 * white_b).max(1e-14);
+            let scale = boost / white_luma;
+
+            buffer.par_iter_mut().for_each(|pixel| {
+                pixel.0 = ((pixel.0 - levels.black[0]).max(0.0) * scale).max(0.0);
+                pixel.1 = ((pixel.1 - levels.black[1]).max(0.0) * scale).max(0.0);
+                pixel.2 = ((pixel.2 - levels.black[2]).max(0.0) * scale).max(0.0);
+            });
+        }
+    }
 }
 
 #[cfg(test)]
@@ -578,6 +722,34 @@ mod tests {
             "nebula time_scale should be {}, got {}",
             constants::NEBULA_TIME_SCALE,
             ctx.nebula_config.time_scale
+        );
+    }
+
+    #[test]
+    fn test_subject_aware_nebula_mask_suppresses_near_subject() {
+        let width = 16;
+        let height = 16;
+
+        // Trajectory: strong subject in center (high alpha), empty elsewhere.
+        let mut traj = vec![(0.0, 0.0, 0.0, 0.0); width * height];
+        for y in 6..10 {
+            for x in 6..10 {
+                let idx = y * width + x;
+                traj[idx] = (0.8, 0.6, 0.4, 1.0);
+            }
+        }
+
+        // Nebula: uniform alpha everywhere (straight RGB + alpha).
+        let mut nebula = vec![(0.2, 0.3, 0.4, 0.8); width * height];
+        apply_subject_aware_nebula_mask(&mut nebula, &traj, width, height);
+
+        let center_a = nebula[8 * width + 8].3;
+        let corner_a = nebula[0].3;
+        assert!(
+            center_a < corner_a,
+            "Expected center nebula alpha to be suppressed (center={}, corner={})",
+            center_a,
+            corner_a
         );
     }
 }

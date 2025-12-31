@@ -90,11 +90,58 @@ pub type OklabColorTuple = (f64, f64, f64);
 pub struct RenderConfig {
     /// HDR scale factor (1.0 = no HDR boost)
     pub hdr_scale: f64,
+
+    /// Exposure normalization settings applied before post-processing effects.
+    ///
+    /// This is distinct from tonemapping: normalization maps raw HDR trajectory values
+    /// into a stable working range for downstream effects (halation, dodge & burn, etc.).
+    pub exposure_normalization: ExposureNormalizationConfig,
+
+    /// Pixel sampling stride for Pass 1 histogram collection.
+    ///
+    /// A stride of N samples every Nth pixel in X and Y (grid sampling), reducing memory
+    /// and CPU cost while preserving percentile accuracy.
+    pub histogram_pixel_stride: usize,
 }
 
 impl Default for RenderConfig {
     fn default() -> Self {
-        Self { hdr_scale: constants::DEFAULT_HDR_SCALE }
+        Self {
+            hdr_scale: constants::DEFAULT_HDR_SCALE,
+            exposure_normalization: ExposureNormalizationConfig::default(),
+            histogram_pixel_stride: constants::DEFAULT_HISTOGRAM_PIXEL_STRIDE,
+        }
+    }
+}
+
+/// Exposure normalization behavior before applying post-processing effects.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ExposureNormalizationMode {
+    /// Legacy mode: normalize each RGB channel independently.
+    ///
+    /// This can subtly shift hues when channel ranges differ.
+    PerChannel,
+    /// Normalize using per-channel black points but a *single* luminance-derived scale.
+    ///
+    /// This preserves hue much better and is the recommended mode for museum-quality output.
+    PreserveHue,
+}
+
+/// Configuration for exposure normalization (pre-effects).
+#[derive(Clone, Copy, Debug)]
+pub struct ExposureNormalizationConfig {
+    /// Normalization mode.
+    pub mode: ExposureNormalizationMode,
+    /// Exposure boost applied after normalization.
+    ///
+    /// Values > 1.0 lift midtones into an effect-friendly range while keeping headroom
+    /// for bloom/glow. This is intentionally *not* clamped to 1.0.
+    pub boost: f64,
+}
+
+impl Default for ExposureNormalizationConfig {
+    fn default() -> Self {
+        Self { mode: ExposureNormalizationMode::PreserveHue, boost: constants::DEFAULT_EXPOSURE_BOOST }
     }
 }
 

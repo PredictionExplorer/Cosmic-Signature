@@ -303,36 +303,6 @@ pub(crate) fn tonemap_core(fr: f64, fg: f64, fb: f64, fa: f64, levels: &ChannelL
     gamut_map_preserve_hue(final_channels[0], final_channels[1], final_channels[2])
 }
 
-/// Tonemap to 16-bit (primary output format for maximum precision)
-///
-/// Converts linear HDR RGB to 16-bit unsigned integers suitable for PNG export.
-/// Uses blue-noise dithering to prevent banding in smooth gradients.
-///
-/// # Arguments
-///
-/// * `fr, fg, fb` - Linear RGB input (premultiplied)
-/// * `fa` - Alpha channel
-/// * `levels` - Histogram-derived black/white points
-///
-/// # Returns
-///
-/// RGB as [u16; 3] in range [0, 65535]
-#[inline]
-pub(crate) fn tonemap_to_16bit(
-    fr: f64,
-    fg: f64,
-    fb: f64,
-    fa: f64,
-    levels: &ChannelLevels,
-) -> [u16; 3] {
-    let channels = tonemap_core(fr, fg, fb, fa, levels);
-    [
-        (channels[0] * 65535.0).round().clamp(0.0, 65535.0) as u16,
-        (channels[1] * 65535.0).round().clamp(0.0, 65535.0) as u16,
-        (channels[2] * 65535.0).round().clamp(0.0, 65535.0) as u16,
-    ]
-}
-
 /// Tonemap to 16-bit with blue-noise dithering (museum-quality output)
 ///
 /// Converts linear HDR RGB to 16-bit with sub-visible dithering that
@@ -423,9 +393,9 @@ mod tests {
     }
 
     #[test]
-    fn test_tonemap_to_16bit() {
+    fn test_tonemap_to_16bit_dithered_basic() {
         let levels = ChannelLevels::new(0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
-        let result = tonemap_to_16bit(0.5, 0.5, 0.5, 1.0, &levels);
+        let result = tonemap_to_16bit_dithered(0.5, 0.5, 0.5, 1.0, &levels, 0, 0);
         // Should produce valid 16-bit output (u16 is always in range, just verify it runs)
         assert!(result[0] > 0); // Should have some value for non-zero input
         assert_eq!(result.len(), 3); // Should return 3 channels
@@ -515,7 +485,8 @@ mod tests {
             let premult_b = 0.25 * alpha;
 
             let result = tonemap_core(premult_r, premult_g, premult_b, alpha, &levels);
-            let result_16bit = tonemap_to_16bit(premult_r, premult_g, premult_b, alpha, &levels);
+            let result_16bit =
+                tonemap_to_16bit_dithered(premult_r, premult_g, premult_b, alpha, &levels, 0, 0);
 
             // Should produce visible 16-bit values (at least a few hundred out of 65535)
             assert!(
@@ -601,7 +572,7 @@ mod tests {
             let premult_b = color[2] * nebula_alpha;
 
             let result_16bit =
-                tonemap_to_16bit(premult_r, premult_g, premult_b, nebula_alpha, &levels);
+                tonemap_to_16bit_dithered(premult_r, premult_g, premult_b, nebula_alpha, &levels, 0, 0);
 
             // Each nebula color should produce visible output (not black)
             let max_channel = result_16bit.iter().max().unwrap();

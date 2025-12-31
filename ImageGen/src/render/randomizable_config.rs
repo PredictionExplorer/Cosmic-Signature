@@ -253,7 +253,11 @@ impl RandomizableEffectConfig {
         // =========================================================================
         // Generate 8-axis style fingerprint for this seed. This ensures
         // coherent aesthetics across all effect choices.
-        let style_genome = StyleGenome::from_rng(rng);
+        let mut style_genome = StyleGenome::from_rng(rng);
+
+        // MUSEUM QUALITY: Bias "photochemical" axis higher to favor warm, film-like output
+        // This combats the "cold digital void" look by encouraging Halation/Texture.
+        style_genome.photochemical = (style_genome.photochemical + 0.15).min(1.0);
 
         // 1. Resolve Global Light Angle for Coherent Lighting FIRST (before creating randomizer)
         // We pick one angle for the whole scene to ensure shadows and textures match.
