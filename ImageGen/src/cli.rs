@@ -134,6 +134,10 @@ pub struct OutputArgs {
 
 #[derive(Args, Debug)]
 pub struct EffectArgs {
+    /// Enable special mode with nebula backgrounds and atmospheric effects.
+    ///
+    /// Use --special for rich backgrounds with nebula clouds.
+    /// Default is clean mode without backgrounds.
     #[arg(long, default_value_t = false)]
     pub special: bool,
 

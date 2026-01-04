@@ -336,7 +336,10 @@ pub const DEFAULT_HISTOGRAM_PIXEL_STRIDE: usize = 16;
 ///
 /// This is tuned to produce a rich working range for finishing effects without
 /// crushing midtones or turning the scene into constant bloom.
-pub const DEFAULT_EXPOSURE_BOOST: f64 = 2.2;
+/// Default exposure boost for normalization.
+/// MUSEUM QUALITY: Increased from 2.2 to 3.0 to ensure trajectories are bright enough
+/// before effects are applied. This helps prevent dark images.
+pub const DEFAULT_EXPOSURE_BOOST: f64 = 3.0;
 
 // ========== Museum-Quality Curation ==========
 
@@ -393,8 +396,10 @@ pub const TWO_PI: f64 = 2.0 * std::f64::consts::PI;
 // ========== Tonemapping Constants ==========
 // Note: Main tonemapping constants have been moved to render/tonemap.rs
 
-/// Alpha boost factor for trajectory compositing (1.20 = 20% stronger coverage)
-pub const COMPOSITE_ALPHA_BOOST_FACTOR: f64 = 1.20;
+/// Alpha boost factor for trajectory compositing.
+/// MUSEUM QUALITY: Increased from 1.20 to 1.50 (50% boost) for more visible trajectories.
+/// This helps prevent dark images especially in standard mode without nebula backgrounds.
+pub const COMPOSITE_ALPHA_BOOST_FACTOR: f64 = 1.50;
 
 /// Saturation boost factor for trajectory compositing (1.20 = 20% more saturated)
 pub const COMPOSITE_SATURATION_BOOST_FACTOR: f64 = 1.20;
@@ -403,6 +408,25 @@ pub const COMPOSITE_SATURATION_BOOST_FACTOR: f64 = 1.20;
 pub const COMPOSITE_SATURATION_THRESHOLD: f64 = 0.50;
 
 // ========== Drawing Constants ==========
+
+/// Default alpha denominator for standard mode.
+///
+/// This controls the opacity of each line segment: `alpha = 1 / alpha_denom`.
+/// Higher values = more transparent lines (requires more trajectory density).
+/// Standard mode uses a higher value for subtle, ethereal results.
+pub const DEFAULT_ALPHA_DENOM: usize = 15_000_000;
+
+/// Alpha denominator for gallery/museum quality mode.
+///
+/// Gallery mode uses a lower denominator (3× brighter) to ensure trajectories
+/// are clearly visible even with sparse coverage. This prevents dark/empty images
+/// that can occur when trajectory density is low.
+///
+/// The factor of 3x was chosen because:
+/// - It's enough to make sparse trajectories visible
+/// - It doesn't blow out dense crossing regions
+/// - It works well with the brightness compensation system
+pub const GALLERY_ALPHA_DENOM: usize = 5_000_000;
 
 /// Minimum line length threshold (lines shorter than this are not drawn)
 pub const MIN_LINE_LENGTH: f64 = 0.001;

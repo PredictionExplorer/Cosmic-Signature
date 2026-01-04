@@ -753,8 +753,10 @@ pub const NEBULA_STRENGTH: FloatParamDescriptor = FloatParamDescriptor {
     name: "nebula_strength",
     min: 0.12,
     max: 0.35,
-    gallery_min: 0.15,
-    gallery_max: 0.28,
+    // MUSEUM QUALITY: Increased gallery_min from 0.15 to 0.20 to ensure
+    // nebula backgrounds are always clearly visible in gallery mode
+    gallery_min: 0.20,
+    gallery_max: 0.30,
     description: "Nebula cloud background opacity (special mode only)",
 };
 

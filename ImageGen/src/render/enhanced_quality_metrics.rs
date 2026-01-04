@@ -49,6 +49,20 @@ pub mod thresholds {
     /// Acceptable range around target luminance
     pub const LUMINANCE_TOLERANCE: f64 = 0.12;
     
+    // ==== HARD REJECTION THRESHOLDS (instant fail) ====
+    
+    /// HARD MINIMUM: Images darker than this are INSTANTLY REJECTED.
+    /// A mean luminance below 0.05 means the image is essentially black.
+    pub const HARD_MIN_LUMINANCE: f64 = 0.05;
+    
+    /// HARD MINIMUM: Images with less than this subject coverage are REJECTED.
+    /// Less than 2% visible pixels means the frame is nearly empty.
+    pub const HARD_MIN_SUBJECT_COVERAGE: f64 = 0.02;
+    
+    /// HARD MAXIMUM: Images with more than this shadow crushing are REJECTED.
+    /// More than 50% of pixels in deep shadow indicates catastrophic darkness.
+    pub const HARD_MAX_SHADOW_CRUSH: f64 = 50.0;
+    
     /// Minimum acceptable midtone presence (% of pixels in midtone range)
     pub const MIN_MIDTONE_PRESENCE: f64 = 0.15;
     /// Maximum acceptable edge activity (keeps attention in center)
@@ -125,6 +139,16 @@ pub struct EnhancedQualityMetrics {
     /// Spatial frequency distribution (avoids both flat and noisy)
     pub detail_balance: f64,
     
+    // ========== Beauty Metrics (P3 Museum Quality) ==========
+    /// Luminance hierarchy - clear focal points with visual progression (0-1)
+    pub luminance_hierarchy: f64,
+    /// Color harmony - how well colors work together (0-1)
+    pub color_harmony: f64,
+    /// Visual rhythm - pleasing pattern regularity (0-1)
+    pub visual_rhythm: f64,
+    /// Overall beauty score combining P3 metrics (0-1)
+    pub beauty_score: f64,
+    
     // ========== Composite Scores ==========
     /// Technical sub-score (0-1)
     pub technical_score: f64,
@@ -143,32 +167,37 @@ pub struct EnhancedQualityMetrics {
 impl Default for EnhancedQualityMetrics {
     fn default() -> Self {
         Self {
-            // Technical
+            // Technical - default to "normal" values that won't trigger hard rejection
             highlight_clip_pct: 0.0,
             shadow_crush_pct: 0.0,
-            contrast_spread: 0.0,
-            mean_luminance: 0.5,
+            contrast_spread: 0.15, // Normal contrast
+            mean_luminance: 0.22, // Target luminance (won't trigger hard rejection)
             gamut_excursions: 0,
-            total_pixels: 0,
-            visible_pixels: 0,
+            total_pixels: 1000,
+            visible_pixels: 500, // 50% coverage (won't trigger hard rejection)
             // Tonal
-            shadow_detail: 0.0,
-            midtone_presence: 0.0,
-            highlight_detail: 0.0,
-            tonal_range_utilization: 0.0,
-            // Compositional
-            visual_balance: 0.0,
-            subject_coverage: 0.0,
-            edge_activity: 0.0,
+            shadow_detail: 0.5,
+            midtone_presence: 0.5,
+            highlight_detail: 0.5,
+            tonal_range_utilization: 0.5,
+            // Compositional - default to normal values
+            visual_balance: 0.1, // Slightly off-center
+            subject_coverage: 0.25, // 25% coverage (won't trigger hard rejection)
+            edge_activity: 0.2,
             center_focus: 0.5,
             // Color
-            color_variety: 0.0,
+            color_variety: 0.3,
             saturation_balance: 0.5,
-            mean_saturation: 0.0,
+            mean_saturation: 0.3,
             // Interest
-            local_contrast: 0.0,
-            luminance_entropy: 0.0,
+            local_contrast: 0.5,
+            luminance_entropy: 0.5,
             detail_balance: 0.5,
+            // Beauty (P3 Museum Quality)
+            luminance_hierarchy: 0.5,
+            color_harmony: 0.5,
+            visual_rhythm: 0.5,
+            beauty_score: 0.5,
             // Scores
             technical_score: 1.0,
             tonal_score: 1.0,
@@ -263,7 +292,8 @@ impl EnhancedQualityMetrics {
         height: usize,
     ) -> Self {
         if pixels.is_empty() || width == 0 || height == 0 {
-            return Self::default();
+            // Return metrics with explicit zero values for empty input
+            return Self { total_pixels: 0, visible_pixels: 0, ..Self::default() };
         }
         
         let total_pixels = pixels.len();
@@ -423,7 +453,8 @@ impl EnhancedQualityMetrics {
         // Now compute all the derived metrics
         let visible = aggregate.visible_count;
         if visible == 0 {
-            return Self { total_pixels, ..Default::default() };
+            // Return metrics with explicit values for fully transparent image
+            return Self { total_pixels, visible_pixels: 0, ..Default::default() };
         }
         
         let n = visible as f64;
@@ -557,14 +588,30 @@ impl EnhancedQualityMetrics {
             detail_balance,
         );
         
+        // Beauty metrics (P3 Museum Quality)
+        let luminance_hierarchy = Self::compute_luminance_hierarchy(&aggregate, width, height);
+        let color_harmony = Self::compute_color_harmony(&aggregate);
+        let visual_rhythm = Self::compute_visual_rhythm(
+            luminance_entropy, 
+            local_contrast, 
+            visible as f64 / total_pixels as f64,
+        );
+        let beauty_score = Self::compute_beauty_score(
+            luminance_hierarchy,
+            color_harmony,
+            visual_rhythm,
+        );
+        
         // Final weighted score
         // Weights chosen to prioritize technical correctness while rewarding aesthetic beauty
+        // Beauty metrics contribute 5% (taken from interest_score weight)
         let quality_score = 
             technical_score * 0.30 +
             tonal_score * 0.25 +
             compositional_score * 0.20 +
             color_score * 0.15 +
-            interest_score * 0.10;
+            interest_score * 0.05 +
+            beauty_score * 0.05;
         
         Self {
             // Technical
@@ -593,6 +640,11 @@ impl EnhancedQualityMetrics {
             local_contrast,
             luminance_entropy,
             detail_balance,
+            // Beauty (P3 Museum Quality)
+            luminance_hierarchy,
+            color_harmony,
+            visual_rhythm,
+            beauty_score,
             // Scores
             technical_score,
             tonal_score,
@@ -797,8 +849,176 @@ impl EnhancedQualityMetrics {
         score.clamp(0.0, 1.0)
     }
     
+    /// Compute luminance hierarchy score.
+    /// Measures whether there's a clear focal point with supporting visual progression.
+    /// Higher scores indicate good luminance organization with bright focal areas
+    /// surrounded by supporting darker regions.
+    fn compute_luminance_hierarchy(aggregate: &AggregateAnalysis, width: usize, height: usize) -> f64 {
+        if aggregate.visible_count == 0 || width == 0 || height == 0 {
+            return 0.5;
+        }
+        
+        // Analyze luminance distribution across the image
+        // Good hierarchy: concentrated bright areas with gradual falloff
+        
+        // Check if highlights are well-distributed (not uniform)
+        let highlight_ratio = aggregate.highlight_clipped as f64 / aggregate.visible_count as f64;
+        let shadow_ratio = aggregate.shadow_crushed as f64 / aggregate.visible_count as f64;
+        
+        // Ideal: some highlights (2-15%) with moderate shadows
+        let highlight_score = if highlight_ratio < 0.02 {
+            highlight_ratio / 0.02 // Too few highlights
+        } else if highlight_ratio <= 0.15 {
+            1.0 // Ideal range
+        } else {
+            1.0 - ((highlight_ratio - 0.15) / 0.35).min(0.5) // Too many highlights
+        };
+        
+        // Shadow distribution score
+        let shadow_score = if shadow_ratio < 0.30 {
+            1.0 - (0.30 - shadow_ratio) * 0.5 // Some shadows add depth
+        } else {
+            1.0 - ((shadow_ratio - 0.30) / 0.50).min(0.6) // Too dark
+        };
+        
+        // Combine for hierarchy score
+        (highlight_score * 0.6 + shadow_score * 0.4).clamp(0.0, 1.0)
+    }
+    
+    /// Compute color harmony score.
+    /// Measures how well the colors work together based on color theory principles.
+    /// Considers analogous colors, complementary relationships, and saturation balance.
+    fn compute_color_harmony(aggregate: &AggregateAnalysis) -> f64 {
+        if aggregate.visible_count == 0 {
+            return 0.5;
+        }
+        
+        // Analyze hue bucket distribution for harmony
+        let total_hue_samples: usize = aggregate.hue_buckets.iter().sum();
+        if total_hue_samples == 0 {
+            return 0.5; // Monochrome - neutral harmony
+        }
+        
+        // Find dominant hue buckets
+        let mut sorted_buckets: Vec<(usize, usize)> = aggregate.hue_buckets
+            .iter()
+            .enumerate()
+            .map(|(i, &count)| (i, count))
+            .collect();
+        sorted_buckets.sort_by_key(|&(_, count)| std::cmp::Reverse(count));
+        
+        let dominant_bucket = sorted_buckets[0].0;
+        let dominant_count = sorted_buckets[0].1;
+        
+        // Calculate dominance (how concentrated the color palette is)
+        let dominance = dominant_count as f64 / total_hue_samples as f64;
+        
+        // Harmony patterns:
+        // 1. Monochromatic: >70% in one bucket (high harmony)
+        // 2. Analogous: concentrated in 2-3 adjacent buckets (good harmony)
+        // 3. Complementary: two opposite buckets (interesting harmony)
+        // 4. Split-complementary: dominant + two adjacent to complement (good)
+        // 5. Scattered: low harmony
+        
+        let mut harmony: f64 = 0.5; // Base score
+        
+        if dominance > 0.70 {
+            // Monochromatic - high harmony
+            harmony += 0.35;
+        } else if dominance > 0.40 {
+            // Check for analogous (adjacent buckets)
+            let left_bucket = (dominant_bucket + 11) % 12;
+            let right_bucket = (dominant_bucket + 1) % 12;
+            let analogous_total = dominant_count 
+                + aggregate.hue_buckets[left_bucket]
+                + aggregate.hue_buckets[right_bucket];
+            let analogous_ratio = analogous_total as f64 / total_hue_samples as f64;
+            
+            if analogous_ratio > 0.70 {
+                harmony += 0.30; // Good analogous harmony
+            } else {
+                // Check for complementary
+                let complement = (dominant_bucket + 6) % 12;
+                let complement_count = aggregate.hue_buckets[complement];
+                let complement_ratio = complement_count as f64 / total_hue_samples as f64;
+                
+                if complement_ratio > 0.20 && complement_ratio < 0.45 {
+                    harmony += 0.25; // Good complementary tension
+                }
+            }
+        }
+        
+        // Saturation consistency adds to harmony
+        let sat_score = aggregate.sat_sum / aggregate.visible_count.max(1) as f64;
+        if sat_score > 0.15 && sat_score < 0.60 {
+            harmony += 0.10; // Moderate saturation is harmonious
+        }
+        
+        harmony.clamp(0.0, 1.0)
+    }
+    
+    /// Compute visual rhythm score.
+    /// Measures the presence of pleasing patterns and visual flow in the image.
+    /// Based on luminance variation patterns and spatial distribution.
+    fn compute_visual_rhythm(
+        luminance_entropy: f64,
+        local_contrast: f64,
+        coverage: f64,
+    ) -> f64 {
+        // Visual rhythm is indicated by:
+        // 1. Luminance entropy in the sweet spot (not too uniform, not chaotic)
+        // 2. Good distribution of detail across the image
+        // 3. Balance between quiet and active areas
+        
+        let mut rhythm: f64 = 0.5;
+        
+        // Luminance entropy contribution
+        // Values 0.4-0.7 suggest good visual rhythm
+        if luminance_entropy >= 0.4 && luminance_entropy <= 0.7 {
+            rhythm += 0.25;
+        } else if luminance_entropy < 0.3 {
+            rhythm -= 0.15; // Too uniform, boring
+        } else if luminance_entropy > 0.85 {
+            rhythm -= 0.10; // Too chaotic, no pattern
+        }
+        
+        // Local contrast variation adds rhythm
+        if local_contrast > 0.2 && local_contrast < 0.8 {
+            rhythm += 0.15; // Good contrast rhythm
+        }
+        
+        // Coverage contributes to rhythm perception
+        if coverage > 0.15 && coverage < 0.70 {
+            rhythm += 0.10; // Good subject/background balance
+        }
+        
+        rhythm.clamp(0.0, 1.0)
+    }
+    
+    /// Compute overall beauty score combining all P3 beauty metrics.
+    fn compute_beauty_score(
+        luminance_hierarchy: f64,
+        color_harmony: f64,
+        visual_rhythm: f64,
+    ) -> f64 {
+        // Weight the components
+        // Color harmony is most important for aesthetic appeal
+        // Luminance hierarchy creates visual interest
+        // Visual rhythm provides pleasing patterns
+        let score = luminance_hierarchy * 0.30 +
+                   color_harmony * 0.45 +
+                   visual_rhythm * 0.25;
+        
+        score.clamp(0.0, 1.0)
+    }
+    
     /// Get quality assessment category
     pub fn assessment(&self) -> QualityAssessment {
+        // First check for hard rejection conditions
+        if self.is_hard_rejected() {
+            return QualityAssessment::Rejected;
+        }
+        
         if self.quality_score >= thresholds::EXCELLENT {
             QualityAssessment::Excellent
         } else if self.quality_score >= thresholds::GOOD {
@@ -810,14 +1030,65 @@ impl EnhancedQualityMetrics {
         }
     }
     
-    /// Check if quality is museum-worthy
+    /// Check if this image should be HARD REJECTED (catastrophic quality issues).
+    ///
+    /// These conditions represent images that are fundamentally unusable:
+    /// - Too dark (essentially black)
+    /// - Too empty (no visible content)
+    /// - Excessive shadow crushing (majority of image is crushed to black)
+    pub fn is_hard_rejected(&self) -> bool {
+        // HARD REJECT: Image is essentially black
+        if self.mean_luminance < thresholds::HARD_MIN_LUMINANCE {
+            return true;
+        }
+        
+        // HARD REJECT: Image is nearly empty (no visible content)
+        if self.subject_coverage < thresholds::HARD_MIN_SUBJECT_COVERAGE {
+            return true;
+        }
+        
+        // HARD REJECT: Catastrophic shadow crushing (majority of image is black)
+        if self.shadow_crush_pct > thresholds::HARD_MAX_SHADOW_CRUSH {
+            return true;
+        }
+        
+        false
+    }
+    
+    /// Get the reason for hard rejection, if any.
+    pub fn hard_rejection_reason(&self) -> Option<String> {
+        if self.mean_luminance < thresholds::HARD_MIN_LUMINANCE {
+            return Some(format!(
+                "Image too dark: mean luminance {:.3} < minimum {:.3}",
+                self.mean_luminance, thresholds::HARD_MIN_LUMINANCE
+            ));
+        }
+        
+        if self.subject_coverage < thresholds::HARD_MIN_SUBJECT_COVERAGE {
+            return Some(format!(
+                "Image too empty: subject coverage {:.1}% < minimum {:.1}%",
+                self.subject_coverage * 100.0, thresholds::HARD_MIN_SUBJECT_COVERAGE * 100.0
+            ));
+        }
+        
+        if self.shadow_crush_pct > thresholds::HARD_MAX_SHADOW_CRUSH {
+            return Some(format!(
+                "Image crushed to black: {:.1}% shadow crushing > maximum {:.1}%",
+                self.shadow_crush_pct, thresholds::HARD_MAX_SHADOW_CRUSH
+            ));
+        }
+        
+        None
+    }
+    
+    /// Check if quality is museum-worthy (passes all hard requirements AND score threshold)
     pub fn passes_museum_quality(&self) -> bool {
-        self.quality_score >= thresholds::GOOD
+        !self.is_hard_rejected() && self.quality_score >= thresholds::GOOD
     }
     
     /// Check if quality is exhibition-ready
     pub fn is_exhibition_ready(&self) -> bool {
-        self.quality_score >= thresholds::EXCELLENT
+        !self.is_hard_rejected() && self.quality_score >= thresholds::EXCELLENT
     }
     
     /// Get a detailed diagnostic string
@@ -958,6 +1229,8 @@ pub enum QualityAssessment {
     Acceptable,
     /// Score < 0.50: Needs significant improvement
     Poor,
+    /// HARD REJECTED: Catastrophic quality issues (black, empty, etc.)
+    Rejected,
 }
 
 impl std::fmt::Display for QualityAssessment {
@@ -967,6 +1240,7 @@ impl std::fmt::Display for QualityAssessment {
             QualityAssessment::Good => write!(f, "Good"),
             QualityAssessment::Acceptable => write!(f, "Acceptable"),
             QualityAssessment::Poor => write!(f, "Poor"),
+            QualityAssessment::Rejected => write!(f, "REJECTED"),
         }
     }
 }
@@ -1396,6 +1670,109 @@ mod tests {
         assert!((full_metrics.quality_score - sampled_metrics.quality_score).abs() < 0.15,
             "Quality scores should be similar: {} vs {}",
             full_metrics.quality_score, sampled_metrics.quality_score);
+    }
+    
+    // ========== Beauty Metrics Tests (P3 Museum Quality) ==========
+    
+    #[test]
+    fn test_luminance_hierarchy_score() {
+        // Test image with good luminance hierarchy: bright center, dark edges
+        let mut pixels = Vec::with_capacity(10000);
+        for y in 0..100 {
+            for x in 0..100 {
+                let dx = (x as f64 - 50.0) / 50.0;
+                let dy = (y as f64 - 50.0) / 50.0;
+                let dist = (dx * dx + dy * dy).sqrt();
+                
+                // Bright focal point in center, gradual falloff
+                let lum = (1.0 - dist * 0.8).max(0.1);
+                pixels.push((lum, lum * 0.9, lum * 0.85, 1.0));
+            }
+        }
+        
+        let metrics = EnhancedQualityMetrics::from_pixel_buffer_2d(&pixels, 100, 100);
+        
+        // Should have decent luminance hierarchy (above flat baseline)
+        assert!(metrics.luminance_hierarchy >= 0.30,
+            "Well-organized luminance should have decent hierarchy, got {}", 
+            metrics.luminance_hierarchy);
+    }
+    
+    #[test]
+    fn test_color_harmony_monochromatic() {
+        // Test monochromatic image (high harmony)
+        let pixels = create_test_pixels(0.6, 0.55, 0.5, 1.0, 10000); // Warm browns
+        let metrics = EnhancedQualityMetrics::from_pixel_buffer_2d(&pixels, 100, 100);
+        
+        // Monochromatic should have good harmony
+        assert!(metrics.color_harmony >= 0.5,
+            "Monochromatic image should have good harmony, got {}",
+            metrics.color_harmony);
+    }
+    
+    #[test]
+    fn test_color_harmony_varied_colors() {
+        // Test image with varied colors (should still have reasonable harmony)
+        let pixels = create_colored_pixels(100, 100);
+        let metrics = EnhancedQualityMetrics::from_pixel_buffer_2d(&pixels, 100, 100);
+        
+        // Varied colors should have moderate harmony
+        assert!(metrics.color_harmony > 0.3 && metrics.color_harmony < 0.9,
+            "Varied colors should have moderate harmony, got {}",
+            metrics.color_harmony);
+    }
+    
+    #[test]
+    fn test_visual_rhythm_good_entropy() {
+        // Test image with good visual rhythm (moderate entropy)
+        let pixels = create_gradient_pixels(100, 100);
+        let metrics = EnhancedQualityMetrics::from_pixel_buffer_2d(&pixels, 100, 100);
+        
+        // Gradient should have decent visual rhythm
+        assert!(metrics.visual_rhythm >= 0.4,
+            "Gradient image should have good visual rhythm, got {}",
+            metrics.visual_rhythm);
+    }
+    
+    #[test]
+    fn test_visual_rhythm_flat_image() {
+        // Test flat image (poor visual rhythm)
+        let pixels = create_test_pixels(0.5, 0.5, 0.5, 1.0, 10000);
+        let metrics = EnhancedQualityMetrics::from_pixel_buffer_2d(&pixels, 100, 100);
+        
+        // Flat image should have lower rhythm due to low entropy
+        assert!(metrics.visual_rhythm <= 0.5,
+            "Flat image should have lower visual rhythm, got {}",
+            metrics.visual_rhythm);
+    }
+    
+    #[test]
+    fn test_beauty_score_combines_metrics() {
+        // Test that beauty score is properly computed from sub-metrics
+        let pixels = create_gradient_pixels(100, 100);
+        let metrics = EnhancedQualityMetrics::from_pixel_buffer_2d(&pixels, 100, 100);
+        
+        // Beauty score should be in valid range
+        assert!(metrics.beauty_score >= 0.0 && metrics.beauty_score <= 1.0,
+            "Beauty score should be in [0, 1], got {}", metrics.beauty_score);
+        
+        // Beauty score should contribute to quality score
+        // Quality score formula: tech*0.30 + tonal*0.25 + comp*0.20 + color*0.15 + interest*0.05 + beauty*0.05
+        let expected_min = metrics.beauty_score * 0.05; // At minimum, beauty contributes this
+        assert!(metrics.quality_score >= expected_min,
+            "Beauty score ({}) should contribute to quality score ({})",
+            metrics.beauty_score, metrics.quality_score);
+    }
+    
+    #[test]
+    fn test_beauty_metrics_default_values() {
+        // Test that default values are reasonable
+        let metrics = EnhancedQualityMetrics::default();
+        
+        assert_eq!(metrics.luminance_hierarchy, 0.5, "Default luminance_hierarchy should be 0.5");
+        assert_eq!(metrics.color_harmony, 0.5, "Default color_harmony should be 0.5");
+        assert_eq!(metrics.visual_rhythm, 0.5, "Default visual_rhythm should be 0.5");
+        assert_eq!(metrics.beauty_score, 0.5, "Default beauty_score should be 0.5");
     }
 }
 

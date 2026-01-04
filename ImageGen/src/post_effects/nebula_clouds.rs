@@ -231,12 +231,19 @@ impl NebulaClouds {
             // Calculate base opacity with edge fade
             let edge_fade = self.calculate_edge_fade(x, y, width_f, height_f);
             
-            // MUSEUM QUALITY: Lower overall strength to avoid overpowering
-            let base_opacity = self.config.strength * 0.75 * edge_fade;
+            // MUSEUM QUALITY: Ensure nebula is always visible with a minimum floor
+            // This prevents completely black images by guaranteeing background brightness
+            let base_opacity = self.config.strength * edge_fade;
 
             // Final opacity creates wispy, organic structure
-            let opacity_variation = 0.40 + noise_value * 1.20;
+            // Increased minimum (0.50 instead of 0.40) ensures visibility
+            let opacity_variation = 0.50 + noise_value * 1.00;
             let final_opacity = (base_opacity * opacity_variation).clamp(0.0, 1.0);
+            
+            // MUSEUM QUALITY FLOOR: Ensure minimum visibility in center region
+            // This prevents "black hole" areas where everything is invisible
+            let min_opacity = if edge_fade > 0.5 { 0.08 } else { 0.04 };
+            let final_opacity = final_opacity.max(min_opacity * edge_fade);
 
             // Apply nebula as pure RGB color with coverage
             pixel.0 = nebula_color[0];

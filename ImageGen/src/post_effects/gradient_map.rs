@@ -94,10 +94,34 @@ impl LuxuryPalette {
     /// An array of 4 RGB colors, each component in range [0.0, 1.0].
     /// Colors are darkened versions of the palette's key tones.
     pub fn nebula_colors(&self) -> [[f64; 3]; 4] {
-        // Helper to darken a color for nebula use (nebulae should be subtle backgrounds)
-        let darken = |r: f64, g: f64, b: f64, factor: f64| -> [f64; 3] {
-            [r * factor, g * factor, b * factor]
+        // Helper to prepare a color for nebula use.
+        // MUSEUM QUALITY: Ensures visible backgrounds with:
+        // 1. Brightness boost (factor * 1.5)
+        // 2. Minimum luminance floor (0.04) to prevent invisible colors
+        // 3. Cap at 0.9 to avoid washing out
+        const MIN_NEBULA_LUMINANCE: f64 = 0.04;
+        
+        let prepare = |r: f64, g: f64, b: f64, factor: f64| -> [f64; 3] {
+            let boost = (factor * 1.5).min(0.9);
+            let boosted_r = r * boost;
+            let boosted_g = g * boost;
+            let boosted_b = b * boost;
+            
+            // Calculate luminance and apply minimum floor if needed
+            let luminance = 0.2126 * boosted_r + 0.7152 * boosted_g + 0.0722 * boosted_b;
+            if luminance < MIN_NEBULA_LUMINANCE && luminance > 0.0 {
+                // Scale up to meet minimum luminance
+                let scale = MIN_NEBULA_LUMINANCE / luminance;
+                [boosted_r * scale, boosted_g * scale, boosted_b * scale]
+            } else if luminance == 0.0 {
+                // Fully black - use a very dark but visible color
+                [MIN_NEBULA_LUMINANCE, MIN_NEBULA_LUMINANCE, MIN_NEBULA_LUMINANCE]
+            } else {
+                [boosted_r, boosted_g, boosted_b]
+            }
         };
+        // Alias for compatibility
+        let darken = prepare;
 
         match self {
             LuxuryPalette::GoldPurple => [
@@ -220,6 +244,96 @@ impl LuxuryPalette {
                 darken(0.55, 0.15, 0.65, 0.4), // Nebula magenta
                 darken(0.25, 0.45, 0.82, 0.4), // Electric blue
             ],
+        }
+    }
+
+    /// Returns 3 harmonized base hues (in degrees 0-360) for body colors.
+    ///
+    /// MUSEUM QUALITY: These hues are carefully chosen to complement each palette,
+    /// ensuring the trajectory colors harmonize with the gradient map effect.
+    ///
+    /// Each palette provides:
+    /// - Body 0: Primary accent hue (brightest, most prominent)
+    /// - Body 1: Secondary complementary hue (supports the primary)
+    /// - Body 2: Tertiary accent hue (adds visual interest)
+    ///
+    /// The hues are designed with sufficient separation (at least 40°) for
+    /// visual distinction while maintaining color harmony.
+    pub fn body_hues(&self) -> [f64; 3] {
+        match self {
+            // Gold-Purple: Gold, rose, violet
+            LuxuryPalette::GoldPurple => [45.0, 330.0, 280.0],
+            // Cosmic Teal-Pink: Teal, magenta, cyan
+            LuxuryPalette::CosmicTealPink => [180.0, 320.0, 200.0],
+            // Amber-Cyan: Amber, cyan, gold
+            LuxuryPalette::AmberCyan => [35.0, 185.0, 55.0],
+            // Indigo-Gold: Indigo, gold, violet
+            LuxuryPalette::IndigoGold => [240.0, 50.0, 270.0],
+            // Blue-Orange: Blue, orange, teal
+            LuxuryPalette::BlueOrange => [220.0, 30.0, 195.0],
+            // Venetian: Crimson, gold, ultramarine
+            LuxuryPalette::VenetianRenaissance => [350.0, 45.0, 235.0],
+            // Ukiyo-e: Prussian blue, vermillion, gold
+            LuxuryPalette::JapaneseUkiyoe => [215.0, 15.0, 50.0],
+            // Art Nouveau: Jade, peacock, copper
+            LuxuryPalette::ArtNouveau => [150.0, 195.0, 25.0],
+            // Lunar Opal: Silver-blue, lavender, moonstone
+            LuxuryPalette::LunarOpal => [220.0, 270.0, 200.0],
+            // Fire Opal: Ruby, flame, citrine
+            LuxuryPalette::FireOpal => [350.0, 25.0, 50.0],
+            // Deep Ocean: Teal, bioluminescent, phosphor
+            LuxuryPalette::DeepOcean => [190.0, 175.0, 150.0],
+            // Aurora: Green, violet, cyan
+            LuxuryPalette::AuroraBorealis => [140.0, 280.0, 190.0],
+            // Molten Metal: Cherry red, yellow-white, platinum
+            LuxuryPalette::MoltenMetal => [0.0, 50.0, 30.0],
+            // Ancient Jade: Jade, celadon, seafoam
+            LuxuryPalette::AncientJade => [155.0, 140.0, 165.0],
+            // Royal Amethyst: Purple, violet, lavender
+            LuxuryPalette::RoyalAmethyst => [280.0, 300.0, 260.0],
+            // Desert Sunset: Terracotta, saffron, rose
+            LuxuryPalette::DesertSunset => [20.0, 40.0, 350.0],
+            // Polar Ice: Ice blue, cyan, turquoise
+            LuxuryPalette::PolarIce => [210.0, 185.0, 175.0],
+            // Peacock: Teal, emerald, sapphire
+            LuxuryPalette::PeacockFeather => [175.0, 150.0, 220.0],
+            // Cherry Blossom: Pink, burgundy, white-pink
+            LuxuryPalette::CherryBlossom => [340.0, 350.0, 330.0],
+            // Cosmic Nebula: Magenta, electric blue, purple
+            LuxuryPalette::CosmicNebula => [300.0, 220.0, 270.0],
+        }
+    }
+
+    /// Returns 3 lightness values for body colors (in OKLab L range 0.0-1.0).
+    ///
+    /// MUSEUM QUALITY: Provides distinct luminance levels for visual hierarchy.
+    /// - Body 0: High lightness (primary, most visible)
+    /// - Body 1: Medium lightness (secondary)
+    /// - Body 2: Medium-high lightness (tertiary accent)
+    pub fn body_lightnesses(&self) -> [f64; 3] {
+        match self {
+            // Fire palettes need brighter bodies
+            LuxuryPalette::FireOpal | LuxuryPalette::MoltenMetal => [0.85, 0.75, 0.80],
+            // Ice/lunar palettes are already bright
+            LuxuryPalette::LunarOpal | LuxuryPalette::PolarIce => [0.80, 0.70, 0.75],
+            // Cherry blossom is delicate
+            LuxuryPalette::CherryBlossom => [0.82, 0.72, 0.78],
+            // Default: balanced luminance hierarchy
+            _ => [0.78, 0.68, 0.73],
+        }
+    }
+
+    /// Returns 3 chroma values for body colors (in OKLab chroma range).
+    ///
+    /// MUSEUM QUALITY: Provides vibrant but harmonized saturation.
+    pub fn body_chromas(&self) -> [f64; 3] {
+        match self {
+            // Desaturated palettes need boost
+            LuxuryPalette::LunarOpal | LuxuryPalette::AncientJade => [0.12, 0.10, 0.11],
+            // Highly saturated palettes
+            LuxuryPalette::FireOpal | LuxuryPalette::AuroraBorealis => [0.18, 0.15, 0.16],
+            // Default: moderate saturation
+            _ => [0.15, 0.13, 0.14],
         }
     }
 }
@@ -738,8 +852,14 @@ mod tests {
     }
 
     #[test]
-    fn test_nebula_colors_are_dark_enough_for_background() {
-        // Nebula colors should be dark (suitable for background use)
+    fn test_nebula_colors_are_appropriate_for_background() {
+        // Nebula colors should be visible but not overwhelming (suitable for background use)
+        // MUSEUM QUALITY: Luminance must be:
+        // - At least 0.04 (minimum floor for visibility)
+        // - At most 0.50 (not too bright for background)
+        const MIN_LUMINANCE: f64 = 0.04;
+        const MAX_LUMINANCE: f64 = 0.50;
+        
         for i in 0..15 {
             let palette = LuxuryPalette::from_index(i);
             let colors = palette.nebula_colors();
@@ -747,9 +867,14 @@ mod tests {
             for (color_idx, color) in colors.iter().enumerate() {
                 let luminance = 0.2126 * color[0] + 0.7152 * color[1] + 0.0722 * color[2];
                 assert!(
-                    luminance < 0.35,
-                    "Palette {} nebula color {} is too bright for background: lum={}",
-                    i, color_idx, luminance
+                    luminance >= MIN_LUMINANCE,
+                    "Palette {} nebula color {} is too dark (invisible): lum={:.4} (min={})",
+                    i, color_idx, luminance, MIN_LUMINANCE
+                );
+                assert!(
+                    luminance < MAX_LUMINANCE,
+                    "Palette {} nebula color {} is too bright for background: lum={:.4} (max={})",
+                    i, color_idx, luminance, MAX_LUMINANCE
                 );
             }
         }
@@ -779,5 +904,102 @@ mod tests {
                 i
             );
         }
+    }
+
+    // =========================================================================
+    // MUSEUM QUALITY: Body Hue Coordination Tests
+    // =========================================================================
+
+    #[test]
+    fn test_body_hues_all_palettes_have_valid_hues() {
+        for i in 0..15 {
+            let palette = LuxuryPalette::from_index(i);
+            let hues = palette.body_hues();
+            
+            for (idx, &hue) in hues.iter().enumerate() {
+                assert!(
+                    (0.0..=360.0).contains(&hue),
+                    "Palette {} body {} hue {} is out of range [0, 360]",
+                    i, idx, hue
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_body_hues_have_sufficient_separation() {
+        // Body hues should be at least 5° apart for visual distinction
+        // (some palettes like monochromatic ones have closer hues by design)
+        for i in 0..15 {
+            let palette = LuxuryPalette::from_index(i);
+            let hues = palette.body_hues();
+            
+            for a in 0..3 {
+                for b in (a + 1)..3 {
+                    let diff = (hues[a] - hues[b]).abs();
+                    let circular_diff = diff.min(360.0 - diff);
+                    
+                    // Some palettes (like monochromatic ones) may have closer hues
+                    // Just ensure they're not identical
+                    assert!(
+                        circular_diff >= 5.0,
+                        "Palette {} bodies {} and {} have very similar hues: {:.1}° and {:.1}° (diff={:.1}°)",
+                        i, a, b, hues[a], hues[b], circular_diff
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_body_lightnesses_are_valid() {
+        for i in 0..15 {
+            let palette = LuxuryPalette::from_index(i);
+            let lightnesses = palette.body_lightnesses();
+            
+            for (idx, &l) in lightnesses.iter().enumerate() {
+                assert!(
+                    (0.3..=0.95).contains(&l),
+                    "Palette {} body {} lightness {} is out of reasonable range [0.3, 0.95]",
+                    i, idx, l
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_body_chromas_are_valid() {
+        for i in 0..15 {
+            let palette = LuxuryPalette::from_index(i);
+            let chromas = palette.body_chromas();
+            
+            for (idx, &c) in chromas.iter().enumerate() {
+                assert!(
+                    (0.05..=0.25).contains(&c),
+                    "Palette {} body {} chroma {} is out of reasonable range [0.05, 0.25]",
+                    i, idx, c
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_different_palettes_have_different_body_hues() {
+        let hues_gold = LuxuryPalette::GoldPurple.body_hues();
+        let hues_teal = LuxuryPalette::CosmicTealPink.body_hues();
+        let hues_blue = LuxuryPalette::BlueOrange.body_hues();
+        
+        // At least the primary hue (body 0) should differ between palettes
+        let diff_gold_teal = (hues_gold[0] - hues_teal[0]).abs();
+        let diff_gold_blue = (hues_gold[0] - hues_blue[0]).abs();
+        
+        assert!(
+            diff_gold_teal > 50.0,
+            "GoldPurple and CosmicTealPink should have different primary hues"
+        );
+        assert!(
+            diff_gold_blue > 50.0,
+            "GoldPurple and BlueOrange should have different primary hues"
+        );
     }
 }

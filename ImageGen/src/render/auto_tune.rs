@@ -126,6 +126,7 @@ fn apply_delta(current: f64, direction: AdjustmentDirection, magnitude: f64, min
 mod tests {
     use super::*;
     use crate::render::effect_randomizer::AestheticBiases;
+    use crate::render::effect_themes::EffectTheme;
 
     #[test]
     fn test_apply_quality_autotune_adjusts_boost_and_logs() {
@@ -135,6 +136,7 @@ mod tests {
             gallery_quality: true,
             special_mode: false,
             noise_seed: 42,
+            effect_theme: EffectTheme::Balanced,
             // enables
             enable_bloom: true,
             enable_glow: true,

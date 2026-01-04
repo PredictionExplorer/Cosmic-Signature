@@ -462,6 +462,15 @@ fn score_candidate_enhanced(
         &identity_levels,
     );
     
+    // ========== HARD REJECTION CHECK ==========
+    // If the image fails catastrophically, give it a score of 0.0
+    // This ensures it won't be selected even if it's the "best" of bad options
+    if metrics.is_hard_rejected() {
+        warn!("Candidate HARD REJECTED: {}", 
+            metrics.hard_rejection_reason().unwrap_or_else(|| "Unknown".to_string()));
+        return (0.0, metrics);
+    }
+    
     // Compute final score with additional biases for museum quality
     let mut score = metrics.quality_score;
     
@@ -473,19 +482,21 @@ fn score_candidate_enhanced(
     };
     
     if coverage < 0.01 {
-        score -= 0.25;
+        score -= 0.35; // Stronger penalty
     } else if coverage < 0.05 {
-        score -= 0.15;
+        score -= 0.25;
     }
     
     // Prefer images with subject in frame
     if metrics.subject_coverage < 0.03 {
-        score -= 0.15;
+        score -= 0.25; // Stronger penalty
     }
     
-    // Strong penalty for very dark images
-    if metrics.mean_luminance < 0.12 {
-        score -= 0.20 * (0.12 - metrics.mean_luminance) / 0.12;
+    // Strong penalty for very dark images (anything below target luminance)
+    if metrics.mean_luminance < 0.15 {
+        score -= 0.30 * (0.15 - metrics.mean_luminance) / 0.15;
+    } else if metrics.mean_luminance < 0.20 {
+        score -= 0.15 * (0.20 - metrics.mean_luminance) / 0.05;
     }
     
     // Strong penalty for very bright images
@@ -493,7 +504,7 @@ fn score_candidate_enhanced(
         score -= 0.15 * (metrics.mean_luminance - 0.40) / 0.40;
     }
     
-    (score, metrics)
+    (score.max(0.0), metrics)
 }
 
 /// Apply quality adjustments to a resolved config

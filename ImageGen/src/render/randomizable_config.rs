@@ -9,13 +9,16 @@
 //! variety and quality:
 //!
 //! 1. **Style Genome**: 8 continuous aesthetic axes derived from seed
-//! 2. **Genome-Biased Randomization**: Effect probabilities influenced by genome
-//! 3. **Parameter Resolution**: All values determined (explicit or randomized)
-//! 4. **Artifact Budget**: Soft caps on artifact-prone effect combinations
-//! 5. **Museum Quality Enforcement**: Minimum quality guarantees for gallery mode
+//! 2. **Effect Theme**: Optional thematic coordination of effects
+//! 3. **Genome-Biased Randomization**: Effect probabilities influenced by genome
+//! 4. **Parameter Resolution**: All values determined (explicit or randomized)
+//! 5. **Artifact Budget**: Soft caps on artifact-prone effect combinations
+//! 6. **Theme Application**: Apply theme modifiers to resolved strengths
+//! 7. **Museum Quality Enforcement**: Minimum quality guarantees for gallery mode
 
 use super::artifact_budget::ArtifactBudget;
 use super::effect_randomizer::{EffectRandomizer, RandomizationLog, RandomizationRecord};
+use super::effect_themes::EffectTheme;
 use super::parameter_descriptors as pd;
 use super::style_genome::StyleGenome;
 use crate::sim::Sha3RandomByteStream;
@@ -26,6 +29,10 @@ use crate::sim::Sha3RandomByteStream;
 pub struct RandomizableEffectConfig {
     // Gallery quality mode
     pub gallery_quality: bool,
+
+    // MUSEUM QUALITY: Effect theme for coordinated aesthetics
+    // None = randomly select a theme (or Balanced), Some = use specified theme
+    pub effect_theme: Option<EffectTheme>,
 
     // Effect enable/disable flags
     pub enable_bloom: Option<bool>,
@@ -259,6 +266,22 @@ impl RandomizableEffectConfig {
         // This combats the "cold digital void" look by encouraging Halation/Texture.
         style_genome.photochemical = (style_genome.photochemical + 0.15).min(1.0);
 
+        // =========================================================================
+        // PHASE 1.5: Effect Theme Selection
+        // =========================================================================
+        // Select or randomize the effect theme. Themes coordinate multiple effects
+        // for cohesive aesthetics (e.g., Ethereal, Dramatic, Cosmic).
+        let effect_theme = match self.effect_theme {
+            Some(theme) => theme,
+            None => {
+                if self.gallery_quality {
+                    EffectTheme::random_gallery(rng)
+                } else {
+                    EffectTheme::random(rng)
+                }
+            }
+        };
+
         // 1. Resolve Global Light Angle for Coherent Lighting FIRST (before creating randomizer)
         // We pick one angle for the whole scene to ensure shadows and textures match.
         // 50% chance of standard studio lighting (top-left, 135 deg), 50% random.
@@ -413,6 +436,7 @@ impl RandomizableEffectConfig {
             gallery_quality: self.gallery_quality,
             special_mode,
             noise_seed,
+            effect_theme,
 
             // Effect enables
             enable_bloom,
@@ -1443,6 +1467,13 @@ impl RandomizableEffectConfig {
             ));
         }
 
+        // =========================================================================
+        // PHASE 7: Apply Effect Theme Modifiers
+        // =========================================================================
+        // Apply theme-specific strength multipliers for cohesive aesthetics.
+        // This is the final touch that coordinates multiple effects together.
+        let resolved = apply_theme_modifiers(resolved, &mut log);
+
         (resolved, log)
     }
 
@@ -1584,6 +1615,9 @@ pub struct ResolvedEffectConfig {
     pub gallery_quality: bool,
     pub special_mode: bool,
     pub noise_seed: i32,
+
+    // MUSEUM QUALITY: Selected effect theme
+    pub effect_theme: EffectTheme,
 
     // Effect enables
     pub enable_bloom: bool,
@@ -1804,6 +1838,64 @@ fn apply_conflict_detection(
 
         log.add_record(adjustment_record);
     }
+
+    config
+}
+
+/// Apply effect theme modifiers to scale strengths for cohesive aesthetics.
+///
+/// Each theme has specific multipliers that boost or reduce certain effects
+/// to create a unified visual style. For example:
+/// - Ethereal: Boosts soft effects (halation, chromatic bloom), reduces harsh effects
+/// - Dramatic: Boosts contrast effects (volumetric occlusion), reduces soft effects
+///
+/// This is applied after all other resolution to ensure themes have final say on aesthetics.
+fn apply_theme_modifiers(
+    mut config: ResolvedEffectConfig,
+    log: &mut RandomizationLog,
+) -> ResolvedEffectConfig {
+    let mods = config.effect_theme.modifiers();
+
+    // Apply multipliers to relevant strengths
+    // Helper to apply modifier with clamping
+    let apply = |value: f64, multiplier: f64| -> f64 { (value * multiplier).clamp(0.0, 1.0) };
+
+    // Bloom & Glow
+    config.blur_strength = config.blur_strength * mods.bloom_multiplier;
+    config.glow_strength = apply(config.glow_strength, mods.glow_multiplier);
+    config.chromatic_bloom_strength = apply(config.chromatic_bloom_strength, mods.chromatic_bloom_multiplier);
+    config.halation_strength = apply(config.halation_strength, mods.halation_multiplier);
+
+    // Atmospheric effects
+    config.atmospheric_darkening = apply(config.atmospheric_darkening, mods.atmospheric_depth_multiplier);
+    config.volumetric_occlusion_strength = apply(config.volumetric_occlusion_strength, mods.volumetric_occlusion_multiplier);
+    config.crepuscular_rays_strength = apply(config.crepuscular_rays_strength, mods.crepuscular_rays_multiplier);
+    config.nebula_strength = apply(config.nebula_strength, mods.nebula_multiplier);
+    config.aurora_veils_strength = apply(config.aurora_veils_strength, mods.aurora_veils_multiplier);
+    // Note: deep_space doesn't have a strength parameter, only enable/disable
+
+    // Detail effects
+    config.micro_contrast_strength = apply(config.micro_contrast_strength, mods.micro_contrast_multiplier);
+    config.fine_texture_strength = apply(config.fine_texture_strength, mods.fine_texture_multiplier);
+    config.perceptual_blur_strength = apply(config.perceptual_blur_strength, mods.perceptual_blur_multiplier);
+
+    // Color effects
+    config.color_grade_strength = apply(config.color_grade_strength, mods.color_grade_multiplier);
+    config.gradient_map_strength = apply(config.gradient_map_strength, mods.gradient_map_multiplier);
+
+    // Other effects
+    config.dodge_burn_strength = apply(config.dodge_burn_strength, mods.dodge_burn_multiplier);
+    config.vignette_strength = apply(config.vignette_strength, mods.vignette_multiplier);
+    config.cosmic_ink_strength = apply(config.cosmic_ink_strength, mods.cosmic_ink_multiplier);
+    config.opalescence_strength = apply(config.opalescence_strength, mods.opalescence_multiplier);
+    config.edge_luminance_strength = apply(config.edge_luminance_strength, mods.edge_luminance_multiplier);
+
+    // Log the theme application
+    log.add_record(RandomizationRecord::new(
+        format!("effect_theme: {}", config.effect_theme.name()),
+        true,
+        false,
+    ));
 
     config
 }
@@ -2032,6 +2124,11 @@ mod tests {
         // Regression test: nebula strength must not be pinned to the descriptor minimum.
         // This used to happen when the distribution was disabled (mean=0,std=0),
         // causing strength to clamp to the minimum every time.
+        //
+        // MUSEUM QUALITY: Effect themes can now modify nebula_strength via multipliers.
+        // The Cosmic theme has nebula_multiplier = 1.4, which can push values up to 0.42.
+        // The Minimal theme has nebula_multiplier = 0.4, which can reduce values to 0.08.
+        // We test for reasonable bounds after theme modification.
         let iterations = 60;
         let mut min_val = f64::INFINITY;
         let mut max_val = f64::NEG_INFINITY;
@@ -2045,10 +2142,12 @@ mod tests {
             min_val = min_val.min(resolved.nebula_strength);
             max_val = max_val.max(resolved.nebula_strength);
 
-            // Gallery-quality range guard (tighten expectations for museum output)
+            // MUSEUM QUALITY: Range after theme modifiers can be wider
+            // Base range: [0.20, 0.30], after Cosmic (1.4x): [0.28, 0.42], after Minimal (0.4x): [0.08, 0.12]
+            // We allow the full modified range: [0.08, 0.50] for safety
             assert!(
-                resolved.nebula_strength >= 0.15 && resolved.nebula_strength <= 0.28,
-                "Gallery nebula strength ({}) should be in range [0.15, 0.28]",
+                resolved.nebula_strength >= 0.08 && resolved.nebula_strength <= 0.50,
+                "Gallery nebula strength ({}) should be in theme-adjusted range [0.08, 0.50]",
                 resolved.nebula_strength
             );
         }

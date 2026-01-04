@@ -63,6 +63,7 @@ fn build_randomizable_config(
 
     RandomizableEffectConfig {
         gallery_quality: args.gallery_quality,
+        effect_theme: None, // Let the system randomly select an appropriate theme
 
         // Effect enables (convert disable flags to enable options)
         enable_bloom: if args.disable_all_effects || args.disable_bloom {
@@ -371,11 +372,48 @@ fn main() -> Result<()> {
     };
 
     // Stage 3: Generate colors
-    let (colors, body_alphas) =
-        app::generate_colors(&mut rng, args.sim.num_steps_sim, args.render.alpha_denom);
+    //
+    // MUSEUM QUALITY: Two enhancements in gallery mode:
+    // 1. Use lower alpha_denom for brighter trajectories
+    // 2. Use palette-coordinated colors for visual harmony with gradient map
+    //
+    // If user explicitly specified --alpha-denom, honor that value.
+    // Otherwise, use gallery or standard defaults based on mode.
+    let effective_alpha_denom = if args.render.alpha_denom != render::constants::DEFAULT_ALPHA_DENOM {
+        // User explicitly overrode alpha_denom
+        args.render.alpha_denom
+    } else if args.effects.gallery_quality {
+        // Gallery mode: use brighter (3x) alpha for museum-quality visibility
+        render::constants::GALLERY_ALPHA_DENOM
+    } else {
+        // Standard mode: use default alpha
+        render::constants::DEFAULT_ALPHA_DENOM
+    };
+    
+    // MUSEUM QUALITY: Generate palette-coordinated colors in gallery mode
+    // This ensures trajectory colors harmonize with the gradient map effect
+    let alpha_value = 1.0 / (effective_alpha_denom as f64);
+    let (colors, body_alphas) = if args.effects.gallery_quality {
+        render::color::generate_palette_coordinated_colors(
+            &mut rng,
+            args.sim.num_steps_sim,
+            alpha_value,
+            resolved_effect_config.gradient_map_palette,
+        )
+    } else {
+        app::generate_colors(&mut rng, args.sim.num_steps_sim, effective_alpha_denom)
+    };
 
     // Using OKLab color space
-    info!("   => Using OKLab color space for accumulation");
+    info!(
+        "   => Using OKLab color space for accumulation (alpha_denom={}{})",
+        effective_alpha_denom,
+        if args.effects.gallery_quality && args.render.alpha_denom == render::constants::DEFAULT_ALPHA_DENOM {
+            " [gallery mode: 3x brighter, palette-coordinated]"
+        } else {
+            ""
+        }
+    );
 
     // Stage 4: Bounding box
     info!("STAGE 4/7: Determining bounding box...");
@@ -563,7 +601,7 @@ fn main() -> Result<()> {
         test_frame: args.output.test_frame,
         clip_black: resolved_effect_config.clip_black,
         clip_white: resolved_effect_config.clip_white,
-        alpha_denom: args.render.alpha_denom,
+        alpha_denom: effective_alpha_denom, // Use actual value (gallery-adjusted)
         escape_threshold: args.sim.escape_threshold,
         drift_enabled: !args.drift.no_drift,
         drift_mode: args.drift.drift_mode.clone(),

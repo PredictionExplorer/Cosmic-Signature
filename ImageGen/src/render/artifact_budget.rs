@@ -173,12 +173,14 @@ mod tests {
     use super::*;
 
     fn minimal_config() -> ResolvedEffectConfig {
+        use crate::render::effect_themes::EffectTheme;
         ResolvedEffectConfig {
             width: 1920,
             height: 1080,
             gallery_quality: true,
             special_mode: false,
             noise_seed: 42,
+            effect_theme: EffectTheme::Balanced,
             enable_bloom: false,
             enable_glow: false,
             enable_chromatic_bloom: false,

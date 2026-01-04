@@ -333,11 +333,11 @@ impl<'a> RenderLoopContext<'a> {
 
         // Stage 5: MUSEUM QUALITY BRIGHTNESS COMPENSATION
         // After all darkening effects have been applied, check if the image is too dark
-        // and apply a gentle lift to ensure exhibition-quality brightness.
+        // and apply a lift to ensure exhibition-quality brightness.
         //
-        // Target luminance: 0.32 is tuned for rich, vibrant output without washing out
-        // Max boost: 1.6 prevents over-correction that could blow out highlights
-        apply_brightness_compensation(&mut final_frame, 0.32, 1.6);
+        // Target luminance: 0.25 is tuned for rich, vibrant output without washing out
+        // Max boost: 3.5 allows significant recovery of dark images while preserving highlights
+        apply_brightness_compensation(&mut final_frame, 0.25, 3.5);
 
         Ok(final_frame)
     }
@@ -670,16 +670,21 @@ pub(crate) fn apply_brightness_compensation(
     }
 
     // Sample luminance from a subset of pixels for speed
+    // MUSEUM QUALITY FIX: Use much lower threshold (1e-6) to catch even very faint pixels
+    // Previously used 0.01 which missed most pixels in sparse trajectory renders
     let sample_stride = (buffer.len() / 1000).max(1);
     let mut total_lum = 0.0;
     let mut sample_count = 0;
+    let mut any_visible = false;
 
     for (idx, pixel) in buffer.iter().enumerate() {
         if idx % sample_stride != 0 {
             continue;
         }
         let (r, g, b, a) = *pixel;
-        if a > 0.01 {
+        // Much lower threshold to catch faint trajectory pixels
+        if a > 1e-6 {
+            any_visible = true;
             // Un-premultiply for accurate luminance
             let sr = r / a;
             let sg = g / a;
@@ -690,7 +695,8 @@ pub(crate) fn apply_brightness_compensation(
         }
     }
 
-    if sample_count == 0 {
+    // If no visible pixels at all, nothing to boost
+    if !any_visible || sample_count == 0 {
         return;
     }
 
@@ -702,18 +708,26 @@ pub(crate) fn apply_brightness_compensation(
     }
 
     // Calculate boost needed to reach target
-    // Use a soft knee to avoid harsh boosting when close to target
+    // For very dark images (mean_lum < 0.03), use a higher floor to prevent division by tiny numbers
+    let safe_mean = mean_lum.max(0.03);
     let deficit = target_luminance - mean_lum;
-    let raw_boost = target_luminance / mean_lum.max(0.01);
+    let raw_boost = target_luminance / safe_mean;
 
-    // Soft knee: reduce boost as we approach the max
-    let boost = 1.0 + (raw_boost - 1.0).min(max_boost - 1.0) * soft_knee(deficit, 0.15);
+    // Soft knee: reduce boost as we approach the max, but be more aggressive for dark images
+    let knee_width = if mean_lum < 0.08 { 0.25 } else { 0.15 }; // Wider knee for darker images
+    let boost = 1.0 + (raw_boost - 1.0).min(max_boost - 1.0) * soft_knee(deficit, knee_width);
 
     // Apply boost while preserving hue and saturation
     // This is done by boosting in a way that lifts luminance without shifting colors
+    //
+    // MUSEUM QUALITY: Also apply minimum brightness floor for visible pixels
+    // This prevents images from being too dark even with extreme effect stacking
+    const MIN_VISIBLE_LUMINANCE: f64 = 0.03; // Minimum brightness for any visible pixel
+    
     buffer.par_iter_mut().for_each(|pixel| {
         let (r, g, b, a) = *pixel;
-        if a <= 0.0 {
+        // Skip completely transparent pixels
+        if a <= 1e-9 {
             return;
         }
 
@@ -723,9 +737,20 @@ pub(crate) fn apply_brightness_compensation(
         let sb = b / a;
 
         // Apply boost with soft rolloff for highlights (avoid clipping)
-        let boosted_r = soft_boost(sr, boost);
-        let boosted_g = soft_boost(sg, boost);
-        let boosted_b = soft_boost(sb, boost);
+        let mut boosted_r = soft_boost(sr, boost);
+        let mut boosted_g = soft_boost(sg, boost);
+        let mut boosted_b = soft_boost(sb, boost);
+        
+        // MUSEUM QUALITY FLOOR: Ensure visible pixels have minimum brightness
+        // This prevents "invisible" pixels where content exists but is too dark to see
+        let boosted_lum = 0.2126 * boosted_r + 0.7152 * boosted_g + 0.0722 * boosted_b;
+        if boosted_lum > 0.0 && boosted_lum < MIN_VISIBLE_LUMINANCE && a > 0.001 {
+            // Scale up to minimum luminance while preserving hue
+            let scale = MIN_VISIBLE_LUMINANCE / boosted_lum;
+            boosted_r *= scale;
+            boosted_g *= scale;
+            boosted_b *= scale;
+        }
 
         // Re-premultiply
         pixel.0 = boosted_r * a;

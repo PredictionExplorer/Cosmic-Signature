@@ -12,17 +12,21 @@ use tracing::{debug, info};
 
 // Module declarations
 pub mod advanced_curation;
+pub mod aesthetic_scoring;
 pub mod artifact_budget;
 pub mod auto_tune;
 pub mod batch_drawing;
 pub mod brightness_budget;
 pub mod buffer_pool;
 pub mod color;
+pub mod color_space;
+pub mod composition;
 pub mod constants;
 pub mod context;
 pub mod curation;
 pub mod drawing;
 pub mod effect_randomizer;
+pub mod effect_themes;
 pub mod enhanced_quality_metrics;
 pub mod effects;
 pub mod error;
@@ -47,7 +51,9 @@ use self::pipeline::{RenderLoopContext, apply_exposure_normalization};
 use self::tonemap::tonemap_to_16bit_dithered;
 
 // Re-export core types and functions for public API compatibility
-pub use color::{OklabColor, generate_body_color_sequences};
+// MUSEUM QUALITY: Added generate_palette_coordinated_colors for palette-aware trajectory colors
+#[allow(unused_imports)]
+pub use color::{OklabColor, generate_body_color_sequences, generate_palette_coordinated_colors};
 #[allow(unused_imports)]
 pub use drawing::{draw_line_segment_aa_spectral_with_dispersion, parallel_blur_2d_rgba};
 pub use effects::{DogBloomConfig, ExposureCalculator, apply_dog_bloom};

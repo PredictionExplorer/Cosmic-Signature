@@ -19,6 +19,8 @@ pub enum TextureType {
     Canvas,
     /// Thick paint relief with specular highlights
     Impasto,
+    /// Classic photographic film grain (silver halide emulation)
+    FilmGrain,
 }
 
 /// Configuration for fine texture overlay
@@ -61,6 +63,25 @@ impl FineTextureConfig {
             angle: 45.0,
             light_angle: 135.0,      // Top-left lighting
             specular_strength: 0.15, // Subtle gloss
+        }
+    }
+    
+    /// Classic photographic film grain for cinematic quality
+    /// 
+    /// Emulates the silver halide grain structure of analog film stock.
+    /// Creates organic, luminance-responsive grain that adds depth and character.
+    #[allow(dead_code)]
+    pub fn film_grain(width: usize, height: usize, intensity: f64) -> Self {
+        let base_scale = (width as f64 * height as f64).sqrt();
+        Self {
+            texture_type: TextureType::FilmGrain,
+            strength: (intensity * 0.15).clamp(0.01, 0.20), // Subtle: 0.01-0.20
+            scale: base_scale * 0.0008,                     // Fine grain
+            contrast: 0.65,                                  // Higher contrast grain particles
+            anisotropy: 0.05,                               // Nearly isotropic (film is random)
+            angle: 0.0,
+            light_angle: 0.0,       // Not used for film grain
+            specular_strength: 0.0, // No specular for film grain
         }
     }
 }
@@ -197,8 +218,35 @@ impl PostEffect for FineTexture {
                         a,
                     );
                 }
+                
+                if self.config.texture_type == TextureType::FilmGrain {
+                    // Film grain emulation (silver halide)
+                    // Key characteristics:
+                    // 1. Luminance-dependent: more visible in midtones, less in shadows/highlights
+                    // 2. Per-channel variation: real film has slightly different grain per color layer
+                    // 3. Gaussian-like distribution: not uniform noise
+                    
+                    let lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+                    
+                    // Film grain is most visible in midtones (0.2-0.7)
+                    // Shadows compress grain, highlights blow it out
+                    let midtone_factor = 1.0 - 2.0 * (lum - 0.45).abs().min(0.45);
+                    let grain_strength = self.config.strength * midtone_factor;
+                    
+                    // Per-channel grain with slight offsets (different film layers)
+                    let grain_r = texture_val;
+                    let grain_g = Self::hash2d(x + 0.5, y + 0.3);
+                    let grain_b = Self::hash2d(x + 0.7, y + 0.9);
+                    
+                    // Apply grain additively (more natural than multiplicative)
+                    let nr = (r + grain_r * grain_strength * lum).max(0.0);
+                    let ng = (g + grain_g * grain_strength * lum).max(0.0);
+                    let nb = (b + grain_b * grain_strength * lum).max(0.0);
+                    
+                    return (nr, ng, nb, a);
+                }
 
-                // 2. Impasto Mode (3D Lighting)
+                // 3. Impasto Mode (3D Lighting)
                 // Calculate simple derivative for normal
                 let h_center = texture_val;
                 let h_right = self.get_height_map(x + 1.0, y);
@@ -288,7 +336,7 @@ mod tests {
 
     #[test]
     fn test_all_texture_types() {
-        let types = [TextureType::Canvas, TextureType::Impasto];
+        let types = [TextureType::Canvas, TextureType::Impasto, TextureType::FilmGrain];
 
         for texture_type in types {
             let config = FineTextureConfig {
@@ -309,5 +357,57 @@ mod tests {
             // Should produce varying values (or at least run without panic)
             let _ = texture.get_height_map(0.0, 0.0);
         }
+    }
+    
+    #[test]
+    fn test_film_grain_mode() {
+        let config = FineTextureConfig::film_grain(1920, 1080, 0.5);
+        let texture = FineTexture::new(config);
+        
+        assert!(texture.is_enabled());
+        assert_eq!(texture.config.texture_type, TextureType::FilmGrain);
+        
+        // Test that film grain processes correctly
+        let buffer = vec![(0.5, 0.5, 0.5, 1.0); 100];
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None };
+        let result = texture.process(&buffer, 10, 10, &params).unwrap();
+        
+        // Should not be identical to input (grain applied)
+        assert!((result[0].0 - 0.5).abs() > 0.0001 || 
+                (result[0].1 - 0.5).abs() > 0.0001 ||
+                (result[0].2 - 0.5).abs() > 0.0001,
+                "Film grain should modify pixel values");
+    }
+    
+    #[test]
+    fn test_film_grain_luminance_dependent() {
+        let config = FineTextureConfig::film_grain(100, 100, 1.0);
+        let texture = FineTexture::new(config);
+        
+        // Create two buffers: dark and bright
+        let dark_buffer = vec![(0.1, 0.1, 0.1, 1.0); 100];
+        let bright_buffer = vec![(0.5, 0.5, 0.5, 1.0); 100];
+        
+        let params = FrameParams { frame_number: 0, _density: None, body_positions: None };
+        let dark_result = texture.process(&dark_buffer, 10, 10, &params).unwrap();
+        let bright_result = texture.process(&bright_buffer, 10, 10, &params).unwrap();
+        
+        // Calculate variance of changes for both
+        let dark_changes: Vec<f64> = dark_result.iter()
+            .zip(dark_buffer.iter())
+            .map(|((r, _, _, _), (orig_r, _, _, _))| (r - orig_r).abs())
+            .collect();
+        let bright_changes: Vec<f64> = bright_result.iter()
+            .zip(bright_buffer.iter())
+            .map(|((r, _, _, _), (orig_r, _, _, _))| (r - orig_r).abs())
+            .collect();
+        
+        let dark_avg: f64 = dark_changes.iter().sum::<f64>() / dark_changes.len() as f64;
+        let bright_avg: f64 = bright_changes.iter().sum::<f64>() / bright_changes.len() as f64;
+        
+        // Midtone (bright) should have more visible grain than dark regions
+        assert!(bright_avg > dark_avg,
+            "Film grain should be more visible in midtones: bright_avg={}, dark_avg={}", 
+            bright_avg, dark_avg);
     }
 }
