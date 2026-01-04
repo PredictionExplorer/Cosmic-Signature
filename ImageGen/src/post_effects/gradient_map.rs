@@ -79,6 +79,149 @@ impl LuxuryPalette {
             _ => unreachable!("Modulo 15 ensures index is 0-14"),
         }
     }
+
+    /// Generate nebula background colors derived from this palette.
+    ///
+    /// MUSEUM QUALITY TUNING (v2): Each palette produces unique nebula colors
+    /// that complement the main gradient map, preventing the "sameness" issue
+    /// in special mode where all images had identical deep blue nebula backgrounds.
+    ///
+    /// Returns 4 colors suitable for nebula noise blending, tuned to be
+    /// atmospheric (dark enough for background) yet visually distinct per palette.
+    ///
+    /// # Returns
+    ///
+    /// An array of 4 RGB colors, each component in range [0.0, 1.0].
+    /// Colors are darkened versions of the palette's key tones.
+    pub fn nebula_colors(&self) -> [[f64; 3]; 4] {
+        // Helper to darken a color for nebula use (nebulae should be subtle backgrounds)
+        let darken = |r: f64, g: f64, b: f64, factor: f64| -> [f64; 3] {
+            [r * factor, g * factor, b * factor]
+        };
+
+        match self {
+            LuxuryPalette::GoldPurple => [
+                darken(0.15, 0.05, 0.25, 0.5), // Dark purple
+                darken(0.35, 0.15, 0.45, 0.4), // Medium purple
+                darken(0.75, 0.45, 0.35, 0.3), // Rose gold hint
+                darken(0.55, 0.25, 0.50, 0.4), // Magenta
+            ],
+            LuxuryPalette::CosmicTealPink => [
+                darken(0.05, 0.20, 0.25, 0.6), // Deep teal
+                darken(0.10, 0.35, 0.45, 0.5), // Cyan
+                darken(0.75, 0.35, 0.60, 0.3), // Magenta hint
+                darken(0.35, 0.50, 0.65, 0.4), // Sky blue
+            ],
+            LuxuryPalette::AmberCyan => [
+                darken(0.25, 0.10, 0.05, 0.5), // Dark amber
+                darken(0.15, 0.55, 0.70, 0.4), // Cyan
+                darken(0.45, 0.75, 0.75, 0.3), // Aqua hint
+                darken(0.65, 0.35, 0.15, 0.4), // Orange
+            ],
+            LuxuryPalette::IndigoGold => [
+                darken(0.05, 0.05, 0.20, 0.7), // Deep indigo
+                darken(0.15, 0.20, 0.50, 0.5), // Blue
+                darken(0.35, 0.45, 0.65, 0.4), // Periwinkle
+                darken(0.75, 0.60, 0.40, 0.3), // Warm accent
+            ],
+            LuxuryPalette::BlueOrange => [
+                darken(0.10, 0.15, 0.35, 0.6), // Deep blue
+                darken(0.20, 0.35, 0.65, 0.5), // Blue
+                darken(0.85, 0.55, 0.35, 0.3), // Orange hint
+                darken(0.50, 0.55, 0.75, 0.4), // Light blue
+            ],
+            LuxuryPalette::VenetianRenaissance => [
+                darken(0.12, 0.05, 0.08, 0.7), // Deep crimson shadow
+                darken(0.45, 0.12, 0.15, 0.4), // Rich crimson
+                darken(0.25, 0.35, 0.65, 0.4), // Ultramarine
+                darken(0.55, 0.28, 0.18, 0.4), // Burnt sienna
+            ],
+            LuxuryPalette::JapaneseUkiyoe => [
+                darken(0.05, 0.08, 0.15, 0.8), // Ink black
+                darken(0.08, 0.15, 0.38, 0.6), // Deep Prussian blue
+                darken(0.12, 0.35, 0.55, 0.5), // Prussian blue
+                darken(0.75, 0.20, 0.18, 0.3), // Vermillion hint
+            ],
+            LuxuryPalette::ArtNouveau => [
+                darken(0.15, 0.28, 0.22, 0.6), // Deep jade green
+                darken(0.18, 0.42, 0.52, 0.5), // Peacock blue
+                darken(0.58, 0.35, 0.22, 0.3), // Copper hint
+                darken(0.25, 0.45, 0.35, 0.5), // Jade
+            ],
+            LuxuryPalette::LunarOpal => [
+                darken(0.25, 0.28, 0.35, 0.5), // Deep moonstone
+                darken(0.45, 0.52, 0.62, 0.4), // Moonstone blue
+                darken(0.65, 0.62, 0.72, 0.3), // Lavender
+                darken(0.85, 0.88, 0.92, 0.2), // Pearl hint
+            ],
+            LuxuryPalette::FireOpal => [
+                darken(0.22, 0.05, 0.08, 0.6), // Deep ruby
+                darken(0.65, 0.08, 0.12, 0.4), // Ruby red
+                darken(0.88, 0.35, 0.15, 0.3), // Flame orange
+                darken(0.92, 0.72, 0.52, 0.2), // Rose gold hint
+            ],
+            LuxuryPalette::DeepOcean => [
+                darken(0.02, 0.05, 0.15, 0.8), // Midnight indigo
+                darken(0.05, 0.12, 0.28, 0.7), // Abyssal blue
+                darken(0.08, 0.35, 0.45, 0.5), // Deep ocean
+                darken(0.12, 0.55, 0.52, 0.3), // Bioluminescent
+            ],
+            LuxuryPalette::AuroraBorealis => [
+                darken(0.08, 0.15, 0.25, 0.6), // Night sky
+                darken(0.15, 0.52, 0.38, 0.5), // Emerald green
+                darken(0.65, 0.28, 0.75, 0.3), // Electric violet
+                darken(0.22, 0.65, 0.72, 0.4), // Ice blue
+            ],
+            LuxuryPalette::MoltenMetal => [
+                darken(0.08, 0.08, 0.10, 0.8), // Dark iron
+                darken(0.25, 0.12, 0.10, 0.6), // Heated metal
+                darken(0.72, 0.18, 0.12, 0.3), // Cherry red
+                darken(0.95, 0.82, 0.35, 0.2), // Yellow-white hint
+            ],
+            LuxuryPalette::AncientJade => [
+                darken(0.05, 0.12, 0.10, 0.7), // Deep jade
+                darken(0.12, 0.28, 0.22, 0.6), // Jade
+                darken(0.25, 0.42, 0.35, 0.5), // Jade green
+                darken(0.55, 0.68, 0.62, 0.3), // Celadon
+            ],
+            LuxuryPalette::RoyalAmethyst => [
+                darken(0.15, 0.05, 0.22, 0.6), // Deep purple
+                darken(0.35, 0.12, 0.45, 0.5), // Amethyst
+                darken(0.52, 0.28, 0.58, 0.4), // Violet
+                darken(0.72, 0.62, 0.78, 0.3), // Lavender
+            ],
+            LuxuryPalette::DesertSunset => [
+                darken(0.18, 0.08, 0.05, 0.6), // Burnt umber
+                darken(0.55, 0.25, 0.15, 0.5), // Terracotta
+                darken(0.85, 0.55, 0.22, 0.3), // Saffron
+                darken(0.72, 0.48, 0.52, 0.4), // Dusty rose
+            ],
+            LuxuryPalette::PolarIce => [
+                darken(0.08, 0.15, 0.28, 0.6), // Deep blue ice
+                darken(0.15, 0.35, 0.52, 0.5), // Ice blue
+                darken(0.35, 0.62, 0.72, 0.4), // Cyan
+                darken(0.72, 0.85, 0.92, 0.3), // Pale turquoise
+            ],
+            LuxuryPalette::PeacockFeather => [
+                darken(0.05, 0.18, 0.22, 0.6), // Deep teal
+                darken(0.08, 0.42, 0.38, 0.5), // Emerald
+                darken(0.12, 0.25, 0.55, 0.5), // Sapphire
+                darken(0.85, 0.68, 0.25, 0.3), // Gold accent
+            ],
+            LuxuryPalette::CherryBlossom => [
+                darken(0.22, 0.08, 0.12, 0.6), // Deep burgundy
+                darken(0.55, 0.18, 0.25, 0.5), // Deep pink
+                darken(0.82, 0.45, 0.52, 0.4), // Cherry pink
+                darken(0.92, 0.72, 0.78, 0.3), // Pale pink
+            ],
+            LuxuryPalette::CosmicNebula => [
+                darken(0.05, 0.02, 0.12, 0.8), // Deep space
+                darken(0.22, 0.08, 0.38, 0.6), // Deep purple
+                darken(0.55, 0.15, 0.65, 0.4), // Nebula magenta
+                darken(0.25, 0.45, 0.82, 0.4), // Electric blue
+            ],
+        }
+    }
 }
 
 /// Configuration for gradient mapping effect
@@ -541,5 +684,100 @@ mod tests {
 
         let params = FrameParams { frame_number: 0, _density: None, body_positions: None }; let result = map.process(&buffer, 50, 50, &params);
         assert!(result.is_ok());
+    }
+
+    // =========================================================================
+    // MUSEUM QUALITY NEBULA COLOR TESTS
+    // =========================================================================
+    // These tests ensure palette-derived nebula colors are correct and varied.
+
+    #[test]
+    fn test_nebula_colors_all_palettes_produce_valid_colors() {
+        // All 15+ palettes should produce valid RGB colors
+        for i in 0..20 {
+            let palette = LuxuryPalette::from_index(i);
+            let colors = palette.nebula_colors();
+
+            for (color_idx, color) in colors.iter().enumerate() {
+                for (channel_idx, &channel) in color.iter().enumerate() {
+                    assert!(
+                        (0.0..=1.0).contains(&channel),
+                        "Palette {} color {} channel {} out of range: {}",
+                        i, color_idx, channel_idx, channel
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_nebula_colors_provide_variety() {
+        // Different palettes should produce different nebula colors
+        let colors_0 = LuxuryPalette::from_index(0).nebula_colors();
+        let colors_1 = LuxuryPalette::from_index(1).nebula_colors();
+        let colors_5 = LuxuryPalette::from_index(5).nebula_colors();
+        let colors_10 = LuxuryPalette::from_index(10).nebula_colors();
+
+        // Check that palettes differ significantly
+        let diff_0_1: f64 = colors_0.iter().zip(colors_1.iter())
+            .map(|(c0, c1)| (c0[0] - c1[0]).abs() + (c0[1] - c1[1]).abs() + (c0[2] - c1[2]).abs())
+            .sum();
+
+        let diff_5_10: f64 = colors_5.iter().zip(colors_10.iter())
+            .map(|(c0, c1)| (c0[0] - c1[0]).abs() + (c0[1] - c1[1]).abs() + (c0[2] - c1[2]).abs())
+            .sum();
+
+        assert!(
+            diff_0_1 > 0.1,
+            "GoldPurple and CosmicTealPink should have different nebula colors"
+        );
+        assert!(
+            diff_5_10 > 0.1,
+            "VenetianRenaissance and DeepOcean should have different nebula colors"
+        );
+    }
+
+    #[test]
+    fn test_nebula_colors_are_dark_enough_for_background() {
+        // Nebula colors should be dark (suitable for background use)
+        for i in 0..15 {
+            let palette = LuxuryPalette::from_index(i);
+            let colors = palette.nebula_colors();
+
+            for (color_idx, color) in colors.iter().enumerate() {
+                let luminance = 0.2126 * color[0] + 0.7152 * color[1] + 0.0722 * color[2];
+                assert!(
+                    luminance < 0.35,
+                    "Palette {} nebula color {} is too bright for background: lum={}",
+                    i, color_idx, luminance
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_nebula_colors_have_sufficient_saturation() {
+        // Nebula colors shouldn't be pure gray - they should have some color
+        for i in 0..15 {
+            let palette = LuxuryPalette::from_index(i);
+            let colors = palette.nebula_colors();
+
+            let mut has_some_color = false;
+            for color in &colors {
+                let max = color[0].max(color[1]).max(color[2]);
+                let min = color[0].min(color[1]).min(color[2]);
+                let saturation = if max > 0.0 { (max - min) / max } else { 0.0 };
+                if saturation > 0.15 {
+                    has_some_color = true;
+                    break;
+                }
+            }
+
+            assert!(
+                has_some_color,
+                "Palette {} nebula colors are too desaturated (gray)",
+                i
+            );
+        }
     }
 }

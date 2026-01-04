@@ -212,9 +212,10 @@ pub const COLOR_GRADE_STRENGTH: FloatParamDescriptor = FloatParamDescriptor {
 pub const VIGNETTE_STRENGTH: FloatParamDescriptor = FloatParamDescriptor {
     name: "vignette_strength",
     min: 0.0,  // Already at natural minimum (no vignette)
-    max: 0.50, // Tightened from 0.95 - prevent tunnel vision
-    gallery_min: 0.15,
-    gallery_max: 0.35,
+    max: 0.40, // Reduced from 0.50 - prevent tunnel vision
+    // BRIGHTNESS FIX: Reduced gallery range - vignette contributes to perceived darkness
+    gallery_min: 0.10,
+    gallery_max: 0.28,
     description: "Vignette darkness strength",
 };
 
@@ -450,9 +451,10 @@ pub const EDGE_LUMINANCE_BRIGHTNESS_BOOST: FloatParamDescriptor = FloatParamDesc
 pub const ATMOSPHERIC_DEPTH_STRENGTH: FloatParamDescriptor = FloatParamDescriptor {
     name: "atmospheric_depth_strength",
     min: 0.0,  // Already at natural minimum
-    max: 0.75, // Ultra-exploratory: extreme atmospheric haze
-    gallery_min: 0.10,
-    gallery_max: 0.35,
+    max: 0.55, // Reduced from 0.75 - extreme haze was too dark
+    // BRIGHTNESS FIX: Reduced gallery_max from 0.35 to 0.28
+    gallery_min: 0.08,
+    gallery_max: 0.28,
     description: "Atmospheric perspective strength",
 };
 
@@ -468,9 +470,10 @@ pub const ATMOSPHERIC_DESATURATION: FloatParamDescriptor = FloatParamDescriptor 
 pub const ATMOSPHERIC_DARKENING: FloatParamDescriptor = FloatParamDescriptor {
     name: "atmospheric_darkening",
     min: 0.0,  // Already at natural minimum
-    max: 0.30, // Tightened from 0.55 - prevent excessive gloom
-    gallery_min: 0.05,
-    gallery_max: 0.15,
+    max: 0.20, // Further reduced from 0.30 - prevent excessive gloom
+    // BRIGHTNESS FIX: Dramatically reduced gallery range for brightness preservation
+    gallery_min: 0.02,
+    gallery_max: 0.10,
     description: "Depth-based darkening",
 };
 
@@ -549,13 +552,15 @@ pub const CREPUSCULAR_RAYS_EXPOSURE: FloatParamDescriptor = FloatParamDescriptor
 };
 
 // ==================== VOLUMETRIC OCCLUSION (SELF-SHADOWING) ====================
+// MUSEUM QUALITY TUNING (v2): Tightened gallery ranges to prevent cumulative darkness
 
 pub const VOLUMETRIC_OCCLUSION_STRENGTH: FloatParamDescriptor = FloatParamDescriptor {
     name: "volumetric_occlusion_strength",
     min: 0.1,
-    max: 0.8,
-    gallery_min: 0.3,
-    gallery_max: 0.6,
+    max: 0.7, // Reduced from 0.8 - prevents extreme shadowing
+    // BRIGHTNESS FIX: Reduced gallery_max from 0.6 to 0.45 to prevent dark images
+    gallery_min: 0.25,
+    gallery_max: 0.45,
     description: "Strength of volumetric shadows",
 };
 

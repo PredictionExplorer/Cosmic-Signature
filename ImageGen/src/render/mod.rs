@@ -11,9 +11,11 @@ use rayon::prelude::*;
 use tracing::{debug, info};
 
 // Module declarations
+pub mod advanced_curation;
 pub mod artifact_budget;
 pub mod auto_tune;
 pub mod batch_drawing;
+pub mod brightness_budget;
 pub mod buffer_pool;
 pub mod color;
 pub mod constants;
@@ -21,6 +23,7 @@ pub mod context;
 pub mod curation;
 pub mod drawing;
 pub mod effect_randomizer;
+pub mod enhanced_quality_metrics;
 pub mod effects;
 pub mod error;
 pub mod histogram;
@@ -51,6 +54,8 @@ pub use effects::{DogBloomConfig, ExposureCalculator, apply_dog_bloom};
 pub use histogram::compute_black_white_gamma;
 #[allow(unused_imports)] // Public API for quality-based auto-adjustment
 pub use quality_metrics::{QualityMetrics, QualityAssessment};
+#[allow(unused_imports)] // Public API for enhanced quality assessment
+pub use enhanced_quality_metrics::{EnhancedQualityMetrics, QualityAdjustment};
 #[allow(unused_imports)] // Public API types - exported for library consumers
 pub use types::{
     BloomConfig, BlurConfig, ChannelLevels, HdrConfig, PerceptualBlurSettings, RenderConfig,

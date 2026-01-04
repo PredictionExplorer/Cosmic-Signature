@@ -34,15 +34,41 @@ impl Default for VolumetricOcclusionConfig {
 }
 
 impl VolumetricOcclusionConfig {
+    /// Configuration for special/gallery mode.
+    ///
+    /// MUSEUM QUALITY TUNING (v2): Reduced strength to prevent cumulative darkness.
+    /// Original value was 0.65, which when combined with atmospheric_depth (0.28)
+    /// and cosmic_ink (0.40) created images that were consistently too dark.
+    ///
+    /// The new strength (0.42) provides excellent depth perception while
+    /// preserving midtone brightness for exhibition-quality output.
     pub fn special_mode() -> Self {
         Self {
-            strength: 0.65,
+            // REDUCED from 0.65 to 0.42 for brightness preservation
+            strength: 0.42,
             steps: 16,
-            density_scale: 1.2,
+            density_scale: 1.0, // Reduced from 1.2 for subtler shadows
             light_angle: 135.0,             // Top-left lighting default
-            shadow_color: (0.0, 0.0, 0.05), // Very deep blue-black shadows
-            decay: 0.85,
-            shadow_threshold: 0.1,
+            // Warmer shadow color - pure black shadows looked too harsh
+            shadow_color: (0.02, 0.02, 0.06), // Slightly warmer blue-black
+            decay: 0.88, // Slightly faster decay for less shadow accumulation
+            shadow_threshold: 0.12, // Slightly higher to reduce shadow coverage
+        }
+    }
+
+    /// Configuration for standard mode (non-gallery).
+    ///
+    /// Provides subtle depth cues without heavy shadowing.
+    #[allow(dead_code)] // Public API for library consumers
+    pub fn standard_mode() -> Self {
+        Self {
+            strength: 0.30,
+            steps: 12,
+            density_scale: 0.9,
+            light_angle: 135.0,
+            shadow_color: (0.03, 0.03, 0.06),
+            decay: 0.90,
+            shadow_threshold: 0.15,
         }
     }
 }

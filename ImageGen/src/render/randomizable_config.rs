@@ -336,16 +336,36 @@ impl RandomizableEffectConfig {
             crepuscular_rays_exposure_base
         };
 
-        // Palette Coherence: Bias fog color based on palette temperature
-        // 0=GoldPurple (Warm), 1=CosmicTealPink (Cool), 2=AmberCyan (Warm), etc.
+        // MUSEUM QUALITY TUNING (v2): Enhanced Palette Coherence
+        // Derive fog colors directly from the gradient map palette's nebula colors.
+        // This ensures atmospheric effects are visually coherent with the color grading
+        // and provides variety across different palettes (fixes "too similar backgrounds" issue).
+        use crate::post_effects::LuxuryPalette;
+
         let (fog_bias_r, fog_bias_g, fog_bias_b) = if enable_gradient_map {
-            match gradient_map_palette {
-                0 | 2 | 3 | 5 | 9 | 12 => (0.25, 0.15, 0.10), // Warm bias
-                1 | 4 | 10 | 11 | 13 | 14 => (0.10, 0.20, 0.30), // Cool bias
-                _ => (0.15, 0.15, 0.15),                      // Neutral
+            // Get nebula colors from the selected palette
+            let palette = LuxuryPalette::from_index(gradient_map_palette);
+            let nebula_colors = palette.nebula_colors();
+            
+            // Average the nebula colors for the fog base, giving more weight to darker tones
+            // This creates atmospheric coherence with the nebula background
+            let mut sum_r = 0.0;
+            let mut sum_g = 0.0;
+            let mut sum_b = 0.0;
+            for color in &nebula_colors {
+                sum_r += color[0];
+                sum_g += color[1];
+                sum_b += color[2];
             }
+            let avg_r = sum_r / 4.0;
+            let avg_g = sum_g / 4.0;
+            let avg_b = sum_b / 4.0;
+            
+            // Scale slightly brighter for fog (fog is more visible than nebula)
+            (avg_r * 1.3, avg_g * 1.3, avg_b * 1.3)
         } else {
-            (0.15, 0.15, 0.15) // Neutral default
+            // Neutral default when gradient map is not active
+            (0.12, 0.14, 0.18)
         };
 
         // Resolve fog colors
@@ -371,10 +391,17 @@ impl RandomizableEffectConfig {
             &mut log,
         );
 
-        // Blend fog with bias if gradient map is active and fog wasn't manually set
+        // Blend fog with palette-derived bias if gradient map is active and fog wasn't manually set
+        // This creates variety: each palette produces a unique fog color
         let (final_fog_r, final_fog_g, final_fog_b) =
             if enable_gradient_map && self.atmospheric_fog_color_r.is_none() {
-                ((fog_r + fog_bias_r) * 0.5, (fog_g + fog_bias_g) * 0.5, (fog_b + fog_bias_b) * 0.5)
+                // Use a stronger blend towards palette colors for more variety
+                let blend = 0.6; // 60% palette, 40% random
+                (
+                    fog_r * (1.0 - blend) + fog_bias_r * blend,
+                    fog_g * (1.0 - blend) + fog_bias_g * blend,
+                    fog_b * (1.0 - blend) + fog_bias_b * blend,
+                )
             } else {
                 (fog_r, fog_g, fog_b)
             };
@@ -1251,48 +1278,65 @@ impl RandomizableEffectConfig {
         // 5. GALLERY/SPECIAL MODE: Maximum Beauty Enforcement
         // Gallery mode (--special) should maximize all beauty effects for cinematic impact.
         // This is the "exhibition showpiece" mode - no compromises on visual richness.
+        //
+        // MUSEUM QUALITY TUNING (v2): Changed from 100% mandatory to 92-95% probabilistic.
+        // This introduces variety while maintaining the high quality floor.
+        // Previously, 100% enforcement of darkening effects caused all images to be too dark
+        // and look too similar. The small chance of disabling effects creates more variety.
         if resolved.special_mode {
-            // 5a. Atmospheric Effect Guarantee
-            // At least ONE atmospheric effect must be active for gallery-worthy depth.
+            // 5a. Atmospheric Effect Guarantee (92% - slight chance for clean aesthetic)
+            // At least ONE atmospheric effect should be active for gallery-worthy depth.
             if !resolved.enable_cosmic_ink && !resolved.enable_aurora_veils {
-                // Select based on aesthetic biases for coherent visual language
-                let ink_score = biases.complexity * 0.5 + biases.energy_vs_matter * 0.8;
-                let aurora_score =
-                    (1.0 - biases.energy_vs_matter) * 0.8 + (1.0 - biases.vintage_vs_digital) * 0.3;
+                // 92% chance to force an atmospheric effect
+                let force_atmospheric = rng.next_f64() < 0.92;
+                if force_atmospheric {
+                    // Select based on aesthetic biases for coherent visual language
+                    let ink_score = biases.complexity * 0.5 + biases.energy_vs_matter * 0.8;
+                    let aurora_score =
+                        (1.0 - biases.energy_vs_matter) * 0.8 + (1.0 - biases.vintage_vs_digital) * 0.3;
 
-                if ink_score > aurora_score {
-                    resolved.enable_cosmic_ink = true;
-                    log.add_record(RandomizationRecord::new("cosmic_ink".to_string(), true, false));
-                } else {
-                    resolved.enable_aurora_veils = true;
+                    if ink_score > aurora_score {
+                        resolved.enable_cosmic_ink = true;
+                        log.add_record(RandomizationRecord::new("cosmic_ink".to_string(), true, false));
+                    } else {
+                        resolved.enable_aurora_veils = true;
+                        log.add_record(RandomizationRecord::new(
+                            "aurora_veils".to_string(),
+                            true,
+                            false,
+                        ));
+                    }
+                }
+            }
+
+            // 5b. Volumetric Occlusion (92% - occasionally skip for brighter images)
+            // 3D depth perception is important but not always necessary.
+            // TUNING: Reduced from 100% to allow some images without heavy shadowing.
+            if !resolved.enable_volumetric_occlusion {
+                let force_volumetric = rng.next_f64() < 0.92;
+                if force_volumetric {
+                    resolved.enable_volumetric_occlusion = true;
                     log.add_record(RandomizationRecord::new(
-                        "aurora_veils".to_string(),
+                        "volumetric_occlusion".to_string(),
                         true,
                         false,
                     ));
                 }
             }
 
-            // 5b. Volumetric Occlusion is MANDATORY in gallery mode
-            // 3D depth is non-negotiable for exhibition-quality renders.
-            if !resolved.enable_volumetric_occlusion {
-                resolved.enable_volumetric_occlusion = true;
-                log.add_record(RandomizationRecord::new(
-                    "volumetric_occlusion".to_string(),
-                    true,
-                    false,
-                ));
-            }
-
-            // 5c. Atmospheric Depth is MANDATORY in gallery mode
-            // Aerial perspective is essential for spatial grandeur.
+            // 5c. Atmospheric Depth (88% - occasionally skip for cleaner look)
+            // Aerial perspective adds depth but also darkening.
+            // TUNING: Reduced from 100% to allow more brightness variety.
             if !resolved.enable_atmospheric_depth {
-                resolved.enable_atmospheric_depth = true;
-                log.add_record(RandomizationRecord::new(
-                    "atmospheric_depth".to_string(),
-                    true,
-                    false,
-                ));
+                let force_atmospheric_depth = rng.next_f64() < 0.88;
+                if force_atmospheric_depth {
+                    resolved.enable_atmospheric_depth = true;
+                    log.add_record(RandomizationRecord::new(
+                        "atmospheric_depth".to_string(),
+                        true,
+                        false,
+                    ));
+                }
             }
 
             // 5d. Chromatic Bloom is HIGHLY encouraged in gallery mode

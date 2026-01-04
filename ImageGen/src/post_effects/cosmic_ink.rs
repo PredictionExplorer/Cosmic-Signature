@@ -47,16 +47,27 @@ impl Default for CosmicInkConfig {
 }
 
 impl CosmicInkConfig {
-    /// Configuration optimized for special mode (dramatic fluid trails)
+    /// Configuration optimized for special mode (dramatic fluid trails).
+    ///
+    /// MUSEUM QUALITY TUNING (v2): Reduced strength and brightened ink color
+    /// to prevent cumulative darkness. The original strength of 0.40 with
+    /// very dark ink (0.08, 0.12, 0.18) was contributing significantly to
+    /// image darkness when combined with other atmospheric effects.
+    ///
+    /// Key changes:
+    /// - Reduced strength from 0.40 to 0.28 (30% reduction)
+    /// - Brightened ink color for more translucent, less opaque appearance
+    /// - Slightly reduced vorticity for subtler swirl patterns
     pub fn special_mode() -> Self {
         Self {
-            strength: 0.40,                // Noticeable but not overwhelming
+            strength: 0.28,                // Reduced from 0.40 for brightness
             octaves: 4,                    // Rich multi-scale detail
             scale: 0.015,                  // Medium-scale patterns
-            swirl_intensity: 0.75,         // Strong flow following
-            diffusion: 0.35,               // Moderate spread
-            ink_color: (0.08, 0.12, 0.18), // Deep blue-gray ink
-            vorticity_strength: 0.55,      // Visible swirls
+            swirl_intensity: 0.70,         // Slightly reduced from 0.75
+            diffusion: 0.30,               // Reduced from 0.35 for cleaner look
+            // Brighter ink color - more translucent, less opaque darkness
+            ink_color: (0.12, 0.15, 0.22), // Brightened from (0.08, 0.12, 0.18)
+            vorticity_strength: 0.45,      // Reduced from 0.55 for subtlety
         }
     }
 
@@ -64,13 +75,13 @@ impl CosmicInkConfig {
     #[allow(dead_code)] // Public API for library consumers
     pub fn standard_mode() -> Self {
         Self {
-            strength: 0.22,
+            strength: 0.18, // Reduced from 0.22
             octaves: 3,
             scale: 0.020,
-            swirl_intensity: 0.50,
-            diffusion: 0.25,
-            ink_color: (0.05, 0.08, 0.12),
-            vorticity_strength: 0.35,
+            swirl_intensity: 0.45,
+            diffusion: 0.20,
+            ink_color: (0.08, 0.10, 0.14), // Slightly brighter
+            vorticity_strength: 0.30,
         }
     }
 }

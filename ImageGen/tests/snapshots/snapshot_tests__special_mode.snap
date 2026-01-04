@@ -5,26 +5,26 @@ expression: signature
 width: 640
 height: 480
 center:
-  - 51322
-  - 51297
-  - 51247
+  - 51318
+  - 51283
+  - 51286
 top_left:
-  - 7928
-  - 5871
-  - 9468
+  - 7896
+  - 5819
+  - 9531
 top_right:
-  - 12991
-  - 13852
-  - 9333
+  - 12962
+  - 13805
+  - 9385
 bottom_left:
-  - 12571
-  - 8436
-  - 13438
+  - 12542
+  - 8394
+  - 13476
 bottom_right:
-  - 3053
-  - 2271
-  - 3981
-avg_r: 5352
-avg_g: 4216
-avg_b: 6357
-non_black_pixels: 305714
+  - 3021
+  - 2226
+  - 4028
+avg_r: 5323
+avg_g: 4171
+avg_b: 6411
+non_black_pixels: 305691

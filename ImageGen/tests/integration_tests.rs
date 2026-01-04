@@ -401,3 +401,178 @@ fn test_coordinate_transformation_roundtrip() {
     assert!((px - 960.0).abs() < 100.0, "Center X should be near middle: {}", px);
     assert!((py - 540.0).abs() < 100.0, "Center Y should be near middle: {}", py);
 }
+
+// ============================================================================
+// Advanced Curation Integration Tests
+// ============================================================================
+
+#[test]
+fn test_enhanced_quality_metrics_realistic_scene() {
+    use three_body_problem::render::enhanced_quality_metrics::EnhancedQualityMetrics;
+    
+    // Create a realistic pixel buffer simulating a rendered scene
+    // with bright trajectories on a dark background
+    let width = 100;
+    let height = 100;
+    let mut pixels = vec![(0.05, 0.03, 0.08, 1.0); width * height]; // Dark background
+    
+    // Add some bright "trajectory" pixels in the center
+    for y in 30..70 {
+        for x in 30..70 {
+            let idx = y * width + x;
+            let dist_from_center = (((x as f64 - 50.0).powi(2) + (y as f64 - 50.0).powi(2)).sqrt()) / 28.0;
+            if dist_from_center < 1.0 {
+                let brightness = 0.3 + 0.5 * (1.0 - dist_from_center);
+                pixels[idx] = (brightness * 1.1, brightness * 0.9, brightness * 0.7, 1.0);
+            }
+        }
+    }
+    
+    let metrics = EnhancedQualityMetrics::from_pixel_buffer_2d(&pixels, width, height);
+    
+    // Should have reasonable scores for a centered subject
+    assert!(metrics.quality_score > 0.3, 
+        "Centered subject should have reasonable quality: {}", metrics.quality_score);
+    assert!(metrics.center_focus > 0.3, 
+        "Should detect center focus: {}", metrics.center_focus);
+    assert!(metrics.subject_coverage > 0.05, 
+        "Should detect subject coverage: {}", metrics.subject_coverage);
+}
+
+#[test]
+fn test_enhanced_quality_metrics_detects_quality_issues() {
+    use three_body_problem::render::enhanced_quality_metrics::EnhancedQualityMetrics;
+    
+    // Test 1: Too dark image
+    let dark_pixels: Vec<(f64, f64, f64, f64)> = vec![(0.02, 0.02, 0.02, 1.0); 10000];
+    let dark_metrics = EnhancedQualityMetrics::from_pixel_buffer_2d(&dark_pixels, 100, 100);
+    assert!(dark_metrics.mean_luminance < 0.05, "Should detect dark image");
+    assert!(dark_metrics.quality_score < 0.6, "Dark image should have low score");
+    
+    // Test 2: Too bright image with clipping
+    let bright_pixels: Vec<(f64, f64, f64, f64)> = vec![(0.99, 0.99, 0.99, 1.0); 10000];
+    let bright_metrics = EnhancedQualityMetrics::from_pixel_buffer_2d(&bright_pixels, 100, 100);
+    assert!(bright_metrics.highlight_clip_pct > 50.0, "Should detect clipping");
+    
+    // Test 3: Flat/boring image
+    let flat_pixels: Vec<(f64, f64, f64, f64)> = vec![(0.5, 0.5, 0.5, 1.0); 10000];
+    let flat_metrics = EnhancedQualityMetrics::from_pixel_buffer_2d(&flat_pixels, 100, 100);
+    assert!(flat_metrics.contrast_spread < 0.01, "Should detect flat contrast");
+    assert!(flat_metrics.interest_score < 0.6, "Flat image should have low interest");
+}
+
+#[test]
+fn test_enhanced_quality_metrics_suggests_improvements() {
+    use three_body_problem::render::enhanced_quality_metrics::EnhancedQualityMetrics;
+    
+    // Create a problematic image (too dark with low contrast)
+    let mut pixels = Vec::with_capacity(10000);
+    for _ in 0..10000 {
+        pixels.push((0.05, 0.05, 0.05, 1.0));
+    }
+    
+    let metrics = EnhancedQualityMetrics::from_pixel_buffer_2d(&pixels, 100, 100);
+    let adjustments = metrics.suggest_adjustments();
+    
+    // Should suggest exposure boost for dark images
+    assert!(adjustments.iter().any(|a| a.param.contains("exposure") || a.param.contains("darkening")),
+        "Should suggest exposure or darkening adjustments for dark image");
+}
+
+#[test]
+fn test_advanced_curation_settings_presets() {
+    use three_body_problem::render::advanced_curation::AdvancedCurationSettings;
+    
+    let default = AdvancedCurationSettings::default();
+    let fast = AdvancedCurationSettings::fast();
+    let gallery = AdvancedCurationSettings::gallery();
+    
+    // Fast mode should be faster (fewer candidates, larger stride)
+    assert!(fast.initial_k < default.initial_k, "Fast mode should have fewer candidates");
+    assert!(fast.fast_step_stride > default.fast_step_stride, "Fast mode should have larger stride");
+    
+    // Gallery mode should be more thorough
+    assert!(gallery.initial_k >= default.initial_k, "Gallery mode should have at least as many candidates");
+    assert!(gallery.hifi_step_stride < default.hifi_step_stride, "Gallery mode should have smaller stride");
+    assert!(gallery.max_refinement_iterations >= default.max_refinement_iterations, 
+        "Gallery mode should allow more refinement");
+}
+
+#[test]
+fn test_advanced_curation_determinism() {
+    use three_body_problem::render::advanced_curation::{
+        advanced_curate_effect_config, AdvancedCurationSettings
+    };
+    use three_body_problem::render::randomizable_config::RandomizableEffectConfig;
+    use three_body_problem::render::types::{RenderConfig, SceneDataRef};
+    
+    let seed = b"determinism_test_advanced";
+    let mut rng1 = Sha3RandomByteStream::new(seed, 150.0, 200.0, 100.0, 3.0);
+    let mut rng2 = Sha3RandomByteStream::new(seed, 150.0, 200.0, 100.0, 3.0);
+    
+    // Create identical scenes
+    let bodies = vec![
+        Body::new(150.0, Vector3::new(0.0, 0.0, 0.0), Vector3::new(0.0, 0.5, 0.0)),
+        Body::new(160.0, Vector3::new(1.0, 0.0, 0.0), Vector3::new(0.0, -0.4, 0.0)),
+        Body::new(170.0, Vector3::new(0.0, 1.0, 0.0), Vector3::new(-0.3, 0.0, 0.0)),
+    ];
+    let sim = get_positions(bodies, 200);
+    let (colors1, alphas1) = generate_body_color_sequences(&mut rng1, 200, 0.01);
+    let (colors2, alphas2) = generate_body_color_sequences(&mut rng2, 200, 0.01);
+    
+    let scene1 = SceneDataRef::new(&sim.positions, &colors1, &alphas1);
+    let scene2 = SceneDataRef::new(&sim.positions, &colors2, &alphas2);
+    
+    let randomizable = RandomizableEffectConfig::default();
+    let (resolved1, log1) = randomizable.clone().resolve(&mut rng1, 256, 144, false, 42);
+    let (resolved2, log2) = randomizable.clone().resolve(&mut rng2, 256, 144, false, 42);
+    
+    // Use fast settings for quick test
+    let settings = AdvancedCurationSettings::fast();
+    
+    let curated1 = advanced_curate_effect_config(
+        seed, resolved1, log1, &randomizable,
+        256, 144, false, true, 42, scene1, &RenderConfig::default(), settings,
+    );
+    
+    let curated2 = advanced_curate_effect_config(
+        seed, resolved2, log2, &randomizable,
+        256, 144, false, true, 42, scene2, &RenderConfig::default(), settings,
+    );
+    
+    // Results should be identical
+    assert!((curated1.summary.final_score - curated2.summary.final_score).abs() < 1e-6,
+        "Scores should be deterministic: {} vs {}", 
+        curated1.summary.final_score, curated2.summary.final_score);
+    assert_eq!(curated1.summary.chosen_initial_index, curated2.summary.chosen_initial_index,
+        "Should choose same candidate");
+}
+
+#[test]
+fn test_quality_assessment_thresholds() {
+    use three_body_problem::render::enhanced_quality_metrics::{
+        EnhancedQualityMetrics, QualityAssessment, thresholds
+    };
+    
+    let mut metrics = EnhancedQualityMetrics::default();
+    
+    // Test Excellent threshold
+    metrics.quality_score = thresholds::EXCELLENT;
+    assert_eq!(metrics.assessment(), QualityAssessment::Excellent);
+    assert!(metrics.is_exhibition_ready());
+    
+    // Test Good threshold
+    metrics.quality_score = thresholds::GOOD;
+    assert_eq!(metrics.assessment(), QualityAssessment::Good);
+    assert!(metrics.passes_museum_quality());
+    assert!(!metrics.is_exhibition_ready());
+    
+    // Test Acceptable threshold
+    metrics.quality_score = thresholds::ACCEPTABLE;
+    assert_eq!(metrics.assessment(), QualityAssessment::Acceptable);
+    assert!(!metrics.passes_museum_quality());
+    
+    // Test Poor
+    metrics.quality_score = 0.3;
+    assert_eq!(metrics.assessment(), QualityAssessment::Poor);
+}

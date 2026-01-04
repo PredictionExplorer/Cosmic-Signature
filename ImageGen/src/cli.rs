@@ -137,8 +137,9 @@ pub struct EffectArgs {
     #[arg(long, default_value_t = false)]
     pub special: bool,
 
-    /// Enable gallery quality mode (narrower randomization ranges for exhibition-ready results)
-    /// Default is TRUE for best quality. Use --gallery-quality=false for wider exploration.
+    /// Enable gallery quality mode (narrower randomization ranges for exhibition-ready results).
+    ///
+    /// DEFAULT: TRUE for museum-quality output. Use --gallery-quality=false for experimental/wider exploration.
     #[arg(long, default_value_t = true)]
     pub gallery_quality: bool,
 
@@ -150,6 +151,17 @@ pub struct EffectArgs {
     /// If not specified, curation defaults to 8 in gallery mode and 1 otherwise.
     #[arg(long)]
     pub curation_k: Option<usize>,
+
+    /// Enable advanced multi-stage curation with iterative quality refinement.
+    ///
+    /// This uses a three-stage process:
+    /// 1. Fast preview of 12 candidates
+    /// 2. High-fidelity comparison of top 3
+    /// 3. Iterative refinement until "Excellent" quality
+    ///
+    /// Enabled by default for museum-quality output. Use --advanced-curation=false to disable.
+    #[arg(long, default_value_t = true)]
+    pub advanced_curation: bool,
 
     // ==== Effect Control Flags (All effects enabled by default) ====
     /// Disable ALL post-processing effects (show pure spectral rendering + basic bloom)
