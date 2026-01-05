@@ -25,17 +25,45 @@ pub struct EdgeLuminanceConfig {
 
 impl Default for EdgeLuminanceConfig {
     fn default() -> Self {
-        Self::special_mode()
+        Self::subtle()
     }
 }
 
+#[allow(dead_code)]
 impl EdgeLuminanceConfig {
-    /// Create configuration optimized for special mode (refined highlighting)
+    /// Create a subtle configuration for gentle edge definition.
+    /// 
+    /// This is the recommended default - enhances form definition
+    /// without creating harsh outlines or halos.
+    pub fn subtle() -> Self {
+        Self {
+            strength: 0.12,        // Very subtle
+            threshold: 0.20,       // Higher = fewer edges enhanced
+            brightness_boost: 0.20, // Gentle brightening
+            bright_edges_only: true,
+            min_luminance: 0.30,   // Only enhance bright edges
+        }
+    }
+    
+    /// Create configuration for special mode (moderate highlighting).
+    /// 
+    /// More noticeable edge definition for artistic effect.
     pub fn special_mode() -> Self {
         Self {
-            strength: 0.25,
+            strength: 0.18,
+            threshold: 0.18,
+            brightness_boost: 0.25,
+            bright_edges_only: true,
+            min_luminance: 0.25,
+        }
+    }
+    
+    /// Create a disabled configuration.
+    pub fn disabled() -> Self {
+        Self {
+            strength: 0.0,
             threshold: 0.15,
-            brightness_boost: 0.35,
+            brightness_boost: 0.25,
             bright_edges_only: true,
             min_luminance: 0.25,
         }

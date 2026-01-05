@@ -114,14 +114,15 @@ impl Preset {
     fn apply_gallery(&self, config: &mut RandomizableEffectConfig) {
         config.gallery_quality = true;
 
-        // Enable core exhibition-ready effects
+        // Enable core exhibition-ready effects with refined settings
         config.enable_chromatic_bloom = Some(true);
-        config.enable_champleve = Some(true);
+        config.enable_champleve = Some(false);     // Disabled - adds noise/texture
         config.enable_color_grade = Some(true);
         config.enable_bloom = Some(true);
-        config.enable_glow = Some(true);
+        config.enable_glow = Some(false);          // Disabled - avoid bloom stacking
         config.enable_perceptual_blur = Some(true);
-        config.enable_edge_luminance = Some(true);
+        config.enable_edge_luminance = Some(false); // Disabled - can create harsh edges
+        config.enable_micro_contrast = Some(false); // Disabled - can add noise
 
         // Disable experimental/unstable effects
         config.enable_aether = Some(false);
@@ -130,10 +131,11 @@ impl Preset {
         config.enable_volumetric_occlusion = Some(false);
         config.enable_refractive_caustics = Some(false);
 
-        // Conservative parameter ranges
-        config.chromatic_bloom_strength = Some(0.55);
-        config.color_grade_strength = Some(0.45);
-        config.vignette_strength = Some(0.35);
+        // Refined, subtle parameters for clean output
+        config.chromatic_bloom_strength = Some(0.35);  // Reduced from 0.55
+        config.color_grade_strength = Some(0.35);      // Reduced from 0.45
+        config.vignette_strength = Some(0.25);         // Reduced from 0.35
+        config.blur_strength = Some(5.0);              // Reduced
     }
 
     fn apply_preview(&self, config: &mut RandomizableEffectConfig) {
@@ -163,32 +165,34 @@ impl Preset {
     }
 
     fn apply_cinematic(&self, config: &mut RandomizableEffectConfig) {
-        // Strong color grading for film look
+        // Moderate color grading for film look
         config.enable_color_grade = Some(true);
-        config.color_grade_strength = Some(0.70);
-        config.vignette_strength = Some(0.55);
-        config.vignette_softness = Some(2.8);
-        config.tone_curve_strength = Some(0.70);
+        config.color_grade_strength = Some(0.50);      // Reduced from 0.70
+        config.vignette_strength = Some(0.40);         // Reduced from 0.55
+        config.vignette_softness = Some(3.2);          // Increased for softer falloff
+        config.tone_curve_strength = Some(0.50);       // Reduced from 0.70
 
-        // Atmospheric effects for depth
+        // Subtle atmospheric effects for depth
         config.enable_atmospheric_depth = Some(true);
-        config.atmospheric_depth_strength = Some(0.35);
-        config.atmospheric_desaturation = Some(0.40);
+        config.atmospheric_depth_strength = Some(0.25); // Reduced from 0.35
+        config.atmospheric_desaturation = Some(0.30);   // Reduced from 0.40
 
-        // Rich bloom
+        // Moderate bloom (no glow stacking)
         config.enable_bloom = Some(true);
-        config.enable_glow = Some(true);
-        config.glow_strength = Some(0.50);
-        config.blur_strength = Some(10.0);
+        config.enable_glow = Some(false);              // Disabled - avoid stacking
+        config.blur_strength = Some(6.0);              // Reduced from 10.0
 
         // Subtle chromatic effects
         config.enable_chromatic_bloom = Some(true);
-        config.chromatic_bloom_strength = Some(0.45);
+        config.chromatic_bloom_strength = Some(0.30);  // Reduced from 0.45
 
         // Disable distracting effects
         config.enable_opalescence = Some(false);
         config.enable_crepuscular_rays = Some(false);
         config.enable_fine_texture = Some(false);
+        config.enable_champleve = Some(false);
+        config.enable_micro_contrast = Some(false);
+        config.enable_edge_luminance = Some(false);
     }
 
     fn apply_exploratory(&self, config: &mut RandomizableEffectConfig) {
@@ -240,13 +244,13 @@ impl Preset {
     }
 
     fn apply_web(&self, config: &mut RandomizableEffectConfig) {
-        // Punchy effects that survive compression
+        // Moderate effects that survive compression without looking harsh
         config.enable_bloom = Some(true);
-        config.enable_glow = Some(true);
+        config.enable_glow = Some(false);              // Disabled - avoid stacking
         config.enable_chromatic_bloom = Some(true);
         config.enable_color_grade = Some(true);
-        config.enable_edge_luminance = Some(true);
-        config.enable_micro_contrast = Some(true);
+        config.enable_edge_luminance = Some(false);    // Disabled - can look harsh after compression
+        config.enable_micro_contrast = Some(false);    // Disabled - noise amplified by compression
 
         // Disable subtle effects that get lost in compression
         config.enable_perceptual_blur = Some(false);
@@ -259,14 +263,13 @@ impl Preset {
         config.enable_volumetric_occlusion = Some(false);
         config.enable_refractive_caustics = Some(false);
 
-        // Strong, punchy values
-        config.chromatic_bloom_strength = Some(0.65);
-        config.color_grade_strength = Some(0.55);
-        config.vibrance = Some(1.25);
-        config.clarity_strength = Some(0.40);
-        config.micro_contrast_strength = Some(0.35);
-        config.edge_luminance_strength = Some(0.30);
-        config.vignette_strength = Some(0.40);
+        // Moderate values - punchy but not harsh
+        config.chromatic_bloom_strength = Some(0.40);  // Reduced from 0.65
+        config.color_grade_strength = Some(0.40);      // Reduced from 0.55
+        config.vibrance = Some(1.12);                  // Reduced from 1.25
+        config.clarity_strength = Some(0.20);          // Reduced from 0.40
+        config.vignette_strength = Some(0.30);         // Reduced from 0.40
+        config.blur_strength = Some(5.0);              // Moderate bloom
     }
 }
 
@@ -368,7 +371,7 @@ mod tests {
 
         assert!(config.gallery_quality);
         assert_eq!(config.enable_chromatic_bloom, Some(true));
-        assert_eq!(config.enable_champleve, Some(true));
+        assert_eq!(config.enable_champleve, Some(false));  // Now disabled for cleaner output
         assert_eq!(config.enable_aether, Some(false));
         assert_eq!(config.enable_opalescence, Some(false));
     }
@@ -415,8 +418,8 @@ mod tests {
         Preset::Cinematic.apply(&mut config);
 
         assert_eq!(config.enable_color_grade, Some(true));
-        assert_eq!(config.vignette_strength, Some(0.55));
-        assert_eq!(config.tone_curve_strength, Some(0.70));
+        assert_eq!(config.vignette_strength, Some(0.40));    // Refined value
+        assert_eq!(config.tone_curve_strength, Some(0.50));  // Refined value
         assert_eq!(config.enable_atmospheric_depth, Some(true));
     }
 
@@ -425,13 +428,16 @@ mod tests {
         let mut config = RandomizableEffectConfig::default();
         Preset::Web.apply(&mut config);
 
-        // Punchy effects enabled
-        assert_eq!(config.enable_micro_contrast, Some(true));
+        // Core effects enabled
+        assert_eq!(config.enable_chromatic_bloom, Some(true));
+        assert_eq!(config.enable_color_grade, Some(true));
         assert!(config.vibrance.unwrap_or(1.0) > 1.0);
 
         // Subtle effects disabled
         assert_eq!(config.enable_fine_texture, Some(false));
         assert_eq!(config.enable_perceptual_blur, Some(false));
+        // Micro contrast now disabled to avoid noise after compression
+        assert_eq!(config.enable_micro_contrast, Some(false));
     }
 
     #[test]

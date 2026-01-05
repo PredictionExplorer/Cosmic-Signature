@@ -3,9 +3,9 @@ source: tests/snapshot_tests.rs
 expression: levels
 ---
 black_r: "0.000000e0"
-white_r: "3.411036e-1"
+white_r: "2.657374e-1"
 black_g: "0.000000e0"
-white_g: "5.024202e-1"
+white_g: "2.515209e-1"
 black_b: "0.000000e0"
-white_b: "6.129452e-1"
+white_b: "6.446423e-1"
 num_samples: 3000

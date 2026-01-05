@@ -23,18 +23,43 @@ pub struct MicroContrastConfig {
 
 impl Default for MicroContrastConfig {
     fn default() -> Self {
-        Self::special_mode()
+        Self::subtle()
     }
 }
 
+#[allow(dead_code)]
 impl MicroContrastConfig {
-    /// Create configuration for special mode (strong clarity)
+    /// Create a subtle configuration that enhances detail without adding noise.
+    /// 
+    /// This is the recommended default for clean, professional output.
+    pub fn subtle() -> Self {
+        Self {
+            strength: 0.15,        // Gentle clarity enhancement
+            radius: 2,             // Very local (2-pixel radius)
+            edge_threshold: 0.20,  // Higher threshold = less edge artifacts
+            luminance_weight: 0.6, // Balanced luminance focus
+        }
+    }
+    
+    /// Create configuration for special mode (moderate clarity).
+    /// 
+    /// Use for images that need more definition.
     pub fn special_mode() -> Self {
         Self {
-            strength: 0.35,        // Noticeable clarity boost
+            strength: 0.22,        // Moderate clarity boost
             radius: 2,             // Very local (2-pixel radius)
-            edge_threshold: 0.12,  // Moderate edge protection
-            luminance_weight: 0.7, // Focus on luminance contrast
+            edge_threshold: 0.15,  // Moderate edge protection
+            luminance_weight: 0.65, // Focus on luminance contrast
+        }
+    }
+    
+    /// Create a disabled configuration.
+    pub fn disabled() -> Self {
+        Self {
+            strength: 0.0,
+            radius: 2,
+            edge_threshold: 0.15,
+            luminance_weight: 0.6,
         }
     }
 }

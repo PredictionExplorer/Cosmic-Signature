@@ -134,12 +134,11 @@ impl EffectChainBuilder {
             )));
         }
 
-        match config.bloom_mode.as_str() {
-            "dog" => chain.add(Box::new(DogBloom::new(
+        if config.bloom_mode == "dog" {
+            chain.add(Box::new(DogBloom::new(
                 config.dog_config.clone(),
                 config.blur_core_brightness,
-            ))),
-            _ => {}
+            )));
         }
 
         if config.glow_enhancement_enabled {
@@ -290,36 +289,60 @@ impl EffectChainBuilder {
 }
 
 impl Default for EffectConfig {
+    /// Creates a refined default configuration optimized for clean, beautiful output.
+    /// 
+    /// # Design Philosophy
+    /// 
+    /// The default settings prioritize:
+    /// 1. **Clean aesthetics** - Subtle effects that enhance rather than overwhelm
+    /// 2. **Natural colors** - Preserving the organic spectral trajectory colors
+    /// 3. **Minimal stacking** - Avoiding multiple bloom/glow effects that muddy output
+    /// 
+    /// Effects are curated to avoid the "AI slop" aesthetic of over-processed images.
     fn default() -> Self {
         Self {
+            // Bloom: Single, refined DoG bloom for natural glow
             bloom_mode: "dog".to_string(),
-            blur_radius_px: 15,
-            blur_strength: 10.0,
-            blur_core_brightness: 10.0,
+            blur_radius_px: 10,           // Reduced from 15 for tighter glow
+            blur_strength: 5.0,           // Reduced from 10.0 for subtlety
+            blur_core_brightness: 6.0,    // Reduced from 10.0 for less bloom
             dog_config: DogBloomConfig::default(),
-            // MUSEUM QUALITY: Changed to "off" - histogram+ACES is now the sole exposure authority
-            // This prevents double-normalization that flattens nuance
             hdr_mode: "off".to_string(),
+            
+            // Perceptual blur: Keeps subtle smoothing
             perceptual_blur_enabled: true,
             perceptual_blur_config: None,
+            
+            // Color grading: Enabled but with refined defaults (see ColorGradeParams)
             color_grade_enabled: true,
             color_grade_params: ColorGradeParams::default(),
             gradient_map_enabled: false,
             gradient_map_config: GradientMapConfig::default(),
-            champleve_enabled: true,
+            
+            // Material effects: Disabled by default - these add noise
+            // Enable selectively for specific artistic styles
+            champleve_enabled: false,     // Disabled - adds noise/texture
             champleve_config: ChampleveConfig::default(),
             aether_enabled: false,
             aether_config: AetherConfig::default(),
+            
+            // Chromatic bloom: Enabled but with refined defaults (see ChromaticBloomConfig)
             chromatic_bloom_enabled: true,
             chromatic_bloom_config: ChromaticBloomConfig::default(),
             opalescence_enabled: false,
             opalescence_config: OpalescenceConfig::default(),
-            edge_luminance_enabled: true,
+            
+            // Detail enhancement: Subtle settings
+            edge_luminance_enabled: false, // Disabled - sharpening adds harshness
             edge_luminance_config: EdgeLuminanceConfig::default(),
-            micro_contrast_enabled: true,
+            micro_contrast_enabled: false, // Disabled - adds noise at high values
             micro_contrast_config: MicroContrastConfig::default(),
-            glow_enhancement_enabled: true,
+            
+            // Glow enhancement: Disabled to avoid bloom stacking
+            glow_enhancement_enabled: false,
             glow_enhancement_config: GlowEnhancementConfig::default(),
+            
+            // Atmospheric effects: All disabled by default
             atmospheric_depth_enabled: false,
             atmospheric_depth_config: AtmosphericDepthConfig::default(),
             crepuscular_rays_enabled: false,
@@ -331,7 +354,7 @@ impl Default for EffectConfig {
             fine_texture_enabled: false,
             fine_texture_config: FineTextureConfig::default(),
 
-            // New "Masterpiece" effects (disabled by default)
+            // Artistic effects: All disabled by default
             event_horizon_enabled: false,
             event_horizon_config: EventHorizonConfig::default(),
             cherenkov_enabled: false,
@@ -342,14 +365,12 @@ impl Default for EffectConfig {
             aurora_veils_config: AuroraVeilsConfig::default(),
             prismatic_halos_enabled: false,
             prismatic_halos_config: PrismaticHalosConfig::default(),
-            // MUSEUM QUALITY: Dimensional glitch removed from museum-quality pipeline
-            // It creates too "FX/music video" aesthetic that's not museum-appropriate
             dimensional_glitch_enabled: false,
             dimensional_glitch_config: DimensionalGlitchConfig::default(),
             deep_space_enabled: false,
             deep_space_config: DeepSpaceConfig::default(),
 
-            // NEW: Museum Quality Upgrade effects
+            // Photochemical finishing: Disabled by default
             halation_enabled: false,
             halation_config: HalationConfig::default(),
             dodge_burn_enabled: false,

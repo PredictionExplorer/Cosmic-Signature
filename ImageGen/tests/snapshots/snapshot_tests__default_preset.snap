@@ -18,13 +18,13 @@ top_right:
   - 0
 bottom_left:
   - 65535
-  - 65535
-  - 55661
+  - 47283
+  - 33379
 bottom_right:
   - 0
   - 0
   - 0
-avg_r: 3061
-avg_g: 2252
-avg_b: 1679
-non_black_pixels: 15691
+avg_r: 3330
+avg_g: 2405
+avg_b: 1756
+non_black_pixels: 17192

@@ -41,19 +41,51 @@ impl Default for ChromaticBloomConfig {
 }
 
 impl ChromaticBloomConfig {
-    /// Create configuration scaled for the given resolution with enhanced prismatic beauty
-    /// This ensures the effect looks consistently stunning across different resolutions
+    /// Create configuration scaled for the given resolution.
+    /// 
+    /// # Design Philosophy
+    /// 
+    /// Chromatic bloom should be a subtle optical enhancement, not a dominant effect.
+    /// Previous settings (strength: 0.78, threshold: 0.12) were too aggressive and
+    /// created a cheap "video game screenshot" aesthetic. These refined settings
+    /// create a more elegant, photographic lens quality.
     pub fn from_resolution(width: usize, height: usize) -> Self {
         let min_dim = width.min(height) as f64;
         Self {
-            // Enhanced radius for luxurious bloom spread: 14px @ 1080p, 28px @ 4K
-            radius: (0.013 * min_dim).round() as usize, // Increased from 0.0111
-            // Enhanced separation for dramatic chromatic aberration: 3.2px @ 1080p
-            separation: 0.0030 * min_dim, // Increased from 0.0023
-            // Enhanced strength for vivid prismatic color
-            strength: 0.78, // Increased from 0.65
-            // Lower threshold for more magical bloom coverage
-            threshold: 0.12, // Reduced from 0.15
+            // Refined radius: subtle bloom spread (8px @ 1080p, 16px @ 4K)
+            radius: (0.0074 * min_dim).round().max(4.0) as usize,
+            // Subtle separation: gentle chromatic fringing (1.6px @ 1080p)
+            separation: 0.0015 * min_dim,
+            // Refined strength: noticeable but not overwhelming
+            strength: 0.35,
+            // Higher threshold: only true highlights get chromatic treatment
+            threshold: 0.55,
+        }
+    }
+    
+    /// Create a minimal configuration for subtle, almost imperceptible bloom.
+    /// Use this when you want chromatic effects to be barely noticeable.
+    #[allow(dead_code)]
+    pub fn subtle(width: usize, height: usize) -> Self {
+        let min_dim = width.min(height) as f64;
+        Self {
+            radius: (0.005 * min_dim).round().max(3.0) as usize,
+            separation: 0.001 * min_dim,
+            strength: 0.20,
+            threshold: 0.70,
+        }
+    }
+    
+    /// Create a more pronounced configuration for artistic/stylized renders.
+    /// Use sparingly and intentionally.
+    #[allow(dead_code)]
+    pub fn artistic(width: usize, height: usize) -> Self {
+        let min_dim = width.min(height) as f64;
+        Self {
+            radius: (0.012 * min_dim).round().max(6.0) as usize,
+            separation: 0.0025 * min_dim,
+            strength: 0.50,
+            threshold: 0.40,
         }
     }
 }

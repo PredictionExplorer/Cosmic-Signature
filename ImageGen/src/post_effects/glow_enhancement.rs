@@ -26,20 +26,49 @@ pub struct GlowEnhancementConfig {
 
 impl Default for GlowEnhancementConfig {
     fn default() -> Self {
-        Self::special_mode(1920, 1080)
+        Self::subtle(1920, 1080)
     }
 }
 
+#[allow(dead_code)]
 impl GlowEnhancementConfig {
-    /// Create configuration for special mode (stunning ethereal sparkle)
+    /// Create a subtle configuration for clean, professional output.
+    /// 
+    /// This configuration creates minimal glow enhancement that only
+    /// affects the very brightest highlights without adding excessive bloom.
+    pub fn subtle(width: usize, height: usize) -> Self {
+        let min_dim = width.min(height) as f64;
+        Self {
+            strength: 0.25,                             // Subtle glow
+            threshold: 0.75,                            // Only very bright pixels
+            radius: (0.006 * min_dim).round().max(3.0) as usize, // Tight radius
+            sharpness: 3.0,                             // Sharp glow (not diffuse)
+            saturation_boost: 0.15,                     // Minimal saturation boost
+        }
+    }
+    
+    /// Create configuration for special mode (more prominent glow).
+    /// 
+    /// Use when you want more noticeable highlight sparkle.
     pub fn special_mode(width: usize, height: usize) -> Self {
         let min_dim = width.min(height) as f64;
         Self {
-            strength: 0.62,                             // Dramatically increased for magical glow
-            threshold: 0.58,                            // Lower threshold for more glow coverage
-            radius: (0.010 * min_dim).round() as usize, // Larger radius for dreamy halos
-            sharpness: 2.2,                             // Softer glow for ethereal quality
-            saturation_boost: 0.38,                     // Strong color boost for jewel-like sparkle
+            strength: 0.35,                             // Moderate glow
+            threshold: 0.68,                            // Moderate threshold
+            radius: (0.008 * min_dim).round().max(4.0) as usize,
+            sharpness: 2.5,                             // Balanced sharpness
+            saturation_boost: 0.22,                     // Moderate saturation boost
+        }
+    }
+    
+    /// Create a disabled configuration.
+    pub fn disabled() -> Self {
+        Self {
+            strength: 0.0,
+            threshold: 0.7,
+            radius: 5,
+            sharpness: 2.5,
+            saturation_boost: 0.2,
         }
     }
 }
