@@ -243,12 +243,18 @@ pub(crate) fn tonemap_core(fr: f64, fg: f64, fb: f64, fa: f64, levels: &ChannelL
         return [0.0, 0.0, 0.0];
     }
 
-    // Compute straight (unpremultiplied) RGB for chroma calculations
+    // Compute straight (unpremultiplied) RGB for all calculations
+    // IMPORTANT: We work with straight values for leveling and tonemapping,
+    // as premultiplied values can be extremely small for low-alpha regions.
     let source = [premult[0] / alpha, premult[1] / alpha, premult[2] / alpha];
 
+    // Level the STRAIGHT values, not premultiplied
+    // This ensures proper dynamic range handling regardless of alpha
     let mut leveled = [0.0; 3];
     for i in 0..3 {
-        leveled[i] = ((premult[i] - levels.black[i]).max(0.0)) / levels.range[i];
+        // Note: levels.black/range are typically 0/1 for identity,
+        // but if set from histogram, they should still work on straight values
+        leveled[i] = ((source[i] - levels.black[i]).max(0.0)) / levels.range[i];
     }
 
     let mut channel_curves = [0.0; 3];
@@ -507,17 +513,19 @@ mod tests {
     }
 
     #[test]
-    fn test_alpha_scaling_is_linear_not_quadratic() {
-        // If double-premultiplication bug exists, halving alpha would quarter the output (α²).
-        // With the fix, halving alpha should roughly halve the output (linear).
+    fn test_alpha_independent_tonemapping() {
+        // Tonemapping now operates on straight (un-premultiplied) values,
+        // so the same straight RGB should produce the same output regardless of alpha.
+        // This is correct behavior: tonemapping maps color values to display range,
+        // while alpha only affects compositing.
         let levels = ChannelLevels::new(0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
 
         let straight_rgb = (0.5, 0.5, 0.5);
 
         let alpha_high = 0.4;
-        let alpha_low = 0.2; // Half of high
+        let alpha_low = 0.2;
 
-        // Premultiplied inputs
+        // Premultiplied inputs with different alphas but same straight RGB
         let result_high = tonemap_core(
             straight_rgb.0 * alpha_high,
             straight_rgb.1 * alpha_high,
@@ -533,17 +541,13 @@ mod tests {
             &levels,
         );
 
-        // Ratio should be closer to 2 (linear) than to 4 (quadratic bug)
+        // Both should produce similar output (same straight RGB)
+        // Allow small differences due to chroma preservation factor
         let ratio = result_high[0] / result_low[0];
 
         assert!(
-            ratio < 3.0,
-            "Ratio {} suggests quadratic scaling (bug). Expected closer to 2.0 (linear).",
-            ratio
-        );
-        assert!(
-            ratio > 1.2,
-            "Ratio {} is too low, higher alpha should produce brighter output.",
+            ratio > 0.8 && ratio < 1.3,
+            "Ratio {} suggests alpha-dependent tonemapping. Expected ~1.0 (alpha-independent).",
             ratio
         );
     }

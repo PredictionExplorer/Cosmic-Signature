@@ -20,16 +20,20 @@ pub mod brightness_budget;
 pub mod buffer_pool;
 pub mod color;
 pub mod color_space;
+pub mod color_types;
 pub mod composition;
 pub mod constants;
 pub mod context;
 pub mod curation;
 pub mod drawing;
+pub mod effect_energy;
 pub mod effect_randomizer;
+pub mod elegant_pipeline;
 pub mod effect_themes;
 pub mod enhanced_quality_metrics;
 pub mod effects;
 pub mod error;
+pub mod hdr_pipeline;
 pub mod histogram;
 pub mod parameter_descriptors;
 pub mod pipeline;
@@ -54,6 +58,12 @@ use self::tonemap::tonemap_to_16bit_dithered;
 // MUSEUM QUALITY: Added generate_palette_coordinated_colors for palette-aware trajectory colors
 #[allow(unused_imports)]
 pub use color::{OklabColor, generate_body_color_sequences, generate_palette_coordinated_colors};
+// ELEGANT HDR PIPELINE: Type-safe color representations
+#[allow(unused_imports)]
+pub use color_types::{LinearHDR, DisplayRGB, HDRBuffer, DisplayBuffer, ExposureControl, EnergyTracker};
+// ELEGANT HDR PIPELINE: Pipeline components
+#[allow(unused_imports)]
+pub use hdr_pipeline::{HDREffect, HDREffectChain, HDRToDisplay, HDRPipeline, LegacyEffectAdapter};
 #[allow(unused_imports)]
 pub use drawing::{draw_line_segment_aa_spectral_with_dispersion, parallel_blur_2d_rgba};
 pub use effects::{DogBloomConfig, ExposureCalculator, apply_dog_bloom};
