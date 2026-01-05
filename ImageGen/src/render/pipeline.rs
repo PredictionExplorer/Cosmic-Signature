@@ -335,9 +335,18 @@ impl<'a> RenderLoopContext<'a> {
         // After all darkening effects have been applied, check if the image is too dark
         // and apply a lift to ensure exhibition-quality brightness.
         //
-        // Target luminance: 0.25 is tuned for rich, vibrant output without washing out
-        // Max boost: 3.5 allows significant recovery of dark images while preserving highlights
-        apply_brightness_compensation(&mut final_frame, 0.25, 3.5);
+        // Target luminance: 0.30 (raised from 0.25) for richer midtones
+        // Max boost: 4.0 allows significant recovery of dark images while preserving highlights
+        apply_brightness_compensation(&mut final_frame, 0.30, 4.0);
+
+        // Stage 6: FINAL AUTO-LEVELS (Safety Net)
+        // After all processing, ensure the white point uses proper dynamic range.
+        // This is like "Auto Levels" in Photoshop - stretches the histogram so the
+        // brightest pixels reach the target (0.90).
+        //
+        // This catches any images where cumulative darkening left the white point too low,
+        // ensuring museum-quality output regardless of effect combination.
+        apply_final_auto_levels(&mut final_frame, 0.90);
 
         Ok(final_frame)
     }
@@ -786,6 +795,127 @@ fn soft_boost(value: f64, boost: f64) -> f64 {
     }
 }
 
+/// Apply final auto-levels stretch to ensure proper dynamic range usage.
+///
+/// This runs AFTER all post-effects and brightness compensation as a final
+/// safety net, similar to "Auto Levels" in Photoshop. It ensures the white
+/// point (brightest pixels) uses the full available dynamic range.
+///
+/// # Algorithm
+///
+/// 1. Sample pixels to find 1st and 99th percentile luminance
+/// 2. If 99th percentile (white point) is below target (0.90), stretch
+/// 3. Apply stretch with soft highlight protection
+///
+/// # Arguments
+///
+/// * `buffer` - Pixel buffer to modify (premultiplied alpha)
+/// * `target_white` - Target luminance for white point (typically 0.90)
+///
+/// This is the LAST brightness adjustment in the pipeline, ensuring
+/// museum-quality output regardless of what effects were applied.
+pub(crate) fn apply_final_auto_levels(buffer: &mut PixelBuffer, target_white: f64) {
+    if buffer.is_empty() {
+        return;
+    }
+
+    // Sample pixels to find luminance distribution
+    let sample_stride = (buffer.len() / 5000).max(1);
+    let mut luminances: Vec<f64> = Vec::with_capacity(buffer.len() / sample_stride + 1);
+
+    for (idx, pixel) in buffer.iter().enumerate() {
+        if idx % sample_stride != 0 {
+            continue;
+        }
+        let (r, g, b, a) = *pixel;
+        if a > 0.001 {
+            // Un-premultiply for accurate luminance
+            let sr = r / a;
+            let sg = g / a;
+            let sb = b / a;
+            let lum = 0.2126 * sr + 0.7152 * sg + 0.0722 * sb;
+            luminances.push(lum);
+        }
+    }
+
+    if luminances.len() < 10 {
+        return; // Not enough samples
+    }
+
+    // Sort to find percentiles
+    luminances.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+
+    // Find 1st and 99th percentile
+    let p1_idx = (luminances.len() as f64 * 0.01) as usize;
+    let p99_idx = ((luminances.len() as f64 * 0.99) as usize).min(luminances.len() - 1);
+
+    let black_point = luminances[p1_idx];
+    let white_point = luminances[p99_idx];
+
+    // If white point is already good, or range is too small, skip
+    if white_point >= target_white * 0.95 {
+        return; // Already bright enough
+    }
+
+    let range = white_point - black_point;
+    if range < 0.02 {
+        return; // Not enough contrast to stretch
+    }
+
+    // Calculate stretch factor to map white_point → target_white
+    // Formula: new_value = (old_value - black_point) * stretch + black_point
+    // where stretch = (target_white - black_point) / (white_point - black_point)
+    let stretch = (target_white - black_point) / range;
+
+    // Cap stretch to prevent extreme adjustments
+    let stretch = stretch.min(6.0);
+
+    tracing::debug!(
+        "Auto-levels: white_point={:.3} → {:.3} (stretch {:.2}x)",
+        white_point, target_white, stretch
+    );
+
+    // Apply stretch to all pixels
+    buffer.par_iter_mut().for_each(|pixel| {
+        let (r, g, b, a) = *pixel;
+        if a <= 1e-9 {
+            return;
+        }
+
+        // Un-premultiply
+        let sr = r / a;
+        let sg = g / a;
+        let sb = b / a;
+
+        // Apply levels stretch
+        let stretched_r = ((sr - black_point) * stretch + black_point).max(0.0);
+        let stretched_g = ((sg - black_point) * stretch + black_point).max(0.0);
+        let stretched_b = ((sb - black_point) * stretch + black_point).max(0.0);
+
+        // Soft clip for highlight protection (values above 1.0)
+        let clipped_r = soft_clip_highlight(stretched_r);
+        let clipped_g = soft_clip_highlight(stretched_g);
+        let clipped_b = soft_clip_highlight(stretched_b);
+
+        // Re-premultiply
+        pixel.0 = clipped_r * a;
+        pixel.1 = clipped_g * a;
+        pixel.2 = clipped_b * a;
+    });
+}
+
+/// Soft clip for highlights - smoothly compress values above 1.0
+#[inline]
+fn soft_clip_highlight(v: f64) -> f64 {
+    if v <= 1.0 {
+        v
+    } else {
+        // Soft shoulder: compress excess using tanh
+        // Maps [1.0, ∞) to [1.0, 1.15] approximately
+        1.0 + (v - 1.0).tanh() * 0.15
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1035,5 +1165,109 @@ mod tests {
 
         assert!(dark < mid, "Dark should remain darker than mid");
         assert!(mid < light, "Mid should remain darker than light");
+    }
+
+    // ========== Final Auto-Levels Tests ==========
+
+    #[test]
+    fn test_auto_levels_stretches_dark_image() {
+        // Create a dark image (white point at ~0.30) with enough samples
+        let mut buffer: PixelBuffer = Vec::new();
+        // Add many dark pixels
+        for i in 0..100 {
+            let lum = 0.05 + (i as f64 / 100.0) * 0.25; // Range 0.05 to 0.30
+            buffer.push((lum, lum, lum, 1.0));
+        }
+
+        apply_final_auto_levels(&mut buffer, 0.90);
+
+        // The brightest pixel should now be close to 0.90
+        let max_lum = buffer.iter()
+            .map(|(r, g, b, _)| 0.2126 * r + 0.7152 * g + 0.0722 * b)
+            .fold(0.0_f64, |a, b| a.max(b));
+
+        assert!(max_lum > 0.75, "White point should be stretched, got {}", max_lum);
+    }
+
+    #[test]
+    fn test_auto_levels_preserves_bright_image() {
+        // Create an already bright image (white point at 0.95) with enough samples
+        let mut buffer: PixelBuffer = Vec::new();
+        for i in 0..100 {
+            let lum = 0.30 + (i as f64 / 100.0) * 0.65; // Range 0.30 to 0.95
+            buffer.push((lum, lum, lum, 1.0));
+        }
+
+        let original_max = 0.95;
+        apply_final_auto_levels(&mut buffer, 0.90);
+
+        // Should not change significantly (already bright enough)
+        let max_lum = buffer.iter()
+            .map(|(r, g, b, _)| 0.2126 * r + 0.7152 * g + 0.0722 * b)
+            .fold(0.0_f64, |a, b| a.max(b));
+
+        assert!((max_lum - original_max).abs() < 0.15, 
+            "Bright image should not change much, got {}", max_lum);
+    }
+
+    #[test]
+    fn test_auto_levels_preserves_relative_order() {
+        // Create enough samples with three distinct luminance groups
+        let mut buffer: PixelBuffer = Vec::new();
+        // 40 dark pixels
+        for _ in 0..40 {
+            buffer.push((0.05, 0.05, 0.05, 1.0));
+        }
+        // 40 medium pixels
+        for _ in 0..40 {
+            buffer.push((0.15, 0.15, 0.15, 1.0));
+        }
+        // 20 light pixels
+        for _ in 0..20 {
+            buffer.push((0.25, 0.25, 0.25, 1.0));
+        }
+
+        apply_final_auto_levels(&mut buffer, 0.90);
+
+        // Check representative pixels from each group
+        let lum_dark = 0.2126 * buffer[0].0 + 0.7152 * buffer[0].1 + 0.0722 * buffer[0].2;
+        let lum_med = 0.2126 * buffer[50].0 + 0.7152 * buffer[50].1 + 0.0722 * buffer[50].2;
+        let lum_light = 0.2126 * buffer[90].0 + 0.7152 * buffer[90].1 + 0.0722 * buffer[90].2;
+
+        assert!(lum_dark < lum_med, "Dark should remain darker than medium");
+        assert!(lum_med < lum_light, "Medium should remain darker than light");
+    }
+
+    #[test]
+    fn test_auto_levels_handles_empty_buffer() {
+        let mut buffer: PixelBuffer = vec![];
+        apply_final_auto_levels(&mut buffer, 0.90);
+        assert!(buffer.is_empty());
+    }
+
+    #[test]
+    fn test_auto_levels_handles_transparent_pixels() {
+        let mut buffer: PixelBuffer = vec![
+            (0.1, 0.1, 0.1, 1.0),
+            (0.0, 0.0, 0.0, 0.0), // Fully transparent
+            (0.2, 0.2, 0.2, 1.0),
+        ];
+
+        apply_final_auto_levels(&mut buffer, 0.90);
+
+        // Transparent pixel should remain unchanged
+        assert_eq!(buffer[1], (0.0, 0.0, 0.0, 0.0));
+    }
+
+    #[test]
+    fn test_soft_clip_highlight() {
+        // Below 1.0 should pass through unchanged
+        assert!((soft_clip_highlight(0.5) - 0.5).abs() < 1e-10);
+        assert!((soft_clip_highlight(1.0) - 1.0).abs() < 1e-10);
+
+        // Above 1.0 should be compressed
+        let clipped = soft_clip_highlight(1.5);
+        assert!(clipped > 1.0, "Should be above 1.0");
+        assert!(clipped < 1.2, "Should be compressed, not 1.5");
     }
 }

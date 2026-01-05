@@ -55,6 +55,14 @@ pub mod thresholds {
     /// A mean luminance below 0.05 means the image is essentially black.
     pub const HARD_MIN_LUMINANCE: f64 = 0.05;
     
+    /// HARD MINIMUM: White point (99th percentile) must be at least this bright.
+    /// A white point below 0.30 means the image has no proper highlights.
+    pub const HARD_MIN_WHITE_POINT: f64 = 0.30;
+    
+    /// TARGET: White point should ideally be at least this value.
+    /// Used for penalizing images in technical score, not hard rejection.
+    pub const TARGET_WHITE_POINT: f64 = 0.70;
+    
     /// HARD MINIMUM: Images with less than this subject coverage are REJECTED.
     /// Less than 2% visible pixels means the frame is nearly empty.
     pub const HARD_MIN_SUBJECT_COVERAGE: f64 = 0.02;
@@ -96,6 +104,8 @@ pub struct EnhancedQualityMetrics {
     pub contrast_spread: f64,
     /// Mean luminance of the image
     pub mean_luminance: f64,
+    /// White point (99th percentile luminance) - should be close to 1.0 for proper exposure
+    pub white_point: f64,
     /// Number of pixels with out-of-gamut values
     pub gamut_excursions: usize,
     /// Total pixels analyzed
@@ -172,6 +182,7 @@ impl Default for EnhancedQualityMetrics {
             shadow_crush_pct: 0.0,
             contrast_spread: 0.15, // Normal contrast
             mean_luminance: 0.22, // Target luminance (won't trigger hard rejection)
+            white_point: 0.75, // Good white point (won't trigger hard rejection)
             gamut_excursions: 0,
             total_pixels: 1000,
             visible_pixels: 500, // 50% coverage (won't trigger hard rejection)
@@ -466,6 +477,24 @@ impl EnhancedQualityMetrics {
         let highlight_clip_pct = (aggregate.highlight_clipped as f64 / n) * 100.0;
         let shadow_crush_pct = (aggregate.shadow_crushed as f64 / n) * 100.0;
         
+        // White point (99th percentile luminance) from histogram
+        // This tells us the brightest meaningful pixels in the image
+        let white_point = {
+            let total_samples: usize = histogram.iter().sum();
+            let target = (total_samples as f64 * 0.99) as usize;
+            let mut cumsum = 0usize;
+            let mut p99_bin = 15; // Default to brightest bin
+            for (bin, &count) in histogram.iter().enumerate() {
+                cumsum += count;
+                if cumsum >= target {
+                    p99_bin = bin;
+                    break;
+                }
+            }
+            // Convert bin index to luminance (center of bin)
+            (p99_bin as f64 + 0.5) / 16.0
+        };
+        
         // Tonal distribution
         let shadow_detail = if aggregate.shadow_count > 10 {
             let shadow_mean = aggregate.shadow_lum_sum / aggregate.shadow_count as f64;
@@ -560,6 +589,7 @@ impl EnhancedQualityMetrics {
             aggregate.gamut_excursions,
             visible,
             mean_luminance,
+            white_point,
         );
         
         let tonal_score = Self::compute_tonal_score(
@@ -619,6 +649,7 @@ impl EnhancedQualityMetrics {
             shadow_crush_pct,
             contrast_spread,
             mean_luminance,
+            white_point,
             gamut_excursions: aggregate.gamut_excursions,
             total_pixels,
             visible_pixels: visible,
@@ -696,6 +727,7 @@ impl EnhancedQualityMetrics {
         gamut_excursions: usize,
         visible_pixels: usize,
         mean_luminance: f64,
+        white_point: f64,
     ) -> f64 {
         let mut score = 1.0;
         
@@ -725,6 +757,13 @@ impl EnhancedQualityMetrics {
         // Mean luminance (target ~0.22 for photographic midtone)
         let lum_error = (mean_luminance - thresholds::TARGET_MEAN_LUMINANCE).abs();
         score -= (lum_error / thresholds::LUMINANCE_TOLERANCE).min(0.20);
+        
+        // White point penalty - images should have bright highlights
+        // Target is ~0.70 for proper exposure with headroom
+        if white_point < thresholds::TARGET_WHITE_POINT {
+            let wp_deficit = thresholds::TARGET_WHITE_POINT - white_point;
+            score -= (wp_deficit / 0.40).min(0.25);
+        }
         
         score.max(0.0)
     }
@@ -1042,6 +1081,11 @@ impl EnhancedQualityMetrics {
             return true;
         }
         
+        // HARD REJECT: White point is too low (image has no highlights)
+        if self.white_point < thresholds::HARD_MIN_WHITE_POINT {
+            return true;
+        }
+        
         // HARD REJECT: Image is nearly empty (no visible content)
         if self.subject_coverage < thresholds::HARD_MIN_SUBJECT_COVERAGE {
             return true;
@@ -1061,6 +1105,13 @@ impl EnhancedQualityMetrics {
             return Some(format!(
                 "Image too dark: mean luminance {:.3} < minimum {:.3}",
                 self.mean_luminance, thresholds::HARD_MIN_LUMINANCE
+            ));
+        }
+        
+        if self.white_point < thresholds::HARD_MIN_WHITE_POINT {
+            return Some(format!(
+                "White point too low: {:.3} < minimum {:.3} (image lacks highlights)",
+                self.white_point, thresholds::HARD_MIN_WHITE_POINT
             ));
         }
         
