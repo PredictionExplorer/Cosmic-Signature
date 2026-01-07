@@ -50,41 +50,56 @@ impl ColorGradeParams {
     pub fn from_resolution(width: usize, height: usize) -> Self {
         Self::from_resolution_and_mode(width, height, false)
     }
+    
+    /// Create elegant, minimal color grading that only adds subtle vignette.
+    /// 
+    /// This is the recommended default for museum-quality output.
+    /// It preserves natural trajectory colors while adding subtle edge darkening
+    /// to frame the composition.
+    pub fn elegant() -> Self {
+        Self {
+            strength: 0.20,              // Very subtle overall
+            vignette_strength: 0.18,     // Gentle edge darkening
+            vignette_softness: 4.0,      // Very smooth falloff
+            vibrance: 1.0,               // No vibrance change (preserve natural colors)
+            clarity_strength: 0.0,       // No clarity (can add noise)
+            clarity_radius: 3,
+            tone_curve: 0.0,             // No S-curve (preserve natural contrast)
+            shadow_tint: [0.0, 0.0, 0.0], // No color tinting
+            highlight_tint: [0.0, 0.0, 0.0], // No color tinting
+            palette_wave_strength: 0.0,  // No palette manipulation
+        }
+    }
 
     /// Create parameters with special mode flag to control color biasing
     pub fn from_resolution_and_mode(width: usize, height: usize, special_mode: bool) -> Self {
         let min_dim = width.min(height) as f64;
 
         if special_mode {
-            // Full cinematic grading for special mode
+            // Moderate cinematic grading for special mode
             Self {
-                strength: constants::DEFAULT_COLOR_GRADE_STRENGTH,
-                vignette_strength: constants::DEFAULT_COLOR_GRADE_VIGNETTE,
+                strength: constants::DEFAULT_COLOR_GRADE_STRENGTH * 0.7, // Reduced
+                vignette_strength: constants::DEFAULT_COLOR_GRADE_VIGNETTE * 0.8,
                 vignette_softness: constants::DEFAULT_COLOR_GRADE_VIGNETTE_SOFTNESS,
-                vibrance: constants::DEFAULT_COLOR_GRADE_VIBRANCE,
-                clarity_strength: constants::DEFAULT_COLOR_GRADE_CLARITY,
+                vibrance: 1.0 + (constants::DEFAULT_COLOR_GRADE_VIBRANCE - 1.0) * 0.5, // Half boost
+                clarity_strength: 0.0, // Disabled - creates noise
                 clarity_radius: (0.0028 * min_dim).round().max(1.0) as usize,
-                tone_curve: constants::DEFAULT_COLOR_GRADE_TONE_CURVE,
-                shadow_tint: constants::DEFAULT_COLOR_GRADE_SHADOW_TINT,
-                highlight_tint: constants::DEFAULT_COLOR_GRADE_HIGHLIGHT_TINT,
-                palette_wave_strength: 1.0, // Full palette wave
+                tone_curve: constants::DEFAULT_COLOR_GRADE_TONE_CURVE * 0.5, // Reduced
+                shadow_tint: [
+                    constants::DEFAULT_COLOR_GRADE_SHADOW_TINT[0] * 0.5,
+                    constants::DEFAULT_COLOR_GRADE_SHADOW_TINT[1] * 0.5,
+                    constants::DEFAULT_COLOR_GRADE_SHADOW_TINT[2] * 0.5,
+                ],
+                highlight_tint: [
+                    constants::DEFAULT_COLOR_GRADE_HIGHLIGHT_TINT[0] * 0.5,
+                    constants::DEFAULT_COLOR_GRADE_HIGHLIGHT_TINT[1] * 0.5,
+                    constants::DEFAULT_COLOR_GRADE_HIGHLIGHT_TINT[2] * 0.5,
+                ],
+                palette_wave_strength: 0.3, // Reduced palette wave
             }
         } else {
-            // Neutral color grading for standard mode - avoids red/warm bias
-            Self {
-                strength: constants::DEFAULT_COLOR_GRADE_STRENGTH * 0.5, // Reduced overall strength
-                vignette_strength: constants::DEFAULT_COLOR_GRADE_VIGNETTE * 0.6,
-                vignette_softness: constants::DEFAULT_COLOR_GRADE_VIGNETTE_SOFTNESS,
-                vibrance: constants::DEFAULT_COLOR_GRADE_VIBRANCE * 0.8, // Slightly reduced
-                clarity_strength: constants::DEFAULT_COLOR_GRADE_CLARITY * 0.7,
-                clarity_radius: (0.0028 * min_dim).round().max(1.0) as usize,
-                tone_curve: constants::DEFAULT_COLOR_GRADE_TONE_CURVE * 0.7,
-                // Neutral shadow tint - no warm bias
-                shadow_tint: [-0.04, -0.01, 0.08], // Reduced from original
-                // Neutral highlight tint - no red/yellow bias
-                highlight_tint: [0.03, 0.02, 0.0], // Greatly reduced from original
-                palette_wave_strength: 0.0,        // Disable palette wave to prevent red bias
-            }
+            // Elegant minimal grading for standard mode
+            Self::elegant()
         }
     }
 }
@@ -279,11 +294,24 @@ mod tests {
 
     #[test]
     fn test_color_grade_resolution_scaling() {
-        let params_hd = ColorGradeParams::from_resolution(1920, 1080);
-        let params_4k = ColorGradeParams::from_resolution(3840, 2160);
+        // Test that special mode still scales with resolution
+        let params_hd = ColorGradeParams::from_resolution_and_mode(1920, 1080, true);
+        let params_4k = ColorGradeParams::from_resolution_and_mode(3840, 2160, true);
 
-        // 4K should have larger clarity radius
+        // 4K should have larger clarity radius in special mode
         assert!(params_4k.clarity_radius > params_hd.clarity_radius);
+    }
+    
+    #[test]
+    fn test_elegant_mode_minimal_processing() {
+        let params = ColorGradeParams::elegant();
+        
+        // Elegant mode should have minimal settings
+        assert_eq!(params.clarity_strength, 0.0); // No clarity
+        assert_eq!(params.tone_curve, 0.0);       // No S-curve
+        assert_eq!(params.vibrance, 1.0);         // No vibrance change
+        assert!(params.vignette_strength > 0.0);  // Subtle vignette only
+        assert!(params.vignette_strength < 0.3);  // But very subtle
     }
 
     #[test]

@@ -141,6 +141,15 @@ pub struct EffectArgs {
     #[arg(long, default_value_t = false)]
     pub special: bool,
 
+    /// Background mode for special mode rendering.
+    ///
+    /// Options:
+    /// - "nebula" (default): Animated cosmic cloud backgrounds
+    /// - "pure-black": Pure black background for minimal aesthetic
+    /// - "gradient": Subtle gradient backgrounds (no noise)
+    #[arg(long, default_value = "nebula")]
+    pub background_mode: String,
+
     /// Enable gallery quality mode (narrower randomization ranges for exhibition-ready results).
     ///
     /// DEFAULT: TRUE for museum-quality output. Use --gallery-quality=false for experimental/wider exploration.

@@ -300,8 +300,10 @@ fn test_preset_gallery_produces_valid_output() {
     Preset::Gallery.apply(&mut config);
 
     assert!(config.gallery_quality, "Gallery preset should enable gallery_quality");
-    assert_eq!(config.enable_chromatic_bloom, Some(true));
-    assert_eq!(config.enable_aether, Some(false)); // Experimental disabled
+    // Gallery now uses elegant defaults - chromatic bloom disabled for pure output
+    assert_eq!(config.enable_chromatic_bloom, Some(false));
+    assert_eq!(config.enable_bloom, Some(true)); // Only subtle Gaussian bloom
+    assert_eq!(config.enable_aether, Some(false)); // All extras disabled
 }
 
 #[test]

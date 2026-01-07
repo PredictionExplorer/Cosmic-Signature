@@ -40,25 +40,53 @@ impl Default for NebulaCloudConfig {
 }
 
 impl NebulaCloudConfig {
-    /// Create configuration for special mode with enhanced atmosphere
+    /// Create configuration for special mode with subtle atmosphere.
+    /// 
+    /// The nebula should be barely perceptible - a hint of cosmic depth
+    /// that doesn't compete with the trajectories. Previous values (0.18)
+    /// were too strong and created distracting patterns.
     #[allow(dead_code)] // Legacy helper - kept for backward compatibility
     pub fn special_mode(width: usize, height: usize, seed: i32) -> Self {
         let min_dim = width.min(height) as f64;
         Self {
-            strength: 0.18, // 18% peak opacity - clearly visible yet elegant
-            octaves: 4,     // Rich multi-scale detail
-            base_frequency: 0.0014 * (1080.0 / min_dim), // Medium-scale features
-            persistence: 0.54, // Natural octave contribution
-            lacunarity: 2.15, // Good variation between scales
+            strength: 0.06,  // Very subtle - barely visible hint of atmosphere
+            octaves: 3,      // Fewer octaves = smoother, less noisy
+            base_frequency: 0.0008 * (1080.0 / min_dim), // Lower frequency = larger, smoother features
+            persistence: 0.4, // Lower = less high-frequency detail
+            lacunarity: 2.0,
             colors: [
-                [0.12, 0.06, 0.28], // Rich purple - visible and mysterious
-                [0.05, 0.20, 0.24], // Vibrant teal - clear complement to gold
-                [0.22, 0.05, 0.24], // Vibrant magenta - adds visual interest
-                [0.03, 0.08, 0.20], // Deep blue - strong foundation
+                [0.04, 0.02, 0.10], // Very dark purple - barely visible
+                [0.02, 0.06, 0.08], // Very dark teal
+                [0.06, 0.02, 0.08], // Very dark magenta
+                [0.01, 0.03, 0.08], // Very deep blue
             ],
-            time_scale: 0.0022, // Gentle drift - ~4 units over 30sec @60fps
+            time_scale: 0.0015, // Slower drift
             noise_seed: seed as i64,
-            edge_fade: 0.25, // Gentle radial vignette
+            edge_fade: 0.35, // Strong edge fade so nebula is mostly at edges
+        }
+    }
+    
+    /// Create elegant minimal nebula - just a very subtle color gradient.
+    /// 
+    /// This creates an almost imperceptible background that adds depth
+    /// without any distracting patterns.
+    #[allow(dead_code)] // API available for future use
+    pub fn elegant(seed: i32) -> Self {
+        Self {
+            strength: 0.03,  // Almost invisible
+            octaves: 2,      // Minimal detail - just smooth color
+            base_frequency: 0.0004, // Very large, smooth features
+            persistence: 0.3,
+            lacunarity: 2.0,
+            colors: [
+                [0.02, 0.01, 0.05], // Near-black with hint of purple
+                [0.01, 0.03, 0.04], // Near-black with hint of teal
+                [0.03, 0.01, 0.04], // Near-black with hint of magenta
+                [0.01, 0.02, 0.04], // Near-black with hint of blue
+            ],
+            time_scale: 0.001,
+            noise_seed: seed as i64,
+            edge_fade: 0.5, // Very strong edge fade
         }
     }
 
@@ -66,7 +94,7 @@ impl NebulaCloudConfig {
     pub fn standard_mode(_width: usize, _height: usize, seed: i32) -> Self {
         Self {
             strength: 0.0, // Disabled in standard mode
-            octaves: 4,
+            octaves: 2,
             base_frequency: 0.001,
             persistence: 0.5,
             lacunarity: 2.0,

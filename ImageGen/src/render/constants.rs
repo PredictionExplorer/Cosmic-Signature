@@ -50,28 +50,41 @@ pub const BODY_HUE_PHASE: [f64; 3] = [0.0, 120.0, 240.0];
 // ========== OKLab Perceptual Color Space Constants ==========
 
 /// Base chroma value for color saturation.
-/// 
-/// Moderate value for rich but not garish colors.
-pub const OKLAB_CHROMA_BASE: f64 = 0.18;
+///
+/// MUSEUM QUALITY: Reduced from 0.18 to 0.12 for more sophisticated,
+/// muted color palettes. Vibrant neon colors look "digital" - refined
+/// art uses more subtle, nuanced color.
+pub const OKLAB_CHROMA_BASE: f64 = 0.12;
 
 /// Range of chroma variation.
-pub const OKLAB_CHROMA_RANGE: f64 = 0.10;
+///
+/// MUSEUM QUALITY: Reduced from 0.10 to 0.06 to prevent occasional
+/// oversaturated spikes while maintaining visual interest.
+pub const OKLAB_CHROMA_RANGE: f64 = 0.06;
 
 /// Chroma wave amplitude for saturation modulation.
-/// 
-/// Subtle variation for organic feel.
-pub const OKLAB_CHROMA_WAVE_AMPLITUDE: f64 = 0.06;
+///
+/// MUSEUM QUALITY: Reduced from 0.06 to 0.03 for more consistent
+/// saturation levels throughout the trajectory.
+pub const OKLAB_CHROMA_WAVE_AMPLITUDE: f64 = 0.03;
 
 /// Base lightness value.
-/// 
-/// Balanced for good visibility without washed-out appearance.
-pub const OKLAB_LIGHTNESS_BASE: f64 = 0.62;
+///
+/// MUSEUM QUALITY: Increased from 0.62 to 0.68 for more luminous,
+/// elegant appearance. Higher lightness with lower chroma = refined.
+pub const OKLAB_LIGHTNESS_BASE: f64 = 0.68;
 
 /// Range of lightness variation.
-pub const OKLAB_LIGHTNESS_RANGE: f64 = 0.28;
+///
+/// MUSEUM QUALITY: Reduced from 0.28 to 0.20 for more consistent
+/// brightness without harsh dark spots.
+pub const OKLAB_LIGHTNESS_RANGE: f64 = 0.20;
 
 /// Lightness wave amplitude for brightness modulation.
-pub const OKLAB_LIGHTNESS_WAVE_AMPLITUDE: f64 = 0.18;
+///
+/// MUSEUM QUALITY: Reduced from 0.18 to 0.10 for smoother
+/// brightness transitions.
+pub const OKLAB_LIGHTNESS_WAVE_AMPLITUDE: f64 = 0.10;
 
 // ========== Rendering Constants ==========
 
@@ -118,6 +131,8 @@ pub const DEFAULT_COLOR_GRADE_VIBRANCE: f64 = 1.08;
 /// Clarity for local contrast enhancement.
 /// 
 /// Reduced to prevent harsh edges and noise amplification.
+/// Note: Currently set to 0.0 in elegant mode to avoid artifacts.
+#[allow(dead_code)] // Available for modes that want clarity enhancement
 pub const DEFAULT_COLOR_GRADE_CLARITY: f64 = 0.18;
 
 /// Tone curve for S-curve contrast.

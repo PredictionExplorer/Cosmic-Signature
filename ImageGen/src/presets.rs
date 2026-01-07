@@ -114,28 +114,39 @@ impl Preset {
     fn apply_gallery(&self, config: &mut RandomizableEffectConfig) {
         config.gallery_quality = true;
 
-        // Enable core exhibition-ready effects with refined settings
-        config.enable_chromatic_bloom = Some(true);
-        config.enable_champleve = Some(false);     // Disabled - adds noise/texture
-        config.enable_color_grade = Some(true);
+        // PURE, ELEGANT OUTPUT
+        // The beauty comes from the mathematical trajectories themselves.
+        // Post-processing should be nearly invisible.
+        
+        // ONLY enable minimal bloom for soft glow
         config.enable_bloom = Some(true);
-        config.enable_glow = Some(false);          // Disabled - avoid bloom stacking
-        config.enable_perceptual_blur = Some(true);
-        config.enable_edge_luminance = Some(false); // Disabled - can create harsh edges
-        config.enable_micro_contrast = Some(false); // Disabled - can add noise
-
-        // Disable experimental/unstable effects
+        config.blur_strength = Some(2.5);          // Very subtle
+        config.blur_radius_scale = Some(0.005);    // Tight glow
+        
+        // Minimal color grading - just subtle vignette
+        config.enable_color_grade = Some(true);
+        config.color_grade_strength = Some(0.20);  // Very subtle
+        config.vignette_strength = Some(0.18);     // Gentle edge darkening
+        config.vignette_softness = Some(4.0);      // Very smooth
+        config.vibrance = Some(1.0);               // No vibrance change
+        config.clarity_strength = Some(0.0);       // No clarity
+        config.tone_curve_strength = Some(0.0);    // No S-curve
+        
+        // DISABLE EVERYTHING ELSE
+        config.enable_chromatic_bloom = Some(false); // Disabled - creates fake lens artifacts
+        config.enable_champleve = Some(false);       // Disabled - adds noise/texture
+        config.enable_glow = Some(false);            // Disabled - avoid bloom stacking
+        config.enable_perceptual_blur = Some(false); // Disabled - smears detail
+        config.enable_edge_luminance = Some(false);  // Disabled - harsh edges
+        config.enable_micro_contrast = Some(false);  // Disabled - adds noise
         config.enable_aether = Some(false);
         config.enable_opalescence = Some(false);
         config.enable_crepuscular_rays = Some(false);
         config.enable_volumetric_occlusion = Some(false);
         config.enable_refractive_caustics = Some(false);
-
-        // Refined, subtle parameters for clean output
-        config.chromatic_bloom_strength = Some(0.35);  // Reduced from 0.55
-        config.color_grade_strength = Some(0.35);      // Reduced from 0.45
-        config.vignette_strength = Some(0.25);         // Reduced from 0.35
-        config.blur_strength = Some(5.0);              // Reduced
+        config.enable_fine_texture = Some(false);
+        config.enable_atmospheric_depth = Some(false);
+        config.enable_gradient_map = Some(false);
     }
 
     fn apply_preview(&self, config: &mut RandomizableEffectConfig) {
@@ -219,7 +230,7 @@ impl Preset {
     }
 
     fn apply_minimal(&self, config: &mut RandomizableEffectConfig) {
-        // Disable almost everything
+        // Pure trajectory visualization - disable ALL post-processing
         config.enable_chromatic_bloom = Some(false);
         config.enable_perceptual_blur = Some(false);
         config.enable_micro_contrast = Some(false);
@@ -234,13 +245,12 @@ impl Preset {
         config.enable_volumetric_occlusion = Some(false);
         config.enable_refractive_caustics = Some(false);
         config.enable_fine_texture = Some(false);
+        config.enable_glow = Some(false);  // No glow stacking
 
-        // Keep minimal bloom for visibility
+        // Keep ONLY the most basic bloom for visibility
         config.enable_bloom = Some(true);
-        config.enable_glow = Some(true);
-        config.blur_strength = Some(4.0);
-        config.blur_radius_scale = Some(0.008);
-        config.glow_strength = Some(0.25);
+        config.blur_strength = Some(2.0);
+        config.blur_radius_scale = Some(0.004);
     }
 
     fn apply_web(&self, config: &mut RandomizableEffectConfig) {
@@ -370,10 +380,12 @@ mod tests {
         Preset::Gallery.apply(&mut config);
 
         assert!(config.gallery_quality);
-        assert_eq!(config.enable_chromatic_bloom, Some(true));
-        assert_eq!(config.enable_champleve, Some(false));  // Now disabled for cleaner output
+        // Gallery preset is now truly minimal for pure elegance
+        assert_eq!(config.enable_chromatic_bloom, Some(false)); // Disabled - pure look
+        assert_eq!(config.enable_champleve, Some(false));
         assert_eq!(config.enable_aether, Some(false));
         assert_eq!(config.enable_opalescence, Some(false));
+        assert_eq!(config.enable_bloom, Some(true)); // Only subtle bloom
     }
 
     #[test]

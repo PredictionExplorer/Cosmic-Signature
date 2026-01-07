@@ -289,60 +289,63 @@ impl EffectChainBuilder {
 }
 
 impl Default for EffectConfig {
-    /// Creates a refined default configuration optimized for clean, beautiful output.
+    /// Creates a pure, elegant configuration that lets trajectory beauty shine through.
     /// 
     /// # Design Philosophy
     /// 
-    /// The default settings prioritize:
-    /// 1. **Clean aesthetics** - Subtle effects that enhance rather than overwhelm
-    /// 2. **Natural colors** - Preserving the organic spectral trajectory colors
-    /// 3. **Minimal stacking** - Avoiding multiple bloom/glow effects that muddy output
+    /// Museum-quality output requires RESTRAINT, not more effects.
+    /// The beauty comes from the mathematical trajectories themselves.
+    /// Post-processing should be nearly invisible:
     /// 
-    /// Effects are curated to avoid the "AI slop" aesthetic of over-processed images.
+    /// 1. **Minimal bloom** - Just enough to give lines a soft glow
+    /// 2. **No texture effects** - No Champleve, Aether, or patterns
+    /// 3. **No color manipulation** - Only a subtle vignette for framing
+    /// 4. **No chromatic aberration** - Keeps colors pure
+    /// 
+    /// The result should look like fine art, not a video game screenshot.
     fn default() -> Self {
         Self {
-            // Bloom: Single, refined DoG bloom for natural glow
-            bloom_mode: "dog".to_string(),
-            blur_radius_px: 10,           // Reduced from 15 for tighter glow
-            blur_strength: 5.0,           // Reduced from 10.0 for subtlety
-            blur_core_brightness: 6.0,    // Reduced from 10.0 for less bloom
+            // Bloom: Simple Gaussian only, no DoG (which creates pattern artifacts)
+            bloom_mode: "none".to_string(), // DoG disabled - creates unwanted patterns
+            blur_radius_px: 4,              // Very small radius for tight, elegant glow
+            blur_strength: 0.35,            // Very subtle bloom (was 2.5 - way too strong)
+            blur_core_brightness: 1.0,      // No artificial brightening (preserve original)
             dog_config: DogBloomConfig::default(),
             hdr_mode: "off".to_string(),
             
-            // Perceptual blur: Keeps subtle smoothing
-            perceptual_blur_enabled: true,
+            // Perceptual blur: DISABLED - smears detail
+            perceptual_blur_enabled: false,
             perceptual_blur_config: None,
             
-            // Color grading: Enabled but with refined defaults (see ColorGradeParams)
+            // Color grading: MINIMAL - just a subtle vignette for framing
             color_grade_enabled: true,
-            color_grade_params: ColorGradeParams::default(),
+            color_grade_params: ColorGradeParams::elegant(),
             gradient_map_enabled: false,
             gradient_map_config: GradientMapConfig::default(),
             
-            // Material effects: Disabled by default - these add noise
-            // Enable selectively for specific artistic styles
-            champleve_enabled: false,     // Disabled - adds noise/texture
+            // Material effects: ALL DISABLED - these create ugly patterns
+            champleve_enabled: false,
             champleve_config: ChampleveConfig::default(),
             aether_enabled: false,
             aether_config: AetherConfig::default(),
             
-            // Chromatic bloom: Enabled but with refined defaults (see ChromaticBloomConfig)
-            chromatic_bloom_enabled: true,
+            // Chromatic bloom: DISABLED - adds fake lens artifacts
+            chromatic_bloom_enabled: false,
             chromatic_bloom_config: ChromaticBloomConfig::default(),
             opalescence_enabled: false,
             opalescence_config: OpalescenceConfig::default(),
             
-            // Detail enhancement: Subtle settings
-            edge_luminance_enabled: false, // Disabled - sharpening adds harshness
+            // Detail enhancement: ALL DISABLED - creates harsh edges
+            edge_luminance_enabled: false,
             edge_luminance_config: EdgeLuminanceConfig::default(),
-            micro_contrast_enabled: false, // Disabled - adds noise at high values
+            micro_contrast_enabled: false,
             micro_contrast_config: MicroContrastConfig::default(),
             
-            // Glow enhancement: Disabled to avoid bloom stacking
+            // Glow enhancement: DISABLED - bloom stacking
             glow_enhancement_enabled: false,
             glow_enhancement_config: GlowEnhancementConfig::default(),
             
-            // Atmospheric effects: All disabled by default
+            // Atmospheric effects: ALL DISABLED
             atmospheric_depth_enabled: false,
             atmospheric_depth_config: AtmosphericDepthConfig::default(),
             crepuscular_rays_enabled: false,
@@ -354,7 +357,7 @@ impl Default for EffectConfig {
             fine_texture_enabled: false,
             fine_texture_config: FineTextureConfig::default(),
 
-            // Artistic effects: All disabled by default
+            // Artistic effects: ALL DISABLED
             event_horizon_enabled: false,
             event_horizon_config: EventHorizonConfig::default(),
             cherenkov_enabled: false,
@@ -370,7 +373,7 @@ impl Default for EffectConfig {
             deep_space_enabled: false,
             deep_space_config: DeepSpaceConfig::default(),
 
-            // Photochemical finishing: Disabled by default
+            // Photochemical finishing: DISABLED
             halation_enabled: false,
             halation_config: HalationConfig::default(),
             dodge_burn_enabled: false,
@@ -1068,10 +1071,12 @@ mod tests {
     fn test_effect_config_default() {
         let config = EffectConfig::default();
 
-        assert_eq!(config.bloom_mode, "dog");
-        assert!(config.blur_radius_px > 0);
-        assert!(config.perceptual_blur_enabled);
-        assert!(config.color_grade_enabled);
+        // Elegant defaults: minimal processing, no DoG bloom
+        assert_eq!(config.bloom_mode, "none"); // DoG disabled for clean output
+        assert!(config.blur_radius_px > 0);    // Subtle Gaussian bloom only
+        assert!(!config.perceptual_blur_enabled); // Disabled - smears detail
+        assert!(config.color_grade_enabled);   // Just subtle vignette
+        assert!(!config.chromatic_bloom_enabled); // Disabled - fake lens artifacts
     }
 
     #[test]
