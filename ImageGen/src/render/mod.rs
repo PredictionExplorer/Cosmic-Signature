@@ -40,6 +40,9 @@ pub mod film_grain;
 pub mod hdr_pipeline;
 pub mod histogram;
 pub mod museum_mode;
+pub mod gravitational_lensing;
+pub mod lensing_background;
+pub mod lensing_renderer;
 pub mod parameter_descriptors;
 pub mod pipeline;
 pub mod point_renderer;
@@ -92,13 +95,21 @@ pub use video::{EncodingStrategy, create_video_from_frames_singlepass, create_vi
 #[allow(unused_imports)]
 pub use museum_mode::{MuseumModeConfig, MuseumModeRenderer, MuseumRenderResult, BackgroundMode};
 #[allow(unused_imports)]
-pub use cosmic_palette::{CosmicPalette, ALL_COSMIC_PALETTES};
+pub use cosmic_palette::{CosmicPalette, ALL_COSMIC_PALETTES, EVENT_HORIZON};
 #[allow(unused_imports)]
 pub use point_renderer::{PointRendererConfig, RenderPoint};
 #[allow(unused_imports)]
 pub use composition_filter::{CompositionFilterConfig, CompositionScore};
 #[allow(unused_imports)]
 pub use film_grain::FilmGrainConfig;
+
+// Re-export gravitational lensing types for public API
+#[allow(unused_imports)]
+pub use gravitational_lensing::{LensingConfig, LensingField, LensingSource};
+#[allow(unused_imports)]
+pub use lensing_background::{LensingBackgroundConfig, BackgroundStyle as LensingBackgroundStyle};
+#[allow(unused_imports)]
+pub use lensing_renderer::{LensingRendererConfig, LensingRenderer, LensingRenderResult};
 
 // Re-export types from dependencies used in public API
 pub use image::{DynamicImage, ImageBuffer, Rgb};
@@ -747,8 +758,8 @@ pub fn render_single_frame_spectral(
 
     // Get current body positions for the test frame
     let mut current_body_positions = Vec::with_capacity(3);
-    for i in 0..3 {
-        let p = positions[i][first_frame_step];
+    for body_pos in positions.iter().take(3) {
+        let p = body_pos[first_frame_step];
         let (px, py) = ctx.to_pixel(p[0], p[1]);
         current_body_positions.push((px as f64, py as f64));
     }

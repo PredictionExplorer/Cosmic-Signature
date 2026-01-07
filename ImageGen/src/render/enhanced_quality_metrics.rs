@@ -876,7 +876,7 @@ impl EnhancedQualityMetrics {
         score += local_contrast * 0.25;
         
         // Entropy in goldilocks zone (0.4-0.8 is ideal)
-        if luminance_entropy >= 0.4 && luminance_entropy <= 0.8 {
+        if (0.4..=0.8).contains(&luminance_entropy) {
             score += 0.20;
         } else if luminance_entropy < 0.3 {
             score -= (0.3 - luminance_entropy) * 0.5;
@@ -1013,7 +1013,7 @@ impl EnhancedQualityMetrics {
         
         // Luminance entropy contribution
         // Values 0.4-0.7 suggest good visual rhythm
-        if luminance_entropy >= 0.4 && luminance_entropy <= 0.7 {
+        if (0.4..=0.7).contains(&luminance_entropy) {
             rhythm += 0.25;
         } else if luminance_entropy < 0.3 {
             rhythm -= 0.15; // Too uniform, boring

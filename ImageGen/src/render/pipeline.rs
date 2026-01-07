@@ -229,8 +229,8 @@ impl<'a> RenderLoopContext<'a> {
         // Store body positions if we are about to emit a frame
         if self.should_emit_frame(step) {
             self.current_body_positions.clear();
-            for i in 0..3 {
-                let p = positions[i][step];
+            for body_pos in positions.iter().take(3) {
+                let p = body_pos[step];
                 let (px, py) = self.ctx.to_pixel(p[0], p[1]);
                 self.current_body_positions.push((px as f64, py as f64));
             }

@@ -173,6 +173,7 @@ impl LinearHDR {
     ///
     /// Returns (0, 0, 0) for transparent pixels.
     #[inline]
+    #[allow(clippy::wrong_self_convention)]
     pub fn to_straight_rgb(&self) -> (f64, f64, f64) {
         if self.a <= 0.0 {
             return (0.0, 0.0, 0.0);

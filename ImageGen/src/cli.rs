@@ -179,6 +179,43 @@ pub struct EffectArgs {
     #[arg(long, default_value = "hybrid")]
     pub museum_style: String,
 
+    /// Enable gravitational lensing mode: visualize spacetime distortion.
+    ///
+    /// Lensing mode renders trajectories as masses that curve spacetime,
+    /// distorting a static starfield/nebula background. This creates a
+    /// physics-inspired visualization of general relativity.
+    ///
+    /// When enabled, this takes precedence over museum mode.
+    #[arg(long, default_value_t = false)]
+    pub lensing_mode: bool,
+
+    /// Lensing mode style variant.
+    ///
+    /// Options:
+    /// - "gravitational-wakes" (default): Trajectories visible as luminous paths
+    ///   that dramatically distort space around them
+    /// - "invisible-paths": Most subtle - trajectories nearly invisible,
+    ///   only the background distortion reveals their presence
+    /// - "extreme": Maximum drama with intense lensing effects
+    #[arg(long, default_value = "gravitational-wakes")]
+    pub lensing_style: String,
+
+    /// Lensing strength multiplier.
+    ///
+    /// Controls how dramatically space is warped. Higher = more dramatic distortion.
+    /// - 1.0: Subtle, physically-inspired
+    /// - 2.0: Default dramatic setting
+    /// - 5.0+: Extreme artistic distortion
+    #[arg(long, default_value_t = 2.0)]
+    pub lensing_strength: f64,
+
+    /// Enable grid overlay for lensing visualization.
+    ///
+    /// Shows a distorted grid overlay to make the spacetime curvature visible.
+    /// Useful for educational/artistic purposes.
+    #[arg(long, default_value_t = false)]
+    pub lensing_grid: bool,
+
     /// Museum-quality curation: try K effect configurations and pick the best via preview scoring.
     ///
     /// - `1` disables curation (single config, fastest).

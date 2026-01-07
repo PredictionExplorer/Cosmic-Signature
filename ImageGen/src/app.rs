@@ -775,6 +775,195 @@ pub fn render_museum_mode_video(
     Ok(())
 }
 
+// ============================================================================
+// GRAVITATIONAL LENSING MODE RENDERING
+// ============================================================================
+
+use render::lensing_renderer::{LensingRendererConfig, LensingRenderer};
+use render::cosmic_palette::EVENT_HORIZON;
+
+/// Render a test frame using gravitational lensing mode
+/// 
+/// Creates an image visualizing spacetime distortion caused by orbital masses.
+/// The trajectories curve space, distorting a static starfield/nebula background.
+pub fn render_lensing_mode_test_frame(
+    positions: &[Vec<Vector3<f64>>],
+    width: u32,
+    height: u32,
+    seed: u64,
+    output_png: &str,
+    style: &str,
+    lensing_strength: f64,
+    show_grid: bool,
+) -> Result<()> {
+    info!("LENSING MODE: Rendering with {} style (strength={:.2})...", style, lensing_strength);
+    
+    // Select configuration based on style
+    let mut config = match style {
+        "invisible-paths" => LensingRendererConfig::invisible_paths(),
+        "extreme" => LensingRendererConfig::extreme(),
+        _ => LensingRendererConfig::gravitational_wakes(), // Default
+    };
+    
+    // Apply user customizations
+    config = config.with_lensing_strength(lensing_strength);
+    if show_grid {
+        config = config.with_grid();
+    }
+    
+    let renderer = LensingRenderer::new(config);
+    
+    // Render the frame using Event Horizon palette (default for lensing)
+    let result = renderer.render(
+        positions,
+        None, // Compute velocities automatically
+        width as usize,
+        height as usize,
+        seed,
+        Some(&EVENT_HORIZON),
+    );
+    
+    info!("Lensing mode: {} palette, max_distortion={:.1}px, avg_distortion={:.1}px", 
+        result.palette_name,
+        result.max_distortion,
+        result.avg_distortion);
+    
+    // Convert to 16-bit image
+    let rgb16_data = result.to_u16();
+    
+    // Extract RGB from RGBA (16-bit)
+    let rgb_data: Vec<u16> = rgb16_data
+        .chunks(4)
+        .flat_map(|rgba| [rgba[0], rgba[1], rgba[2]])
+        .collect();
+    
+    let img: ImageBuffer<Rgb<u16>, Vec<u16>> = 
+        ImageBuffer::from_raw(width, height, rgb_data)
+            .ok_or_else(|| ConfigError::FileSystem { 
+                operation: "create image".to_string(),
+                path: output_png.to_string(),
+                error: std::io::Error::other("Failed to create image buffer"),
+            })?;
+    
+    save_image_as_png_16bit(&img, output_png)?;
+    
+    info!("Saved lensing mode image to: {}", output_png);
+    
+    Ok(())
+}
+
+/// Render video using gravitational lensing mode
+/// 
+/// Creates a video visualizing spacetime distortion with gravitational lensing.
+/// For stills-focused mode, this renders the full trajectory (not progressive)
+/// to show the complete lensing field.
+pub fn render_lensing_mode_video(
+    positions: &[Vec<Vector3<f64>>],
+    width: u32,
+    height: u32,
+    seed: u64,
+    output_vid: &str,
+    output_png: &str,
+    style: &str,
+    lensing_strength: f64,
+    show_grid: bool,
+    fast_encode: bool,
+) -> Result<()> {
+    info!("LENSING MODE VIDEO: Rendering with {} style (strength={:.2})...", style, lensing_strength);
+    
+    // Select configuration based on style
+    let mut config = match style {
+        "invisible-paths" => LensingRendererConfig::invisible_paths(),
+        "extreme" => LensingRendererConfig::extreme(),
+        _ => LensingRendererConfig::gravitational_wakes(),
+    };
+    
+    // Apply user customizations
+    config = config.with_lensing_strength(lensing_strength);
+    if show_grid {
+        config = config.with_grid();
+    }
+    
+    let renderer = LensingRenderer::new(config);
+    
+    // Calculate frame parameters
+    let total_steps = positions[0].len();
+    let target_frames = constants::DEFAULT_TARGET_FRAMES as usize;
+    let frame_interval = (total_steps / target_frames).max(1);
+    
+    let mut last_frame: Option<ImageBuffer<Rgb<u16>, Vec<u16>>> = None;
+    let video_options = if fast_encode {
+        VideoEncodingOptions::fast_encode()
+    } else {
+        VideoEncodingOptions::default()
+    };
+    
+    let frame_rate = constants::DEFAULT_VIDEO_FPS;
+    
+    // Render progressive frames showing lensing field building up
+    create_video_from_frames_singlepass(
+        width,
+        height,
+        frame_rate,
+        |out| {
+            for frame_idx in 0..target_frames {
+                let end_step = ((frame_idx + 1) * frame_interval).min(total_steps);
+                
+                // Create partial trajectory up to current step
+                let partial_positions: Vec<Vec<Vector3<f64>>> = positions
+                    .iter()
+                    .map(|body| body[..end_step].to_vec())
+                    .collect();
+                
+                // Render frame with this partial trajectory
+                let frame_seed = seed + frame_idx as u64;
+                let result = renderer.render(
+                    &partial_positions,
+                    None,
+                    width as usize,
+                    height as usize,
+                    frame_seed,
+                    Some(&EVENT_HORIZON),
+                );
+                
+                // Convert to 16-bit RGB
+                let rgb16_data = result.to_u16();
+                let rgb_data: Vec<u16> = rgb16_data
+                    .chunks(4)
+                    .flat_map(|rgba| [rgba[0], rgba[1], rgba[2]])
+                    .collect();
+                
+                // Write frame (little-endian rgb48le format)
+                let buf_bytes: &[u8] = bytemuck::cast_slice(&rgb_data);
+                out.write_all(buf_bytes).map_err(render::error::RenderError::VideoEncoding)?;
+                
+                // Save last frame for PNG output
+                if frame_idx == target_frames - 1 {
+                    last_frame = ImageBuffer::from_raw(width, height, rgb_data);
+                }
+                
+                if frame_idx % 10 == 0 {
+                    let pct = (frame_idx as f64 / target_frames as f64) * 100.0;
+                    info!("Lensing mode video: {:.0}% complete", pct);
+                }
+            }
+            Ok(())
+        },
+        output_vid,
+        &video_options,
+    )?;
+    
+    // Save final frame as PNG
+    if let Some(frame) = last_frame {
+        save_image_as_png_16bit(&frame, output_png)?;
+        info!("Saved final frame to: {}", output_png);
+    }
+    
+    info!("Lensing mode video complete: {}", output_vid);
+    
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

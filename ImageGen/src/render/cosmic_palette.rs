@@ -282,6 +282,52 @@ pub const BLUEPRINT: CosmicPalette = CosmicPalette {
 };
 
 // ============================================================================
+// GRAVITATIONAL LENSING PALETTES - For spacetime distortion visualization
+// ============================================================================
+
+/// Event Horizon - The edge of the unknowable
+/// Designed for gravitational lensing visualization with deep blacks,
+/// luminous orange-gold accretion disk colors, and subtle blue Doppler shifts
+pub const EVENT_HORIZON: CosmicPalette = CosmicPalette {
+    name: "Event Horizon",
+    primary: [1.0, 0.647, 0.0],        // Orange-gold (accretion disk)
+    accent: [0.529, 0.808, 0.980],     // Doppler blue (approaching matter)
+    void_deep: [0.0, 0.0, 0.0],        // Absolute black (true void)
+    void_horizon: [0.008, 0.004, 0.016], // Hint of deep purple at edges
+    mood: "The boundary between known and unknowable, cosmic drama",
+};
+
+/// Hawking Radiation - Quantum glow at the edge of oblivion
+pub const HAWKING_RADIATION: CosmicPalette = CosmicPalette {
+    name: "Hawking Radiation",
+    primary: [0.980, 0.922, 0.843],    // Warm white (thermal radiation)
+    accent: [0.863, 0.078, 0.235],     // Crimson (high-energy particles)
+    void_deep: [0.0, 0.0, 0.0],        // Pure black
+    void_horizon: [0.012, 0.008, 0.004], // Warm void edge
+    mood: "Quantum whispers from the event horizon",
+};
+
+/// Einstein Ring - The perfect circle of bent light
+pub const EINSTEIN_RING: CosmicPalette = CosmicPalette {
+    name: "Einstein Ring",
+    primary: [0.878, 0.878, 0.941],    // Cool silver-blue
+    accent: [1.0, 0.843, 0.0],         // Gold (lensed galaxy)
+    void_deep: [0.004, 0.004, 0.012],  // Deep blue-black
+    void_horizon: [0.012, 0.016, 0.028], // Subtle blue
+    mood: "Geometry made visible, Einstein's legacy",
+};
+
+/// Gravitational Wake - Distorted spacetime trails
+pub const GRAVITATIONAL_WAKE: CosmicPalette = CosmicPalette {
+    name: "Gravitational Wake",
+    primary: [0.686, 0.533, 0.890],    // Soft violet (distortion field)
+    accent: [0.0, 0.980, 0.604],       // Cyan-green (Cherenkov-like)
+    void_deep: [0.004, 0.0, 0.012],    // Purple-black
+    void_horizon: [0.016, 0.008, 0.028], // Deep violet edge
+    mood: "Spacetime rippling in the wake of massive bodies",
+};
+
+// ============================================================================
 // PALETTE COLLECTION
 // ============================================================================
 
@@ -307,7 +353,20 @@ pub static ALL_COSMIC_PALETTES: &[CosmicPalette] = &[
     // Scholarly
     SEPIA_STUDY,
     BLUEPRINT,
+    // Gravitational Lensing
+    EVENT_HORIZON,
+    HAWKING_RADIATION,
+    EINSTEIN_RING,
+    GRAVITATIONAL_WAKE,
 ];
+
+/// Get a palette suitable for gravitational lensing visualization
+pub fn lensing_palette(seed: u64) -> &'static CosmicPalette {
+    // Prefer Event Horizon as default, with other lensing palettes as alternatives
+    const LENSING_FAVORITES: &[usize] = &[15, 16, 17, 18]; // EVENT_HORIZON, HAWKING_RADIATION, EINSTEIN_RING, GRAVITATIONAL_WAKE
+    let index = LENSING_FAVORITES[(seed as usize) % LENSING_FAVORITES.len()];
+    &ALL_COSMIC_PALETTES[index]
+}
 
 /// Get a palette suitable for "filament" style rendering (thin, delicate)
 pub fn filament_palette(seed: u64) -> &'static CosmicPalette {

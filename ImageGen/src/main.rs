@@ -482,13 +482,13 @@ fn main() -> Result<()> {
         (curated.resolved, curated.randomization_log)
     } else {
         // Standard K-try curation (faster, still good quality)
-        let curation_k = args.effects.curation_k.unwrap_or_else(|| {
+        let curation_k = args.effects.curation_k.unwrap_or(
             if args.effects.gallery_quality {
                 render::constants::DEFAULT_CURATION_K
             } else {
                 1
             }
-        });
+        );
 
         if curation_k > 1 {
             info!("Curating effect configuration (K = {})...", curation_k);
@@ -553,7 +553,46 @@ fn main() -> Result<()> {
     let output_png = format!("pics/{}.png", base_filename);
 
     // Stage 7: Render
-    // Check for museum mode first - it's a completely different rendering path
+    // Check for special rendering modes first - they are completely different rendering paths
+    
+    // Gravitational lensing mode takes precedence when enabled
+    if args.effects.lensing_mode {
+        info!("Using GRAVITATIONAL LENSING MODE rendering...");
+        
+        if args.output.test_frame {
+            app::render_lensing_mode_test_frame(
+                &positions,
+                args.render.width,
+                args.render.height,
+                noise_seed as u64,
+                &output_png,
+                &args.effects.lensing_style,
+                args.effects.lensing_strength,
+                args.effects.lensing_grid,
+            )?;
+        } else {
+            let output_vid = format!("vids/{}.mp4", base_filename);
+            app::render_lensing_mode_video(
+                &positions,
+                args.render.width,
+                args.render.height,
+                noise_seed as u64,
+                &output_vid,
+                &output_png,
+                &args.effects.lensing_style,
+                args.effects.lensing_strength,
+                args.effects.lensing_grid,
+                args.render.fast_encode,
+            )?;
+        }
+        
+        info!(
+            "Done! Gravitational lensing render complete.\nHave a nice day!"
+        );
+        return Ok(());
+    }
+    
+    // Museum mode is the fallback special rendering mode
     if args.effects.museum_mode {
         info!("Using MUSEUM MODE rendering...");
         

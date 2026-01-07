@@ -257,7 +257,7 @@ fn analyze_best_mode(visual_center: &(f64, f64), content_aspect: f64) -> Framing
     if center_offset < 0.1 {
         // Content is well-centered, use standard framing
         FramingMode::BoundingBox
-    } else if content_aspect > GOLDEN_RATIO || content_aspect < 1.0 / GOLDEN_RATIO {
+    } else if !(1.0 / GOLDEN_RATIO..=GOLDEN_RATIO).contains(&content_aspect) {
         // Very elongated content benefits from golden ratio framing
         FramingMode::GoldenRatio
     } else {
