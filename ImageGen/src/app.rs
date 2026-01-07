@@ -16,6 +16,7 @@ use crate::render::{
     compute_black_white_gamma, constants, create_video_from_frames_singlepass,
     generate_body_color_sequences, pass_1_build_histogram_spectral, pass_2_write_frames_spectral,
     render_single_frame_spectral, save_image_as_png_16bit,
+    MuseumModeConfig, MuseumModeRenderer,
 };
 use crate::sim::{self, Body, Sha3RandomByteStream, TrajectoryResult};
 use image::{ImageBuffer, Rgb};
@@ -605,6 +606,173 @@ pub fn log_generation(
     record.randomization_log = randomization_log.cloned();
 
     logger.log_generation(record);
+}
+
+/// Render a single test frame using museum mode
+/// 
+/// Museum mode is a radically different renderer designed for museum-quality art.
+/// It uses 2-color palettes, point-based Gaussian splatting, and composition filtering.
+pub fn render_museum_mode_test_frame(
+    positions: &[Vec<Vector3<f64>>],
+    width: u32,
+    height: u32,
+    seed: u64,
+    output_png: &str,
+    style: &str,
+) -> Result<()> {
+    info!("MUSEUM MODE: Rendering with {} style...", style);
+    
+    // Select configuration based on style
+    let config = match style {
+        "filament" => MuseumModeConfig::filament(),
+        "hybrid" => MuseumModeConfig::hybrid(),
+        "minimal" => MuseumModeConfig::minimal(),
+        _ => MuseumModeConfig::deep_field(), // Default
+    };
+    
+    let renderer = MuseumModeRenderer::new(config);
+    
+    // Render the frame
+    let result = renderer.render(
+        positions,
+        None, // Compute velocities automatically
+        width as usize,
+        height as usize,
+        seed,
+    );
+    
+    info!("Museum mode composition: {} ({})", 
+        result.quality_tier(), 
+        result.palette_name);
+    
+    if !result.is_museum_quality() {
+        warn!("Composition score below threshold: {:?}", result.composition_score);
+    }
+    
+    // Convert to 16-bit image
+    let rgb16_data = result.to_u16();
+    
+    // Extract RGB from RGBA (16-bit)
+    let rgb_data: Vec<u16> = rgb16_data
+        .chunks(4)
+        .flat_map(|rgba| [rgba[0], rgba[1], rgba[2]])
+        .collect();
+    
+    let img: ImageBuffer<Rgb<u16>, Vec<u16>> = 
+        ImageBuffer::from_raw(width, height, rgb_data)
+            .ok_or_else(|| ConfigError::FileSystem { 
+                operation: "create image".to_string(),
+                path: output_png.to_string(),
+                error: std::io::Error::other("Failed to create image buffer"),
+            })?;
+    
+    save_image_as_png_16bit(&img, output_png)?;
+    
+    info!("Saved museum mode image to: {}", output_png);
+    
+    Ok(())
+}
+
+/// Render video using museum mode
+/// 
+/// Creates a video using the museum mode renderer with point-based Gaussian splatting.
+pub fn render_museum_mode_video(
+    positions: &[Vec<Vector3<f64>>],
+    width: u32,
+    height: u32,
+    seed: u64,
+    output_vid: &str,
+    output_png: &str,
+    style: &str,
+    fast_encode: bool,
+) -> Result<()> {
+    info!("MUSEUM MODE VIDEO: Rendering with {} style...", style);
+    
+    // Select configuration based on style
+    let config = match style {
+        "filament" => MuseumModeConfig::filament(),
+        "hybrid" => MuseumModeConfig::hybrid(),
+        "minimal" => MuseumModeConfig::minimal(),
+        _ => MuseumModeConfig::deep_field(),
+    };
+    
+    let renderer = MuseumModeRenderer::new(config);
+    
+    // Calculate frame parameters
+    let total_steps = positions[0].len();
+    let target_frames = constants::DEFAULT_TARGET_FRAMES as usize;
+    let frame_interval = (total_steps / target_frames).max(1);
+    
+    let mut last_frame: Option<ImageBuffer<Rgb<u16>, Vec<u16>>> = None;
+    let video_options = if fast_encode {
+        VideoEncodingOptions::fast_encode()
+    } else {
+        VideoEncodingOptions::default()
+    };
+    
+    let frame_rate = constants::DEFAULT_VIDEO_FPS;
+    
+    // We'll render progressive subsets of the trajectory
+    create_video_from_frames_singlepass(
+        width,
+        height,
+        frame_rate,
+        |out| {
+            for frame_idx in 0..target_frames {
+                let end_step = ((frame_idx + 1) * frame_interval).min(total_steps);
+                
+                // Create partial trajectory up to current step
+                let partial_positions: Vec<Vec<Vector3<f64>>> = positions
+                    .iter()
+                    .map(|body| body[..end_step].to_vec())
+                    .collect();
+                
+                // Render frame with this partial trajectory
+                let frame_seed = seed + frame_idx as u64;
+                let result = renderer.render(
+                    &partial_positions,
+                    None,
+                    width as usize,
+                    height as usize,
+                    frame_seed,
+                );
+                
+                // Convert to 16-bit RGB
+                let rgb16_data = result.to_u16();
+                let rgb_data: Vec<u16> = rgb16_data
+                    .chunks(4)
+                    .flat_map(|rgba| [rgba[0], rgba[1], rgba[2]])
+                    .collect();
+                
+                // Write frame (little-endian rgb48le format)
+                let buf_bytes: &[u8] = bytemuck::cast_slice(&rgb_data);
+                out.write_all(buf_bytes).map_err(render::error::RenderError::VideoEncoding)?;
+                
+                // Save last frame for PNG output
+                if frame_idx == target_frames - 1 {
+                    last_frame = ImageBuffer::from_raw(width, height, rgb_data);
+                }
+                
+                if frame_idx % 10 == 0 {
+                    let pct = (frame_idx as f64 / target_frames as f64) * 100.0;
+                    info!("Museum mode video: {:.0}% complete", pct);
+                }
+            }
+            Ok(())
+        },
+        output_vid,
+        &video_options,
+    )?;
+    
+    // Save final frame as PNG
+    if let Some(frame) = last_frame {
+        save_image_as_png_16bit(&frame, output_png)?;
+        info!("Saved final frame to: {}", output_png);
+    }
+    
+    info!("Museum mode video complete: {}", output_vid);
+    
+    Ok(())
 }
 
 #[cfg(test)]

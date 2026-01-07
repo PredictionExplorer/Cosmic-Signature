@@ -372,13 +372,13 @@ mod tests {
         for y in 0..3 {
             buffer[y * 3 + 2] = (1.0, 0.0, 0.0, 1.0);
         }
-        buffer[1 * 3 + 1] = (0.5, 0.0, 0.0, 0.1);
+        buffer[3 + 1] = (0.5, 0.0, 0.0, 0.1);
 
         let params = FrameParams { frame_number: 0, _density: None, body_positions: None };
         let out = caustics.process(&buffer, 3, 3, &params).unwrap();
 
         // Center pixel should refract toward the opaque right column; alpha should follow the sample.
-        let (r, _g, _b, a) = out[1 * 3 + 1];
+        let (r, _g, _b, a) = out[3 + 1];
         assert!(a > 0.9, "Expected refracted alpha to come from the sampled source, got {a}");
 
         let straight_r = r / a.max(1e-12);

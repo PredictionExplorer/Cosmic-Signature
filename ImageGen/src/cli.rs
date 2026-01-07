@@ -156,6 +156,29 @@ pub struct EffectArgs {
     #[arg(long, default_value_t = true)]
     pub gallery_quality: bool,
 
+    /// Enable museum mode: a radically different renderer designed for museum-quality art.
+    ///
+    /// Museum mode uses:
+    /// - 2-color curated palettes for sophisticated restraint
+    /// - Point-based Gaussian splatting for soft, ethereal quality
+    /// - Composition filtering for negative space enforcement
+    /// - Film grain for organic materiality
+    ///
+    /// This is a complete reimagining of the rendering approach for maximum elegance.
+    /// ENABLED BY DEFAULT for maximum beauty. Use --museum-mode=false for legacy spectral mode.
+    #[arg(long, default_value_t = true)]
+    pub museum_mode: bool,
+
+    /// Museum mode style variant.
+    ///
+    /// Options:
+    /// - "hybrid": Rich detail with soft points and elegant curves (default, best for most images)
+    /// - "deep-field": Sparse points, lots of void (minimalist)
+    /// - "filament": Thin trails, elegant curves
+    /// - "minimal": Maximum restraint, 85% void target (most sparse)
+    #[arg(long, default_value = "hybrid")]
+    pub museum_style: String,
+
     /// Museum-quality curation: try K effect configurations and pick the best via preview scoring.
     ///
     /// - `1` disables curation (single config, fastest).

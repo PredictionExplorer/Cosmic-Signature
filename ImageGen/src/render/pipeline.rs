@@ -178,7 +178,7 @@ impl<'a> RenderLoopContext<'a> {
             special_mode,
             hdr_scale: params.render_config.hdr_scale,
             current_body_positions: Vec::with_capacity(3),
-            levels: params.levels.cloned(),
+            levels: params.levels.copied(),
             exposure_normalization: params.render_config.exposure_normalization,
         }
     }

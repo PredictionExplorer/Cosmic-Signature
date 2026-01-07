@@ -2,6 +2,8 @@
 //!
 //! This module provides advanced framing algorithms that go beyond simple
 //! bounding-box fitting to consider compositional principles.
+
+#![allow(clippy::unreadable_literal)]
 //!
 //! # Compositional Principles
 //!
@@ -50,7 +52,7 @@ pub const THIRDS_POWER_POINTS: [(f64, f64); 4] = [
 ];
 
 /// Framing mode for composition
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub enum FramingMode {
     /// Simple bounding box with uniform margins
     BoundingBox,
@@ -59,13 +61,8 @@ pub enum FramingMode {
     /// Center content with golden ratio consideration
     GoldenRatio,
     /// Automatic selection based on content analysis
+    #[default]
     Automatic,
-}
-
-impl Default for FramingMode {
-    fn default() -> Self {
-        FramingMode::Automatic
-    }
 }
 
 /// Result of composition analysis

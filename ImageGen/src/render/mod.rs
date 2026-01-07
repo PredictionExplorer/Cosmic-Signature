@@ -22,8 +22,10 @@ pub mod color;
 pub mod color_space;
 pub mod color_types;
 pub mod composition;
+pub mod composition_filter;
 pub mod constants;
 pub mod context;
+pub mod cosmic_palette;
 pub mod curation;
 pub mod drawing;
 pub mod effect_energy;
@@ -34,10 +36,13 @@ pub mod effect_themes;
 pub mod enhanced_quality_metrics;
 pub mod effects;
 pub mod error;
+pub mod film_grain;
 pub mod hdr_pipeline;
 pub mod histogram;
+pub mod museum_mode;
 pub mod parameter_descriptors;
 pub mod pipeline;
+pub mod point_renderer;
 pub mod quality_metrics;
 pub mod randomizable_config;
 pub mod simd_tonemap;
@@ -82,6 +87,18 @@ pub use types::{
 pub use video::VideoEncodingOptions;
 #[allow(unused_imports)] // Public API for library consumers
 pub use video::{EncodingStrategy, create_video_from_frames_singlepass, create_video_with_retry};
+
+// Re-export museum mode types for public API
+#[allow(unused_imports)]
+pub use museum_mode::{MuseumModeConfig, MuseumModeRenderer, MuseumRenderResult, BackgroundMode};
+#[allow(unused_imports)]
+pub use cosmic_palette::{CosmicPalette, ALL_COSMIC_PALETTES};
+#[allow(unused_imports)]
+pub use point_renderer::{PointRendererConfig, RenderPoint};
+#[allow(unused_imports)]
+pub use composition_filter::{CompositionFilterConfig, CompositionScore};
+#[allow(unused_imports)]
+pub use film_grain::FilmGrainConfig;
 
 // Re-export types from dependencies used in public API
 pub use image::{DynamicImage, ImageBuffer, Rgb};

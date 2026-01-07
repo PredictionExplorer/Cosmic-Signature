@@ -15,9 +15,10 @@ use nalgebra::Vector3;
 use std::hint::black_box;
 use three_body_problem::{
     oklab::{linear_srgb_to_oklab, linear_srgb_to_oklab_batch, oklab_to_linear_srgb},
+    post_effects::FrameParams,
     render::{
         drawing::draw_line_segment_aa_spectral_with_dispersion,
-        effects::{EffectChainBuilder, EffectConfig, FrameParams},
+        effects::{EffectChainBuilder, EffectConfig},
     },
     sim::{Body, Sha3RandomByteStream, get_positions},
     spectrum::{NUM_BINS, spd_to_rgba},
@@ -182,7 +183,7 @@ fn bench_effect_chain(c: &mut Criterion) {
 
     let config = EffectConfig::default();
     let chain = EffectChainBuilder::new(config);
-    let params = FrameParams { _frame_number: 0, _density: None };
+    let params = FrameParams { frame_number: 0, _density: None, body_positions: None };
 
     for (name, (w, h)) in
         [("720p", (1280usize, 720usize)), ("1080p", (1920usize, 1080usize))].iter()
@@ -194,7 +195,8 @@ fn bench_effect_chain(c: &mut Criterion) {
             BenchmarkId::new("full_chain", name),
             &(*w, *h, buffer.clone()),
             |b, (w, h, buf)| {
-                b.iter(|| chain.process_frame(black_box(buf.clone()), *w, *h, &params))
+                // Use process_trajectories for benchmark (the main effect processing path)
+                b.iter(|| chain.process_trajectories(black_box(buf.clone()), *w, *h, &params))
             },
         );
     }
@@ -205,7 +207,7 @@ fn bench_effect_chain(c: &mut Criterion) {
     let buffer_1080: Vec<(f64, f64, f64, f64)> = vec![(0.5, 0.5, 0.5, 1.0); 1920 * 1080];
 
     group.bench_function("minimal_chain_1080p", |b| {
-        b.iter(|| minimal_chain.process_frame(black_box(buffer_1080.clone()), 1920, 1080, &params))
+        b.iter(|| minimal_chain.process_trajectories(black_box(buffer_1080.clone()), 1920, 1080, &params))
     });
 
     group.finish();

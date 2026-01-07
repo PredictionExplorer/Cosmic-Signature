@@ -2,6 +2,12 @@
 //!
 //! The existing Pass 1 (histogram building) renders every frame. We can compute
 //! quality metrics there at **zero extra cost**:
+
+// The variance formula `(sum_sq / n) - (mean * mean)` is mathematically correct
+// (E[X^2] - E[X]^2), but clippy thinks it looks like a typo
+#![allow(clippy::suspicious_operation_groupings)]
+// Using if-else for bool-to-int is clearer in this context
+#![allow(clippy::bool_to_int_with_if)]
 //!
 //! - Highlight clipping percentage
 //! - Shadow crush percentage

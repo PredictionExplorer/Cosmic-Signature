@@ -8,6 +8,7 @@
 //! future improvements.
 
 #![allow(dead_code)] // Infrastructure module - not all types used yet
+#![allow(clippy::return_self_not_must_use)] // Builder-pattern methods intentionally return Self
 //!
 //! # Design Philosophy
 //!

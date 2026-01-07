@@ -2,7 +2,10 @@
 //!
 //! This module defines the complete parameter space for effect configuration,
 //! with support for explicit user values or random generation.
-//!
+
+// The resolve function is large but intentionally so - it handles all config resolution in one place
+#![allow(clippy::cognitive_complexity)]
+
 //! # Museum Quality Pipeline
 //!
 //! The resolution pipeline implements a multi-stage approach to ensure both
@@ -1861,7 +1864,7 @@ fn apply_theme_modifiers(
     let apply = |value: f64, multiplier: f64| -> f64 { (value * multiplier).clamp(0.0, 1.0) };
 
     // Bloom & Glow
-    config.blur_strength = config.blur_strength * mods.bloom_multiplier;
+    config.blur_strength *= mods.bloom_multiplier;
     config.glow_strength = apply(config.glow_strength, mods.glow_multiplier);
     config.chromatic_bloom_strength = apply(config.chromatic_bloom_strength, mods.chromatic_bloom_multiplier);
     config.halation_strength = apply(config.halation_strength, mods.halation_multiplier);

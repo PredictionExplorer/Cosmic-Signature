@@ -281,7 +281,7 @@ pub fn advanced_curate_effect_config(
     candidates.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
     let finalists: Vec<_> = candidates.into_iter().take(settings.finalist_count).collect();
     
-    let stage1_best = finalists.first().map(|c| c.score).unwrap_or(0.0);
+    let stage1_best = finalists.first().map_or(0.0, |c| c.score);
     stage_scores.push(stage1_best);
     info!("Stage 1 complete: top {} finalists selected (best score: {:.3})", 
         finalists.len(), stage1_best);
@@ -566,10 +566,9 @@ fn apply_adjustments(config: &mut ResolvedEffectConfig, adjustments: &[QualityAd
             _ => None,
         };
         
-        if let Some((name, before, after)) = result {
-            if (before - after).abs() > 1e-9 {
+        if let Some((name, before, after)) = result
+            && (before - after).abs() > 1e-9 {
                 applied.push(format!("{}: {:.3}→{:.3}", name, before, after));
-            }
         }
     }
     
@@ -641,7 +640,7 @@ fn render_preview_frame(
     }
     
     // Ensure final step is drawn
-    if total_steps > 0 && (total_steps - 1) % step_stride != 0 {
+    if total_steps > 0 && !(total_steps - 1).is_multiple_of(step_stride) {
         loop_ctx.draw_step(total_steps - 1, positions, colors, body_alphas);
     }
     

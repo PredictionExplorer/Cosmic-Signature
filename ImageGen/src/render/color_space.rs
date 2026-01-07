@@ -8,9 +8,13 @@
 //!
 //! All conversions maintain hue fidelity using perceptually-uniform mappings.
 
+// Color space matrices use standard values that are more readable without separators
+#![allow(clippy::unreadable_literal)]
+
 /// Supported output color spaces
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 #[allow(dead_code)]
+#[allow(clippy::upper_case_acronyms)]
 pub enum ColorSpace {
     /// Standard RGB (sRGB) - default for web and most displays
     #[default]
@@ -24,6 +28,7 @@ pub enum ColorSpace {
 #[allow(dead_code)]
 impl ColorSpace {
     /// Parse color space from string (case-insensitive)
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Option<Self> {
         match s.to_lowercase().as_str() {
             "srgb" | "s-rgb" => Some(Self::SRGB),
@@ -254,9 +259,9 @@ impl ColorSpaceConverter {
     #[inline]
     #[allow(dead_code)]
     pub fn is_in_srgb_gamut(r: f64, g: f64, b: f64) -> bool {
-        r >= 0.0 && r <= 1.0 &&
-        g >= 0.0 && g <= 1.0 &&
-        b >= 0.0 && b <= 1.0
+        (0.0..=1.0).contains(&r) &&
+        (0.0..=1.0).contains(&g) &&
+        (0.0..=1.0).contains(&b)
     }
     
     /// Calculate gamut coverage percentage

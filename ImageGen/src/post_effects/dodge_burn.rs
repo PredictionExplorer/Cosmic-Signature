@@ -110,7 +110,7 @@ impl DodgeBurn {
         blur_1d_vertical(&mut saliency, width, height, radius);
 
         // Normalize to 0-1 range
-        let max_sal = saliency.iter().cloned().fold(0.0f64, f64::max);
+        let max_sal = saliency.iter().copied().fold(0.0f64, f64::max);
         if max_sal > 0.0 {
             saliency.par_iter_mut().for_each(|s| *s /= max_sal);
         }
@@ -536,14 +536,14 @@ mod tests {
         let saliency = effect.build_saliency_map(&input, 10, 10);
 
         // Maximum should be 1.0 after normalization
-        let max_sal = saliency.iter().cloned().fold(0.0f64, f64::max);
+        let max_sal = saliency.iter().copied().fold(0.0f64, f64::max);
         assert!(
             (max_sal - 1.0).abs() < 0.01,
             "Saliency should be normalized to max 1.0"
         );
 
         // Minimum should be >= 0
-        let min_sal = saliency.iter().cloned().fold(f64::INFINITY, f64::min);
+        let min_sal = saliency.iter().copied().fold(f64::INFINITY, f64::min);
         assert!(min_sal >= 0.0, "Saliency should be non-negative");
     }
 

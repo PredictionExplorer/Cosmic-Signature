@@ -553,6 +553,40 @@ fn main() -> Result<()> {
     let output_png = format!("pics/{}.png", base_filename);
 
     // Stage 7: Render
+    // Check for museum mode first - it's a completely different rendering path
+    if args.effects.museum_mode {
+        info!("Using MUSEUM MODE rendering...");
+        
+        if args.output.test_frame {
+            app::render_museum_mode_test_frame(
+                &positions,
+                args.render.width,
+                args.render.height,
+                noise_seed as u64,
+                &output_png,
+                &args.effects.museum_style,
+            )?;
+        } else {
+            let output_vid = format!("vids/{}.mp4", base_filename);
+            app::render_museum_mode_video(
+                &positions,
+                args.render.width,
+                args.render.height,
+                noise_seed as u64,
+                &output_vid,
+                &output_png,
+                &args.effects.museum_style,
+                args.render.fast_encode,
+            )?;
+        }
+        
+        info!(
+            "Done! Museum mode render complete.\nHave a nice day!"
+        );
+        return Ok(());
+    }
+    
+    // Standard rendering mode
     if args.output.test_frame {
         app::render_test_frame(
             &positions,

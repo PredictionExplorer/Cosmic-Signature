@@ -14,6 +14,8 @@
 //! Our implementation uses a lookup table (LUT) for performance, achieving
 //! ~3x speedup over direct calculation on typical workloads.
 
+#![allow(clippy::unreadable_literal)]
+
 use super::types::ChannelLevels;
 use std::sync::LazyLock;
 

@@ -60,8 +60,8 @@ pub struct AestheticScores {
 ///
 /// # Arguments
 ///
-/// * `positions` - Position vectors for each body at each timestep
-///               positions[body_idx][step] = Vector3
+/// * `positions` - Position vectors for each body at each timestep.
+///   Format: `positions[body_idx][step] = Vector3`
 /// * `frame_aspect_ratio` - Width / Height of the target frame (e.g., 16/9 = 1.78)
 ///
 /// # Returns
@@ -353,7 +353,7 @@ mod tests {
                 let t = i as f64 / steps as f64;
                 Vector3::new(
                     t * 1000.0 - 500.0,
-                    (t * 3.14).sin() * 50.0,
+                    (t * std::f64::consts::PI).sin() * 50.0,
                     0.0,
                 )
             })
@@ -426,8 +426,8 @@ mod tests {
         for i in 0..1000 {
             let t = i as f64 / 1000.0;
             orbit.push(Vector3::new(
-                (t * 6.28).cos() * 160.0,
-                (t * 6.28).sin() * 90.0,
+                (t * std::f64::consts::TAU).cos() * 160.0,
+                (t * std::f64::consts::TAU).sin() * 90.0,
                 0.0,
             ));
         }

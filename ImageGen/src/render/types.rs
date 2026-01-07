@@ -9,6 +9,8 @@
 //! Note: Some types are exported for library API completeness even if not used
 //! internally. This is intentional professional API design.
 
+#![allow(clippy::return_self_not_must_use)] // Builder pattern methods
+
 #![allow(dead_code)] // Public API types for library consumers
 
 use super::color::OklabColor;

@@ -202,7 +202,7 @@ fn score_candidate(
     score -= (mean_err / 0.22).min(0.25);
 
     // Prefer non-flat contrast (already in quality_score, add a tiny extra incentive).
-    score += (metrics.contrast_spread - 0.10).max(0.0).min(0.08);
+    score += (metrics.contrast_spread - 0.10).clamp(0.0, 0.08);
 
     // Encourage candidates that produce stable histogram levels (avoid extreme scaling).
     // This helps prevent the “firefly exposure collapse” failure mode.
@@ -262,7 +262,7 @@ fn render_preview_frame(
         step = step.saturating_add(step_stride);
     }
     // Ensure we draw the final step so body_positions are correct for finishing effects.
-    if total_steps > 0 && (total_steps - 1) % step_stride != 0 {
+    if total_steps > 0 && !(total_steps - 1).is_multiple_of(step_stride) {
         loop_ctx.draw_step(total_steps - 1, positions, colors, body_alphas);
     }
 

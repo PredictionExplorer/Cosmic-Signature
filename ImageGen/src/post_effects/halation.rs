@@ -273,7 +273,6 @@ mod tests {
             warmth: 0.0,       // No warmth for easier testing
             softness: 1.0,
             downsample_factor: 1,
-            ..Default::default()
         };
         let effect = Halation::new(config);
 

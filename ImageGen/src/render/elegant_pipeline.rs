@@ -112,10 +112,9 @@ pub fn compute_energy_catalog(config: &ResolvedEffectConfig) -> EffectEnergyCata
     }
 
     // Color grading with vignette (darkening via vignette)
-    if config.enable_color_grade {
-        if config.vignette_strength > 0.0 {
+    if config.enable_color_grade
+        && config.vignette_strength > 0.0 {
             catalog.add_vignette(config.vignette_strength);
-        }
     }
 
     // Micro contrast (neutral)
@@ -641,7 +640,7 @@ mod tests {
         let factor = catalog.combined_factor();
 
         // Should have some effects
-        assert!(catalog.breakdown().len() > 0);
+        assert!(!catalog.breakdown().is_empty());
 
         // Factor should be reasonable (not 0 or huge)
         assert!(factor > 0.1 && factor < 10.0);

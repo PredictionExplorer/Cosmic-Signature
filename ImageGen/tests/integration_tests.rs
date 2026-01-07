@@ -558,25 +558,23 @@ fn test_quality_assessment_thresholds() {
         EnhancedQualityMetrics, QualityAssessment, thresholds
     };
     
-    let mut metrics = EnhancedQualityMetrics::default();
-    
     // Test Excellent threshold
-    metrics.quality_score = thresholds::EXCELLENT;
+    let metrics = EnhancedQualityMetrics { quality_score: thresholds::EXCELLENT, ..Default::default() };
     assert_eq!(metrics.assessment(), QualityAssessment::Excellent);
     assert!(metrics.is_exhibition_ready());
     
     // Test Good threshold
-    metrics.quality_score = thresholds::GOOD;
+    let metrics = EnhancedQualityMetrics { quality_score: thresholds::GOOD, ..Default::default() };
     assert_eq!(metrics.assessment(), QualityAssessment::Good);
     assert!(metrics.passes_museum_quality());
     assert!(!metrics.is_exhibition_ready());
     
     // Test Acceptable threshold
-    metrics.quality_score = thresholds::ACCEPTABLE;
+    let metrics = EnhancedQualityMetrics { quality_score: thresholds::ACCEPTABLE, ..Default::default() };
     assert_eq!(metrics.assessment(), QualityAssessment::Acceptable);
     assert!(!metrics.passes_museum_quality());
     
     // Test Poor
-    metrics.quality_score = 0.3;
+    let metrics = EnhancedQualityMetrics { quality_score: 0.3, ..Default::default() };
     assert_eq!(metrics.assessment(), QualityAssessment::Poor);
 }

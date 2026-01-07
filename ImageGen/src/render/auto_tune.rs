@@ -75,15 +75,14 @@ pub fn apply_quality_autotune(
             _ => None,
         };
 
-        if let Some((before, after)) = applied {
-            if (after - before).abs() > 1e-12 {
+        if let Some((before, after)) = applied
+            && (after - before).abs() > 1e-12 {
                 record.parameters.push(RandomizedParameter {
                     name: adj.param,
                     value: format!("{after:.4}"),
                     was_randomized: false,
                     range_used: format!("auto_tune (from {before:.4})"),
                 });
-            }
         }
     }
 
