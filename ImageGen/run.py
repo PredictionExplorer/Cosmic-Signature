@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
 Parallel runner for Three Body Problem simulations.
-Runs 4 concurrent simulations at a time.
+Runs 8 concurrent simulations at a time.
 Generates random seeds and randomly chooses rendering mode.
 
 Available modes:
 - Museum modes: hybrid, deep-field, filament, minimal
-- Lensing modes: gravitational-wakes, invisible-paths
+- Lensing modes: cosmic-lens, gravitational-wake, event-horizon, spacetime-fabric
 - Legacy modes: standard, special
 """
 
@@ -33,15 +33,17 @@ class RenderMode:
 
 # All available rendering modes
 RENDER_MODES = [
-    # Museum modes (default beautiful renderer)
+    # Museum modes (beautiful minimalist renderer)
     RenderMode("museum_hybrid", "Museum (Hybrid)", ["--museum-mode", "--museum-style", "hybrid"]),
     RenderMode("museum_deepfield", "Museum (Deep Field)", ["--museum-mode", "--museum-style", "deep-field"]),
     RenderMode("museum_filament", "Museum (Filament)", ["--museum-mode", "--museum-style", "filament"]),
     RenderMode("museum_minimal", "Museum (Minimal)", ["--museum-mode", "--museum-style", "minimal"]),
     
-    # Lensing modes (gravitational lensing visualization)
-    RenderMode("lensing_wakes", "Lensing (Gravitational Wakes)", ["--lensing-mode", "--lensing-style", "gravitational-wakes"]),
-    RenderMode("lensing_invisible", "Lensing (Invisible Paths)", ["--lensing-mode", "--lensing-style", "invisible-paths"]),
+    # Lensing modes v2 (gravitational lensing visualization)
+    RenderMode("lensing_cosmic", "Lensing (Cosmic Lens)", ["--lensing-mode", "--lensing-style", "cosmic-lens"]),
+    RenderMode("lensing_wake", "Lensing (Gravitational Wake)", ["--lensing-mode", "--lensing-style", "gravitational-wake"]),
+    RenderMode("lensing_horizon", "Lensing (Event Horizon)", ["--lensing-mode", "--lensing-style", "event-horizon"]),
+    RenderMode("lensing_fabric", "Lensing (Spacetime Fabric)", ["--lensing-mode", "--lensing-style", "spacetime-fabric"]),
     
     # Legacy modes
     RenderMode("standard", "Standard (Legacy)", ["--museum-mode=false"]),
@@ -61,7 +63,7 @@ def choose_random_mode() -> RenderMode:
 
 async def run_simulation(seed: str, mode: RenderMode, job_id: int) -> bool:
     """Run a single simulation with the given parameters."""
-    filename = f"{seed[2:]}_{mode.name}"  # Remove '0x' prefix for filename
+    filename = f"{mode.name}_{seed[2:]}"  # Mode first for easy sorting, then seed
 
     command = [
         './target/release/three_body_problem',

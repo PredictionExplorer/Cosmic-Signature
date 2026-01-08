@@ -192,21 +192,20 @@ pub struct EffectArgs {
     /// Lensing mode style variant.
     ///
     /// Options:
-    /// - "gravitational-wakes" (default): Trajectories visible as luminous paths
-    ///   that dramatically distort space around them
-    /// - "invisible-paths": Most subtle - trajectories nearly invisible,
-    ///   only the background distortion reveals their presence
-    /// - "extreme": Maximum drama with intense lensing effects
-    #[arg(long, default_value = "gravitational-wakes")]
+    /// - "cosmic-lens" (default): 3 massive bodies with dramatic Einstein rings
+    /// - "gravitational-wake": Trajectory centroids create rippling wake patterns
+    /// - "event-horizon": Extreme distortion with accretion glow
+    /// - "spacetime-fabric": Grid overlay showing mathematical curvature
+    #[arg(long, default_value = "cosmic-lens")]
     pub lensing_style: String,
 
     /// Lensing strength multiplier.
     ///
     /// Controls how dramatically space is warped. Higher = more dramatic distortion.
-    /// - 1.0: Subtle, physically-inspired
-    /// - 2.0: Default dramatic setting
-    /// - 5.0+: Extreme artistic distortion
-    #[arg(long, default_value_t = 2.0)]
+    /// - 0.5: Subtle effect
+    /// - 1.0: Default dramatic setting
+    /// - 2.0+: Extreme artistic distortion
+    #[arg(long, default_value_t = 1.0)]
     pub lensing_strength: f64,
 
     /// Enable grid overlay for lensing visualization.

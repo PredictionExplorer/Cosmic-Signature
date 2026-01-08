@@ -105,7 +105,7 @@ pub use film_grain::FilmGrainConfig;
 
 // Re-export gravitational lensing types for public API
 #[allow(unused_imports)]
-pub use gravitational_lensing::{LensingConfig, LensingField, LensingSource};
+pub use gravitational_lensing::{LensingConfig, LensingStyle, MassSource, DisplacementField};
 #[allow(unused_imports)]
 pub use lensing_background::{LensingBackgroundConfig, BackgroundStyle as LensingBackgroundStyle};
 #[allow(unused_imports)]

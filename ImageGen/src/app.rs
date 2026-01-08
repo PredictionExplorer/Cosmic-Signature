@@ -776,16 +776,21 @@ pub fn render_museum_mode_video(
 }
 
 // ============================================================================
-// GRAVITATIONAL LENSING MODE RENDERING
+// GRAVITATIONAL LENSING MODE RENDERING v2
 // ============================================================================
 
 use render::lensing_renderer::{LensingRendererConfig, LensingRenderer};
-use render::cosmic_palette::EVENT_HORIZON;
 
 /// Render a test frame using gravitational lensing mode
 /// 
 /// Creates an image visualizing spacetime distortion caused by orbital masses.
 /// The trajectories curve space, distorting a static starfield/nebula background.
+///
+/// # Styles
+/// - "cosmic-lens": 3 massive bodies with dramatic Einstein rings (default)
+/// - "gravitational-wake": Trajectory centroids create rippling wake patterns  
+/// - "event-horizon": Extreme distortion with accretion glow
+/// - "spacetime-fabric": Grid overlay showing mathematical curvature
 pub fn render_lensing_mode_test_frame(
     positions: &[Vec<Vector3<f64>>],
     width: u32,
@@ -796,55 +801,31 @@ pub fn render_lensing_mode_test_frame(
     lensing_strength: f64,
     show_grid: bool,
 ) -> Result<()> {
-    info!("LENSING MODE: Rendering with {} style (strength={:.2})...", style, lensing_strength);
+    info!("LENSING MODE v2: Rendering with '{}' style (strength={:.2})...", style, lensing_strength);
     
     // Select configuration based on style
-    let mut config = match style {
-        "invisible-paths" => LensingRendererConfig::invisible_paths(),
-        "extreme" => LensingRendererConfig::extreme(),
-        _ => LensingRendererConfig::gravitational_wakes(), // Default
-    };
+    let mut config = LensingRendererConfig::from_style_str(style);
     
     // Apply user customizations
-    config = config.with_lensing_strength(lensing_strength);
+    config = config.with_strength(lensing_strength);
     if show_grid {
         config = config.with_grid();
     }
     
     let renderer = LensingRenderer::new(config);
     
-    // Render the frame using Event Horizon palette (default for lensing)
+    // Render the frame
     let result = renderer.render(
         positions,
-        None, // Compute velocities automatically
         width as usize,
         height as usize,
         seed,
-        Some(&EVENT_HORIZON),
     );
     
-    info!("Lensing mode: {} palette, max_distortion={:.1}px, avg_distortion={:.1}px", 
-        result.palette_name,
-        result.max_distortion,
-        result.avg_distortion);
+    info!("Lensing mode: {}", result.quality_summary());
     
-    // Convert to 16-bit image
-    let rgb16_data = result.to_u16();
-    
-    // Extract RGB from RGBA (16-bit)
-    let rgb_data: Vec<u16> = rgb16_data
-        .chunks(4)
-        .flat_map(|rgba| [rgba[0], rgba[1], rgba[2]])
-        .collect();
-    
-    let img: ImageBuffer<Rgb<u16>, Vec<u16>> = 
-        ImageBuffer::from_raw(width, height, rgb_data)
-            .ok_or_else(|| ConfigError::FileSystem { 
-                operation: "create image".to_string(),
-                path: output_png.to_string(),
-                error: std::io::Error::other("Failed to create image buffer"),
-            })?;
-    
+    // Convert to 16-bit image and save
+    let img = result.to_image();
     save_image_as_png_16bit(&img, output_png)?;
     
     info!("Saved lensing mode image to: {}", output_png);
@@ -855,8 +836,13 @@ pub fn render_lensing_mode_test_frame(
 /// Render video using gravitational lensing mode
 /// 
 /// Creates a video visualizing spacetime distortion with gravitational lensing.
-/// For stills-focused mode, this renders the full trajectory (not progressive)
-/// to show the complete lensing field.
+/// Renders progressive frames showing the lensing field building up.
+///
+/// # Styles
+/// - "cosmic-lens": 3 massive bodies with dramatic Einstein rings (default)
+/// - "gravitational-wake": Trajectory centroids create rippling wake patterns  
+/// - "event-horizon": Extreme distortion with accretion glow
+/// - "spacetime-fabric": Grid overlay showing mathematical curvature
 pub fn render_lensing_mode_video(
     positions: &[Vec<Vector3<f64>>],
     width: u32,
@@ -869,17 +855,13 @@ pub fn render_lensing_mode_video(
     show_grid: bool,
     fast_encode: bool,
 ) -> Result<()> {
-    info!("LENSING MODE VIDEO: Rendering with {} style (strength={:.2})...", style, lensing_strength);
+    info!("LENSING MODE v2 VIDEO: Rendering with '{}' style (strength={:.2})...", style, lensing_strength);
     
     // Select configuration based on style
-    let mut config = match style {
-        "invisible-paths" => LensingRendererConfig::invisible_paths(),
-        "extreme" => LensingRendererConfig::extreme(),
-        _ => LensingRendererConfig::gravitational_wakes(),
-    };
+    let mut config = LensingRendererConfig::from_style_str(style);
     
     // Apply user customizations
-    config = config.with_lensing_strength(lensing_strength);
+    config = config.with_strength(lensing_strength);
     if show_grid {
         config = config.with_grid();
     }
@@ -919,19 +901,14 @@ pub fn render_lensing_mode_video(
                 let frame_seed = seed + frame_idx as u64;
                 let result = renderer.render(
                     &partial_positions,
-                    None,
                     width as usize,
                     height as usize,
                     frame_seed,
-                    Some(&EVENT_HORIZON),
                 );
                 
                 // Convert to 16-bit RGB
-                let rgb16_data = result.to_u16();
-                let rgb_data: Vec<u16> = rgb16_data
-                    .chunks(4)
-                    .flat_map(|rgba| [rgba[0], rgba[1], rgba[2]])
-                    .collect();
+                let img = result.to_image();
+                let rgb_data = img.into_raw();
                 
                 // Write frame (little-endian rgb48le format)
                 let buf_bytes: &[u8] = bytemuck::cast_slice(&rgb_data);
