@@ -5,16 +5,29 @@ import { ArbSys } from "@arbitrum/nitro-contracts/src/precompiles/ArbSys.sol";
 import { ArbGasInfo } from "@arbitrum/nitro-contracts/src/precompiles/ArbGasInfo.sol";
 import { CosmicSignatureEvents } from "./CosmicSignatureEvents.sol";
 
+/// @title Arbitrum Precompile Helpers.
+/// @author The Cosmic Signature Development Team.
+/// @notice Provides safe wrappers for Arbitrum precompile calls used for entropy generation.
+/// @dev All functions use low-level calls to gracefully handle precompile failures,
+/// which can occur when running on non-Arbitrum networks (e.g., Hardhat for testing).
+/// On failure, functions emit an event and return `isSuccess_ = false` rather than reverting.
 library ArbitrumHelpers {
+	/// @notice The ArbSys precompile address (0x64).
 	ArbSys internal constant arbSys = ArbSys(address(0x64));
+
+	/// @notice The ArbGasInfo precompile address (0x6C).
 	ArbGasInfo internal constant arbGasInfo = ArbGasInfo(address(0x6C));
 
+	/// @notice Attempts to get the current Arbitrum L2 block number.
+	/// @return isSuccess_ True if the call succeeded.
+	/// @return arbBlockNumber_ The current Arbitrum block number, or 0 on failure.
+	/// @dev Uses low-level call to avoid reverting on non-Arbitrum networks.
 	function tryGetArbBlockNumber() internal /*view*/ returns (bool isSuccess_, uint256 arbBlockNumber_) {
 		{
 			bytes memory returnData_;
 
 			// [Comment-202506296]
-			// Issue. Making a low level call.
+			// Making a low level call.
 			// I would instead prefer to make a high level call under `try`,
 			// but Solidity doesn't appear to guarantee that the transaction won't be reversed after certain errors.
 			// Comment-202502043 relates.
@@ -35,6 +48,11 @@ library ArbitrumHelpers {
 		}
 	}
 
+	/// @notice Attempts to get the block hash for a given Arbitrum L2 block number.
+	/// @param arbBlockNumber_ The Arbitrum block number to get the hash for.
+	/// @return isSuccess_ True if the call succeeded.
+	/// @return arbBlockHash_ The block hash, or bytes32(0) on failure.
+	/// @dev Uses low-level call to avoid reverting on non-Arbitrum networks.
 	function tryGetArbBlockHash(uint256 arbBlockNumber_) internal /*view*/ returns (bool isSuccess_, bytes32 arbBlockHash_) {
 		{
 			bytes memory returnData_;
@@ -56,13 +74,19 @@ library ArbitrumHelpers {
 		}
 	}
 
+	/// @notice Attempts to get the current gas backlog.
+	/// @return isSuccess_ True if the call succeeded.
+	/// @return gasBacklog_ The current gas backlog, or 0 on failure.
+	/// @dev
+	/// [Comment-202506298]
+	/// This method (almost?) always returns a different value for each transaction,
+	/// making it useful as an entropy source.
+	/// [/Comment-202506298]
+	/// Uses low-level call to avoid reverting on non-Arbitrum networks.
 	function tryGetGasBacklog() internal /*view*/ returns (bool isSuccess_, uint256 gasBacklog_) {
 		{
 			bytes memory returnData_;
 
-			// [Comment-202506298]
-			// This method (almost?) always returns a different value for each transaction.
-			// [/Comment-202506298]
 			// Comment-202506296 applies.
 			(isSuccess_, returnData_) = address(arbGasInfo).call(abi.encodeWithSelector(ArbGasInfo.getGasBacklog.selector));
 
@@ -82,11 +106,15 @@ library ArbitrumHelpers {
 		}
 	}
 
+	/// @notice Attempts to get the L1 pricing units since the last update.
+	/// @return isSuccess_ True if the call succeeded.
+	/// @return l1PricingUnitsSinceUpdate_ The L1 pricing units since update, or 0 on failure.
+	/// @dev Uses low-level call to avoid reverting on non-Arbitrum networks.
+	/// Comment-202506298 applies (this value tends to change per transaction).
 	function tryGetL1PricingUnitsSinceUpdate() internal /*view*/ returns (bool isSuccess_, uint256 l1PricingUnitsSinceUpdate_) {
 		{
 			bytes memory returnData_;
 
-			// Comment-202506298 applies.
 			// Comment-202506296 applies.
 			(isSuccess_, returnData_) = address(arbGasInfo).call(abi.encodeWithSelector(ArbGasInfo.getL1PricingUnitsSinceUpdate.selector));
 

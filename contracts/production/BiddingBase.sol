@@ -5,23 +5,39 @@ import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { IBiddingBase } from "./interfaces/IBiddingBase.sol";
 
+/// @title BiddingBase
+/// @author Cosmic Signature Team
+/// @notice Provides base modifiers and helper functions for bidding round status checks.
+/// @dev This abstract contract contains modifiers that enforce bidding round state requirements:
+/// - `_onlyNonFirstRound`: Ensures operation is not on the first round.
+/// - `_onlyRoundIsInactive`: Ensures the current bidding round has not started yet.
+/// - `_onlyRoundIsActive`: Ensures the current bidding round is active.
+/// - `_onlyBeforeBidPlacedInRound`: Ensures no bids have been placed in the current round.
+///
+/// It also provides internal setters for round-related parameters that emit events.
 abstract contract BiddingBase is CosmicSignatureGameStorage, IBiddingBase {
+	// #region Modifiers and Checks
+
+	/// @dev Modifier that ensures the current round is not the first (round 0).
 	modifier _onlyNonFirstRound() {
 		_checkNonFirstRound();
 		_;
 	}
 
+	/// @dev Reverts if the current round is the first bidding round.
 	function _checkNonFirstRound() internal view {
 		if ( ! (roundNum > 0) ) {
 			revert CosmicSignatureErrors.FirstRound("This operation is invalid during the very first bidding round.");
 		}
 	}
 
+	/// @dev Modifier that ensures the current bidding round has not yet activated.
 	modifier _onlyRoundIsInactive() {
 		_checkRoundIsInactive();
 		_;
 	}
 
+	/// @dev Reverts if the current bidding round is already active (current time >= activation time).
 	function _checkRoundIsInactive() internal view {
 		uint256 roundActivationTimeCopy_ = roundActivationTime;
 		if ( ! (block.timestamp < roundActivationTimeCopy_) ) {
@@ -29,11 +45,13 @@ abstract contract BiddingBase is CosmicSignatureGameStorage, IBiddingBase {
 		}
 	}
 
+	/// @dev Modifier that ensures the current bidding round is active.
 	modifier _onlyRoundIsActive() {
 		_checkRoundIsActive();
 		_;
 	}
 
+	/// @dev Reverts if the current bidding round is not yet active (current time < activation time).
 	function _checkRoundIsActive() internal view {
 		uint256 roundActivationTimeCopy_ = roundActivationTime;
 		if ( ! (block.timestamp >= roundActivationTimeCopy_) ) {
@@ -41,13 +59,14 @@ abstract contract BiddingBase is CosmicSignatureGameStorage, IBiddingBase {
 		}
 	}
 
-	/// @notice Comment-202503108 applies.
+	/// @dev Modifier that ensures no bids have been placed in the current round yet.
+	/// Comment-202503108 applies.
 	modifier _onlyBeforeBidPlacedInRound() {
 		_checkBeforeBidPlacedInRound();
 		_;
 	}
 
-	/// @notice
+	/// @dev Reverts if a bid has already been placed in the current bidding round.
 	/// [Comment-202503108]
 	/// It doesn't matter whether the current bidding round is active or not.
 	/// This only requires that no bids have been placed in the current bidding round yet.
@@ -58,21 +77,34 @@ abstract contract BiddingBase is CosmicSignatureGameStorage, IBiddingBase {
 		}
 	}
 
+	// #endregion
+	// #region Internal Setters
+
+	/// @dev Sets the round activation time and emits an event.
+	/// @param newValue_ The new round activation timestamp.
 	function _setRoundActivationTime(uint256 newValue_) internal {
 		roundActivationTime = newValue_;
 		emit RoundActivationTimeChanged(newValue_);
 	}
 
+	/// @dev Sets the ETH Dutch auction duration divisor and emits an event.
+	/// @param newValue_ The new divisor value.
 	function _setEthDutchAuctionDurationDivisor(uint256 newValue_) internal {
 		ethDutchAuctionDurationDivisor = newValue_;
 		emit EthDutchAuctionDurationDivisorChanged(newValue_);
 	}
 
+	/// @dev Sets the ETH Dutch auction ending bid price divisor and emits an event.
+	/// @param newValue_ The new divisor value.
 	function _setEthDutchAuctionEndingBidPriceDivisor(uint256 newValue_) internal {
 		ethDutchAuctionEndingBidPriceDivisor = newValue_;
 		emit EthDutchAuctionEndingBidPriceDivisorChanged(newValue_);
 	}
 
+	// #endregion
+	// #region View Functions
+
+	/// @inheritdoc IBiddingBase
 	function getDurationUntilRoundActivation() external view override returns (int256) {
 		// #enable_smtchecker /*
 		unchecked
@@ -83,6 +115,7 @@ abstract contract BiddingBase is CosmicSignatureGameStorage, IBiddingBase {
 		}
 	}
 
+	/// @inheritdoc IBiddingBase
 	function getDurationElapsedSinceRoundActivation() public view override returns (int256) {
 		// #enable_smtchecker /*
 		unchecked
@@ -92,4 +125,6 @@ abstract contract BiddingBase is CosmicSignatureGameStorage, IBiddingBase {
 			return durationElapsedSinceRoundActivation_;
 		}
 	}
+
+	// #endregion
 }

@@ -15,6 +15,15 @@ import { IMarketingWallet } from "./interfaces/IMarketingWallet.sol";
 // #endregion
 // #region
 
+/// @title MarketingWallet
+/// @author Cosmic Signature Team
+/// @notice Manages CST rewards for marketing and promotional activities.
+/// @dev This contract holds CST tokens minted at the end of each bidding round and allows
+/// a designated treasurer to distribute them to marketers as rewards.
+/// Features:
+/// - Treasurer role: Only the treasurer can distribute rewards.
+/// - Batch transfers: Supports efficient batch reward distribution.
+/// - Owner control: Owner can change the treasurer address.
 contract MarketingWallet is Ownable, AddressValidator, IMarketingWallet {
 	// #region State
 
@@ -56,6 +65,7 @@ contract MarketingWallet is Ownable, AddressValidator, IMarketingWallet {
 	// #endregion
 	// #region `setTreasurerAddress`
 
+	/// @inheritdoc IMarketingWallet
 	function setTreasurerAddress(address newValue_) external override onlyOwner _providedAddressIsNonZero(newValue_) {
 		treasurerAddress = newValue_;
 		emit TreasurerAddressChanged(newValue_);
@@ -64,6 +74,7 @@ contract MarketingWallet is Ownable, AddressValidator, IMarketingWallet {
 	// #endregion
 	// #region `payReward`
 
+	/// @inheritdoc IMarketingWallet
 	function payReward(address marketerAddress_, uint256 amount_) external override _onlyTreasurer {
 		emit RewardPaid(marketerAddress_, amount_);
 
@@ -76,6 +87,8 @@ contract MarketingWallet is Ownable, AddressValidator, IMarketingWallet {
 	// #endregion
 	// #region `payManyRewards`
 
+	/// @inheritdoc IMarketingWallet
+	/// @dev Pays the same reward amount to multiple marketers.
 	function payManyRewards(address[] calldata marketerAddresses_, uint256 amount_) external override _onlyTreasurer {
 		for (uint256 index_ = marketerAddresses_.length; index_ > 0; ) {
 			-- index_;
@@ -90,6 +103,8 @@ contract MarketingWallet is Ownable, AddressValidator, IMarketingWallet {
 	// #endregion
 	// #region `payManyRewards`
 
+	/// @inheritdoc IMarketingWallet
+	/// @dev Pays different reward amounts to different marketers.
 	function payManyRewards(ICosmicSignatureToken.MintSpec[] calldata specs_) external override _onlyTreasurer {
 		for (uint256 index_ = specs_.length; index_ > 0; ) {
 			-- index_;

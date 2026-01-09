@@ -24,6 +24,15 @@ import { IBidding } from "./interfaces/IBidding.sol";
 // #endregion
 // #region
 
+/// @title Bidding
+/// @author Cosmic Signature Team
+/// @notice Handles ETH and CST bidding logic for the Cosmic Signature game.
+/// @dev This contract implements:
+/// - ETH bidding with Dutch auction pricing for the first bid of each round.
+/// - CST (Cosmic Signature Token) bidding with its own Dutch auction.
+/// - Random Walk NFT integration for discounted ETH bids.
+/// - Donation capabilities (tokens and NFTs can be donated alongside bids).
+/// - Bid price calculations and refund logic for overpayments.
 abstract contract Bidding is
 	ReentrancyGuardTransientUpgradeable,
 	OwnableUpgradeableWithReservedStorageGaps,
@@ -34,14 +43,23 @@ abstract contract Bidding is
 	IBidding {
 	// #region `receive`
 
+	/// @notice Fallback function that allows direct ETH transfers to be treated as bids.
+	/// @dev Calls `_bidWithEth` with no Random Walk NFT and an empty message.
 	receive() external payable override nonReentrant /*_onlyRoundIsActive*/ {
 		_bidWithEth((-1), "");
 	}
 
 	// #endregion
 	// #region `halveEthDutchAuctionEndingBidPrice`
-	
-	/// @dev
+
+	/// @notice Halves the ETH Dutch auction ending bid price when the auction has stalled.
+	/// @dev This emergency function allows the owner to restart a stalled Dutch auction by:
+	/// 1. Doubling `ethDutchAuctionEndingBidPriceDivisor` (halving the ending price).
+	/// 2. Adjusting `ethDutchAuctionDurationDivisor` to maintain price continuity.
+	///
+	/// Can only be called after the ETH Dutch auction has fully elapsed and before any bid is placed.
+	/// The owner must restore these parameters after the round ends.
+	///
 	/// [Comment-202508184]
 	/// Observable universe entities accessed here:
 	///    `onlyOwner`.
@@ -199,6 +217,7 @@ abstract contract Bidding is
 	// #endregion
 	// #region `bidWithEthAndDonateToken`
 
+	/// @inheritdoc IBidding
 	function bidWithEthAndDonateToken(int256 randomWalkNftId_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable override nonReentrant /*_onlyRoundIsActive*/ {
 		_bidWithEth(randomWalkNftId_, message_);
 		prizesWallet.donateToken(roundNum, _msgSender(), tokenAddress_, amount_);
@@ -207,6 +226,7 @@ abstract contract Bidding is
 	// #endregion
 	// #region `bidWithEthAndDonateNft`
 
+	/// @inheritdoc IBidding
 	function bidWithEthAndDonateNft(int256 randomWalkNftId_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable override nonReentrant /*_onlyRoundIsActive*/ {
 		_bidWithEth(randomWalkNftId_, message_);
 		prizesWallet.donateNft(roundNum, _msgSender(), nftAddress_, nftId_);
@@ -215,6 +235,7 @@ abstract contract Bidding is
 	// #endregion
 	// #region `bidWithEth`
 
+	/// @inheritdoc IBidding
 	function bidWithEth(int256 randomWalkNftId_, string memory message_) external payable override nonReentrant /*_onlyRoundIsActive*/ {
 		_bidWithEth(randomWalkNftId_, message_);
 	}
@@ -222,10 +243,17 @@ abstract contract Bidding is
 	// #endregion
 	// #region `_bidWithEth`
 
+	/// @notice Internal implementation of ETH bidding logic.
+	/// @param randomWalkNftId_ The Random Walk NFT ID to use for a discounted bid, or -1 for a regular bid.
+	/// @param message_ Optional message to include with the bid.
+	/// @dev Handles:
+	/// - Bid price calculation (regular or discounted with Random Walk NFT).
+	/// - Overpayment refunds (if above the configurable threshold).
+	/// - Random Walk NFT usage validation and marking.
+	/// - ETH Dutch auction price updates.
+	/// - CST reward minting for bidders.
 	function _bidWithEth(int256 randomWalkNftId_, string memory message_) private /*nonReentrant*/ /*_onlyRoundIsActive*/ {
-		// #region
-
-		// BidType bidType_;
+		// #region Calculate bid price
 
 		// Comment-202503162 relates and/or applies.
 		uint256 ethBidPrice_ = getNextEthBidPriceAdvanced(int256(0));
@@ -235,14 +263,14 @@ abstract contract Bidding is
 			getEthPlusRandomWalkNftBidPrice(ethBidPrice_);
 
 		// #endregion
-		// #region
+		// #region Handle overpayment and underpayment
 
 		int256 overpaidEthPrice_ = int256(msg.value) - int256(paidEthPrice_);
 		if (overpaidEthPrice_ == int256(0)) {
-			// This is the most common case. Doing nothing. Not spending any gas.
+			// Exact payment - most common case. No action needed.
 		} else if(overpaidEthPrice_ > int256(0)) {
-			// If the bidder sent more ETH than required, but we are not going to refund the excess,
-			// treating the whole received amount as what they were supposed to send.
+			// Overpayment handling: if the excess is small (below gas cost threshold),
+			// treat the entire payment as the bid price to save gas on refunds.
 			// Comment-202502052 relates and/or applies.
 			{
 				// #enable_asserts assert(tx.gasprice > 0);
@@ -254,23 +282,18 @@ abstract contract Bidding is
 			}
 		} else {
 			// [Comment-202412045]
-			// Performing this validatin sooner -- to minimize transaction fee in case the validation fails.
+			// Performing this validation sooner -- to minimize transaction fee in case the validation fails.
 			// [/Comment-202412045]
 			revert CosmicSignatureErrors.InsufficientReceivedBidAmount("The current ETH bid price is greater than the amount you transferred.", paidEthPrice_, msg.value);
 		}
 
 		// #endregion
-		// #region
+		// #region Validate and mark Random Walk NFT if used
 
 		if (randomWalkNftId_ < int256(0)) {
-			// #region
-
-			// // #enable_asserts assert(bidType_ == BidType.ETH);
-
-			// #endregion
+			// Regular ETH bid without Random Walk NFT discount.
 		} else {
-			// #region
-
+			// Discounted bid using Random Walk NFT - validate ownership and usage.
 			require(
 				usedRandomWalkNfts[uint256(randomWalkNftId_)] == 0,
 				CosmicSignatureErrors.UsedRandomWalkNft(
@@ -293,16 +316,17 @@ abstract contract Bidding is
 					_msgSender()
 				)
 			);
+			// Mark this Random Walk NFT as used to prevent reuse.
 			usedRandomWalkNfts[uint256(randomWalkNftId_)] = 1;
-			// bidType_ = BidType.RandomWalk;
-
-			// #endregion
 		}
 
 		// #endregion
-		// #region
+		// #region Update state and process bid
 
+		// Track ETH spent by this bidder.
 		biddersInfo[roundNum][_msgSender()].totalSpentEthAmount += paidEthPrice_;
+
+		// Set the Dutch auction beginning price on the first bid of the round.
 		if (lastBidderAddress == address(0)) {
 			ethDutchAuctionBeginningBidPrice = ethBidPrice_ * CosmicSignatureConstants.ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
 		}
@@ -310,9 +334,11 @@ abstract contract Bidding is
 		// [Comment-202501061]
 		// This formula ensures that the result increases.
 		// [/Comment-202501061]
+		// Calculate the next ETH bid price with guaranteed increase.
 		nextEthBidPrice = ethBidPrice_ + ethBidPrice_ / ethBidPriceIncreaseDivisor + 1;
 
 		// Comment-202501125 applies.
+		// Mint CST reward for placing a bid.
 		token.mint(_msgSender(), cstRewardAmountForBidding);
 
 		_bidCommon(/*bidType_,*/ message_);
@@ -327,7 +353,7 @@ abstract contract Bidding is
 		);
 
 		// #endregion
-		// #region
+		// #region Refund excess ETH if applicable
 
 		// [Comment-202505096]
 		// Refunding excess ETH if the bidder sent significantly more than required.
@@ -359,6 +385,7 @@ abstract contract Bidding is
 	// #endregion
 	// #region `getNextEthBidPrice`
 
+	/// @inheritdoc IBidding
 	function getNextEthBidPrice() external view override returns (uint256) {
 		return getNextEthBidPriceAdvanced(int256(0));
 	}
@@ -366,6 +393,9 @@ abstract contract Bidding is
 	// #endregion
 	// #region `getNextEthBidPriceAdvanced`
 
+	/// @inheritdoc IBidding
+	/// @dev The ETH bid price follows a Dutch auction pattern for the first bid of each round,
+	/// then increases incrementally for subsequent bids.
 	function getNextEthBidPriceAdvanced(int256 currentTimeOffset_) public view override returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
@@ -415,6 +445,8 @@ abstract contract Bidding is
 	// #endregion
 	// #region `getEthPlusRandomWalkNftBidPrice`
 
+	/// @inheritdoc IBidding
+	/// @dev Calculates the discounted price when using a Random Walk NFT for bidding.
 	function getEthPlusRandomWalkNftBidPrice(uint256 ethBidPrice_) public pure override returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
@@ -438,6 +470,7 @@ abstract contract Bidding is
 	// #endregion
 	// #region `getEthDutchAuctionDurations`
 
+	/// @inheritdoc IBidding
 	function getEthDutchAuctionDurations() public view override returns (uint256, int256) {
 		// #enable_smtchecker /*
 		unchecked
@@ -452,6 +485,7 @@ abstract contract Bidding is
 	// #endregion
 	// #region `_getEthDutchAuctionDuration`
 
+	/// @dev Calculates the ETH Dutch auction duration based on `mainPrizeTimeIncrementInMicroSeconds`.
 	function _getEthDutchAuctionDuration() private view returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
@@ -469,6 +503,7 @@ abstract contract Bidding is
 	// #endregion
 	// #region `bidWithCstAndDonateToken`
 
+	/// @inheritdoc IBidding
 	function bidWithCstAndDonateToken(uint256 priceMaxLimit_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external override nonReentrant /*_onlyRoundIsActive*/ {
 		_bidWithCst(priceMaxLimit_, message_);
 		prizesWallet.donateToken(roundNum, _msgSender(), tokenAddress_, amount_);
@@ -477,6 +512,7 @@ abstract contract Bidding is
 	// #endregion
 	// #region `bidWithCstAndDonateNft`
 
+	/// @inheritdoc IBidding
 	function bidWithCstAndDonateNft(uint256 priceMaxLimit_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external override nonReentrant /*_onlyRoundIsActive*/ {
 		_bidWithCst(priceMaxLimit_, message_);
 		prizesWallet.donateNft(roundNum, _msgSender(), nftAddress_, nftId_);
@@ -485,6 +521,7 @@ abstract contract Bidding is
 	// #endregion
 	// #region `bidWithCst`
 
+	/// @inheritdoc IBidding
 	function bidWithCst(uint256 priceMaxLimit_, string memory message_) external override nonReentrant /*_onlyRoundIsActive*/ {
 		_bidWithCst(priceMaxLimit_, message_);
 	}
@@ -492,6 +529,11 @@ abstract contract Bidding is
 	// #endregion
 	// #region `_bidWithCst`
 
+	/// @notice Internal implementation of CST bidding logic.
+	/// @param priceMaxLimit_ The maximum CST price the bidder is willing to pay.
+	/// @param message_ Optional message to include with the bid.
+	/// @dev The CST Dutch auction starts from a high price and decreases over time.
+	/// CST used for bidding is burned, and the bidder still receives a CST reward.
 	function _bidWithCst(uint256 priceMaxLimit_, string memory message_) private /*nonReentrant*/ /*_onlyRoundIsActive*/ {
 		// [Comment-202501045]
 		// Somewhere around here, one might want to validate that the first bid in a bidding round is ETH.
@@ -561,6 +603,7 @@ abstract contract Bidding is
 	// #endregion
 	// #region `getNextCstBidPrice`
 
+	/// @inheritdoc IBidding
 	function getNextCstBidPrice() external view override returns (uint256) {
 		return getNextCstBidPriceAdvanced(int256(0));
 	}
@@ -568,6 +611,8 @@ abstract contract Bidding is
 	// #endregion
 	// #region `getNextCstBidPriceAdvanced`
 
+	/// @inheritdoc IBidding
+	/// @dev The CST bid price decreases linearly from the beginning price to zero over the auction duration.
 	function getNextCstBidPriceAdvanced(int256 currentTimeOffset_) public view override returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
@@ -591,6 +636,7 @@ abstract contract Bidding is
 	// #endregion
 	// #region `getCstDutchAuctionDurations`
 
+	/// @inheritdoc IBidding
 	function getCstDutchAuctionDurations() external view override returns (uint256, int256) {
 		// #enable_smtchecker /*
 		unchecked
@@ -605,6 +651,7 @@ abstract contract Bidding is
 	// #endregion
 	// #region `_getCstDutchAuctionDuration`
 
+	/// @dev Calculates the CST Dutch auction duration based on `mainPrizeTimeIncrementInMicroSeconds`.
 	function _getCstDutchAuctionDuration() private view returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
@@ -618,6 +665,7 @@ abstract contract Bidding is
 	// #endregion
 	// #region `_getCstDutchAuctionElapsedDuration`
 
+	/// @dev Calculates how long the current CST Dutch auction has been running.
 	function _getCstDutchAuctionElapsedDuration() private view returns (int256) {
 		// #enable_smtchecker /*
 		unchecked
@@ -631,6 +679,7 @@ abstract contract Bidding is
 	// #endregion
 	// #region `_getCstDutchAuctionTotalAndRemainingDurations`
 
+	/// @dev Returns both the total and remaining duration for the CST Dutch auction.
 	function _getCstDutchAuctionTotalAndRemainingDurations() private view returns (uint256, int256) {
 		// #enable_smtchecker /*
 		unchecked

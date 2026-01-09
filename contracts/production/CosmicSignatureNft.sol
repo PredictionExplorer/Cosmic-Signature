@@ -18,6 +18,17 @@ import { ICosmicSignatureNft } from "./interfaces/ICosmicSignatureNft.sol";
 // #endregion
 // #region
 
+/// @title CosmicSignatureNft
+/// @author Cosmic Signature Team
+/// @notice The ERC-721 NFT contract for Cosmic Signature NFTs.
+/// @dev These NFTs are minted as prizes to bidding round winners and raffle participants.
+/// Features:
+/// - Enumerable: Allows enumeration of all tokens and tokens owned by an address.
+/// - Unique seed: Each NFT has a unique seed used for generative art.
+/// - Custom names: NFT owners can set custom names for their NFTs.
+/// - On-chain metadata: NFT metadata including seed and name stored on-chain.
+///
+/// Only the `CosmicSignatureGame` contract can mint NFTs.
 contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICosmicSignatureNft {
 	// #region State
 
@@ -71,6 +82,7 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 	// #endregion
 	// #region `setNftBaseUri`
 
+	/// @inheritdoc ICosmicSignatureNft
 	function setNftBaseUri(string calldata newValue_) external override onlyOwner {
 		nftBaseUri = newValue_;
 		emit NftBaseUriChanged(newValue_);
@@ -86,6 +98,7 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 	// #endregion
 	// #region `setNftGenerationScriptUri`
 
+	/// @inheritdoc ICosmicSignatureNft
 	function setNftGenerationScriptUri(string calldata newValue_) external override onlyOwner {
 		nftGenerationScriptUri = newValue_;
 		emit NftGenerationScriptUriChanged(newValue_);
@@ -94,6 +107,7 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 	// #endregion
 	// #region `mint`
 
+	/// @inheritdoc ICosmicSignatureNft
 	function mint(uint256 roundNum_, address nftOwnerAddress_, uint256 randomNumberSeed_) external override _onlyGame returns (uint256) {
 		uint256 nftId_ = _mint(roundNum_, nftOwnerAddress_, randomNumberSeed_);
 		return nftId_;
@@ -102,6 +116,7 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 	// #endregion
 	// #region `mintMany`
 
+	/// @inheritdoc ICosmicSignatureNft
 	function mintMany(uint256 roundNum_, address[] calldata nftOwnerAddresses_, uint256 randomNumberSeed_) external override _onlyGame returns (uint256) {
 		uint256 firstNftId_;
 		if (nftOwnerAddresses_.length > 0) {
@@ -117,6 +132,11 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 	// #endregion
 	// #region `_mint`
 
+	/// @dev Internal mint function that creates an NFT with a unique seed derived from the provided random seed.
+	/// @param roundNum_ The bidding round number during which the NFT is minted.
+	/// @param nftOwnerAddress_ The address that will own the minted NFT.
+	/// @param randomNumberSeed_ The seed used to generate the NFT's unique seed.
+	/// @return The ID of the minted NFT.
 	function _mint(uint256 roundNum_, address nftOwnerAddress_, uint256 randomNumberSeed_) private returns (uint256) {
 		uint256 nftId_ = totalSupply();
 
@@ -133,6 +153,7 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 	// #endregion
 	// #region `getNftMetaData`
 
+	/// @inheritdoc ICosmicSignatureNft
 	function getNftMetaData(uint256 nftId_) external view override returns (NftMetaData memory) {
 		return _nftsMetaData[nftId_];
 	}
@@ -140,6 +161,7 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 	// #endregion
 	// #region `setNftName`
 
+	/// @inheritdoc ICosmicSignatureNft
 	function setNftName(uint256 nftId_, string calldata nftName_) external override {
 		// require(
 		// 	_isAuthorized(_ownerOf(nftId_), _msgSender(), nftId_),
@@ -156,6 +178,7 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 	// #endregion
 	// #region `getNftName`
 
+	/// @inheritdoc ICosmicSignatureNft
 	function getNftName(uint256 nftId_) external view override returns (string memory) {
 		return _nftsMetaData[nftId_].name;
 	}
@@ -163,6 +186,7 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 	// #endregion
 	// #region `getNftSeed`
 
+	/// @inheritdoc ICosmicSignatureNft
 	function getNftSeed(uint256 nftId_) external view override returns (uint256) {
 		return _nftsMetaData[nftId_].seed;
 	}
@@ -170,6 +194,7 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 	// #endregion
 	// #region `checkCallerIsAuthorizedFor`
 
+	/// @inheritdoc ICosmicSignatureNft
 	function checkCallerIsAuthorizedFor(uint256 nftId_) public view override {
 		_checkAuthorized(_ownerOf(nftId_), _msgSender(), nftId_);
 	}

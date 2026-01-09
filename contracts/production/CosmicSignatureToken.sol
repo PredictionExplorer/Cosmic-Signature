@@ -19,6 +19,17 @@ import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 // #endregion
 // #region
 
+/// @title CosmicSignatureToken
+/// @author Cosmic Signature Team
+/// @notice The ERC-20 token contract for Cosmic Signature Token (CST).
+/// @dev CST is the governance and utility token for the Cosmic Signature protocol.
+/// Features:
+/// - Burnable: Tokens can be burned, which is used when bidding with CST.
+/// - Permit: Supports gasless approvals via EIP-2612.
+/// - Votes: Supports governance voting with vote delegation (ERC-5805).
+/// - Batch operations: Efficient batch minting, burning, and transfers.
+///
+/// Only the `CosmicSignatureGame` contract can mint and burn tokens.
 contract CosmicSignatureToken is
 	ERC20,
 
@@ -77,6 +88,7 @@ contract CosmicSignatureToken is
 	// #endregion
 	// #region `mint`
 
+	/// @inheritdoc ICosmicSignatureToken
 	function mint(address account_, uint256 value_) external override _onlyGame {
 		_mint(account_, value_);
 	}
@@ -84,6 +96,7 @@ contract CosmicSignatureToken is
 	// #endregion
 	// #region `burn`
 
+	/// @inheritdoc ICosmicSignatureToken
 	function burn(address account_, uint256 value_) external override _onlyGame {
 		_burn(account_, value_);
 	}
@@ -91,6 +104,7 @@ contract CosmicSignatureToken is
 	// #endregion
 	// #region `mintMany`
 
+	/// @inheritdoc ICosmicSignatureToken
 	function mintMany(MintSpec[] calldata specs_) external override _onlyGame {
 		// #enable_smtchecker /*
 		unchecked
@@ -107,6 +121,7 @@ contract CosmicSignatureToken is
 	// #endregion
 	// #region `burnMany`
 
+	/// @inheritdoc ICosmicSignatureToken
 	function burnMany(MintSpec[] calldata specs_) external override _onlyGame {
 		// #enable_smtchecker /*
 		unchecked
@@ -123,6 +138,9 @@ contract CosmicSignatureToken is
 	// #endregion
 	// #region `mintAndBurnMany`
 
+	/// @inheritdoc ICosmicSignatureToken
+	/// @dev Used for atomic mint/burn operations, such as during CST bidding where
+	/// the bid amount is burned and a reward is minted in a single transaction.
 	function mintAndBurnMany(MintOrBurnSpec[] calldata specs_) external override _onlyGame {
 		// #enable_smtchecker /*
 		unchecked
@@ -143,6 +161,8 @@ contract CosmicSignatureToken is
 	// #endregion
 	// #region `transferMany`
 
+	/// @inheritdoc ICosmicSignatureToken
+	/// @dev Transfers the same amount to multiple recipients in a single transaction.
 	function transferMany(address[] calldata tos_, uint256 value_) external override {
 		// #enable_smtchecker /*
 		unchecked
@@ -160,6 +180,8 @@ contract CosmicSignatureToken is
 	// #endregion
 	// #region `transferMany`
 
+	/// @inheritdoc ICosmicSignatureToken
+	/// @dev Transfers different amounts to different recipients in a single transaction.
 	function transferMany(MintSpec[] calldata specs_) external override {
 		// #enable_smtchecker /*
 		unchecked
@@ -226,6 +248,7 @@ contract CosmicSignatureToken is
 	// #endregion
 	// #region Overrides Required By Solidity
 
+	/// @dev Required override to resolve multiple inheritance between ERC20 and ERC20Votes.
 	function _update(address from_, address to_, uint256 value_) internal override (ERC20, ERC20Votes) {
 		// // #enable_asserts // #disable_smtchecker console.log("_update entered.");
 		super._update(from_, to_, value_);
@@ -241,6 +264,7 @@ contract CosmicSignatureToken is
 	// 	// #enable_asserts // #disable_smtchecker console.log("_transferVotingUnits exiting.");
 	// }
 
+	/// @dev Required override to resolve multiple inheritance for nonces.
 	function nonces(address owner_) public view override (IERC20Permit, Nonces, ERC20Permit) returns (uint256) {
 		return super.nonces(owner_);
 	}
