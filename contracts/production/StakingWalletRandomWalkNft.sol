@@ -114,9 +114,12 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 		// It's possible that this item is already populated because we didn't delete it near Comment-202502263.
 		// We are now overwriting it.
 		stakeActionIds[newStakeActionIndex_] = newStakeActionId_;
+		// #enable_asserts assert(stakeActionIds[newStakeActionIndex_] == newStakeActionId_);
 
 		++ newNumStakedNfts_;
 		numStakedNfts = newNumStakedNfts_;
+		// #enable_asserts assert(newNumStakedNfts_ > 0);
+		// #enable_asserts assert(newActionCounter_ > 0);
 		emit NftStaked(newStakeActionId_, nftId_, msg.sender, newNumStakedNfts_);
 
 		// [Comment-202501145]
@@ -124,6 +127,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 		// it could make sense to use the feature Comment-202501144 is talking about.
 		// [/Comment-202501145]
 		randomWalkNft.transferFrom(msg.sender, address(this), nftId_);
+		// #enable_asserts assert(randomWalkNft.ownerOf(nftId_) == address(this));
 	}
 
 	// #endregion
@@ -166,16 +170,19 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 
 		delete stakeActionReference_.nftId;
 		delete stakeActionReference_.nftOwnerAddress;
+		// #enable_asserts assert(stakeActionReference_.nftOwnerAddress == address(0));
 		uint256 newNumStakedNfts_ = numStakedNfts - 1;
 		numStakedNfts = newNumStakedNfts_;
 
 		// Nothing would be broken if this happens to be equal `stakeActionId_`,
 		// meaning we are unstaking the stake action that is the last in `stakeActionIds`.
 		uint256 lastStakeActionId_ = stakeActionIds[newNumStakedNfts_];
+		// #enable_asserts assert(lastStakeActionId_ > 0);
 
 		stakeActions[lastStakeActionId_].index = stakeActionCopy_.index;
 		delete stakeActionReference_.index;
 		stakeActionIds[stakeActionCopy_.index] = lastStakeActionId_;
+		// #enable_asserts assert(stakeActionIds[stakeActionCopy_.index] == lastStakeActionId_);
 
 		// [Comment-202502263]
 		// Deleting the last element is unnecessary for correctness because we track `numStakedNfts`.

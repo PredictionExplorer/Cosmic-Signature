@@ -154,10 +154,13 @@ contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, S
 		newStakeActionReference_.initialRewardAmountPerStakedNft = rewardAmountPerStakedNftCopy_;
 		uint256 newNumStakedNfts_ = numStakedNfts + 1;
 		numStakedNfts = newNumStakedNfts_;
+		// #enable_asserts assert(newNumStakedNfts_ > 0);
+		// #enable_asserts assert(newActionCounter_ > 0);
 		emit NftStaked(newStakeActionId_, nftId_, _msgSender(), newNumStakedNfts_, rewardAmountPerStakedNftCopy_);
 
 		// Comment-202501145 applies.
 		nft.transferFrom(_msgSender(), address(this), nftId_);
+		// #enable_asserts assert(nft.ownerOf(nftId_) == address(this));
 	}
 
 	// #endregion

@@ -90,7 +90,11 @@ contract CosmicSignatureToken is
 
 	/// @inheritdoc ICosmicSignatureToken
 	function mint(address account_, uint256 value_) external override _onlyGame {
+		// #enable_asserts uint256 oldTotalSupply_ = totalSupply();
+		// #enable_asserts uint256 oldBalance_ = balanceOf(account_);
 		_mint(account_, value_);
+		// #enable_asserts assert(totalSupply() == oldTotalSupply_ + value_);
+		// #enable_asserts assert(balanceOf(account_) == oldBalance_ + value_);
 	}
 
 	// #endregion
@@ -98,7 +102,11 @@ contract CosmicSignatureToken is
 
 	/// @inheritdoc ICosmicSignatureToken
 	function burn(address account_, uint256 value_) external override _onlyGame {
+		// #enable_asserts uint256 oldTotalSupply_ = totalSupply();
+		// #enable_asserts uint256 oldBalance_ = balanceOf(account_);
 		_burn(account_, value_);
+		// #enable_asserts assert(totalSupply() == oldTotalSupply_ - value_);
+		// #enable_asserts assert(balanceOf(account_) == oldBalance_ - value_);
 	}
 
 	// #endregion

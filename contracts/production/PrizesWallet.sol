@@ -273,8 +273,10 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 	function _prepareWithdrawEth(uint256 roundNum_, address prizeWinnerAddress_) private returns (uint256) {
 		// It's OK if this is zero.
 		uint256 ethBalanceAmountCopy_ = _ethBalanceAmounts[roundNum_][uint256(uint160(prizeWinnerAddress_))];
+		// #enable_asserts assert(ethBalanceAmountCopy_ <= address(this).balance);
 
 		delete _ethBalanceAmounts[roundNum_][uint256(uint160(prizeWinnerAddress_))];
+		// #enable_asserts assert(_ethBalanceAmounts[roundNum_][uint256(uint160(prizeWinnerAddress_))] == 0);
 		emit EthWithdrawn(roundNum_, prizeWinnerAddress_, _msgSender(), ethBalanceAmountCopy_);
 		return ethBalanceAmountCopy_;
 	}

@@ -336,10 +336,12 @@ abstract contract Bidding is
 		// [/Comment-202501061]
 		// Calculate the next ETH bid price with guaranteed increase.
 		nextEthBidPrice = ethBidPrice_ + ethBidPrice_ / ethBidPriceIncreaseDivisor + 1;
+		// #enable_asserts assert(nextEthBidPrice > ethBidPrice_);
 
 		// Comment-202501125 applies.
 		// Mint CST reward for placing a bid.
 		token.mint(_msgSender(), cstRewardAmountForBidding);
+		// #enable_asserts assert(paidEthPrice_ > 0);
 
 		_bidCommon(/*bidType_,*/ message_);
 		emit BidPlaced(
@@ -596,6 +598,9 @@ abstract contract Bidding is
 			nextRoundFirstCstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
 		}
 		lastCstBidderAddress = _msgSender();
+		// #enable_asserts assert(lastCstBidderAddress != address(0));
+		// Note: paidPrice_ can be 0 if CST Dutch auction has elapsed, which is valid.
+		// #enable_asserts assert(newCstDutchAuctionBeginningBidPrice_ >= cstDutchAuctionBeginningBidPriceMinLimit);
 		_bidCommon(/*BidType.CST,*/ message_);
 		emit BidPlaced(roundNum, _msgSender(), -1, int256(paidPrice_), -1, message_, mainPrizeTime);
 	}
@@ -732,12 +737,16 @@ abstract contract Bidding is
 		}
 		// lastBidType = bidType_;
 		lastBidderAddress = _msgSender();
+		// #enable_asserts assert(lastBidderAddress != address(0));
 		BidderAddresses storage bidderAddressesReference_ = bidderAddresses[roundNum];
 		uint256 totalNumBids_ = bidderAddressesReference_.numItems;
 		bidderAddressesReference_.items[totalNumBids_] = _msgSender();
 		++ totalNumBids_;
 		bidderAddressesReference_.numItems = totalNumBids_;
+		// #enable_asserts assert(totalNumBids_ > 0);
+		// #enable_asserts assert(bidderAddressesReference_.items[totalNumBids_ - 1] == _msgSender());
 		biddersInfo[roundNum][_msgSender()].lastBidTimeStamp = block.timestamp;
+		// #enable_asserts assert(biddersInfo[roundNum][_msgSender()].lastBidTimeStamp == block.timestamp);
 	}
 
 	// #endregion

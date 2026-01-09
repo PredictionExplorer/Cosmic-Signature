@@ -28,6 +28,7 @@ abstract contract SecondaryPrizes is CosmicSignatureGameStorage, ISecondaryPrize
 		unchecked
 		// #enable_smtchecker */
 		{
+			// #enable_asserts assert(chronoWarriorEthPrizeAmountPercentage <= 100);
 			return address(this).balance * chronoWarriorEthPrizeAmountPercentage / 100;
 		}
 	}
