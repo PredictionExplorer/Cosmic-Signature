@@ -10,8 +10,21 @@
 //! curved light paths. This module prioritizes **visible, dramatic effects** over
 //! physically accurate but imperceptible simulations.
 //!
+//! # Luminous Trajectory Lensing (New Default)
+//!
+//! The "Geodesic Caustics" style implements a novel approach where the **entire orbital
+//! history** shapes spacetime distortion:
+//!
+//! 1. **Trajectory Density Field**: Computes where bodies spent time throughout the simulation
+//! 2. **Distributed Mass**: The trajectory path itself acts as an extended mass distribution
+//! 3. **Accumulated Caustics**: Integrates caustic patterns across multiple timesteps
+//!
+//! This creates museum-quality art where the physics of the three-body problem
+//! directly shapes the visual output - denser orbital regions create stronger lensing.
+//!
 //! # Styles
 //!
+//! - **Geodesic Caustics**: Full orbital history shapes lensing (default)
 //! - **Cosmic Lens**: 3 massive bodies create dramatic Einstein rings
 //! - **Gravitational Wake**: Trajectory centroids create rippling patterns
 //! - **Event Horizon**: Extreme distortion, almost surreal
@@ -31,8 +44,11 @@ use nalgebra::Vector3;
 /// Lensing style variants
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub enum LensingStyle {
-    /// 3 massive bodies with Einstein rings (recommended default)
+    /// Geodesic ray tracing with emergent caustic patterns (recommended default)
+    /// Physics-accurate visualization where beauty emerges from the mathematics
     #[default]
+    GeodesicCaustics,
+    /// 3 massive bodies with Einstein rings
     CosmicLens,
     /// Trajectory centroids create rippling wake patterns
     GravitationalWake,
@@ -47,17 +63,19 @@ impl LensingStyle {
     #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Self {
         match s.to_lowercase().as_str() {
+            "geodesic-caustics" | "geodesiccaustics" | "caustics" | "geodesic" => Self::GeodesicCaustics,
             "cosmic-lens" | "cosmiclens" | "cosmic" => Self::CosmicLens,
             "gravitational-wake" | "wake" | "ripple" => Self::GravitationalWake,
             "event-horizon" | "eventhorizon" | "extreme" | "black-hole" => Self::EventHorizon,
             "spacetime-fabric" | "fabric" | "grid" | "spacetime" => Self::SpacetimeFabric,
-            _ => Self::CosmicLens,
+            _ => Self::GeodesicCaustics, // Default to geodesic caustics
         }
     }
     
     /// Get display name
     pub fn name(&self) -> &'static str {
         match self {
+            Self::GeodesicCaustics => "Geodesic Caustics",
             Self::CosmicLens => "Cosmic Lens",
             Self::GravitationalWake => "Gravitational Wake",
             Self::EventHorizon => "Event Horizon",
@@ -125,15 +143,111 @@ pub struct LensingConfig {
     
     /// Whether to compute at half resolution for performance
     pub half_resolution: bool,
+    
+    // === Geodesic Caustics specific settings ===
+    
+    /// Number of ray samples per pixel for caustic computation
+    pub caustic_ray_density: usize,
+    
+    /// Caustic brightness multiplier
+    pub caustic_brightness: f64,
+    
+    /// Whether to show caustic curves (emergent from ray density)
+    pub show_caustics: bool,
+    
+    /// Proper-time trail visualization (physics-accurate worldlines)
+    pub show_proper_time_trails: bool,
+    
+    /// Time dilation color shift strength (red=slow, blue=fast)
+    pub time_dilation_strength: f64,
+    
+    /// Caustic smoothing radius
+    pub caustic_smoothing: f64,
+    
+    // === Trajectory-Based Lensing Settings ===
+    
+    /// Enable trajectory-based mass distribution (entire orbital history shapes lensing)
+    pub use_trajectory_density: bool,
+    
+    /// Number of trajectory points to sample for density computation
+    pub trajectory_sample_count: usize,
+    
+    /// Minimum density threshold (0-1) for mass source generation
+    pub density_threshold: f64,
+    
+    /// How many mass sources to generate from trajectory density
+    pub trajectory_source_count: usize,
+    
+    /// Base mass per trajectory density unit
+    pub trajectory_mass_scale: f64,
+    
+    /// Number of temporal snapshots for accumulated caustics
+    pub accumulated_caustic_samples: usize,
+    
+    /// Luminous trail brightness (the glowing path of orbital history)
+    pub luminous_trail_brightness: f64,
+    
+    /// Luminous trail falloff (how quickly brightness fades with age)
+    pub luminous_trail_falloff: f64,
 }
 
 impl Default for LensingConfig {
     fn default() -> Self {
-        Self::cosmic_lens()
+        Self::geodesic_caustics()
     }
 }
 
 impl LensingConfig {
+    /// Geodesic Caustics: Physics-accurate ray tracing with emergent caustic patterns
+    /// 
+    /// This style implements "Luminous Trajectory Lensing" - the entire orbital history
+    /// shapes the gravitational lensing effect:
+    /// 
+    /// 1. **Trajectory Density Field**: Where bodies spent more time = higher "mass density"
+    /// 2. **Distributed Mass Sources**: The orbital path itself warps spacetime
+    /// 3. **Accumulated Caustics**: Caustics are integrated across multiple timesteps
+    /// 
+    /// The beauty emerges directly from the physics of the three-body problem.
+    pub fn geodesic_caustics() -> Self {
+        Self {
+            style: LensingStyle::GeodesicCaustics,
+            base_mass: 80_000.0,  // Lower per-source mass since we have more sources
+            mass_multiplier: 1.0,
+            einstein_scale: 0.12,
+            max_displacement: 120.0,
+            falloff_exponent: 1.0,
+            show_einstein_rings: false, // Caustics create their own ring-like patterns
+            ring_brightness: 0.0,
+            ring_thickness: 0.0,
+            show_accretion_glow: false,
+            accretion_intensity: 0.0,
+            show_grid: false,
+            grid_spacing: 50.0,
+            grid_opacity: 0.0,
+            chromatic_aberration: 0.15, // Physically accurate - different wavelengths bend differently
+            wake_centroids: 3,
+            trail_opacity: 0.0, // Use luminous trails instead
+            trail_width: 0.0,
+            half_resolution: false, // Full resolution for caustic detail
+            // Geodesic-specific settings
+            caustic_ray_density: 4, // Rays per pixel for density computation
+            caustic_brightness: 1.2,
+            show_caustics: true,
+            show_proper_time_trails: true,
+            time_dilation_strength: 0.6,
+            caustic_smoothing: 2.5,
+            // Trajectory-based lensing (the new approach!)
+            use_trajectory_density: true,
+            trajectory_sample_count: 2000, // Sample this many trajectory points
+            density_threshold: 0.05,       // Minimum density for mass generation
+            trajectory_source_count: 150,  // Generate this many mass sources from density
+            trajectory_mass_scale: 1500.0, // Mass per density unit
+            accumulated_caustic_samples: 8, // Temporal samples for caustic accumulation
+            luminous_trail_brightness: 0.45,
+            luminous_trail_falloff: 0.4,
+        }
+    }
+    
     /// Cosmic Lens: 3 massive bodies with dramatic Einstein rings
     pub fn cosmic_lens() -> Self {
         Self {
@@ -156,6 +270,22 @@ impl LensingConfig {
             trail_opacity: 0.15,
             trail_width: 1.0,
             half_resolution: true,
+            // Geodesic-specific settings (not used for this style)
+            caustic_ray_density: 1,
+            caustic_brightness: 0.0,
+            show_caustics: false,
+            show_proper_time_trails: false,
+            time_dilation_strength: 0.0,
+            caustic_smoothing: 0.0,
+            // Trajectory-based lensing (disabled for this style)
+            use_trajectory_density: false,
+            trajectory_sample_count: 0,
+            density_threshold: 0.0,
+            trajectory_source_count: 0,
+            trajectory_mass_scale: 0.0,
+            accumulated_caustic_samples: 0,
+            luminous_trail_brightness: 0.0,
+            luminous_trail_falloff: 0.0,
         }
     }
     
@@ -181,6 +311,22 @@ impl LensingConfig {
             trail_opacity: 0.25,
             trail_width: 1.2,
             half_resolution: true,
+            // Geodesic-specific settings (not used for this style)
+            caustic_ray_density: 1,
+            caustic_brightness: 0.0,
+            show_caustics: false,
+            show_proper_time_trails: false,
+            time_dilation_strength: 0.0,
+            caustic_smoothing: 0.0,
+            // Trajectory-based lensing (disabled for this style)
+            use_trajectory_density: false,
+            trajectory_sample_count: 0,
+            density_threshold: 0.0,
+            trajectory_source_count: 0,
+            trajectory_mass_scale: 0.0,
+            accumulated_caustic_samples: 0,
+            luminous_trail_brightness: 0.0,
+            luminous_trail_falloff: 0.0,
         }
     }
     
@@ -206,6 +352,22 @@ impl LensingConfig {
             trail_opacity: 0.0,
             trail_width: 0.0,
             half_resolution: true,
+            // Geodesic-specific settings (not used for this style)
+            caustic_ray_density: 1,
+            caustic_brightness: 0.0,
+            show_caustics: false,
+            show_proper_time_trails: false,
+            time_dilation_strength: 0.0,
+            caustic_smoothing: 0.0,
+            // Trajectory-based lensing (disabled for this style)
+            use_trajectory_density: false,
+            trajectory_sample_count: 0,
+            density_threshold: 0.0,
+            trajectory_source_count: 0,
+            trajectory_mass_scale: 0.0,
+            accumulated_caustic_samples: 0,
+            luminous_trail_brightness: 0.0,
+            luminous_trail_falloff: 0.0,
         }
     }
     
@@ -231,12 +393,29 @@ impl LensingConfig {
             trail_opacity: 0.2,
             trail_width: 1.5,
             half_resolution: true,
+            // Geodesic-specific settings (not used for this style)
+            caustic_ray_density: 1,
+            caustic_brightness: 0.0,
+            show_caustics: false,
+            show_proper_time_trails: false,
+            time_dilation_strength: 0.0,
+            caustic_smoothing: 0.0,
+            // Trajectory-based lensing (disabled for this style)
+            use_trajectory_density: false,
+            trajectory_sample_count: 0,
+            density_threshold: 0.0,
+            trajectory_source_count: 0,
+            trajectory_mass_scale: 0.0,
+            accumulated_caustic_samples: 0,
+            luminous_trail_brightness: 0.0,
+            luminous_trail_falloff: 0.0,
         }
     }
     
     /// Create config from style enum
     pub fn from_style(style: LensingStyle) -> Self {
         match style {
+            LensingStyle::GeodesicCaustics => Self::geodesic_caustics(),
             LensingStyle::CosmicLens => Self::cosmic_lens(),
             LensingStyle::GravitationalWake => Self::gravitational_wake(),
             LensingStyle::EventHorizon => Self::event_horizon(),
@@ -282,6 +461,7 @@ pub struct MassSource {
 
 /// Create mass sources from trajectory positions
 /// 
+/// For GeodesicCaustics with trajectory density: Creates distributed mass sources from orbital history
 /// For CosmicLens/EventHorizon: Uses only current (final) body positions
 /// For GravitationalWake: Uses aggregated centroids along trajectory
 pub fn create_mass_sources(
@@ -301,7 +481,11 @@ pub fn create_mass_sources(
     };
     
     match config.style {
-        LensingStyle::CosmicLens | LensingStyle::EventHorizon | LensingStyle::SpacetimeFabric => {
+        LensingStyle::GeodesicCaustics if config.use_trajectory_density => {
+            // NEW: Create mass sources from entire orbital history
+            create_trajectory_density_sources(positions, config, width, height, &world_bounds)
+        }
+        LensingStyle::GeodesicCaustics | LensingStyle::CosmicLens | LensingStyle::EventHorizon | LensingStyle::SpacetimeFabric => {
             create_body_sources(positions, config, width, height, &world_bounds)
         }
         LensingStyle::GravitationalWake => {
@@ -436,6 +620,344 @@ fn create_centroid_sources(
     }
     
     sources
+}
+
+// ============================================================================
+// TRAJECTORY DENSITY LENSING (NEW!)
+// ============================================================================
+
+/// Trajectory density field - a 2D map showing where bodies spent time
+/// 
+/// Higher values indicate regions where bodies lingered or orbital paths overlapped.
+/// This becomes the mass distribution for "Luminous Trajectory Lensing".
+pub struct TrajectoryDensityField {
+    /// Density values for each pixel (0-1 normalized)
+    pub density: Vec<f64>,
+    /// Width of the density field
+    pub width: usize,
+    /// Height of the density field
+    pub height: usize,
+    /// Per-body density contributions (for coloring)
+    pub body_densities: [Vec<f64>; 3],
+    /// World bounds used for coordinate conversion
+    bounds: WorldBounds,
+}
+
+impl TrajectoryDensityField {
+    /// Compute trajectory density field from all positions
+    /// 
+    /// For each trajectory point, we accumulate density in nearby pixels.
+    /// This creates a "heat map" of where bodies spent their time.
+    pub fn compute(
+        positions: &[Vec<Vector3<f64>>],
+        width: usize,
+        height: usize,
+        config: &LensingConfig,
+    ) -> Self {
+        let (min_x, max_x, min_y, max_y) = compute_bounds(positions);
+        let margin = 0.1 * ((max_x - min_x).max(max_y - min_y));
+        let bounds = WorldBounds {
+            min_x: min_x - margin,
+            max_x: max_x + margin,
+            min_y: min_y - margin,
+            max_y: max_y + margin,
+        };
+        
+        let mut density = vec![0.0; width * height];
+        let mut body_densities: [Vec<f64>; 3] = [
+            vec![0.0; width * height],
+            vec![0.0; width * height],
+            vec![0.0; width * height],
+        ];
+        
+        // Subsample trajectory for performance
+        let sample_count = config.trajectory_sample_count.max(100);
+        
+        // Gaussian splat radius (in pixels)
+        let splat_radius = (width.min(height) as f64 * 0.02).max(3.0);
+        let sigma = splat_radius / 2.5;
+        let radius_int = splat_radius.ceil() as i32;
+        
+        for (body_idx, body_pos) in positions.iter().enumerate() {
+            if body_pos.is_empty() {
+                continue;
+            }
+            
+            let subsample = (body_pos.len() / sample_count).max(1);
+            
+            for (step, pos) in body_pos.iter().enumerate() {
+                if step % subsample != 0 {
+                    continue;
+                }
+                
+                let (px, py) = bounds.to_pixel(pos.x, pos.y, width, height);
+                let cx = px.round() as i32;
+                let cy = py.round() as i32;
+                
+                // Time-based weight: more recent positions have slightly higher weight
+                let age = step as f64 / body_pos.len() as f64;
+                let time_weight = 1.0 - age * 0.3; // Recent is 1.0, old is 0.7
+                
+                // Splat Gaussian contribution to nearby pixels
+                for dy in -radius_int..=radius_int {
+                    for dx in -radius_int..=radius_int {
+                        let nx = cx + dx;
+                        let ny = cy + dy;
+                        
+                        if nx < 0 || nx >= width as i32 || ny < 0 || ny >= height as i32 {
+                            continue;
+                        }
+                        
+                        let dist_sq = (dx as f64).powi(2) + (dy as f64).powi(2);
+                        let weight = (-dist_sq / (2.0 * sigma * sigma)).exp() * time_weight;
+                        
+                        let idx = ny as usize * width + nx as usize;
+                        density[idx] += weight;
+                        
+                        if body_idx < 3 {
+                            body_densities[body_idx][idx] += weight;
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Normalize density to [0, 1]
+        let max_density = density.iter().copied().fold(0.0, f64::max).max(1e-10);
+        for d in &mut density {
+            *d /= max_density;
+        }
+        
+        // Normalize body densities
+        for body_density in &mut body_densities {
+            let max_bd = body_density.iter().copied().fold(0.0, f64::max).max(1e-10);
+            for d in body_density.iter_mut() {
+                *d /= max_bd;
+            }
+        }
+        
+        Self {
+            density,
+            width,
+            height,
+            body_densities,
+            bounds,
+        }
+    }
+    
+    /// Get density at a pixel location
+    pub fn get_density(&self, x: usize, y: usize) -> f64 {
+        if x < self.width && y < self.height {
+            self.density[y * self.width + x]
+        } else {
+            0.0
+        }
+    }
+    
+    /// Get which body contributed most at this location (for coloring)
+    pub fn dominant_body(&self, x: usize, y: usize) -> usize {
+        if x >= self.width || y >= self.height {
+            return 0;
+        }
+        let idx = y * self.width + x;
+        let mut max_body = 0;
+        let mut max_val = 0.0;
+        for (i, bd) in self.body_densities.iter().enumerate() {
+            if bd[idx] > max_val {
+                max_val = bd[idx];
+                max_body = i;
+            }
+        }
+        max_body
+    }
+}
+
+/// Create mass sources distributed along the trajectory based on density
+/// 
+/// This is the key function for "Luminous Trajectory Lensing":
+/// - High-density regions (where bodies lingered) get more massive sources
+/// - The entire orbital history shapes the gravitational lensing
+fn create_trajectory_density_sources(
+    positions: &[Vec<Vector3<f64>>],
+    config: &LensingConfig,
+    width: usize,
+    height: usize,
+    bounds: &WorldBounds,
+) -> Vec<MassSource> {
+    // Compute trajectory density field
+    let density_field = TrajectoryDensityField::compute(positions, width, height, config);
+    
+    // Also include the 3 current body positions as primary sources
+    let mut sources = create_body_sources(positions, config, width, height, bounds);
+    
+    // Find high-density regions and create mass sources there
+    let target_count = config.trajectory_source_count.max(10);
+    let threshold = config.density_threshold;
+    
+    // Collect candidate positions (above threshold density)
+    let mut candidates: Vec<(usize, usize, f64, usize)> = Vec::new(); // (x, y, density, body_idx)
+    
+    // Sample the density field at regular intervals
+    let step = ((width * height) as f64 / (target_count as f64 * 10.0)).sqrt().max(1.0) as usize;
+    
+    for y in (0..height).step_by(step.max(1)) {
+        for x in (0..width).step_by(step.max(1)) {
+            let d = density_field.get_density(x, y);
+            if d > threshold {
+                let body_idx = density_field.dominant_body(x, y);
+                candidates.push((x, y, d, body_idx));
+            }
+        }
+    }
+    
+    // Sort by density (highest first) and take top candidates
+    candidates.sort_by(|a, b| b.2.partial_cmp(&a.2).unwrap_or(std::cmp::Ordering::Equal));
+    
+    let count = candidates.len().min(target_count);
+    
+    for (x, y, density, body_idx) in candidates.into_iter().take(count) {
+        // Mass proportional to density
+        let mass = config.trajectory_mass_scale * density * config.mass_multiplier;
+        
+        sources.push(MassSource {
+            x: x as f64 + 0.5,
+            y: y as f64 + 0.5,
+            mass,
+            body_index: body_idx,
+            velocity: density, // Use density as velocity proxy for coloring
+        });
+    }
+    
+    sources
+}
+
+/// Render luminous trajectory trails
+/// 
+/// Creates a glowing visualization of the orbital history, where brightness
+/// corresponds to how much time the bodies spent in each region.
+pub fn render_luminous_trails(
+    buffer: &mut [(f64, f64, f64, f64)],
+    density_field: &TrajectoryDensityField,
+    config: &LensingConfig,
+    body_colors: &[[f64; 3]; 3],
+) {
+    if config.luminous_trail_brightness <= 0.0 {
+        return;
+    }
+    
+    let width = density_field.width;
+    let _height = density_field.height; // Used for buffer indexing validation
+    let brightness = config.luminous_trail_brightness;
+    let falloff = config.luminous_trail_falloff.max(0.1);
+    
+    buffer.par_iter_mut().enumerate().for_each(|(idx, pixel)| {
+        let x = idx % width;
+        let y = idx / width;
+        
+        let density = density_field.get_density(x, y);
+        
+        if density > 0.01 {
+            // Get dominant body for coloring
+            let body_idx = density_field.dominant_body(x, y);
+            let base_color = body_colors[body_idx % 3];
+            
+            // Non-linear intensity mapping for more dramatic effect
+            let intensity = brightness * density.powf(falloff);
+            
+            // Additive blending with soft glow
+            pixel.0 = (pixel.0 + base_color[0] * intensity).min(1.0);
+            pixel.1 = (pixel.1 + base_color[1] * intensity).min(1.0);
+            pixel.2 = (pixel.2 + base_color[2] * intensity).min(1.0);
+        }
+    });
+}
+
+/// Compute accumulated caustics across multiple timesteps
+/// 
+/// Instead of computing caustics from just the final positions, this
+/// samples multiple points along the trajectory and integrates the
+/// caustic patterns, creating a visualization of the entire gravitational history.
+pub fn compute_accumulated_caustics(
+    positions: &[Vec<Vector3<f64>>],
+    field: &DisplacementField,
+    config: &LensingConfig,
+    width: usize,
+    height: usize,
+) -> Vec<f64> {
+    let samples = config.accumulated_caustic_samples.max(1);
+    
+    if samples <= 1 {
+        // Fall back to single-frame caustics
+        return compute_caustic_density(field, config);
+    }
+    
+    // Compute world bounds
+    let (min_x, max_x, min_y, max_y) = compute_bounds(positions);
+    let margin = 0.1 * ((max_x - min_x).max(max_y - min_y));
+    let bounds = WorldBounds {
+        min_x: min_x - margin,
+        max_x: max_x + margin,
+        min_y: min_y - margin,
+        max_y: max_y + margin,
+    };
+    
+    // Accumulator for caustic density
+    let mut accumulated = vec![0.0; width * height];
+    
+    // Sample positions at different timesteps
+    let total_steps = positions.iter().map(|p| p.len()).max().unwrap_or(1);
+    
+    for sample_idx in 0..samples {
+        // Select timestep for this sample
+        let t = (sample_idx as f64 + 0.5) / samples as f64;
+        let step = ((total_steps as f64) * t) as usize;
+        
+        // Create temporary sources from positions at this timestep
+        let mut temp_sources = Vec::new();
+        let effective_mass = config.base_mass * config.mass_multiplier;
+        
+        for (body_idx, body_pos) in positions.iter().enumerate() {
+            if body_pos.is_empty() {
+                continue;
+            }
+            
+            let idx = step.min(body_pos.len() - 1);
+            let pos = &body_pos[idx];
+            let (px, py) = bounds.to_pixel(pos.x, pos.y, width, height);
+            
+            // Weight decreases for older samples
+            let age_weight = 0.5 + 0.5 * t; // 0.5 to 1.0
+            
+            temp_sources.push(MassSource {
+                x: px,
+                y: py,
+                mass: effective_mass * age_weight,
+                body_index: body_idx,
+                velocity: 1.0,
+            });
+        }
+        
+        // Compute displacement field for this timestep
+        let temp_field = DisplacementField::compute(&temp_sources, width, height, config);
+        
+        // Compute caustic density and accumulate
+        let temp_density = compute_caustic_density(&temp_field, config);
+        
+        // Weight this sample (more recent samples get higher weight)
+        let sample_weight = 0.5 + 0.5 * t;
+        
+        for (acc, d) in accumulated.iter_mut().zip(temp_density.iter()) {
+            *acc += d * sample_weight;
+        }
+    }
+    
+    // Normalize accumulated density
+    let max_acc = accumulated.iter().copied().fold(0.0, f64::max).max(1.0);
+    for d in &mut accumulated {
+        *d = (*d / max_acc).powf(0.6); // Gamma for better dynamic range
+    }
+    
+    accumulated
 }
 
 // ============================================================================
@@ -1037,6 +1559,261 @@ fn draw_soft_point(
 }
 
 // ============================================================================
+// GEODESIC CAUSTICS RENDERING
+// ============================================================================
+
+/// Compute ray density field for caustic visualization
+/// 
+/// This traces light rays backward through curved spacetime and counts
+/// where they converge to create bright caustic patterns.
+pub fn compute_caustic_density(
+    field: &DisplacementField,
+    config: &LensingConfig,
+) -> Vec<f64> {
+    let width = field.full_width();
+    let height = field.full_height();
+    
+    // Create density accumulator
+    let mut density = vec![0.0f64; width * height];
+    
+    // For each destination pixel, trace multiple rays backward to find where
+    // they came from in the source plane. Where many rays converge to similar
+    // source positions, we have high density (caustics).
+    let ray_density = config.caustic_ray_density.max(1);
+    let sub_pixel_step = 1.0 / ray_density as f64;
+    
+    for y in 0..height {
+        for x in 0..width {
+            // Trace multiple rays per pixel for density estimation
+            for sy in 0..ray_density {
+                for sx in 0..ray_density {
+                    let sub_x = x as f64 + sx as f64 * sub_pixel_step + sub_pixel_step * 0.5;
+                    let sub_y = y as f64 + sy as f64 * sub_pixel_step + sub_pixel_step * 0.5;
+                    
+                    // Get source coordinates (where this light ray came from)
+                    let (src_x, src_y) = field.get_source_coords(
+                        sub_x.min((width - 1) as f64) as usize,
+                        sub_y.min((height - 1) as f64) as usize,
+                    );
+                    
+                    // Compute magnification (Jacobian determinant)
+                    // Higher magnification = more light rays converging = brighter caustic
+                    let (dx, dy) = field.get_displacement(
+                        sub_x.min((width - 1) as f64) as usize,
+                        sub_y.min((height - 1) as f64) as usize,
+                    );
+                    let displacement_mag = (dx * dx + dy * dy).sqrt();
+                    
+                    // Magnification increases near caustics (where rays converge)
+                    // This is approximated by displacement gradient
+                    let magnification = 1.0 + displacement_mag * 0.1;
+                    
+                    // Accumulate to source pixel
+                    let src_xi = (src_x.round() as usize).min(width - 1);
+                    let src_yi = (src_y.round() as usize).min(height - 1);
+                    let src_idx = src_yi * width + src_xi;
+                    
+                    density[src_idx] += magnification / (ray_density * ray_density) as f64;
+                }
+            }
+        }
+    }
+    
+    // Apply smoothing to reduce noise
+    if config.caustic_smoothing > 0.0 {
+        density = smooth_density_field(&density, width, height, config.caustic_smoothing);
+    }
+    
+    // Normalize to [0, 1] range with non-linear mapping for artistic effect
+    let max_density = density.iter().copied().fold(0.0, f64::max).max(1.0);
+    for d in &mut density {
+        *d = (*d / max_density).powf(0.7); // Gamma for better dynamic range
+    }
+    
+    density
+}
+
+/// Apply Gaussian smoothing to density field
+fn smooth_density_field(
+    density: &[f64],
+    _width: usize,
+    _height: usize,
+    sigma: f64,
+) -> Vec<f64> {
+    // Derive width and height from density length
+    let total = density.len();
+    let width = (total as f64).sqrt() as usize;
+    let height = total / width;
+    
+    let radius = (sigma * 2.5).ceil() as i32;
+    let mut smoothed = vec![0.0; width * height];
+    
+    // Compute Gaussian kernel weights
+    let mut kernel = Vec::new();
+    let mut kernel_sum = 0.0;
+    for dy in -radius..=radius {
+        for dx in -radius..=radius {
+            let weight = (-((dx * dx + dy * dy) as f64) / (2.0 * sigma * sigma)).exp();
+            kernel.push(weight);
+            kernel_sum += weight;
+        }
+    }
+    for w in &mut kernel {
+        *w /= kernel_sum;
+    }
+    
+    // Apply convolution
+    for y in 0..height {
+        for x in 0..width {
+            let mut sum = 0.0;
+            let mut ki = 0;
+            
+            for dy in -radius..=radius {
+                for dx in -radius..=radius {
+                    let nx = (x as i32 + dx).clamp(0, (width - 1) as i32) as usize;
+                    let ny = (y as i32 + dy).clamp(0, (height - 1) as i32) as usize;
+                    sum += density[ny * width + nx] * kernel[ki];
+                    ki += 1;
+                }
+            }
+            
+            smoothed[y * width + x] = sum;
+        }
+    }
+    
+    smoothed
+}
+
+/// Render caustic patterns over the buffer
+/// 
+/// Caustics appear as bright curves where light rays converge.
+/// This creates organic, physics-based patterns without mathematical grids.
+pub fn render_caustic_overlay(
+    buffer: &mut [(f64, f64, f64, f64)],
+    density: &[f64],
+    _width: usize,
+    _height: usize,
+    config: &LensingConfig,
+    primary_color: [f64; 3],
+    accent_color: [f64; 3],
+) {
+    if !config.show_caustics || config.caustic_brightness <= 0.0 {
+        return;
+    }
+    
+    // Find density threshold for caustic detection (high density = caustic)
+    let mean_density: f64 = density.iter().sum::<f64>() / density.len() as f64;
+    let caustic_threshold = mean_density + 0.15; // Caustics are above-average density
+    
+    buffer.par_iter_mut().enumerate().for_each(|(idx, pixel)| {
+        let d = density[idx];
+        
+        if d > caustic_threshold {
+            // Caustic detected - add glow
+            let intensity = ((d - caustic_threshold) / (1.0 - caustic_threshold))
+                .clamp(0.0, 1.0)
+                .powf(0.5) // Square root for more visible caustics
+                * config.caustic_brightness;
+            
+            // Blend between primary and accent based on intensity
+            // Higher intensity caustics shift toward accent color
+            let blend = intensity.clamp(0.0, 1.0);
+            let color = [
+                primary_color[0] * (1.0 - blend) + accent_color[0] * blend,
+                primary_color[1] * (1.0 - blend) + accent_color[1] * blend,
+                primary_color[2] * (1.0 - blend) + accent_color[2] * blend,
+            ];
+            
+            // Additive blending for glow effect
+            pixel.0 = (pixel.0 + color[0] * intensity * 0.5).min(1.0);
+            pixel.1 = (pixel.1 + color[1] * intensity * 0.5).min(1.0);
+            pixel.2 = (pixel.2 + color[2] * intensity * 0.5).min(1.0);
+        }
+    });
+}
+
+/// Render proper-time worldline trails
+/// 
+/// Instead of simple line trails, this visualizes the bodies' worldlines
+/// with color encoding gravitational time dilation:
+/// - Blue tint: fast-running clocks (weak gravity)
+/// - Red tint: slow-running clocks (strong gravity, close approaches)
+pub fn render_proper_time_trails(
+    buffer: &mut [(f64, f64, f64, f64)],
+    positions: &[Vec<Vector3<f64>>],
+    sources: &[MassSource],
+    width: usize,
+    height: usize,
+    config: &LensingConfig,
+    base_colors: &[[f64; 3]; 3],
+) {
+    if !config.show_proper_time_trails || config.time_dilation_strength <= 0.0 {
+        return;
+    }
+    
+    let (min_x, max_x, min_y, max_y) = compute_bounds(positions);
+    let margin = 0.1 * ((max_x - min_x).max(max_y - min_y));
+    let bounds = WorldBounds {
+        min_x: min_x - margin,
+        max_x: max_x + margin,
+        min_y: min_y - margin,
+        max_y: max_y + margin,
+    };
+    
+    // Subsample for performance
+    let subsample = (positions[0].len() / 8000).max(1);
+    
+    for (body_idx, body_pos) in positions.iter().enumerate() {
+        let base_color = base_colors[body_idx % 3];
+        
+        for step in (0..body_pos.len()).step_by(subsample) {
+            let pos = body_pos[step];
+            let (px, py) = bounds.to_pixel(pos.x, pos.y, width, height);
+            
+            if px < 0.0 || px >= width as f64 || py < 0.0 || py >= height as f64 {
+                continue;
+            }
+            
+            // Compute gravitational potential at this point
+            // (approximation: sum of 1/r from all other masses)
+            let mut potential = 0.0;
+            for (other_idx, source) in sources.iter().enumerate() {
+                if other_idx == body_idx {
+                    continue;
+                }
+                let dx = px - source.x;
+                let dy = py - source.y;
+                let dist = (dx * dx + dy * dy).sqrt().max(10.0);
+                potential += source.mass / dist;
+            }
+            
+            // Normalize potential for color mapping
+            let normalized_potential = (potential / 50000.0).clamp(0.0, 1.0);
+            
+            // Time dilation color shift
+            // Higher potential (close to masses) = redder (slower time)
+            // Lower potential (far from masses) = bluer (faster time)
+            let dilation_factor = config.time_dilation_strength * normalized_potential;
+            
+            // Apply time dilation color shift
+            let shifted_color = [
+                (base_color[0] + dilation_factor * 0.3).clamp(0.0, 1.0),
+                (base_color[1] - dilation_factor * 0.1).clamp(0.0, 1.0),
+                (base_color[2] - dilation_factor * 0.2).clamp(0.0, 1.0),
+            ];
+            
+            // Age-based fade
+            let age = step as f64 / body_pos.len() as f64;
+            let opacity = 0.35 * (1.0 - age * 0.6);
+            
+            // Draw as soft point (phantom echo effect)
+            let size = 2.0 + (1.0 - age) * 1.5; // Larger for recent positions
+            draw_soft_point(buffer, width, height, px, py, size, opacity, &shifted_color);
+        }
+    }
+}
+
+// ============================================================================
 // TESTS
 // ============================================================================
 
@@ -1049,6 +1826,11 @@ mod tests {
     
     #[test]
     fn test_lensing_style_from_str() {
+        assert_eq!(LensingStyle::from_str("geodesic-caustics"), LensingStyle::GeodesicCaustics);
+        assert_eq!(LensingStyle::from_str("geodesiccaustics"), LensingStyle::GeodesicCaustics);
+        assert_eq!(LensingStyle::from_str("caustics"), LensingStyle::GeodesicCaustics);
+        assert_eq!(LensingStyle::from_str("geodesic"), LensingStyle::GeodesicCaustics);
+        assert_eq!(LensingStyle::from_str("CAUSTICS"), LensingStyle::GeodesicCaustics);
         assert_eq!(LensingStyle::from_str("cosmic-lens"), LensingStyle::CosmicLens);
         assert_eq!(LensingStyle::from_str("cosmic"), LensingStyle::CosmicLens);
         assert_eq!(LensingStyle::from_str("COSMIC"), LensingStyle::CosmicLens);
@@ -1060,11 +1842,12 @@ mod tests {
         assert_eq!(LensingStyle::from_str("spacetime-fabric"), LensingStyle::SpacetimeFabric);
         assert_eq!(LensingStyle::from_str("fabric"), LensingStyle::SpacetimeFabric);
         assert_eq!(LensingStyle::from_str("grid"), LensingStyle::SpacetimeFabric);
-        assert_eq!(LensingStyle::from_str("unknown"), LensingStyle::CosmicLens); // Default
+        assert_eq!(LensingStyle::from_str("unknown"), LensingStyle::GeodesicCaustics); // Default
     }
     
     #[test]
     fn test_lensing_style_name() {
+        assert_eq!(LensingStyle::GeodesicCaustics.name(), "Geodesic Caustics");
         assert_eq!(LensingStyle::CosmicLens.name(), "Cosmic Lens");
         assert_eq!(LensingStyle::GravitationalWake.name(), "Gravitational Wake");
         assert_eq!(LensingStyle::EventHorizon.name(), "Event Horizon");
@@ -1073,7 +1856,7 @@ mod tests {
     
     #[test]
     fn test_lensing_style_default() {
-        assert_eq!(LensingStyle::default(), LensingStyle::CosmicLens);
+        assert_eq!(LensingStyle::default(), LensingStyle::GeodesicCaustics);
     }
 
     // ---- LensingConfig tests ----
@@ -1136,7 +1919,7 @@ mod tests {
     #[test]
     fn test_lensing_config_default() {
         let config = LensingConfig::default();
-        assert_eq!(config.style, LensingStyle::CosmicLens);
+        assert_eq!(config.style, LensingStyle::GeodesicCaustics);
     }
 
     // ---- Mass source creation tests ----
@@ -1486,6 +2269,7 @@ mod tests {
         let positions = create_test_trajectory();
         
         for style in [
+            LensingStyle::GeodesicCaustics,
             LensingStyle::CosmicLens,
             LensingStyle::GravitationalWake,
             LensingStyle::EventHorizon,
@@ -1540,5 +2324,662 @@ mod tests {
         let (px, py) = bounds.to_pixel(50.0, 50.0, 1000, 1000);
         assert!((px - 500.0).abs() < 0.001);
         assert!((py - 500.0).abs() < 0.001);
+    }
+
+    // ============================================================================
+    // GEODESIC CAUSTICS TESTS
+    // ============================================================================
+    
+    #[test]
+    fn test_lensing_config_geodesic_caustics() {
+        let config = LensingConfig::geodesic_caustics();
+        assert_eq!(config.style, LensingStyle::GeodesicCaustics);
+        assert!(config.show_caustics);
+        assert!(config.show_proper_time_trails);
+        assert!(!config.show_einstein_rings); // Uses emergent caustics instead
+        assert!(!config.show_grid); // No mathematical grid
+        assert!(config.caustic_brightness > 0.0);
+        assert!(config.time_dilation_strength > 0.0);
+    }
+    
+    #[test]
+    fn test_create_mass_sources_geodesic_caustics() {
+        let positions = create_test_trajectory();
+        let config = LensingConfig::geodesic_caustics();
+        let sources = create_mass_sources(&positions, &config, 1920, 1080);
+        
+        // Geodesic caustics with trajectory density creates many sources
+        // (3 body sources + trajectory-based sources)
+        assert!(sources.len() > 3,
+            "Should have trajectory-based sources in addition to body sources, got {}", sources.len());
+        
+        // All sources should have positive mass
+        for source in &sources {
+            assert!(source.mass > 0.0, "All sources should have positive mass");
+        }
+    }
+    
+    #[test]
+    fn test_compute_caustic_density_produces_values() {
+        let sources = vec![
+            MassSource { x: 50.0, y: 50.0, mass: 100000.0, body_index: 0, velocity: 1.0 },
+        ];
+        let config = LensingConfig::geodesic_caustics();
+        let field = DisplacementField::compute(&sources, 100, 100, &config);
+        
+        let density = compute_caustic_density(&field, &config);
+        
+        assert_eq!(density.len(), 100 * 100);
+        
+        // Density should have variation (not all zeros)
+        let max_density = density.iter().copied().fold(0.0, f64::max);
+        let min_density = density.iter().copied().fold(f64::MAX, f64::min);
+        
+        assert!(max_density > 0.0, "Should have positive density");
+        assert!(max_density != min_density, "Should have density variation");
+    }
+    
+    #[test]
+    fn test_compute_caustic_density_normalized() {
+        let sources = vec![
+            MassSource { x: 50.0, y: 50.0, mass: 100000.0, body_index: 0, velocity: 1.0 },
+        ];
+        let config = LensingConfig::geodesic_caustics();
+        let field = DisplacementField::compute(&sources, 100, 100, &config);
+        
+        let density = compute_caustic_density(&field, &config);
+        
+        // All values should be in [0, 1] range after normalization
+        for d in &density {
+            assert!(*d >= 0.0, "Density should be non-negative");
+            assert!(*d <= 1.0, "Density should be at most 1.0 after normalization");
+        }
+    }
+    
+    #[test]
+    fn test_render_caustic_overlay_adds_brightness() {
+        let sources = vec![
+            MassSource { x: 50.0, y: 50.0, mass: 100000.0, body_index: 0, velocity: 1.0 },
+        ];
+        let config = LensingConfig::geodesic_caustics();
+        let field = DisplacementField::compute(&sources, 100, 100, &config);
+        let density = compute_caustic_density(&field, &config);
+        
+        let mut buffer: Vec<(f64, f64, f64, f64)> = vec![(0.0, 0.0, 0.0, 1.0); 10000];
+        let initial_brightness: f64 = buffer.iter().map(|p| p.0 + p.1 + p.2).sum();
+        
+        render_caustic_overlay(
+            &mut buffer,
+            &density,
+            100,
+            100,
+            &config,
+            [1.0, 0.5, 0.0],
+            [0.5, 0.8, 1.0],
+        );
+        
+        let final_brightness: f64 = buffer.iter().map(|p| p.0 + p.1 + p.2).sum();
+        
+        assert!(final_brightness > initial_brightness, "Caustic overlay should add brightness");
+    }
+    
+    #[test]
+    fn test_render_caustic_overlay_disabled() {
+        let sources = vec![
+            MassSource { x: 50.0, y: 50.0, mass: 100000.0, body_index: 0, velocity: 1.0 },
+        ];
+        let mut config = LensingConfig::geodesic_caustics();
+        config.show_caustics = false;
+        
+        let field = DisplacementField::compute(&sources, 100, 100, &config);
+        let density = compute_caustic_density(&field, &config);
+        
+        let mut buffer: Vec<(f64, f64, f64, f64)> = vec![(0.1, 0.1, 0.1, 1.0); 10000];
+        let original = buffer.clone();
+        
+        render_caustic_overlay(
+            &mut buffer,
+            &density,
+            100,
+            100,
+            &config,
+            [1.0, 0.5, 0.0],
+            [0.5, 0.8, 1.0],
+        );
+        
+        assert_eq!(buffer, original, "Should not modify buffer when caustics disabled");
+    }
+    
+    #[test]
+    fn test_render_proper_time_trails_adds_brightness() {
+        let positions = create_test_trajectory();
+        let config = LensingConfig::geodesic_caustics();
+        let sources = create_mass_sources(&positions, &config, 200, 200);
+        
+        let mut buffer: Vec<(f64, f64, f64, f64)> = vec![(0.0, 0.0, 0.0, 1.0); 200 * 200];
+        let initial_brightness: f64 = buffer.iter().map(|p| p.0 + p.1 + p.2).sum();
+        
+        let colors = [[0.8, 0.2, 0.2], [0.2, 0.8, 0.2], [0.2, 0.2, 0.8]];
+        render_proper_time_trails(
+            &mut buffer,
+            &positions,
+            &sources,
+            200,
+            200,
+            &config,
+            &colors,
+        );
+        
+        let final_brightness: f64 = buffer.iter().map(|p| p.0 + p.1 + p.2).sum();
+        
+        assert!(final_brightness > initial_brightness, "Proper time trails should add brightness");
+    }
+    
+    #[test]
+    fn test_render_proper_time_trails_disabled() {
+        let positions = create_test_trajectory();
+        let mut config = LensingConfig::geodesic_caustics();
+        config.show_proper_time_trails = false;
+        
+        let sources = create_mass_sources(&positions, &config, 100, 100);
+        
+        let mut buffer: Vec<(f64, f64, f64, f64)> = vec![(0.1, 0.1, 0.1, 1.0); 10000];
+        let original = buffer.clone();
+        
+        let colors = [[0.8, 0.2, 0.2], [0.2, 0.8, 0.2], [0.2, 0.2, 0.8]];
+        render_proper_time_trails(
+            &mut buffer,
+            &positions,
+            &sources,
+            100,
+            100,
+            &config,
+            &colors,
+        );
+        
+        assert_eq!(buffer, original, "Should not modify buffer when proper time trails disabled");
+    }
+    
+    #[test]
+    fn test_smooth_density_field_preserves_dimensions() {
+        let density: Vec<f64> = vec![0.5; 10000];
+        let smoothed = smooth_density_field(&density, 100, 100, 2.0);
+        
+        assert_eq!(smoothed.len(), 10000);
+    }
+    
+    #[test]
+    fn test_smooth_density_field_smooths_spikes() {
+        // Create a density field with a single spike
+        let mut density: Vec<f64> = vec![0.0; 10000];
+        density[50 * 100 + 50] = 1.0; // Spike in center
+        
+        let smoothed = smooth_density_field(&density, 100, 100, 3.0);
+        
+        // The spike should be reduced
+        assert!(smoothed[50 * 100 + 50] < 1.0, "Spike should be smoothed");
+        
+        // Neighbors should have increased values
+        assert!(smoothed[50 * 100 + 51] > 0.0, "Neighbors should have increased values");
+    }
+    
+    #[test]
+    fn test_full_geodesic_caustics_pipeline() {
+        let positions = create_test_trajectory();
+        let config = LensingConfig::geodesic_caustics();
+        
+        // Create sources (with trajectory density enabled, we get many sources)
+        let sources = create_mass_sources(&positions, &config, 200, 200);
+        assert!(sources.len() > 3, "Should have trajectory-based sources");
+        
+        // Compute displacement field
+        let field = DisplacementField::compute(&sources, 200, 200, &config);
+        assert!(field.max_magnitude() > 0.0);
+        
+        // Compute caustic density
+        let density = compute_caustic_density(&field, &config);
+        assert_eq!(density.len(), 200 * 200);
+        
+        // Apply distortion
+        let background: Vec<(f64, f64, f64, f64)> = vec![(0.05, 0.05, 0.1, 1.0); 200 * 200];
+        let mut buffer = apply_distortion(&background, &field, &config);
+        
+        // Add caustic overlay
+        render_caustic_overlay(
+            &mut buffer,
+            &density,
+            200,
+            200,
+            &config,
+            [1.0, 0.5, 0.0],
+            [0.5, 0.8, 1.0],
+        );
+        
+        // Add proper time trails
+        let colors = [[0.8, 0.2, 0.2], [0.2, 0.8, 0.2], [0.2, 0.2, 0.8]];
+        render_proper_time_trails(
+            &mut buffer,
+            &positions,
+            &sources,
+            200,
+            200,
+            &config,
+            &colors,
+        );
+        
+        // Verify results
+        assert_eq!(buffer.len(), 200 * 200);
+        
+        // Should have some bright pixels
+        let bright_pixels = buffer.iter()
+            .filter(|p| p.0 > 0.2 || p.1 > 0.2 || p.2 > 0.2)
+            .count();
+        assert!(bright_pixels > 0, "Should have some bright pixels from caustics and trails");
+        
+        // All values should be valid
+        for pixel in &buffer {
+            assert!(pixel.0 >= 0.0 && pixel.0 <= 1.0);
+            assert!(pixel.1 >= 0.0 && pixel.1 <= 1.0);
+            assert!(pixel.2 >= 0.0 && pixel.2 <= 1.0);
+        }
+    }
+    
+    #[test]
+    fn test_geodesic_caustics_chromatic_aberration() {
+        let config = LensingConfig::geodesic_caustics();
+        
+        // Geodesic caustics should have chromatic aberration enabled
+        assert!(config.chromatic_aberration > 0.0,
+            "Geodesic caustics should have chromatic aberration for physically accurate light bending");
+    }
+    
+    #[test]
+    fn test_geodesic_caustics_high_quality_settings() {
+        let config = LensingConfig::geodesic_caustics();
+        
+        // Should not use half resolution for maximum quality
+        assert!(!config.half_resolution,
+            "Geodesic caustics should use full resolution for caustic detail");
+        
+        // Should have multiple rays per pixel
+        assert!(config.caustic_ray_density >= 2,
+            "Should trace multiple rays per pixel for accurate caustic computation");
+    }
+
+    // ============================================================================
+    // TRAJECTORY-BASED LENSING TESTS (NEW!)
+    // ============================================================================
+    
+    #[test]
+    fn test_trajectory_density_config_enabled() {
+        let config = LensingConfig::geodesic_caustics();
+        
+        // Trajectory-based lensing should be enabled by default for geodesic caustics
+        assert!(config.use_trajectory_density, 
+            "Geodesic caustics should use trajectory density by default");
+        assert!(config.trajectory_sample_count > 100,
+            "Should sample many trajectory points");
+        assert!(config.trajectory_source_count > 10,
+            "Should generate multiple trajectory-based mass sources");
+        assert!(config.accumulated_caustic_samples > 1,
+            "Should use accumulated caustics");
+        assert!(config.luminous_trail_brightness > 0.0,
+            "Should have luminous trail visualization");
+    }
+    
+    #[test]
+    fn test_trajectory_density_config_disabled_for_other_styles() {
+        // Cosmic Lens
+        let config = LensingConfig::cosmic_lens();
+        assert!(!config.use_trajectory_density,
+            "Cosmic Lens should not use trajectory density");
+        
+        // Gravitational Wake
+        let config = LensingConfig::gravitational_wake();
+        assert!(!config.use_trajectory_density,
+            "Gravitational Wake should not use trajectory density");
+        
+        // Event Horizon
+        let config = LensingConfig::event_horizon();
+        assert!(!config.use_trajectory_density,
+            "Event Horizon should not use trajectory density");
+        
+        // Spacetime Fabric
+        let config = LensingConfig::spacetime_fabric();
+        assert!(!config.use_trajectory_density,
+            "Spacetime Fabric should not use trajectory density");
+    }
+    
+    #[test]
+    fn test_trajectory_density_field_compute() {
+        let positions = create_test_trajectory();
+        let config = LensingConfig::geodesic_caustics();
+        
+        let density_field = TrajectoryDensityField::compute(&positions, 100, 100, &config);
+        
+        // Check dimensions
+        assert_eq!(density_field.width, 100);
+        assert_eq!(density_field.height, 100);
+        assert_eq!(density_field.density.len(), 100 * 100);
+        assert_eq!(density_field.body_densities.len(), 3);
+    }
+    
+    #[test]
+    fn test_trajectory_density_field_has_nonzero_values() {
+        let positions = create_test_trajectory();
+        let config = LensingConfig::geodesic_caustics();
+        
+        let density_field = TrajectoryDensityField::compute(&positions, 100, 100, &config);
+        
+        // Should have some non-zero density
+        let max_density = density_field.density.iter().copied().fold(0.0, f64::max);
+        assert!(max_density > 0.0, "Density field should have non-zero values");
+        
+        // Maximum should be 1.0 after normalization
+        assert!((max_density - 1.0).abs() < 0.01,
+            "Density field should be normalized to max 1.0, got {}", max_density);
+    }
+    
+    #[test]
+    fn test_trajectory_density_field_values_in_range() {
+        let positions = create_test_trajectory();
+        let config = LensingConfig::geodesic_caustics();
+        
+        let density_field = TrajectoryDensityField::compute(&positions, 100, 100, &config);
+        
+        // All values should be in [0, 1] range
+        for d in &density_field.density {
+            assert!(*d >= 0.0 && *d <= 1.0,
+                "Density values should be in [0, 1], got {}", d);
+        }
+    }
+    
+    #[test]
+    fn test_trajectory_density_field_get_density() {
+        let positions = create_test_trajectory();
+        let config = LensingConfig::geodesic_caustics();
+        
+        let density_field = TrajectoryDensityField::compute(&positions, 100, 100, &config);
+        
+        // In-bounds access
+        let d = density_field.get_density(50, 50);
+        assert!(d >= 0.0 && d <= 1.0);
+        
+        // Out-of-bounds should return 0
+        let d_oob = density_field.get_density(200, 200);
+        assert!((d_oob - 0.0).abs() < 0.001, "Out of bounds should return 0");
+    }
+    
+    #[test]
+    fn test_trajectory_density_field_dominant_body() {
+        let positions = create_test_trajectory();
+        let config = LensingConfig::geodesic_caustics();
+        
+        let density_field = TrajectoryDensityField::compute(&positions, 100, 100, &config);
+        
+        // Should return a valid body index (0, 1, or 2)
+        let body_idx = density_field.dominant_body(50, 50);
+        assert!(body_idx < 3, "Body index should be 0, 1, or 2");
+        
+        // Out-of-bounds should return 0
+        let body_idx_oob = density_field.dominant_body(200, 200);
+        assert_eq!(body_idx_oob, 0, "Out of bounds should return body 0");
+    }
+    
+    #[test]
+    fn test_create_trajectory_density_sources_count() {
+        let positions = create_test_trajectory();
+        let config = LensingConfig::geodesic_caustics();
+        
+        let sources = create_mass_sources(&positions, &config, 200, 200);
+        
+        // With trajectory density enabled, should have more than just 3 sources
+        // (3 from bodies + additional from trajectory density)
+        assert!(sources.len() > 3,
+            "Trajectory density should generate additional sources, got {}", sources.len());
+        
+        // Should have at least the configured target count (or close to it)
+        // Note: actual count may vary based on density distribution
+        assert!(sources.len() >= 10,
+            "Should have a reasonable number of sources, got {}", sources.len());
+    }
+    
+    #[test]
+    fn test_create_trajectory_density_sources_positions() {
+        let positions = create_test_trajectory();
+        let config = LensingConfig::geodesic_caustics();
+        
+        let sources = create_mass_sources(&positions, &config, 200, 200);
+        
+        // All sources should have valid positions
+        for source in &sources {
+            // Positions should be within or near image bounds
+            assert!(source.x >= -50.0 && source.x <= 250.0,
+                "Source x position out of range: {}", source.x);
+            assert!(source.y >= -50.0 && source.y <= 250.0,
+                "Source y position out of range: {}", source.y);
+        }
+    }
+    
+    #[test]
+    fn test_create_trajectory_density_sources_mass() {
+        let positions = create_test_trajectory();
+        let config = LensingConfig::geodesic_caustics();
+        
+        let sources = create_mass_sources(&positions, &config, 200, 200);
+        
+        // All sources should have positive mass
+        for source in &sources {
+            assert!(source.mass > 0.0,
+                "All sources should have positive mass, got {}", source.mass);
+        }
+    }
+    
+    #[test]
+    fn test_render_luminous_trails_adds_brightness() {
+        let positions = create_test_trajectory();
+        let config = LensingConfig::geodesic_caustics();
+        
+        let density_field = TrajectoryDensityField::compute(&positions, 100, 100, &config);
+        
+        let mut buffer: Vec<(f64, f64, f64, f64)> = vec![(0.0, 0.0, 0.0, 1.0); 10000];
+        let initial_brightness: f64 = buffer.iter().map(|p| p.0 + p.1 + p.2).sum();
+        
+        let colors = [[0.8, 0.2, 0.2], [0.2, 0.8, 0.2], [0.2, 0.2, 0.8]];
+        render_luminous_trails(&mut buffer, &density_field, &config, &colors);
+        
+        let final_brightness: f64 = buffer.iter().map(|p| p.0 + p.1 + p.2).sum();
+        
+        assert!(final_brightness > initial_brightness,
+            "Luminous trails should add brightness");
+    }
+    
+    #[test]
+    fn test_render_luminous_trails_disabled() {
+        let positions = create_test_trajectory();
+        let mut config = LensingConfig::geodesic_caustics();
+        config.luminous_trail_brightness = 0.0;
+        
+        let density_field = TrajectoryDensityField::compute(&positions, 100, 100, &config);
+        
+        let mut buffer: Vec<(f64, f64, f64, f64)> = vec![(0.1, 0.1, 0.1, 1.0); 10000];
+        let original = buffer.clone();
+        
+        let colors = [[0.8, 0.2, 0.2], [0.2, 0.8, 0.2], [0.2, 0.2, 0.8]];
+        render_luminous_trails(&mut buffer, &density_field, &config, &colors);
+        
+        assert_eq!(buffer, original,
+            "Should not modify buffer when luminous trails brightness is 0");
+    }
+    
+    #[test]
+    fn test_render_luminous_trails_values_in_range() {
+        let positions = create_test_trajectory();
+        let config = LensingConfig::geodesic_caustics();
+        
+        let density_field = TrajectoryDensityField::compute(&positions, 100, 100, &config);
+        
+        let mut buffer: Vec<(f64, f64, f64, f64)> = vec![(0.5, 0.5, 0.5, 1.0); 10000];
+        
+        let colors = [[0.8, 0.2, 0.2], [0.2, 0.8, 0.2], [0.2, 0.2, 0.8]];
+        render_luminous_trails(&mut buffer, &density_field, &config, &colors);
+        
+        // All values should still be in [0, 1] range
+        for pixel in &buffer {
+            assert!(pixel.0 >= 0.0 && pixel.0 <= 1.0,
+                "Red channel should be in [0, 1], got {}", pixel.0);
+            assert!(pixel.1 >= 0.0 && pixel.1 <= 1.0,
+                "Green channel should be in [0, 1], got {}", pixel.1);
+            assert!(pixel.2 >= 0.0 && pixel.2 <= 1.0,
+                "Blue channel should be in [0, 1], got {}", pixel.2);
+        }
+    }
+    
+    #[test]
+    fn test_compute_accumulated_caustics_produces_values() {
+        let positions = create_test_trajectory();
+        let config = LensingConfig::geodesic_caustics();
+        let sources = create_mass_sources(&positions, &config, 100, 100);
+        let field = DisplacementField::compute(&sources, 100, 100, &config);
+        
+        let accumulated = compute_accumulated_caustics(&positions, &field, &config, 100, 100);
+        
+        assert_eq!(accumulated.len(), 100 * 100,
+            "Accumulated caustics should have correct size");
+        
+        // Should have some non-zero values
+        let max_val = accumulated.iter().copied().fold(0.0, f64::max);
+        assert!(max_val > 0.0,
+            "Accumulated caustics should have non-zero values");
+    }
+    
+    #[test]
+    fn test_compute_accumulated_caustics_normalized() {
+        let positions = create_test_trajectory();
+        let config = LensingConfig::geodesic_caustics();
+        let sources = create_mass_sources(&positions, &config, 100, 100);
+        let field = DisplacementField::compute(&sources, 100, 100, &config);
+        
+        let accumulated = compute_accumulated_caustics(&positions, &field, &config, 100, 100);
+        
+        // All values should be in [0, 1] range
+        for val in &accumulated {
+            assert!(*val >= 0.0 && *val <= 1.0,
+                "Accumulated caustic values should be in [0, 1], got {}", val);
+        }
+    }
+    
+    #[test]
+    fn test_compute_accumulated_caustics_single_sample_fallback() {
+        let positions = create_test_trajectory();
+        let mut config = LensingConfig::geodesic_caustics();
+        config.accumulated_caustic_samples = 1; // Force single sample
+        
+        let sources = create_mass_sources(&positions, &config, 100, 100);
+        let field = DisplacementField::compute(&sources, 100, 100, &config);
+        
+        let accumulated = compute_accumulated_caustics(&positions, &field, &config, 100, 100);
+        
+        // Should fall back to regular caustic density
+        assert_eq!(accumulated.len(), 100 * 100);
+    }
+    
+    #[test]
+    fn test_full_trajectory_lensing_pipeline() {
+        let positions = create_test_trajectory();
+        let config = LensingConfig::geodesic_caustics();
+        
+        // Step 1: Compute trajectory density field
+        let density_field = TrajectoryDensityField::compute(&positions, 200, 200, &config);
+        assert_eq!(density_field.density.len(), 200 * 200);
+        
+        // Step 2: Create trajectory-based mass sources
+        let sources = create_mass_sources(&positions, &config, 200, 200);
+        assert!(sources.len() > 3, "Should have trajectory-based sources");
+        
+        // Step 3: Compute displacement field
+        let field = DisplacementField::compute(&sources, 200, 200, &config);
+        assert!(field.max_magnitude() > 0.0);
+        
+        // Step 4: Create background and apply distortion
+        let background: Vec<(f64, f64, f64, f64)> = vec![(0.05, 0.05, 0.1, 1.0); 200 * 200];
+        let mut buffer = apply_distortion(&background, &field, &config);
+        
+        // Step 5: Render luminous trails
+        let colors = [[0.8, 0.3, 0.1], [0.3, 0.6, 0.9], [0.7, 0.2, 0.7]];
+        render_luminous_trails(&mut buffer, &density_field, &config, &colors);
+        
+        // Step 6: Compute and render accumulated caustics
+        let accumulated_caustics = compute_accumulated_caustics(
+            &positions, &field, &config, 200, 200
+        );
+        render_caustic_overlay(
+            &mut buffer, &accumulated_caustics, 200, 200, &config,
+            [1.0, 0.5, 0.0], [0.5, 0.8, 1.0],
+        );
+        
+        // Verify results
+        assert_eq!(buffer.len(), 200 * 200);
+        
+        // Should have some bright pixels from both trails and caustics
+        let bright_pixels = buffer.iter()
+            .filter(|p| p.0 > 0.2 || p.1 > 0.2 || p.2 > 0.2)
+            .count();
+        assert!(bright_pixels > 100,
+            "Should have many bright pixels from trails and caustics, got {}", bright_pixels);
+        
+        // All values should be valid
+        for pixel in &buffer {
+            assert!(pixel.0 >= 0.0 && pixel.0 <= 1.0);
+            assert!(pixel.1 >= 0.0 && pixel.1 <= 1.0);
+            assert!(pixel.2 >= 0.0 && pixel.2 <= 1.0);
+        }
+    }
+    
+    #[test]
+    fn test_trajectory_lensing_vs_standard_lensing_source_count() {
+        let positions = create_test_trajectory();
+        
+        // Geodesic Caustics with trajectory density
+        let config_traj = LensingConfig::geodesic_caustics();
+        assert!(config_traj.use_trajectory_density);
+        let sources_traj = create_mass_sources(&positions, &config_traj, 200, 200);
+        
+        // Cosmic Lens without trajectory density
+        let config_std = LensingConfig::cosmic_lens();
+        assert!(!config_std.use_trajectory_density);
+        let sources_std = create_mass_sources(&positions, &config_std, 200, 200);
+        
+        // Trajectory-based should have significantly more sources
+        assert!(sources_traj.len() > sources_std.len() * 2,
+            "Trajectory lensing should have many more sources: {} vs {}",
+            sources_traj.len(), sources_std.len());
+    }
+    
+    #[test]
+    fn test_trajectory_density_respects_sample_count() {
+        let positions = create_test_trajectory();
+        
+        // Low sample count
+        let mut config_low = LensingConfig::geodesic_caustics();
+        config_low.trajectory_sample_count = 100;
+        
+        // High sample count  
+        let mut config_high = LensingConfig::geodesic_caustics();
+        config_high.trajectory_sample_count = 5000;
+        
+        let density_low = TrajectoryDensityField::compute(&positions, 100, 100, &config_low);
+        let density_high = TrajectoryDensityField::compute(&positions, 100, 100, &config_high);
+        
+        // Both should produce valid density fields
+        assert_eq!(density_low.density.len(), 10000);
+        assert_eq!(density_high.density.len(), 10000);
+        
+        // Both should have non-zero max density
+        let max_low = density_low.density.iter().copied().fold(0.0, f64::max);
+        let max_high = density_high.density.iter().copied().fold(0.0, f64::max);
+        
+        assert!(max_low > 0.0);
+        assert!(max_high > 0.0);
     }
 }

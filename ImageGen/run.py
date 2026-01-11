@@ -6,7 +6,7 @@ Generates random seeds and randomly chooses rendering mode.
 
 Available modes:
 - Museum modes: hybrid, deep-field, filament, minimal
-- Lensing modes: cosmic-lens, gravitational-wake, event-horizon, spacetime-fabric
+- Lensing modes: geodesic-caustics, cosmic-lens, gravitational-wake, event-horizon, spacetime-fabric
 - Legacy modes: standard, special
 """
 
@@ -40,6 +40,7 @@ RENDER_MODES = [
     RenderMode("museum_minimal", "Museum (Minimal)", ["--museum-mode", "--museum-style", "minimal"]),
     
     # Lensing modes v2 (gravitational lensing visualization)
+    RenderMode("lensing_caustics", "Lensing (Geodesic Caustics)", ["--lensing-mode", "--lensing-style", "geodesic-caustics"]),
     RenderMode("lensing_cosmic", "Lensing (Cosmic Lens)", ["--lensing-mode", "--lensing-style", "cosmic-lens"]),
     RenderMode("lensing_wake", "Lensing (Gravitational Wake)", ["--lensing-mode", "--lensing-style", "gravitational-wake"]),
     RenderMode("lensing_horizon", "Lensing (Event Horizon)", ["--lensing-mode", "--lensing-style", "event-horizon"]),

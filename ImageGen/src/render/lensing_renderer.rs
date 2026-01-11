@@ -22,7 +22,9 @@ use super::gravitational_lensing::{
     LensingConfig, LensingStyle,
     create_mass_sources, DisplacementField, apply_distortion,
     render_einstein_rings, render_accretion_glow, render_grid_overlay,
-    render_trajectory_trails,
+    render_trajectory_trails, compute_caustic_density, render_caustic_overlay,
+    render_proper_time_trails, TrajectoryDensityField, render_luminous_trails,
+    compute_accumulated_caustics,
 };
 use super::lensing_background::{LensingBackgroundConfig, generate_background};
 use super::cosmic_palette::{CosmicPalette, EVENT_HORIZON, ICE_AND_FIRE, DEEP_OCEAN, RED_DWARF};
@@ -59,11 +61,28 @@ pub struct LensingRendererConfig {
 
 impl Default for LensingRendererConfig {
     fn default() -> Self {
-        Self::cosmic_lens()
+        Self::geodesic_caustics()
     }
 }
 
 impl LensingRendererConfig {
+    /// Geodesic Caustics style: Physics-accurate ray tracing with emergent caustic patterns
+    /// 
+    /// This is the recommended default style - it creates museum-quality art
+    /// where the beauty emerges directly from accurate physics visualization.
+    /// Caustic curves form naturally where light rays converge through curved spacetime.
+    pub fn geodesic_caustics() -> Self {
+        Self {
+            lensing: LensingConfig::geodesic_caustics(),
+            background: LensingBackgroundConfig::deep_field(),
+            grain: FilmGrainConfig::museum_quality(),
+            vignette_strength: 0.18,
+            vignette_radius: 0.65,
+            gamma: 2.2,
+            palette_name: "Event Horizon".to_string(),
+        }
+    }
+    
     /// Cosmic Lens style: Dramatic Einstein rings around 3 massive bodies
     pub fn cosmic_lens() -> Self {
         Self {
@@ -119,6 +138,7 @@ impl LensingRendererConfig {
     /// Create config from style enum
     pub fn from_style(style: LensingStyle) -> Self {
         match style {
+            LensingStyle::GeodesicCaustics => Self::geodesic_caustics(),
             LensingStyle::CosmicLens => Self::cosmic_lens(),
             LensingStyle::GravitationalWake => Self::gravitational_wake(),
             LensingStyle::EventHorizon => Self::event_horizon(),
@@ -265,6 +285,9 @@ impl LensingRenderer {
             self.select_palette()
         });
         
+        // Body colors for trail rendering
+        let body_colors = [palette.primary, palette.accent, blend_colors(&palette.primary, &palette.accent)];
+        
         // Step 1: Generate background
         let mut buffer = generate_background(
             width,
@@ -274,7 +297,19 @@ impl LensingRenderer {
             seed,
         );
         
-        // Step 2: Create mass sources
+        // Step 2: Compute trajectory density field (for Geodesic Caustics with trajectory density)
+        let trajectory_density = if self.config.lensing.use_trajectory_density {
+            Some(TrajectoryDensityField::compute(
+                positions,
+                width,
+                height,
+                &self.config.lensing,
+            ))
+        } else {
+            None
+        };
+        
+        // Step 3: Create mass sources (uses trajectory density if enabled)
         let sources = create_mass_sources(
             positions,
             &self.config.lensing,
@@ -282,7 +317,7 @@ impl LensingRenderer {
             height,
         );
         
-        // Step 3: Compute displacement field
+        // Step 4: Compute displacement field
         let field = DisplacementField::compute(
             &sources,
             width,
@@ -293,10 +328,48 @@ impl LensingRenderer {
         let max_distortion = field.max_magnitude();
         let avg_distortion = field.avg_magnitude();
         
-        // Step 4: Apply lensing distortion
+        // Step 5: Apply lensing distortion
         buffer = apply_distortion(&buffer, &field, &self.config.lensing);
         
-        // Step 5: Render grid overlay (if enabled)
+        // Step 6: Render luminous trails BEFORE caustics (so caustics appear on top)
+        // This creates the glowing orbital history visualization
+        if let Some(ref density_field) = trajectory_density {
+            render_luminous_trails(
+                &mut buffer,
+                density_field,
+                &self.config.lensing,
+                &body_colors,
+            );
+        }
+        
+        // Step 7: Render caustic overlay (for Geodesic Caustics style)
+        if self.config.lensing.show_caustics {
+            // Use accumulated caustics if trajectory density is enabled
+            let caustic_density = if self.config.lensing.use_trajectory_density 
+                && self.config.lensing.accumulated_caustic_samples > 1 {
+                compute_accumulated_caustics(
+                    positions,
+                    &field,
+                    &self.config.lensing,
+                    width,
+                    height,
+                )
+            } else {
+                compute_caustic_density(&field, &self.config.lensing)
+            };
+            
+            render_caustic_overlay(
+                &mut buffer,
+                &caustic_density,
+                width,
+                height,
+                &self.config.lensing,
+                palette.primary,
+                palette.accent,
+            );
+        }
+        
+        // Step 8: Render grid overlay (if enabled)
         if self.config.lensing.show_grid {
             render_grid_overlay(
                 &mut buffer,
@@ -309,7 +382,7 @@ impl LensingRenderer {
             );
         }
         
-        // Step 6: Render accretion glow (if enabled)
+        // Step 9: Render accretion glow (if enabled)
         render_accretion_glow(
             &mut buffer,
             &sources,
@@ -319,7 +392,7 @@ impl LensingRenderer {
             palette.primary,
         );
         
-        // Step 7: Render Einstein rings (if enabled)
+        // Step 10: Render Einstein rings (if enabled)
         render_einstein_rings(
             &mut buffer,
             &sources,
@@ -329,18 +402,33 @@ impl LensingRenderer {
             palette.accent,
         );
         
-        // Step 8: Render trajectory trails (if enabled)
-        let body_colors = [palette.primary, palette.accent, blend_colors(&palette.primary, &palette.accent)];
-        render_trajectory_trails(
-            &mut buffer,
-            positions,
-            width,
-            height,
-            &self.config.lensing,
-            &body_colors,
-        );
+        // Step 11: Render trajectory trails
+        // Use proper-time trails for Geodesic Caustics, standard trails otherwise
+        // Skip if we already rendered luminous trails
+        if !self.config.lensing.use_trajectory_density {
+            if self.config.lensing.show_proper_time_trails {
+                render_proper_time_trails(
+                    &mut buffer,
+                    positions,
+                    &sources,
+                    width,
+                    height,
+                    &self.config.lensing,
+                    &body_colors,
+                );
+            } else {
+                render_trajectory_trails(
+                    &mut buffer,
+                    positions,
+                    width,
+                    height,
+                    &self.config.lensing,
+                    &body_colors,
+                );
+            }
+        }
         
-        // Step 9: Apply vignette
+        // Step 12: Apply vignette
         if self.config.vignette_strength > 0.0 {
             buffer = apply_vignette(
                 &buffer,
@@ -351,7 +439,7 @@ impl LensingRenderer {
             );
         }
         
-        // Step 10: Apply film grain
+        // Step 13: Apply film grain
         if self.config.grain.intensity > 0.0 {
             buffer = apply_film_grain(
                 &buffer,
@@ -362,7 +450,7 @@ impl LensingRenderer {
             );
         }
         
-        // Step 11: Apply gamma correction
+        // Step 14: Apply gamma correction
         buffer = apply_gamma(&buffer, self.config.gamma);
         
         LensingRenderResult {
@@ -444,6 +532,15 @@ mod tests {
     // ---- Config tests ----
     
     #[test]
+    fn test_config_geodesic_caustics() {
+        let config = LensingRendererConfig::geodesic_caustics();
+        assert_eq!(config.lensing.style, LensingStyle::GeodesicCaustics);
+        assert!(config.lensing.show_caustics);
+        assert!(config.lensing.show_proper_time_trails);
+        assert!(!config.lensing.show_einstein_rings); // Uses emergent caustics instead
+    }
+    
+    #[test]
     fn test_config_cosmic_lens() {
         let config = LensingRendererConfig::cosmic_lens();
         assert_eq!(config.lensing.style, LensingStyle::CosmicLens);
@@ -473,6 +570,12 @@ mod tests {
     
     #[test]
     fn test_config_from_style_str() {
+        let geodesic = LensingRendererConfig::from_style_str("geodesic-caustics");
+        assert_eq!(geodesic.lensing.style, LensingStyle::GeodesicCaustics);
+        
+        let caustics = LensingRendererConfig::from_style_str("caustics");
+        assert_eq!(caustics.lensing.style, LensingStyle::GeodesicCaustics);
+        
         let cosmic = LensingRendererConfig::from_style_str("cosmic-lens");
         assert_eq!(cosmic.lensing.style, LensingStyle::CosmicLens);
         
@@ -484,6 +587,10 @@ mod tests {
         
         let fabric = LensingRendererConfig::from_style_str("fabric");
         assert_eq!(fabric.lensing.style, LensingStyle::SpacetimeFabric);
+        
+        // Default should now be GeodesicCaustics
+        let unknown = LensingRendererConfig::from_style_str("unknown");
+        assert_eq!(unknown.lensing.style, LensingStyle::GeodesicCaustics);
     }
     
     #[test]
@@ -503,7 +610,7 @@ mod tests {
     #[test]
     fn test_renderer_creation() {
         let renderer = LensingRenderer::new(LensingRendererConfig::default());
-        assert_eq!(renderer.config.lensing.style, LensingStyle::CosmicLens);
+        assert_eq!(renderer.config.lensing.style, LensingStyle::GeodesicCaustics);
     }
     
     #[test]
@@ -519,6 +626,24 @@ mod tests {
     }
 
     // ---- Render result tests ----
+    
+    #[test]
+    fn test_render_geodesic_caustics() {
+        let positions = create_test_trajectory();
+        let renderer = LensingRenderer::for_style(LensingStyle::GeodesicCaustics);
+        
+        let result = renderer.render(&positions, 200, 200, 123);
+        
+        assert_eq!(result.width, 200);
+        assert_eq!(result.height, 200);
+        assert_eq!(result.buffer.len(), 200 * 200);
+        // With trajectory density enabled, we have many more sources
+        assert!(result.source_count > 3,
+            "Geodesic caustics with trajectory density should have many sources, got {}",
+            result.source_count);
+        assert!(result.max_distortion > 0.0);
+        assert_eq!(result.style_name, "Geodesic Caustics");
+    }
     
     #[test]
     fn test_render_cosmic_lens() {
@@ -576,6 +701,7 @@ mod tests {
         let positions = create_test_trajectory();
         
         for style in [
+            LensingStyle::GeodesicCaustics,
             LensingStyle::CosmicLens,
             LensingStyle::GravitationalWake,
             LensingStyle::EventHorizon,

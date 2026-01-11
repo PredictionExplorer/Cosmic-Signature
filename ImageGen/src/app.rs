@@ -787,7 +787,8 @@ use render::lensing_renderer::{LensingRendererConfig, LensingRenderer};
 /// The trajectories curve space, distorting a static starfield/nebula background.
 ///
 /// # Styles
-/// - "cosmic-lens": 3 massive bodies with dramatic Einstein rings (default)
+/// - "geodesic-caustics": Physics-accurate ray tracing with emergent caustic patterns (default)
+/// - "cosmic-lens": 3 massive bodies with dramatic Einstein rings
 /// - "gravitational-wake": Trajectory centroids create rippling wake patterns  
 /// - "event-horizon": Extreme distortion with accretion glow
 /// - "spacetime-fabric": Grid overlay showing mathematical curvature
@@ -839,7 +840,8 @@ pub fn render_lensing_mode_test_frame(
 /// Renders progressive frames showing the lensing field building up.
 ///
 /// # Styles
-/// - "cosmic-lens": 3 massive bodies with dramatic Einstein rings (default)
+/// - "geodesic-caustics": Physics-accurate ray tracing with emergent caustic patterns (default)
+/// - "cosmic-lens": 3 massive bodies with dramatic Einstein rings
 /// - "gravitational-wake": Trajectory centroids create rippling wake patterns  
 /// - "event-horizon": Extreme distortion with accretion glow
 /// - "spacetime-fabric": Grid overlay showing mathematical curvature
