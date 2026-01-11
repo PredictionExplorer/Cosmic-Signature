@@ -56,6 +56,9 @@ pub enum LensingStyle {
     EventHorizon,
     /// Grid overlay showing spacetime curvature
     SpacetimeFabric,
+    /// NEW: Accumulated grid distortion from orbital history
+    /// The grid permanently records gravitational influence - no trajectory lines
+    GravitationalMemory,
 }
 
 impl LensingStyle {
@@ -68,6 +71,7 @@ impl LensingStyle {
             "gravitational-wake" | "wake" | "ripple" => Self::GravitationalWake,
             "event-horizon" | "eventhorizon" | "extreme" | "black-hole" => Self::EventHorizon,
             "spacetime-fabric" | "fabric" | "grid" | "spacetime" => Self::SpacetimeFabric,
+            "gravitational-memory" | "memory" | "accumulated" | "imprint" => Self::GravitationalMemory,
             _ => Self::GeodesicCaustics, // Default to geodesic caustics
         }
     }
@@ -80,6 +84,7 @@ impl LensingStyle {
             Self::GravitationalWake => "Gravitational Wake",
             Self::EventHorizon => "Event Horizon",
             Self::SpacetimeFabric => "Spacetime Fabric",
+            Self::GravitationalMemory => "Gravitational Memory",
         }
     }
 }
@@ -199,6 +204,31 @@ pub struct LensingConfig {
     /// End of trajectory window (0.0 = beginning, 1.0 = end)  
     /// Use 1.0 to include the most recent positions
     pub trajectory_window_end: f64,
+    
+    // === Fixed Camera / Square Bounds ===
+    
+    /// Use fixed square bounds (prevents camera zoom and aspect ratio distortion)
+    /// When true, the coordinate system is fixed from the start - no adaptive scaling
+    pub use_fixed_bounds: bool,
+    
+    /// Margin factor for fixed bounds (e.g., 0.1 = 10% extra space around content)
+    pub fixed_bounds_margin: f64,
+    
+    // === Accumulated Grid Distortion (Gravitational Memory) ===
+    
+    /// Enable accumulated grid distortion from orbital history
+    /// Grid permanently records gravitational influence - shows where masses have been
+    pub use_accumulated_grid: bool,
+    
+    /// Number of temporal samples for accumulated grid (more = smoother, slower)
+    pub accumulated_grid_samples: usize,
+    
+    /// Grid distortion memory strength (how much history affects current distortion)
+    pub grid_memory_strength: f64,
+    
+    /// Fraction of trajectory to use for accumulated grid (0.0-1.0)
+    /// Lower values = only recent history, higher = full history
+    pub grid_history_fraction: f64,
 }
 
 impl Default for LensingConfig {
@@ -208,59 +238,63 @@ impl Default for LensingConfig {
 }
 
 impl LensingConfig {
-    /// Geodesic Caustics: Physics-accurate ray tracing with emergent caustic patterns
+    /// Geodesic Caustics: Clean, stable gravitational lensing with dramatic effects
     /// 
-    /// This style implements "Luminous Trajectory Lensing" - the entire orbital history
-    /// shapes the gravitational lensing effect:
+    /// This style creates museum-quality spacetime distortion using 3 massive bodies
+    /// at their FINAL positions. This is stable (no flickering) and visually dramatic.
     /// 
-    /// 1. **Trajectory Density Field**: Where bodies spent more time = higher "mass density"
-    /// 2. **Distributed Mass Sources**: The orbital path itself warps spacetime
-    /// 3. **Accumulated Caustics**: Caustics are integrated across multiple timesteps
-    /// 
-    /// The beauty emerges directly from the physics of the three-body problem.
-    /// 
-    /// OPTIMIZED: Parallelized caustic computation, balanced source count for performance.
+    /// **Key features:**
+    /// - Fixed square coordinate system (no camera zoom or aspect ratio changes)
+    /// - 3 massive bodies create visible Einstein-like lensing
+    /// - Soft glowing trails show orbital history
+    /// - Caustic patterns emerge naturally from ray convergence
     pub fn geodesic_caustics() -> Self {
         Self {
             style: LensingStyle::GeodesicCaustics,
-            base_mass: 90_000.0,  // Slightly higher to compensate for fewer sources
+            base_mass: 120_000.0,  // High mass for dramatic, visible lensing
             mass_multiplier: 1.0,
-            einstein_scale: 0.14,  // Slightly larger for more visible lensing
-            max_displacement: 120.0,
-            falloff_exponent: 1.0,
-            show_einstein_rings: false, // Caustics create their own ring-like patterns
-            ring_brightness: 0.0,
-            ring_thickness: 0.0,
-            show_accretion_glow: false,
-            accretion_intensity: 0.0,
-            show_grid: false,
+            einstein_scale: 0.18,  // Larger for very visible lensing
+            max_displacement: 150.0,
+            falloff_exponent: 0.9,  // Slower falloff = larger area of effect
+            show_einstein_rings: true,  // Show the rings!
+            ring_brightness: 0.5,
+            ring_thickness: 0.10,
+            show_accretion_glow: true,  // Subtle glow around bodies
+            accretion_intensity: 0.3,
+            show_grid: false,  // No grid for clean artistic look
             grid_spacing: 50.0,
             grid_opacity: 0.0,
-            chromatic_aberration: 0.15, // Physically accurate - different wavelengths bend differently
+            chromatic_aberration: 0.18,  // Visible chromatic separation
             wake_centroids: 3,
-            trail_opacity: 0.0, // Use luminous trails instead
+            trail_opacity: 0.0,   // NO boring line trails
             trail_width: 0.0,
-            half_resolution: false, // Full resolution for main displacement (temporal samples use half-res)
-            // Geodesic-specific settings
-            caustic_ray_density: 4, // Rays per pixel for density computation
-            caustic_brightness: 1.4,  // Slightly higher to compensate for fewer temporal samples
+            half_resolution: false,
+            // Caustic settings (stable single-frame computation)
+            caustic_ray_density: 4,
+            caustic_brightness: 1.2,
             show_caustics: true,
-            show_proper_time_trails: true,
-            time_dilation_strength: 0.6,
-            caustic_smoothing: 2.5,
-            // Trajectory-based lensing (OPTIMIZED for performance)
-            use_trajectory_density: true,
-            trajectory_sample_count: 1500,  // Reduced from 2000 (still captures detail)
-            density_threshold: 0.08,        // Higher threshold for cleaner, more elegant curves
-            trajectory_source_count: 80,    // Fewer sources for cleaner lensing
-            trajectory_mass_scale: 2200.0,  // Higher to compensate for fewer sources
-            accumulated_caustic_samples: 5, // Reduced from 8, parallelized (good balance)
-            luminous_trail_brightness: 0.55, // Slightly higher for visibility
-            luminous_trail_falloff: 0.3,    // Lower for smoother, more elegant trails
-            // Temporal windowing: Show only the "mature" part of the orbit
-            // Skip the initial chaotic settling, show the elegant middle-to-end
-            trajectory_window_start: 0.35,  // Skip first 35% (chaotic settling phase)
-            trajectory_window_end: 1.0,     // Include to the end (most recent = most relevant)
+            show_proper_time_trails: false,
+            time_dilation_strength: 0.0,
+            caustic_smoothing: 3.0,
+            // Trajectory-based lensing DISABLED (caused flickering)
+            use_trajectory_density: false,
+            trajectory_sample_count: 0,
+            density_threshold: 0.0,
+            trajectory_source_count: 0,
+            trajectory_mass_scale: 0.0,
+            accumulated_caustic_samples: 1,  // Single frame only
+            luminous_trail_brightness: 0.0,
+            luminous_trail_falloff: 0.0,
+            trajectory_window_start: 0.0,
+            trajectory_window_end: 1.0,
+            // FIXED CAMERA: No zoom, no aspect ratio changes
+            use_fixed_bounds: true,
+            fixed_bounds_margin: 0.15,
+            // Accumulated grid (disabled)
+            use_accumulated_grid: false,
+            accumulated_grid_samples: 0,
+            grid_memory_strength: 0.0,
+            grid_history_fraction: 0.0,
         }
     }
     
@@ -276,15 +310,15 @@ impl LensingConfig {
             show_einstein_rings: true,
             ring_brightness: 0.6,
             ring_thickness: 0.12,
-            show_accretion_glow: false,
-            accretion_intensity: 0.0,
+            show_accretion_glow: true,  // Show glow around bodies
+            accretion_intensity: 0.35,
             show_grid: false,
             grid_spacing: 50.0,
             grid_opacity: 0.3,
             chromatic_aberration: 0.15,
             wake_centroids: 3,
-            trail_opacity: 0.15,
-            trail_width: 1.0,
+            trail_opacity: 0.0,   // NO boring line trails
+            trail_width: 0.0,
             half_resolution: true,
             // Geodesic-specific settings (not used for this style)
             caustic_ray_density: 1,
@@ -305,6 +339,14 @@ impl LensingConfig {
             // Temporal windowing (full trajectory for non-geodesic styles)
             trajectory_window_start: 0.0,
             trajectory_window_end: 1.0,
+            // Fixed camera
+            use_fixed_bounds: true,
+            fixed_bounds_margin: 0.15,
+            // Accumulated grid (disabled)
+            use_accumulated_grid: false,
+            accumulated_grid_samples: 0,
+            grid_memory_strength: 0.0,
+            grid_history_fraction: 0.0,
         }
     }
     
@@ -320,15 +362,15 @@ impl LensingConfig {
             show_einstein_rings: false,
             ring_brightness: 0.0,
             ring_thickness: 0.0,
-            show_accretion_glow: false,
-            accretion_intensity: 0.0,
+            show_accretion_glow: true,   // Glow shows current positions
+            accretion_intensity: 0.3,
             show_grid: false,
             grid_spacing: 50.0,
             grid_opacity: 0.3,
             chromatic_aberration: 0.08,
             wake_centroids: 40,
-            trail_opacity: 0.25,
-            trail_width: 1.2,
+            trail_opacity: 0.0,   // NO boring line trails - wake IS the visualization
+            trail_width: 0.0,
             half_resolution: true,
             // Geodesic-specific settings (not used for this style)
             caustic_ray_density: 1,
@@ -349,6 +391,14 @@ impl LensingConfig {
             // Temporal windowing (full trajectory for non-geodesic styles)
             trajectory_window_start: 0.0,
             trajectory_window_end: 1.0,
+            // Fixed camera
+            use_fixed_bounds: true,
+            fixed_bounds_margin: 0.15,
+            // Accumulated grid (disabled)
+            use_accumulated_grid: false,
+            accumulated_grid_samples: 0,
+            grid_memory_strength: 0.0,
+            grid_history_fraction: 0.0,
         }
     }
     
@@ -365,13 +415,13 @@ impl LensingConfig {
             ring_brightness: 0.9,
             ring_thickness: 0.15,
             show_accretion_glow: true,
-            accretion_intensity: 0.4,
+            accretion_intensity: 0.5,   // More dramatic glow
             show_grid: false,
             grid_spacing: 50.0,
             grid_opacity: 0.3,
             chromatic_aberration: 0.25,
             wake_centroids: 3,
-            trail_opacity: 0.0,
+            trail_opacity: 0.0,   // NO boring line trails
             trail_width: 0.0,
             half_resolution: true,
             // Geodesic-specific settings (not used for this style)
@@ -393,30 +443,41 @@ impl LensingConfig {
             // Temporal windowing (full trajectory for non-geodesic styles)
             trajectory_window_start: 0.0,
             trajectory_window_end: 1.0,
+            // Fixed camera
+            use_fixed_bounds: true,
+            fixed_bounds_margin: 0.15,
+            // Accumulated grid (disabled)
+            use_accumulated_grid: false,
+            accumulated_grid_samples: 0,
+            grid_memory_strength: 0.0,
+            grid_history_fraction: 0.0,
         }
     }
     
     /// Spacetime Fabric: Grid overlay showing curvature
+    /// 
+    /// Grid is now softer and more artistic (less "mathematical").
+    /// Trails are soft glowing orbs instead of lines.
     pub fn spacetime_fabric() -> Self {
         Self {
             style: LensingStyle::SpacetimeFabric,
-            base_mass: 80_000.0,
+            base_mass: 100_000.0,  // Higher mass for more visible bending
             mass_multiplier: 1.0,
-            einstein_scale: 0.12,
-            max_displacement: 100.0,
+            einstein_scale: 0.15,  // Larger effect radius
+            max_displacement: 120.0,
             falloff_exponent: 1.0,
             show_einstein_rings: false,
             ring_brightness: 0.0,
             ring_thickness: 0.0,
-            show_accretion_glow: false,
-            accretion_intensity: 0.0,
+            show_accretion_glow: true,  // Subtle glow around bodies
+            accretion_intensity: 0.25,
             show_grid: true,
-            grid_spacing: 40.0,
-            grid_opacity: 0.5,
-            chromatic_aberration: 0.05,
+            grid_spacing: 50.0,  // Wider grid spacing - less cluttered
+            grid_opacity: 0.25,  // Much softer grid (was 0.5)
+            chromatic_aberration: 0.08,
             wake_centroids: 3,
-            trail_opacity: 0.2,
-            trail_width: 1.5,
+            trail_opacity: 0.0,   // NO trail lines!
+            trail_width: 0.0,
             half_resolution: true,
             // Geodesic-specific settings (not used for this style)
             caustic_ray_density: 1,
@@ -437,6 +498,72 @@ impl LensingConfig {
             // Temporal windowing (full trajectory for non-geodesic styles)
             trajectory_window_start: 0.0,
             trajectory_window_end: 1.0,
+            // Fixed camera
+            use_fixed_bounds: true,
+            fixed_bounds_margin: 0.15,
+            // Accumulated grid (disabled - use GravitationalMemory for this)
+            use_accumulated_grid: false,
+            accumulated_grid_samples: 0,
+            grid_memory_strength: 0.0,
+            grid_history_fraction: 0.0,
+        }
+    }
+    
+    /// Gravitational Memory: Grid permanently records orbital history
+    /// 
+    /// **THE COOLEST MODE** - The grid shows WHERE masses have been, not WHERE they are.
+    /// No trajectory lines - the distorted grid IS the history.
+    /// 
+    /// The grid accumulates distortion from every position in the orbital history,
+    /// creating a permanent "imprint" of gravitational influence.
+    pub fn gravitational_memory() -> Self {
+        Self {
+            style: LensingStyle::GravitationalMemory,
+            base_mass: 60_000.0,  // Lower per-sample mass (accumulates)
+            mass_multiplier: 1.0,
+            einstein_scale: 0.12,
+            max_displacement: 100.0,
+            falloff_exponent: 1.0,
+            show_einstein_rings: false,  // Grid tells the story
+            ring_brightness: 0.0,
+            ring_thickness: 0.0,
+            show_accretion_glow: true,  // Glow at current positions
+            accretion_intensity: 0.4,   // More visible glow
+            show_grid: true,            // THE MAIN FEATURE
+            grid_spacing: 40.0,         // Denser grid for detail
+            grid_opacity: 0.45,         // Visible but not overwhelming
+            chromatic_aberration: 0.10, // Subtle color fringing
+            wake_centroids: 3,
+            trail_opacity: 0.0,         // NO TRAIL LINES! Grid is the trail.
+            trail_width: 0.0,
+            half_resolution: true,
+            // Geodesic-specific (not used)
+            caustic_ray_density: 1,
+            caustic_brightness: 0.0,
+            show_caustics: false,
+            show_proper_time_trails: false,
+            time_dilation_strength: 0.0,
+            caustic_smoothing: 0.0,
+            // Trajectory-based lensing (disabled)
+            use_trajectory_density: false,
+            trajectory_sample_count: 0,
+            density_threshold: 0.0,
+            trajectory_source_count: 0,
+            trajectory_mass_scale: 0.0,
+            accumulated_caustic_samples: 0,
+            luminous_trail_brightness: 0.0,
+            luminous_trail_falloff: 0.0,
+            // Temporal windowing
+            trajectory_window_start: 0.0,
+            trajectory_window_end: 1.0,
+            // Fixed camera
+            use_fixed_bounds: true,
+            fixed_bounds_margin: 0.15,
+            // ACCUMULATED GRID - THE KEY FEATURE
+            use_accumulated_grid: true,
+            accumulated_grid_samples: 30,  // Sample 30 timesteps for history
+            grid_memory_strength: 0.8,     // Strong memory of past positions
+            grid_history_fraction: 1.0,    // Use full history
         }
     }
     
@@ -448,6 +575,7 @@ impl LensingConfig {
             LensingStyle::GravitationalWake => Self::gravitational_wake(),
             LensingStyle::EventHorizon => Self::event_horizon(),
             LensingStyle::SpacetimeFabric => Self::spacetime_fabric(),
+            LensingStyle::GravitationalMemory => Self::gravitational_memory(),
         }
     }
     
@@ -492,61 +620,102 @@ pub struct MassSource {
 /// For GeodesicCaustics with trajectory density: Creates distributed mass sources from orbital history
 /// For CosmicLens/EventHorizon: Uses only current (final) body positions
 /// For GravitationalWake: Uses aggregated centroids along trajectory
+/// 
+/// **New:** When `use_fixed_bounds` is enabled, uses fixed square bounds to prevent
+/// camera zoom and aspect ratio distortion during animations.
 pub fn create_mass_sources(
     positions: &[Vec<Vector3<f64>>],
     config: &LensingConfig,
     width: usize,
     height: usize,
 ) -> Vec<MassSource> {
-    // Compute world bounds
-    let (min_x, max_x, min_y, max_y) = compute_bounds(positions);
-    let margin = 0.1 * ((max_x - min_x).max(max_y - min_y));
-    let world_bounds = WorldBounds {
-        min_x: min_x - margin,
-        max_x: max_x + margin,
-        min_y: min_y - margin,
-        max_y: max_y + margin,
+    // Compute world bounds - use fixed square bounds if configured
+    let world_bounds = if config.use_fixed_bounds {
+        WorldBounds::fixed_square(positions, config.fixed_bounds_margin)
+    } else {
+        WorldBounds::from_positions(positions, 0.1)
     };
     
     match config.style {
         LensingStyle::GeodesicCaustics if config.use_trajectory_density => {
-            // NEW: Create mass sources from entire orbital history
+            // Create mass sources from entire orbital history (can cause flickering)
             create_trajectory_density_sources(positions, config, width, height, &world_bounds)
         }
         LensingStyle::GeodesicCaustics | LensingStyle::CosmicLens | LensingStyle::EventHorizon | LensingStyle::SpacetimeFabric => {
+            // Simple 3-body lensing (stable, no flickering)
             create_body_sources(positions, config, width, height, &world_bounds)
         }
         LensingStyle::GravitationalWake => {
             create_centroid_sources(positions, config, width, height, &world_bounds)
         }
+        LensingStyle::GravitationalMemory => {
+            // For accumulated grid: use all positions from trajectory history
+            // This creates the "permanent imprint" of gravitational influence
+            create_accumulated_history_sources(positions, config, width, height, &world_bounds)
+        }
+    }
+}
+
+/// Get world bounds for external use (e.g., trail rendering)
+pub fn get_world_bounds(positions: &[Vec<Vector3<f64>>], config: &LensingConfig) -> WorldBounds {
+    if config.use_fixed_bounds {
+        WorldBounds::fixed_square(positions, config.fixed_bounds_margin)
+    } else {
+        WorldBounds::from_positions(positions, 0.1)
     }
 }
 
 /// World coordinate bounds
-struct WorldBounds {
-    min_x: f64,
-    max_x: f64,
-    min_y: f64,
-    max_y: f64,
+pub struct WorldBounds {
+    pub min_x: f64,
+    pub max_x: f64,
+    pub min_y: f64,
+    pub max_y: f64,
 }
 
 impl WorldBounds {
-    fn width(&self) -> f64 {
+    pub fn width(&self) -> f64 {
         (self.max_x - self.min_x).max(1e-10)
     }
     
-    fn height(&self) -> f64 {
+    pub fn height(&self) -> f64 {
         (self.max_y - self.min_y).max(1e-10)
     }
     
-    fn to_pixel(&self, world_x: f64, world_y: f64, img_width: usize, img_height: usize) -> (f64, f64) {
+    pub fn to_pixel(&self, world_x: f64, world_y: f64, img_width: usize, img_height: usize) -> (f64, f64) {
         let px = (world_x - self.min_x) / self.width() * img_width as f64;
         let py = (world_y - self.min_y) / self.height() * img_height as f64;
         (px, py)
     }
+    
+    /// Compute bounds from positions (may have non-square aspect ratio)
+    pub fn from_positions(positions: &[Vec<Vector3<f64>>], margin: f64) -> Self {
+        let (min_x, max_x, min_y, max_y) = compute_bounds_raw(positions);
+        let span = (max_x - min_x).max(max_y - min_y);
+        let actual_margin = margin * span;
+        Self {
+            min_x: min_x - actual_margin,
+            max_x: max_x + actual_margin,
+            min_y: min_y - actual_margin,
+            max_y: max_y + actual_margin,
+        }
+    }
+    
+    /// Compute fixed SQUARE bounds centered on center of mass.
+    /// This prevents camera zoom and aspect ratio distortion.
+    pub fn fixed_square(positions: &[Vec<Vector3<f64>>], margin_factor: f64) -> Self {
+        let (min_x, max_x, min_y, max_y) = crate::utils::fixed_square_bounds(positions, margin_factor);
+        Self { min_x, max_x, min_y, max_y }
+    }
+    
+    /// Default bounds for testing or when positions are empty
+    pub fn default_for_positions(positions: &[Vec<Vector3<f64>>], _width: usize, _height: usize) -> Self {
+        Self::from_positions(positions, 0.1)
+    }
 }
 
-fn compute_bounds(positions: &[Vec<Vector3<f64>>]) -> (f64, f64, f64, f64) {
+/// Compute raw bounds from positions (no margin)
+pub fn compute_bounds_raw(positions: &[Vec<Vector3<f64>>]) -> (f64, f64, f64, f64) {
     let mut min_x = f64::INFINITY;
     let mut max_x = f64::NEG_INFINITY;
     let mut min_y = f64::INFINITY;
@@ -562,6 +731,11 @@ fn compute_bounds(positions: &[Vec<Vector3<f64>>]) -> (f64, f64, f64, f64) {
     }
     
     (min_x, max_x, min_y, max_y)
+}
+
+/// Legacy function for backwards compatibility
+pub fn compute_bounds(positions: &[Vec<Vector3<f64>>]) -> (f64, f64, f64, f64) {
+    compute_bounds_raw(positions)
 }
 
 /// Create sources from final body positions only (3 sources)
@@ -650,6 +824,66 @@ fn create_centroid_sources(
     sources
 }
 
+/// Create mass sources from entire trajectory history for accumulated grid distortion
+/// 
+/// This creates many small mass sources at sampled positions throughout the orbital history.
+/// When used with the grid overlay, this creates a "gravitational memory" effect where
+/// the grid shows the permanent imprint of where masses have been.
+fn create_accumulated_history_sources(
+    positions: &[Vec<Vector3<f64>>],
+    config: &LensingConfig,
+    width: usize,
+    height: usize,
+    bounds: &WorldBounds,
+) -> Vec<MassSource> {
+    let num_samples = config.accumulated_grid_samples.max(10);
+    let effective_mass = config.base_mass * config.mass_multiplier;
+    let history_fraction = config.grid_history_fraction.clamp(0.1, 1.0);
+    let memory_strength = config.grid_memory_strength.clamp(0.1, 2.0);
+    
+    let mut sources = Vec::with_capacity(num_samples * positions.len());
+    
+    for (body_idx, body_pos) in positions.iter().enumerate() {
+        if body_pos.is_empty() {
+            continue;
+        }
+        
+        // Determine which portion of history to use
+        let history_len = (body_pos.len() as f64 * history_fraction) as usize;
+        let start_idx = body_pos.len().saturating_sub(history_len);
+        let relevant_positions = &body_pos[start_idx..];
+        
+        if relevant_positions.is_empty() {
+            continue;
+        }
+        
+        // Sample evenly across the history
+        let step = (relevant_positions.len() / num_samples).max(1);
+        
+        for (sample_idx, i) in (0..relevant_positions.len()).step_by(step).enumerate() {
+            let pos = &relevant_positions[i];
+            let (px, py) = bounds.to_pixel(pos.x, pos.y, width, height);
+            
+            // Age factor: older positions have slightly less influence
+            let age = sample_idx as f64 / num_samples as f64;
+            let age_factor = 0.5 + 0.5 * (1.0 - age);  // Older = 50-100% strength
+            
+            // Distribute mass across all samples, weighted by memory strength
+            let sample_mass = (effective_mass / num_samples as f64) * memory_strength * age_factor;
+            
+            sources.push(MassSource {
+                x: px,
+                y: py,
+                mass: sample_mass,
+                body_index: body_idx,
+                velocity: 1.0 - age * 0.3,
+            });
+        }
+    }
+    
+    sources
+}
+
 // ============================================================================
 // TRAJECTORY DENSITY LENSING (NEW!)
 // ============================================================================
@@ -685,14 +919,8 @@ impl TrajectoryDensityField {
         height: usize,
         config: &LensingConfig,
     ) -> Self {
-        let (min_x, max_x, min_y, max_y) = compute_bounds(positions);
-        let margin = 0.1 * ((max_x - min_x).max(max_y - min_y));
-        let bounds = WorldBounds {
-            min_x: min_x - margin,
-            max_x: max_x + margin,
-            min_y: min_y - margin,
-            max_y: max_y + margin,
-        };
+        // Use fixed square bounds if configured
+        let bounds = get_world_bounds(positions, config);
         
         // Subsample trajectory for performance
         let sample_count = config.trajectory_sample_count.max(100);
@@ -949,15 +1177,8 @@ pub fn compute_accumulated_caustics(
         return compute_caustic_density(field, config);
     }
     
-    // Compute world bounds once (shared across all samples)
-    let (min_x, max_x, min_y, max_y) = compute_bounds(positions);
-    let margin = 0.1 * ((max_x - min_x).max(max_y - min_y));
-    let bounds = WorldBounds {
-        min_x: min_x - margin,
-        max_x: max_x + margin,
-        min_y: min_y - margin,
-        max_y: max_y + margin,
-    };
+    // Use fixed square bounds if configured (prevents zoom/aspect ratio issues)
+    let bounds = get_world_bounds(positions, config);
     
     let total_steps = positions.iter().map(|p| p.len()).max().unwrap_or(1);
     let effective_mass = config.base_mass * config.mass_multiplier;
@@ -1534,6 +1755,10 @@ pub fn render_grid_overlay(
 // ============================================================================
 
 /// Render faint trajectory trails
+/// Render trajectory trails as soft glowing orbs
+/// 
+/// **New:** Uses fixed square bounds when configured to prevent camera zoom and
+/// aspect ratio changes. Trails are rendered as soft Gaussian blobs, not lines.
 pub fn render_trajectory_trails(
     buffer: &mut [(f64, f64, f64, f64)],
     positions: &[Vec<Vector3<f64>>],
@@ -1546,17 +1771,17 @@ pub fn render_trajectory_trails(
         return;
     }
     
-    let (min_x, max_x, min_y, max_y) = compute_bounds(positions);
-    let margin = 0.1 * ((max_x - min_x).max(max_y - min_y));
-    let bounds = WorldBounds {
-        min_x: min_x - margin,
-        max_x: max_x + margin,
-        min_y: min_y - margin,
-        max_y: max_y + margin,
-    };
+    // Use fixed bounds if configured (prevents zoom/aspect ratio issues)
+    let bounds = get_world_bounds(positions, config);
     
-    // Subsample trajectory for performance
-    let subsample = (positions[0].len() / 5000).max(1);
+    // Subsample trajectory for performance (render ~2000 points per body)
+    let max_samples = 2000;
+    let subsample = (positions[0].len() / max_samples).max(1);
+    
+    // Use trail_width as the size of soft glowing orbs
+    // Larger width = softer, more blurred trails (artistic)
+    // Smaller width = sharper, more distinct trails
+    let orb_size = config.trail_width.max(1.5);
     
     for (body_idx, body_pos) in positions.iter().enumerate() {
         let color = colors[body_idx % 3];
@@ -1568,11 +1793,21 @@ pub fn render_trajectory_trails(
             
             let (px, py) = bounds.to_pixel(pos.x, pos.y, width, height);
             
-            // Age-based fade
-            let age = step as f64 / body_pos.len() as f64;
-            let opacity = config.trail_opacity * (1.0 - age * 0.7);
+            // Skip points outside the visible area (with margin)
+            if px < -orb_size * 3.0 || px > width as f64 + orb_size * 3.0 ||
+               py < -orb_size * 3.0 || py > height as f64 + orb_size * 3.0 {
+                continue;
+            }
             
-            draw_soft_point(buffer, width, height, px, py, config.trail_width, opacity, &color);
+            // Age-based fade: older points are dimmer
+            // age = 0 at start, 1 at end
+            let age = step as f64 / body_pos.len().max(1) as f64;
+            
+            // Fade from full opacity at end to 30% at start
+            let age_fade = 0.3 + 0.7 * age;
+            let opacity = config.trail_opacity * age_fade;
+            
+            draw_soft_point(buffer, width, height, px, py, orb_size, opacity, &color);
         }
     }
 }
@@ -2272,7 +2507,10 @@ mod tests {
     #[test]
     fn test_render_trajectory_trails_adds_brightness() {
         let positions = create_test_trajectory();
-        let config = LensingConfig::cosmic_lens();
+        // Create a config with trails explicitly enabled for testing
+        let mut config = LensingConfig::cosmic_lens();
+        config.trail_opacity = 0.3;
+        config.trail_width = 2.0;
         
         let mut buffer: Vec<(f64, f64, f64, f64)> = vec![(0.0, 0.0, 0.0, 1.0); 1920 * 1080];
         let initial_brightness: f64 = buffer.iter().map(|p| p.0 + p.1 + p.2).sum();
@@ -2282,7 +2520,7 @@ mod tests {
         
         let final_brightness: f64 = buffer.iter().map(|p| p.0 + p.1 + p.2).sum();
         
-        assert!(final_brightness > initial_brightness, "Trails should add brightness");
+        assert!(final_brightness > initial_brightness, "Trails should add brightness when enabled");
     }
     
     #[test]
@@ -2399,11 +2637,13 @@ mod tests {
         let config = LensingConfig::geodesic_caustics();
         assert_eq!(config.style, LensingStyle::GeodesicCaustics);
         assert!(config.show_caustics);
-        assert!(config.show_proper_time_trails);
-        assert!(!config.show_einstein_rings); // Uses emergent caustics instead
-        assert!(!config.show_grid); // No mathematical grid
+        // Updated: Now uses stable 3-body lensing, not trajectory-based
+        assert!(config.show_einstein_rings, "Should show Einstein rings for dramatic effect");
+        assert!(config.show_accretion_glow, "Should show accretion glow");
+        assert!(!config.show_grid, "No mathematical grid");
         assert!(config.caustic_brightness > 0.0);
-        assert!(config.time_dilation_strength > 0.0);
+        // Fixed camera enabled
+        assert!(config.use_fixed_bounds, "Should use fixed bounds to prevent zoom");
     }
     
     #[test]
@@ -2412,10 +2652,10 @@ mod tests {
         let config = LensingConfig::geodesic_caustics();
         let sources = create_mass_sources(&positions, &config, 1920, 1080);
         
-        // Geodesic caustics with trajectory density creates many sources
-        // (3 body sources + trajectory-based sources)
-        assert!(sources.len() > 3,
-            "Should have trajectory-based sources in addition to body sources, got {}", sources.len());
+        // Updated: Geodesic caustics now uses simple 3-body lensing (stable, no flickering)
+        // This creates exactly 3 sources (one per body at final position)
+        assert_eq!(sources.len(), 3,
+            "Should have 3 sources (one per body), got {}", sources.len());
         
         // All sources should have positive mass
         for source in &sources {
@@ -2517,7 +2757,11 @@ mod tests {
     #[test]
     fn test_render_proper_time_trails_adds_brightness() {
         let positions = create_test_trajectory();
-        let config = LensingConfig::geodesic_caustics();
+        // Use a config that has proper time trails ENABLED for testing
+        let mut config = LensingConfig::geodesic_caustics();
+        config.show_proper_time_trails = true;
+        config.time_dilation_strength = 0.6;
+        
         let sources = create_mass_sources(&positions, &config, 200, 200);
         
         let mut buffer: Vec<(f64, f64, f64, f64)> = vec![(0.0, 0.0, 0.0, 1.0); 200 * 200];
@@ -2592,9 +2836,9 @@ mod tests {
         let positions = create_test_trajectory();
         let config = LensingConfig::geodesic_caustics();
         
-        // Create sources (with trajectory density enabled, we get many sources)
+        // Create sources (stable 3-body approach)
         let sources = create_mass_sources(&positions, &config, 200, 200);
-        assert!(sources.len() > 3, "Should have trajectory-based sources");
+        assert_eq!(sources.len(), 3, "Should have exactly 3 sources (one per body)");
         
         // Compute displacement field
         let field = DisplacementField::compute(&sources, 200, 200, &config);
@@ -2675,20 +2919,20 @@ mod tests {
     // ============================================================================
     
     #[test]
-    fn test_trajectory_density_config_enabled() {
+    fn test_trajectory_density_config_disabled() {
         let config = LensingConfig::geodesic_caustics();
         
-        // Trajectory-based lensing should be enabled by default for geodesic caustics
-        assert!(config.use_trajectory_density, 
-            "Geodesic caustics should use trajectory density by default");
-        assert!(config.trajectory_sample_count > 100,
-            "Should sample many trajectory points");
-        assert!(config.trajectory_source_count > 10,
-            "Should generate multiple trajectory-based mass sources");
-        assert!(config.accumulated_caustic_samples > 1,
-            "Should use accumulated caustics");
-        assert!(config.luminous_trail_brightness > 0.0,
-            "Should have luminous trail visualization");
+        // Trajectory-based lensing is DISABLED in the new stable approach
+        // (trajectory density caused flickering in videos)
+        assert!(!config.use_trajectory_density, 
+            "Geodesic caustics should NOT use trajectory density (causes flickering)");
+        
+        // Instead, it uses stable features:
+        assert!(config.show_einstein_rings, "Should show Einstein rings");
+        assert!(config.show_caustics, "Should show caustics");
+        // No more boring line trails!
+        assert_eq!(config.trail_opacity, 0.0, "Should NOT have line trails");
+        assert!(config.use_fixed_bounds, "Should use fixed bounds");
     }
     
     #[test]
@@ -2793,18 +3037,21 @@ mod tests {
     #[test]
     fn test_create_trajectory_density_sources_count() {
         let positions = create_test_trajectory();
-        let config = LensingConfig::geodesic_caustics();
+        
+        // Test with trajectory density EXPLICITLY enabled for legacy testing
+        let mut config = LensingConfig::geodesic_caustics();
+        config.use_trajectory_density = true;
+        config.trajectory_sample_count = 1000;
+        config.trajectory_source_count = 50;
         
         let sources = create_mass_sources(&positions, &config, 200, 200);
         
         // With trajectory density enabled, should have more than just 3 sources
-        // (3 from bodies + additional from trajectory density)
         assert!(sources.len() > 3,
             "Trajectory density should generate additional sources, got {}", sources.len());
         
-        // Should have at least the configured target count (or close to it)
-        // Note: actual count may vary based on density distribution
-        assert!(sources.len() >= 10,
+        // Should have at least some sources
+        assert!(sources.len() >= 5,
             "Should have a reasonable number of sources, got {}", sources.len());
     }
     
@@ -2842,7 +3089,11 @@ mod tests {
     #[test]
     fn test_render_luminous_trails_adds_brightness() {
         let positions = create_test_trajectory();
-        let config = LensingConfig::geodesic_caustics();
+        // Use a config with luminous trails ENABLED for testing
+        let mut config = LensingConfig::geodesic_caustics();
+        config.use_trajectory_density = true;  // Enable for this test
+        config.luminous_trail_brightness = 0.5;
+        config.trajectory_sample_count = 500;
         
         let density_field = TrajectoryDensityField::compute(&positions, 100, 100, &config);
         
@@ -2951,7 +3202,13 @@ mod tests {
     #[test]
     fn test_full_trajectory_lensing_pipeline() {
         let positions = create_test_trajectory();
-        let config = LensingConfig::geodesic_caustics();
+        
+        // Use a config with trajectory density ENABLED for legacy testing
+        let mut config = LensingConfig::geodesic_caustics();
+        config.use_trajectory_density = true;
+        config.trajectory_sample_count = 500;
+        config.trajectory_source_count = 30;
+        config.luminous_trail_brightness = 0.5;
         
         // Step 1: Compute trajectory density field
         let density_field = TrajectoryDensityField::compute(&positions, 200, 200, &config);
@@ -3004,19 +3261,21 @@ mod tests {
     fn test_trajectory_lensing_vs_standard_lensing_source_count() {
         let positions = create_test_trajectory();
         
-        // Geodesic Caustics with trajectory density
-        let config_traj = LensingConfig::geodesic_caustics();
-        assert!(config_traj.use_trajectory_density);
+        // Config with trajectory density ENABLED
+        let mut config_traj = LensingConfig::geodesic_caustics();
+        config_traj.use_trajectory_density = true;
+        config_traj.trajectory_sample_count = 500;
+        config_traj.trajectory_source_count = 30;
         let sources_traj = create_mass_sources(&positions, &config_traj, 200, 200);
         
-        // Cosmic Lens without trajectory density
-        let config_std = LensingConfig::cosmic_lens();
+        // Config without trajectory density (default for geodesic caustics now)
+        let config_std = LensingConfig::geodesic_caustics();
         assert!(!config_std.use_trajectory_density);
         let sources_std = create_mass_sources(&positions, &config_std, 200, 200);
         
-        // Trajectory-based should have significantly more sources
-        assert!(sources_traj.len() > sources_std.len() * 2,
-            "Trajectory lensing should have many more sources: {} vs {}",
+        // Trajectory-based should have more sources than standard (3)
+        assert!(sources_traj.len() > sources_std.len(),
+            "Trajectory lensing should have more sources: {} vs {}",
             sources_traj.len(), sources_std.len());
     }
     

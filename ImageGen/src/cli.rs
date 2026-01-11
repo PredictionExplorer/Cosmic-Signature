@@ -192,11 +192,12 @@ pub struct EffectArgs {
     /// Lensing mode style variant.
     ///
     /// Options:
-    /// - "geodesic-caustics" (default): Physics-accurate ray tracing with emergent caustic patterns
+    /// - "geodesic-caustics" (default): Physics-accurate lensing with dramatic effects
     /// - "cosmic-lens": 3 massive bodies with dramatic Einstein rings
     /// - "gravitational-wake": Trajectory centroids create rippling wake patterns
     /// - "event-horizon": Extreme distortion with accretion glow
     /// - "spacetime-fabric": Grid overlay showing mathematical curvature
+    /// - "gravitational-memory": Grid permanently records orbital history (COOLEST!)
     #[arg(long, default_value = "geodesic-caustics")]
     pub lensing_style: String,
 

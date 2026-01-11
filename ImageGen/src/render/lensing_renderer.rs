@@ -135,6 +135,22 @@ impl LensingRendererConfig {
         }
     }
     
+    /// Gravitational Memory style: Grid permanently records orbital history
+    /// 
+    /// THE COOLEST MODE - No trajectory lines, the distorted grid IS the history.
+    /// The grid accumulates gravitational influence from every position the bodies visited.
+    pub fn gravitational_memory() -> Self {
+        Self {
+            lensing: LensingConfig::gravitational_memory(),
+            background: LensingBackgroundConfig::deep_field(),  // Dark background for contrast
+            grain: FilmGrainConfig::museum_quality(),
+            vignette_strength: 0.15,
+            vignette_radius: 0.65,
+            gamma: 2.2,
+            palette_name: "Deep Ocean".to_string(),  // Cool blue tones
+        }
+    }
+    
     /// Create config from style enum
     pub fn from_style(style: LensingStyle) -> Self {
         match style {
@@ -143,6 +159,7 @@ impl LensingRendererConfig {
             LensingStyle::GravitationalWake => Self::gravitational_wake(),
             LensingStyle::EventHorizon => Self::event_horizon(),
             LensingStyle::SpacetimeFabric => Self::spacetime_fabric(),
+            LensingStyle::GravitationalMemory => Self::gravitational_memory(),
         }
     }
     
@@ -536,8 +553,10 @@ mod tests {
         let config = LensingRendererConfig::geodesic_caustics();
         assert_eq!(config.lensing.style, LensingStyle::GeodesicCaustics);
         assert!(config.lensing.show_caustics);
-        assert!(config.lensing.show_proper_time_trails);
-        assert!(!config.lensing.show_einstein_rings); // Uses emergent caustics instead
+        // Updated: Now uses stable 3-body lensing with Einstein rings
+        assert!(config.lensing.show_einstein_rings, "Should show Einstein rings");
+        assert!(config.lensing.use_fixed_bounds, "Should use fixed bounds");
+        assert!(!config.lensing.use_trajectory_density, "Trajectory density disabled for stability");
     }
     
     #[test]
@@ -637,9 +656,9 @@ mod tests {
         assert_eq!(result.width, 200);
         assert_eq!(result.height, 200);
         assert_eq!(result.buffer.len(), 200 * 200);
-        // With trajectory density enabled, we have many more sources
-        assert!(result.source_count > 3,
-            "Geodesic caustics with trajectory density should have many sources, got {}",
+        // Updated: Now uses stable 3-body lensing (exactly 3 sources)
+        assert_eq!(result.source_count, 3,
+            "Geodesic caustics should have 3 sources (stable approach), got {}",
             result.source_count);
         assert!(result.max_distortion > 0.0);
         assert_eq!(result.style_name, "Geodesic Caustics");

@@ -56,7 +56,7 @@ pub struct BoundingBox {
 }
 
 impl BoundingBox {
-    /// Create a new bounding box from position data
+    /// Create a new bounding box from position data (may have non-square aspect ratio)
     pub fn from_positions(positions: &[Vec<Vector3<f64>>]) -> Self {
         let (min_x, max_x, min_y, max_y) = crate::utils::bounding_box(positions);
         Self {
@@ -66,6 +66,23 @@ impl BoundingBox {
             max_y,
             width: (max_x - min_x).max(1e-12),
             height: (max_y - min_y).max(1e-12),
+        }
+    }
+    
+    /// Create a fixed square bounding box centered on the center of mass.
+    /// This prevents camera zoom and aspect ratio distortion during animations.
+    /// The margin_factor adds extra space around the content (e.g., 0.1 = 10% margin).
+    #[allow(dead_code)]
+    pub fn fixed_square(positions: &[Vec<Vector3<f64>>], margin_factor: f64) -> Self {
+        let (min_x, max_x, min_y, max_y) = crate::utils::fixed_square_bounds(positions, margin_factor);
+        let size = (max_x - min_x).max(1e-12);
+        Self {
+            min_x,
+            max_x,
+            min_y,
+            max_y,
+            width: size,
+            height: size,
         }
     }
 

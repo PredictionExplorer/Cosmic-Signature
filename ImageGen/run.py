@@ -4,44 +4,51 @@ Parallel runner for Three Body Problem simulations.
 Runs 8 concurrent simulations at a time.
 Generates random seeds and randomly chooses rendering mode.
 
+All modes are selected with equal probability by default.
+
 Available modes:
 - Museum modes: hybrid, deep-field, filament, minimal
-- Lensing modes: geodesic-caustics, cosmic-lens, gravitational-wake, event-horizon, spacetime-fabric
+- Lensing modes: geodesic-caustics, cosmic-lens, gravitational-wake, event-horizon, 
+                 spacetime-fabric, gravitational-memory
+- Lensing slow modes: Same as above but with slower, more graceful movement
 - Legacy modes: standard, special
 
 Usage:
-  python run.py              # Run with random mode selection (50% geodesic-caustics)
-  python run.py --caustics   # Run ONLY geodesic-caustics (Luminous Trajectory Lensing)
-  python run.py --all        # Run with equal random selection from all modes
+  python run.py              # Run with equal random selection from all modes
+  python run.py --memory     # Run ONLY gravitational-memory
+  python run.py --caustics   # Run ONLY geodesic-caustics
 """
 
 import asyncio
 import secrets
 import random
 import sys
-import time
 from pathlib import Path
 from datetime import datetime
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List
 
-# Command-line mode selection
+# Command-line mode selection for single-mode runs
 CAUSTICS_ONLY = "--caustics" in sys.argv
-ALL_MODES_EQUAL = "--all" in sys.argv
+MEMORY_ONLY = "--memory" in sys.argv
 
 # Number of concurrent processes to run
 MAX_CONCURRENT = 8
+
+# Slow mode simulation steps (30% of default for more graceful movement)
+SLOW_STEPS = "300000"
 
 
 @dataclass
 class RenderMode:
     """Represents a rendering mode with its CLI flags and display name."""
-    name: str  # Short name for filename
+    name: str  # Short name for filename prefix
     display: str  # Display name for logging
     flags: List[str]  # CLI flags to pass
+    slow: bool = False  # Whether this is a slow mode variant
 
 
-# All available rendering modes
+# All available rendering modes (all selected with equal probability)
 RENDER_MODES = [
     # Museum modes (beautiful minimalist renderer)
     RenderMode("museum_hybrid", "Museum (Hybrid)", ["--museum-mode", "--museum-style", "hybrid"]),
@@ -49,12 +56,21 @@ RENDER_MODES = [
     RenderMode("museum_filament", "Museum (Filament)", ["--museum-mode", "--museum-style", "filament"]),
     RenderMode("museum_minimal", "Museum (Minimal)", ["--museum-mode", "--museum-style", "minimal"]),
     
-    # Lensing modes v2 (gravitational lensing visualization)
+    # Lensing modes (gravitational lensing visualization)
     RenderMode("lensing_caustics", "Lensing (Geodesic Caustics)", ["--lensing-mode", "--lensing-style", "geodesic-caustics"]),
     RenderMode("lensing_cosmic", "Lensing (Cosmic Lens)", ["--lensing-mode", "--lensing-style", "cosmic-lens"]),
     RenderMode("lensing_wake", "Lensing (Gravitational Wake)", ["--lensing-mode", "--lensing-style", "gravitational-wake"]),
     RenderMode("lensing_horizon", "Lensing (Event Horizon)", ["--lensing-mode", "--lensing-style", "event-horizon"]),
     RenderMode("lensing_fabric", "Lensing (Spacetime Fabric)", ["--lensing-mode", "--lensing-style", "spacetime-fabric"]),
+    RenderMode("lensing_memory", "Lensing (Gravitational Memory)", ["--lensing-mode", "--lensing-style", "gravitational-memory"]),
+    
+    # Lensing SLOW modes (more graceful movement)
+    RenderMode("lensing_caustics_slow", "Lensing Slow (Geodesic Caustics)", ["--lensing-mode", "--lensing-style", "geodesic-caustics"], slow=True),
+    RenderMode("lensing_cosmic_slow", "Lensing Slow (Cosmic Lens)", ["--lensing-mode", "--lensing-style", "cosmic-lens"], slow=True),
+    RenderMode("lensing_wake_slow", "Lensing Slow (Gravitational Wake)", ["--lensing-mode", "--lensing-style", "gravitational-wake"], slow=True),
+    RenderMode("lensing_horizon_slow", "Lensing Slow (Event Horizon)", ["--lensing-mode", "--lensing-style", "event-horizon"], slow=True),
+    RenderMode("lensing_fabric_slow", "Lensing Slow (Spacetime Fabric)", ["--lensing-mode", "--lensing-style", "spacetime-fabric"], slow=True),
+    RenderMode("lensing_memory_slow", "Lensing Slow (Gravitational Memory) ⭐", ["--lensing-mode", "--lensing-style", "gravitational-memory"], slow=True),
     
     # Legacy modes
     RenderMode("standard", "Standard (Legacy)", ["--museum-mode=false"]),
@@ -68,39 +84,37 @@ def generate_random_seed() -> str:
 
 
 def choose_random_mode() -> RenderMode:
-    """Choose a random rendering mode.
+    """Choose a random rendering mode with equal probability.
     
-    Mode selection depends on command-line flags:
-    - --caustics: ONLY Geodesic Caustics (Luminous Trajectory Lensing)
-    - --all: Equal probability for all modes
-    - (default): 50% Geodesic Caustics, 50% other modes
+    Command-line overrides:
+    - --memory: ONLY Gravitational Memory (slow version)
+    - --caustics: ONLY Geodesic Caustics
     """
+    if MEMORY_ONLY:
+        # Return the slow gravitational memory mode
+        return next(m for m in RENDER_MODES if m.name == "lensing_memory_slow")
+    
     if CAUSTICS_ONLY:
-        # Run only Geodesic Caustics (for testing the new trajectory-based lensing)
-        return RENDER_MODES[4]  # lensing_caustics
+        # Return geodesic caustics
+        return next(m for m in RENDER_MODES if m.name == "lensing_caustics")
     
-    if ALL_MODES_EQUAL:
-        # Equal probability for all modes
-        return random.choice(RENDER_MODES)
-    
-    # Default: 50% Geodesic Caustics (the new trajectory-based lensing)
-    if random.random() < 0.5:
-        return RENDER_MODES[4]  # lensing_caustics (Geodesic Caustics)
-    else:
-        # Pick from all other modes
-        other_modes = RENDER_MODES[:4] + RENDER_MODES[5:]
-        return random.choice(other_modes)
+    # Default: equal probability for all modes
+    return random.choice(RENDER_MODES)
 
 
 async def run_simulation(seed: str, mode: RenderMode, job_id: int) -> bool:
     """Run a single simulation with the given parameters."""
-    filename = f"{mode.name}_{seed[2:]}"  # Mode first for easy sorting, then seed
+    filename = f"{mode.name}_{seed[2:]}"  # Mode prefix + seed
 
     command = [
         './target/release/three_body_problem',
         '--seed', seed,
         '--file-name', filename,
     ] + mode.flags
+    
+    # Add slow mode flag if this is a slow variant
+    if mode.slow:
+        command.extend(['--num-steps-sim', SLOW_STEPS])
 
     start_time = datetime.now()
     print(f"\n{'='*60}")
@@ -189,20 +203,20 @@ async def main_async():
     print("="*60)
     
     # Show mode selection strategy
-    if CAUSTICS_ONLY:
-        print("🎯 Mode: GEODESIC CAUSTICS ONLY (Luminous Trajectory Lensing)")
-        print("   Full orbital history shapes spacetime distortion")
-    elif ALL_MODES_EQUAL:
-        print("🎲 Mode: All modes with equal probability")
+    if MEMORY_ONLY:
+        print("🌀 Mode: GRAVITATIONAL MEMORY SLOW ONLY")
+        print("   Grid permanently records orbital history")
+    elif CAUSTICS_ONLY:
+        print("🎯 Mode: GEODESIC CAUSTICS ONLY")
+        print("   Dramatic lensing effects at body positions")
     else:
-        print("⚡ Mode: 50% Geodesic Caustics, 50% other modes")
-        print("   (Use --caustics for only caustics, --all for equal weights)")
+        print(f"🎲 Mode: Equal random selection from {len(RENDER_MODES)} modes")
     
     print("="*60)
     print("Available modes:")
-    for i, mode in enumerate(RENDER_MODES):
-        marker = "★" if i == 4 else "•"  # Star for Geodesic Caustics
-        print(f"  {marker} {mode.display}")
+    for mode in RENDER_MODES:
+        slow_indicator = " 🐢" if mode.slow else ""
+        print(f"  • {mode.display}{slow_indicator}")
     print("="*60)
     print("Press Ctrl+C to stop")
     print("="*60 + "\n")

@@ -65,6 +65,54 @@ pub fn bounding_box(positions: &[Vec<Vector3<f64>>]) -> (f64, f64, f64, f64) {
     (min_x, max_x, min_y, max_y)
 }
 
+/// Fixed square bounding box centered on center of mass.
+/// This prevents camera zoom and aspect ratio distortion.
+/// Returns (min_x, max_x, min_y, max_y) with equal width and height.
+pub fn fixed_square_bounds(positions: &[Vec<Vector3<f64>>], margin_factor: f64) -> (f64, f64, f64, f64) {
+    // Compute center of mass of all positions
+    let mut center_x: f64 = 0.0;
+    let mut center_y: f64 = 0.0;
+    let mut count = 0;
+    
+    for body in positions {
+        for p in body {
+            center_x += p.x;
+            center_y += p.y;
+            count += 1;
+        }
+    }
+    
+    if count == 0 {
+        return (-1.0, 1.0, -1.0, 1.0);
+    }
+    
+    center_x /= count as f64;
+    center_y /= count as f64;
+    
+    // Find maximum distance from center
+    let mut max_dist: f64 = 0.0;
+    for body in positions {
+        for p in body {
+            let dx = (p.x - center_x).abs();
+            let dy = (p.y - center_y).abs();
+            max_dist = max_dist.max(dx).max(dy);
+        }
+    }
+    
+    // Ensure minimum size
+    max_dist = max_dist.max(constants::BOUNDING_BOX_PADDING);
+    
+    // Add margin
+    let half_size = max_dist * (1.0 + margin_factor);
+    
+    (
+        center_x - half_size,
+        center_x + half_size,
+        center_y - half_size,
+        center_y + half_size,
+    )
+}
+
 /// Build a simple 1D Gaussian kernel
 pub fn build_gaussian_kernel(radius: usize) -> SmallVec<[f64; 32]> {
     if radius == 0 {
