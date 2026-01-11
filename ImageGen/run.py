@@ -8,16 +8,26 @@ Available modes:
 - Museum modes: hybrid, deep-field, filament, minimal
 - Lensing modes: geodesic-caustics, cosmic-lens, gravitational-wake, event-horizon, spacetime-fabric
 - Legacy modes: standard, special
+
+Usage:
+  python run.py              # Run with random mode selection (50% geodesic-caustics)
+  python run.py --caustics   # Run ONLY geodesic-caustics (Luminous Trajectory Lensing)
+  python run.py --all        # Run with equal random selection from all modes
 """
 
 import asyncio
 import secrets
 import random
+import sys
 import time
 from pathlib import Path
 from datetime import datetime
 from dataclasses import dataclass
 from typing import List, Optional
+
+# Command-line mode selection
+CAUSTICS_ONLY = "--caustics" in sys.argv
+ALL_MODES_EQUAL = "--all" in sys.argv
 
 # Number of concurrent processes to run
 MAX_CONCURRENT = 8
@@ -58,8 +68,28 @@ def generate_random_seed() -> str:
 
 
 def choose_random_mode() -> RenderMode:
-    """Choose a random rendering mode."""
-    return random.choice(RENDER_MODES)
+    """Choose a random rendering mode.
+    
+    Mode selection depends on command-line flags:
+    - --caustics: ONLY Geodesic Caustics (Luminous Trajectory Lensing)
+    - --all: Equal probability for all modes
+    - (default): 50% Geodesic Caustics, 50% other modes
+    """
+    if CAUSTICS_ONLY:
+        # Run only Geodesic Caustics (for testing the new trajectory-based lensing)
+        return RENDER_MODES[4]  # lensing_caustics
+    
+    if ALL_MODES_EQUAL:
+        # Equal probability for all modes
+        return random.choice(RENDER_MODES)
+    
+    # Default: 50% Geodesic Caustics (the new trajectory-based lensing)
+    if random.random() < 0.5:
+        return RENDER_MODES[4]  # lensing_caustics (Geodesic Caustics)
+    else:
+        # Pick from all other modes
+        other_modes = RENDER_MODES[:4] + RENDER_MODES[5:]
+        return random.choice(other_modes)
 
 
 async def run_simulation(seed: str, mode: RenderMode, job_id: int) -> bool:
@@ -157,9 +187,22 @@ async def main_async():
     print("Three Body Problem - Parallel Runner")
     print(f"Running {MAX_CONCURRENT} concurrent simulations")
     print("="*60)
+    
+    # Show mode selection strategy
+    if CAUSTICS_ONLY:
+        print("🎯 Mode: GEODESIC CAUSTICS ONLY (Luminous Trajectory Lensing)")
+        print("   Full orbital history shapes spacetime distortion")
+    elif ALL_MODES_EQUAL:
+        print("🎲 Mode: All modes with equal probability")
+    else:
+        print("⚡ Mode: 50% Geodesic Caustics, 50% other modes")
+        print("   (Use --caustics for only caustics, --all for equal weights)")
+    
+    print("="*60)
     print("Available modes:")
-    for mode in RENDER_MODES:
-        print(f"  • {mode.display}")
+    for i, mode in enumerate(RENDER_MODES):
+        marker = "★" if i == 4 else "•"  # Star for Geodesic Caustics
+        print(f"  {marker} {mode.display}")
     print("="*60)
     print("Press Ctrl+C to stop")
     print("="*60 + "\n")
