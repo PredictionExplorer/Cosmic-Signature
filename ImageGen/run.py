@@ -2,7 +2,7 @@ import subprocess
 import os
 import random
 import time
-import hashlib # For seed generation
+# os.urandom used for truly random seed generation
 from concurrent.futures import ThreadPoolExecutor
 import concurrent.futures
 import argparse
@@ -14,9 +14,8 @@ CONFIG = {
     'max_concurrent': 8,  # Run 8 parallel processes for faster execution
     'max_random_sleep': 0.5,  # Small random sleep to stagger process starts
     # --- Seed Generation Config ---
-    'base_seed_string': "cosmic_signature00", # Base string for seed generation
-    'num_seeds_per_combo': 6,               # Seeds per parameter combination (adjusted for ~500 total jobs)
-    'seed_hex_bytes': 6,                    # How many bytes of the hash to use (6 bytes = 48 bits)
+    'num_seeds_per_combo': 100,             # Seeds per parameter combination
+    'seed_hex_bytes': 6,                    # How many random bytes for seed (6 bytes = 48 bits)
     # --- Drift Test Matrix ---
     'drift_scales': [0.5, 1.5, 3.0, 5.0, 8.0],  # Drift scales between 0 and 10
     'drift_arc_fractions': [0.1, 0.2, 0.4, 0.7],  # Reasonable arc fraction values
@@ -70,13 +69,9 @@ def run_command(cmd):
     except Exception as e:
         print(f"PID {os.getpid()}: An unexpected error occurred running {' '.join(cmd)}: {e}")
 
-def generate_hex_seed(input_string, num_bytes):
-    """Generates a hex seed string from an input string using SHA-256."""
-    hasher = hashlib.sha256()
-    hasher.update(input_string.encode('utf-8'))
-    hash_bytes = hasher.digest()
-    seed_bytes = hash_bytes[:num_bytes]
-    return "0x" + seed_bytes.hex()
+def generate_random_hex_seed(num_bytes):
+    """Generates a truly random hex seed string using OS entropy."""
+    return "0x" + os.urandom(num_bytes).hex()
 
 def main():
     # Parse command line arguments
@@ -117,7 +112,6 @@ def main():
 
     # Get config values
     max_workers = CONFIG['max_concurrent']
-    base_string = CONFIG['base_seed_string']
     seed_bytes_len = CONFIG['seed_hex_bytes']
     num_seeds = CONFIG['num_seeds_per_combo']
 
@@ -189,8 +183,6 @@ def main():
             job_info = {
                 'drift_config': drift_config,
                 'drift_str': drift_str,
-                'seed_idx': seed_idx,
-                'base_string': base_string,
                 'seed_bytes_len': seed_bytes_len,
                 'pics_dir': pics_dir
             }
@@ -207,18 +199,13 @@ def main():
     for job in all_jobs:
         drift_config = job['drift_config']
         drift_str = job['drift_str']
-        seed_idx = job['seed_idx']
 
-        # 1. Generate the input string for hashing - DO NOT include drift config
-        # This ensures the same seed is used across all drift settings
-        input_seed_str = f"{base_string}_{seed_idx}"
+        # 1. Generate a truly random hex seed
+        hex_seed = generate_random_hex_seed(job['seed_bytes_len'])
 
-        # 2. Generate the actual hex seed using the hash
-        hex_seed = generate_hex_seed(input_seed_str, job['seed_bytes_len'])
-
-        # 3. Derive filename including drift settings
-        seed_suffix = hex_seed[2:][:8] # Use first 8 chars of hex seed
-        output_file_base = f"{seed_suffix}_{drift_str}"
+        # 2. Derive filename: parameters first, then seed
+        seed_suffix = hex_seed[2:][:8]  # Use first 8 chars of hex seed
+        output_file_base = f"{drift_str}_{seed_suffix}"
 
         # Check existence in the 'pics' directory
         output_png_path = os.path.join(job['pics_dir'], f"{output_file_base}.png")
@@ -304,7 +291,7 @@ def main():
 
     print(f"\nCompleted! Processed {run_counter} unique configurations.")
     print("Check the 'pics/' directory for results.")
-    print("Filenames include seed and all parameters: seed_s<scale>_af<arc_fraction>_oe<orbit_eccentricity>.png")
+    print("Filenames: s<scale>_af<arc_fraction>_oe<orbit_eccentricity>_<random_seed>.png")
 
 if __name__ == "__main__":
     try:
