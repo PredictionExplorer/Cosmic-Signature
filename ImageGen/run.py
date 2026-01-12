@@ -11,8 +11,8 @@ import itertools
 # ===================== Configuration =====================
 CONFIG = {
     'program_path': './target/release/three_body_problem',
-    'max_concurrent': 1,  # Always single-threaded as requested
-    'max_random_sleep': 0,  # No sleep needed for single-threaded
+    'max_concurrent': 8,  # Run 8 parallel processes for faster execution
+    'max_random_sleep': 0.5,  # Small random sleep to stagger process starts
     # --- Seed Generation Config ---
     'base_seed_string': "cosmic_signature00", # Base string for seed generation
     'num_seeds_per_combo': 6,               # Seeds per parameter combination (adjusted for ~500 total jobs)
@@ -96,10 +96,15 @@ def main():
                         help='Number of seeds per configuration (default: 6)')
     parser.add_argument('--total-jobs', type=int,
                         help='Override total number of jobs to run (will adjust seeds per combo)')
+    parser.add_argument('--workers', '-j', type=int,
+                        default=CONFIG.get('max_concurrent', 8),
+                        help='Number of parallel worker processes (default: 8)')
     args = parser.parse_args()
 
-    # Always use single-threaded execution
-    CONFIG['max_concurrent'] = 1
+    # Override max_concurrent if specified via command line
+    CONFIG['max_concurrent'] = args.workers
+
+    # Use configured parallelism (default: 8 concurrent processes)
     CONFIG['num_seeds_per_combo'] = args.num_seeds
 
     if args.single_config:
@@ -244,14 +249,14 @@ def main():
         })
 
     print(f"\nSkipped {skipped_count} existing files")
-    print(f"Will run {len(jobs_to_run)} jobs sequentially (single-threaded)\n")
+    print(f"Will run {len(jobs_to_run)} jobs with {max_workers} parallel workers\n")
 
-    # Run jobs sequentially (single-threaded as requested)
+    # Run jobs in parallel using ThreadPoolExecutor
     run_counter = 0
     active_futures = {}
     job_index = 0
 
-    with ThreadPoolExecutor(max_workers=1) as executor:
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
         # Submit initial batch of jobs
         while len(active_futures) < max_workers and job_index < len(jobs_to_run):
             job = jobs_to_run[job_index]
