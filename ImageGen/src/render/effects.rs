@@ -12,6 +12,14 @@ use crate::post_effects::{
     AutoExposure, ChampleveConfig, CinematicColorGrade, ColorGradeParams, DogBloom, GaussianBloom,
     PerceptualBlur, PerceptualBlurConfig, PostEffect, PostEffectChain, aether::AetherConfig,
     apply_aether_weave, apply_champleve_iridescence,
+    // New museum-quality effects
+    AncientManuscript, AncientManuscriptConfig,
+    BlackbodyRadiation, BlackbodyConfig,
+    DichroicGlass, DichroicGlassConfig,
+    Ferrofluid, FerrofluidConfig,
+    SpectralInterference, SpectralInterferenceConfig,
+    SubsurfaceScattering, SubsurfaceScatteringConfig,
+    TemporalEchoes, TemporalEchoesConfig,
 };
 use crate::spectrum::{NUM_BINS, spd_to_rgba};
 use rayon::prelude::*;
@@ -33,6 +41,21 @@ pub struct EffectConfig {
     pub champleve_config: ChampleveConfig,
     pub aether_enabled: bool,
     pub aether_config: AetherConfig,
+    // New museum-quality effects
+    pub blackbody_enabled: bool,
+    pub blackbody_config: BlackbodyConfig,
+    pub subsurface_enabled: bool,
+    pub subsurface_config: SubsurfaceScatteringConfig,
+    pub dichroic_enabled: bool,
+    pub dichroic_config: DichroicGlassConfig,
+    pub ferrofluid_enabled: bool,
+    pub ferrofluid_config: FerrofluidConfig,
+    pub temporal_echoes_enabled: bool,
+    pub temporal_echoes_config: TemporalEchoesConfig,
+    pub manuscript_enabled: bool,
+    pub manuscript_config: AncientManuscriptConfig,
+    pub spectral_interference_enabled: bool,
+    pub spectral_interference_config: SpectralInterferenceConfig,
 }
 
 /// Per-frame parameters that may vary
@@ -104,6 +127,36 @@ impl EffectChainBuilder {
             chain.add(Box::new(AetherFinish::new(config.aether_config.clone())));
         }
 
+        // New museum-quality effects
+        if config.blackbody_enabled {
+            chain.add(Box::new(BlackbodyRadiation::new(config.blackbody_config.clone())));
+        }
+
+        if config.subsurface_enabled {
+            chain.add(Box::new(SubsurfaceScattering::new(config.subsurface_config.clone())));
+        }
+
+        if config.dichroic_enabled {
+            chain.add(Box::new(DichroicGlass::new(config.dichroic_config.clone())));
+        }
+
+        if config.ferrofluid_enabled {
+            chain.add(Box::new(Ferrofluid::new(config.ferrofluid_config.clone())));
+        }
+
+        if config.temporal_echoes_enabled {
+            chain.add(Box::new(TemporalEchoes::new(config.temporal_echoes_config.clone())));
+        }
+
+        if config.spectral_interference_enabled {
+            chain.add(Box::new(SpectralInterference::new(config.spectral_interference_config.clone())));
+        }
+
+        // Ancient manuscript should be last as it's a complete style transformation
+        if config.manuscript_enabled {
+            chain.add(Box::new(AncientManuscript::new(config.manuscript_config.clone())));
+        }
+
         chain
     }
 
@@ -118,6 +171,101 @@ impl EffectChainBuilder {
         self.chain
             .process(buffer, width, height)
             .map_err(|e| RenderError::EffectChain(e.to_string()))
+    }
+}
+
+impl Default for EffectConfig {
+    fn default() -> Self {
+        Self {
+            bloom_mode: "gaussian".to_string(),
+            blur_radius_px: 8,
+            blur_strength: 0.5,
+            blur_core_brightness: 1.0,
+            dog_config: DogBloomConfig::default(),
+            hdr_mode: "off".to_string(),
+            perceptual_blur_enabled: false,
+            perceptual_blur_config: None,
+            color_grade_enabled: true,
+            color_grade_params: ColorGradeParams::default(),
+            champleve_enabled: false,
+            champleve_config: ChampleveConfig::default(),
+            aether_enabled: true,
+            aether_config: AetherConfig::default(),
+            // ═══════════════════════════════════════════════════════════════
+            // MUSEUM-QUALITY EFFECTS - Curated defaults for maximum beauty
+            // ═══════════════════════════════════════════════════════════════
+            
+            // Blackbody: Subtle temperature-based coloring adds physical realism
+            blackbody_enabled: true,
+            blackbody_config: BlackbodyConfig {
+                strength: 0.35,  // Subtle - enhances without overwhelming
+                min_temperature: 2200.0,   // Warm candlelight
+                max_temperature: 9500.0,   // Cool daylight blue
+                preserve_luminance: true,
+                blend_mode: "overlay".to_string(),
+            },
+            
+            // Subsurface Scattering: Creates beautiful volumetric depth
+            subsurface_enabled: true,
+            subsurface_config: SubsurfaceScatteringConfig {
+                strength: 0.30,  // Gentle translucency
+                scatter_radius_scale: 0.018,
+                warmth: 0.25,
+                transmission: 0.55,
+                falloff: 2.2,
+                scatter_saturation: 1.15,
+            },
+            
+            // Dichroic Glass: Iridescent color shifts for jewel-like quality
+            dichroic_enabled: true,
+            dichroic_config: DichroicGlassConfig {
+                strength: 0.28,  // Subtle iridescence
+                primary_hue_shift: 35.0,
+                secondary_hue_shift: -45.0,
+                angle_sensitivity: 0.7,
+                iridescence_frequency: 2.5,
+                preserve_luminance: true,
+            },
+            
+            // Ferrofluid: Metallic highlights for dimensionality
+            ferrofluid_enabled: true,
+            ferrofluid_config: FerrofluidConfig {
+                strength: 0.22,  // Subtle metallic sheen
+                metallic_intensity: 0.5,
+                spike_sharpness: 2.5,
+                reflectivity: 0.45,
+                reflection_tint: [0.97, 0.95, 0.92],  // Neutral silver
+                environment_intensity: 0.2,
+            },
+            
+            // Temporal Echoes: Ghostly depth for sense of motion history
+            temporal_echoes_enabled: true,
+            temporal_echoes_config: TemporalEchoesConfig {
+                strength: 0.25,  // Subtle ghosting
+                num_echoes: 2,
+                opacity_falloff: 0.4,
+                offset_scale: 0.012,
+                color_shift: 0.12,
+                blur_per_echo: 0.25,
+                flow_direction: std::f64::consts::FRAC_PI_4,
+            },
+            
+            // Spectral Interference: Physical optics for rainbow caustics
+            spectral_interference_enabled: true,
+            spectral_interference_config: SpectralInterferenceConfig {
+                strength: 0.22,  // Subtle interference patterns
+                frequency: 35.0,
+                phase_variation: 0.4,
+                color_separation: 0.25,
+                show_constructive: true,
+                show_destructive: true,
+                thickness_variation: 0.5,
+            },
+            
+            // Ancient Manuscript: DISABLED by default (complete style override)
+            manuscript_enabled: false,
+            manuscript_config: AncientManuscriptConfig::default(),
+        }
     }
 }
 

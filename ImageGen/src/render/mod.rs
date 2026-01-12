@@ -28,7 +28,7 @@ use self::effects::{
 };
 use self::error::{RenderError, Result};
 use self::histogram::{HistogramData, calculate_frame_density};
-use crate::post_effects::{AetherConfig, ChampleveConfig, ColorGradeParams};
+// Note: effect configs are now accessed through EffectConfig::default()
 
 // Re-export core types and functions for public API compatibility
 pub use color::{OklabColor, generate_body_color_sequences};
@@ -195,12 +195,7 @@ pub(crate) fn pass_1_build_histogram(
         hdr_mode: hdr_mode.to_string(),
         perceptual_blur_enabled,
         perceptual_blur_config: perceptual_blur_config.cloned(),
-        color_grade_enabled: true,
-        color_grade_params: ColorGradeParams::default(),
-        champleve_enabled: false,
-        champleve_config: ChampleveConfig::default(),
-        aether_enabled: true,
-        aether_config: AetherConfig::default(),
+        ..EffectConfig::default()
     };
     let effect_chain = EffectChainBuilder::new(effect_config);
 
@@ -362,12 +357,7 @@ pub(crate) fn pass_2_write_frames(
         hdr_mode: hdr_mode.to_string(),
         perceptual_blur_enabled,
         perceptual_blur_config: perceptual_blur_config.cloned(),
-        color_grade_enabled: true,
-        color_grade_params: ColorGradeParams::default(),
-        champleve_enabled: false,
-        champleve_config: ChampleveConfig::default(),
-        aether_enabled: true,
-        aether_config: AetherConfig::default(),
+        ..EffectConfig::default()
     };
     let effect_chain = EffectChainBuilder::new(effect_config);
 
@@ -620,12 +610,7 @@ pub fn pass_1_build_histogram_spectral(
         hdr_mode: hdr_mode.to_string(),
         perceptual_blur_enabled,
         perceptual_blur_config: perceptual_blur_config.cloned(),
-        color_grade_enabled: true,
-        color_grade_params: ColorGradeParams::default(),
-        champleve_enabled: false,
-        champleve_config: ChampleveConfig::default(),
-        aether_enabled: true,
-        aether_config: AetherConfig::default(),
+        ..EffectConfig::default()
     };
     let effect_chain = EffectChainBuilder::new(effect_config);
 
@@ -782,12 +767,7 @@ pub fn pass_2_write_frames_spectral(
         hdr_mode: hdr_mode.to_string(),
         perceptual_blur_enabled,
         perceptual_blur_config: perceptual_blur_config.cloned(),
-        color_grade_enabled: true,
-        color_grade_params: ColorGradeParams::default(),
-        champleve_enabled: false,
-        champleve_config: ChampleveConfig::default(),
-        aether_enabled: true,
-        aether_config: AetherConfig::default(),
+        ..EffectConfig::default()
     };
     let effect_chain = EffectChainBuilder::new(effect_config);
 

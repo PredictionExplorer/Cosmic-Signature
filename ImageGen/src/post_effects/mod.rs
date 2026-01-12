@@ -12,6 +12,7 @@ pub type PixelBuffer = Vec<(f64, f64, f64, f64)>;
 
 /// Error type for post-processing pipeline failures.
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct PostEffectError {
     effect_name: String,
     message: String,
@@ -117,15 +118,23 @@ impl Default for PostEffectChain {
 
 // Re-export effect implementations
 pub mod aether;
+pub mod ancient_manuscript;
+pub mod blackbody;
 pub mod champleve;
 pub mod color_grade;
+pub mod dichroic_glass;
 pub mod dog_bloom;
 pub mod exposure;
+pub mod ferrofluid;
 pub mod gaussian_bloom;
 pub mod perceptual_blur;
+pub mod spectral_interference;
+pub mod subsurface_scattering;
+pub mod temporal_echoes;
 pub mod utils;
 
-// Export all public types
+// Export all public types - original effects
+#[allow(unused_imports)]
 pub use aether::{AetherConfig, apply_aether_weave};
 pub use champleve::{ChampleveConfig, apply_champleve_iridescence};
 pub use color_grade::{CinematicColorGrade, ColorGradeParams};
@@ -133,6 +142,15 @@ pub use dog_bloom::DogBloom;
 pub use exposure::AutoExposure;
 pub use gaussian_bloom::GaussianBloom;
 pub use perceptual_blur::{PerceptualBlur, PerceptualBlurConfig};
+
+// Export new museum-quality effects
+pub use ancient_manuscript::{AncientManuscript, AncientManuscriptConfig};
+pub use blackbody::{BlackbodyRadiation, BlackbodyConfig};
+pub use dichroic_glass::{DichroicGlass, DichroicGlassConfig};
+pub use ferrofluid::{Ferrofluid, FerrofluidConfig};
+pub use spectral_interference::{SpectralInterference, SpectralInterferenceConfig};
+pub use subsurface_scattering::{SubsurfaceScattering, SubsurfaceScatteringConfig};
+pub use temporal_echoes::{TemporalEchoes, TemporalEchoesConfig};
 
 #[cfg(test)]
 mod tests {
