@@ -8,6 +8,8 @@ use super::context::PixelBuffer;
 use super::drawing::parallel_blur_2d_rgba;
 use super::error::{RenderError, Result};
 use crate::oklab;
+use crate::optim::simd::simd_oklab_to_linear_srgb_batch;
+use crate::optim::simd::simd_spd_to_rgba_batch;
 use crate::post_effects::{
     AutoExposure, ChampleveConfig, CinematicColorGrade, ColorGradeParams, DogBloom, GaussianBloom,
     PerceptualBlur, PerceptualBlurConfig, PostEffect, PostEffectChain, aether::AetherConfig,
@@ -21,7 +23,9 @@ use crate::post_effects::{
     SubsurfaceScattering, SubsurfaceScatteringConfig,
     TemporalEchoes, TemporalEchoesConfig,
 };
-use crate::spectrum::{NUM_BINS, spd_to_rgba};
+use crate::post_effects::utils;
+use crate::optim::effect_fusion::{FusedEffectConfig, FusedEffectProcessor};
+use crate::spectrum::{BIN_RGB, BIN_TONE, NUM_BINS, spd_to_rgba};
 use rayon::prelude::*;
 
 /// Configuration for effect chain creation
@@ -56,6 +60,44 @@ pub struct EffectConfig {
     pub manuscript_config: AncientManuscriptConfig,
     pub spectral_interference_enabled: bool,
     pub spectral_interference_config: SpectralInterferenceConfig,
+    pub fuse_pixel_effects: bool,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum EffectPreset {
+    Default,
+    Ethereal,
+    Metallic,
+    Astral,
+    Minimal,
+}
+
+impl EffectPreset {
+    pub fn from_str(value: &str) -> Self {
+        match value.to_lowercase().as_str() {
+            "ethereal" => Self::Ethereal,
+            "metallic" => Self::Metallic,
+            "astral" => Self::Astral,
+            "minimal" => Self::Minimal,
+            _ => Self::Default,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct EffectOverrides {
+    pub blackbody_enabled: Option<bool>,
+    pub subsurface_enabled: Option<bool>,
+    pub dichroic_enabled: Option<bool>,
+    pub ferrofluid_enabled: Option<bool>,
+    pub temporal_echoes_enabled: Option<bool>,
+    pub spectral_interference_enabled: Option<bool>,
+    pub aether_enabled: Option<bool>,
+    pub champleve_enabled: Option<bool>,
+    pub color_grade_enabled: Option<bool>,
+    pub perceptual_blur_enabled: Option<bool>,
+    pub fuse_pixel_effects: Option<bool>,
+    pub manuscript_enabled: Option<bool>,
 }
 
 /// Per-frame parameters that may vary
@@ -68,25 +110,56 @@ pub struct FrameParams {
 
 /// Persistent effect chain builder
 pub struct EffectChainBuilder {
-    chain: PostEffectChain,
+    chain_pre: PostEffectChain,
+    chain_post: PostEffectChain,
     #[allow(dead_code)]
     config: EffectConfig,
+    fused_processor: Option<FusedEffectProcessor>,
 }
 
 impl EffectChainBuilder {
     /// Create a new effect chain builder with given configuration
     pub fn new(config: EffectConfig) -> Self {
-        let chain = Self::build_chain(&config);
-        Self { chain, config }
+        let (chain_pre, chain_post, fused_processor) = Self::build_chain(&config);
+        Self { chain_pre, chain_post, config, fused_processor }
     }
 
     /// Build the effect chain based on configuration
-    fn build_chain(config: &EffectConfig) -> PostEffectChain {
-        let mut chain = PostEffectChain::new();
+    fn build_chain(
+        config: &EffectConfig,
+    ) -> (PostEffectChain, PostEffectChain, Option<FusedEffectProcessor>) {
+        let mut chain_pre = PostEffectChain::new();
+        let mut chain_post = PostEffectChain::new();
+        let mut fused_processor = None;
+
+        if config.fuse_pixel_effects {
+            let fused_config = FusedEffectConfig {
+                blackbody_enabled: config.blackbody_enabled,
+                blackbody_strength: config.blackbody_config.strength,
+                blackbody_min_temp: config.blackbody_config.min_temperature,
+                blackbody_max_temp: config.blackbody_config.max_temperature,
+                dichroic_enabled: config.dichroic_enabled,
+                dichroic_strength: config.dichroic_config.strength,
+                dichroic_primary_shift: config.dichroic_config.primary_hue_shift,
+                dichroic_secondary_shift: config.dichroic_config.secondary_hue_shift,
+                ferrofluid_enabled: config.ferrofluid_enabled,
+                ferrofluid_strength: config.ferrofluid_config.strength,
+                ferrofluid_metallic_intensity: config.ferrofluid_config.metallic_intensity,
+                spectral_enabled: false,
+                spectral_strength: 0.0,
+                spectral_frequency: 0.0,
+                subsurface_enabled: config.subsurface_enabled,
+                subsurface_strength: config.subsurface_config.strength,
+                subsurface_warmth: config.subsurface_config.warmth,
+            };
+            if fused_config.any_enabled() {
+                fused_processor = Some(FusedEffectProcessor::new(fused_config));
+            }
+        }
 
         // Add blur effect
         if config.blur_radius_px > 0 {
-            chain.add(Box::new(GaussianBloom::new(
+            chain_pre.add(Box::new(GaussianBloom::new(
                 config.blur_radius_px,
                 config.blur_strength,
                 config.blur_core_brightness,
@@ -95,7 +168,7 @@ impl EffectChainBuilder {
 
         // Add bloom effect
         match config.bloom_mode.as_str() {
-            "dog" => chain.add(Box::new(DogBloom::new(
+            "dog" => chain_pre.add(Box::new(DogBloom::new(
                 config.dog_config.clone(),
                 config.blur_core_brightness,
             ))),
@@ -106,58 +179,62 @@ impl EffectChainBuilder {
         // Add perceptual blur if enabled
         if config.perceptual_blur_enabled {
             if let Some(blur_config) = &config.perceptual_blur_config {
-                chain.add(Box::new(PerceptualBlur::new(blur_config.clone())));
+                chain_pre.add(Box::new(PerceptualBlur::new(blur_config.clone())));
             }
         }
 
         // Add HDR/auto-exposure
         if config.hdr_mode == "auto" {
-            chain.add(Box::new(AutoExposure::default()));
+            chain_pre.add(Box::new(AutoExposure::default()));
         }
 
         if config.color_grade_enabled && config.color_grade_params.strength > 0.0 {
-            chain.add(Box::new(CinematicColorGrade::new(config.color_grade_params.clone())));
+            chain_pre.add(Box::new(CinematicColorGrade::new(config.color_grade_params.clone())));
         }
 
         if config.champleve_enabled {
-            chain.add(Box::new(ChampleveFinish::new(config.champleve_config.clone())));
+            chain_pre.add(Box::new(ChampleveFinish::new(config.champleve_config.clone())));
         }
 
         if config.aether_enabled {
-            chain.add(Box::new(AetherFinish::new(config.aether_config.clone())));
+            chain_pre.add(Box::new(AetherFinish::new(config.aether_config.clone())));
         }
 
-        // New museum-quality effects
-        if config.blackbody_enabled {
-            chain.add(Box::new(BlackbodyRadiation::new(config.blackbody_config.clone())));
-        }
+        // New museum-quality effects (pixel-local)
+        let skip_pixel_local = config.fuse_pixel_effects && fused_processor.is_some();
+        if !skip_pixel_local {
+            if config.blackbody_enabled {
+                chain_pre.add(Box::new(BlackbodyRadiation::new(config.blackbody_config.clone())));
+            }
 
-        if config.subsurface_enabled {
-            chain.add(Box::new(SubsurfaceScattering::new(config.subsurface_config.clone())));
-        }
+            if config.subsurface_enabled {
+                chain_pre.add(Box::new(SubsurfaceScattering::new(config.subsurface_config.clone())));
+            }
 
-        if config.dichroic_enabled {
-            chain.add(Box::new(DichroicGlass::new(config.dichroic_config.clone())));
-        }
+            if config.dichroic_enabled {
+                chain_pre.add(Box::new(DichroicGlass::new(config.dichroic_config.clone())));
+            }
 
-        if config.ferrofluid_enabled {
-            chain.add(Box::new(Ferrofluid::new(config.ferrofluid_config.clone())));
+            if config.ferrofluid_enabled {
+                chain_pre.add(Box::new(Ferrofluid::new(config.ferrofluid_config.clone())));
+            }
         }
 
         if config.temporal_echoes_enabled {
-            chain.add(Box::new(TemporalEchoes::new(config.temporal_echoes_config.clone())));
+            chain_post.add(Box::new(TemporalEchoes::new(config.temporal_echoes_config.clone())));
         }
 
         if config.spectral_interference_enabled {
-            chain.add(Box::new(SpectralInterference::new(config.spectral_interference_config.clone())));
+            chain_post
+                .add(Box::new(SpectralInterference::new(config.spectral_interference_config.clone())));
         }
 
         // Ancient manuscript should be last as it's a complete style transformation
         if config.manuscript_enabled {
-            chain.add(Box::new(AncientManuscript::new(config.manuscript_config.clone())));
+            chain_post.add(Box::new(AncientManuscript::new(config.manuscript_config.clone())));
         }
 
-        chain
+        (chain_pre, chain_post, fused_processor)
     }
 
     /// Process a frame with the persistent effect chain
@@ -168,9 +245,129 @@ impl EffectChainBuilder {
         height: usize,
         _params: &FrameParams,
     ) -> Result<PixelBuffer> {
-        self.chain
+        utils::reset_gradient_cache();
+        let buffer = self
+            .chain_pre
+            .process(buffer, width, height)
+            .map_err(|e| RenderError::EffectChain(e.to_string()))?;
+
+        let mut buffer = buffer;
+        if let Some(fused) = &self.fused_processor {
+            fused.process_in_place(&mut buffer, width, height);
+        }
+
+        self.chain_post
             .process(buffer, width, height)
             .map_err(|e| RenderError::EffectChain(e.to_string()))
+    }
+}
+
+impl EffectConfig {
+    pub fn apply_preset(&mut self, preset: EffectPreset) {
+        match preset {
+            EffectPreset::Default => {}
+            EffectPreset::Ethereal => {
+                self.blur_strength = 0.8;
+                self.blur_core_brightness = 1.4;
+                self.dog_config.strength = 0.25;
+                self.aether_enabled = true;
+                self.champleve_enabled = false;
+                self.blackbody_enabled = true;
+                self.blackbody_config.strength = 0.25;
+                self.subsurface_enabled = true;
+                self.ferrofluid_enabled = false;
+                self.dichroic_enabled = false;
+                self.temporal_echoes_enabled = true;
+                self.spectral_interference_enabled = false;
+                self.color_grade_params.vibrance *= 1.1;
+                self.color_grade_params.warmth_shift += 0.05;
+            }
+            EffectPreset::Metallic => {
+                self.blur_strength = 0.45;
+                self.blur_core_brightness = 0.9;
+                self.aether_enabled = false;
+                self.champleve_enabled = false;
+                self.blackbody_enabled = false;
+                self.subsurface_enabled = false;
+                self.ferrofluid_enabled = true;
+                self.ferrofluid_config.strength = 0.8;
+                self.ferrofluid_config.metallic_intensity = 0.9;
+                self.dichroic_enabled = true;
+                self.spectral_interference_enabled = true;
+                self.temporal_echoes_enabled = false;
+                self.color_grade_params.vibrance *= 1.05;
+            }
+            EffectPreset::Astral => {
+                self.blur_strength = 0.7;
+                self.blur_core_brightness = 1.2;
+                self.aether_enabled = true;
+                self.champleve_enabled = true;
+                self.blackbody_enabled = true;
+                self.blackbody_config.strength = 0.45;
+                self.subsurface_enabled = true;
+                self.ferrofluid_enabled = false;
+                self.dichroic_enabled = false;
+                self.temporal_echoes_enabled = true;
+                self.spectral_interference_enabled = true;
+                self.spectral_interference_config.strength = 0.35;
+                self.color_grade_params.vibrance *= 1.15;
+            }
+            EffectPreset::Minimal => {
+                self.blur_strength = 0.2;
+                self.blur_core_brightness = 0.6;
+                self.bloom_mode = "gaussian".to_string();
+                self.perceptual_blur_enabled = false;
+                self.aether_enabled = false;
+                self.champleve_enabled = false;
+                self.blackbody_enabled = false;
+                self.subsurface_enabled = false;
+                self.dichroic_enabled = false;
+                self.ferrofluid_enabled = false;
+                self.temporal_echoes_enabled = false;
+                self.spectral_interference_enabled = false;
+                self.manuscript_enabled = false;
+                self.color_grade_params.vibrance *= 0.9;
+            }
+        }
+    }
+
+    pub fn apply_overrides(&mut self, overrides: &EffectOverrides) {
+        if let Some(value) = overrides.blackbody_enabled {
+            self.blackbody_enabled = value;
+        }
+        if let Some(value) = overrides.subsurface_enabled {
+            self.subsurface_enabled = value;
+        }
+        if let Some(value) = overrides.dichroic_enabled {
+            self.dichroic_enabled = value;
+        }
+        if let Some(value) = overrides.ferrofluid_enabled {
+            self.ferrofluid_enabled = value;
+        }
+        if let Some(value) = overrides.temporal_echoes_enabled {
+            self.temporal_echoes_enabled = value;
+        }
+        if let Some(value) = overrides.spectral_interference_enabled {
+            self.spectral_interference_enabled = value;
+        }
+        if let Some(value) = overrides.aether_enabled {
+            self.aether_enabled = value;
+        }
+        if let Some(value) = overrides.champleve_enabled {
+            self.champleve_enabled = value;
+        }
+        if let Some(value) = overrides.color_grade_enabled {
+            self.color_grade_enabled = value;
+        }
+        if let Some(value) = overrides.perceptual_blur_enabled {
+            self.perceptual_blur_enabled = value;
+        }
+        if let Some(value) = overrides.fuse_pixel_effects {
+            self.fuse_pixel_effects = value;
+        }
+        if let Some(value) = overrides.manuscript_enabled {
+            self.manuscript_enabled = value;
+        }
     }
 }
 
@@ -265,6 +462,9 @@ impl Default for EffectConfig {
             // Ancient Manuscript: DISABLED by default (complete style override)
             manuscript_enabled: false,
             manuscript_config: AncientManuscriptConfig::default(),
+
+            // Fuse pixel-local effects to reduce passes
+            fuse_pixel_effects: true,
         }
     }
 }
@@ -603,29 +803,52 @@ pub(crate) fn convert_spd_buffer_to_rgba(
 ) {
     assert_eq!(src.len(), dest.len());
 
-    dest.par_iter_mut().zip(src.par_iter()).for_each(|(dest_pixel, src_pixel)| {
-        let rgba = spd_to_rgba(src_pixel);
-        *dest_pixel = rgba;
-    });
+    let bin_rgb = &*BIN_RGB;
+    let bin_tone = &*BIN_TONE;
+    let len = src.len();
+    let simd_len = len / 4 * 4;
+
+    if simd_len > 0 {
+        dest[..simd_len]
+            .par_chunks_mut(4)
+            .zip(src[..simd_len].par_chunks(4))
+            .for_each(|(dest_chunk, src_chunk)| {
+                let batch = [src_chunk[0], src_chunk[1], src_chunk[2], src_chunk[3]];
+                let rgba = simd_spd_to_rgba_batch(&batch, bin_rgb, bin_tone);
+                dest_chunk.copy_from_slice(&rgba);
+            });
+    }
+
+    for i in simd_len..len {
+        dest[i] = spd_to_rgba(&src[i]);
+    }
 }
 
 /// Convert accumulation buffer from OKLab to RGB color space
 pub(crate) fn convert_accum_buffer_to_rgb(
     buffer: &[(f64, f64, f64, f64)],
 ) -> Vec<(f64, f64, f64, f64)> {
-    buffer
-        .par_iter()
-        .map(|&(l, a, b, alpha)| {
-            if alpha > 0.0 {
-                // Divide by alpha to get actual OKLab values
-                let (r, g, b_val) = oklab::oklab_to_linear_srgb(l / alpha, a / alpha, b / alpha);
-                // Keep premultiplied alpha
-                (r * alpha, g * alpha, b_val * alpha, alpha)
-            } else {
-                (0.0, 0.0, 0.0, 0.0)
-            }
-        })
-        .collect()
+    let mut output = vec![(0.0, 0.0, 0.0, 0.0); buffer.len()];
+    let len = buffer.len();
+    let simd_len = len / 4 * 4;
+
+    if simd_len > 0 {
+        simd_oklab_to_linear_srgb_batch(&buffer[..simd_len], &mut output[..simd_len]);
+    }
+
+    for i in simd_len..len {
+        let (l, a, b, alpha) = buffer[i];
+        if alpha > 0.0 {
+            // Divide by alpha to get actual OKLab values
+            let (r, g, b_val) = oklab::oklab_to_linear_srgb(l / alpha, a / alpha, b / alpha);
+            // Keep premultiplied alpha
+            output[i] = (r * alpha, g * alpha, b_val * alpha, alpha);
+        } else {
+            output[i] = (0.0, 0.0, 0.0, 0.0);
+        }
+    }
+
+    output
 }
 
 struct ChampleveFinish {

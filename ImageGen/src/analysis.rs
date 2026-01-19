@@ -8,6 +8,47 @@ use crate::utils::fourier_transform;
 use nalgebra::Vector3;
 use statrs::statistics::Statistics;
 
+// ==================== AESTHETIC WEIGHTS ====================
+
+#[derive(Clone, Copy, Debug)]
+pub struct AestheticWeights {
+    pub chaos: f64,
+    pub equilateralness: f64,
+    pub golden_ratio: f64,
+    pub negative_space: f64,
+    pub symmetry: f64,
+    pub density: f64,
+    pub preview: f64,
+}
+
+impl Default for AestheticWeights {
+    fn default() -> Self {
+        Self {
+            chaos: 1.0,
+            equilateralness: 8.5,
+            golden_ratio: 0.0,
+            negative_space: 0.0,
+            symmetry: 0.0,
+            density: 0.0,
+            preview: 0.0,
+        }
+    }
+}
+
+impl AestheticWeights {
+    pub fn gallery() -> Self {
+        Self {
+            chaos: 1.0,
+            equilateralness: 8.0,
+            golden_ratio: 3.0,
+            negative_space: 2.4,
+            symmetry: 1.6,
+            density: 1.2,
+            preview: 1.5,
+        }
+    }
+}
+
 // ==================== PHYSICAL METRICS ====================
 
 /// Total energy: kinetic + potential
@@ -247,59 +288,9 @@ pub fn golden_ratio_composition_score(positions: &[Vec<Vector3<f64>>]) -> f64 {
 /// Returns a score from 0.0 (poor negative space) to 1.0 (excellent)
 #[allow(dead_code)]
 pub fn negative_space_score(positions: &[Vec<Vector3<f64>>]) -> f64 {
-    let n = positions[0].len();
-    if n < 10 {
+    let Some((grid, occupied, empty)) = build_occupancy_grid(positions) else {
         return 0.0;
-    }
-
-    // Create a low-resolution occupancy grid
-    const GRID_SIZE: usize = 16;
-    let mut grid = [[false; GRID_SIZE]; GRID_SIZE];
-
-    // Find bounding box
-    let mut min_x = f64::MAX;
-    let mut max_x = f64::MIN;
-    let mut min_y = f64::MAX;
-    let mut max_y = f64::MIN;
-
-    for body_positions in positions {
-        for pos in body_positions {
-            min_x = min_x.min(pos[0]);
-            max_x = max_x.max(pos[0]);
-            min_y = min_y.min(pos[1]);
-            max_y = max_y.max(pos[1]);
-        }
-    }
-
-    let width = max_x - min_x;
-    let height = max_y - min_y;
-    if width < 1e-10 || height < 1e-10 {
-        return 0.0;
-    }
-
-    // Fill occupancy grid
-    for body_positions in positions {
-        for pos in body_positions {
-            let gx = (((pos[0] - min_x) / width) * (GRID_SIZE - 1) as f64).round() as usize;
-            let gy = (((pos[1] - min_y) / height) * (GRID_SIZE - 1) as f64).round() as usize;
-            let gx = gx.min(GRID_SIZE - 1);
-            let gy = gy.min(GRID_SIZE - 1);
-            grid[gy][gx] = true;
-        }
-    }
-
-    // Count occupied and empty cells
-    let mut occupied = 0;
-    let mut empty = 0;
-    for row in &grid {
-        for &cell in row {
-            if cell {
-                occupied += 1;
-            } else {
-                empty += 1;
-            }
-        }
-    }
+    };
 
     let total = (GRID_SIZE * GRID_SIZE) as f64;
     let occupancy_ratio = occupied as f64 / total;
@@ -367,6 +358,30 @@ pub fn negative_space_score(positions: &[Vec<Vector3<f64>>]) -> f64 {
         + symmetry_score * 0.2;
 
     final_score.clamp(0.0, 1.0)
+}
+
+/// Symmetry score based on occupancy grid mirroring.
+pub fn symmetry_score(positions: &[Vec<Vector3<f64>>]) -> f64 {
+    let Some((grid, _, _)) = build_occupancy_grid(positions) else {
+        return 0.0;
+    };
+    calculate_grid_symmetry(&grid).clamp(0.0, 1.0)
+}
+
+/// Density balance score based on overall occupancy ratio.
+pub fn density_balance_score(positions: &[Vec<Vector3<f64>>]) -> f64 {
+    let Some((_grid, occupied, _empty)) = build_occupancy_grid(positions) else {
+        return 0.0;
+    };
+    let total = (GRID_SIZE * GRID_SIZE) as f64;
+    if total <= 0.0 {
+        return 0.0;
+    }
+    let ratio = occupied as f64 / total;
+    let ideal = 0.35;
+    let tolerance = 0.35;
+    let score = 1.0 - ((ratio - ideal).abs() / tolerance).min(1.0);
+    score.clamp(0.0, 1.0)
 }
 
 /// Helper: flood fill to count connected region size
@@ -442,6 +457,63 @@ fn calculate_grid_symmetry(grid: &[[bool; 16]; 16]) -> f64 {
 
     // Average of both symmetries
     (horizontal_score + vertical_score) / 2.0
+}
+
+// ==================== GRID HELPERS ====================
+
+const GRID_SIZE: usize = 16;
+
+fn build_occupancy_grid(
+    positions: &[Vec<Vector3<f64>>],
+) -> Option<([[bool; GRID_SIZE]; GRID_SIZE], usize, usize)> {
+    if positions.is_empty() || positions[0].len() < 10 {
+        return None;
+    }
+
+    let mut min_x = f64::MAX;
+    let mut max_x = f64::MIN;
+    let mut min_y = f64::MAX;
+    let mut max_y = f64::MIN;
+
+    for body_positions in positions {
+        for pos in body_positions {
+            min_x = min_x.min(pos[0]);
+            max_x = max_x.max(pos[0]);
+            min_y = min_y.min(pos[1]);
+            max_y = max_y.max(pos[1]);
+        }
+    }
+
+    let width = max_x - min_x;
+    let height = max_y - min_y;
+    if width < 1e-10 || height < 1e-10 {
+        return None;
+    }
+
+    let mut grid = [[false; GRID_SIZE]; GRID_SIZE];
+    for body_positions in positions {
+        for pos in body_positions {
+            let gx = (((pos[0] - min_x) / width) * (GRID_SIZE - 1) as f64).round() as usize;
+            let gy = (((pos[1] - min_y) / height) * (GRID_SIZE - 1) as f64).round() as usize;
+            let gx = gx.min(GRID_SIZE - 1);
+            let gy = gy.min(GRID_SIZE - 1);
+            grid[gy][gx] = true;
+        }
+    }
+
+    let mut occupied = 0;
+    let mut empty = 0;
+    for row in &grid {
+        for &cell in row {
+            if cell {
+                occupied += 1;
+            } else {
+                empty += 1;
+            }
+        }
+    }
+
+    Some((grid, occupied, empty))
 }
 
 // ==================== TIME DILATION METRICS ====================

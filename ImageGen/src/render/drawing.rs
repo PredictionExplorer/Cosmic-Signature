@@ -2,6 +2,7 @@
 
 use super::color::OklabColor;
 use super::constants;
+use crate::optim::simd::simd_blur_row;
 use crate::spectrum::NUM_BINS;
 use crate::utils::build_gaussian_kernel;
 use rayon::prelude::*;
@@ -113,21 +114,9 @@ pub fn parallel_blur_2d_rgba(
     // Horizontal pass
     let mut temp = vec![(0.0, 0.0, 0.0, 0.0); buffer.len()];
     temp.par_chunks_mut(width).enumerate().for_each(|(y, row)| {
-        for x in 0..width {
-            let mut sum = (0.0, 0.0, 0.0, 0.0);
-
-            for (i, &k) in blur_ctx.kernel.iter().enumerate() {
-                let src_x = (x as i32 + i as i32 - blur_ctx.radius as i32)
-                    .clamp(0, width as i32 - 1) as usize;
-                let pixel = buffer[y * width + src_x];
-                sum.0 += pixel.0 * k;
-                sum.1 += pixel.1 * k;
-                sum.2 += pixel.2 * k;
-                sum.3 += pixel.3 * k;
-            }
-
-            row[x] = sum;
-        }
+        let start = y * width;
+        let src_row = &buffer[start..start + width];
+        simd_blur_row(src_row, row, blur_ctx.kernel.as_slice(), blur_ctx.radius);
     });
 
     // Vertical pass

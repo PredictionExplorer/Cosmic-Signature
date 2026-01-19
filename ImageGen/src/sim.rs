@@ -1,8 +1,9 @@
 //! Simulation module: 3-body orbits, RNG, integrator, and Borda search
 
 use crate::analysis::{
-    calculate_total_angular_momentum, calculate_total_energy, equilateralness_score,
-    non_chaoticness,
+    AestheticWeights, calculate_total_angular_momentum, calculate_total_energy,
+    density_balance_score, equilateralness_score, golden_ratio_composition_score,
+    negative_space_score, non_chaoticness, symmetry_score,
 };
 use nalgebra::Vector3;
 use rayon::prelude::*;
@@ -334,6 +335,11 @@ pub fn is_definitely_escaping(b: &[Body], th: f64) -> bool {
 pub struct TrajectoryResult {
     pub chaos: f64,
     pub equilateralness: f64,
+    pub golden_ratio: f64,
+    pub negative_space: f64,
+    pub symmetry: f64,
+    pub density: f64,
+    pub preview_score: f64,
     pub chaos_pts: usize,
     pub equil_pts: usize,
     pub total_score: usize,
@@ -345,8 +351,7 @@ pub fn select_best_trajectory(
     rng: &mut Sha3RandomByteStream,
     num_sims: usize,
     steps: usize,
-    cw: f64,
-    ew: f64,
+    weights: &AestheticWeights,
     th: f64,
 ) -> (Vec<Body>, TrajectoryResult) {
     info!("STAGE 1/7: Borda search over {num_sims} random orbits...");
@@ -430,10 +435,19 @@ pub fn select_best_trajectory(
             let m3 = b[2].mass;
             let c = non_chaoticness(m1, m2, m3, &pos);
             let eq = equilateralness_score(&pos);
+            let golden = golden_ratio_composition_score(&pos);
+            let neg = negative_space_score(&pos);
+            let sym = symmetry_score(&pos);
+            let density = density_balance_score(&pos);
             Some((
                 TrajectoryResult {
                     chaos: c,
                     equilateralness: eq,
+                    golden_ratio: golden,
+                    negative_space: neg,
+                    symmetry: sym,
+                    density,
+                    preview_score: 0.0,
                     chaos_pts: 0,
                     equil_pts: 0,
                     total_score: 0,
@@ -468,17 +482,34 @@ pub fn select_best_trajectory(
     }
     let mut cv = Vec::with_capacity(iv.len());
     let mut ev = Vec::with_capacity(iv.len());
+    let mut gv = Vec::with_capacity(iv.len());
+    let mut nv = Vec::with_capacity(iv.len());
+    let mut sv = Vec::with_capacity(iv.len());
+    let mut dv = Vec::with_capacity(iv.len());
     for (i, (t, _)) in iv.iter().enumerate() {
         cv.push((t.chaos, i));
         ev.push((t.equilateralness, i));
+        gv.push((t.golden_ratio, i));
+        nv.push((t.negative_space, i));
+        sv.push((t.symmetry, i));
+        dv.push((t.density, i));
     }
     let cps = assign(cv, false);
     let eps = assign(ev, true);
+    let gps = if weights.golden_ratio > 0.0 { assign(gv, true) } else { vec![0; iv.len()] };
+    let nps = if weights.negative_space > 0.0 { assign(nv, true) } else { vec![0; iv.len()] };
+    let sps = if weights.symmetry > 0.0 { assign(sv, true) } else { vec![0; iv.len()] };
+    let dps = if weights.density > 0.0 { assign(dv, true) } else { vec![0; iv.len()] };
     for (i, (t, _)) in iv.iter_mut().enumerate() {
         t.chaos_pts = cps[i];
         t.equil_pts = eps[i];
-        t.total_score = t.chaos_pts + t.equil_pts;
-        t.total_score_weighted = cw * (t.chaos_pts as f64) + ew * (t.equil_pts as f64);
+        t.total_score = t.chaos_pts + t.equil_pts + gps[i] + nps[i] + sps[i] + dps[i];
+        t.total_score_weighted = weights.chaos * (t.chaos_pts as f64)
+            + weights.equilateralness * (t.equil_pts as f64)
+            + weights.golden_ratio * (gps[i] as f64)
+            + weights.negative_space * (nps[i] as f64)
+            + weights.symmetry * (sps[i] as f64)
+            + weights.density * (dps[i] as f64);
     }
     iv.sort_by(|a, b| b.0.total_score_weighted.partial_cmp(&a.0.total_score_weighted).unwrap());
     let bi = iv[0].1;

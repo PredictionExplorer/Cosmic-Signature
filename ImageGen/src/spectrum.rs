@@ -19,37 +19,37 @@ pub fn wavelength_nm_for_bin(bin: usize) -> f64 {
     LAMBDA_START + (bin as f64 + 0.5) * (LAMBDA_END - LAMBDA_START) / NUM_BINS as f64
 }
 
+/// Approximate XYZ color matching functions for a given wavelength (nm).
+/// Based on Wyman et al. "Simple Analytic Approximations to the CIE XYZ Color Matching Functions".
+fn wavelength_to_xyz(lambda: f64) -> (f64, f64, f64) {
+    fn gaussian(x: f64, mu: f64, sigma: f64) -> f64 {
+        let t = (x - mu) / sigma;
+        (-0.5 * t * t).exp()
+    }
+
+    let x = 1.056 * gaussian(lambda, 599.8, 37.9)
+        + 0.362 * gaussian(lambda, 442.0, 16.0)
+        - 0.065 * gaussian(lambda, 501.1, 20.4);
+    let y = 0.821 * gaussian(lambda, 568.8, 46.9)
+        + 0.286 * gaussian(lambda, 530.9, 16.3);
+    let z = 1.217 * gaussian(lambda, 437.0, 11.8)
+        + 0.681 * gaussian(lambda, 459.0, 26.0);
+
+    (x.max(0.0), y.max(0.0), z.max(0.0))
+}
+
+/// Convert XYZ (D65) to linear sRGB.
+fn xyz_to_linear_srgb(x: f64, y: f64, z: f64) -> (f64, f64, f64) {
+    let r = 3.2406 * x - 1.5372 * y - 0.4986 * z;
+    let g = -0.9689 * x + 1.8758 * y + 0.0415 * z;
+    let b = 0.0557 * x - 0.2040 * y + 1.0570 * z;
+    (r.max(0.0), g.max(0.0), b.max(0.0))
+}
+
 /// Approximate (linear-sRGB) colour corresponding to a given wavelength.
-/// Formula adapted from Dan Bruton's reference (gamma removed → stay linear).
 fn wavelength_to_rgb(lambda: f64) -> (f64, f64, f64) {
-    let (r, g, b) = if (380.0..440.0).contains(&lambda) {
-        (-(lambda - 440.0) / (440.0 - 380.0), 0.0, 1.0)
-    } else if (440.0..490.0).contains(&lambda) {
-        (0.0, (lambda - 440.0) / (490.0 - 440.0), 1.0)
-    } else if (490.0..510.0).contains(&lambda) {
-        (0.0, 1.0, -(lambda - 510.0) / (510.0 - 490.0))
-    } else if (510.0..580.0).contains(&lambda) {
-        ((lambda - 510.0) / (580.0 - 510.0), 1.0, 0.0)
-    } else if (580.0..645.0).contains(&lambda) {
-        (1.0, -(lambda - 645.0) / (645.0 - 580.0), 0.0)
-    } else if (645.0..=700.0).contains(&lambda) {
-        (1.0, 0.0, 0.0)
-    } else {
-        (0.0, 0.0, 0.0)
-    };
-
-    // Intensity falloff near ends of visible range (simple linear ramp).
-    let factor = if (380.0..420.0).contains(&lambda) {
-        0.3 + 0.7 * (lambda - 380.0) / (420.0 - 380.0)
-    } else if (420.0..645.0).contains(&lambda) {
-        1.0
-    } else if (645.0..=700.0).contains(&lambda) {
-        0.3 + 0.7 * (700.0 - lambda) / (700.0 - 645.0)
-    } else {
-        0.0
-    };
-
-    (r * factor, g * factor, b * factor)
+    let (x, y, z) = wavelength_to_xyz(lambda);
+    xyz_to_linear_srgb(x, y, z)
 }
 
 /// Pre-computed linear-sRGB triplet for each bin's unit intensity.

@@ -11,6 +11,7 @@ use std::sync::LazyLock;
 use tracing::{debug, info};
 
 // Module declarations
+pub mod camera;
 pub mod color;
 pub mod constants;
 pub mod context;
@@ -23,24 +24,46 @@ pub mod video;
 // Import from our submodules
 use self::context::RenderContext;
 use self::effects::{
-    EffectChainBuilder, EffectConfig, FrameParams, convert_accum_buffer_to_rgb,
-    convert_spd_buffer_to_rgba,
+    EffectChainBuilder, EffectConfig, EffectOverrides, EffectPreset, FrameParams,
+    convert_accum_buffer_to_rgb, convert_spd_buffer_to_rgba,
 };
 use self::error::{RenderError, Result};
 use self::histogram::{HistogramData, calculate_frame_density};
 // Note: effect configs are now accessed through EffectConfig::default()
 
 // Re-export core types and functions for public API compatibility
+pub use camera::{CameraConfig, DepthCueConfig, ProjectionMode};
 pub use color::{OklabColor, generate_body_color_sequences};
 pub use drawing::{
     draw_line_segment_aa_alpha, draw_line_segment_aa_spectral, parallel_blur_2d_rgba,
 };
-pub use effects::{DogBloomConfig, ExposureCalculator, apply_dog_bloom};
+pub use effects::{DogBloomConfig, EffectOverrides, EffectPreset, ExposureCalculator, apply_dog_bloom};
 pub use histogram::compute_black_white_gamma;
 pub use video::{VideoEncodingOptions, create_video_from_frames_singlepass};
 
 // Re-export types from dependencies used in public API
 pub use image::{DynamicImage, ImageBuffer, Rgb};
+
+/// Output configuration for final still frames.
+#[derive(Clone, Copy, Debug)]
+pub struct OutputImageConfig {
+    pub png_bit_depth: u16,
+    pub write_exr: bool,
+}
+
+impl Default for OutputImageConfig {
+    fn default() -> Self {
+        Self { png_bit_depth: 16, write_exr: false }
+    }
+}
+
+/// Stores the final frame outputs in one or more formats.
+#[derive(Default)]
+pub struct FinalFrameOutputs {
+    pub png8: Option<ImageBuffer<Rgb<u8>, Vec<u8>>>,
+    pub png16: Option<ImageBuffer<Rgb<u16>, Vec<u16>>>,
+    pub exr: Option<ImageBuffer<Rgb<f32>, Vec<f32>>>,
+}
 
 /// Rendering configuration parameters
 #[derive(Clone, Copy, Debug)]
@@ -48,11 +71,20 @@ pub use image::{DynamicImage, ImageBuffer, Rgb};
 pub struct RenderConfig {
     pub alpha_compress: f64,
     pub hdr_scale: f64,
+    pub camera: CameraConfig,
+    pub depth_cue: DepthCueConfig,
+    pub parallel_accumulation: bool,
 }
 
 impl Default for RenderConfig {
     fn default() -> Self {
-        Self { alpha_compress: 0.0, hdr_scale: constants::DEFAULT_HDR_SCALE }
+        Self {
+            alpha_compress: 0.0,
+            hdr_scale: constants::DEFAULT_HDR_SCALE,
+            camera: CameraConfig::default(),
+            depth_cue: DepthCueConfig::default(),
+            parallel_accumulation: false,
+        }
     }
 }
 
@@ -150,11 +182,118 @@ fn tonemap_to_8bit(fr: f64, fg: f64, fb: f64, fa: f64, levels: &ChannelLevels) -
     ]
 }
 
-/// Save single image as PNG
+#[inline]
+fn tonemap_to_16bit(fr: f64, fg: f64, fb: f64, fa: f64, levels: &ChannelLevels) -> [u16; 3] {
+    let alpha = fa.clamp(0.0, 1.0);
+    if alpha <= 0.0 {
+        return [0, 0, 0];
+    }
+
+    let source = [fr.max(0.0), fg.max(0.0), fb.max(0.0)];
+    let premult = [source[0] * alpha, source[1] * alpha, source[2] * alpha];
+    if premult[0] <= 0.0 && premult[1] <= 0.0 && premult[2] <= 0.0 {
+        return [0, 0, 0];
+    }
+
+    let mut leveled = [0.0; 3];
+    for i in 0..3 {
+        leveled[i] = ((premult[i] - levels.black[i]).max(0.0)) / levels.range[i];
+    }
+
+    let mut channel_curves = [0.0; 3];
+    for i in 0..3 {
+        channel_curves[i] = ACES_LUT.apply(leveled[i]);
+    }
+
+    let target_luma =
+        0.2126 * channel_curves[0] + 0.7152 * channel_curves[1] + 0.0722 * channel_curves[2];
+
+    if target_luma <= 0.0 {
+        return [0, 0, 0];
+    }
+
+    let straight_luma = 0.2126 * source[0] + 0.7152 * source[1] + 0.0722 * source[2];
+    let chroma_preserve = (alpha / (alpha + 0.1)).clamp(0.0, 1.0);
+
+    let mut final_channels = [0.0; 3];
+    if straight_luma > 0.0 {
+        for i in 0..3 {
+            final_channels[i] = channel_curves[i] * (1.0 - chroma_preserve)
+                + (source[i] / straight_luma) * target_luma * chroma_preserve;
+        }
+    } else {
+        final_channels = channel_curves;
+    }
+
+    let neutral_mix = ((0.05 - alpha).max(0.0) / 0.05).clamp(0.0, 1.0) * 0.2;
+    if neutral_mix > 0.0 {
+        for c in &mut final_channels {
+            *c = (*c * (1.0 - neutral_mix) + target_luma * neutral_mix).max(0.0);
+        }
+    }
+
+    let final_luma =
+        0.2126 * final_channels[0] + 0.7152 * final_channels[1] + 0.0722 * final_channels[2];
+
+    if final_luma > 0.0 {
+        let scale = target_luma / final_luma;
+        for c in &mut final_channels {
+            *c *= scale;
+        }
+    }
+
+    let scale = 65535.0;
+    [
+        (final_channels[0] * scale).round().clamp(0.0, scale) as u16,
+        (final_channels[1] * scale).round().clamp(0.0, scale) as u16,
+        (final_channels[2] * scale).round().clamp(0.0, scale) as u16,
+    ]
+}
+
+#[inline]
+fn linear_levels_to_f32(fr: f64, fg: f64, fb: f64, fa: f64, levels: &ChannelLevels) -> [f32; 3] {
+    let alpha = fa.clamp(0.0, 1.0);
+    if alpha <= 0.0 {
+        return [0.0, 0.0, 0.0];
+    }
+
+    let source = [fr.max(0.0), fg.max(0.0), fb.max(0.0)];
+    let premult = [source[0] * alpha, source[1] * alpha, source[2] * alpha];
+
+    let mut leveled = [0.0; 3];
+    for i in 0..3 {
+        leveled[i] = ((premult[i] - levels.black[i]).max(0.0)) / levels.range[i];
+    }
+
+    [leveled[0] as f32, leveled[1] as f32, leveled[2] as f32]
+}
+
+/// Save single 8-bit PNG.
 pub fn save_image_as_png(rgb_img: &ImageBuffer<Rgb<u8>, Vec<u8>>, path: &str) -> Result<()> {
+    save_image_as_png_u8(rgb_img, path)
+}
+
+/// Save single 8-bit PNG.
+pub fn save_image_as_png_u8(rgb_img: &ImageBuffer<Rgb<u8>, Vec<u8>>, path: &str) -> Result<()> {
     let dyn_img = DynamicImage::ImageRgb8(rgb_img.clone());
     dyn_img.save(path).map_err(|e| RenderError::ImageEncoding(e.to_string()))?;
     info!("   Saved PNG => {path}");
+    Ok(())
+}
+
+/// Save single 16-bit PNG.
+pub fn save_image_as_png_u16(rgb_img: &ImageBuffer<Rgb<u16>, Vec<u16>>, path: &str) -> Result<()> {
+    let dyn_img = DynamicImage::ImageRgb16(rgb_img.clone());
+    dyn_img.save(path).map_err(|e| RenderError::ImageEncoding(e.to_string()))?;
+    info!("   Saved PNG16 => {path}");
+    Ok(())
+}
+
+/// Save single 32-bit EXR.
+pub fn save_image_as_exr(rgb_img: &ImageBuffer<Rgb<f32>, Vec<f32>>, path: &str) -> Result<()> {
+    let dyn_img = DynamicImage::ImageRgb32F(rgb_img.clone());
+    dyn_img.save(path).map_err(|e| RenderError::ImageEncoding(e.to_string()))?;
+    info!("   Saved EXR => {path}");
     Ok(())
 }
 
@@ -179,14 +318,16 @@ pub(crate) fn pass_1_build_histogram(
     hdr_mode: &str,
     perceptual_blur_enabled: bool,
     perceptual_blur_config: Option<&PerceptualBlurConfig>,
+    effect_preset: EffectPreset,
+    effect_overrides: Option<&EffectOverrides>,
     render_config: &RenderConfig,
 ) {
     // Create render context
-    let ctx = RenderContext::new(width, height, positions);
+    let ctx = RenderContext::new(width, height, positions, render_config.camera, render_config.depth_cue);
     let mut accum_crisp = vec![(0.0, 0.0, 0.0, 0.0); ctx.pixel_count()];
 
     // Create persistent effect chain
-    let effect_config = EffectConfig {
+    let mut effect_config = EffectConfig {
         bloom_mode: bloom_mode.to_string(),
         blur_radius_px,
         blur_strength,
@@ -197,6 +338,10 @@ pub(crate) fn pass_1_build_histogram(
         perceptual_blur_config: perceptual_blur_config.cloned(),
         ..EffectConfig::default()
     };
+    effect_config.apply_preset(effect_preset);
+    if let Some(overrides) = effect_overrides {
+        effect_config.apply_overrides(overrides);
+    }
     let effect_chain = EffectChainBuilder::new(effect_config);
 
     // Create histogram storage (more efficient than separate vectors)
@@ -204,6 +349,39 @@ pub(crate) fn pass_1_build_histogram(
 
     let total_steps = positions[0].len();
     let chunk_line = (total_steps / 10).max(1);
+
+    if render_config.parallel_accumulation && frame_interval >= total_steps {
+        info!("   Using parallel accumulation for spectral histogram (final-only).");
+        accum_spd = accumulate_spd_parallel(positions, colors, body_alphas, &ctx, render_config);
+
+        convert_spd_buffer_to_rgba(&accum_spd, &mut accum_rgba);
+        let frame_params = FrameParams { frame_number: 0, density: None };
+        let rgba_buffer = std::mem::take(&mut accum_rgba);
+        let final_frame_pixels = effect_chain
+            .process_frame(rgba_buffer, width as usize, height as usize, &frame_params)
+            .expect("Failed to process frame during spectral histogram pass");
+
+        histogram.reserve(ctx.pixel_count());
+        for &(r, g, b, a) in &final_frame_pixels {
+            histogram.push(r * a, g * a, b * a);
+        }
+
+        all_r.clear();
+        all_g.clear();
+        all_b.clear();
+        all_r.reserve(histogram.len());
+        all_g.reserve(histogram.len());
+        all_b.reserve(histogram.len());
+
+        for rgb in histogram.data() {
+            all_r.push(rgb[0]);
+            all_g.push(rgb[1]);
+            all_b.push(rgb[2]);
+        }
+
+        info!("   pass 1 (spectral histogram): 100% done");
+        return;
+    }
 
     // Iterate through ALL steps
     for step in 0..total_steps {
@@ -219,13 +397,13 @@ pub(crate) fn pass_1_build_histogram(
         let c1 = colors[1][step];
         let c2 = colors[2][step];
 
-        let a0 = body_alphas[0];
-        let a1 = body_alphas[1];
-        let a2 = body_alphas[2];
+        let (x0, y0, d0) = ctx.to_pixel(p0[0], p0[1], p0[2]);
+        let (x1, y1, d1) = ctx.to_pixel(p1[0], p1[1], p1[2]);
+        let (x2, y2, d2) = ctx.to_pixel(p2[0], p2[1], p2[2]);
 
-        let (x0, y0) = ctx.to_pixel(p0[0], p0[1]);
-        let (x1, y1) = ctx.to_pixel(p1[0], p1[1]);
-        let (x2, y2) = ctx.to_pixel(p2[0], p2[1]);
+        let a0 = body_alphas[0] * d0;
+        let a1 = body_alphas[1] * d1;
+        let a2 = body_alphas[2] * d2;
 
         // Accumulate crisp lines for every step
         draw_line_segment_aa_alpha(
@@ -339,16 +517,19 @@ pub(crate) fn pass_2_write_frames(
     hdr_mode: &str,
     perceptual_blur_enabled: bool,
     perceptual_blur_config: Option<&PerceptualBlurConfig>,
+    effect_preset: EffectPreset,
+    effect_overrides: Option<&EffectOverrides>,
     mut frame_sink: impl FnMut(&[u8]) -> Result<()>,
-    last_frame_out: &mut Option<ImageBuffer<Rgb<u8>, Vec<u8>>>,
+    last_frame_out: &mut FinalFrameOutputs,
+    output_config: &OutputImageConfig,
     render_config: &RenderConfig,
 ) -> Result<()> {
     // Create render context
-    let ctx = RenderContext::new(width, height, positions);
+    let ctx = RenderContext::new(width, height, positions, render_config.camera, render_config.depth_cue);
     let mut accum_crisp = vec![(0.0, 0.0, 0.0, 0.0); ctx.pixel_count()];
 
     // Create persistent effect chain
-    let effect_config = EffectConfig {
+    let mut effect_config = EffectConfig {
         bloom_mode: bloom_mode.to_string(),
         blur_radius_px,
         blur_strength,
@@ -359,6 +540,10 @@ pub(crate) fn pass_2_write_frames(
         perceptual_blur_config: perceptual_blur_config.cloned(),
         ..EffectConfig::default()
     };
+    effect_config.apply_preset(effect_preset);
+    if let Some(overrides) = effect_overrides {
+        effect_config.apply_overrides(overrides);
+    }
     let effect_chain = EffectChainBuilder::new(effect_config);
 
     let total_steps = positions[0].len();
@@ -368,6 +553,62 @@ pub(crate) fn pass_2_write_frames(
     let base_alpha_compress = render_config.alpha_compress;
 
     let levels = ChannelLevels::new(black_r, white_r, black_g, white_g, black_b, white_b);
+
+    if render_config.parallel_accumulation && frame_interval >= total_steps {
+        info!("   Using parallel accumulation for spectral render (final-only).");
+        accum_spd = accumulate_spd_parallel(positions, colors, body_alphas, &ctx, render_config);
+
+        convert_spd_buffer_to_rgba(&accum_spd, &mut accum_rgba);
+        let frame_params = FrameParams { frame_number: 0, density: None };
+        let rgba_buffer = std::mem::take(&mut accum_rgba);
+        let final_frame_pixels = effect_chain
+            .process_frame(rgba_buffer, width as usize, height as usize, &frame_params)
+            .expect("Failed to process frame during spectral render pass");
+
+        let mut buf_8bit = vec![0u8; ctx.pixel_count() * 3];
+        buf_8bit.par_chunks_mut(3).zip(final_frame_pixels.par_iter()).for_each(
+            |(chunk, &(fr, fg, fb, fa))| {
+                let mapped = tonemap_to_8bit(fr, fg, fb, fa, &levels);
+                chunk[0] = mapped[0];
+                chunk[1] = mapped[1];
+                chunk[2] = mapped[2];
+            },
+        );
+
+        frame_sink(&buf_8bit)?;
+        if output_config.png_bit_depth <= 8 {
+            last_frame_out.png8 = ImageBuffer::from_raw(width, height, buf_8bit);
+        } else {
+            let mut buf_16bit = vec![0u16; ctx.pixel_count() * 3];
+            buf_16bit
+                .par_chunks_mut(3)
+                .zip(final_frame_pixels.par_iter())
+                .for_each(|(chunk, &(fr, fg, fb, fa))| {
+                    let mapped = tonemap_to_16bit(fr, fg, fb, fa, &levels);
+                    chunk[0] = mapped[0];
+                    chunk[1] = mapped[1];
+                    chunk[2] = mapped[2];
+                });
+            last_frame_out.png16 = ImageBuffer::from_raw(width, height, buf_16bit);
+        }
+
+        if output_config.write_exr {
+            let mut buf_f32 = vec![0f32; ctx.pixel_count() * 3];
+            buf_f32
+                .par_chunks_mut(3)
+                .zip(final_frame_pixels.par_iter())
+                .for_each(|(chunk, &(fr, fg, fb, fa))| {
+                    let mapped = linear_levels_to_f32(fr, fg, fb, fa, &levels);
+                    chunk[0] = mapped[0];
+                    chunk[1] = mapped[1];
+                    chunk[2] = mapped[2];
+                });
+            last_frame_out.exr = ImageBuffer::from_raw(width, height, buf_f32);
+        }
+
+        info!("   pass 2 (spectral render): 100% done");
+        return Ok(());
+    }
 
     // Iterate through ALL steps
     for step in 0..total_steps {
@@ -381,13 +622,14 @@ pub(crate) fn pass_2_write_frames(
         let c0 = colors[0][step];
         let c1 = colors[1][step];
         let c2 = colors[2][step];
-        let a0 = body_alphas[0];
-        let a1 = body_alphas[1];
-        let a2 = body_alphas[2];
 
-        let (x0, y0) = ctx.to_pixel(p0[0], p0[1]);
-        let (x1, y1) = ctx.to_pixel(p1[0], p1[1]);
-        let (x2, y2) = ctx.to_pixel(p2[0], p2[1]);
+        let (x0, y0, d0) = ctx.to_pixel(p0[0], p0[1], p0[2]);
+        let (x1, y1, d1) = ctx.to_pixel(p1[0], p1[1], p1[2]);
+        let (x2, y2, d2) = ctx.to_pixel(p2[0], p2[1], p2[2]);
+
+        let a0 = body_alphas[0] * d0;
+        let a1 = body_alphas[1] * d1;
+        let a2 = body_alphas[2] * d2;
 
         // Accumulate crisp lines
         draw_line_segment_aa_alpha(
@@ -493,10 +735,37 @@ pub(crate) fn pass_2_write_frames(
             // 4. Send Frame to Sink
             frame_sink(&buf_8bit)?;
 
-            // 5. Store Last Frame for PNG Output
+            // 5. Store Last Frame for still output
             if is_final {
-                // Create ImageBuffer from the raw 8-bit buffer
-                *last_frame_out = ImageBuffer::from_raw(width, height, buf_8bit);
+                if output_config.png_bit_depth <= 8 {
+                    last_frame_out.png8 = ImageBuffer::from_raw(width, height, buf_8bit);
+                } else {
+                    let mut buf_16bit = vec![0u16; ctx.pixel_count() * 3];
+                    buf_16bit
+                        .par_chunks_mut(3)
+                        .zip(final_frame_pixels.par_iter())
+                        .for_each(|(chunk, &(fr, fg, fb, fa))| {
+                            let mapped = tonemap_to_16bit(fr, fg, fb, fa, &levels);
+                            chunk[0] = mapped[0];
+                            chunk[1] = mapped[1];
+                            chunk[2] = mapped[2];
+                        });
+                    last_frame_out.png16 = ImageBuffer::from_raw(width, height, buf_16bit);
+                }
+
+                if output_config.write_exr {
+                    let mut buf_f32 = vec![0f32; ctx.pixel_count() * 3];
+                    buf_f32
+                        .par_chunks_mut(3)
+                        .zip(final_frame_pixels.par_iter())
+                        .for_each(|(chunk, &(fr, fg, fb, fa))| {
+                            let mapped = linear_levels_to_f32(fr, fg, fb, fa, &levels);
+                            chunk[0] = mapped[0];
+                            chunk[1] = mapped[1];
+                            chunk[2] = mapped[2];
+                        });
+                    last_frame_out.exr = ImageBuffer::from_raw(width, height, buf_f32);
+                }
             }
         }
     }
@@ -573,6 +842,96 @@ impl AcesLut {
 // Lazy static for global LUT
 static ACES_LUT: LazyLock<AcesLut> = LazyLock::new(AcesLut::new);
 
+fn accumulate_spd_parallel(
+    positions: &[Vec<Vector3<f64>>],
+    colors: &[Vec<OklabColor>],
+    body_alphas: &[f64],
+    ctx: &RenderContext,
+    render_config: &RenderConfig,
+) -> Vec<[f64; NUM_BINS]> {
+    let total_steps = positions[0].len();
+    let width = ctx.width;
+    let height = ctx.height;
+    let pixel_count = ctx.pixel_count();
+
+    (0..total_steps)
+        .into_par_iter()
+        .fold(
+            || vec![[0.0f64; NUM_BINS]; pixel_count],
+            |mut local, step| {
+                let p0 = positions[0][step];
+                let p1 = positions[1][step];
+                let p2 = positions[2][step];
+
+                let c0 = colors[0][step];
+                let c1 = colors[1][step];
+                let c2 = colors[2][step];
+
+                let (x0, y0, d0) = ctx.to_pixel(p0[0], p0[1], p0[2]);
+                let (x1, y1, d1) = ctx.to_pixel(p1[0], p1[1], p1[2]);
+                let (x2, y2, d2) = ctx.to_pixel(p2[0], p2[1], p2[2]);
+
+                let a0 = body_alphas[0] * d0;
+                let a1 = body_alphas[1] * d1;
+                let a2 = body_alphas[2] * d2;
+
+                draw_line_segment_aa_spectral(
+                    &mut local,
+                    width,
+                    height,
+                    x0,
+                    y0,
+                    x1,
+                    y1,
+                    c0,
+                    c1,
+                    a0,
+                    a1,
+                    render_config.hdr_scale,
+                );
+                draw_line_segment_aa_spectral(
+                    &mut local,
+                    width,
+                    height,
+                    x1,
+                    y1,
+                    x2,
+                    y2,
+                    c1,
+                    c2,
+                    a1,
+                    a2,
+                    render_config.hdr_scale,
+                );
+                draw_line_segment_aa_spectral(
+                    &mut local,
+                    width,
+                    height,
+                    x2,
+                    y2,
+                    x0,
+                    y0,
+                    c2,
+                    c0,
+                    a2,
+                    a0,
+                    render_config.hdr_scale,
+                );
+
+                local
+            },
+        )
+        .reduce_with(|mut a, b| {
+            for (dst, src) in a.iter_mut().zip(b.into_iter()) {
+                for bin in 0..NUM_BINS {
+                    dst[bin] += src[bin];
+                }
+            }
+            a
+        })
+        .unwrap_or_else(|| vec![[0.0f64; NUM_BINS]; pixel_count])
+}
+
 // ====================== PASS 1 (SPECTRAL) ===========================
 /// Pass 1: gather global histogram for final color leveling (spectral)
 pub fn pass_1_build_histogram_spectral(
@@ -593,15 +952,17 @@ pub fn pass_1_build_histogram_spectral(
     hdr_mode: &str,
     perceptual_blur_enabled: bool,
     perceptual_blur_config: Option<&PerceptualBlurConfig>,
+    effect_preset: EffectPreset,
+    effect_overrides: Option<&EffectOverrides>,
     render_config: &RenderConfig,
 ) {
     // Create render context
-    let ctx = RenderContext::new(width, height, positions);
+    let ctx = RenderContext::new(width, height, positions, render_config.camera, render_config.depth_cue);
     let mut accum_spd = vec![[0.0f64; NUM_BINS]; ctx.pixel_count()];
     let mut accum_rgba = vec![(0.0, 0.0, 0.0, 0.0); ctx.pixel_count()];
 
     // Create persistent effect chain
-    let effect_config = EffectConfig {
+    let mut effect_config = EffectConfig {
         bloom_mode: bloom_mode.to_string(),
         blur_radius_px,
         blur_strength,
@@ -612,6 +973,10 @@ pub fn pass_1_build_histogram_spectral(
         perceptual_blur_config: perceptual_blur_config.cloned(),
         ..EffectConfig::default()
     };
+    effect_config.apply_preset(effect_preset);
+    if let Some(overrides) = effect_overrides {
+        effect_config.apply_overrides(overrides);
+    }
     let effect_chain = EffectChainBuilder::new(effect_config);
 
     // Create histogram storage
@@ -633,13 +998,13 @@ pub fn pass_1_build_histogram_spectral(
         let c1 = colors[1][step];
         let c2 = colors[2][step];
 
-        let a0 = body_alphas[0];
-        let a1 = body_alphas[1];
-        let a2 = body_alphas[2];
+        let (x0, y0, d0) = ctx.to_pixel(p0[0], p0[1], p0[2]);
+        let (x1, y1, d1) = ctx.to_pixel(p1[0], p1[1], p1[2]);
+        let (x2, y2, d2) = ctx.to_pixel(p2[0], p2[1], p2[2]);
 
-        let (x0, y0) = ctx.to_pixel(p0[0], p0[1]);
-        let (x1, y1) = ctx.to_pixel(p1[0], p1[1]);
-        let (x2, y2) = ctx.to_pixel(p2[0], p2[1]);
+        let a0 = body_alphas[0] * d0;
+        let a1 = body_alphas[1] * d1;
+        let a2 = body_alphas[2] * d2;
 
         draw_line_segment_aa_spectral(
             &mut accum_spd,
@@ -748,17 +1113,20 @@ pub fn pass_2_write_frames_spectral(
     hdr_mode: &str,
     perceptual_blur_enabled: bool,
     perceptual_blur_config: Option<&PerceptualBlurConfig>,
+    effect_preset: EffectPreset,
+    effect_overrides: Option<&EffectOverrides>,
     mut frame_sink: impl FnMut(&[u8]) -> Result<()>,
-    last_frame_out: &mut Option<ImageBuffer<Rgb<u8>, Vec<u8>>>,
+    last_frame_out: &mut FinalFrameOutputs,
+    output_config: &OutputImageConfig,
     render_config: &RenderConfig,
 ) -> Result<()> {
     // Create render context
-    let ctx = RenderContext::new(width, height, positions);
+    let ctx = RenderContext::new(width, height, positions, render_config.camera, render_config.depth_cue);
     let mut accum_spd = vec![[0.0f64; NUM_BINS]; ctx.pixel_count()];
     let mut accum_rgba = vec![(0.0, 0.0, 0.0, 0.0); ctx.pixel_count()];
 
     // Create persistent effect chain
-    let effect_config = EffectConfig {
+    let mut effect_config = EffectConfig {
         bloom_mode: bloom_mode.to_string(),
         blur_radius_px,
         blur_strength,
@@ -769,6 +1137,10 @@ pub fn pass_2_write_frames_spectral(
         perceptual_blur_config: perceptual_blur_config.cloned(),
         ..EffectConfig::default()
     };
+    effect_config.apply_preset(effect_preset);
+    if let Some(overrides) = effect_overrides {
+        effect_config.apply_overrides(overrides);
+    }
     let effect_chain = EffectChainBuilder::new(effect_config);
 
     let total_steps = positions[0].len();
@@ -789,13 +1161,13 @@ pub fn pass_2_write_frames_spectral(
         let c1 = colors[1][step];
         let c2 = colors[2][step];
 
-        let a0 = body_alphas[0];
-        let a1 = body_alphas[1];
-        let a2 = body_alphas[2];
+        let (x0, y0, d0) = ctx.to_pixel(p0[0], p0[1], p0[2]);
+        let (x1, y1, d1) = ctx.to_pixel(p1[0], p1[1], p1[2]);
+        let (x2, y2, d2) = ctx.to_pixel(p2[0], p2[1], p2[2]);
 
-        let (x0, y0) = ctx.to_pixel(p0[0], p0[1]);
-        let (x1, y1) = ctx.to_pixel(p1[0], p1[1]);
-        let (x2, y2) = ctx.to_pixel(p2[0], p2[1]);
+        let a0 = body_alphas[0] * d0;
+        let a1 = body_alphas[1] * d1;
+        let a2 = body_alphas[2] * d2;
 
         draw_line_segment_aa_spectral(
             &mut accum_spd,
@@ -869,7 +1241,35 @@ pub fn pass_2_write_frames_spectral(
 
             frame_sink(&buf_8bit)?;
             if is_final {
-                *last_frame_out = ImageBuffer::from_raw(width, height, buf_8bit);
+                if output_config.png_bit_depth <= 8 {
+                    last_frame_out.png8 = ImageBuffer::from_raw(width, height, buf_8bit);
+                } else {
+                    let mut buf_16bit = vec![0u16; ctx.pixel_count() * 3];
+                    buf_16bit
+                        .par_chunks_mut(3)
+                        .zip(final_frame_pixels.par_iter())
+                        .for_each(|(chunk, &(fr, fg, fb, fa))| {
+                            let mapped = tonemap_to_16bit(fr, fg, fb, fa, &levels);
+                            chunk[0] = mapped[0];
+                            chunk[1] = mapped[1];
+                            chunk[2] = mapped[2];
+                        });
+                    last_frame_out.png16 = ImageBuffer::from_raw(width, height, buf_16bit);
+                }
+
+                if output_config.write_exr {
+                    let mut buf_f32 = vec![0f32; ctx.pixel_count() * 3];
+                    buf_f32
+                        .par_chunks_mut(3)
+                        .zip(final_frame_pixels.par_iter())
+                        .for_each(|(chunk, &(fr, fg, fb, fa))| {
+                            let mapped = linear_levels_to_f32(fr, fg, fb, fa, &levels);
+                            chunk[0] = mapped[0];
+                            chunk[1] = mapped[1];
+                            chunk[2] = mapped[2];
+                        });
+                    last_frame_out.exr = ImageBuffer::from_raw(width, height, buf_f32);
+                }
             }
         }
     }

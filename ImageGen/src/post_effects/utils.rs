@@ -1,10 +1,31 @@
 //! Shared utilities for post-processing effects.
 
 use super::PixelBuffer;
+use parking_lot::Mutex;
 use rayon::prelude::*;
+use std::sync::{Arc, LazyLock};
+
+struct GradientCache {
+    width: usize,
+    height: usize,
+    data: Arc<Vec<(f64, f64)>>,
+}
+
+static GRADIENT_CACHE: LazyLock<Mutex<Option<GradientCache>>> = LazyLock::new(|| Mutex::new(None));
+
+/// Clears cached gradients so the next request recomputes them.
+pub fn reset_gradient_cache() {
+    *GRADIENT_CACHE.lock() = None;
+}
 
 /// Computes luminance gradients for a given pixel buffer, used for flow-aware effects.
-pub fn calculate_gradients(buffer: &PixelBuffer, width: usize, height: usize) -> Vec<(f64, f64)> {
+pub fn calculate_gradients(buffer: &PixelBuffer, width: usize, height: usize) -> Arc<Vec<(f64, f64)>> {
+    if let Some(cache) = GRADIENT_CACHE.lock().as_ref() {
+        if cache.width == width && cache.height == height {
+            return cache.data.clone();
+        }
+    }
+
     let mut luminance = vec![0.0f64; buffer.len()];
     luminance.par_iter_mut().enumerate().for_each(|(idx, lum)| {
         let (r, g, b, a) = buffer[idx];
@@ -29,5 +50,8 @@ pub fn calculate_gradients(buffer: &PixelBuffer, width: usize, height: usize) ->
 
         *grad = (gx * scale, gy * scale);
     });
-    gradients
+
+    let data = Arc::new(gradients);
+    *GRADIENT_CACHE.lock() = Some(GradientCache { width, height, data: data.clone() });
+    data
 }

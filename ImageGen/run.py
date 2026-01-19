@@ -2,11 +2,18 @@ import subprocess
 import os
 import random
 import time
+import json
+from collections import deque
 # os.urandom used for truly random seed generation
 from concurrent.futures import ThreadPoolExecutor
 import concurrent.futures
 import argparse
 import itertools
+
+try:
+    import tomllib  # Python 3.11+
+except ImportError:
+    tomllib = None
 
 # ===================== Configuration =====================
 CONFIG = {
@@ -21,7 +28,21 @@ CONFIG = {
     'drift_arc_fractions': [0.1, 0.2, 0.4, 0.7],  # Reasonable arc fraction values
     'drift_orbit_eccentricities': [0.1, 0.3, 0.5, 0.8],  # Eccentricity values (0 = circle, 1 = parabola)
     'drift_mode': 'elliptical',                 # Only test elliptical drift mode
-    'use_test_matrix': True                # Whether to use the test matrix or single config
+    'use_test_matrix': True,                # Whether to use the test matrix or single config
+    # --- Aesthetic / Style Presets ---
+    'aesthetic_presets': ['default', 'gallery'],
+    'style_presets': ['default', 'astral', 'ethereal'],
+    # --- Time Dilation Variants ---
+    'time_dilation_configs': [
+        {'enabled': False, 'min_dt_factor': 0.1, 'threshold_distance': 0.5, 'strength': 2.0, 'tag': 'off'},
+        {'enabled': True, 'min_dt_factor': 0.05, 'threshold_distance': 0.4, 'strength': 2.0, 'tag': 'soft'},
+        {'enabled': True, 'min_dt_factor': 0.02, 'threshold_distance': 0.3, 'strength': 2.6, 'tag': 'strong'},
+    ],
+    # --- Output / Performance Flags ---
+    'png_only': False,
+    'parallel_accumulation': False,
+    'png_bit_depth': 16,
+    'write_exr': False
 }
 
 def run_command(cmd):
@@ -73,6 +94,51 @@ def generate_random_hex_seed(num_bytes):
     """Generates a truly random hex seed string using OS entropy."""
     return "0x" + os.urandom(num_bytes).hex()
 
+def fmt_float(value, precision=3):
+    s = f"{value:.{precision}g}"
+    return s.replace(".", "p")
+
+def rank_metadata(pics_dir, top_n=20):
+    if tomllib is None:
+        print("tomllib not available; skipping metadata ranking.")
+        return
+
+    entries = []
+    for filename in os.listdir(pics_dir):
+        if not filename.endswith(".meta.toml"):
+            continue
+        path = os.path.join(pics_dir, filename)
+        try:
+            with open(path, "rb") as f:
+                data = tomllib.load(f)
+            score = (
+                data.get("scores", {}).get("total_weighted")
+                if isinstance(data.get("scores"), dict)
+                else None
+            )
+            if score is None:
+                continue
+            entries.append((score, data))
+        except Exception as e:
+            print(f"Failed to parse metadata {filename}: {e}")
+
+    if not entries:
+        print("No metadata files found for ranking.")
+        return
+
+    entries.sort(key=lambda item: item[0], reverse=True)
+    top_entries = entries[:top_n]
+    ranking_path = os.path.join(pics_dir, "rankings.json")
+    with open(ranking_path, "w", encoding="utf-8") as f:
+        json.dump([entry[1] for entry in top_entries], f, indent=2)
+
+    print(f"\nTop {len(top_entries)} candidates by total_weighted score:")
+    for idx, (score, data) in enumerate(top_entries, start=1):
+        name = data.get("file_name", "unknown")
+        output_png = data.get("output_png", "")
+        print(f"{idx:02d}. {name} | score={score:.3f} | {output_png}")
+    print(f"Saved rankings to {ranking_path}")
+
 def main():
     # Parse command line arguments
     parser = argparse.ArgumentParser(description='Run multiple three-body simulations with different parameter combinations')
@@ -88,9 +154,9 @@ def main():
                         help='Orbit eccentricity for single config')
     parser.add_argument('--num-seeds', type=int,
                         default=CONFIG.get('num_seeds_per_combo', 6),
-                        help='Number of seeds per configuration (default: 6)')
+                        help='Seeds per parameter set per cycle (default: 6)')
     parser.add_argument('--total-jobs', type=int,
-                        help='Override total number of jobs to run (will adjust seeds per combo)')
+                        help='Optional: stop after N runs (default: infinite)')
     parser.add_argument('--workers', '-j', type=int,
                         default=CONFIG.get('max_concurrent', 8),
                         help='Number of parallel worker processes (default: 8)')
@@ -113,185 +179,163 @@ def main():
     # Get config values
     max_workers = CONFIG['max_concurrent']
     seed_bytes_len = CONFIG['seed_hex_bytes']
-    num_seeds = CONFIG['num_seeds_per_combo']
+    rounds_per_combo = max(1, CONFIG.get('num_seeds_per_combo', 1))
+    max_runs = args.total_jobs if args.total_jobs and args.total_jobs > 0 else None
 
-    # Generate drift configurations
-    drift_configs = []
-    if CONFIG['use_test_matrix']:
-        # Generate all combinations of parameters
-        for scale, arc_frac, eccen in itertools.product(
-            CONFIG['drift_scales'],
-            CONFIG['drift_arc_fractions'],
-            CONFIG['drift_orbit_eccentricities']
-        ):
-            drift_configs.append({
+    pics_dir = "pics"
+    print(f"\nOutput PNGs will be saved in ./{pics_dir}/")
+    print(f"Using max {max_workers} concurrent workers\n")
+    print("Cycling through all parameter combinations in shuffled order.")
+    print("Press Ctrl+C to stop.")
+
+    time_dilation_configs = CONFIG.get(
+        'time_dilation_configs',
+        [{'enabled': False, 'min_dt_factor': 0.1, 'threshold_distance': 0.5, 'strength': 2.0, 'tag': 'off'}],
+    )
+    aesthetic_presets = CONFIG.get('aesthetic_presets', ['default'])
+    style_presets = CONFIG.get('style_presets', ['default'])
+
+    if args.single_config:
+        drift_configs = [{
+            'mode': CONFIG.get('single_drift_mode', 'linear'),
+            'scale': CONFIG.get('single_drift_scale', 1.5),
+            'arc_fraction': CONFIG.get('single_drift_arc_fraction', 0.2),
+            'orbit_eccentricity': CONFIG.get('single_drift_orbit_eccentricity', 0.3),
+            'enabled': True
+        }]
+        print(f"Using fixed drift config: {drift_configs[0]}")
+    else:
+        drift_configs = [
+            {
                 'mode': CONFIG['drift_mode'],
                 'scale': scale,
                 'arc_fraction': arc_frac,
                 'orbit_eccentricity': eccen,
                 'enabled': True
-            })
-
-        # Adjust seeds per combo if total-jobs specified
-        if args.total_jobs:
-            num_seeds = max(1, args.total_jobs // len(drift_configs))
-            CONFIG['num_seeds_per_combo'] = num_seeds
-            print(f"Adjusted to {num_seeds} seeds per combination to reach ~{args.total_jobs} total jobs")
-
-        total_jobs = num_seeds * len(drift_configs)
-        print(f"Running test matrix with {len(drift_configs)} parameter combinations:")
-        print(f"  - Drift scales: {CONFIG['drift_scales']}")
-        print(f"  - Arc fractions: {CONFIG['drift_arc_fractions']}")
-        print(f"  - Orbit eccentricities: {CONFIG['drift_orbit_eccentricities']}")
-        print(f"Will generate {num_seeds} random seeds per combination")
-        print(f"Total runs: {num_seeds} × {len(drift_configs)} = {total_jobs}")
-    else:
-        # Single configuration
-        mode = CONFIG.get('single_drift_mode', 'linear')
-        scale = CONFIG.get('single_drift_scale', 1.5)
-        arc_fraction = CONFIG.get('single_drift_arc_fraction', 0.2)
-        orbit_eccentricity = CONFIG.get('single_drift_orbit_eccentricity', 0.3)
-        drift_configs.append({
-            'mode': mode,
-            'scale': scale,
-            'arc_fraction': arc_fraction,
-            'orbit_eccentricity': orbit_eccentricity,
-            'enabled': True
-        })
-
-        print(f"Running single configuration:")
-        print(f"  - Mode: {mode}")
-        print(f"  - Scale: {scale}")
-        print(f"  - Arc fraction: {arc_fraction}")
-        print(f"  - Orbit eccentricity: {orbit_eccentricity}")
-        print(f"Using {num_seeds} different seeds")
-
-        # Rust program now saves PNGs to 'pics/' and videos to 'vids/'
-    pics_dir = "pics"
-    print(f"\nOutput PNGs will be saved in ./{pics_dir}/")
-    print(f"Using max {max_workers} concurrent workers\n")
-
-    # Generate all job configurations first
-    # Iterate through seeds first, then drift configs for each combination
-    all_jobs = []
-
-    for seed_idx in range(num_seeds):
-        for drift_config in drift_configs:
-            # Format drift info for filename - include all parameters
-            drift_str = f"s{drift_config['scale']}_af{drift_config['arc_fraction']}_oe{drift_config['orbit_eccentricity']}"
-
-            job_info = {
-                'drift_config': drift_config,
-                'drift_str': drift_str,
-                'seed_bytes_len': seed_bytes_len,
-                'pics_dir': pics_dir
             }
-            all_jobs.append(job_info)
+            for (scale, arc_frac, eccen) in itertools.product(
+                CONFIG['drift_scales'],
+                CONFIG['drift_arc_fractions'],
+                CONFIG['drift_orbit_eccentricities']
+            )
+        ]
 
-    # Randomize the order of all jobs
-    random.shuffle(all_jobs)
-    print(f"Randomized order of {len(all_jobs)} total jobs\n")
+    base_combos = list(itertools.product(drift_configs, time_dilation_configs, aesthetic_presets, style_presets))
+    print(f"Parameter combinations per round: {len(base_combos)}")
+    print(f"Seeds per combination per cycle: {rounds_per_combo}")
 
-    # Prepare jobs to run (filter out existing ones first)
-    jobs_to_run = []
-    skipped_count = 0
+    param_queue = deque()
+    cycle_count = 0
 
-    for job in all_jobs:
-        drift_config = job['drift_config']
-        drift_str = job['drift_str']
+    def refill_param_queue():
+        nonlocal param_queue, cycle_count
+        new_queue = []
+        for _ in range(rounds_per_combo):
+            combos = base_combos.copy()
+            random.shuffle(combos)
+            new_queue.extend(combos)
+        param_queue = deque(new_queue)
+        cycle_count += 1
+        print(f"\nStarting parameter cycle {cycle_count} ({len(param_queue)} runs queued)")
 
-        # 1. Generate a truly random hex seed
-        hex_seed = generate_random_hex_seed(job['seed_bytes_len'])
+    def build_job_from_combo(combo):
+        drift_config, td_config, aesthetic_preset, style_preset = combo
+        drift_str = f"s{fmt_float(drift_config['scale'])}_af{fmt_float(drift_config['arc_fraction'])}_oe{fmt_float(drift_config['orbit_eccentricity'])}"
+        if td_config.get('enabled'):
+            td_str = (
+                f"td_m{fmt_float(td_config['min_dt_factor'])}"
+                f"_t{fmt_float(td_config['threshold_distance'])}"
+                f"_s{fmt_float(td_config['strength'])}"
+            )
+        else:
+            td_str = "td_off"
+        preset_str = f"ap{aesthetic_preset}_sp{style_preset}"
+        param_str = f"{drift_str}_{td_str}_{preset_str}"
 
-        # 2. Derive filename: parameters first, then seed
-        seed_suffix = hex_seed[2:][:8]  # Use first 8 chars of hex seed
-        output_file_base = f"{drift_str}_{seed_suffix}"
+        hex_seed = generate_random_hex_seed(seed_bytes_len)
+        seed_suffix = hex_seed[2:][:8]
+        output_file_base = f"{param_str}_{seed_suffix}"
+        output_png_path = os.path.join(pics_dir, f"{output_file_base}.png")
 
-        # Check existence in the 'pics' directory
-        output_png_path = os.path.join(job['pics_dir'], f"{output_file_base}.png")
-
-        # 4. Check if the output PNG already exists
-        if os.path.exists(output_png_path):
-            print(f"Skipping: {output_file_base} (already exists)")
-            skipped_count += 1
-            continue # Skip this iteration
-
-        # 5. Construct the command
         command = [
             CONFIG['program_path'],
             '--seed', hex_seed,
-            # Pass ONLY the base filename - Rust handles the directory
             '--file-name', output_file_base,
-            # Add drift mode and all parameters
             '--drift-mode', drift_config['mode'],
             '--drift-scale', str(drift_config['scale']),
             '--drift-arc-fraction', str(drift_config['arc_fraction']),
-            '--drift-orbit-eccentricity', str(drift_config['orbit_eccentricity'])
+            '--drift-orbit-eccentricity', str(drift_config['orbit_eccentricity']),
+            '--aesthetic-preset', aesthetic_preset,
+            '--style-preset', style_preset,
         ]
 
-        jobs_to_run.append({
+        if td_config.get('enabled'):
+            command.extend([
+                '--time-dilation',
+                '--time-dilation-min-dt-factor', str(td_config['min_dt_factor']),
+                '--time-dilation-threshold', str(td_config['threshold_distance']),
+                '--time-dilation-strength', str(td_config['strength'])
+            ])
+
+        if CONFIG.get('png_only'):
+            command.append('--png-only')
+        if CONFIG.get('parallel_accumulation'):
+            command.append('--parallel-accumulation')
+        if CONFIG.get('png_bit_depth') in (8, 16):
+            command.extend(['--png-bit-depth', str(CONFIG['png_bit_depth'])])
+        if CONFIG.get('write_exr'):
+            command.append('--write-exr')
+
+        return {
             'command': command,
             'output_file_base': output_file_base,
+            'output_png_path': output_png_path,
             'hex_seed': hex_seed
-        })
+        }
 
-    print(f"\nSkipped {skipped_count} existing files")
-    print(f"Will run {len(jobs_to_run)} jobs with {max_workers} parallel workers\n")
-
-    # Run jobs in parallel using ThreadPoolExecutor
     run_counter = 0
     active_futures = {}
-    job_index = 0
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        # Submit initial batch of jobs
-        while len(active_futures) < max_workers and job_index < len(jobs_to_run):
-            job = jobs_to_run[job_index]
-            jobs_remaining = len(jobs_to_run) - job_index
-            print(f"[Submitting] {job['output_file_base']} (seed {job['hex_seed']}) | Jobs remaining: {jobs_remaining}")
-            future = executor.submit(run_command, job['command'])
-            active_futures[future] = job
-            job_index += 1
-            run_counter += 1
-
-        # Process jobs as they complete and submit new ones
         try:
-            while active_futures:
-                # Wait for at least one job to complete
+            while True:
+                while len(active_futures) < max_workers and (max_runs is None or run_counter < max_runs):
+                    if not param_queue:
+                        refill_param_queue()
+                    combo = param_queue.popleft()
+                    job = build_job_from_combo(combo)
+                    if os.path.exists(job['output_png_path']):
+                        continue
+                    print(f"[Submitting] {job['output_file_base']} (seed {job['hex_seed']}) | Active jobs: {len(active_futures)}")
+                    future = executor.submit(run_command, job['command'])
+                    active_futures[future] = job
+                    run_counter += 1
+
+                if max_runs is not None and run_counter >= max_runs and not active_futures:
+                    break
+
                 done, pending = concurrent.futures.wait(
                     active_futures.keys(),
                     return_when=concurrent.futures.FIRST_COMPLETED
                 )
 
-                # Process completed jobs
                 for future in done:
                     job = active_futures.pop(future)
                     try:
-                        future.result()  # This will raise exception if job failed
+                        future.result()
                         print(f"[Completed] {job['output_file_base']} | Active jobs: {len(active_futures)}")
                     except Exception as e:
                         print(f"[Failed] {job['output_file_base']} raised an exception: {e} | Active jobs: {len(active_futures)}")
 
-                    # Submit a new job if available
-                    if job_index < len(jobs_to_run):
-                        new_job = jobs_to_run[job_index]
-                        jobs_remaining = len(jobs_to_run) - job_index
-                        print(f"[Submitting] {new_job['output_file_base']} (seed {new_job['hex_seed']}) | Jobs remaining: {jobs_remaining}")
-                        new_future = executor.submit(run_command, new_job['command'])
-                        active_futures[new_future] = new_job
-                        job_index += 1
-                        run_counter += 1
-
         except KeyboardInterrupt:
             print("\nCaught KeyboardInterrupt, stopping...")
-            # Cancel all pending futures
             for future in active_futures:
                 future.cancel()
             executor.shutdown(wait=False, cancel_futures=True)
 
-    print(f"\nCompleted! Processed {run_counter} unique configurations.")
+    print(f"\nStopped. Processed {run_counter} runs.")
     print("Check the 'pics/' directory for results.")
-    print("Filenames: s<scale>_af<arc_fraction>_oe<orbit_eccentricity>_<random_seed>.png")
+    rank_metadata(pics_dir, top_n=20)
 
 if __name__ == "__main__":
     try:

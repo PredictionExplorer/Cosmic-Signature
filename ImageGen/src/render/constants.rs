@@ -80,6 +80,48 @@ pub const DEFAULT_HDR_SCALE_LINE: f64 = 0.15;
 /// Alpha threshold below which pixels are skipped (for performance)
 pub const ALPHA_THRESHOLD: f64 = 1e-6;
 
+// ========== Camera / Projection Defaults ==========
+
+/// Default camera azimuth (degrees)
+pub const DEFAULT_CAMERA_AZIMUTH_DEG: f64 = 35.0;
+
+/// Default camera elevation (degrees)
+pub const DEFAULT_CAMERA_ELEVATION_DEG: f64 = 20.0;
+
+/// Default camera roll (degrees)
+pub const DEFAULT_CAMERA_ROLL_DEG: f64 = 0.0;
+
+/// Default camera distance multiplier relative to scene radius
+pub const DEFAULT_CAMERA_DISTANCE: f64 = 2.5;
+
+/// Default camera vertical field of view (degrees)
+pub const DEFAULT_CAMERA_FOV_DEG: f64 = 45.0;
+
+/// Default camera fit padding for projected bounds (fraction)
+pub const DEFAULT_CAMERA_FIT_PADDING: f64 = 0.06;
+
+/// Default near clip for perspective projection
+pub const DEFAULT_CAMERA_NEAR_CLIP: f64 = 1e-3;
+
+// ========== Depth Cue Defaults ==========
+
+/// Default depth cue strength (0 = off)
+pub const DEFAULT_DEPTH_CUE_STRENGTH: f64 = 0.0;
+
+/// Default depth cue gamma for nearness weighting
+pub const DEFAULT_DEPTH_CUE_GAMMA: f64 = 1.0;
+
+/// Default minimum depth scale (farther points never drop below this)
+pub const DEFAULT_DEPTH_CUE_MIN_SCALE: f64 = 0.6;
+
+// ========== Preview Scoring Defaults ==========
+
+/// Default preview render size (square)
+pub const DEFAULT_PREVIEW_SIZE: u32 = 96;
+
+/// Default stride for preview sampling (steps)
+pub const DEFAULT_PREVIEW_STEP_STRIDE: usize = 8;
+
 /// Default strength for the cinematic color grading effect (0-1)
 pub const DEFAULT_COLOR_GRADE_STRENGTH: f64 = 0.48;
 
