@@ -59,23 +59,22 @@ def run_command(cmd):
 
     print(f"PID {os.getpid()}: Running command: {' '.join(cmd)}")
     try:
-        # Use Popen to run the command and stream output
-        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1, universal_newlines=True)
+        # Merge stderr into stdout to avoid deadlocks from full stderr buffers
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+            universal_newlines=True,
+        )
 
-        # Read and print stdout line by line
+        # Read combined output line by line
         if process.stdout:
             for line in process.stdout:
-                print(f"[stdout] {line.strip()}", flush=True)
+                print(f"[output] {line.strip()}", flush=True)
 
-        # Read and print stderr line by line after stdout is exhausted
-        # Or you could potentially read them concurrently with threads/select if needed
-        stderr_output = ""
-        if process.stderr:
-            stderr_output = process.stderr.read()
-            if stderr_output:
-                print(f"[stderr] {stderr_output.strip()}", flush=True)
-
-        process.wait() # Wait for the process to complete
+        process.wait()  # Wait for the process to complete
 
         if process.returncode == 0:
             print(f"PID {os.getpid()}: Command finished successfully: {' '.join(cmd)}")
