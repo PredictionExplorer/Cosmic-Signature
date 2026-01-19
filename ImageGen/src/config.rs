@@ -31,7 +31,7 @@ pub fn load_config(path: &str) -> Result<AppConfig, Box<dyn Error>> {
     Ok(config)
 }
 
-impl From<&EffectsConfig> for crate::render::EffectOverrides {
+impl From<&EffectsConfig> for crate::render::effects::EffectOverrides {
     fn from(config: &EffectsConfig) -> Self {
         Self {
             blackbody_enabled: config.blackbody_enabled,

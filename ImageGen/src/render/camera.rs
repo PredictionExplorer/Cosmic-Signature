@@ -75,7 +75,9 @@ impl DepthCueConfig {
 /// Scene bounds derived from 3D positions.
 #[derive(Clone, Copy, Debug)]
 pub struct SceneBounds {
+    #[allow(dead_code)]
     pub min: Vector3<f64>,
+    #[allow(dead_code)]
     pub max: Vector3<f64>,
     pub center: Vector3<f64>,
     pub radius: f64,

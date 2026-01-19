@@ -37,7 +37,7 @@ pub use color::{OklabColor, generate_body_color_sequences};
 pub use drawing::{
     draw_line_segment_aa_alpha, draw_line_segment_aa_spectral, parallel_blur_2d_rgba,
 };
-pub use effects::{DogBloomConfig, EffectOverrides, EffectPreset, ExposureCalculator, apply_dog_bloom};
+pub use effects::{DogBloomConfig, ExposureCalculator, apply_dog_bloom};
 pub use histogram::compute_black_white_gamma;
 pub use video::{VideoEncodingOptions, create_video_from_frames_singlepass};
 
@@ -269,6 +269,7 @@ fn linear_levels_to_f32(fr: f64, fg: f64, fb: f64, fa: f64, levels: &ChannelLeve
 }
 
 /// Save single 8-bit PNG.
+#[allow(dead_code)]
 pub fn save_image_as_png(rgb_img: &ImageBuffer<Rgb<u8>, Vec<u8>>, path: &str) -> Result<()> {
     save_image_as_png_u8(rgb_img, path)
 }
@@ -349,39 +350,6 @@ pub(crate) fn pass_1_build_histogram(
 
     let total_steps = positions[0].len();
     let chunk_line = (total_steps / 10).max(1);
-
-    if render_config.parallel_accumulation && frame_interval >= total_steps {
-        info!("   Using parallel accumulation for spectral histogram (final-only).");
-        accum_spd = accumulate_spd_parallel(positions, colors, body_alphas, &ctx, render_config);
-
-        convert_spd_buffer_to_rgba(&accum_spd, &mut accum_rgba);
-        let frame_params = FrameParams { frame_number: 0, density: None };
-        let rgba_buffer = std::mem::take(&mut accum_rgba);
-        let final_frame_pixels = effect_chain
-            .process_frame(rgba_buffer, width as usize, height as usize, &frame_params)
-            .expect("Failed to process frame during spectral histogram pass");
-
-        histogram.reserve(ctx.pixel_count());
-        for &(r, g, b, a) in &final_frame_pixels {
-            histogram.push(r * a, g * a, b * a);
-        }
-
-        all_r.clear();
-        all_g.clear();
-        all_b.clear();
-        all_r.reserve(histogram.len());
-        all_g.reserve(histogram.len());
-        all_b.reserve(histogram.len());
-
-        for rgb in histogram.data() {
-            all_r.push(rgb[0]);
-            all_g.push(rgb[1]);
-            all_b.push(rgb[2]);
-        }
-
-        info!("   pass 1 (spectral histogram): 100% done");
-        return;
-    }
 
     // Iterate through ALL steps
     for step in 0..total_steps {
@@ -553,62 +521,6 @@ pub(crate) fn pass_2_write_frames(
     let base_alpha_compress = render_config.alpha_compress;
 
     let levels = ChannelLevels::new(black_r, white_r, black_g, white_g, black_b, white_b);
-
-    if render_config.parallel_accumulation && frame_interval >= total_steps {
-        info!("   Using parallel accumulation for spectral render (final-only).");
-        accum_spd = accumulate_spd_parallel(positions, colors, body_alphas, &ctx, render_config);
-
-        convert_spd_buffer_to_rgba(&accum_spd, &mut accum_rgba);
-        let frame_params = FrameParams { frame_number: 0, density: None };
-        let rgba_buffer = std::mem::take(&mut accum_rgba);
-        let final_frame_pixels = effect_chain
-            .process_frame(rgba_buffer, width as usize, height as usize, &frame_params)
-            .expect("Failed to process frame during spectral render pass");
-
-        let mut buf_8bit = vec![0u8; ctx.pixel_count() * 3];
-        buf_8bit.par_chunks_mut(3).zip(final_frame_pixels.par_iter()).for_each(
-            |(chunk, &(fr, fg, fb, fa))| {
-                let mapped = tonemap_to_8bit(fr, fg, fb, fa, &levels);
-                chunk[0] = mapped[0];
-                chunk[1] = mapped[1];
-                chunk[2] = mapped[2];
-            },
-        );
-
-        frame_sink(&buf_8bit)?;
-        if output_config.png_bit_depth <= 8 {
-            last_frame_out.png8 = ImageBuffer::from_raw(width, height, buf_8bit);
-        } else {
-            let mut buf_16bit = vec![0u16; ctx.pixel_count() * 3];
-            buf_16bit
-                .par_chunks_mut(3)
-                .zip(final_frame_pixels.par_iter())
-                .for_each(|(chunk, &(fr, fg, fb, fa))| {
-                    let mapped = tonemap_to_16bit(fr, fg, fb, fa, &levels);
-                    chunk[0] = mapped[0];
-                    chunk[1] = mapped[1];
-                    chunk[2] = mapped[2];
-                });
-            last_frame_out.png16 = ImageBuffer::from_raw(width, height, buf_16bit);
-        }
-
-        if output_config.write_exr {
-            let mut buf_f32 = vec![0f32; ctx.pixel_count() * 3];
-            buf_f32
-                .par_chunks_mut(3)
-                .zip(final_frame_pixels.par_iter())
-                .for_each(|(chunk, &(fr, fg, fb, fa))| {
-                    let mapped = linear_levels_to_f32(fr, fg, fb, fa, &levels);
-                    chunk[0] = mapped[0];
-                    chunk[1] = mapped[1];
-                    chunk[2] = mapped[2];
-                });
-            last_frame_out.exr = ImageBuffer::from_raw(width, height, buf_f32);
-        }
-
-        info!("   pass 2 (spectral render): 100% done");
-        return Ok(());
-    }
 
     // Iterate through ALL steps
     for step in 0..total_steps {
@@ -985,6 +897,39 @@ pub fn pass_1_build_histogram_spectral(
     let total_steps = positions[0].len();
     let chunk_line = (total_steps / 10).max(1);
 
+    if render_config.parallel_accumulation && frame_interval >= total_steps {
+        info!("   Using parallel accumulation for spectral histogram (final-only).");
+        accum_spd = accumulate_spd_parallel(positions, colors, body_alphas, &ctx, render_config);
+
+        convert_spd_buffer_to_rgba(&accum_spd, &mut accum_rgba);
+        let frame_params = FrameParams { frame_number: 0, density: None };
+        let rgba_buffer = std::mem::take(&mut accum_rgba);
+        let final_frame_pixels = effect_chain
+            .process_frame(rgba_buffer, width as usize, height as usize, &frame_params)
+            .expect("Failed to process frame during spectral histogram pass");
+
+        histogram.reserve(ctx.pixel_count());
+        for &(r, g, b, a) in &final_frame_pixels {
+            histogram.push(r * a, g * a, b * a);
+        }
+
+        all_r.clear();
+        all_g.clear();
+        all_b.clear();
+        all_r.reserve(histogram.len());
+        all_g.reserve(histogram.len());
+        all_b.reserve(histogram.len());
+
+        for rgb in histogram.data() {
+            all_r.push(rgb[0]);
+            all_g.push(rgb[1]);
+            all_b.push(rgb[2]);
+        }
+
+        info!("   pass 1 (spectral histogram): 100% done");
+        return;
+    }
+
     for step in 0..total_steps {
         if step % chunk_line == 0 {
             let pct = (step as f64 / total_steps as f64) * constants::PERCENT_FACTOR;
@@ -1147,6 +1092,62 @@ pub fn pass_2_write_frames_spectral(
     let chunk_line = (total_steps / 10).max(1);
 
     let levels = ChannelLevels::new(black_r, white_r, black_g, white_g, black_b, white_b);
+
+    if render_config.parallel_accumulation && frame_interval >= total_steps {
+        info!("   Using parallel accumulation for spectral render (final-only).");
+        accum_spd = accumulate_spd_parallel(positions, colors, body_alphas, &ctx, render_config);
+
+        convert_spd_buffer_to_rgba(&accum_spd, &mut accum_rgba);
+        let frame_params = FrameParams { frame_number: 0, density: None };
+        let rgba_buffer = std::mem::take(&mut accum_rgba);
+        let final_frame_pixels = effect_chain
+            .process_frame(rgba_buffer, width as usize, height as usize, &frame_params)
+            .expect("Failed to process frame during spectral render pass");
+
+        let mut buf_8bit = vec![0u8; ctx.pixel_count() * 3];
+        buf_8bit.par_chunks_mut(3).zip(final_frame_pixels.par_iter()).for_each(
+            |(chunk, &(fr, fg, fb, fa))| {
+                let mapped = tonemap_to_8bit(fr, fg, fb, fa, &levels);
+                chunk[0] = mapped[0];
+                chunk[1] = mapped[1];
+                chunk[2] = mapped[2];
+            },
+        );
+
+        frame_sink(&buf_8bit)?;
+        if output_config.png_bit_depth <= 8 {
+            last_frame_out.png8 = ImageBuffer::from_raw(width, height, buf_8bit);
+        } else {
+            let mut buf_16bit = vec![0u16; ctx.pixel_count() * 3];
+            buf_16bit
+                .par_chunks_mut(3)
+                .zip(final_frame_pixels.par_iter())
+                .for_each(|(chunk, &(fr, fg, fb, fa))| {
+                    let mapped = tonemap_to_16bit(fr, fg, fb, fa, &levels);
+                    chunk[0] = mapped[0];
+                    chunk[1] = mapped[1];
+                    chunk[2] = mapped[2];
+                });
+            last_frame_out.png16 = ImageBuffer::from_raw(width, height, buf_16bit);
+        }
+
+        if output_config.write_exr {
+            let mut buf_f32 = vec![0f32; ctx.pixel_count() * 3];
+            buf_f32
+                .par_chunks_mut(3)
+                .zip(final_frame_pixels.par_iter())
+                .for_each(|(chunk, &(fr, fg, fb, fa))| {
+                    let mapped = linear_levels_to_f32(fr, fg, fb, fa, &levels);
+                    chunk[0] = mapped[0];
+                    chunk[1] = mapped[1];
+                    chunk[2] = mapped[2];
+                });
+            last_frame_out.exr = ImageBuffer::from_raw(width, height, buf_f32);
+        }
+
+        info!("   pass 2 (spectral render): 100% done");
+        return Ok(());
+    }
 
     for step in 0..total_steps {
         if step % chunk_line == 0 {

@@ -454,11 +454,11 @@ fn main() -> std::result::Result<(), Box<dyn Error>> {
         .as_deref()
         .or_else(|| file_config.as_ref().and_then(|cfg| cfg.style_preset.as_deref()))
         .unwrap_or("default");
-    let effect_preset = render::EffectPreset::from_str(style_preset_name);
+    let effect_preset = render::effects::EffectPreset::from_str(style_preset_name);
     let effect_overrides = file_config
         .as_ref()
         .and_then(|cfg| cfg.effects.as_ref())
-        .map(|effects| render::EffectOverrides::from(effects));
+        .map(|effects| render::effects::EffectOverrides::from(effects));
 
     let mut weights = match aesthetic_preset_name.to_lowercase().as_str() {
         "gallery" => AestheticWeights::gallery(),
