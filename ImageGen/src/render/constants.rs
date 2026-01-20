@@ -217,6 +217,92 @@ pub const DEFAULT_AETHER_CAUSTIC_STRENGTH: f64 = 0.15;
 /// Softness of the caustic bleed effect
 pub const DEFAULT_AETHER_CAUSTIC_SOFTNESS: f64 = 3.0;
 
+// ========== Advanced Optical Effects Defaults ==========
+
+/// Default strength for gravitational lensing warp
+pub const DEFAULT_LENSING_STRENGTH: f64 = 0.45;
+
+/// Blur radius for the lensing mass field (pixels)
+pub const DEFAULT_LENSING_BLUR_RADIUS: usize = 6;
+
+/// Exponent applied to luminance when building the mass field
+pub const DEFAULT_LENSING_MASS_EXPONENT: f64 = 1.4;
+
+/// Maximum pixel displacement allowed for lensing
+pub const DEFAULT_LENSING_MAX_DISPLACEMENT: f64 = 3.0;
+
+/// Edge fade-out region (fraction of min dimension)
+pub const DEFAULT_LENSING_EDGE_FADE: f64 = 0.12;
+
+/// Default strength for chromatic dispersion halos
+pub const DEFAULT_CHROMATIC_DISPERSION_STRENGTH: f64 = 0.35;
+
+/// Base dispersion shift in pixels
+pub const DEFAULT_CHROMATIC_DISPERSION_PIXELS: f64 = 1.9;
+
+/// Minimum edge strength before dispersion appears
+pub const DEFAULT_CHROMATIC_DISPERSION_EDGE_THRESHOLD: f64 = 0.05;
+
+/// Edge weighting exponent for dispersion falloff
+pub const DEFAULT_CHROMATIC_DISPERSION_EDGE_EXPONENT: f64 = 1.25;
+
+/// Luminance exponent driving dispersion intensity
+pub const DEFAULT_CHROMATIC_DISPERSION_LUMA_POWER: f64 = 0.6;
+
+/// Default strength for anisotropic flow blur
+pub const DEFAULT_FLOW_BLUR_STRENGTH: f64 = 0.35;
+
+/// Base flow blur radius in pixels
+pub const DEFAULT_FLOW_BLUR_RADIUS: f64 = 5.5;
+
+/// Sample count for flow blur
+pub const DEFAULT_FLOW_BLUR_SAMPLES: usize = 7;
+
+/// Gradient-driven anisotropy for flow blur
+pub const DEFAULT_FLOW_BLUR_ANISOTROPY: f64 = 1.1;
+
+/// Minimum edge threshold for flow blur
+pub const DEFAULT_FLOW_BLUR_EDGE_THRESHOLD: f64 = 0.04;
+
+/// Falloff exponent for flow blur sampling weights
+pub const DEFAULT_FLOW_BLUR_FALLOFF: f64 = 1.6;
+
+/// Default strength for diffraction spikes
+pub const DEFAULT_DIFFRACTION_STRENGTH: f64 = 0.4;
+
+/// Luminance threshold for diffraction highlights
+pub const DEFAULT_DIFFRACTION_THRESHOLD: f64 = 0.68;
+
+/// Soft knee for diffraction thresholding
+pub const DEFAULT_DIFFRACTION_KNEE: f64 = 0.18;
+
+/// Spike length in pixels
+pub const DEFAULT_DIFFRACTION_SPIKE_LENGTH: f64 = 14.0;
+
+/// Falloff exponent for diffraction spikes
+pub const DEFAULT_DIFFRACTION_SPIKE_FALLOFF: f64 = 2.2;
+
+/// Samples per spike direction
+pub const DEFAULT_DIFFRACTION_SAMPLE_COUNT: usize = 8;
+
+/// Central airy halo strength
+pub const DEFAULT_DIFFRACTION_HALO_STRENGTH: f64 = 0.25;
+
+/// Default strength for curvature emboss
+pub const DEFAULT_EMBOSS_STRENGTH: f64 = 0.32;
+
+/// Default light direction (radians) for embossing
+pub const DEFAULT_EMBOSS_LIGHT_DIRECTION: f64 = 0.85;
+
+/// Curvature amplification for embossing
+pub const DEFAULT_EMBOSS_CURVATURE_BOOST: f64 = 1.2;
+
+/// Emboss contrast multiplier
+pub const DEFAULT_EMBOSS_CONTRAST: f64 = 0.8;
+
+/// Minimum luminance for embossing to engage
+pub const DEFAULT_EMBOSS_MIN_LUMINANCE: f64 = 0.02;
+
 // ========== Video Encoding Constants ==========
 
 /// Default video bitrate for high quality output

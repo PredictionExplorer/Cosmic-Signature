@@ -17,8 +17,13 @@ use crate::post_effects::{
     // New museum-quality effects
     AncientManuscript, AncientManuscriptConfig,
     BlackbodyRadiation, BlackbodyConfig,
+    ChromaticDispersion, ChromaticDispersionConfig,
+    CurvatureEmboss, CurvatureEmbossConfig,
     DichroicGlass, DichroicGlassConfig,
+    DiffractionSpikes, DiffractionSpikesConfig,
     Ferrofluid, FerrofluidConfig,
+    FlowBlur, FlowBlurConfig,
+    GravitationalLensing, GravitationalLensingConfig,
     SpectralInterference, SpectralInterferenceConfig,
     SubsurfaceScattering, SubsurfaceScatteringConfig,
     TemporalEchoes, TemporalEchoesConfig,
@@ -48,6 +53,12 @@ pub struct EffectConfig {
     // New museum-quality effects
     pub blackbody_enabled: bool,
     pub blackbody_config: BlackbodyConfig,
+    pub curvature_emboss_enabled: bool,
+    pub curvature_emboss_config: CurvatureEmbossConfig,
+    pub flow_blur_enabled: bool,
+    pub flow_blur_config: FlowBlurConfig,
+    pub lensing_enabled: bool,
+    pub lensing_config: GravitationalLensingConfig,
     pub subsurface_enabled: bool,
     pub subsurface_config: SubsurfaceScatteringConfig,
     pub dichroic_enabled: bool,
@@ -56,6 +67,10 @@ pub struct EffectConfig {
     pub ferrofluid_config: FerrofluidConfig,
     pub temporal_echoes_enabled: bool,
     pub temporal_echoes_config: TemporalEchoesConfig,
+    pub diffraction_spikes_enabled: bool,
+    pub diffraction_spikes_config: DiffractionSpikesConfig,
+    pub chromatic_dispersion_enabled: bool,
+    pub chromatic_dispersion_config: ChromaticDispersionConfig,
     pub manuscript_enabled: bool,
     pub manuscript_config: AncientManuscriptConfig,
     pub spectral_interference_enabled: bool,
@@ -87,10 +102,15 @@ impl EffectPreset {
 #[derive(Clone, Debug, Default)]
 pub struct EffectOverrides {
     pub blackbody_enabled: Option<bool>,
+    pub curvature_emboss_enabled: Option<bool>,
+    pub flow_blur_enabled: Option<bool>,
+    pub lensing_enabled: Option<bool>,
     pub subsurface_enabled: Option<bool>,
     pub dichroic_enabled: Option<bool>,
     pub ferrofluid_enabled: Option<bool>,
     pub temporal_echoes_enabled: Option<bool>,
+    pub diffraction_spikes_enabled: Option<bool>,
+    pub chromatic_dispersion_enabled: Option<bool>,
     pub spectral_interference_enabled: Option<bool>,
     pub aether_enabled: Option<bool>,
     pub champleve_enabled: Option<bool>,
@@ -220,6 +240,18 @@ impl EffectChainBuilder {
             }
         }
 
+        if config.curvature_emboss_enabled {
+            chain_post.add(Box::new(CurvatureEmboss::new(config.curvature_emboss_config.clone())));
+        }
+
+        if config.flow_blur_enabled {
+            chain_post.add(Box::new(FlowBlur::new(config.flow_blur_config.clone())));
+        }
+
+        if config.lensing_enabled {
+            chain_post.add(Box::new(GravitationalLensing::new(config.lensing_config.clone())));
+        }
+
         if config.temporal_echoes_enabled {
             chain_post.add(Box::new(TemporalEchoes::new(config.temporal_echoes_config.clone())));
         }
@@ -227,6 +259,14 @@ impl EffectChainBuilder {
         if config.spectral_interference_enabled {
             chain_post
                 .add(Box::new(SpectralInterference::new(config.spectral_interference_config.clone())));
+        }
+
+        if config.diffraction_spikes_enabled {
+            chain_post.add(Box::new(DiffractionSpikes::new(config.diffraction_spikes_config.clone())));
+        }
+
+        if config.chromatic_dispersion_enabled {
+            chain_post.add(Box::new(ChromaticDispersion::new(config.chromatic_dispersion_config.clone())));
         }
 
         // Ancient manuscript should be last as it's a complete style transformation
@@ -274,10 +314,19 @@ impl EffectConfig {
                 self.champleve_enabled = false;
                 self.blackbody_enabled = true;
                 self.blackbody_config.strength = 0.25;
+                self.curvature_emboss_enabled = true;
+                self.curvature_emboss_config.strength *= 0.7;
+                self.flow_blur_enabled = true;
+                self.flow_blur_config.strength *= 1.15;
+                self.lensing_enabled = true;
+                self.lensing_config.strength *= 1.1;
                 self.subsurface_enabled = true;
                 self.ferrofluid_enabled = false;
                 self.dichroic_enabled = false;
                 self.temporal_echoes_enabled = true;
+                self.diffraction_spikes_enabled = false;
+                self.chromatic_dispersion_enabled = true;
+                self.chromatic_dispersion_config.strength *= 0.9;
                 self.spectral_interference_enabled = false;
                 self.color_grade_params.vibrance *= 1.1;
                 self.color_grade_params.warmth_shift += 0.05;
@@ -288,6 +337,10 @@ impl EffectConfig {
                 self.aether_enabled = false;
                 self.champleve_enabled = false;
                 self.blackbody_enabled = false;
+                self.curvature_emboss_enabled = true;
+                self.curvature_emboss_config.strength *= 1.25;
+                self.flow_blur_enabled = false;
+                self.lensing_enabled = false;
                 self.subsurface_enabled = false;
                 self.ferrofluid_enabled = true;
                 self.ferrofluid_config.strength = 0.8;
@@ -295,6 +348,10 @@ impl EffectConfig {
                 self.dichroic_enabled = true;
                 self.spectral_interference_enabled = true;
                 self.temporal_echoes_enabled = false;
+                self.diffraction_spikes_enabled = true;
+                self.diffraction_spikes_config.strength *= 1.15;
+                self.chromatic_dispersion_enabled = true;
+                self.chromatic_dispersion_config.strength *= 1.05;
                 self.color_grade_params.vibrance *= 1.05;
             }
             EffectPreset::Astral => {
@@ -304,12 +361,22 @@ impl EffectConfig {
                 self.champleve_enabled = true;
                 self.blackbody_enabled = true;
                 self.blackbody_config.strength = 0.45;
+                self.curvature_emboss_enabled = true;
+                self.curvature_emboss_config.strength *= 0.85;
+                self.flow_blur_enabled = true;
+                self.flow_blur_config.strength *= 1.05;
+                self.lensing_enabled = true;
+                self.lensing_config.strength *= 1.1;
                 self.subsurface_enabled = true;
                 self.ferrofluid_enabled = false;
                 self.dichroic_enabled = false;
                 self.temporal_echoes_enabled = true;
                 self.spectral_interference_enabled = true;
                 self.spectral_interference_config.strength = 0.35;
+                self.diffraction_spikes_enabled = true;
+                self.diffraction_spikes_config.strength *= 1.05;
+                self.chromatic_dispersion_enabled = true;
+                self.chromatic_dispersion_config.strength *= 1.05;
                 self.color_grade_params.vibrance *= 1.15;
             }
             EffectPreset::Minimal => {
@@ -320,12 +387,17 @@ impl EffectConfig {
                 self.aether_enabled = false;
                 self.champleve_enabled = false;
                 self.blackbody_enabled = false;
+                self.curvature_emboss_enabled = false;
+                self.flow_blur_enabled = false;
+                self.lensing_enabled = false;
                 self.subsurface_enabled = false;
                 self.dichroic_enabled = false;
                 self.ferrofluid_enabled = false;
                 self.temporal_echoes_enabled = false;
                 self.spectral_interference_enabled = false;
                 self.manuscript_enabled = false;
+                self.diffraction_spikes_enabled = false;
+                self.chromatic_dispersion_enabled = false;
                 self.color_grade_params.vibrance *= 0.9;
             }
         }
@@ -334,6 +406,15 @@ impl EffectConfig {
     pub fn apply_overrides(&mut self, overrides: &EffectOverrides) {
         if let Some(value) = overrides.blackbody_enabled {
             self.blackbody_enabled = value;
+        }
+        if let Some(value) = overrides.curvature_emboss_enabled {
+            self.curvature_emboss_enabled = value;
+        }
+        if let Some(value) = overrides.flow_blur_enabled {
+            self.flow_blur_enabled = value;
+        }
+        if let Some(value) = overrides.lensing_enabled {
+            self.lensing_enabled = value;
         }
         if let Some(value) = overrides.subsurface_enabled {
             self.subsurface_enabled = value;
@@ -346,6 +427,12 @@ impl EffectConfig {
         }
         if let Some(value) = overrides.temporal_echoes_enabled {
             self.temporal_echoes_enabled = value;
+        }
+        if let Some(value) = overrides.diffraction_spikes_enabled {
+            self.diffraction_spikes_enabled = value;
+        }
+        if let Some(value) = overrides.chromatic_dispersion_enabled {
+            self.chromatic_dispersion_enabled = value;
         }
         if let Some(value) = overrides.spectral_interference_enabled {
             self.spectral_interference_enabled = value;
@@ -401,6 +488,18 @@ impl Default for EffectConfig {
                 preserve_luminance: true,
                 blend_mode: "overlay".to_string(),
             },
+
+            // Curvature Emboss: Sculpted depth along trajectories
+            curvature_emboss_enabled: true,
+            curvature_emboss_config: CurvatureEmbossConfig::default(),
+
+            // Flow Blur: Directional motion-like streaking
+            flow_blur_enabled: true,
+            flow_blur_config: FlowBlurConfig::default(),
+
+            // Gravitational Lensing: Subtle spacetime warping
+            lensing_enabled: true,
+            lensing_config: GravitationalLensingConfig::default(),
             
             // Subsurface Scattering: Creates beautiful volumetric depth
             subsurface_enabled: true,
@@ -446,6 +545,14 @@ impl Default for EffectConfig {
                 blur_per_echo: 0.25,
                 flow_direction: std::f64::consts::FRAC_PI_4,
             },
+
+            // Diffraction Spikes: Optical starbursts for bright nodes
+            diffraction_spikes_enabled: true,
+            diffraction_spikes_config: DiffractionSpikesConfig::default(),
+
+            // Chromatic Dispersion: Edge color splitting for optics realism
+            chromatic_dispersion_enabled: true,
+            chromatic_dispersion_config: ChromaticDispersionConfig::default(),
             
             // Spectral Interference: Physical optics for rainbow caustics
             spectral_interference_enabled: true,

@@ -21,7 +21,7 @@ CONFIG = {
     'max_concurrent': 8,  # Run 8 parallel processes for faster execution
     'max_random_sleep': 0.5,  # Small random sleep to stagger process starts
     # --- Seed Generation Config ---
-    'num_seeds_per_combo': 100,             # Seeds per parameter combination
+    'num_seeds_per_combo': 100,             # Random selections per batch
     'seed_hex_bytes': 6,                    # How many random bytes for seed (6 bytes = 48 bits)
     # --- Drift Test Matrix ---
     'drift_scales': [0.5, 1.5, 3.0, 5.0, 8.0],  # Drift scales between 0 and 10
@@ -31,7 +31,7 @@ CONFIG = {
     'use_test_matrix': True,                # Whether to use the test matrix or single config
     # --- Aesthetic / Style Presets ---
     'aesthetic_presets': ['default', 'gallery'],
-    'style_presets': ['default', 'astral', 'ethereal'],
+    'style_presets': ['default', 'astral', 'ethereal', 'metallic', 'minimal'],
     # --- Time Dilation Variants ---
     'time_dilation_configs': [
         {'enabled': False, 'min_dt_factor': 0.1, 'threshold_distance': 0.5, 'strength': 2.0, 'tag': 'off'},
@@ -178,13 +178,13 @@ def main():
     # Get config values
     max_workers = CONFIG['max_concurrent']
     seed_bytes_len = CONFIG['seed_hex_bytes']
-    rounds_per_combo = max(1, CONFIG.get('num_seeds_per_combo', 1))
+    random_batch_size = max(1, CONFIG.get('num_seeds_per_combo', 1))
     max_runs = args.total_jobs if args.total_jobs and args.total_jobs > 0 else None
 
     pics_dir = "pics"
     print(f"\nOutput PNGs will be saved in ./{pics_dir}/")
     print(f"Using max {max_workers} concurrent workers\n")
-    print("Cycling through all parameter combinations in shuffled order.")
+    print("Randomly sampling parameter combinations each run.")
     print("Press Ctrl+C to stop.")
 
     time_dilation_configs = CONFIG.get(
@@ -220,22 +220,17 @@ def main():
         ]
 
     base_combos = list(itertools.product(drift_configs, time_dilation_configs, aesthetic_presets, style_presets))
-    print(f"Parameter combinations per round: {len(base_combos)}")
-    print(f"Seeds per combination per cycle: {rounds_per_combo}")
+    print(f"Possible parameter combinations: {len(base_combos)}")
+    print(f"Random selections per batch: {random_batch_size}")
 
     param_queue = deque()
-    cycle_count = 0
+    batch_count = 0
 
     def refill_param_queue():
-        nonlocal param_queue, cycle_count
-        new_queue = []
-        for _ in range(rounds_per_combo):
-            combos = base_combos.copy()
-            random.shuffle(combos)
-            new_queue.extend(combos)
-        param_queue = deque(new_queue)
-        cycle_count += 1
-        print(f"\nStarting parameter cycle {cycle_count} ({len(param_queue)} runs queued)")
+        nonlocal param_queue, batch_count
+        param_queue = deque(random.choice(base_combos) for _ in range(random_batch_size))
+        batch_count += 1
+        print(f"\nStarting random batch {batch_count} ({len(param_queue)} runs queued)")
 
     def build_job_from_combo(combo):
         drift_config, td_config, aesthetic_preset, style_preset = combo

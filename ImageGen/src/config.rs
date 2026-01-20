@@ -12,10 +12,15 @@ pub struct AppConfig {
 #[derive(Debug, Deserialize, Default, Clone)]
 pub struct EffectsConfig {
     pub blackbody_enabled: Option<bool>,
+    pub curvature_emboss_enabled: Option<bool>,
+    pub flow_blur_enabled: Option<bool>,
+    pub lensing_enabled: Option<bool>,
     pub subsurface_enabled: Option<bool>,
     pub dichroic_enabled: Option<bool>,
     pub ferrofluid_enabled: Option<bool>,
     pub temporal_echoes_enabled: Option<bool>,
+    pub diffraction_spikes_enabled: Option<bool>,
+    pub chromatic_dispersion_enabled: Option<bool>,
     pub spectral_interference_enabled: Option<bool>,
     pub aether_enabled: Option<bool>,
     pub champleve_enabled: Option<bool>,
@@ -35,10 +40,15 @@ impl From<&EffectsConfig> for crate::render::effects::EffectOverrides {
     fn from(config: &EffectsConfig) -> Self {
         Self {
             blackbody_enabled: config.blackbody_enabled,
+            curvature_emboss_enabled: config.curvature_emboss_enabled,
+            flow_blur_enabled: config.flow_blur_enabled,
+            lensing_enabled: config.lensing_enabled,
             subsurface_enabled: config.subsurface_enabled,
             dichroic_enabled: config.dichroic_enabled,
             ferrofluid_enabled: config.ferrofluid_enabled,
             temporal_echoes_enabled: config.temporal_echoes_enabled,
+            diffraction_spikes_enabled: config.diffraction_spikes_enabled,
+            chromatic_dispersion_enabled: config.chromatic_dispersion_enabled,
             spectral_interference_enabled: config.spectral_interference_enabled,
             aether_enabled: config.aether_enabled,
             champleve_enabled: config.champleve_enabled,
