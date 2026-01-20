@@ -1,7 +1,7 @@
 //! Performance optimization modules
 //!
 //! This module contains CPU-optimized implementations for performance-critical operations:
-//! - Hierarchical Borda selection (multi-stage filtering)
+//! - Exhaustive Borda selection (single-stage full evaluation)
 //! - Memory pooling and arena allocation
 //! - Pre-computed lookup tables
 //! - Fused effect processing
@@ -15,10 +15,7 @@ pub mod simd;
 pub mod sparse_spectrum;
 
 // Re-export commonly used types
-pub use borda::{
-    BordaAestheticConfig, HierarchicalBordaConfig, PreviewRenderConfig,
-    select_best_trajectory_hierarchical,
-};
+pub use borda::{BordaAestheticConfig, BordaConfig, select_best_trajectory};
 
 // These are library utilities that may not be used by the main binary but are part of the API
 #[allow(unused_imports)]

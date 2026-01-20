@@ -32,7 +32,6 @@ struct ScoreMetadata {
     negative_space: f64,
     symmetry: f64,
     density: f64,
-    preview_score: f64,
 }
 
 #[derive(Serialize)]
@@ -168,18 +167,6 @@ struct Args {
     #[arg(long)]
     density_weight: Option<f64>,
 
-    /// Low-res preview weight
-    #[arg(long)]
-    preview_weight: Option<f64>,
-
-    /// Preview render size (square)
-    #[arg(long, default_value_t = constants::DEFAULT_PREVIEW_SIZE)]
-    preview_size: u32,
-
-    /// Preview step stride (higher = faster, lower = more detail)
-    #[arg(long, default_value_t = constants::DEFAULT_PREVIEW_STEP_STRIDE)]
-    preview_stride: usize,
-
     #[arg(long, default_value_t = 1920)]
     width: u32,
 
@@ -280,14 +267,6 @@ struct Args {
     /// Fast mode: reduces simulation steps and candidate count for quick previews
     #[arg(long, default_value_t = false)]
     fast: bool,
-
-    /// Use hierarchical Borda selection for faster trajectory finding
-    #[arg(long, default_value_t = true)]
-    hierarchical_borda: bool,
-
-    /// Borda selection strategy: default, fast, aggressive
-    #[arg(long, default_value = "default")]
-    borda_strategy: String,
 
     /// Bloom mode: gaussian or dog
     #[arg(long, default_value = "dog")]
@@ -482,24 +461,8 @@ fn main() -> std::result::Result<(), Box<dyn Error>> {
     if let Some(val) = args.density_weight {
         weights.density = val;
     }
-    if let Some(val) = args.preview_weight {
-        weights.preview = val;
-    }
 
-    let mut preview = match aesthetic_preset_name.to_lowercase().as_str() {
-        "gallery" => optim::PreviewRenderConfig::gallery(),
-        _ => optim::PreviewRenderConfig::default(),
-    };
-    preview.width = args.preview_size;
-    preview.height = args.preview_size;
-    preview.step_stride = args.preview_stride.max(1);
-    preview.enabled = weights.preview > 0.0;
-
-    let aesthetic_config = optim::BordaAestheticConfig {
-        weights,
-        preview,
-        camera: camera_config,
-    };
+    let aesthetic_config = optim::BordaAestheticConfig { weights };
 
     // Convert hex seed
     let hex_seed = if args.seed.starts_with("0x") { &args.seed[2..] } else { &args.seed };
@@ -512,30 +475,23 @@ fn main() -> std::result::Result<(), Box<dyn Error>> {
         args.velocity,
     );
 
-    // 1) Borda selection (use hierarchical for better performance)
-    let (best_bodies, best_info) = if args.hierarchical_borda {
-        let borda_config = match args.borda_strategy.as_str() {
-            "fast" => optim::HierarchicalBordaConfig::fast(),
-            "aggressive" => optim::HierarchicalBordaConfig::aggressive(),
-            _ => optim::HierarchicalBordaConfig::default(),
-        };
-        optim::select_best_trajectory_hierarchical(
-            &mut rng,
-            num_sims,
-            num_steps_sim,
-            args.escape_threshold,
-            &borda_config,
-            &aesthetic_config,
-        )
+    // 1) Borda selection - exhaustive single-stage search
+    let borda_config = if args.fast {
+        optim::BordaConfig::fast()
     } else {
-        sim::select_best_trajectory(
-            &mut rng,
-            num_sims,
-            num_steps_sim,
-            &aesthetic_config.weights,
-            args.escape_threshold,
-        )
+        optim::BordaConfig {
+            num_candidates: num_sims,
+            ..optim::BordaConfig::default()
+        }
     };
+    
+    let (best_bodies, best_info) = optim::select_best_trajectory(
+        &mut rng,
+        num_steps_sim,
+        args.escape_threshold,
+        &borda_config,
+        &aesthetic_config,
+    );
 
     // 2) Re-run best orbit
     info!("STAGE 2/7: Re-running best orbit for {} steps...", num_steps_sim);
@@ -847,7 +803,6 @@ fn main() -> std::result::Result<(), Box<dyn Error>> {
             negative_space: best_info.negative_space,
             symmetry: best_info.symmetry,
             density: best_info.density,
-            preview_score: best_info.preview_score,
         },
         time_dilation: TimeDilationMetadata {
             enabled: time_dilation.enabled,

@@ -10,15 +10,24 @@ use statrs::statistics::Statistics;
 
 // ==================== AESTHETIC WEIGHTS ====================
 
+/// Weights for aesthetic scoring in Borda selection.
+///
+/// Each weight determines how much influence a particular metric has
+/// on the final trajectory ranking. Higher weights = more influence.
 #[derive(Clone, Copy, Debug)]
 pub struct AestheticWeights {
+    /// Weight for chaos/regularity metric (lower chaos = more regular orbits)
     pub chaos: f64,
+    /// Weight for equilateralness (how close the triangle stays to equilateral)
     pub equilateralness: f64,
+    /// Weight for golden ratio composition
     pub golden_ratio: f64,
+    /// Weight for negative space quality
     pub negative_space: f64,
+    /// Weight for symmetry
     pub symmetry: f64,
+    /// Weight for density balance
     pub density: f64,
-    pub preview: f64,
 }
 
 impl Default for AestheticWeights {
@@ -30,12 +39,12 @@ impl Default for AestheticWeights {
             negative_space: 0.0,
             symmetry: 0.0,
             density: 0.0,
-            preview: 0.0,
         }
     }
 }
 
 impl AestheticWeights {
+    /// Preset with all aesthetic metrics enabled for gallery-quality output.
     pub fn gallery() -> Self {
         Self {
             chaos: 1.0,
@@ -44,7 +53,6 @@ impl AestheticWeights {
             negative_space: 2.4,
             symmetry: 1.6,
             density: 1.2,
-            preview: 1.5,
         }
     }
 }
@@ -80,6 +88,7 @@ pub fn calculate_total_angular_momentum(bodies: &[Body]) -> Vector3<f64> {
 }
 
 /// A measure of "regularity" vs "chaos", smaller => more chaotic
+#[allow(dead_code)]
 pub fn non_chaoticness(m1: f64, m2: f64, m3: f64, positions: &[Vec<Vector3<f64>>]) -> f64 {
     let len = positions[0].len();
     if len == 0 {
@@ -109,6 +118,7 @@ pub fn non_chaoticness(m1: f64, m2: f64, m3: f64, positions: &[Vec<Vector3<f64>>
 }
 
 /// Score how "equilateral" the 3-body triangle is over time
+#[allow(dead_code)]
 pub fn equilateralness_score(positions: &[Vec<Vector3<f64>>]) -> f64 {
     let n = positions[0].len();
     if n < 1 {
@@ -361,6 +371,7 @@ pub fn negative_space_score(positions: &[Vec<Vector3<f64>>]) -> f64 {
 }
 
 /// Symmetry score based on occupancy grid mirroring.
+#[allow(dead_code)]
 pub fn symmetry_score(positions: &[Vec<Vector3<f64>>]) -> f64 {
     let Some((grid, _, _)) = build_occupancy_grid(positions) else {
         return 0.0;
@@ -369,6 +380,7 @@ pub fn symmetry_score(positions: &[Vec<Vector3<f64>>]) -> f64 {
 }
 
 /// Density balance score based on overall occupancy ratio.
+#[allow(dead_code)]
 pub fn density_balance_score(positions: &[Vec<Vector3<f64>>]) -> f64 {
     let Some((_grid, occupied, _empty)) = build_occupancy_grid(positions) else {
         return 0.0;

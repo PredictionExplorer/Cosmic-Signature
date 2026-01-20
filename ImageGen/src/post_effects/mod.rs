@@ -119,14 +119,19 @@ impl Default for PostEffectChain {
 // Re-export effect implementations
 pub mod aether;
 pub mod ancient_manuscript;
+pub mod aurora;
 pub mod blackbody;
+pub mod caustic_networks;
 pub mod champleve;
 pub mod color_grade;
 pub mod dichroic_glass;
 pub mod dog_bloom;
+pub mod doppler_shift;
 pub mod exposure;
 pub mod ferrofluid;
 pub mod gaussian_bloom;
+pub mod gravitational_lensing;
+pub mod nebula;
 pub mod perceptual_blur;
 pub mod spectral_interference;
 pub mod subsurface_scattering;
@@ -151,6 +156,13 @@ pub use ferrofluid::{Ferrofluid, FerrofluidConfig};
 pub use spectral_interference::{SpectralInterference, SpectralInterferenceConfig};
 pub use subsurface_scattering::{SubsurfaceScattering, SubsurfaceScatteringConfig};
 pub use temporal_echoes::{TemporalEchoes, TemporalEchoesConfig};
+
+// Export cosmic/physics-inspired museum-quality effects
+pub use aurora::{Aurora, AuroraConfig};
+pub use caustic_networks::{CausticNetworks, CausticNetworksConfig};
+pub use doppler_shift::{DopplerShift, DopplerShiftConfig};
+pub use gravitational_lensing::{GravitationalLensing, GravitationalLensingConfig};
+pub use nebula::{Nebula, NebulaConfig};
 
 #[cfg(test)]
 mod tests {

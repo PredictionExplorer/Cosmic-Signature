@@ -22,6 +22,12 @@ use crate::post_effects::{
     SpectralInterference, SpectralInterferenceConfig,
     SubsurfaceScattering, SubsurfaceScatteringConfig,
     TemporalEchoes, TemporalEchoesConfig,
+    // Cosmic/Physics-inspired museum-quality effects
+    Aurora, AuroraConfig,
+    CausticNetworks, CausticNetworksConfig,
+    DopplerShift, DopplerShiftConfig,
+    GravitationalLensing, GravitationalLensingConfig,
+    Nebula, NebulaConfig,
 };
 use crate::post_effects::utils;
 use crate::optim::effect_fusion::{FusedEffectConfig, FusedEffectProcessor};
@@ -61,6 +67,19 @@ pub struct EffectConfig {
     pub spectral_interference_enabled: bool,
     pub spectral_interference_config: SpectralInterferenceConfig,
     pub fuse_pixel_effects: bool,
+    // ═══════════════════════════════════════════════════════════════
+    // COSMIC/PHYSICS-INSPIRED MUSEUM-QUALITY EFFECTS
+    // ═══════════════════════════════════════════════════════════════
+    pub gravitational_lensing_enabled: bool,
+    pub gravitational_lensing_config: GravitationalLensingConfig,
+    pub caustic_networks_enabled: bool,
+    pub caustic_networks_config: CausticNetworksConfig,
+    pub doppler_shift_enabled: bool,
+    pub doppler_shift_config: DopplerShiftConfig,
+    pub aurora_enabled: bool,
+    pub aurora_config: AuroraConfig,
+    pub nebula_enabled: bool,
+    pub nebula_config: NebulaConfig,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -98,6 +117,12 @@ pub struct EffectOverrides {
     pub perceptual_blur_enabled: Option<bool>,
     pub fuse_pixel_effects: Option<bool>,
     pub manuscript_enabled: Option<bool>,
+    // Cosmic/Physics-inspired effects
+    pub gravitational_lensing_enabled: Option<bool>,
+    pub caustic_networks_enabled: Option<bool>,
+    pub doppler_shift_enabled: Option<bool>,
+    pub aurora_enabled: Option<bool>,
+    pub nebula_enabled: Option<bool>,
 }
 
 /// Per-frame parameters that may vary
@@ -229,6 +254,41 @@ impl EffectChainBuilder {
                 .add(Box::new(SpectralInterference::new(config.spectral_interference_config.clone())));
         }
 
+        // ═══════════════════════════════════════════════════════════════
+        // COSMIC/PHYSICS-INSPIRED MUSEUM-QUALITY EFFECTS
+        // These effects create beautiful, scientifically-inspired visuals
+        // ═══════════════════════════════════════════════════════════════
+
+        // Gravitational Lensing: Apply early for distortion effects
+        // (should be before color effects to distort the base image)
+        if config.gravitational_lensing_enabled {
+            chain_post.add(Box::new(GravitationalLensing::new(
+                config.gravitational_lensing_config.clone(),
+            )));
+        }
+
+        // Caustic Networks: Light focusing creates brilliant highlights
+        if config.caustic_networks_enabled {
+            chain_post.add(Box::new(CausticNetworks::new(
+                config.caustic_networks_config.clone(),
+            )));
+        }
+
+        // Doppler Shift: Direction-based color shifting
+        if config.doppler_shift_enabled {
+            chain_post.add(Box::new(DopplerShift::new(config.doppler_shift_config.clone())));
+        }
+
+        // Aurora Borealis: Ethereal color ribbons
+        if config.aurora_enabled {
+            chain_post.add(Box::new(Aurora::new(config.aurora_config.clone())));
+        }
+
+        // Nebula Tendrils: Atmospheric depth and cosmic wisps
+        if config.nebula_enabled {
+            chain_post.add(Box::new(Nebula::new(config.nebula_config.clone())));
+        }
+
         // Ancient manuscript should be last as it's a complete style transformation
         if config.manuscript_enabled {
             chain_post.add(Box::new(AncientManuscript::new(config.manuscript_config.clone())));
@@ -281,6 +341,15 @@ impl EffectConfig {
                 self.spectral_interference_enabled = false;
                 self.color_grade_params.vibrance *= 1.1;
                 self.color_grade_params.warmth_shift += 0.05;
+                // Ethereal cosmic effects
+                self.gravitational_lensing_enabled = true;
+                self.gravitational_lensing_config.strength = 0.25;
+                self.caustic_networks_enabled = false;
+                self.doppler_shift_enabled = false;
+                self.aurora_enabled = true;
+                self.aurora_config.strength = 0.5;
+                self.nebula_enabled = true;
+                self.nebula_config.strength = 0.45;
             }
             EffectPreset::Metallic => {
                 self.blur_strength = 0.45;
@@ -296,6 +365,15 @@ impl EffectConfig {
                 self.spectral_interference_enabled = true;
                 self.temporal_echoes_enabled = false;
                 self.color_grade_params.vibrance *= 1.05;
+                // Metallic cosmic effects - focus on caustics
+                self.gravitational_lensing_enabled = true;
+                self.gravitational_lensing_config.strength = 0.4;
+                self.caustic_networks_enabled = true;
+                self.caustic_networks_config.strength = 0.6;
+                self.doppler_shift_enabled = true;
+                self.doppler_shift_config.strength = 0.3;
+                self.aurora_enabled = false;
+                self.nebula_enabled = false;
             }
             EffectPreset::Astral => {
                 self.blur_strength = 0.7;
@@ -311,6 +389,17 @@ impl EffectConfig {
                 self.spectral_interference_enabled = true;
                 self.spectral_interference_config.strength = 0.35;
                 self.color_grade_params.vibrance *= 1.15;
+                // Astral preset: Maximum cosmic beauty - all effects enabled
+                self.gravitational_lensing_enabled = true;
+                self.gravitational_lensing_config.strength = 0.4;
+                self.caustic_networks_enabled = true;
+                self.caustic_networks_config.strength = 0.5;
+                self.doppler_shift_enabled = true;
+                self.doppler_shift_config.strength = 0.45;
+                self.aurora_enabled = true;
+                self.aurora_config.strength = 0.4;
+                self.nebula_enabled = true;
+                self.nebula_config.strength = 0.4;
             }
             EffectPreset::Minimal => {
                 self.blur_strength = 0.2;
@@ -327,6 +416,12 @@ impl EffectConfig {
                 self.spectral_interference_enabled = false;
                 self.manuscript_enabled = false;
                 self.color_grade_params.vibrance *= 0.9;
+                // Minimal: disable all cosmic effects
+                self.gravitational_lensing_enabled = false;
+                self.caustic_networks_enabled = false;
+                self.doppler_shift_enabled = false;
+                self.aurora_enabled = false;
+                self.nebula_enabled = false;
             }
         }
     }
@@ -367,6 +462,22 @@ impl EffectConfig {
         }
         if let Some(value) = overrides.manuscript_enabled {
             self.manuscript_enabled = value;
+        }
+        // Cosmic/Physics-inspired effects
+        if let Some(value) = overrides.gravitational_lensing_enabled {
+            self.gravitational_lensing_enabled = value;
+        }
+        if let Some(value) = overrides.caustic_networks_enabled {
+            self.caustic_networks_enabled = value;
+        }
+        if let Some(value) = overrides.doppler_shift_enabled {
+            self.doppler_shift_enabled = value;
+        }
+        if let Some(value) = overrides.aurora_enabled {
+            self.aurora_enabled = value;
+        }
+        if let Some(value) = overrides.nebula_enabled {
+            self.nebula_enabled = value;
         }
     }
 }
@@ -465,6 +576,80 @@ impl Default for EffectConfig {
 
             // Fuse pixel-local effects to reduce passes
             fuse_pixel_effects: true,
+
+            // ═══════════════════════════════════════════════════════════════
+            // COSMIC/PHYSICS-INSPIRED MUSEUM-QUALITY EFFECTS
+            // These create the stunning, gallery-worthy visual impact
+            // ═══════════════════════════════════════════════════════════════
+
+            // Gravitational Lensing: Subtle light distortion around dense regions
+            // Creates the "gravity is visible" effect - essential for physics authenticity
+            gravitational_lensing_enabled: true,
+            gravitational_lensing_config: GravitationalLensingConfig {
+                strength: 0.35,
+                distortion_radius: 0.08,
+                density_sensitivity: 2.5,
+                falloff_exponent: 1.5,
+                chromatic_aberration: true,
+                chromatic_strength: 0.3,
+            },
+
+            // Caustic Networks: Sharp light focusing at curvature maxima
+            // Creates dramatic, jewel-like brilliance where light concentrates
+            caustic_networks_enabled: true,
+            caustic_networks_config: CausticNetworksConfig {
+                strength: 0.45,
+                curvature_threshold: 0.15,
+                sharpness: 3.0,
+                warmth: 0.3,
+                rainbow_dispersion: true,
+                dispersion_strength: 0.4,
+                glow_radius: 0.02,
+            },
+
+            // Relativistic Doppler Shift: Direction-based blue/red shifting
+            // Approaching regions blue-shift, receding red-shift - scientifically accurate
+            doppler_shift_enabled: true,
+            doppler_shift_config: DopplerShiftConfig {
+                strength: 0.40,
+                blue_shift_intensity: 0.7,
+                red_shift_intensity: 0.6,
+                velocity_sensitivity: 1.5,
+                preserve_luminance: true,
+                approach_direction: -std::f64::consts::FRAC_PI_4,
+                transition_smoothness: 0.3,
+            },
+
+            // Aurora Borealis Ribbons: Ethereal flowing color bands
+            // Creates organic, dancing light reminiscent of northern lights
+            aurora_enabled: true,
+            aurora_config: AuroraConfig {
+                strength: 0.38,
+                num_ribbons: 4,
+                wave_frequency: 8.0,
+                wave_amplitude: 0.03,
+                ribbon_width: 0.025,
+                color_intensity: 0.85,
+                perpendicular: true,
+                shimmer_phase: 0.0,
+                edge_softness: 0.6,
+            },
+
+            // Nebula Tendrils: Atmospheric depth with wispy extensions
+            // Adds cosmic grandeur and volumetric quality
+            nebula_enabled: true,
+            nebula_config: NebulaConfig {
+                strength: 0.35,
+                tendril_reach: 0.15,
+                octaves: 4,
+                persistence: 0.5,
+                noise_scale: 3.0,
+                hue_variation: 0.3,
+                follow_gradient: true,
+                dust_opacity: 0.6,
+                emission_intensity: 0.4,
+                color_temperature: 0.4,
+            },
         }
     }
 }

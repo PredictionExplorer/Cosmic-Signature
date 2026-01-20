@@ -23,6 +23,12 @@ pub struct EffectsConfig {
     pub perceptual_blur_enabled: Option<bool>,
     pub fuse_pixel_effects: Option<bool>,
     pub manuscript_enabled: Option<bool>,
+    // Cosmic/Physics-inspired effects
+    pub gravitational_lensing_enabled: Option<bool>,
+    pub caustic_networks_enabled: Option<bool>,
+    pub doppler_shift_enabled: Option<bool>,
+    pub aurora_enabled: Option<bool>,
+    pub nebula_enabled: Option<bool>,
 }
 
 pub fn load_config(path: &str) -> Result<AppConfig, Box<dyn Error>> {
@@ -46,6 +52,12 @@ impl From<&EffectsConfig> for crate::render::effects::EffectOverrides {
             perceptual_blur_enabled: config.perceptual_blur_enabled,
             fuse_pixel_effects: config.fuse_pixel_effects,
             manuscript_enabled: config.manuscript_enabled,
+            // Cosmic/Physics-inspired effects
+            gravitational_lensing_enabled: config.gravitational_lensing_enabled,
+            caustic_networks_enabled: config.caustic_networks_enabled,
+            doppler_shift_enabled: config.doppler_shift_enabled,
+            aurora_enabled: config.aurora_enabled,
+            nebula_enabled: config.nebula_enabled,
         }
     }
 }

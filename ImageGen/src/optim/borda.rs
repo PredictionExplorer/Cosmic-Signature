@@ -1,850 +1,1003 @@
-//! Hierarchical Borda Selection
+//! Exhaustive Single-Stage Borda Selection
 //!
-//! Multi-stage filtering algorithm that dramatically reduces the number of simulation
-//! steps needed to find the best trajectory. Instead of running full simulations for
-//! all candidates, we progressively eliminate poor candidates with shorter simulations.
+//! This module implements a brute-force trajectory search that evaluates all candidates
+//! with full simulation. Scores are computed incrementally during simulation to minimize
+//! memory usage - only initial conditions and final scores are retained.
 //!
-//! Typical speedup: 5-10x for Borda selection phase.
+//! The algorithm:
+//! 1. Generate N random initial conditions (default: 100,000)
+//! 2. For each candidate, run full simulation and compute scores incrementally
+//! 3. Rank all valid candidates using weighted Borda scoring
+//! 4. Return the best trajectory's initial conditions
 
 use crate::analysis::{
     AestheticWeights, calculate_total_angular_momentum, calculate_total_energy,
-    density_balance_score, equilateralness_score, golden_ratio_composition_score,
-    negative_space_score, non_chaoticness, symmetry_score,
 };
-use crate::render::{CameraConfig, DepthCueConfig, OklabColor, draw_line_segment_aa_alpha};
 use crate::render::constants;
-use crate::render::context::RenderContext;
-use crate::sim::{Body, Sha3RandomByteStream, TrajectoryResult, get_positions, is_definitely_escaping, shift_bodies_to_com};
+use crate::sim::{Body, Sha3RandomByteStream, TrajectoryResult, shift_bodies_to_com, G};
 use nalgebra::Vector3;
 use rayon::prelude::*;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::time::Instant;
 use tracing::info;
 
-/// Configuration for hierarchical Borda selection
+// =============================================================================
+// Configuration
+// =============================================================================
+
+/// Configuration for exhaustive Borda selection
 #[derive(Clone, Debug)]
-pub struct HierarchicalBordaConfig {
-    /// Number of elimination stages
-    pub num_stages: usize,
-    /// Steps per stage as fraction of final steps
-    pub stage_step_fractions: Vec<f64>,
-    /// Survival rate per stage (fraction to keep)
-    pub stage_survival_rates: Vec<f64>,
-    /// Minimum candidates to keep per stage
-    pub min_survivors_per_stage: usize,
-    /// Whether to use parallel processing
+pub struct BordaConfig {
+    /// Number of candidate trajectories to evaluate (default: 100,000)
+    pub num_candidates: usize,
+    /// Enable parallel processing (default: true)
     pub parallel: bool,
+    /// Progress reporting interval in candidates (default: 1,000)
+    pub progress_interval: usize,
+    /// Escape check interval in simulation steps (default: 10,000)
+    pub escape_check_interval: usize,
 }
 
-impl Default for HierarchicalBordaConfig {
+impl Default for BordaConfig {
     fn default() -> Self {
         Self {
-            num_stages: 3,
-            // Stage 1: 1%, Stage 2: 10%, Stage 3: 100% of steps
-            stage_step_fractions: vec![0.01, 0.10, 1.0],
-            // Keep 30% after stage 1, 50% after stage 2, final selection at stage 3
-            stage_survival_rates: vec![0.30, 0.50, 1.0],
-            min_survivors_per_stage: 10,
+            num_candidates: 100_000,
             parallel: true,
+            progress_interval: 1_000,
+            escape_check_interval: 10_000,
         }
     }
 }
 
-impl HierarchicalBordaConfig {
-    /// Create a fast config for quick previews
+impl BordaConfig {
+    /// Create a fast config for quick testing
     pub fn fast() -> Self {
         Self {
-            num_stages: 2,
-            stage_step_fractions: vec![0.005, 1.0],
-            stage_survival_rates: vec![0.20, 1.0],
-            min_survivors_per_stage: 5,
+            num_candidates: 500,
             parallel: true,
-        }
-    }
-
-    /// Create an aggressive config for maximum performance
-    pub fn aggressive() -> Self {
-        Self {
-            num_stages: 4,
-            stage_step_fractions: vec![0.001, 0.01, 0.1, 1.0],
-            stage_survival_rates: vec![0.15, 0.25, 0.50, 1.0],
-            min_survivors_per_stage: 5,
-            parallel: true,
-        }
-    }
-
-    /// Validate configuration
-    pub fn validate(&self) -> Result<(), String> {
-        if self.num_stages == 0 {
-            return Err("Must have at least 1 stage".to_string());
-        }
-        if self.stage_step_fractions.len() != self.num_stages {
-            return Err("stage_step_fractions length must match num_stages".to_string());
-        }
-        if self.stage_survival_rates.len() != self.num_stages {
-            return Err("stage_survival_rates length must match num_stages".to_string());
-        }
-        for (i, &frac) in self.stage_step_fractions.iter().enumerate() {
-            if frac <= 0.0 || frac > 1.0 {
-                return Err(format!("stage_step_fractions[{}] must be in (0, 1]", i));
-            }
-        }
-        for (i, &rate) in self.stage_survival_rates.iter().enumerate() {
-            if rate <= 0.0 || rate > 1.0 {
-                return Err(format!("stage_survival_rates[{}] must be in (0, 1]", i));
-            }
-        }
-        // Last stage must have 100% steps and survival
-        if self.stage_step_fractions[self.num_stages - 1] != 1.0 {
-            return Err("Final stage must have step_fraction = 1.0".to_string());
-        }
-        Ok(())
-    }
-}
-
-/// Low-resolution preview render settings for fast composition scoring.
-#[derive(Clone, Copy, Debug)]
-pub struct PreviewRenderConfig {
-    pub enabled: bool,
-    pub width: u32,
-    pub height: u32,
-    pub step_stride: usize,
-}
-
-impl Default for PreviewRenderConfig {
-    fn default() -> Self {
-        Self {
-            enabled: false,
-            width: constants::DEFAULT_PREVIEW_SIZE,
-            height: constants::DEFAULT_PREVIEW_SIZE,
-            step_stride: constants::DEFAULT_PREVIEW_STEP_STRIDE,
+            progress_interval: 100,
+            escape_check_interval: 5_000,
         }
     }
 }
 
-impl PreviewRenderConfig {
-    pub fn gallery() -> Self {
-        Self {
-            enabled: true,
-            width: constants::DEFAULT_PREVIEW_SIZE,
-            height: constants::DEFAULT_PREVIEW_SIZE,
-            step_stride: (constants::DEFAULT_PREVIEW_STEP_STRIDE / 2).max(1),
-        }
-    }
-}
+// =============================================================================
+// Aesthetic Configuration
+// =============================================================================
 
-/// Aesthetic configuration for Borda selection.
-#[derive(Clone, Copy, Debug)]
+/// Aesthetic configuration for Borda selection
+#[derive(Clone, Copy, Debug, Default)]
 pub struct BordaAestheticConfig {
     pub weights: AestheticWeights,
-    pub preview: PreviewRenderConfig,
-    pub camera: CameraConfig,
 }
 
-impl Default for BordaAestheticConfig {
-    fn default() -> Self {
+// =============================================================================
+// Streaming Scorer
+// =============================================================================
+
+/// Grid size for spatial metrics (occupancy, symmetry, density)
+const GRID_SIZE: usize = 16;
+
+/// Accumulates aesthetic scores incrementally during simulation.
+/// 
+/// This avoids storing the full trajectory (which would be ~24MB per candidate
+/// for 1M steps × 3 bodies × 3 coords × 8 bytes).
+#[derive(Clone)]
+struct StreamingScorer {
+    // Body masses (needed for chaos calculation)
+    masses: [f64; 3],
+    
+    // Equilateralness accumulator
+    equil_sum: f64,
+    equil_count: usize,
+    
+    // Bounding box for spatial metrics
+    min_x: f64,
+    max_x: f64,
+    min_y: f64,
+    max_y: f64,
+    
+    // Occupancy grid for density/symmetry/negative-space
+    occupancy_grid: [[bool; GRID_SIZE]; GRID_SIZE],
+    
+    // For chaos metric: store radial distances (subsampled)
+    radial_samples_1: Vec<f64>,
+    radial_samples_2: Vec<f64>,
+    radial_samples_3: Vec<f64>,
+    subsample_rate: usize,
+    step_counter: usize,
+}
+
+impl StreamingScorer {
+    fn new(masses: [f64; 3], num_steps: usize) -> Self {
+        // Subsample radial distances to keep memory reasonable
+        // For 1M steps, keep ~10K samples (every 100th step)
+        let subsample_rate = (num_steps / 10_000).max(1);
+        let expected_samples = num_steps / subsample_rate + 1;
+        
         Self {
-            weights: AestheticWeights::default(),
-            preview: PreviewRenderConfig::default(),
-            camera: CameraConfig::default(),
+            masses,
+            equil_sum: 0.0,
+            equil_count: 0,
+            min_x: f64::MAX,
+            max_x: f64::MIN,
+            min_y: f64::MAX,
+            max_y: f64::MIN,
+            occupancy_grid: [[false; GRID_SIZE]; GRID_SIZE],
+            radial_samples_1: Vec::with_capacity(expected_samples),
+            radial_samples_2: Vec::with_capacity(expected_samples),
+            radial_samples_3: Vec::with_capacity(expected_samples),
+            subsample_rate,
+            step_counter: 0,
         }
+    }
+    
+    /// Update scores with positions from a single simulation step.
+    /// This is called once per integration step and must be fast.
+    #[inline]
+    fn update(&mut self, p0: Vector3<f64>, p1: Vector3<f64>, p2: Vector3<f64>) {
+        // Update bounding box
+        for p in [p0, p1, p2] {
+            self.min_x = self.min_x.min(p[0]);
+            self.max_x = self.max_x.max(p[0]);
+            self.min_y = self.min_y.min(p[1]);
+            self.max_y = self.max_y.max(p[1]);
+        }
+        
+        // Equilateralness: measure how close triangle sides are to each other
+        let l01 = (p0 - p1).norm();
+        let l12 = (p1 - p2).norm();
+        let l20 = (p2 - p0).norm();
+        let min_len = l01.min(l12).min(l20);
+        if min_len > 1e-14 {
+            let max_len = l01.max(l12).max(l20);
+            self.equil_sum += min_len / max_len;
+            self.equil_count += 1;
+        }
+        
+        // Subsample radial distances for chaos metric
+        if self.step_counter % self.subsample_rate == 0 {
+            let [m1, m2, m3] = self.masses;
+            let cm1 = (m2 * p1 + m3 * p2) / (m2 + m3);
+            let cm2 = (m1 * p0 + m3 * p2) / (m1 + m3);
+            let cm3 = (m1 * p0 + m2 * p1) / (m1 + m2);
+            self.radial_samples_1.push((p0 - cm1).norm());
+            self.radial_samples_2.push((p1 - cm2).norm());
+            self.radial_samples_3.push((p2 - cm3).norm());
+        }
+        
+        self.step_counter += 1;
+    }
+    
+    /// Finalize bounding box and populate occupancy grid.
+    /// Called after all simulation steps are processed.
+    fn finalize_grid(&mut self, positions_for_grid: &[(Vector3<f64>, Vector3<f64>, Vector3<f64>)]) {
+        let width = self.max_x - self.min_x;
+        let height = self.max_y - self.min_y;
+        
+        if width < 1e-10 || height < 1e-10 {
+            return;
+        }
+        
+        for &(p0, p1, p2) in positions_for_grid {
+            for p in [p0, p1, p2] {
+                let gx = (((p[0] - self.min_x) / width) * (GRID_SIZE - 1) as f64).round() as usize;
+                let gy = (((p[1] - self.min_y) / height) * (GRID_SIZE - 1) as f64).round() as usize;
+                let gx = gx.min(GRID_SIZE - 1);
+                let gy = gy.min(GRID_SIZE - 1);
+                self.occupancy_grid[gy][gx] = true;
+            }
+        }
+    }
+    
+    /// Compute final scores from accumulated data.
+    fn compute_scores(&self) -> AestheticScores {
+        let equilateralness = if self.equil_count > 0 {
+            self.equil_sum / self.equil_count as f64
+        } else {
+            0.0
+        };
+        
+        let chaos = self.compute_chaos_score();
+        let (density, symmetry, negative_space, golden_ratio) = self.compute_spatial_scores();
+        
+        AestheticScores {
+            chaos,
+            equilateralness,
+            golden_ratio,
+            negative_space,
+            symmetry,
+            density,
+        }
+    }
+    
+    /// Compute chaos score from subsampled radial distances using FFT.
+    fn compute_chaos_score(&self) -> f64 {
+        if self.radial_samples_1.is_empty() {
+            return 0.0;
+        }
+        
+        // Compute standard deviation of FFT magnitudes for each body
+        let sd1 = fft_std_dev(&self.radial_samples_1);
+        let sd2 = fft_std_dev(&self.radial_samples_2);
+        let sd3 = fft_std_dev(&self.radial_samples_3);
+        
+        (sd1 + sd2 + sd3) / 3.0
+    }
+    
+    /// Compute spatial scores from occupancy grid.
+    fn compute_spatial_scores(&self) -> (f64, f64, f64, f64) {
+        let (occupied, empty) = self.count_grid_cells();
+        let total = (GRID_SIZE * GRID_SIZE) as f64;
+        
+        // Density score: prefer ~35% occupancy
+        let density = {
+            let ratio = occupied as f64 / total;
+            let ideal = 0.35;
+            let tolerance = 0.35;
+            (1.0 - ((ratio - ideal).abs() / tolerance).min(1.0)).clamp(0.0, 1.0)
+        };
+        
+        // Symmetry score
+        let symmetry = self.compute_grid_symmetry();
+        
+        // Negative space score
+        let negative_space = self.compute_negative_space_score(occupied, empty);
+        
+        // Golden ratio score
+        let golden_ratio = self.compute_golden_ratio_score();
+        
+        (density, symmetry, negative_space, golden_ratio)
+    }
+    
+    fn count_grid_cells(&self) -> (usize, usize) {
+        let mut occupied = 0;
+        let mut empty = 0;
+        for row in &self.occupancy_grid {
+            for &cell in row {
+                if cell { occupied += 1; } else { empty += 1; }
+            }
+        }
+        (occupied, empty)
+    }
+    
+    fn compute_grid_symmetry(&self) -> f64 {
+        let mut h_matches = 0;
+        let mut v_matches = 0;
+        let mut total = 0;
+        
+        // Horizontal symmetry (left-right)
+        for y in 0..GRID_SIZE {
+            for x in 0..GRID_SIZE / 2 {
+                if self.occupancy_grid[y][x] == self.occupancy_grid[y][GRID_SIZE - 1 - x] {
+                    h_matches += 1;
+                }
+                total += 1;
+            }
+        }
+        
+        // Vertical symmetry (top-bottom)
+        for x in 0..GRID_SIZE {
+            for y in 0..GRID_SIZE / 2 {
+                if self.occupancy_grid[y][x] == self.occupancy_grid[GRID_SIZE - 1 - y][x] {
+                    v_matches += 1;
+                }
+            }
+        }
+        
+        if total == 0 {
+            return 0.0;
+        }
+        
+        let h_score = h_matches as f64 / total as f64;
+        let v_score = v_matches as f64 / total as f64;
+        ((h_score + v_score) / 2.0).clamp(0.0, 1.0)
+    }
+    
+    fn compute_negative_space_score(&self, occupied: usize, empty: usize) -> f64 {
+        let total = (GRID_SIZE * GRID_SIZE) as f64;
+        let occupancy_ratio = occupied as f64 / total;
+        
+        // Ideal occupancy around 40%
+        let ideal_occupancy = 0.4;
+        let occupancy_score = 1.0 - ((occupancy_ratio - ideal_occupancy).abs() / 0.4).min(1.0);
+        
+        // Find largest connected empty region
+        let mut visited = [[false; GRID_SIZE]; GRID_SIZE];
+        let mut largest_empty = 0;
+        let mut num_regions = 0;
+        
+        for y in 0..GRID_SIZE {
+            for x in 0..GRID_SIZE {
+                if !self.occupancy_grid[y][x] && !visited[y][x] {
+                    let size = flood_fill(&self.occupancy_grid, &mut visited, x, y);
+                    largest_empty = largest_empty.max(size);
+                    num_regions += 1;
+                }
+            }
+        }
+        
+        let region_size_score = if empty > 0 {
+            (largest_empty as f64 / empty as f64).min(1.0)
+        } else {
+            0.0
+        };
+        
+        let region_count_score = if num_regions > 0 {
+            (1.0 / num_regions as f64).min(1.0)
+        } else {
+            0.0
+        };
+        
+        // Edge connectivity
+        let mut edge_empty = 0;
+        for i in 0..GRID_SIZE {
+            if !self.occupancy_grid[0][i] { edge_empty += 1; }
+            if !self.occupancy_grid[GRID_SIZE - 1][i] { edge_empty += 1; }
+            if !self.occupancy_grid[i][0] { edge_empty += 1; }
+            if !self.occupancy_grid[i][GRID_SIZE - 1] { edge_empty += 1; }
+        }
+        let edge_score = (edge_empty as f64 / (4 * GRID_SIZE) as f64).min(1.0);
+        
+        let symmetry_score = self.compute_grid_symmetry();
+        
+        (occupancy_score * 0.25 + region_size_score * 0.25 + region_count_score * 0.15 
+            + edge_score * 0.15 + symmetry_score * 0.2).clamp(0.0, 1.0)
+    }
+    
+    fn compute_golden_ratio_score(&self) -> f64 {
+        const PHI: f64 = 1.618033988749895;
+        
+        let width = self.max_x - self.min_x;
+        let height = self.max_y - self.min_y;
+        if width < 1e-10 || height < 1e-10 {
+            return 0.0;
+        }
+        
+        // Count cells in each section
+        let (occupied, _) = self.count_grid_cells();
+        if occupied == 0 {
+            return 0.0;
+        }
+        
+        // Center cell concentration
+        let center_count = {
+            let mid = GRID_SIZE / 2;
+            let range = GRID_SIZE / 4;
+            let mut count = 0;
+            for y in (mid - range)..(mid + range) {
+                for x in (mid - range)..(mid + range) {
+                    if self.occupancy_grid[y][x] { count += 1; }
+                }
+            }
+            count
+        };
+        
+        let center_ratio = center_count as f64 / occupied as f64;
+        let ideal_center = 0.25;
+        let center_score = 1.0 - (center_ratio - ideal_center).abs() / 0.25;
+        
+        // Edge utilization
+        let mut uses_edges = 0u8;
+        for i in 0..GRID_SIZE {
+            if self.occupancy_grid[0][i] { uses_edges |= 1; }
+            if self.occupancy_grid[GRID_SIZE - 1][i] { uses_edges |= 2; }
+            if self.occupancy_grid[i][0] { uses_edges |= 4; }
+            if self.occupancy_grid[i][GRID_SIZE - 1] { uses_edges |= 8; }
+        }
+        let edge_score = uses_edges.count_ones() as f64 / 4.0;
+        
+        // Aspect ratio
+        let aspect = width / height;
+        let aspect_score = 1.0 - ((aspect - PHI).abs() / PHI).min(1.0);
+        
+        (center_score.max(0.0) * 0.3 + edge_score * 0.4 + aspect_score * 0.3).clamp(0.0, 1.0)
     }
 }
 
-/// Candidate trajectory with intermediate scores
+/// Flood fill to count connected empty region size.
+fn flood_fill(
+    grid: &[[bool; GRID_SIZE]; GRID_SIZE],
+    visited: &mut [[bool; GRID_SIZE]; GRID_SIZE],
+    start_x: usize,
+    start_y: usize,
+) -> usize {
+    let mut stack = vec![(start_x, start_y)];
+    let mut size = 0;
+    
+    while let Some((x, y)) = stack.pop() {
+        if x >= GRID_SIZE || y >= GRID_SIZE || visited[y][x] || grid[y][x] {
+            continue;
+        }
+        
+        visited[y][x] = true;
+        size += 1;
+        
+        if x > 0 { stack.push((x - 1, y)); }
+        if x < GRID_SIZE - 1 { stack.push((x + 1, y)); }
+        if y > 0 { stack.push((x, y - 1)); }
+        if y < GRID_SIZE - 1 { stack.push((x, y + 1)); }
+    }
+    
+    size
+}
+
+/// Compute standard deviation of FFT magnitudes.
+fn fft_std_dev(samples: &[f64]) -> f64 {
+    if samples.len() < 2 {
+        return 0.0;
+    }
+    
+    // Use the existing fourier_transform from utils
+    let spectrum = crate::utils::fourier_transform(samples);
+    let magnitudes: Vec<f64> = spectrum.iter().map(|c| c.norm()).collect();
+    
+    // Compute standard deviation
+    let n = magnitudes.len() as f64;
+    let mean = magnitudes.iter().sum::<f64>() / n;
+    let variance = magnitudes.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / n;
+    variance.sqrt()
+}
+
+// =============================================================================
+// Candidate Result
+// =============================================================================
+
+/// Aesthetic scores computed for a trajectory.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct AestheticScores {
+    pub chaos: f64,
+    pub equilateralness: f64,
+    pub golden_ratio: f64,
+    pub negative_space: f64,
+    pub symmetry: f64,
+    pub density: f64,
+}
+
+/// Result from evaluating a single candidate trajectory.
 #[derive(Clone)]
-struct Candidate {
-    bodies: Vec<Body>,
+struct CandidateResult {
     index: usize,
-    chaos_score: f64,
-    equil_score: f64,
-    golden_score: f64,
-    negative_score: f64,
-    symmetry_score: f64,
-    density_score: f64,
-    preview_score: f64,
+    initial_bodies: Vec<Body>,
+    scores: AestheticScores,
     is_valid: bool,
 }
 
-#[derive(Clone, Copy, Debug)]
-struct CandidateScores {
-    chaos: f64,
-    equilateralness: f64,
-    golden: f64,
-    negative: f64,
-    symmetry: f64,
-    density: f64,
-    preview: f64,
-}
-
-fn preview_composition_score(
-    positions: &[Vec<Vector3<f64>>],
-    preview: &PreviewRenderConfig,
-    camera: CameraConfig,
-) -> f64 {
-    if !preview.enabled || positions.is_empty() {
-        return 0.0;
-    }
-
-    let width = preview.width.max(8);
-    let height = preview.height.max(8);
-    let depth_cue = DepthCueConfig { strength: 0.0, gamma: 1.0, min_scale: 1.0 };
-    let ctx = RenderContext::new(width, height, positions, camera, depth_cue);
-    let mut accum = vec![(0.0, 0.0, 0.0, 0.0); (width * height) as usize];
-
-    let total_steps = positions[0].len();
-    let stride = preview.step_stride.max(1);
-    let neutral_color: OklabColor = (0.0, 0.0, 0.0);
-
-    for step in (0..total_steps).step_by(stride) {
-        let p0 = positions[0][step];
-        let p1 = positions[1][step];
-        let p2 = positions[2][step];
-
-        let (x0, y0, _d0) = ctx.to_pixel(p0[0], p0[1], p0[2]);
-        let (x1, y1, _d1) = ctx.to_pixel(p1[0], p1[1], p1[2]);
-        let (x2, y2, _d2) = ctx.to_pixel(p2[0], p2[1], p2[2]);
-
-        draw_line_segment_aa_alpha(
-            &mut accum,
-            width,
-            height,
-            x0,
-            y0,
-            x1,
-            y1,
-            neutral_color,
-            neutral_color,
-            1.0,
-            1.0,
-            1.0,
-        );
-        draw_line_segment_aa_alpha(
-            &mut accum,
-            width,
-            height,
-            x1,
-            y1,
-            x2,
-            y2,
-            neutral_color,
-            neutral_color,
-            1.0,
-            1.0,
-            1.0,
-        );
-        draw_line_segment_aa_alpha(
-            &mut accum,
-            width,
-            height,
-            x2,
-            y2,
-            x0,
-            y0,
-            neutral_color,
-            neutral_color,
-            1.0,
-            1.0,
-            1.0,
-        );
-    }
-
-    preview_score_from_alpha(&accum, width as usize, height as usize)
-}
-
-fn preview_score_from_alpha(buffer: &[(f64, f64, f64, f64)], width: usize, height: usize) -> f64 {
-    if buffer.is_empty() || width == 0 || height == 0 {
-        return 0.0;
-    }
-
-    let threshold = 1e-4;
-    let total = (width * height) as f64;
-    let occupied = buffer.iter().filter(|p| p.3 > threshold).count() as f64;
-    let ratio = occupied / total.max(1.0);
-
-    let ideal = 0.25;
-    let density_score = (1.0 - ((ratio - ideal).abs() / ideal).min(1.0)).clamp(0.0, 1.0);
-
-    let mut sym_lr = 0.0;
-    let mut count_lr = 0usize;
-    for y in 0..height {
-        for x in 0..width / 2 {
-            let a = buffer[y * width + x].3;
-            let b = buffer[y * width + (width - 1 - x)].3;
-            let denom = a.max(b).max(1e-6);
-            sym_lr += 1.0 - ((a - b).abs() / denom).min(1.0);
-            count_lr += 1;
+impl CandidateResult {
+    fn invalid(index: usize, bodies: Vec<Body>) -> Self {
+        Self {
+            index,
+            initial_bodies: bodies,
+            scores: AestheticScores::default(),
+            is_valid: false,
         }
     }
-    let sym_lr_score = if count_lr > 0 { sym_lr / count_lr as f64 } else { 0.0 };
-
-    let mut sym_tb = 0.0;
-    let mut count_tb = 0usize;
-    for y in 0..height / 2 {
-        for x in 0..width {
-            let a = buffer[y * width + x].3;
-            let b = buffer[(height - 1 - y) * width + x].3;
-            let denom = a.max(b).max(1e-6);
-            sym_tb += 1.0 - ((a - b).abs() / denom).min(1.0);
-            count_tb += 1;
-        }
-    }
-    let sym_tb_score = if count_tb > 0 { sym_tb / count_tb as f64 } else { 0.0 };
-
-    let symmetry_score = (sym_lr_score + sym_tb_score) * 0.5;
-    (0.55 * symmetry_score + 0.45 * density_score).clamp(0.0, 1.0)
 }
 
-/// Score a candidate at a given number of steps
-fn score_candidate(
-    bodies: &[Body],
-    steps: usize,
+// =============================================================================
+// Single Candidate Evaluation
+// =============================================================================
+
+/// Evaluate a single candidate trajectory.
+///
+/// Runs full simulation, computes scores incrementally, returns compact result.
+fn evaluate_candidate(
+    index: usize,
+    bodies: Vec<Body>,
+    num_steps: usize,
     escape_threshold: f64,
-    preview: &PreviewRenderConfig,
-    camera: CameraConfig,
-) -> Option<CandidateScores> {
-    // Quick energy/momentum filter
-    let e = calculate_total_energy(bodies);
-    let ang = calculate_total_angular_momentum(bodies).norm();
-    if e > 10.0 || ang < 10.0 {
-        return None;
+    escape_check_interval: usize,
+) -> CandidateResult {
+    // Quick energy/momentum pre-filter
+    let energy = calculate_total_energy(&bodies);
+    let angular_momentum = calculate_total_angular_momentum(&bodies).norm();
+    if energy > 10.0 || angular_momentum < 10.0 {
+        return CandidateResult::invalid(index, bodies);
     }
-
-    // Run simulation
-    let sim_result = get_positions(bodies.to_vec(), steps);
     
-    // Escape check
-    if is_definitely_escaping(&sim_result.final_bodies, escape_threshold) {
-        return None;
+    // Initialize simulation state
+    let mut sim_bodies = bodies.clone();
+    shift_bodies_to_com(&mut sim_bodies);
+    let dt = constants::DEFAULT_DT;
+    
+    // Initialize streaming scorer
+    let masses = [sim_bodies[0].mass, sim_bodies[1].mass, sim_bodies[2].mass];
+    let mut scorer = StreamingScorer::new(masses, num_steps);
+    
+    // Store subsampled positions for grid computation
+    let grid_subsample_rate = (num_steps / 1000).max(1);
+    let mut grid_positions: Vec<(Vector3<f64>, Vector3<f64>, Vector3<f64>)> = 
+        Vec::with_capacity(num_steps / grid_subsample_rate + 1);
+    
+    // Warmup phase (same number of steps as recording phase)
+    for _ in 0..num_steps {
+        verlet_step(&mut sim_bodies, dt);
     }
-
-    // Calculate scores
-    let m1 = bodies[0].mass;
-    let m2 = bodies[1].mass;
-    let m3 = bodies[2].mass;
-    let chaos = non_chaoticness(m1, m2, m3, &sim_result.positions);
-    let equil = equilateralness_score(&sim_result.positions);
-    let golden = golden_ratio_composition_score(&sim_result.positions);
-    let negative = negative_space_score(&sim_result.positions);
-    let symmetry = symmetry_score(&sim_result.positions);
-    let density = density_balance_score(&sim_result.positions);
-    let preview_score = if preview.enabled {
-        preview_composition_score(&sim_result.positions, preview, camera)
-    } else {
-        0.0
-    };
-
-    Some(CandidateScores {
-        chaos,
-        equilateralness: equil,
-        golden,
-        negative,
-        symmetry,
-        density,
-        preview: preview_score,
-    })
+    
+    // Recording phase with streaming scoring
+    let mut recording_bodies = sim_bodies.clone();
+    for step in 0..num_steps {
+        let p0 = recording_bodies[0].position;
+        let p1 = recording_bodies[1].position;
+        let p2 = recording_bodies[2].position;
+        
+        // Update streaming scorer
+        scorer.update(p0, p1, p2);
+        
+        // Subsample for grid
+        if step % grid_subsample_rate == 0 {
+            grid_positions.push((p0, p1, p2));
+        }
+        
+        // Integration step
+        verlet_step(&mut recording_bodies, dt);
+        
+        // Periodic escape check
+        if step % escape_check_interval == 0
+            && step > 0
+            && is_escaping(&recording_bodies, escape_threshold)
+        {
+            return CandidateResult::invalid(index, bodies);
+        }
+    }
+    
+    // Final escape check
+    if is_escaping(&recording_bodies, escape_threshold) {
+        return CandidateResult::invalid(index, bodies);
+    }
+    
+    // Finalize grid and compute scores
+    scorer.finalize_grid(&grid_positions);
+    let scores = scorer.compute_scores();
+    
+    CandidateResult {
+        index,
+        initial_bodies: bodies,
+        scores,
+        is_valid: true,
+    }
 }
 
-/// Select top N candidates by weighted score
-fn select_top_candidates(
-    candidates: &mut [Candidate],
+/// Basic Verlet integration step (inlined for performance).
+#[inline]
+fn verlet_step(bodies: &mut [Body], dt: f64) {
+    // Store positions and masses
+    let positions: [Vector3<f64>; 3] = [
+        bodies[0].position,
+        bodies[1].position,
+        bodies[2].position,
+    ];
+    let masses: [f64; 3] = [bodies[0].mass, bodies[1].mass, bodies[2].mass];
+    
+    // Compute accelerations
+    let mut accelerations = [Vector3::zeros(); 3];
+    for i in 0..3 {
+        for j in 0..3 {
+            if i != j {
+                let dir = positions[i] - positions[j];
+                let d = dir.norm();
+                if d > 1e-10 {
+                    accelerations[i] -= G * masses[j] * dir / d.powi(3);
+                }
+            }
+        }
+    }
+    
+    // Update positions
+    for (i, body) in bodies.iter_mut().enumerate() {
+        body.position += body.velocity * dt + 0.5 * accelerations[i] * dt * dt;
+    }
+    
+    // Recompute accelerations at new positions
+    let new_positions: [Vector3<f64>; 3] = [
+        bodies[0].position,
+        bodies[1].position,
+        bodies[2].position,
+    ];
+    
+    let mut new_accelerations = [Vector3::zeros(); 3];
+    for i in 0..3 {
+        for j in 0..3 {
+            if i != j {
+                let dir = new_positions[i] - new_positions[j];
+                let d = dir.norm();
+                if d > 1e-10 {
+                    new_accelerations[i] -= G * masses[j] * dir / d.powi(3);
+                }
+            }
+        }
+    }
+    
+    // Update velocities
+    for (i, body) in bodies.iter_mut().enumerate() {
+        body.velocity += 0.5 * (accelerations[i] + new_accelerations[i]) * dt;
+    }
+}
+
+/// Check if any body is escaping the system.
+#[inline]
+fn is_escaping(bodies: &[Body], threshold: f64) -> bool {
+    let mut local = bodies.to_vec();
+    shift_bodies_to_com(&mut local);
+    
+    for (i, bi) in local.iter().enumerate() {
+        let kinetic = constants::KINETIC_ENERGY_FACTOR * bi.mass * bi.velocity.norm_squared();
+        
+        let mut potential = 0.0;
+        for (j, bj) in local.iter().enumerate() {
+            if i != j {
+                let d = (bi.position - bj.position).norm();
+                if d > 1e-12 {
+                    potential += -G * bi.mass * bj.mass / d;
+                }
+            }
+        }
+        
+        if kinetic + potential > threshold {
+            return true;
+        }
+    }
+    
+    false
+}
+
+// =============================================================================
+// Borda Ranking
+// =============================================================================
+
+/// Assign Borda points to candidates based on a metric.
+/// Higher is better when `higher_is_better` is true.
+fn assign_borda_points(values: &[(f64, usize)], higher_is_better: bool) -> Vec<usize> {
+    let mut sorted = values.to_vec();
+    if higher_is_better {
+        sorted.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
+    } else {
+        sorted.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
+    }
+    
+    let n = sorted.len();
+    let mut points = vec![0usize; n];
+    for (rank, (_, original_index)) in sorted.into_iter().enumerate() {
+        points[original_index] = n - rank;
+    }
+    
+    points
+}
+
+/// Rank candidates using weighted Borda scoring and return the best one.
+fn select_best_by_borda(
+    candidates: &[CandidateResult],
     weights: &AestheticWeights,
-    keep_count: usize,
-) -> Vec<Candidate> {
-    // Only consider valid candidates
-    let valid_candidates: Vec<_> = candidates.iter()
-        .filter(|c| c.is_valid)
-        .collect();
+) -> (usize, TrajectoryResult) {
+    let n = candidates.len();
     
-    if valid_candidates.is_empty() {
-        return vec![];
-    }
-
-    fn assign(vals: Vec<(f64, usize)>, higher_is_better: bool) -> Vec<usize> {
-        let mut v = vals;
-        if higher_is_better {
-            v.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
-        } else {
-            v.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
+    // Extract values for each metric
+    let chaos_vals: Vec<_> = candidates.iter().enumerate()
+        .map(|(i, c)| (c.scores.chaos, i)).collect();
+    let equil_vals: Vec<_> = candidates.iter().enumerate()
+        .map(|(i, c)| (c.scores.equilateralness, i)).collect();
+    let golden_vals: Vec<_> = candidates.iter().enumerate()
+        .map(|(i, c)| (c.scores.golden_ratio, i)).collect();
+    let negative_vals: Vec<_> = candidates.iter().enumerate()
+        .map(|(i, c)| (c.scores.negative_space, i)).collect();
+    let symmetry_vals: Vec<_> = candidates.iter().enumerate()
+        .map(|(i, c)| (c.scores.symmetry, i)).collect();
+    let density_vals: Vec<_> = candidates.iter().enumerate()
+        .map(|(i, c)| (c.scores.density, i)).collect();
+    
+    // Assign Borda points (chaos: lower is better, others: higher is better)
+    let chaos_pts = assign_borda_points(&chaos_vals, false);
+    let equil_pts = assign_borda_points(&equil_vals, true);
+    let golden_pts = if weights.golden_ratio > 0.0 {
+        assign_borda_points(&golden_vals, true)
+    } else {
+        vec![0; n]
+    };
+    let negative_pts = if weights.negative_space > 0.0 {
+        assign_borda_points(&negative_vals, true)
+    } else {
+        vec![0; n]
+    };
+    let symmetry_pts = if weights.symmetry > 0.0 {
+        assign_borda_points(&symmetry_vals, true)
+    } else {
+        vec![0; n]
+    };
+    let density_pts = if weights.density > 0.0 {
+        assign_borda_points(&density_vals, true)
+    } else {
+        vec![0; n]
+    };
+    
+    // Calculate weighted scores and find best
+    let mut best_idx = 0;
+    let mut best_weighted = f64::MIN;
+    
+    for i in 0..n {
+        let weighted = weights.chaos * chaos_pts[i] as f64
+            + weights.equilateralness * equil_pts[i] as f64
+            + weights.golden_ratio * golden_pts[i] as f64
+            + weights.negative_space * negative_pts[i] as f64
+            + weights.symmetry * symmetry_pts[i] as f64
+            + weights.density * density_pts[i] as f64;
+        
+        if weighted > best_weighted {
+            best_weighted = weighted;
+            best_idx = i;
         }
-        let n = v.len();
-        let mut out = vec![0; n];
-        for (r, (_, i)) in v.into_iter().enumerate() {
-            out[i] = n - r;
-        }
-        out
     }
-
-    // Borda point assignment
-    let n = valid_candidates.len();
-    let chaos_points = assign(
-        valid_candidates.iter().enumerate().map(|(i, c)| (c.chaos_score, i)).collect(),
-        false,
-    );
-    let equil_points = assign(
-        valid_candidates.iter().enumerate().map(|(i, c)| (c.equil_score, i)).collect(),
-        true,
-    );
-    let golden_points = if weights.golden_ratio > 0.0 {
-        assign(
-            valid_candidates.iter().enumerate().map(|(i, c)| (c.golden_score, i)).collect(),
-            true,
-        )
-    } else {
-        vec![0; n]
+    
+    let best = &candidates[best_idx];
+    let result = TrajectoryResult {
+        chaos: best.scores.chaos,
+        equilateralness: best.scores.equilateralness,
+        golden_ratio: best.scores.golden_ratio,
+        negative_space: best.scores.negative_space,
+        symmetry: best.scores.symmetry,
+        density: best.scores.density,
+        chaos_pts: chaos_pts[best_idx],
+        equil_pts: equil_pts[best_idx],
+        total_score: chaos_pts[best_idx] + equil_pts[best_idx] 
+            + golden_pts[best_idx] + negative_pts[best_idx]
+            + symmetry_pts[best_idx] + density_pts[best_idx],
+        total_score_weighted: best_weighted,
     };
-    let negative_points = if weights.negative_space > 0.0 {
-        assign(
-            valid_candidates.iter().enumerate().map(|(i, c)| (c.negative_score, i)).collect(),
-            true,
-        )
-    } else {
-        vec![0; n]
-    };
-    let symmetry_points = if weights.symmetry > 0.0 {
-        assign(
-            valid_candidates.iter().enumerate().map(|(i, c)| (c.symmetry_score, i)).collect(),
-            true,
-        )
-    } else {
-        vec![0; n]
-    };
-    let density_points = if weights.density > 0.0 {
-        assign(
-            valid_candidates.iter().enumerate().map(|(i, c)| (c.density_score, i)).collect(),
-            true,
-        )
-    } else {
-        vec![0; n]
-    };
-    let preview_points = if weights.preview > 0.0 {
-        assign(
-            valid_candidates.iter().enumerate().map(|(i, c)| (c.preview_score, i)).collect(),
-            true,
-        )
-    } else {
-        vec![0; n]
-    };
-
-    // Calculate weighted scores
-    let mut scored: Vec<_> = valid_candidates
-        .iter()
-        .enumerate()
-        .map(|(i, c)| {
-            let weighted = weights.chaos * chaos_points[i] as f64
-                + weights.equilateralness * equil_points[i] as f64
-                + weights.golden_ratio * golden_points[i] as f64
-                + weights.negative_space * negative_points[i] as f64
-                + weights.symmetry * symmetry_points[i] as f64
-                + weights.density * density_points[i] as f64
-                + weights.preview * preview_points[i] as f64;
-            ((**c).clone(), weighted)
-        })
-        .collect();
-
-    // Sort by weighted score (descending)
-    scored.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
-
-    // Return top candidates
-    scored.into_iter()
-        .take(keep_count)
-        .map(|(c, _)| c)
-        .collect()
+    
+    (best.index, result)
 }
 
-/// Hierarchical Borda selection algorithm
+// =============================================================================
+// Main Entry Point
+// =============================================================================
+
+/// Generate random initial conditions for a 3-body system.
+fn generate_random_bodies(rng: &mut Sha3RandomByteStream) -> Vec<Body> {
+    let mut bodies = vec![
+        Body::new(
+            rng.random_mass(),
+            Vector3::new(rng.random_location(), rng.random_location(), rng.random_location()),
+            Vector3::new(rng.random_velocity(), rng.random_velocity(), rng.random_velocity()),
+        ),
+        Body::new(
+            rng.random_mass(),
+            Vector3::new(rng.random_location(), rng.random_location(), rng.random_location()),
+            Vector3::new(rng.random_velocity(), rng.random_velocity(), rng.random_velocity()),
+        ),
+        Body::new(
+            rng.random_mass(),
+            Vector3::new(rng.random_location(), rng.random_location(), rng.random_location()),
+            Vector3::new(rng.random_velocity(), rng.random_velocity(), rng.random_velocity()),
+        ),
+    ];
+    shift_bodies_to_com(&mut bodies);
+    bodies
+}
+
+/// Exhaustive single-stage Borda selection.
 ///
-/// This function implements a multi-stage filtering approach:
-/// 1. Generate all random candidates
-/// 2. For each stage, run shorter simulations and eliminate poor performers
-/// 3. Final stage runs full simulation on survivors
+/// Evaluates all candidates with full simulation and returns the best trajectory.
 ///
-/// Returns the best trajectory and its result.
-pub fn select_best_trajectory_hierarchical(
+/// # Arguments
+/// * `rng` - Random number generator for initial conditions
+/// * `num_steps` - Number of simulation steps per candidate
+/// * `escape_threshold` - Energy threshold for escape detection
+/// * `config` - Borda search configuration
+/// * `aesthetic` - Aesthetic weights for scoring
+///
+/// # Returns
+/// Tuple of (best initial conditions, trajectory result with scores)
+pub fn select_best_trajectory(
     rng: &mut Sha3RandomByteStream,
-    num_sims: usize,
-    final_steps: usize,
+    num_steps: usize,
     escape_threshold: f64,
-    config: &HierarchicalBordaConfig,
+    config: &BordaConfig,
     aesthetic: &BordaAestheticConfig,
 ) -> (Vec<Body>, TrajectoryResult) {
-    config.validate().expect("Invalid hierarchical Borda config");
-
-    info!("STAGE 1/7: Hierarchical Borda search over {} random orbits...", num_sims);
-    info!("   Using {} elimination stages", config.num_stages);
-
-    // Generate all random initial conditions
-    let mut candidates: Vec<Candidate> = (0..num_sims)
-        .map(|i| {
-            let mut bodies = vec![
-                Body::new(
-                    rng.random_mass(),
-                    Vector3::new(rng.random_location(), rng.random_location(), rng.random_location()),
-                    Vector3::new(rng.random_velocity(), rng.random_velocity(), rng.random_velocity()),
-                ),
-                Body::new(
-                    rng.random_mass(),
-                    Vector3::new(rng.random_location(), rng.random_location(), rng.random_location()),
-                    Vector3::new(rng.random_velocity(), rng.random_velocity(), rng.random_velocity()),
-                ),
-                Body::new(
-                    rng.random_mass(),
-                    Vector3::new(rng.random_location(), rng.random_location(), rng.random_location()),
-                    Vector3::new(rng.random_velocity(), rng.random_velocity(), rng.random_velocity()),
-                ),
-            ];
-            shift_bodies_to_com(&mut bodies);
-            Candidate {
-                bodies,
-                index: i,
-                chaos_score: 0.0,
-                equil_score: 0.0,
-                golden_score: 0.0,
-                negative_score: 0.0,
-                symmetry_score: 0.0,
-                density_score: 0.0,
-                preview_score: 0.0,
-                is_valid: true,
-            }
-        })
+    info!(
+        "Exhaustive Borda search: {} candidates × {} steps",
+        config.num_candidates, num_steps
+    );
+    
+    // Generate all initial conditions upfront
+    let start_gen = Instant::now();
+    let candidates: Vec<Vec<Body>> = (0..config.num_candidates)
+        .map(|_| generate_random_bodies(rng))
         .collect();
-
-    // Process each stage
-    for stage in 0..config.num_stages {
-        let steps = (final_steps as f64 * config.stage_step_fractions[stage]).round() as usize;
-        let steps = steps.max(100); // Minimum 100 steps
-
-        let active_count = candidates.iter().filter(|c| c.is_valid).count();
-        info!("   Stage {}/{}: {} steps, {} candidates", 
-              stage + 1, config.num_stages, steps, active_count);
-
-        // Score candidates in parallel
-        let progress = AtomicUsize::new(0);
-        let chunk_size = (active_count / 10).max(1);
-
-        if config.parallel {
-            candidates.par_iter_mut().for_each(|candidate| {
-                if !candidate.is_valid {
-                    return;
-                }
-
-                let count = progress.fetch_add(1, Ordering::Relaxed) + 1;
-                if count % chunk_size == 0 {
-                    let pct = (count as f64 / active_count as f64) * 100.0;
-                    info!("      Progress: {:.0}%", pct);
-                }
-
-                if let Some(scores) = score_candidate(
-                    &candidate.bodies,
-                    steps,
+    info!(
+        "Generated {} initial conditions in {:.2}s",
+        candidates.len(),
+        start_gen.elapsed().as_secs_f64()
+    );
+    
+    // Evaluate all candidates
+    let progress = AtomicUsize::new(0);
+    let discarded = AtomicUsize::new(0);
+    let start_eval = Instant::now();
+    
+    let results: Vec<CandidateResult> = if config.parallel {
+        candidates
+            .into_par_iter()
+            .enumerate()
+            .map(|(index, bodies)| {
+                let result = evaluate_candidate(
+                    index,
+                    bodies,
+                    num_steps,
                     escape_threshold,
-                    &aesthetic.preview,
-                    aesthetic.camera,
-                ) {
-                    candidate.chaos_score = scores.chaos;
-                    candidate.equil_score = scores.equilateralness;
-                    candidate.golden_score = scores.golden;
-                    candidate.negative_score = scores.negative;
-                    candidate.symmetry_score = scores.symmetry;
-                    candidate.density_score = scores.density;
-                    candidate.preview_score = scores.preview;
-                } else {
-                    candidate.is_valid = false;
+                    config.escape_check_interval,
+                );
+                
+                if !result.is_valid {
+                    discarded.fetch_add(1, Ordering::Relaxed);
                 }
-            });
-        } else {
-            for candidate in candidates.iter_mut() {
-                if !candidate.is_valid {
-                    continue;
+                
+                // Progress reporting
+                let done = progress.fetch_add(1, Ordering::Relaxed) + 1;
+                if done % config.progress_interval == 0 {
+                    let elapsed = start_eval.elapsed().as_secs_f64();
+                    let rate = done as f64 / elapsed;
+                    let eta = (config.num_candidates - done) as f64 / rate;
+                    info!(
+                        "   Progress: {}/{} ({:.1}%), {:.1} cand/s, ETA: {:.0}s",
+                        done,
+                        config.num_candidates,
+                        done as f64 / config.num_candidates as f64 * 100.0,
+                        rate,
+                        eta
+                    );
                 }
-
-                if let Some(scores) = score_candidate(
-                    &candidate.bodies,
-                    steps,
+                
+                result
+            })
+            .collect()
+    } else {
+        candidates
+            .into_iter()
+            .enumerate()
+            .map(|(index, bodies)| {
+                let result = evaluate_candidate(
+                    index,
+                    bodies,
+                    num_steps,
                     escape_threshold,
-                    &aesthetic.preview,
-                    aesthetic.camera,
-                ) {
-                    candidate.chaos_score = scores.chaos;
-                    candidate.equil_score = scores.equilateralness;
-                    candidate.golden_score = scores.golden;
-                    candidate.negative_score = scores.negative;
-                    candidate.symmetry_score = scores.symmetry;
-                    candidate.density_score = scores.density;
-                    candidate.preview_score = scores.preview;
-                } else {
-                    candidate.is_valid = false;
+                    config.escape_check_interval,
+                );
+                
+                if !result.is_valid {
+                    discarded.fetch_add(1, Ordering::Relaxed);
                 }
-            }
-        }
-
-        // Count valid candidates
-        let valid_count = candidates.iter().filter(|c| c.is_valid).count();
-        if valid_count == 0 {
-            panic!("No valid orbits found after stage {} filtering!", stage + 1);
-        }
-
-        // Eliminate poor performers (except in final stage)
-        if stage < config.num_stages - 1 {
-            let keep_count = ((valid_count as f64 * config.stage_survival_rates[stage]).round() as usize)
-                .max(config.min_survivors_per_stage);
-
-            let survivors = select_top_candidates(&mut candidates, &aesthetic.weights, keep_count);
-            
-            // Mark non-survivors as invalid
-            let survivor_indices: std::collections::HashSet<_> = survivors.iter()
-                .map(|c| c.index)
-                .collect();
-            
-            for candidate in candidates.iter_mut() {
-                if !survivor_indices.contains(&candidate.index) {
-                    candidate.is_valid = false;
+                
+                let done = progress.fetch_add(1, Ordering::Relaxed) + 1;
+                if done % config.progress_interval == 0 {
+                    let elapsed = start_eval.elapsed().as_secs_f64();
+                    let rate = done as f64 / elapsed;
+                    let eta = (config.num_candidates - done) as f64 / rate;
+                    info!(
+                        "   Progress: {}/{} ({:.1}%), {:.1} cand/s, ETA: {:.0}s",
+                        done,
+                        config.num_candidates,
+                        done as f64 / config.num_candidates as f64 * 100.0,
+                        rate,
+                        eta
+                    );
                 }
-            }
-
-            let eliminated = valid_count - keep_count.min(valid_count);
-            info!("      Eliminated {} candidates, {} remain", eliminated, survivors.len());
-        }
-    }
-
-    // Final selection
-    let valid_candidates: Vec<_> = candidates.iter()
-        .filter(|c| c.is_valid)
-        .collect();
-
-    if valid_candidates.is_empty() {
-        panic!("No valid orbits found after all filtering stages!");
-    }
-
-    // Get the best candidate
-    let survivors = select_top_candidates(&mut candidates.clone(), &aesthetic.weights, 1);
-    let best = &survivors[0];
-
-    // Create final result
-    let result = TrajectoryResult {
-        chaos: best.chaos_score,
-        equilateralness: best.equil_score,
-        golden_ratio: best.golden_score,
-        negative_space: best.negative_score,
-        symmetry: best.symmetry_score,
-        density: best.density_score,
-        preview_score: best.preview_score,
-        chaos_pts: 0, // Will be calculated by caller if needed
-        equil_pts: 0,
-        total_score: 0,
-        total_score_weighted: aesthetic.weights.chaos * best.chaos_score
-            + aesthetic.weights.equilateralness * best.equil_score
-            + aesthetic.weights.golden_ratio * best.golden_score
-            + aesthetic.weights.negative_space * best.negative_score
-            + aesthetic.weights.symmetry * best.symmetry_score
-            + aesthetic.weights.density * best.density_score
-            + aesthetic.weights.preview * best.preview_score,
+                
+                result
+            })
+            .collect()
     };
-
-    info!("   => Chosen orbit idx {} with weighted score {:.3}", 
-          best.index, result.total_score_weighted);
-
-    (best.bodies.clone(), result)
+    
+    let total_time = start_eval.elapsed().as_secs_f64();
+    let discard_count = discarded.load(Ordering::Relaxed);
+    info!(
+        "Evaluation complete in {:.1}s ({:.1} candidates/s)",
+        total_time,
+        config.num_candidates as f64 / total_time
+    );
+    info!(
+        "   Discarded {}/{} ({:.1}%) due to filters or escapes",
+        discard_count,
+        config.num_candidates,
+        discard_count as f64 / config.num_candidates as f64 * 100.0
+    );
+    
+    // Filter valid results
+    let valid_results: Vec<CandidateResult> = results
+        .into_iter()
+        .filter(|r| r.is_valid)
+        .collect();
+    
+    if valid_results.is_empty() {
+        panic!("No valid trajectories found! Try adjusting parameters.");
+    }
+    
+    info!("Valid candidates: {}", valid_results.len());
+    
+    // Borda ranking
+    let (best_idx, result) = select_best_by_borda(&valid_results, &aesthetic.weights);
+    let best_bodies = valid_results[best_idx].initial_bodies.clone();
+    
+    info!(
+        "   => Best candidate: original_idx={}, weighted_score={:.3}",
+        valid_results[best_idx].index,
+        result.total_score_weighted
+    );
+    
+    (best_bodies, result)
 }
+
+// =============================================================================
+// Tests
+// =============================================================================
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn make_candidate(bodies: Vec<Body>, index: usize, chaos: f64, equil: f64, valid: bool) -> Candidate {
-        Candidate {
-            bodies,
-            index,
-            chaos_score: chaos,
-            equil_score: equil,
-            golden_score: 0.0,
-            negative_score: 0.0,
-            symmetry_score: 0.0,
-            density_score: 0.0,
-            preview_score: 0.0,
-            is_valid: valid,
-        }
+    #[test]
+    fn test_borda_config_default() {
+        let config = BordaConfig::default();
+        assert_eq!(config.num_candidates, 100_000);
+        assert!(config.parallel);
     }
 
     #[test]
-    fn test_hierarchical_config_default() {
-        let config = HierarchicalBordaConfig::default();
-        assert_eq!(config.num_stages, 3);
-        assert!(config.validate().is_ok());
+    fn test_borda_config_fast() {
+        let config = BordaConfig::fast();
+        assert_eq!(config.num_candidates, 500);
     }
 
     #[test]
-    fn test_hierarchical_config_fast() {
-        let config = HierarchicalBordaConfig::fast();
-        assert_eq!(config.num_stages, 2);
-        assert!(config.validate().is_ok());
+    fn test_streaming_scorer_creation() {
+        let scorer = StreamingScorer::new([100.0, 100.0, 100.0], 1_000_000);
+        assert_eq!(scorer.equil_sum, 0.0);
+        assert_eq!(scorer.equil_count, 0);
     }
 
     #[test]
-    fn test_hierarchical_config_aggressive() {
-        let config = HierarchicalBordaConfig::aggressive();
-        assert_eq!(config.num_stages, 4);
-        assert!(config.validate().is_ok());
-    }
-
-    #[test]
-    fn test_config_validation_empty_stages() {
-        let config = HierarchicalBordaConfig {
-            num_stages: 0,
-            stage_step_fractions: vec![],
-            stage_survival_rates: vec![],
-            min_survivors_per_stage: 5,
-            parallel: true,
-        };
-        assert!(config.validate().is_err());
-    }
-
-    #[test]
-    fn test_config_validation_mismatched_lengths() {
-        let config = HierarchicalBordaConfig {
-            num_stages: 2,
-            stage_step_fractions: vec![0.1], // Wrong length
-            stage_survival_rates: vec![0.5, 1.0],
-            min_survivors_per_stage: 5,
-            parallel: true,
-        };
-        assert!(config.validate().is_err());
-    }
-
-    #[test]
-    fn test_config_validation_invalid_fraction() {
-        let config = HierarchicalBordaConfig {
-            num_stages: 2,
-            stage_step_fractions: vec![-0.1, 1.0], // Invalid negative
-            stage_survival_rates: vec![0.5, 1.0],
-            min_survivors_per_stage: 5,
-            parallel: true,
-        };
-        assert!(config.validate().is_err());
-    }
-
-    #[test]
-    fn test_config_validation_final_stage_not_full() {
-        let config = HierarchicalBordaConfig {
-            num_stages: 2,
-            stage_step_fractions: vec![0.1, 0.5], // Final not 1.0
-            stage_survival_rates: vec![0.5, 1.0],
-            min_survivors_per_stage: 5,
-            parallel: true,
-        };
-        assert!(config.validate().is_err());
-    }
-
-    #[test]
-    fn test_candidate_creation() {
-        let candidate = make_candidate(vec![], 42, 0.5, 0.8, true);
-        assert_eq!(candidate.index, 42);
-        assert!(candidate.is_valid);
-    }
-
-    #[test]
-    fn test_select_top_candidates_empty() {
-        let mut candidates: Vec<Candidate> = vec![];
-        let weights = AestheticWeights::default();
-        let result = select_top_candidates(&mut candidates, &weights, 5);
-        assert!(result.is_empty());
-    }
-
-    #[test]
-    fn test_select_top_candidates_all_invalid() {
-        let mut candidates = vec![
-            make_candidate(vec![], 0, 0.5, 0.5, false),
-            make_candidate(vec![], 1, 0.3, 0.7, false),
-        ];
-        let weights = AestheticWeights::default();
-        let result = select_top_candidates(&mut candidates, &weights, 5);
-        assert!(result.is_empty());
-    }
-
-    #[test]
-    fn test_select_top_candidates_basic() {
-        let body = Body::new(
-            100.0,
-            Vector3::new(0.0, 0.0, 0.0),
-            Vector3::new(0.0, 0.0, 0.0),
-        );
+    fn test_streaming_scorer_update() {
+        let mut scorer = StreamingScorer::new([100.0, 100.0, 100.0], 1000);
+        let p0 = Vector3::new(1.0, 0.0, 0.0);
+        let p1 = Vector3::new(0.0, 1.0, 0.0);
+        let p2 = Vector3::new(0.0, 0.0, 1.0);
         
-        let mut candidates = vec![
-            make_candidate(vec![body.clone()], 0, 0.9, 0.1, true),
-            make_candidate(vec![body.clone()], 1, 0.1, 0.9, true),
-            make_candidate(vec![body.clone()], 2, 0.5, 0.5, true),
-        ];
-
-        // With equal weights, candidate 1 should win (best at both)
-        let weights = AestheticWeights::default();
-        let result = select_top_candidates(&mut candidates, &weights, 1);
-        assert_eq!(result.len(), 1);
-        assert_eq!(result[0].index, 1);
+        scorer.update(p0, p1, p2);
+        
+        assert!(scorer.equil_count > 0);
+        assert!(scorer.min_x <= 0.0);
+        assert!(scorer.max_x >= 1.0);
     }
 
     #[test]
-    fn test_select_top_candidates_chaos_weighted() {
-        let body = Body::new(
-            100.0,
-            Vector3::new(0.0, 0.0, 0.0),
-            Vector3::new(0.0, 0.0, 0.0),
-        );
+    fn test_flood_fill() {
+        let grid = [[false; GRID_SIZE]; GRID_SIZE];
+        let mut visited = [[false; GRID_SIZE]; GRID_SIZE];
         
-        let mut candidates = vec![
-            make_candidate(vec![body.clone()], 0, 0.1, 0.1, true),
-            make_candidate(vec![body.clone()], 1, 0.9, 0.9, true),
-        ];
-
-        // Heavy chaos weight should favor candidate 0
-        let weights = AestheticWeights {
-            chaos: 10.0,
-            equilateralness: 1.0,
-            ..AestheticWeights::default()
-        };
-        let result = select_top_candidates(&mut candidates, &weights, 1);
-        assert_eq!(result.len(), 1);
-        assert_eq!(result[0].index, 0);
+        let size = flood_fill(&grid, &mut visited, 0, 0);
+        assert_eq!(size, GRID_SIZE * GRID_SIZE);
     }
 
     #[test]
-    fn test_select_top_candidates_equil_weighted() {
-        let body = Body::new(
-            100.0,
-            Vector3::new(0.0, 0.0, 0.0),
-            Vector3::new(0.0, 0.0, 0.0),
-        );
+    fn test_assign_borda_points() {
+        let values = vec![(0.5, 0), (0.3, 1), (0.8, 2)];
         
-        let mut candidates = vec![
-            make_candidate(vec![body.clone()], 0, 0.1, 0.1, true),
-            make_candidate(vec![body.clone()], 1, 0.9, 0.9, true),
-        ];
-
-        // Heavy equil weight should favor candidate 1
-        let weights = AestheticWeights {
-            chaos: 1.0,
-            equilateralness: 10.0,
-            ..AestheticWeights::default()
-        };
-        let result = select_top_candidates(&mut candidates, &weights, 1);
-        assert_eq!(result.len(), 1);
-        assert_eq!(result[0].index, 1);
+        // Higher is better
+        let points = assign_borda_points(&values, true);
+        assert_eq!(points[2], 3); // 0.8 is best
+        assert_eq!(points[0], 2); // 0.5 is second
+        assert_eq!(points[1], 1); // 0.3 is worst
+        
+        // Lower is better
+        let points = assign_borda_points(&values, false);
+        assert_eq!(points[1], 3); // 0.3 is best
+        assert_eq!(points[0], 2); // 0.5 is second
+        assert_eq!(points[2], 1); // 0.8 is worst
     }
 
     #[test]
-    fn test_select_top_candidates_keep_multiple() {
-        let body = Body::new(
-            100.0,
-            Vector3::new(0.0, 0.0, 0.0),
-            Vector3::new(0.0, 0.0, 0.0),
-        );
-        
-        let mut candidates = vec![
-            make_candidate(vec![body.clone()], 0, 0.3, 0.3, true),
-            make_candidate(vec![body.clone()], 1, 0.1, 0.9, true),
-            make_candidate(vec![body.clone()], 2, 0.5, 0.5, true),
-        ];
-
-        let weights = AestheticWeights::default();
-        let result = select_top_candidates(&mut candidates, &weights, 2);
-        assert_eq!(result.len(), 2);
+    fn test_aesthetic_scores_default() {
+        let scores = AestheticScores::default();
+        assert_eq!(scores.chaos, 0.0);
+        assert_eq!(scores.equilateralness, 0.0);
     }
 }
