@@ -90,7 +90,7 @@ Starting with round 1, the first bid beginning ETH bid price equals 2x of the fi
 If an ETH bid is accompanied by a Random Walk NFT, the bid price becomes a half of its normal value.
 
 Every **CST bid price** is formed using a Dutch auction. The first CST Dutch auction in a given round begins when a user places the first ETH bid.\
-The beginning CST bid price of round zero equals a configurable beginning minimum. Then over a configurable duration it declines lineraly down to zero. As soon as someone places a bid, the new beginning price is calculated as 2x of the paid price, but no lower than the same configurable beginning minimum. After each bid the Dutch auction repeats.\
+The beginning CST bid price of round zero equals a configurable beginning minimum. Then over a configurable duration it declines lineraly down to zero. As soon as someone places a bid, the new beginning price is calculated as 2x of the paid price, but no lower than the same configurable beginning minimum. After each CST bid the Dutch auction repeats.\
 The beginning CST bid price of the first bid in a nonzero round equals beginning price of the second bid in the previous round.
 
 Again, a Dutch auction is used for: (1) the first ETH bid price in a nonzero round; (2) each CST bid price, but with at least a floor beginning price. Round zero first ETH bid price is a constant. Any round non-first ETH bid price increases exponentially.
