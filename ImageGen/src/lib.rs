@@ -5,6 +5,7 @@
 pub mod analysis;
 pub mod app;
 pub mod drift;
+pub mod curation;
 pub mod drift_config;
 pub mod error;
 pub mod generation_log;

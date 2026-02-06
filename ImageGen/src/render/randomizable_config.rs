@@ -1083,18 +1083,15 @@ mod tests {
         
         // Test all valid indices (0-19 for all 20 palettes)
         for i in 0..=19 {
-            let palette = LuxuryPalette::from_index(i);
+            let _palette = LuxuryPalette::from_index(i);
             // Just verify it doesn't panic and returns a valid palette
             // The actual mapping correctness is ensured by the match statement
-            drop(palette);
         }
         
         // Test that modulo wrapping works (indices >= 20)
-        let palette_20 = LuxuryPalette::from_index(20);
-        let palette_0 = LuxuryPalette::from_index(0);
+        let _palette_20 = LuxuryPalette::from_index(20);
+        let _palette_0 = LuxuryPalette::from_index(0);
         // Both should be GoldPurple (though we can't easily test enum equality without PartialEq)
-        drop(palette_20);
-        drop(palette_0);
         
         // Verify total count
         assert_eq!(LuxuryPalette::count(), 20, "Should have 20 palettes");

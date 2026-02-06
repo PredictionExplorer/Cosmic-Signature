@@ -37,6 +37,7 @@ pub struct AppConfig {
     pub clip_black: f64,
     pub clip_white: f64,
     pub alpha_denom: usize,
+    pub alpha_compress: f64,
     pub escape_threshold: f64,
     pub drift_enabled: bool,
     pub drift_mode: String,
@@ -50,6 +51,7 @@ pub struct AppConfig {
     pub dog_ratio: f64,
     pub hdr_mode: String,
     pub hdr_scale: f64,
+    pub quality_mode: String,
     pub perceptual_blur: String,
     pub perceptual_blur_radius: Option<usize>,
     pub perceptual_blur_strength: f64,
@@ -174,9 +176,17 @@ pub fn generate_colors(
     rng: &mut Sha3RandomByteStream,
     num_steps_sim: usize,
     alpha_denom: usize,
+    alpha_compress: f64,
 ) -> (Vec<Vec<render::OklabColor>>, Vec<f64>) {
     info!("STAGE 3/7: Generating color sequences + alpha...");
-    let alpha_value = 1.0 / (alpha_denom as f64);
+    let base_alpha = 1.0 / (alpha_denom as f64);
+    let density_factor = (num_steps_sim as f64 / 1_000_000.0).clamp(0.25, 4.0);
+    let compression = 1.0 + alpha_compress.max(0.0) * 0.05 * density_factor;
+    let alpha_value = (base_alpha / compression).max(base_alpha * 0.1);
+    info!(
+        "   => Alpha compression {:.2} (density {:.2}) => alpha {:.3e} (base {:.3e})",
+        alpha_compress, density_factor, alpha_value, base_alpha
+    );
     generate_body_color_sequences(rng, num_steps_sim, alpha_value)
 }
 
@@ -426,6 +436,14 @@ pub fn log_generation(
     num_sims: usize,
     best_info: &TrajectoryResult,
     randomization_log: Option<&render::effect_randomizer::RandomizationLog>,
+    curation_summary: Option<&crate::curation::CurationSummary>,
+    style_family: Option<&str>,
+    candidate_id: Option<usize>,
+    round_id: Option<usize>,
+    quality_scores: Option<&crate::curation::quality_score::QualityScores>,
+    frame_features: Option<&crate::curation::quality_score::FrameFeatures>,
+    novelty_score: Option<f64>,
+    repair_actions: &[String],
 ) {
     let logger = GenerationLogger::new();
     
@@ -441,13 +459,14 @@ pub fn log_generation(
         clip_black: config.clip_black,
         clip_white: config.clip_white,
         alpha_denom: config.alpha_denom,
-        alpha_compress: 6.0, // Default value from constants
+        alpha_compress: config.alpha_compress,
         bloom_mode: config.bloom_mode.clone(),
         dog_strength: config.dog_strength,
         dog_sigma: config.dog_sigma,
         dog_ratio: config.dog_ratio,
         hdr_mode: config.hdr_mode.clone(),
         hdr_scale: config.hdr_scale,
+        quality_mode: config.quality_mode.clone(),
         perceptual_blur: config.perceptual_blur.clone(),
         perceptual_blur_radius: config.perceptual_blur_radius,
         perceptual_blur_strength: config.perceptual_blur_strength,
@@ -495,6 +514,16 @@ pub fn log_generation(
     
     // Include randomization log if provided
     record.randomization_log = randomization_log.cloned();
+    record.curation = curation_summary.map(|summary| crate::generation_log::CurationRecord {
+        summary: summary.clone(),
+        style_family: style_family.map(str::to_string),
+        candidate_id,
+        round_id,
+        quality_scores: quality_scores.cloned(),
+        frame_features: frame_features.cloned(),
+        novelty_score,
+        repair_actions: repair_actions.to_vec(),
+    });
     
     logger.log_generation(record);
 }
@@ -559,4 +588,3 @@ mod tests {
         assert_eq!(brightness, 12.0);
     }
 }
-

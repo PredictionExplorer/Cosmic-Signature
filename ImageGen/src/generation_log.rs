@@ -9,6 +9,7 @@ use std::fs::{File, OpenOptions};
 use std::io::{BufReader, BufWriter};
 use std::path::Path;
 use tracing::{error, info};
+use crate::curation::{CurationSummary, quality_score::{FrameFeatures, QualityScores}};
 
 const LOG_FILE_PATH: &str = "generation_log.json";
 
@@ -42,6 +43,10 @@ pub struct GenerationRecord {
     /// Randomization log (if any parameters were randomized)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub randomization_log: Option<crate::render::effect_randomizer::RandomizationLog>,
+
+    /// Curation metadata for strict/balanced quality runs
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub curation: Option<CurationRecord>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -58,10 +63,35 @@ pub struct LoggedRenderConfig {
     pub dog_ratio: f64,
     pub hdr_mode: String,
     pub hdr_scale: f64,
+    #[serde(default = "default_quality_mode")]
+    pub quality_mode: String,
     pub perceptual_blur: String,
     pub perceptual_blur_radius: Option<usize>,
     pub perceptual_blur_strength: f64,
     pub perceptual_gamut_mode: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CurationRecord {
+    pub summary: CurationSummary,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub style_family: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub candidate_id: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub round_id: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub quality_scores: Option<QualityScores>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub frame_features: Option<FrameFeatures>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub novelty_score: Option<f64>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub repair_actions: Vec<String>,
+}
+
+fn default_quality_mode() -> String {
+    "strict".to_string()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -111,6 +141,7 @@ impl GenerationRecord {
             simulation_config: SimulationConfig::default(),
             orbit_info: OrbitInfo::default(),
             randomization_log: None,
+            curation: None,
         }
     }
 }
@@ -130,6 +161,7 @@ impl Default for LoggedRenderConfig {
             dog_ratio: 2.8,
             hdr_mode: "auto".to_string(),
             hdr_scale: 0.12,
+            quality_mode: "strict".to_string(),
             perceptual_blur: "on".to_string(),
             perceptual_blur_radius: None,
             perceptual_blur_strength: 0.65,
@@ -258,4 +290,23 @@ impl Default for GenerationLogger {
     fn default() -> Self {
         Self::new()
     }
+}
+
+/// Load recent accepted frame feature signatures for novelty gating.
+pub fn load_recent_frame_features(limit: usize) -> Vec<FrameFeatures> {
+    let logger = GenerationLogger::new();
+    let records = logger.load_records();
+    let mut features = Vec::new();
+    for record in records.into_iter().rev() {
+        if let Some(curation) = record.curation {
+            if let Some(feature) = curation.frame_features {
+                features.push(feature);
+                if features.len() >= limit.max(1) {
+                    break;
+                }
+            }
+        }
+    }
+    features.reverse();
+    features
 }

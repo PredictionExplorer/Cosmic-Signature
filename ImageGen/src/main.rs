@@ -1,10 +1,14 @@
 use clap::Parser;
-use tracing::info;
+use nalgebra::Vector3;
+use std::collections::HashMap;
+use std::fs;
+use tracing::{info, warn};
 use tracing_subscriber::EnvFilter;
 
 mod analysis;
 mod app;
 mod drift;
+mod curation;
 mod drift_config;
 mod error;
 mod generation_log;
@@ -21,6 +25,14 @@ mod utils;
 use error::Result;
 use render::RenderConfig;
 use sim::Sha3RandomByteStream;
+use crate::curation::{
+    CandidateEvaluation, CurationOptions, CurationSummary, QualityMode,
+    novelty::NoveltyMemory,
+    quality_score::{apply_video_and_novelty, estimate_temporal_scores, score_image_frame},
+    repair::repair_candidate,
+    selector::{accept_candidate, choose_finalists, composite_score, pick_winner},
+    style_families::{apply_style_family, resolve_style_family, StyleFamily},
+};
 
 /// Command-line arguments
 #[derive(Parser, Debug)]
@@ -175,6 +187,48 @@ struct Args {
     /// Set log level (trace, debug, info, warn, error)
     #[arg(long, default_value = "info")]
     log_level: String,
+
+    // ==== Curation & Quality Search ====
+
+    /// Quality mode: strict, balanced, or explore
+    #[arg(long, default_value = "strict")]
+    quality_mode: String,
+
+    /// Number of preview candidates per curation round
+    #[arg(long, default_value_t = 24)]
+    candidate_count_preview: usize,
+
+    /// Number of finalists re-rendered at target resolution
+    #[arg(long, default_value_t = 4)]
+    finalist_count: usize,
+
+    /// Maximum curation rounds before fallback to best candidate
+    #[arg(long, default_value_t = 3)]
+    max_curation_rounds: usize,
+
+    /// Minimum image score threshold for acceptance
+    #[arg(long, default_value_t = 0.78)]
+    min_image_score: f64,
+
+    /// Minimum video score threshold for acceptance
+    #[arg(long, default_value_t = 0.72)]
+    min_video_score: f64,
+
+    /// Minimum novelty score threshold for acceptance
+    #[arg(long, default_value_t = 0.18)]
+    min_novelty_score: f64,
+
+    /// Allow targeted repair pass for near-miss candidates
+    #[arg(long, default_value_t = true)]
+    allow_repair_pass: bool,
+
+    /// Optional fixed style family name (e.g. "Velvet Nebula")
+    #[arg(long)]
+    style_family: Option<String>,
+
+    /// Save optional archival master output in strict mode
+    #[arg(long, default_value_t = false)]
+    save_master: bool,
 
     // ==== Effect Control Flags (All effects enabled by default) ====
     
@@ -524,28 +578,57 @@ fn setup_logging(json: bool, level: &str) {
     }
 }
 
+fn build_curation_options(args: &Args) -> CurationOptions {
+    CurationOptions {
+        quality_mode: QualityMode::from_str(&args.quality_mode),
+        candidate_count_preview: args.candidate_count_preview.max(1),
+        finalist_count: args.finalist_count.max(1),
+        max_curation_rounds: args.max_curation_rounds.max(1),
+        min_image_score: args.min_image_score.clamp(0.0, 1.0),
+        min_video_score: args.min_video_score.clamp(0.0, 1.0),
+        min_novelty_score: args.min_novelty_score.clamp(0.0, 1.0),
+        allow_repair_pass: args.allow_repair_pass,
+        style_family: args.style_family.clone(),
+    }
+}
+
 /// Build randomizable effect configuration from command-line arguments.
 /// Any unspecified parameter will be randomized during resolution.
-fn build_randomizable_config(args: &Args) -> render::randomizable_config::RandomizableEffectConfig {
+fn build_randomizable_config(
+    args: &Args,
+    mode: QualityMode,
+) -> render::randomizable_config::RandomizableEffectConfig {
     use render::randomizable_config::RandomizableEffectConfig;
+
+    let default_enable = !matches!(mode, QualityMode::Explore);
+
+    let enable_or_random = |disabled: bool| -> Option<bool> {
+        if args.disable_all_effects || disabled {
+            Some(false)
+        } else if default_enable {
+            Some(true)
+        } else {
+            None
+        }
+    };
 
     RandomizableEffectConfig {
         gallery_quality: args.gallery_quality,
 
-        // Effect enables (convert disable flags to enable options)
-        enable_bloom: if args.disable_all_effects || args.disable_bloom { Some(false) } else { None },
-        enable_glow: if args.disable_all_effects || args.disable_glow { Some(false) } else { None },
-        enable_chromatic_bloom: if args.disable_all_effects || args.disable_chromatic_bloom { Some(false) } else { None },
-        enable_perceptual_blur: if args.disable_all_effects || args.disable_perceptual_blur { Some(false) } else { None },
-        enable_micro_contrast: if args.disable_all_effects || args.disable_micro_contrast { Some(false) } else { None },
-        enable_gradient_map: if args.disable_all_effects || args.disable_gradient_map { Some(false) } else { None },
-        enable_color_grade: if args.disable_all_effects || args.disable_color_grade { Some(false) } else { None },
-        enable_champleve: if args.disable_all_effects || args.disable_champleve { Some(false) } else { None },
-        enable_aether: if args.disable_all_effects || args.disable_aether { Some(false) } else { None },
-        enable_opalescence: if args.disable_all_effects || args.disable_opalescence { Some(false) } else { None },
-        enable_edge_luminance: if args.disable_all_effects || args.disable_edge_luminance { Some(false) } else { None },
-        enable_atmospheric_depth: if args.disable_all_effects || args.disable_atmospheric_depth { Some(false) } else { None },
-        enable_fine_texture: if args.disable_all_effects || args.disable_fine_texture { Some(false) } else { None },
+        // Effect enables (strict/balanced default to enabled; explore keeps randomization)
+        enable_bloom: enable_or_random(args.disable_bloom),
+        enable_glow: enable_or_random(args.disable_glow),
+        enable_chromatic_bloom: enable_or_random(args.disable_chromatic_bloom),
+        enable_perceptual_blur: enable_or_random(args.disable_perceptual_blur),
+        enable_micro_contrast: enable_or_random(args.disable_micro_contrast),
+        enable_gradient_map: enable_or_random(args.disable_gradient_map),
+        enable_color_grade: enable_or_random(args.disable_color_grade),
+        enable_champleve: enable_or_random(args.disable_champleve),
+        enable_aether: enable_or_random(args.disable_aether),
+        enable_opalescence: enable_or_random(args.disable_opalescence),
+        enable_edge_luminance: enable_or_random(args.disable_edge_luminance),
+        enable_atmospheric_depth: enable_or_random(args.disable_atmospheric_depth),
+        enable_fine_texture: enable_or_random(args.disable_fine_texture),
 
         // Bloom & Glow parameters
         blur_strength: args.param_blur_strength,
@@ -636,11 +719,462 @@ fn build_randomizable_config(args: &Args) -> render::randomizable_config::Random
     }
 }
 
+fn apply_effect_disable_overrides(
+    args: &Args,
+    config: &mut render::randomizable_config::ResolvedEffectConfig,
+) {
+    if args.disable_all_effects {
+        config.enable_bloom = false;
+        config.enable_glow = false;
+        config.enable_chromatic_bloom = false;
+        config.enable_perceptual_blur = false;
+        config.enable_micro_contrast = false;
+        config.enable_gradient_map = false;
+        config.enable_color_grade = false;
+        config.enable_champleve = false;
+        config.enable_aether = false;
+        config.enable_opalescence = false;
+        config.enable_edge_luminance = false;
+        config.enable_atmospheric_depth = false;
+        config.enable_fine_texture = false;
+        return;
+    }
+
+    if args.disable_bloom {
+        config.enable_bloom = false;
+    }
+    if args.disable_glow {
+        config.enable_glow = false;
+    }
+    if args.disable_chromatic_bloom {
+        config.enable_chromatic_bloom = false;
+    }
+    if args.disable_perceptual_blur {
+        config.enable_perceptual_blur = false;
+    }
+    if args.disable_micro_contrast {
+        config.enable_micro_contrast = false;
+    }
+    if args.disable_gradient_map {
+        config.enable_gradient_map = false;
+    }
+    if args.disable_color_grade {
+        config.enable_color_grade = false;
+    }
+    if args.disable_champleve {
+        config.enable_champleve = false;
+    }
+    if args.disable_aether {
+        config.enable_aether = false;
+    }
+    if args.disable_opalescence {
+        config.enable_opalescence = false;
+    }
+    if args.disable_edge_luminance {
+        config.enable_edge_luminance = false;
+    }
+    if args.disable_atmospheric_depth {
+        config.enable_atmospheric_depth = false;
+    }
+    if args.disable_fine_texture {
+        config.enable_fine_texture = false;
+    }
+}
+
+fn build_render_config(
+    args: &Args,
+    quality_mode: QualityMode,
+    resolved_effect_config: &render::randomizable_config::ResolvedEffectConfig,
+) -> RenderConfig {
+    let bloom_mode = match args.bloom_mode.to_ascii_lowercase().as_str() {
+        "gaussian" => "gaussian".to_string(),
+        _ => "dog".to_string(),
+    };
+    let hdr_mode = match args.hdr_mode.to_ascii_lowercase().as_str() {
+        "off" => "off".to_string(),
+        _ => "auto".to_string(),
+    };
+    let temporal_smoothing_enabled =
+        !args.disable_temporal_smoothing && !matches!(quality_mode, QualityMode::Explore);
+    let temporal_smoothing_blend = if temporal_smoothing_enabled {
+        match quality_mode {
+            QualityMode::Strict => 0.18,
+            QualityMode::Balanced => 0.13,
+            QualityMode::Explore => 0.0,
+        }
+    } else {
+        0.0
+    };
+
+    RenderConfig {
+        hdr_scale: if hdr_mode == "auto" {
+            resolved_effect_config.hdr_scale
+        } else {
+            1.0
+        },
+        bloom_mode,
+        hdr_mode,
+        temporal_smoothing_enabled,
+        temporal_smoothing_blend,
+        exposure_damping_enabled: !matches!(quality_mode, QualityMode::Explore),
+        exposure_damping_rate: if matches!(quality_mode, QualityMode::Strict) {
+            0.15
+        } else {
+            0.20
+        },
+        output_dither_enabled: !matches!(quality_mode, QualityMode::Explore),
+    }
+}
+
+fn preview_dimensions(width: u32, height: u32) -> (u32, u32) {
+    let scale_w = 640.0 / width as f64;
+    let scale_h = 360.0 / height as f64;
+    let scale = scale_w.min(scale_h).min(1.0);
+
+    let mut w = ((width as f64 * scale).round() as u32).max(64);
+    let mut h = ((height as f64 * scale).round() as u32).max(64);
+    if w % 2 == 1 {
+        w = w.saturating_sub(1);
+    }
+    if h % 2 == 1 {
+        h = h.saturating_sub(1);
+    }
+    (w.max(2), h.max(2))
+}
+
+fn downsample_scene(
+    positions: &[Vec<Vector3<f64>>],
+    colors: &[Vec<render::OklabColor>],
+    target_steps: usize,
+) -> (Vec<Vec<Vector3<f64>>>, Vec<Vec<render::OklabColor>>) {
+    if positions.is_empty() || positions[0].is_empty() {
+        return (positions.to_vec(), colors.to_vec());
+    }
+
+    let total_steps = positions[0].len();
+    if total_steps <= target_steps.max(2) {
+        return (positions.to_vec(), colors.to_vec());
+    }
+
+    let stride = ((total_steps as f64) / target_steps as f64).ceil() as usize;
+    let mut indices: Vec<usize> = (0..total_steps).step_by(stride.max(1)).collect();
+    if indices.last().copied() != Some(total_steps - 1) {
+        indices.push(total_steps - 1);
+    }
+
+    let sampled_positions = positions
+        .iter()
+        .map(|body| indices.iter().map(|&i| body[i]).collect())
+        .collect();
+    let sampled_colors = colors
+        .iter()
+        .map(|body| indices.iter().map(|&i| body[i]).collect())
+        .collect();
+    (sampled_positions, sampled_colors)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn evaluate_candidate(
+    positions: &[Vec<Vector3<f64>>],
+    colors: &[Vec<render::OklabColor>],
+    body_alphas: &[f64],
+    resolved_config: &render::randomizable_config::ResolvedEffectConfig,
+    noise_seed: i32,
+    render_config: &RenderConfig,
+    temporal_metrics: (f64, f64, f64),
+    novelty_memory: &NoveltyMemory,
+) -> Result<(
+    crate::curation::quality_score::QualityScores,
+    crate::curation::quality_score::FrameFeatures,
+    f64,
+    f64,
+)> {
+    let levels = app::build_histogram_and_levels(
+        positions,
+        colors,
+        body_alphas,
+        resolved_config,
+        noise_seed,
+        render_config,
+    )?;
+
+    let frame = render::render_single_frame_spectral(
+        positions,
+        colors,
+        body_alphas,
+        resolved_config,
+        levels.black[0],
+        levels.range[0] + levels.black[0],
+        levels.black[1],
+        levels.range[1] + levels.black[1],
+        levels.black[2],
+        levels.range[2] + levels.black[2],
+        noise_seed,
+        render_config,
+    )?;
+
+    let (mut scores, features) = score_image_frame(&frame, resolved_config);
+    let novelty_score = novelty_memory.score_candidate(&features);
+
+    let temporal_stability = (0.40 * temporal_metrics.0 + 0.60 * scores.image_composite).clamp(0.0, 1.0);
+    let motion_smoothness = (0.40 * temporal_metrics.1 + 0.60 * scores.image_composite).clamp(0.0, 1.0);
+    let exposure_consistency = (0.40 * temporal_metrics.2 + 0.60 * scores.image_composite).clamp(0.0, 1.0);
+    apply_video_and_novelty(
+        &mut scores,
+        temporal_stability,
+        motion_smoothness,
+        exposure_consistency,
+        novelty_score,
+    );
+
+    let composite = composite_score(&scores, novelty_score);
+    Ok((scores, features, novelty_score, composite))
+}
+
+#[allow(clippy::too_many_arguments)]
+fn run_curation_search(
+    args: &Args,
+    curation_options: &CurationOptions,
+    rng: &mut Sha3RandomByteStream,
+    positions: &[Vec<Vector3<f64>>],
+    colors: &[Vec<render::OklabColor>],
+    body_alphas: &[f64],
+    noise_seed: i32,
+    novelty_memory: &mut NoveltyMemory,
+) -> Result<(CandidateEvaluation, CurationSummary)> {
+    const PREVIEW_TARGET_STEPS: usize = 12_000;
+    const FINALIST_TARGET_STEPS: usize = 36_000;
+    const EPSILON_EXPLORATION: f64 = 0.25;
+
+    let (preview_width, preview_height) = preview_dimensions(args.width, args.height);
+    let (preview_positions, preview_colors) = downsample_scene(positions, colors, PREVIEW_TARGET_STEPS);
+    let (final_positions, final_colors) = downsample_scene(positions, colors, FINALIST_TARGET_STEPS);
+
+    let preview_temporal = estimate_temporal_scores(&preview_positions);
+    let final_temporal = estimate_temporal_scores(&final_positions);
+
+    let mut best_overall: Option<CandidateEvaluation> = None;
+    let mut total_candidates = 0usize;
+    let mut finalists_considered = 0usize;
+    let mut rounds_used = 0usize;
+    let mut family_stats: HashMap<String, (usize, usize)> = HashMap::new();
+
+    for round_id in 1..=curation_options.max_curation_rounds {
+        rounds_used = round_id;
+        info!(
+            "Curation round {}/{} (preview candidates: {})",
+            round_id,
+            curation_options.max_curation_rounds,
+            curation_options.candidate_count_preview
+        );
+
+        let mut preview_candidates = Vec::with_capacity(curation_options.candidate_count_preview);
+
+        for local_candidate_id in 1..=curation_options.candidate_count_preview {
+            total_candidates += 1;
+            let candidate_id = total_candidates;
+            let randomizable_config = build_randomizable_config(args, curation_options.quality_mode);
+            let (mut resolved_config, randomization_log) = randomizable_config.resolve(
+                rng,
+                preview_width,
+                preview_height,
+                args.special,
+            );
+
+            let style_family = if let Some(explicit) = curation_options.style_family.as_deref() {
+                resolve_style_family(Some(explicit), rng)
+            } else if rng.next_f64() < EPSILON_EXPLORATION || family_stats.is_empty() {
+                StyleFamily::random(rng)
+            } else {
+                let mut best_family = StyleFamily::random(rng);
+                let mut best_score = f64::MIN;
+                for family in StyleFamily::all() {
+                    let (attempts, successes) =
+                        family_stats.get(family.name()).copied().unwrap_or((0, 0));
+                    let score = if attempts == 0 {
+                        1.0
+                    } else {
+                        (successes as f64 + 1.0) / (attempts as f64 + 2.0)
+                    };
+                    if score > best_score {
+                        best_score = score;
+                        best_family = family;
+                    }
+                }
+                best_family
+            };
+            let style_key = style_family.name().to_string();
+            family_stats
+                .entry(style_key.clone())
+                .and_modify(|entry| entry.0 += 1)
+                .or_insert((1, 0));
+            let mut repair_actions = apply_style_family(
+                &mut resolved_config,
+                style_family,
+                rng,
+                curation_options.quality_mode,
+            );
+            apply_effect_disable_overrides(args, &mut resolved_config);
+
+            let render_config = build_render_config(args, curation_options.quality_mode, &resolved_config);
+            let (mut scores, mut features, mut novelty_score, mut composite) = evaluate_candidate(
+                &preview_positions,
+                &preview_colors,
+                body_alphas,
+                &resolved_config,
+                noise_seed,
+                &render_config,
+                preview_temporal,
+                novelty_memory,
+            )?;
+
+            if curation_options.allow_repair_pass && (0.70..0.80).contains(&composite) {
+                let mut repaired_config = resolved_config.clone();
+                let mut suggested_repairs = repair_candidate(&mut repaired_config, &scores);
+                if !suggested_repairs.is_empty() {
+                    apply_effect_disable_overrides(args, &mut repaired_config);
+                    let repaired_render_config =
+                        build_render_config(args, curation_options.quality_mode, &repaired_config);
+                    let (repaired_scores, repaired_features, repaired_novelty, repaired_composite) =
+                        evaluate_candidate(
+                            &preview_positions,
+                            &preview_colors,
+                            body_alphas,
+                            &repaired_config,
+                            noise_seed,
+                            &repaired_render_config,
+                            preview_temporal,
+                            novelty_memory,
+                        )?;
+
+                    if repaired_composite > composite {
+                        resolved_config = repaired_config;
+                        scores = repaired_scores;
+                        features = repaired_features;
+                        novelty_score = repaired_novelty;
+                        composite = repaired_composite;
+                        repair_actions.append(&mut suggested_repairs);
+                    }
+                }
+            }
+
+            let evaluation = CandidateEvaluation {
+                round_id,
+                candidate_id,
+                style_family: style_family.name().to_string(),
+                config: resolved_config,
+                randomization_log,
+                scores,
+                features,
+                novelty_score,
+                composite_score: composite,
+                repair_actions,
+            };
+            info!(
+                "  Preview candidate {}/{} -> score {:.3} (image {:.3}, video {:.3}, novelty {:.3})",
+                local_candidate_id,
+                curation_options.candidate_count_preview,
+                evaluation.composite_score,
+                evaluation.scores.image_composite,
+                evaluation.scores.video_composite,
+                evaluation.novelty_score
+            );
+            preview_candidates.push(evaluation);
+        }
+
+        let mut finalists = choose_finalists(preview_candidates, curation_options.finalist_count);
+        finalists_considered += finalists.len();
+
+        for finalist in &mut finalists {
+            finalist.config.width = args.width;
+            finalist.config.height = args.height;
+            apply_effect_disable_overrides(args, &mut finalist.config);
+            let finalist_render_config =
+                build_render_config(args, curation_options.quality_mode, &finalist.config);
+            let (scores, features, novelty_score, composite) = evaluate_candidate(
+                &final_positions,
+                &final_colors,
+                body_alphas,
+                &finalist.config,
+                noise_seed,
+                &finalist_render_config,
+                final_temporal,
+                novelty_memory,
+            )?;
+            finalist.scores = scores;
+            finalist.features = features;
+            finalist.novelty_score = novelty_score;
+            finalist.composite_score = composite;
+        }
+
+        if let Some(round_winner) = pick_winner(&finalists) {
+            if let Some(stats) = family_stats.get_mut(&round_winner.style_family) {
+                stats.1 += 1;
+            }
+            if best_overall
+                .as_ref()
+                .map(|b| round_winner.composite_score > b.composite_score)
+                .unwrap_or(true)
+            {
+                best_overall = Some(round_winner.clone());
+            }
+
+            if accept_candidate(
+                &round_winner,
+                curation_options.min_image_score,
+                curation_options.min_video_score,
+                curation_options.min_novelty_score,
+            ) {
+                novelty_memory.remember(round_winner.features.clone());
+                let summary = CurationSummary {
+                    quality_mode: curation_options.quality_mode.as_str().to_string(),
+                    rounds_used,
+                    accepted: true,
+                    total_candidates,
+                    finalists_considered,
+                    rejection_reason: None,
+                };
+                return Ok((round_winner, summary));
+            }
+        }
+    }
+
+    let fallback = best_overall.ok_or_else(|| {
+        warn!("Curation produced no candidates; this should not happen with min(1) defaults.");
+        std::io::Error::other("Curation produced no candidates")
+    })?;
+    novelty_memory.remember(fallback.features.clone());
+    let summary = CurationSummary {
+        quality_mode: curation_options.quality_mode.as_str().to_string(),
+        rounds_used,
+        accepted: false,
+        total_candidates,
+        finalists_considered,
+        rejection_reason: Some("no-candidate-met-thresholds; selected-best-overall".to_string()),
+    };
+    Ok((fallback, summary))
+}
+
+struct SelectedCuration {
+    resolved_effect_config: render::randomizable_config::ResolvedEffectConfig,
+    randomization_log: render::effect_randomizer::RandomizationLog,
+    style_family: Option<String>,
+    candidate_id: Option<usize>,
+    round_id: Option<usize>,
+    quality_scores: Option<crate::curation::quality_score::QualityScores>,
+    frame_features: Option<crate::curation::quality_score::FrameFeatures>,
+    novelty_score: Option<f64>,
+    repair_actions: Vec<String>,
+    curation_summary: CurationSummary,
+}
+
 fn main() -> Result<()> {
     let args = Args::parse();
 
     // Initialize tracing
     setup_logging(args.json_logs, &args.log_level);
+    let curation_options = build_curation_options(&args);
+    info!("Quality mode: {}", curation_options.quality_mode.as_str());
 
     // Determine number of simulations
     let num_sims = args.num_sims.unwrap_or(if args.special { 100_000 } else { 30_000 });
@@ -660,33 +1194,6 @@ fn main() -> Result<()> {
         args.location,
         args.velocity,
     );
-
-    // Resolve effect configuration (randomize unspecified parameters)
-    info!("Resolving effect configuration...");
-    let randomizable_config = build_randomizable_config(&args);
-    let (resolved_effect_config, randomization_log) = randomizable_config.resolve(
-        &mut rng,
-        args.width,
-        args.height,
-        args.special,
-    );
-    
-    let num_randomized = randomization_log.effects.iter()
-        .map(|e| e.parameters.iter().filter(|p| p.was_randomized).count())
-        .sum::<usize>();
-    
-    info!(
-        "   => Resolved {} effects ({} parameters randomized, {} explicit)",
-        randomization_log.effects.len(),
-        num_randomized,
-        randomization_log.effects.iter()
-            .map(|e| e.parameters.len())
-            .sum::<usize>() - num_randomized
-    );
-    
-    if args.gallery_quality {
-        info!("   => Gallery quality mode enabled (conservative randomization ranges)");
-    }
 
     // Stage 1: Borda selection
     let (best_bodies, best_info) = app::run_borda_selection(
@@ -722,10 +1229,111 @@ fn main() -> Result<()> {
         &mut rng,
         args.num_steps_sim,
         args.alpha_denom,
+        args.alpha_compress,
     );
 
-    // Using OKLab color space
-    info!("   => Using OKLab color space for accumulation");
+    let mut novelty_memory = NoveltyMemory::new(64);
+    let historical_features = generation_log::load_recent_frame_features(64);
+    for feature in historical_features {
+        novelty_memory.remember(feature);
+    }
+    if novelty_memory.len() > 0 {
+        info!(
+            "Loaded {} prior frame signatures for novelty gating.",
+            novelty_memory.len()
+        );
+    }
+
+    let selected = if matches!(curation_options.quality_mode, QualityMode::Explore) {
+        info!("Explore mode selected: using single-pass randomization without strict curation.");
+        let randomizable_config = build_randomizable_config(&args, curation_options.quality_mode);
+        let (mut resolved_effect_config, randomization_log) = randomizable_config.resolve(
+            &mut rng,
+            args.width,
+            args.height,
+            args.special,
+        );
+        apply_effect_disable_overrides(&args, &mut resolved_effect_config);
+        SelectedCuration {
+            resolved_effect_config,
+            randomization_log,
+            style_family: None,
+            candidate_id: None,
+            round_id: None,
+            quality_scores: None,
+            frame_features: None,
+            novelty_score: None,
+            repair_actions: Vec::new(),
+            curation_summary: CurationSummary {
+                quality_mode: curation_options.quality_mode.as_str().to_string(),
+                rounds_used: 1,
+                accepted: true,
+                total_candidates: 1,
+                finalists_considered: 1,
+                rejection_reason: None,
+            },
+        }
+    } else {
+        info!("Running curated candidate search...");
+        let (winner, summary) = run_curation_search(
+            &args,
+            &curation_options,
+            &mut rng,
+            &positions,
+            &colors,
+            &body_alphas,
+            noise_seed,
+            &mut novelty_memory,
+        )?;
+        SelectedCuration {
+            resolved_effect_config: winner.config,
+            randomization_log: winner.randomization_log,
+            style_family: Some(winner.style_family),
+            candidate_id: Some(winner.candidate_id),
+            round_id: Some(winner.round_id),
+            quality_scores: Some(winner.scores),
+            frame_features: Some(winner.features),
+            novelty_score: Some(winner.novelty_score),
+            repair_actions: winner.repair_actions,
+            curation_summary: summary,
+        }
+    };
+
+    let num_randomized = selected
+        .randomization_log
+        .effects
+        .iter()
+        .map(|e| e.parameters.iter().filter(|p| p.was_randomized).count())
+        .sum::<usize>();
+
+    info!(
+        "Resolved {} effects ({} parameters randomized, {} explicit)",
+        selected.randomization_log.effects.len(),
+        num_randomized,
+        selected
+            .randomization_log
+            .effects
+            .iter()
+            .map(|e| e.parameters.len())
+            .sum::<usize>()
+            .saturating_sub(num_randomized)
+    );
+    if let Some(style_family) = &selected.style_family {
+        info!("Selected style family: {}", style_family);
+    }
+    info!(
+        "Curation summary: rounds={}, accepted={}, candidates={}, finalists={}",
+        selected.curation_summary.rounds_used,
+        selected.curation_summary.accepted,
+        selected.curation_summary.total_candidates,
+        selected.curation_summary.finalists_considered
+    );
+    if let Some(reason) = &selected.curation_summary.rejection_reason {
+        warn!("Curation fallback reason: {reason}");
+    }
+    if args.gallery_quality {
+        info!("Gallery quality mode enabled (conservative randomization ranges).");
+    }
 
     // Stage 4: Bounding box
     info!("STAGE 4/7: Determining bounding box...");
@@ -734,16 +1342,15 @@ fn main() -> Result<()> {
     info!("   => X: [{:.3}, {:.3}], Y: [{:.3}, {:.3}]", bbox.min_x, bbox.max_x, bbox.min_y, bbox.max_y);
 
     // Configure rendering from resolved parameters
-    let render_config = RenderConfig {
-        hdr_scale: if args.hdr_mode == "auto" { resolved_effect_config.hdr_scale } else { 1.0 },
-    };
+    let render_config =
+        build_render_config(&args, curation_options.quality_mode, &selected.resolved_effect_config);
 
     // Stage 5-6: Build histogram and compute levels
     let levels = app::build_histogram_and_levels(
         &positions,
         &colors,
         &body_alphas,
-        &resolved_effect_config,
+        &selected.resolved_effect_config,
         noise_seed,
         &render_config,
     )?;
@@ -757,31 +1364,39 @@ fn main() -> Result<()> {
             &positions,
             &colors,
             &body_alphas,
-            &resolved_effect_config,
+            &selected.resolved_effect_config,
             &levels,
             noise_seed,
             &render_config,
             &output_png,
             &best_info,
         )?;
-        return Ok(());
-    }
+    } else {
+        // Normal mode: Render full video
+        let output_vid = format!("vids/{}.mp4", base_filename);
 
-    // Normal mode: Render full video
-    let output_vid = format!("vids/{}.mp4", base_filename);
-    
-    app::render_video(
-        &positions,
-        &colors,
-        &body_alphas,
-        &resolved_effect_config,
-        &levels,
-        noise_seed,
-        &render_config,
-        &output_vid,
-        &output_png,
-        args.fast_encode,
-    )?;
+        app::render_video(
+            &positions,
+            &colors,
+            &body_alphas,
+            &selected.resolved_effect_config,
+            &levels,
+            noise_seed,
+            &render_config,
+            &output_vid,
+            &output_png,
+            args.fast_encode,
+        )?;
+
+        if args.save_master && matches!(curation_options.quality_mode, QualityMode::Strict) {
+            fs::create_dir_all("masters")?;
+            let master_png = format!("masters/{}_master.png", base_filename);
+            let master_vid = format!("masters/{}_master.mp4", base_filename);
+            fs::copy(&output_png, &master_png)?;
+            fs::copy(&output_vid, &master_vid)?;
+            info!("Saved archival master outputs: {}, {}", master_png, master_vid);
+        }
+    }
 
     info!(
         "Done! Best orbit => Weighted Borda = {:.3}\nHave a nice day!",
@@ -798,9 +1413,10 @@ fn main() -> Result<()> {
         height: args.height,
         special: args.special,
         test_frame: args.test_frame,
-        clip_black: args.clip_black,
-        clip_white: args.clip_white,
+        clip_black: selected.resolved_effect_config.clip_black,
+        clip_white: selected.resolved_effect_config.clip_white,
         alpha_denom: args.alpha_denom,
+        alpha_compress: args.alpha_compress,
         escape_threshold: args.escape_threshold,
         drift_enabled: !args.no_drift,
         drift_mode: args.drift_mode.clone(),
@@ -812,8 +1428,9 @@ fn main() -> Result<()> {
         dog_strength: args.dog_strength,
         dog_sigma: args.dog_sigma,
         dog_ratio: args.dog_ratio,
-        hdr_mode: args.hdr_mode.clone(),
-        hdr_scale: args.hdr_scale,
+        hdr_mode: render_config.hdr_mode.clone(),
+        hdr_scale: render_config.hdr_scale,
+        quality_mode: curation_options.quality_mode.as_str().to_string(),
         perceptual_blur: args.perceptual_blur.clone(),
         perceptual_blur_radius: args.perceptual_blur_radius,
         perceptual_blur_strength: args.perceptual_blur_strength,
@@ -833,7 +1450,15 @@ fn main() -> Result<()> {
         &drift_config,
         num_sims,
         &best_info,
-        Some(&randomization_log),
+        Some(&selected.randomization_log),
+        Some(&selected.curation_summary),
+        selected.style_family.as_deref(),
+        selected.candidate_id,
+        selected.round_id,
+        selected.quality_scores.as_ref(),
+        selected.frame_features.as_ref(),
+        selected.novelty_score,
+        &selected.repair_actions,
     );
     
     Ok(())

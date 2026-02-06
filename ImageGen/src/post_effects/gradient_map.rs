@@ -656,7 +656,7 @@ mod tests {
         let result = GradientMap::lerp_hue(350.0, 10.0, 0.5);
         // Midpoint should be near 0 (or 360), NOT near 180
         assert!(
-            result < 10.0 || result > 350.0,
+            !(10.0..=350.0).contains(&result),
             "Shortest arc across 0: expected near 0/360, got {}",
             result
         );
@@ -668,7 +668,7 @@ mod tests {
         let result = GradientMap::lerp_hue(10.0, 350.0, 0.5);
         // Midpoint should be near 0 (or 360), NOT near 180
         assert!(
-            result < 10.0 || result > 350.0,
+            !(10.0..=350.0).contains(&result),
             "Shortest arc reverse: expected near 0/360, got {}",
             result
         );
@@ -680,7 +680,7 @@ mod tests {
         let result = GradientMap::lerp_hue(90.0, 270.0, 0.5);
         // Could go either way, but should be valid (0 or 180)
         assert!(
-            result >= 0.0 && result < 360.0,
+            (0.0..360.0).contains(&result),
             "Result should be in valid range: {}",
             result
         );
@@ -695,7 +695,7 @@ mod tests {
                     let t = t_i as f64 / 10.0;
                     let result = GradientMap::lerp_hue(h0 as f64, h1 as f64, t);
                     assert!(
-                        result >= 0.0 && result < 360.0,
+                        (0.0..360.0).contains(&result),
                         "lerp_hue({}, {}, {}) = {} out of range",
                         h0, h1, t, result
                     );

@@ -5,7 +5,7 @@
 
 use crate::post_effects::{
     ChromaticBloomConfig, GradientMapConfig, LuxuryPalette, NebulaClouds, NebulaCloudConfig,
-    PerceptualBlurConfig,
+    PerceptualBlurConfig, TemporalSmoothing, TemporalSmoothingConfig,
 };
 use crate::spectrum::NUM_BINS;
 use nalgebra::Vector3;
@@ -58,14 +58,30 @@ pub use video::{VideoEncodingOptions, create_video_from_frames_singlepass};
 pub use image::{DynamicImage, ImageBuffer, Rgb};
 
 /// Rendering configuration parameters
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct RenderConfig {
     pub hdr_scale: f64,
+    pub bloom_mode: String,
+    pub hdr_mode: String,
+    pub temporal_smoothing_enabled: bool,
+    pub temporal_smoothing_blend: f64,
+    pub exposure_damping_enabled: bool,
+    pub exposure_damping_rate: f64,
+    pub output_dither_enabled: bool,
 }
 
 impl Default for RenderConfig {
     fn default() -> Self {
-        Self { hdr_scale: constants::DEFAULT_HDR_SCALE }
+        Self {
+            hdr_scale: constants::DEFAULT_HDR_SCALE,
+            bloom_mode: "dog".to_string(),
+            hdr_mode: "auto".to_string(),
+            temporal_smoothing_enabled: false,
+            temporal_smoothing_blend: 0.0,
+            exposure_damping_enabled: false,
+            exposure_damping_rate: 0.15,
+            output_dither_enabled: false,
+        }
     }
 }
 
@@ -155,6 +171,81 @@ fn tonemap_to_16bit(fr: f64, fg: f64, fb: f64, fa: f64, levels: &ChannelLevels) 
         (channels[1] * 65535.0).round().clamp(0.0, 65535.0) as u16,
         (channels[2] * 65535.0).round().clamp(0.0, 65535.0) as u16,
     ]
+}
+
+fn estimate_frame_exposure(pixels: &[(f64, f64, f64, f64)]) -> f64 {
+    if pixels.is_empty() {
+        return 1.0;
+    }
+
+    let mut luma_sum = 0.0;
+    let mut count = 0usize;
+    for &(r, g, b, a) in pixels {
+        if a <= 1e-6 {
+            continue;
+        }
+        let luma = (0.2126 * r + 0.7152 * g + 0.0722 * b) / a.max(1e-6);
+        luma_sum += luma;
+        count += 1;
+    }
+
+    if count == 0 {
+        return 1.0;
+    }
+
+    let mean_luma = (luma_sum / count as f64).max(1e-6);
+    (0.22 / mean_luma).clamp(0.45, 1.75)
+}
+
+fn apply_exposure_damping(
+    pixels: &mut PixelBuffer,
+    exposure_state: &mut Option<f64>,
+    damping_rate: f64,
+) {
+    let target_exposure = estimate_frame_exposure(pixels);
+    let damped_exposure = if let Some(previous) = *exposure_state {
+        previous + (target_exposure - previous) * damping_rate.clamp(0.01, 1.0)
+    } else {
+        target_exposure
+    };
+    *exposure_state = Some(damped_exposure);
+
+    if (damped_exposure - 1.0).abs() < 1e-4 {
+        return;
+    }
+
+    for pixel in pixels {
+        pixel.0 *= damped_exposure;
+        pixel.1 *= damped_exposure;
+        pixel.2 *= damped_exposure;
+    }
+}
+
+fn dither_hash(x: usize, y: usize, frame_number: usize) -> i32 {
+    let mut n = (x as u32)
+        .wrapping_mul(374_761_393)
+        .wrapping_add((y as u32).wrapping_mul(668_265_263))
+        .wrapping_add((frame_number as u32).wrapping_mul(2_147_483_647));
+    n ^= n >> 13;
+    n = n.wrapping_mul(1_274_126_177);
+    n ^= n >> 16;
+    (n & 0xff) as i32
+}
+
+fn apply_output_dither(buf_16bit: &mut [u16], width: usize, frame_number: usize) {
+    if width == 0 {
+        return;
+    }
+    for (idx, chunk) in buf_16bit.chunks_exact_mut(3).enumerate() {
+        let x = idx % width;
+        let y = idx / width;
+        let noise = dither_hash(x, y, frame_number) - 128;
+        let offset = noise / 2;
+        for c in chunk {
+            let value = *c as i32 + offset;
+            *c = value.clamp(0, 65_535) as u16;
+        }
+    }
 }
 
 /// Save 16-bit image as PNG
@@ -333,6 +424,7 @@ fn composite_buffers(
 /// parameters determined (either explicitly set or randomized).
 fn build_effect_config_from_resolved(
     resolved: &randomizable_config::ResolvedEffectConfig,
+    render_config: &RenderConfig,
 ) -> EffectConfig {
     use crate::oklab::GamutMapMode;
     use crate::post_effects::{
@@ -347,7 +439,12 @@ fn build_effect_config_from_resolved(
     let min_dim = width.min(height);
     
     // Calculate derived parameters from resolved scales
-    let blur_radius_px = (resolved.blur_radius_scale * min_dim as f64).round() as usize;
+    let bloom_enabled = resolved.enable_bloom;
+    let blur_radius_px = if bloom_enabled {
+        (resolved.blur_radius_scale * min_dim as f64).round() as usize
+    } else {
+        0
+    };
     let dog_inner_sigma = resolved.dog_sigma_scale * min_dim as f64;
     let glow_radius = (resolved.glow_radius_scale * min_dim as f64).round() as usize;
     let chromatic_bloom_radius = (resolved.chromatic_bloom_radius_scale * min_dim as f64).round() as usize;
@@ -359,7 +456,7 @@ fn build_effect_config_from_resolved(
     let dog_config = DogBloomConfig {
         inner_sigma: dog_inner_sigma,
         outer_ratio: resolved.dog_ratio,
-        strength: resolved.dog_strength,
+        strength: if bloom_enabled { resolved.dog_strength } else { 0.0 },
         threshold: 0.01, // Fixed threshold
     };
     
@@ -384,12 +481,18 @@ fn build_effect_config_from_resolved(
     
     EffectConfig {
         // Core bloom and blur
-        bloom_mode: if resolved.enable_bloom { "dog".to_string() } else { "none".to_string() },
+        bloom_mode: if !bloom_enabled {
+            "none".to_string()
+        } else if render_config.bloom_mode.eq_ignore_ascii_case("gaussian") {
+            "gaussian".to_string()
+        } else {
+            "dog".to_string()
+        },
         blur_radius_px,
-        blur_strength: resolved.blur_strength,
+        blur_strength: if bloom_enabled { resolved.blur_strength } else { 0.0 },
         blur_core_brightness: resolved.blur_core_brightness,
         dog_config,
-        hdr_mode: "auto".to_string(),
+        hdr_mode: render_config.hdr_mode.clone(),
         perceptual_blur_enabled: resolved.enable_perceptual_blur,
         perceptual_blur_config,
         
@@ -670,7 +773,7 @@ pub fn pass_1_build_histogram_spectral(
     let mut accum_rgba = vec![(0.0, 0.0, 0.0, 0.0); ctx.pixel_count()];
 
     // Build effect configuration from resolved config
-    let effect_config = build_effect_config_from_resolved(resolved_config);
+    let effect_config = build_effect_config_from_resolved(resolved_config, render_config);
     let effect_chain = EffectChainBuilder::new(effect_config);
     
     // Create nebula configuration (rendered separately, not in effect chain)
@@ -821,7 +924,7 @@ pub fn pass_2_write_frames_spectral(
     let mut accum_rgba = vec![(0.0, 0.0, 0.0, 0.0); ctx.pixel_count()];
 
     // Build effect configuration from resolved config
-    let effect_config = build_effect_config_from_resolved(resolved_config);
+    let effect_config = build_effect_config_from_resolved(resolved_config, render_config);
     let effect_chain = EffectChainBuilder::new(effect_config);
     
     // Create nebula configuration (rendered separately, not in effect chain)
@@ -853,6 +956,15 @@ pub fn pass_2_write_frames_spectral(
     let empty_background = vec![(0.0, 0.0, 0.0, 0.0); ctx.pixel_count()];
 
     let levels = ChannelLevels::new(black_r, white_r, black_g, white_g, black_b, white_b);
+    let temporal_smoother = if render_config.temporal_smoothing_enabled {
+        Some(TemporalSmoothing::new(TemporalSmoothingConfig {
+            blend_factor: render_config.temporal_smoothing_blend.clamp(0.0, 0.95),
+            alpha_threshold: 0.01,
+        }))
+    } else {
+        None
+    };
+    let mut exposure_state: Option<f64> = None;
 
     for step in 0..total_steps {
         if step % chunk_line == 0 {
@@ -921,7 +1033,18 @@ pub fn pass_2_write_frames_spectral(
             };
 
             // Composite nebula background UNDER trajectory foreground
-            let final_frame_pixels = composite_buffers(&nebula_background, &trajectory_pixels);
+            let mut final_frame_pixels = composite_buffers(&nebula_background, &trajectory_pixels);
+
+            if let Some(smoother) = &temporal_smoother {
+                final_frame_pixels = smoother.process_frame(final_frame_pixels);
+            }
+            if render_config.exposure_damping_enabled {
+                apply_exposure_damping(
+                    &mut final_frame_pixels,
+                    &mut exposure_state,
+                    render_config.exposure_damping_rate,
+                );
+            }
 
             // levels + ACES tonemapping to 16-bit
             let mut buf_16bit = vec![0u16; ctx.pixel_count() * 3];
@@ -933,6 +1056,9 @@ pub fn pass_2_write_frames_spectral(
                     chunk[2] = mapped[2];
                 },
             );
+            if render_config.output_dither_enabled {
+                apply_output_dither(&mut buf_16bit, width as usize, step / frame_interval);
+            }
 
             // Convert u16 buffer to bytes for FFmpeg (little-endian rgb48le format)
             let buf_bytes = unsafe {
@@ -981,7 +1107,7 @@ pub fn render_single_frame_spectral(
     let mut accum_rgba = vec![(0.0, 0.0, 0.0, 0.0); ctx.pixel_count()];
 
     // Build effect configuration from resolved config
-    let effect_config = build_effect_config_from_resolved(resolved_config);
+    let effect_config = build_effect_config_from_resolved(resolved_config, render_config);
     let effect_chain = EffectChainBuilder::new(effect_config);
     
     // Create nebula configuration
