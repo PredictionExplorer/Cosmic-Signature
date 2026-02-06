@@ -62,10 +62,11 @@ const solidityCompilationCacheSubFolderName = ENABLE_HARDHAT_PREPROCESSOR ? ("de
 // One option is to install the solc package globally:
 //    sudo add-apt-repository ppa:ethereum/ethereum
 //    sudo apt install solc
+// Update: From Solidity 0.8.31 ChangeLog: Ubuntu PPA Packages: Discontinue the PPA as a binary distribution channel.
 // Another, arguably better option is to use the "solc-select" tool.
 // It's documented at https://github.com/crytic/solc-select .
 // After you install it, to switch to a particular solc version, use this command:
-//    solc-select use 0.8.30 --always-install
+//    solc-select use 0.8.33 --always-install
 // It's OK if afterwards you switch to a different version. As long as the given version remains installed, we will find and use it.
 //
 // Update 1. It turns out that just like solc-js, solc installed with solc-select also fails when SMTChecker is enabled.
@@ -88,7 +89,7 @@ const solidityCompilationCacheSubFolderName = ENABLE_HARDHAT_PREPROCESSOR ? ("de
 // [ToDo-202409098-2]
 // When changing this, remember to revisit the configuration near Comment-202411136, Comment-202408026, Comment-202408025.
 // [/ToDo-202409098-2]
-const solidityVersion = "0.8.30";
+const solidityVersion = "0.8.33";
 
 // Comment-202409011 applies.
 // [Comment-202411136]
@@ -105,7 +106,7 @@ const solidityVersion = "0.8.30";
 // solc-js is said to report its version without the suffix.
 // So we must do the same here.
 // [/Comment-202411136]
-const solidityCompilerLongVersion = solidityVersion + "+commit.73712a01";
+const solidityCompilerLongVersion = solidityVersion + "+commit.64118f21";
 
 // Comment-202409011 applies.
 // Comment-202411136 relates.
@@ -155,7 +156,7 @@ console.warn("%s", `Warning. Make sure "${solidityCompilerPath}" version is "${s
 // This imports a bunch of other packages. Don't import them here.
 require("@nomicfoundation/hardhat-toolbox");
 
-const { HardhatUserConfig, subtask, } = require("hardhat/config");
+const { subtask } = require("hardhat/config");
 if (ENABLE_HARDHAT_PREPROCESSOR) {
 	require("hardhat-preprocessor");
 }
@@ -222,7 +223,7 @@ function populateNetworkIsMainNetOnce(hre) {
 
 subtask(
 	TASK_COMPILE_SOLIDITY_GET_SOLC_BUILD,
-	async (args, hre, runSuper) => {
+	async (args, _hre, _runSuper) => {
 		if (args.solcVersion == solidityVersion) {
 			return {
 				compilerPath: solidityCompilerPath,
@@ -280,7 +281,7 @@ function preProcessSolidityLine(hre, line) {
 // #endregion
 // #region
 
-/** @type {HardhatUserConfig} */
+/** @type {import("hardhat/config").HardhatUserConfig} */
 const hardhatUserConfig = {
 	// #region
 
@@ -302,13 +303,13 @@ const hardhatUserConfig = {
 			// See https://v2.hardhat.org/hardhat-runner/docs/config#default-evm-version
 			// But we want this to be the latest Arbitrum-compatible.
 			// [/Comment-202408026]
-			evmVersion: "prague",
+			evmVersion: "osaka",
 
 			// [Comment-202408025]
 			// See https://v2.hardhat.org/hardhat-runner/docs/reference/solidity-support
 			// [/Comment-202408025]
 			// Is this going to become `true` by default in a future Solidity version?
-			// As of the 0.8.30, this is `false` by default.
+			// As of the 0.8.33, this is `false` by default.
 			viaIR: true,
 
 			// Comment-202408025 applies.
