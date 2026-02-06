@@ -61,7 +61,7 @@ impl NebulaCloudConfig {
         }
     }
 
-    /// Create configuration for standard mode (disabled)
+    /// Create configuration for standard mode (disabled — nebula requires --special)
     pub fn standard_mode(_width: usize, _height: usize, seed: i32) -> Self {
         Self {
             strength: 0.0,  // Disabled in standard mode
@@ -308,12 +308,32 @@ mod tests {
     }
 
     #[test]
-    fn test_disabled_mode() {
-        let config = NebulaCloudConfig::standard_mode(1920, 1080, 0);
-        assert_eq!(config.strength, 0.0);
-        
+    fn test_disabled_when_zero_strength() {
+        let config = NebulaCloudConfig {
+            strength: 0.0,
+            ..NebulaCloudConfig::special_mode(1920, 1080, 0)
+        };
         let nebula = NebulaClouds::new(config);
         assert!(!nebula.is_enabled());
+    }
+
+    #[test]
+    fn test_standard_mode_is_disabled() {
+        // Nebula requires --special flag; standard mode is disabled
+        let config = NebulaCloudConfig::standard_mode(1920, 1080, 42);
+        assert_eq!(config.strength, 0.0, "Standard mode should have zero strength");
+        
+        let nebula = NebulaClouds::new(config);
+        assert!(!nebula.is_enabled(), "Standard mode nebula should be disabled");
+    }
+
+    #[test]
+    fn test_special_mode_is_enabled() {
+        let config = NebulaCloudConfig::special_mode(1920, 1080, 42);
+        assert!(config.strength > 0.0, "Special mode should have non-zero strength");
+        
+        let nebula = NebulaClouds::new(config);
+        assert!(nebula.is_enabled(), "Special mode nebula should be enabled");
     }
 
     #[test]

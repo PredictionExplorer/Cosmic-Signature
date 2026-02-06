@@ -45,15 +45,15 @@ impl AtmosphericDepthConfig {
         }
     }
 
-    /// Create configuration for standard mode (minimal effect)
+    /// Create configuration for standard mode (refined atmospheric effect)
     pub fn standard_mode() -> Self {
         Self {
-            strength: 0.08,
-            // Subtle cool tint
-            fog_color: (0.05, 0.08, 0.15),
-            density_threshold: 0.25,
-            desaturation: 0.20,
-            darkening: 0.08,
+            strength: 0.15,
+            // Richer cool tint for visible atmospheric depth
+            fog_color: (0.06, 0.10, 0.18),
+            density_threshold: 0.20,
+            desaturation: 0.30,
+            darkening: 0.12,
             density_radius: 2,
         }
     }

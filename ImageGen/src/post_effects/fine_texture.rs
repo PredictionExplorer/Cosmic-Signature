@@ -58,14 +58,14 @@ impl FineTextureConfig {
         }
     }
 
-    /// Standard mode (minimal texture)
+    /// Standard mode (refined surface texture)
     pub fn standard_mode(width: usize, height: usize) -> Self {
         let base_scale = (width as f64 * height as f64).sqrt();
         Self {
             texture_type: TextureType::FilmGrain,
-            strength: 0.04,
-            scale: base_scale * 0.0008,
-            contrast: 0.20,
+            strength: 0.07,
+            scale: base_scale * 0.0010,
+            contrast: 0.26,
             anisotropy: 0.0,
             angle: 0.0,
         }

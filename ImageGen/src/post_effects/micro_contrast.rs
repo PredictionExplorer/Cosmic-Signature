@@ -38,13 +38,13 @@ impl MicroContrastConfig {
         }
     }
 
-    /// Create configuration for standard mode (subtle clarity)
+    /// Create configuration for standard mode (refined clarity)
     pub fn standard_mode() -> Self {
         Self {
-            strength: 0.18,           // Subtle clarity boost
+            strength: 0.25,           // Noticeable clarity boost
             radius: 2,
-            edge_threshold: 0.15,     // More edge protection
-            luminance_weight: 0.6,
+            edge_threshold: 0.14,     // Balanced edge protection
+            luminance_weight: 0.65,
         }
     }
 }

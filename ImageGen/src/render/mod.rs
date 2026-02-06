@@ -374,8 +374,8 @@ fn build_effect_config_from_resolved(
         None
     };
     
-    // Determine gradient map settings (only enabled in special mode or if explicitly enabled)
-    let gradient_map_enabled = resolved.enable_gradient_map && resolved.special_mode;
+    // Determine gradient map settings (enabled in both modes for richer color palettes)
+    let gradient_map_enabled = resolved.enable_gradient_map;
     let gradient_map_config = GradientMapConfig {
         palette: LuxuryPalette::from_index(resolved.gradient_map_palette),
         strength: resolved.gradient_map_strength,

@@ -46,16 +46,16 @@ impl OpalescenceConfig {
         }
     }
 
-    /// Create configuration for standard mode (subtle effect)
+    /// Create configuration for standard mode (refined gem-like effect)
     pub fn standard_mode(width: usize, height: usize) -> Self {
         let base_scale = (width as f64 * height as f64).sqrt();
         Self {
-            strength: 0.08,                    // Very subtle
-            scale: base_scale * 0.012,         // Slightly larger features
+            strength: 0.12,                    // Visible but refined
+            scale: base_scale * 0.010,         // Medium-scale features
             layers: 2,                         // Fewer layers
-            chromatic_shift: 0.15,             // Minimal rainbow
-            angle_sensitivity: 0.65,           // Less angle-dependent
-            pearl_sheen: 0.08,                 // Minimal sheen
+            chromatic_shift: 0.22,             // Noticeable rainbow
+            angle_sensitivity: 0.85,           // Stronger angle dependency
+            pearl_sheen: 0.12,                 // Subtle sheen
         }
     }
 }

@@ -62,7 +62,7 @@ pub struct RandomizableEffectConfig {
     // Gradient mapping
     pub gradient_map_strength: Option<f64>,
     pub gradient_map_hue_preservation: Option<f64>,
-    pub gradient_map_palette: Option<usize>,  // 0-14 for 15 different palettes
+    pub gradient_map_palette: Option<usize>,  // 0-19 for 20 different palettes
 
     // Material effects - Opalescence
     pub opalescence_strength: Option<f64>,
@@ -474,7 +474,7 @@ pub struct ResolvedEffectConfig {
     pub tone_curve_strength: f64,
     pub gradient_map_strength: f64,
     pub gradient_map_hue_preservation: f64,
-    pub gradient_map_palette: usize,  // Palette index (0-14)
+    pub gradient_map_palette: usize,  // Palette index (0-19)
     pub opalescence_strength: f64,
     pub opalescence_scale: f64,
     pub opalescence_layers: usize,
@@ -1014,7 +1014,7 @@ mod tests {
         assert!(resolved.glow_strength >= 0.0 && resolved.glow_strength <= 1.0);
         assert!(resolved.chromatic_bloom_strength >= 0.10 && resolved.chromatic_bloom_strength <= 1.0);
         assert!(resolved.opalescence_layers >= 1 && resolved.opalescence_layers <= 6);
-        assert!(resolved.gradient_map_palette <= 14, "Palette index should be 0-14");
+        assert!(resolved.gradient_map_palette <= 19, "Palette index should be 0-19");
         assert!(resolved.atmospheric_fog_color_r >= 0.0 && resolved.atmospheric_fog_color_r <= 0.30);
         assert!(resolved.atmospheric_fog_color_g >= 0.0 && resolved.atmospheric_fog_color_g <= 0.30);
         assert!(resolved.atmospheric_fog_color_b >= 0.0 && resolved.atmospheric_fog_color_b <= 0.30);
@@ -1039,8 +1039,8 @@ mod tests {
 
             // Verify palette index is always within valid range
             assert!(
-                resolved.gradient_map_palette <= 14,
-                "Palette index {} exceeds maximum (14)",
+                resolved.gradient_map_palette <= 19,
+                "Palette index {} exceeds maximum (19)",
                 resolved.gradient_map_palette
             );
         }
@@ -1081,19 +1081,22 @@ mod tests {
     fn test_luxury_palette_from_index() {
         use crate::post_effects::LuxuryPalette;
         
-        // Test all valid indices
-        for i in 0..=14 {
+        // Test all valid indices (0-19 for all 20 palettes)
+        for i in 0..=19 {
             let palette = LuxuryPalette::from_index(i);
             // Just verify it doesn't panic and returns a valid palette
             // The actual mapping correctness is ensured by the match statement
             drop(palette);
         }
         
-        // Test that modulo wrapping works (indices > 14)
-        let palette_15 = LuxuryPalette::from_index(15);
+        // Test that modulo wrapping works (indices >= 20)
+        let palette_20 = LuxuryPalette::from_index(20);
         let palette_0 = LuxuryPalette::from_index(0);
         // Both should be GoldPurple (though we can't easily test enum equality without PartialEq)
-        drop(palette_15);
+        drop(palette_20);
         drop(palette_0);
+        
+        // Verify total count
+        assert_eq!(LuxuryPalette::count(), 20, "Should have 20 palettes");
     }
 }

@@ -285,10 +285,10 @@ pub const GRADIENT_MAP_HUE_PRESERVATION: FloatParamDescriptor = FloatParamDescri
 pub const GRADIENT_MAP_PALETTE: IntParamDescriptor = IntParamDescriptor {
     name: "gradient_map_palette",
     min: 0,
-    max: 14,     // 15 palettes total (0-14)
+    max: 19,     // 20 palettes total (0-19)
     gallery_min: 0,
-    gallery_max: 14,
-    description: "Luxury palette selection (0=GoldPurple, 1=CosmicTealPink, 2=AmberCyan, 3=IndigoGold, 4=BlueOrange, 5=VenetianRenaissance, 6=JapaneseUkiyoe, 7=ArtNouveau, 8=LunarOpal, 9=FireOpal, 10=DeepOcean, 11=AuroraBorealis, 12=MoltenMetal, 13=AncientJade, 14=RoyalAmethyst)",
+    gallery_max: 19,
+    description: "Luxury palette selection (0=GoldPurple, 1=CosmicTealPink, 2=AmberCyan, 3=IndigoGold, 4=BlueOrange, 5=VenetianRenaissance, 6=JapaneseUkiyoe, 7=ArtNouveau, 8=LunarOpal, 9=FireOpal, 10=DeepOcean, 11=AuroraBorealis, 12=MoltenMetal, 13=AncientJade, 14=RoyalAmethyst, 15=DesertSunset, 16=PolarIce, 17=PeacockFeather, 18=CherryBlossom, 19=CosmicNebula)",
 };
 
 // ==================== MATERIAL EFFECTS ====================
@@ -572,11 +572,11 @@ pub const CLIP_WHITE: FloatParamDescriptor = FloatParamDescriptor {
 
 pub const NEBULA_STRENGTH: FloatParamDescriptor = FloatParamDescriptor {
     name: "nebula_strength",
-    min: 0.0,    // Disabled completely (was 0.30)
-    max: 0.0,    // Disabled completely
-    gallery_min: 0.0,
-    gallery_max: 0.0,
-    description: "Nebula cloud background opacity (currently disabled)",
+    min: 0.03,   // Subtle cosmic atmosphere
+    max: 0.18,   // Clearly visible but never overpowering
+    gallery_min: 0.06,
+    gallery_max: 0.12,
+    description: "Nebula cloud background opacity for cosmic depth",
 };
 
 pub const NEBULA_OCTAVES: IntParamDescriptor = IntParamDescriptor {
