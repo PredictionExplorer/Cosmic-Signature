@@ -18,6 +18,7 @@ import os
 import platform
 import random
 import re
+import shlex
 import secrets
 import signal
 import socket
@@ -39,6 +40,7 @@ DEFAULT_LOGS_DIR = Path("./runner_logs")
 DEFAULT_BINARY_LOG_LEVEL = "info"
 DEFAULT_DIAGNOSTIC_TAIL_BYTES = 32 * 1024
 DEFAULT_TOP_PROCESSES = 20
+DEFAULT_STOP_WAIT_SECONDS = 6.0
 
 # Global state for graceful shutdown
 shutdown_event = threading.Event()
@@ -140,6 +142,23 @@ def parse_args() -> argparse.Namespace:
             f"(default: {DEFAULT_DIAGNOSTIC_TAIL_BYTES})"
         ),
     )
+    parser.add_argument(
+        '--stop-all',
+        action='store_true',
+        help=(
+            "Stop active run.py sessions and their renderer child processes "
+            "for this repository, then exit"
+        ),
+    )
+    parser.add_argument(
+        '--stop-wait-seconds',
+        type=float,
+        default=DEFAULT_STOP_WAIT_SECONDS,
+        help=(
+            "How long to wait after graceful stop signals before escalation "
+            f"(default: {DEFAULT_STOP_WAIT_SECONDS})"
+        ),
+    )
     args = parser.parse_args()
     if args.workers < 1:
         parser.error("--workers must be at least 1")
@@ -147,6 +166,8 @@ def parse_args() -> argparse.Namespace:
         parser.error("--timeout must be at least 1")
     if args.diagnostic_tail_bytes < 256:
         parser.error("--diagnostic-tail-bytes must be at least 256")
+    if args.stop_wait_seconds < 0.1:
+        parser.error("--stop-wait-seconds must be at least 0.1")
     return args
 
 
@@ -261,6 +282,7 @@ def ensure_logs_layout(logs_dir: Path) -> dict[str, Path]:
         'runs_index': logs_dir / "runs.jsonl",
         'session_meta': logs_dir / "session.json",
         'session_events': logs_dir / "session_events.jsonl",
+        'session_control': logs_dir / "session_control.json",
     }
 
 
@@ -444,6 +466,29 @@ def write_json_file(path: Path, payload: dict[str, Any]) -> None:
     tmp_path.replace(path)
 
 
+def read_json_file(path: Path) -> Optional[dict[str, Any]]:
+    """Read a JSON object file if it exists and is valid."""
+    if not path.exists():
+        return None
+    try:
+        with path.open('r', encoding='utf-8') as f:
+            data = json.load(f)
+        if isinstance(data, dict):
+            return data
+    except Exception:
+        return None
+    return None
+
+
+def update_session_control(path: Path, updates: dict[str, Any]) -> None:
+    """Merge updates into session control JSON, preserving existing fields."""
+    payload = read_json_file(path) or {}
+    payload.update(updates)
+    payload.setdefault('created_at_utc', utc_now_iso())
+    payload['updated_at_utc'] = utc_now_iso()
+    write_json_file(path, payload)
+
+
 def append_jsonl(path: Path, payload: dict[str, Any]) -> None:
     """Append a JSON object line in a thread-safe way."""
     line = json.dumps(payload, sort_keys=True)
@@ -468,6 +513,294 @@ def write_session_metadata(args: argparse.Namespace, logs_layout: dict[str, Path
         },
     }
     write_json_file(logs_layout['session_meta'], payload)
+
+
+def is_pid_alive(pid: int) -> bool:
+    """Return True if the process exists."""
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def process_cwd(pid: int) -> Optional[str]:
+    """Best-effort process cwd lookup (Linux /proc)."""
+    path = Path(f"/proc/{pid}/cwd")
+    if not path.exists():
+        return None
+    try:
+        return str(path.resolve())
+    except Exception:
+        return None
+
+
+def process_cmdline(pid: int) -> str:
+    """Best-effort full command line for a process."""
+    proc_cmd = Path(f"/proc/{pid}/cmdline")
+    if proc_cmd.exists():
+        try:
+            raw = proc_cmd.read_bytes()
+            text = raw.replace(b"\x00", b" ").decode(errors='replace').strip()
+            if text:
+                return text
+        except Exception:
+            pass
+    ps_cmd = safe_check_output(["ps", "-p", str(pid), "-o", "args="])
+    return ps_cmd or ""
+
+
+def process_matches_repo(pid: int, repo_root: Path) -> bool:
+    """Heuristic: process cwd or command line points to this repo."""
+    root_str = str(repo_root)
+    cwd = process_cwd(pid)
+    if cwd and (cwd == root_str or cwd.startswith(root_str + os.sep)):
+        return True
+    cmd = process_cmdline(pid)
+    if root_str in cmd or "Cosmic-Signature/ImageGen" in cmd:
+        return True
+    return False
+
+
+def parse_ps_table() -> list[dict[str, Any]]:
+    """Parse basic process table entries from ps."""
+    output = safe_check_output(["ps", "-eo", "pid,ppid,comm,args"])
+    if not output:
+        return []
+    rows: list[dict[str, Any]] = []
+    lines = output.splitlines()
+    for line in lines[1:]:
+        parts = line.strip().split(None, 3)
+        if len(parts) < 4:
+            continue
+        try:
+            pid = int(parts[0])
+            ppid = int(parts[1])
+        except ValueError:
+            continue
+        rows.append({'pid': pid, 'ppid': ppid, 'comm': parts[2], 'args': parts[3]})
+    return rows
+
+
+def tokenize_command_line(args: str) -> list[str]:
+    """Split a process args string into tokens."""
+    try:
+        return shlex.split(args)
+    except ValueError:
+        return args.strip().split()
+
+
+def is_python_runpy_process(comm: str, args: str) -> bool:
+    """Return True if process appears to be `python ... run.py ...`."""
+    if "python" not in comm.lower():
+        return False
+    tokens = tokenize_command_line(args)
+    if not tokens:
+        return False
+    exe = os.path.basename(tokens[0]).lower()
+    if "python" not in exe:
+        return False
+    for token in tokens[1:]:
+        if token.endswith("run.py"):
+            return True
+    return False
+
+
+def is_runpy_cmdline(cmdline: str) -> bool:
+    """Fallback check when only full cmdline text is available."""
+    tokens = tokenize_command_line(cmdline)
+    if not tokens:
+        return False
+    exe = os.path.basename(tokens[0]).lower()
+    if "python" not in exe:
+        return False
+    return any(token.endswith("run.py") for token in tokens[1:])
+
+
+def is_renderer_process(comm: str, args: str) -> bool:
+    """Return True if process appears to be the renderer binary."""
+    if "three_body_problem" in comm:
+        return True
+    tokens = tokenize_command_line(args)
+    if not tokens:
+        return False
+    first = os.path.basename(tokens[0]).lower()
+    if first == "three_body_problem":
+        return True
+    if first in {"sh", "bash", "dash", "zsh"} and len(tokens) > 1:
+        return os.path.basename(tokens[1]) == "three_body_problem"
+    return False
+
+
+def send_signal_if_alive(pid: int, sig: signal.Signals) -> bool:
+    """Send a signal to a pid if it is still alive."""
+    if not is_pid_alive(pid):
+        return False
+    try:
+        os.kill(pid, sig)
+        return True
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return False
+    except Exception:
+        return False
+
+
+def wait_for_exit(pids: set[int], timeout_seconds: float) -> set[int]:
+    """Wait until timeout and return pids still alive."""
+    if timeout_seconds <= 0:
+        return {pid for pid in pids if is_pid_alive(pid)}
+    deadline = time.monotonic() + timeout_seconds
+    while time.monotonic() < deadline:
+        alive = {pid for pid in pids if is_pid_alive(pid)}
+        if not alive:
+            return set()
+        time.sleep(0.2)
+    return {pid for pid in pids if is_pid_alive(pid)}
+
+
+def discover_runner_and_renderer_pids(
+    logs_layout: dict[str, Path],
+    repo_root: Path,
+) -> tuple[set[int], set[int]]:
+    """Discover active runner and renderer pids for this repository."""
+    me = os.getpid()
+    runner_pids: set[int] = set()
+    renderer_pids: set[int] = set()
+
+    control = read_json_file(logs_layout['session_control']) or {}
+    control_pid = control.get('runner_pid')
+    if isinstance(control_pid, int) and control_pid != me and is_pid_alive(control_pid):
+        if is_runpy_cmdline(process_cmdline(control_pid)):
+            runner_pids.add(control_pid)
+
+    process_rows = parse_ps_table()
+    for row in process_rows:
+        pid = row['pid']
+        comm = row['comm']
+        args = row['args']
+        if pid == me:
+            continue
+        if is_python_runpy_process(comm, args) and process_matches_repo(pid, repo_root):
+            runner_pids.add(pid)
+
+    for row in process_rows:
+        pid = row['pid']
+        ppid = row['ppid']
+        comm = row['comm']
+        args = row['args']
+        if pid == me:
+            continue
+        if not is_renderer_process(comm, args):
+            continue
+        if ppid in runner_pids or process_matches_repo(pid, repo_root):
+            renderer_pids.add(pid)
+
+    return runner_pids, renderer_pids
+
+
+def stop_all_running_tasks(logs_layout: dict[str, Path], wait_seconds: float) -> int:
+    """Stop all run.py and renderer tasks associated with this repository."""
+    repo_root = Path.cwd().resolve()
+    runner_pids, renderer_pids = discover_runner_and_renderer_pids(logs_layout, repo_root)
+    if not runner_pids and not renderer_pids:
+        print("No active run.py or three_body_problem tasks found for this repository.")
+        update_session_control(
+            logs_layout['session_control'],
+            {
+                'status': 'stop_requested_no_targets',
+                'repo_root': str(repo_root),
+            },
+        )
+        return 0
+
+    print(f"Found {len(runner_pids)} runner(s) and {len(renderer_pids)} renderer process(es).")
+    if runner_pids:
+        print(f"  Runner PIDs:   {', '.join(str(p) for p in sorted(runner_pids))}")
+    if renderer_pids:
+        print(f"  Renderer PIDs: {', '.join(str(p) for p in sorted(renderer_pids))}")
+
+    write_session_event(
+        logs_layout['session_events'],
+        {
+            'event': 'stop_all_requested',
+            'runner_pids': sorted(runner_pids),
+            'renderer_pids': sorted(renderer_pids),
+            'repo_root': str(repo_root),
+            'wait_seconds': wait_seconds,
+        },
+    )
+    update_session_control(
+        logs_layout['session_control'],
+        {
+            'status': 'stopping',
+            'repo_root': str(repo_root),
+            'stop_request': {
+                'runner_pids': sorted(runner_pids),
+                'renderer_pids': sorted(renderer_pids),
+                'wait_seconds': wait_seconds,
+            },
+        },
+    )
+
+    for pid in sorted(runner_pids):
+        send_signal_if_alive(pid, signal.SIGINT)
+    runners_left = wait_for_exit(runner_pids, wait_seconds)
+
+    for pid in sorted(runners_left):
+        send_signal_if_alive(pid, signal.SIGTERM)
+    runners_left = wait_for_exit(runners_left, max(1.0, wait_seconds / 2.0))
+
+    for pid in sorted(renderer_pids):
+        send_signal_if_alive(pid, signal.SIGTERM)
+    renderers_left = wait_for_exit(renderer_pids, 2.0)
+
+    still_alive = set(runners_left) | set(renderers_left)
+    for pid in sorted(still_alive):
+        send_signal_if_alive(pid, signal.SIGKILL)
+    still_alive = wait_for_exit(still_alive, 1.0)
+
+    stopped_runners = sorted(pid for pid in runner_pids if pid not in runners_left)
+    stopped_renderers = sorted(pid for pid in renderer_pids if pid not in renderers_left)
+
+    write_session_event(
+        logs_layout['session_events'],
+        {
+            'event': 'stop_all_finished',
+            'requested_runner_pids': sorted(runner_pids),
+            'requested_renderer_pids': sorted(renderer_pids),
+            'stopped_runner_pids': stopped_runners,
+            'stopped_renderer_pids': stopped_renderers,
+            'remaining_pids': sorted(still_alive),
+        },
+    )
+
+    if still_alive:
+        update_session_control(
+            logs_layout['session_control'],
+            {
+                'status': 'stop_partial',
+                'remaining_pids': sorted(still_alive),
+            },
+        )
+        print(
+            "Stop command completed with remaining processes: "
+            + ", ".join(str(pid) for pid in sorted(still_alive))
+        )
+        return 1
+
+    update_session_control(
+        logs_layout['session_control'],
+        {
+            'status': 'stopped_by_stop_all',
+            'remaining_pids': [],
+        },
+    )
+    print("All matching run.py and three_body_problem processes were stopped.")
+    return 0
 
 
 def run_simulation(
@@ -881,6 +1214,10 @@ def main():
     mode_arg = args.mode
     timeout = args.timeout
     logs_layout = ensure_logs_layout(Path(args.logs_dir))
+
+    if args.stop_all:
+        sys.exit(stop_all_running_tasks(logs_layout, args.stop_wait_seconds))
+
     write_session_metadata(args, logs_layout)
     write_session_event(
         logs_layout['session_events'],
@@ -892,6 +1229,18 @@ def main():
     )
 
     check_binary(binary_path)
+    update_session_control(
+        logs_layout['session_control'],
+        {
+            'status': 'running',
+            'runner_pid': os.getpid(),
+            'runner_pgid': os.getpgrp(),
+            'repo_root': str(Path.cwd().resolve()),
+            'logs_root': str(logs_layout['root']),
+            'runs_index': str(logs_layout['runs_index']),
+            'session_events': str(logs_layout['session_events']),
+        },
+    )
 
     # Ensure output directories exist
     Path(args.pics_dir).mkdir(parents=True, exist_ok=True)
@@ -1020,6 +1369,7 @@ def main():
     print(f"  Avg sim time:      {avg:.1f}s")
     print(f"  Wall-clock time:   {overall_elapsed:.1f}s")
     print(f"  Session metadata:  {logs_layout['session_meta']}")
+    print(f"  Session control:   {logs_layout['session_control']}")
     print(f"  Run index (JSONL): {logs_layout['runs_index']}")
     print(f"  Session events:    {logs_layout['session_events']}")
     print(f"  Per-run logs:      {logs_layout['runs']}")
@@ -1037,6 +1387,29 @@ def main():
             'regular_fail': stats['regular_fail'],
             'avg_sim_time': avg,
             'wall_clock_seconds': overall_elapsed,
+        },
+    )
+    update_session_control(
+        logs_layout['session_control'],
+        {
+            'status': 'stopped',
+            'runner_pid': os.getpid(),
+            'runner_pgid': os.getpgrp(),
+            'repo_root': str(Path.cwd().resolve()),
+            'logs_root': str(logs_layout['root']),
+            'runs_index': str(logs_layout['runs_index']),
+            'session_events': str(logs_layout['session_events']),
+            'summary': {
+                'total_started': stats['started'],
+                'successful': stats['successful'],
+                'failed': stats['failed'],
+                'special_ok': stats['special_ok'],
+                'special_fail': stats['special_fail'],
+                'regular_ok': stats['regular_ok'],
+                'regular_fail': stats['regular_fail'],
+                'avg_sim_time': avg,
+                'wall_clock_seconds': overall_elapsed,
+            },
         },
     )
 
