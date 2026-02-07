@@ -17,6 +17,7 @@ import json
 import os
 import platform
 import random
+import re
 import secrets
 import signal
 import socket
@@ -36,6 +37,8 @@ DEFAULT_SUBPROCESS_TIMEOUT = 16000  # 100 minutes per simulation
 BINARY_PATH = Path('./target/release/three_body_problem')
 DEFAULT_LOGS_DIR = Path("./runner_logs")
 DEFAULT_BINARY_LOG_LEVEL = "info"
+DEFAULT_DIAGNOSTIC_TAIL_BYTES = 32 * 1024
+DEFAULT_TOP_PROCESSES = 20
 
 # Global state for graceful shutdown
 shutdown_event = threading.Event()
@@ -128,11 +131,22 @@ def parse_args() -> argparse.Namespace:
         default='json',
         help="Binary log format for captured logs (default: json)",
     )
+    parser.add_argument(
+        '--diagnostic-tail-bytes',
+        type=int,
+        default=DEFAULT_DIAGNOSTIC_TAIL_BYTES,
+        help=(
+            "Bytes of stdout/stderr tail captured in per-run diagnostics "
+            f"(default: {DEFAULT_DIAGNOSTIC_TAIL_BYTES})"
+        ),
+    )
     args = parser.parse_args()
     if args.workers < 1:
         parser.error("--workers must be at least 1")
     if args.timeout < 1:
         parser.error("--timeout must be at least 1")
+    if args.diagnostic_tail_bytes < 256:
+        parser.error("--diagnostic-tail-bytes must be at least 256")
     return args
 
 
@@ -246,7 +260,179 @@ def ensure_logs_layout(logs_dir: Path) -> dict[str, Path]:
         'runs': runs_dir,
         'runs_index': logs_dir / "runs.jsonl",
         'session_meta': logs_dir / "session.json",
+        'session_events': logs_dir / "session_events.jsonl",
     }
+
+
+def safe_check_output(command: list[str]) -> Optional[str]:
+    """Run a command and return stdout if successful."""
+    try:
+        out = subprocess.check_output(
+            command,
+            stderr=subprocess.DEVNULL,
+            text=True,
+        )
+        return out.strip()
+    except Exception:
+        return None
+
+
+def parse_proc_status(pid: int) -> dict[str, str]:
+    """Read selected fields from /proc/<pid>/status when available."""
+    path = Path(f"/proc/{pid}/status")
+    if not path.exists():
+        return {}
+    wanted = {
+        "Name",
+        "State",
+        "VmPeak",
+        "VmSize",
+        "VmRSS",
+        "VmHWM",
+        "Threads",
+        "voluntary_ctxt_switches",
+        "nonvoluntary_ctxt_switches",
+    }
+    data: dict[str, str] = {}
+    try:
+        for line in path.read_text(encoding='utf-8', errors='replace').splitlines():
+            if ":" not in line:
+                continue
+            key, value = line.split(":", 1)
+            key = key.strip()
+            if key in wanted:
+                data[key] = value.strip()
+    except Exception:
+        return {}
+    return data
+
+
+def parse_meminfo() -> dict[str, str]:
+    """Read selected memory counters from /proc/meminfo."""
+    path = Path("/proc/meminfo")
+    if not path.exists():
+        return {}
+    wanted = {"MemTotal", "MemFree", "MemAvailable", "SwapTotal", "SwapFree"}
+    data: dict[str, str] = {}
+    try:
+        for line in path.read_text(encoding='utf-8', errors='replace').splitlines():
+            if ":" not in line:
+                continue
+            key, value = line.split(":", 1)
+            key = key.strip()
+            if key in wanted:
+                data[key] = value.strip()
+    except Exception:
+        return {}
+    return data
+
+
+def collect_top_processes(limit: int = DEFAULT_TOP_PROCESSES) -> list[str]:
+    """Collect top CPU processes for timeout diagnostics."""
+    output = safe_check_output(
+        ["ps", "-eo", "pid,ppid,%cpu,%mem,etimes,state,comm,args", "--sort=-%cpu"]
+    )
+    if not output:
+        return []
+    lines = output.splitlines()
+    return lines[: max(2, limit + 1)]
+
+
+def collect_system_snapshot() -> dict[str, Any]:
+    """Collect lightweight host telemetry useful for remote debugging."""
+    snapshot: dict[str, Any] = {
+        'captured_at_utc': utc_now_iso(),
+        'hostname': socket.gethostname(),
+        'cpu_count': os.cpu_count(),
+        'loadavg': None,
+        'meminfo': parse_meminfo(),
+        'top_processes': collect_top_processes(),
+    }
+    try:
+        one, five, fifteen = os.getloadavg()
+        snapshot['loadavg'] = {'1m': one, '5m': five, '15m': fifteen}
+    except OSError:
+        snapshot['loadavg'] = None
+    uptime_text = safe_check_output(["cat", "/proc/uptime"])
+    if uptime_text:
+        try:
+            uptime_seconds = float(uptime_text.split()[0])
+            snapshot['uptime_seconds'] = uptime_seconds
+        except Exception:
+            pass
+    return snapshot
+
+
+def collect_process_snapshot(pid: Optional[int]) -> dict[str, Any]:
+    """Collect process-level info for diagnostics."""
+    if pid is None:
+        return {}
+    data: dict[str, Any] = {
+        'pid': pid,
+        'proc_status': parse_proc_status(pid),
+    }
+    ps_line = safe_check_output(
+        ["ps", "-p", str(pid), "-o", "pid,ppid,%cpu,%mem,etimes,state,rss,vsz,cmd"]
+    )
+    if ps_line:
+        data['ps'] = ps_line.splitlines()
+    cgroup = safe_check_output(["cat", f"/proc/{pid}/cgroup"])
+    if cgroup:
+        data['cgroup'] = cgroup.splitlines()
+    return data
+
+
+def summarize_progress(stdout_tail: str) -> dict[str, Any]:
+    """Extract high-level progress markers from renderer logs."""
+    progress: dict[str, Any] = {}
+    candidate_re = re.compile(r"Preview candidate (\d+)/(\d+) -> score ([0-9.]+)")
+    round_re = re.compile(r"Curation round (\d+)/(\d+)")
+    stage_re = re.compile(r"STAGE (\d+)/(\d+)")
+    for line in reversed(stdout_tail.splitlines()):
+        if 'preview_candidate' not in progress:
+            m = candidate_re.search(line)
+            if m:
+                progress['preview_candidate'] = {
+                    'index': int(m.group(1)),
+                    'total': int(m.group(2)),
+                    'score': float(m.group(3)),
+                }
+                continue
+        if 'curation_round' not in progress:
+            m = round_re.search(line)
+            if m:
+                progress['curation_round'] = {
+                    'index': int(m.group(1)),
+                    'total': int(m.group(2)),
+                }
+                continue
+        if 'stage' not in progress:
+            m = stage_re.search(line)
+            if m:
+                progress['stage'] = {
+                    'index': int(m.group(1)),
+                    'total': int(m.group(2)),
+                }
+                continue
+        if 'last_log_line' not in progress and line.strip():
+            progress['last_log_line'] = line.strip()
+        if (
+            'preview_candidate' in progress
+            and 'curation_round' in progress
+            and 'stage' in progress
+            and 'last_log_line' in progress
+        ):
+            break
+    return progress
+
+
+def write_session_event(path: Path, event: dict[str, Any]) -> None:
+    """Append a normalized session event."""
+    payload = {
+        'timestamp_utc': utc_now_iso(),
+        **event,
+    }
+    append_jsonl(path, payload)
 
 
 def write_json_file(path: Path, payload: dict[str, Any]) -> None:
@@ -291,8 +477,10 @@ def run_simulation(
     timeout: int,
     runs_dir: Path,
     runs_index_path: Path,
+    session_events_path: Path,
     binary_log_level: str,
     binary_log_format: str,
+    diagnostic_tail_bytes: int,
 ) -> dict[str, Any]:
     """Run a single simulation with random parameters.
 
@@ -315,6 +503,7 @@ def run_simulation(
     stdout_path = runs_dir / f"{filename}.stdout.log"
     stderr_path = runs_dir / f"{filename}.stderr.log"
     metadata_path = runs_dir / f"{filename}.json"
+    diagnostics_path = runs_dir / f"{filename}.diagnostics.json"
 
     command = [
         binary_path,
@@ -336,6 +525,24 @@ def run_simulation(
         f"[{current_num}] Started: {filename} ({mode_label}) "
         f"[logs: {metadata_path}]"
     )
+    write_session_event(
+        session_events_path,
+        {
+            'event': 'run_started',
+            'task_id': task_id,
+            'sequence': seq,
+            'runner_counter': current_num,
+            'filename': filename,
+            'seed': seed,
+            'is_special': is_special,
+            'mode_label': mode_label,
+            'command': command,
+            'timeout_seconds': timeout,
+            'stdout_log': str(stdout_path),
+            'stderr_log': str(stderr_path),
+            'metadata_log': str(metadata_path),
+        },
+    )
 
     start_time_monotonic = time.monotonic()
     started_at_utc = utc_now_iso()
@@ -343,6 +550,7 @@ def run_simulation(
     timed_out = False
     return_code: Optional[int] = None
     exception_text: Optional[str] = None
+    timeout_snapshot: Optional[dict[str, Any]] = None
     try:
         with stdout_path.open('wb') as stdout_file, stderr_path.open('wb') as stderr_file:
             process = subprocess.Popen(
@@ -355,6 +563,11 @@ def run_simulation(
                 return_code = process.wait(timeout=timeout)
             except subprocess.TimeoutExpired:
                 timed_out = True
+                timeout_snapshot = {
+                    'triggered_at_utc': utc_now_iso(),
+                    'process': collect_process_snapshot(process.pid),
+                    'system': collect_system_snapshot(),
+                }
                 try:
                     if process.pid is not None:
                         os.killpg(process.pid, signal.SIGKILL)
@@ -365,7 +578,45 @@ def run_simulation(
         elapsed = time.monotonic() - start_time_monotonic
         classification = classify_return_code(return_code, timed_out)
         success = classification['exit_reason'] == 'ok'
-        stderr_tail = read_file_tail(stderr_path)
+        stderr_tail = read_file_tail(stderr_path, 2048)
+        stdout_tail = read_file_tail(stdout_path, 2048)
+        failure_diagnostics_written = False
+        progress_hint = summarize_progress(stdout_tail)
+        if not success:
+            diagnostics_payload: dict[str, Any] = {
+                'captured_at_utc': utc_now_iso(),
+                'task_id': task_id,
+                'sequence': seq,
+                'runner_counter': current_num,
+                'filename': filename,
+                'seed': seed,
+                'is_special': is_special,
+                'mode_label': mode_label,
+                'command': command,
+                'timeout_seconds': timeout,
+                'elapsed_seconds': elapsed,
+                'return_code': return_code,
+                'timed_out': timed_out,
+                'exit_reason': classification['exit_reason'],
+                'signal_number': classification['signal_number'],
+                'signal_name': classification['signal_name'],
+                'stdout_log': str(stdout_path),
+                'stderr_log': str(stderr_path),
+                'stdout_bytes': stdout_path.stat().st_size if stdout_path.exists() else None,
+                'stderr_bytes': stderr_path.stat().st_size if stderr_path.exists() else None,
+                'stdout_tail': read_file_tail(stdout_path, diagnostic_tail_bytes),
+                'stderr_tail': read_file_tail(stderr_path, diagnostic_tail_bytes),
+                'progress_hint': progress_hint,
+                'process_snapshot': collect_process_snapshot(process.pid if process else None),
+                'system_snapshot': collect_system_snapshot(),
+                'timeout_snapshot': timeout_snapshot,
+            }
+            try:
+                write_json_file(diagnostics_path, diagnostics_payload)
+                failure_diagnostics_written = True
+            except Exception:
+                failure_diagnostics_written = False
+
         metadata: dict[str, Any] = {
             'task_id': task_id,
             'sequence': seq,
@@ -391,10 +642,34 @@ def run_simulation(
             'pid': process.pid if process is not None else None,
             'stdout_log': str(stdout_path),
             'stderr_log': str(stderr_path),
+            'stdout_tail': stdout_tail,
             'stderr_tail': stderr_tail,
+            'progress_hint': progress_hint,
+            'diagnostics_log': str(diagnostics_path) if failure_diagnostics_written else None,
         }
         write_json_file(metadata_path, metadata)
         append_jsonl(runs_index_path, metadata)
+        write_session_event(
+            session_events_path,
+            {
+                'event': 'run_finished',
+                'task_id': task_id,
+                'sequence': seq,
+                'runner_counter': current_num,
+                'filename': filename,
+                'success': success,
+                'elapsed_seconds': elapsed,
+                'timed_out': timed_out,
+                'return_code': return_code,
+                'exit_reason': classification['exit_reason'],
+                'signal_name': classification['signal_name'],
+                'stdout_log': str(stdout_path),
+                'stderr_log': str(stderr_path),
+                'metadata_log': str(metadata_path),
+                'diagnostics_log': str(diagnostics_path) if failure_diagnostics_written else None,
+                'progress_hint': progress_hint,
+            },
+        )
 
         if success:
             print(f"[{current_num}] Completed: {filename} ({elapsed:.1f}s)")
@@ -406,7 +681,8 @@ def run_simulation(
             )
             print(
                 f"[{current_num}] Failed (exit {return_code}{signal_detail}): "
-                f"{filename} ({elapsed:.1f}s) [stderr: {stderr_path}]"
+                f"{filename} ({elapsed:.1f}s) "
+                f"[stderr: {stderr_path}, diag: {diagnostics_path}]"
             )
 
         return {
@@ -444,12 +720,41 @@ def run_simulation(
             'pid': None,
             'stdout_log': str(stdout_path),
             'stderr_log': str(stderr_path),
+            'stdout_tail': read_file_tail(stdout_path, 2048),
+            'stderr_tail': read_file_tail(stderr_path, 2048),
+            'progress_hint': {},
+            'diagnostics_log': None,
+        }
+        diagnostics_payload = {
+            'captured_at_utc': utc_now_iso(),
+            'error': 'binary_not_found',
+            'binary_path': binary_path,
+            'command': command,
+            'stdout_log': str(stdout_path),
+            'stderr_log': str(stderr_path),
+            'system_snapshot': collect_system_snapshot(),
         }
         try:
+            write_json_file(diagnostics_path, diagnostics_payload)
+            failure_meta['diagnostics_log'] = str(diagnostics_path)
             write_json_file(metadata_path, failure_meta)
             append_jsonl(runs_index_path, failure_meta)
         except Exception:
             pass
+        write_session_event(
+            session_events_path,
+            {
+                'event': 'run_failed_to_start',
+                'task_id': task_id,
+                'sequence': seq,
+                'runner_counter': current_num,
+                'filename': filename,
+                'error': 'binary_not_found',
+                'binary_path': binary_path,
+                'metadata_log': str(metadata_path),
+                'diagnostics_log': str(diagnostics_path),
+            },
+        )
         print(
             f"[{current_num}] Binary not found: {binary_path}",
             file=sys.stderr,
@@ -491,14 +796,49 @@ def run_simulation(
             'pid': process.pid if process is not None else None,
             'stdout_log': str(stdout_path),
             'stderr_log': str(stderr_path),
+            'stdout_tail': read_file_tail(stdout_path, 2048),
+            'stderr_tail': read_file_tail(stderr_path, 2048),
+            'progress_hint': {},
+            'diagnostics_log': str(diagnostics_path),
             'exception': exception_text,
             'traceback': traceback.format_exc(),
         }
+        diagnostics_payload = {
+            'captured_at_utc': utc_now_iso(),
+            'error': 'runner_exception',
+            'exception': exception_text,
+            'traceback': traceback.format_exc(),
+            'task_id': task_id,
+            'sequence': seq,
+            'runner_counter': current_num,
+            'filename': filename,
+            'command': command,
+            'stdout_log': str(stdout_path),
+            'stderr_log': str(stderr_path),
+            'stdout_tail': read_file_tail(stdout_path, diagnostic_tail_bytes),
+            'stderr_tail': read_file_tail(stderr_path, diagnostic_tail_bytes),
+            'process_snapshot': collect_process_snapshot(process.pid if process else None),
+            'system_snapshot': collect_system_snapshot(),
+        }
         try:
+            write_json_file(diagnostics_path, diagnostics_payload)
             write_json_file(metadata_path, failure_meta)
             append_jsonl(runs_index_path, failure_meta)
         except Exception:
             pass
+        write_session_event(
+            session_events_path,
+            {
+                'event': 'run_runner_exception',
+                'task_id': task_id,
+                'sequence': seq,
+                'runner_counter': current_num,
+                'filename': filename,
+                'exception': exception_text,
+                'metadata_log': str(metadata_path),
+                'diagnostics_log': str(diagnostics_path),
+            },
+        )
         print(f"[{current_num}] Error: {filename} - {e}")
         return {
             'task_id': task_id,
@@ -542,6 +882,14 @@ def main():
     timeout = args.timeout
     logs_layout = ensure_logs_layout(Path(args.logs_dir))
     write_session_metadata(args, logs_layout)
+    write_session_event(
+        logs_layout['session_events'],
+        {
+            'event': 'session_started',
+            'argv': sys.argv,
+            'args': vars(args),
+        },
+    )
 
     check_binary(binary_path)
 
@@ -563,6 +911,7 @@ def main():
     print(f"  Timeout:  {timeout}s per simulation")
     print(f"  Binary:   {binary_path}")
     print(f"  Logs:     {logs_layout['root']}")
+    print(f"  Events:   {logs_layout['session_events']}")
     print(f"  Files:    {{special|regular}}_NNNN_{{seed}}")
     print("=" * 60)
     print("Press Ctrl+C to stop (will wait for running tasks)")
@@ -593,8 +942,10 @@ def main():
                 timeout,
                 logs_layout['runs'],
                 logs_layout['runs_index'],
+                logs_layout['session_events'],
                 args.binary_log_level,
                 args.binary_log_format,
+                args.diagnostic_tail_bytes,
             )
             futures[future] = task_id
             task_id += 1
@@ -631,8 +982,10 @@ def main():
                         timeout,
                         logs_layout['runs'],
                         logs_layout['runs_index'],
+                        logs_layout['session_events'],
                         args.binary_log_level,
                         args.binary_log_format,
+                        args.diagnostic_tail_bytes,
                     )
                     futures[new_future] = task_id
                     task_id += 1
@@ -668,8 +1021,24 @@ def main():
     print(f"  Wall-clock time:   {overall_elapsed:.1f}s")
     print(f"  Session metadata:  {logs_layout['session_meta']}")
     print(f"  Run index (JSONL): {logs_layout['runs_index']}")
+    print(f"  Session events:    {logs_layout['session_events']}")
     print(f"  Per-run logs:      {logs_layout['runs']}")
     print("=" * 60 + "\n")
+    write_session_event(
+        logs_layout['session_events'],
+        {
+            'event': 'session_finished',
+            'total_started': stats['started'],
+            'successful': stats['successful'],
+            'failed': stats['failed'],
+            'special_ok': stats['special_ok'],
+            'special_fail': stats['special_fail'],
+            'regular_ok': stats['regular_ok'],
+            'regular_fail': stats['regular_fail'],
+            'avg_sim_time': avg,
+            'wall_clock_seconds': overall_elapsed,
+        },
+    )
 
 
 if __name__ == "__main__":
