@@ -38,7 +38,7 @@ const esLintConfigArray =
 					esLintJs.configs.recommended,
 					typeScriptEsLint.configs.recommendedTypeChecked,
 
-					// // Issue. This generates a zillion lints.
+					// // todo-3 This generates a zillion lints. Maybe revisit this some day.
 					// stylisticEsLintPlugin.configs.recommended,
 				],
 				rules: {
