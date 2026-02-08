@@ -10,17 +10,89 @@ pub fn composite_score(scores: &QualityScores, novelty_score: f64) -> f64 {
     clamp01(0.70 * scores.image_composite + 0.20 * scores.video_composite + 0.10 * novelty_score)
 }
 
+fn feature_distance(a: &crate::curation::quality_score::FrameFeatures, b: &crate::curation::quality_score::FrameFeatures) -> f64 {
+    let mut sum = 0.0;
+    for i in 0..3 {
+        let d_mean = a.mean_rgb[i] - b.mean_rgb[i];
+        let d_std = a.std_rgb[i] - b.std_rgb[i];
+        sum += 1.2 * d_mean * d_mean;
+        sum += 0.8 * d_std * d_std;
+    }
+    let d_occ = a.occupancy_ratio - b.occupancy_ratio;
+    let d_edge = a.edge_density - b.edge_density;
+    let d_center = a.center_energy_ratio - b.center_energy_ratio;
+    let d_sat = a.saturation_mean - b.saturation_mean;
+    let d_band = a.banding_proxy - b.banding_proxy;
+    sum += 1.3 * d_occ * d_occ;
+    sum += 1.3 * d_edge * d_edge;
+    sum += 0.9 * d_center * d_center;
+    sum += 1.1 * d_sat * d_sat;
+    sum += 0.6 * d_band * d_band;
+    sum.sqrt()
+}
+
+fn diversity_score(
+    candidate: &CandidateEvaluation,
+    selected: &[CandidateEvaluation],
+) -> f64 {
+    if selected.is_empty() {
+        return 1.0;
+    }
+    let min_distance = selected
+        .iter()
+        .map(|s| feature_distance(&candidate.features, &s.features))
+        .fold(f64::INFINITY, f64::min);
+    let style_bonus = if selected
+        .iter()
+        .all(|s| s.style_family != candidate.style_family)
+    {
+        0.12
+    } else {
+        0.0
+    };
+    clamp01((min_distance / 0.35).clamp(0.0, 1.0) + style_bonus)
+}
+
 pub fn choose_finalists(
     mut candidates: Vec<CandidateEvaluation>,
     finalist_count: usize,
 ) -> Vec<CandidateEvaluation> {
+    if candidates.is_empty() {
+        return Vec::new();
+    }
+    let target = finalist_count.max(1).min(candidates.len());
     candidates.sort_by(|a, b| {
         b.composite_score
             .partial_cmp(&a.composite_score)
             .unwrap_or(std::cmp::Ordering::Equal)
     });
-    candidates.truncate(finalist_count.max(1));
-    candidates
+    if target == candidates.len() {
+        return candidates;
+    }
+
+    let mut selected = Vec::with_capacity(target);
+    selected.push(candidates.remove(0));
+
+    while selected.len() < target && !candidates.is_empty() {
+        let mut best_idx = 0usize;
+        let mut best_utility = f64::NEG_INFINITY;
+        for (idx, candidate) in candidates.iter().enumerate() {
+            let utility =
+                0.68 * candidate.composite_score + 0.32 * diversity_score(candidate, &selected);
+            if utility > best_utility {
+                best_utility = utility;
+                best_idx = idx;
+            }
+        }
+        selected.push(candidates.swap_remove(best_idx));
+    }
+
+    selected.sort_by(|a, b| {
+        b.composite_score
+            .partial_cmp(&a.composite_score)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+    selected
 }
 
 pub fn accept_candidate(
@@ -151,6 +223,41 @@ mod tests {
         }
     }
 
+    fn candidate_with_features(
+        id: usize,
+        score: f64,
+        style_family: &str,
+        feature_seed: f64,
+    ) -> CandidateEvaluation {
+        CandidateEvaluation {
+            round_id: 1,
+            candidate_id: id,
+            style_family: style_family.to_string(),
+            config: dummy_config(),
+            randomization_log: RandomizationLog::default(),
+            scores: QualityScores {
+                image_composite: score,
+                video_composite: score,
+                final_composite: score,
+                ..Default::default()
+            },
+            features: FrameFeatures {
+                mean_rgb: [feature_seed, feature_seed * 0.9, feature_seed * 0.8],
+                std_rgb: [0.06 + feature_seed * 0.1, 0.05, 0.04],
+                occupancy_ratio: 0.25 + feature_seed * 0.2,
+                edge_density: 0.10 + feature_seed * 0.15,
+                center_energy_ratio: 0.35 + feature_seed * 0.2,
+                clip_black_ratio: 0.05,
+                clip_white_ratio: 0.02,
+                banding_proxy: 0.08 + feature_seed * 0.1,
+                saturation_mean: 0.18 + feature_seed * 0.25,
+            },
+            novelty_score: score,
+            composite_score: score,
+            repair_actions: Vec::new(),
+        }
+    }
+
     #[test]
     fn finalists_are_sorted() {
         let finalists = choose_finalists(vec![candidate(0.2), candidate(0.9), candidate(0.5)], 2);
@@ -163,5 +270,22 @@ mod tests {
         let c = candidate(0.8);
         assert!(accept_candidate(&c, 0.7, 0.7, 0.7));
         assert!(!accept_candidate(&c, 0.9, 0.7, 0.7));
+    }
+
+    #[test]
+    fn finalists_balance_score_and_diversity() {
+        let near_duplicate_a = candidate_with_features(1, 0.95, "Velvet Nebula", 0.20);
+        let near_duplicate_b = candidate_with_features(2, 0.94, "Velvet Nebula", 0.205);
+        let distinct_style = candidate_with_features(3, 0.90, "Glass Aurora", 0.85);
+
+        let finalists = choose_finalists(
+            vec![near_duplicate_a, near_duplicate_b, distinct_style],
+            2,
+        );
+
+        assert_eq!(finalists.len(), 2);
+        let ids: Vec<usize> = finalists.iter().map(|c| c.candidate_id).collect();
+        assert!(ids.contains(&1));
+        assert!(ids.contains(&3));
     }
 }

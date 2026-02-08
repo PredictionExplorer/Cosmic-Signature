@@ -2,6 +2,7 @@ use clap::Parser;
 use nalgebra::Vector3;
 use std::collections::HashMap;
 use std::fs;
+use std::time::Instant;
 use tracing::{info, warn};
 use tracing_subscriber::EnvFilter;
 
@@ -28,7 +29,10 @@ use sim::Sha3RandomByteStream;
 use crate::curation::{
     CandidateEvaluation, CurationOptions, CurationSummary, QualityMode,
     novelty::NoveltyMemory,
-    quality_score::{apply_video_and_novelty, estimate_temporal_scores, score_image_frame},
+    quality_score::{
+        apply_video_and_novelty, estimate_temporal_scores, score_image_frame,
+        score_temporal_probe_frames,
+    },
     repair::repair_candidate,
     selector::{accept_candidate, choose_finalists, composite_score, pick_winner},
     style_families::{apply_style_family, resolve_style_family, StyleFamily},
@@ -578,6 +582,57 @@ fn setup_logging(json: bool, level: &str) {
     }
 }
 
+fn parse_status_kib(status_text: &str, key: &str) -> Option<u64> {
+    for line in status_text.lines() {
+        if let Some(rest) = line.strip_prefix(key) {
+            let value = rest
+                .split_whitespace()
+                .next()
+                .and_then(|v| v.parse::<u64>().ok());
+            if value.is_some() {
+                return value;
+            }
+        }
+    }
+    None
+}
+
+fn parse_status_threads(status_text: &str) -> Option<usize> {
+    for line in status_text.lines() {
+        if let Some(rest) = line.strip_prefix("Threads:") {
+            let value = rest
+                .split_whitespace()
+                .next()
+                .and_then(|v| v.parse::<usize>().ok());
+            if value.is_some() {
+                return value;
+            }
+        }
+    }
+    None
+}
+
+fn read_process_telemetry() -> Option<(u64, u64, usize)> {
+    let status_text = fs::read_to_string("/proc/self/status").ok()?;
+    let vm_rss_kib = parse_status_kib(&status_text, "VmRSS:")?;
+    let vm_hwm_kib = parse_status_kib(&status_text, "VmHWM:").unwrap_or(vm_rss_kib);
+    let threads = parse_status_threads(&status_text).unwrap_or(0);
+    Some((vm_rss_kib, vm_hwm_kib, threads))
+}
+
+fn log_stage_telemetry(stage: &str, started_at: Instant) {
+    let elapsed_s = started_at.elapsed().as_secs_f64();
+    if let Some((rss_kib, hwm_kib, threads)) = read_process_telemetry() {
+        info!(
+            "Stage telemetry: stage={stage}, elapsed_s={elapsed_s:.3}, vm_rss_mb={:.1}, vm_hwm_mb={:.1}, threads={threads}",
+            rss_kib as f64 / 1024.0,
+            hwm_kib as f64 / 1024.0,
+        );
+    } else {
+        info!("Stage telemetry: stage={stage}, elapsed_s={elapsed_s:.3}");
+    }
+}
+
 fn build_curation_options(args: &Args) -> CurationOptions {
     CurationOptions {
         quality_mode: QualityMode::from_str(&args.quality_mode),
@@ -785,6 +840,7 @@ fn build_render_config(
     args: &Args,
     quality_mode: QualityMode,
     resolved_effect_config: &render::randomizable_config::ResolvedEffectConfig,
+    effect_budget: render::EffectBudget,
 ) -> RenderConfig {
     let bloom_mode = match args.bloom_mode.to_ascii_lowercase().as_str() {
         "gaussian" => "gaussian".to_string(),
@@ -794,13 +850,15 @@ fn build_render_config(
         "off" => "off".to_string(),
         _ => "auto".to_string(),
     };
-    let temporal_smoothing_enabled =
-        !args.disable_temporal_smoothing && !matches!(quality_mode, QualityMode::Explore);
+    let temporal_smoothing_enabled = !args.disable_temporal_smoothing
+        && !matches!(quality_mode, QualityMode::Explore)
+        && !matches!(effect_budget, render::EffectBudget::Preview);
     let temporal_smoothing_blend = if temporal_smoothing_enabled {
-        match quality_mode {
-            QualityMode::Strict => 0.18,
-            QualityMode::Balanced => 0.13,
-            QualityMode::Explore => 0.0,
+        match (quality_mode, effect_budget) {
+            (QualityMode::Strict, render::EffectBudget::Full) => 0.18,
+            (QualityMode::Balanced, render::EffectBudget::Full) => 0.13,
+            (_, render::EffectBudget::Finalist) => 0.08,
+            _ => 0.0,
         }
     } else {
         0.0
@@ -816,13 +874,17 @@ fn build_render_config(
         hdr_mode,
         temporal_smoothing_enabled,
         temporal_smoothing_blend,
-        exposure_damping_enabled: !matches!(quality_mode, QualityMode::Explore),
+        exposure_damping_enabled: !matches!(quality_mode, QualityMode::Explore)
+            && !matches!(effect_budget, render::EffectBudget::Preview),
         exposure_damping_rate: if matches!(quality_mode, QualityMode::Strict) {
             0.15
         } else {
             0.20
         },
-        output_dither_enabled: !matches!(quality_mode, QualityMode::Explore),
+        output_dither_enabled: !matches!(quality_mode, QualityMode::Explore)
+            && matches!(effect_budget, render::EffectBudget::Full),
+        effect_budget,
+        histogram_fast_mode: !matches!(effect_budget, render::EffectBudget::Full),
     }
 }
 
@@ -881,7 +943,7 @@ fn evaluate_candidate(
     resolved_config: &render::randomizable_config::ResolvedEffectConfig,
     noise_seed: i32,
     render_config: &RenderConfig,
-    temporal_metrics: (f64, f64, f64),
+    temporal_prior: (f64, f64, f64),
     novelty_memory: &NoveltyMemory,
 ) -> Result<(
     crate::curation::quality_score::QualityScores,
@@ -898,7 +960,12 @@ fn evaluate_candidate(
         render_config,
     )?;
 
-    let frame = render::render_single_frame_spectral(
+    let probe_count = match render_config.effect_budget {
+        render::EffectBudget::Preview => 4,
+        render::EffectBudget::Finalist => 8,
+        render::EffectBudget::Full => 10,
+    };
+    let probe_frames = render::render_probe_frames_spectral(
         positions,
         colors,
         body_alphas,
@@ -911,14 +978,22 @@ fn evaluate_candidate(
         levels.range[2] + levels.black[2],
         noise_seed,
         render_config,
+        probe_count,
     )?;
 
-    let (mut scores, features) = score_image_frame(&frame, resolved_config);
+    let frame = if let Some(frame) = probe_frames.first() {
+        frame
+    } else {
+        return Err(std::io::Error::other("probe frame render returned no frames").into());
+    };
+
+    let (mut scores, features) = score_image_frame(frame, resolved_config);
     let novelty_score = novelty_memory.score_candidate(&features);
 
-    let temporal_stability = (0.40 * temporal_metrics.0 + 0.60 * scores.image_composite).clamp(0.0, 1.0);
-    let motion_smoothness = (0.40 * temporal_metrics.1 + 0.60 * scores.image_composite).clamp(0.0, 1.0);
-    let exposure_consistency = (0.40 * temporal_metrics.2 + 0.60 * scores.image_composite).clamp(0.0, 1.0);
+    let probe_temporal = score_temporal_probe_frames(&probe_frames);
+    let temporal_stability = (0.25 * temporal_prior.0 + 0.75 * probe_temporal.0).clamp(0.0, 1.0);
+    let motion_smoothness = (0.25 * temporal_prior.1 + 0.75 * probe_temporal.1).clamp(0.0, 1.0);
+    let exposure_consistency = (0.25 * temporal_prior.2 + 0.75 * probe_temporal.2).clamp(0.0, 1.0);
     apply_video_and_novelty(
         &mut scores,
         temporal_stability,
@@ -1016,7 +1091,12 @@ fn run_curation_search(
             );
             apply_effect_disable_overrides(args, &mut resolved_config);
 
-            let render_config = build_render_config(args, curation_options.quality_mode, &resolved_config);
+            let render_config = build_render_config(
+                args,
+                curation_options.quality_mode,
+                &resolved_config,
+                render::EffectBudget::Preview,
+            );
             let (mut scores, mut features, mut novelty_score, mut composite) = evaluate_candidate(
                 &preview_positions,
                 &preview_colors,
@@ -1034,7 +1114,12 @@ fn run_curation_search(
                 if !suggested_repairs.is_empty() {
                     apply_effect_disable_overrides(args, &mut repaired_config);
                     let repaired_render_config =
-                        build_render_config(args, curation_options.quality_mode, &repaired_config);
+                        build_render_config(
+                            args,
+                            curation_options.quality_mode,
+                            &repaired_config,
+                            render::EffectBudget::Preview,
+                        );
                     let (repaired_scores, repaired_features, repaired_novelty, repaired_composite) =
                         evaluate_candidate(
                             &preview_positions,
@@ -1090,7 +1175,12 @@ fn run_curation_search(
             finalist.config.height = args.height;
             apply_effect_disable_overrides(args, &mut finalist.config);
             let finalist_render_config =
-                build_render_config(args, curation_options.quality_mode, &finalist.config);
+                build_render_config(
+                    args,
+                    curation_options.quality_mode,
+                    &finalist.config,
+                    render::EffectBudget::Finalist,
+                );
             let (scores, features, novelty_score, composite) = evaluate_candidate(
                 &final_positions,
                 &final_colors,
@@ -1170,6 +1260,7 @@ struct SelectedCuration {
 
 fn main() -> Result<()> {
     let args = Args::parse();
+    let total_start = Instant::now();
 
     // Initialize tracing
     setup_logging(args.json_logs, &args.log_level);
@@ -1196,6 +1287,7 @@ fn main() -> Result<()> {
     );
 
     // Stage 1: Borda selection
+    let stage_1_start = Instant::now();
     let (best_bodies, best_info) = app::run_borda_selection(
         &mut rng,
         num_sims,
@@ -1204,11 +1296,15 @@ fn main() -> Result<()> {
         args.equil_weight,
         args.escape_threshold,
     )?;
+    log_stage_telemetry("stage_1_borda", stage_1_start);
 
     // Stage 2: Re-run best orbit
+    let stage_2_start = Instant::now();
     let mut positions = app::simulate_best_orbit(best_bodies, args.num_steps_sim);
+    log_stage_telemetry("stage_2_resimulate", stage_2_start);
 
     // Stage 2.5: Apply drift (if enabled)
+    let stage_25_start = Instant::now();
     let drift_config = if !args.no_drift {
         app::apply_drift_transformation(
             &mut positions,
@@ -1223,14 +1319,17 @@ fn main() -> Result<()> {
         info!("STAGE 2.5/7: Drift disabled (--no-drift flag)");
         None
     };
+    log_stage_telemetry("stage_2_5_drift", stage_25_start);
 
     // Stage 3: Generate colors
+    let stage_3_start = Instant::now();
     let (colors, body_alphas) = app::generate_colors(
         &mut rng,
         args.num_steps_sim,
         args.alpha_denom,
         args.alpha_compress,
     );
+    log_stage_telemetry("stage_3_color_generation", stage_3_start);
 
     let mut novelty_memory = NoveltyMemory::new(64);
     let historical_features = generation_log::load_recent_frame_features(64);
@@ -1244,6 +1343,7 @@ fn main() -> Result<()> {
         );
     }
 
+    let stage_curation_start = Instant::now();
     let selected = if matches!(curation_options.quality_mode, QualityMode::Explore) {
         info!("Explore mode selected: using single-pass randomization without strict curation.");
         let randomizable_config = build_randomizable_config(&args, curation_options.quality_mode);
@@ -1298,6 +1398,7 @@ fn main() -> Result<()> {
             curation_summary: summary,
         }
     };
+    log_stage_telemetry("stage_3_5_curation", stage_curation_start);
 
     let num_randomized = selected
         .randomization_log
@@ -1342,10 +1443,15 @@ fn main() -> Result<()> {
     info!("   => X: [{:.3}, {:.3}], Y: [{:.3}, {:.3}]", bbox.min_x, bbox.max_x, bbox.min_y, bbox.max_y);
 
     // Configure rendering from resolved parameters
-    let render_config =
-        build_render_config(&args, curation_options.quality_mode, &selected.resolved_effect_config);
+    let render_config = build_render_config(
+        &args,
+        curation_options.quality_mode,
+        &selected.resolved_effect_config,
+        render::EffectBudget::Full,
+    );
 
     // Stage 5-6: Build histogram and compute levels
+    let stage_56_start = Instant::now();
     let levels = app::build_histogram_and_levels(
         &positions,
         &colors,
@@ -1354,11 +1460,13 @@ fn main() -> Result<()> {
         noise_seed,
         &render_config,
     )?;
+    log_stage_telemetry("stage_5_6_histogram_levels", stage_56_start);
 
     let base_filename = app::generate_filename(&args.file_name, &args.profile_tag);
     let output_png = format!("pics/{}.png", base_filename);
 
     // Stage 7: Render
+    let stage_7_start = Instant::now();
     if args.test_frame {
         app::render_test_frame(
             &positions,
@@ -1397,6 +1505,7 @@ fn main() -> Result<()> {
             info!("Saved archival master outputs: {}, {}", master_png, master_vid);
         }
     }
+    log_stage_telemetry("stage_7_render", stage_7_start);
 
     info!(
         "Done! Best orbit => Weighted Borda = {:.3}\nHave a nice day!",
@@ -1460,6 +1569,25 @@ fn main() -> Result<()> {
         selected.novelty_score,
         &selected.repair_actions,
     );
+    log_stage_telemetry("total_pipeline", total_start);
     
     Ok(())
+}
+
+#[cfg(test)]
+mod telemetry_tests {
+    use super::{parse_status_kib, parse_status_threads};
+
+    #[test]
+    fn parse_status_kib_extracts_values() {
+        let text = "Name:\tthree_body_problem\nVmRSS:\t123456 kB\nVmHWM:\t234567 kB\n";
+        assert_eq!(parse_status_kib(text, "VmRSS:"), Some(123456));
+        assert_eq!(parse_status_kib(text, "VmHWM:"), Some(234567));
+    }
+
+    #[test]
+    fn parse_status_threads_extracts_count() {
+        let text = "Name:\tthree_body_problem\nThreads:\t48\n";
+        assert_eq!(parse_status_threads(text), Some(48));
+    }
 }

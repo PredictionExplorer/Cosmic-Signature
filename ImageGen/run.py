@@ -41,6 +41,7 @@ DEFAULT_BINARY_LOG_LEVEL = "info"
 DEFAULT_DIAGNOSTIC_TAIL_BYTES = 32 * 1024
 DEFAULT_TOP_PROCESSES = 20
 DEFAULT_STOP_WAIT_SECONDS = 6.0
+DEFAULT_RAYON_THREADS_AUTO = 0
 
 # Global state for graceful shutdown
 shutdown_event = threading.Event()
@@ -148,6 +149,15 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        '--rayon-threads',
+        type=int,
+        default=DEFAULT_RAYON_THREADS_AUTO,
+        help=(
+            "RAYON_NUM_THREADS passed to each renderer process. "
+            "Use 0 to auto-size from cpu_count/workers."
+        ),
+    )
+    parser.add_argument(
         '--stop-all',
         action='store_true',
         help=(
@@ -173,6 +183,8 @@ def parse_args() -> argparse.Namespace:
         parser.error("--diagnostic-tail-bytes must be at least 256")
     if args.stop_wait_seconds < 0.1:
         parser.error("--stop-wait-seconds must be at least 0.1")
+    if args.rayon_threads < 0:
+        parser.error("--rayon-threads must be >= 0")
     return args
 
 
@@ -186,6 +198,14 @@ def check_binary(binary_path: str) -> None:
     if not path.is_file():
         print(f"Error: '{binary_path}' is not a file.", file=sys.stderr)
         sys.exit(1)
+
+
+def compute_rayon_threads(rayon_threads: int, workers: int) -> int:
+    """Resolve per-process Rayon thread count."""
+    if rayon_threads > 0:
+        return rayon_threads
+    cpu_count = os.cpu_count() or 1
+    return max(1, cpu_count // max(1, workers))
 
 
 def generate_random_seed() -> str:
@@ -869,6 +889,7 @@ def run_simulation(
     binary_log_level: str,
     binary_log_format: str,
     diagnostic_tail_bytes: int,
+    rayon_threads: int,
 ) -> dict[str, Any]:
     """Run a single simulation with random parameters.
 
@@ -941,11 +962,14 @@ def run_simulation(
     timeout_snapshot: Optional[dict[str, Any]] = None
     try:
         with stdout_path.open('wb') as stdout_file, stderr_path.open('wb') as stderr_file:
+            child_env = os.environ.copy()
+            child_env["RAYON_NUM_THREADS"] = str(rayon_threads)
             process = subprocess.Popen(
                 command,
                 stdout=stdout_file,
                 stderr=stderr_file,
                 start_new_session=True,
+                env=child_env,
             )
             register_active_process(task_id, process)
             if force_shutdown_event.is_set():
@@ -985,6 +1009,7 @@ def run_simulation(
                 'mode_label': mode_label,
                 'command': command,
                 'timeout_seconds': timeout,
+                'rayon_threads': rayon_threads,
                 'elapsed_seconds': elapsed,
                 'return_code': return_code,
                 'timed_out': timed_out,
@@ -1018,6 +1043,7 @@ def run_simulation(
             'mode_label': mode_label,
             'command': command,
             'timeout_seconds': timeout,
+            'rayon_threads': rayon_threads,
             'binary_path': binary_path,
             'binary_log_level': binary_log_level,
             'binary_log_format': binary_log_format,
@@ -1096,6 +1122,7 @@ def run_simulation(
             'mode_label': mode_label,
             'command': command,
             'timeout_seconds': timeout,
+            'rayon_threads': rayon_threads,
             'binary_path': binary_path,
             'binary_log_level': binary_log_level,
             'binary_log_format': binary_log_format,
@@ -1172,6 +1199,7 @@ def run_simulation(
             'mode_label': mode_label,
             'command': command,
             'timeout_seconds': timeout,
+            'rayon_threads': rayon_threads,
             'binary_path': binary_path,
             'binary_log_level': binary_log_level,
             'binary_log_format': binary_log_format,
@@ -1299,6 +1327,7 @@ def main():
     mode_arg = args.mode
     timeout = args.timeout
     logs_layout = ensure_logs_layout(Path(args.logs_dir))
+    rayon_threads = compute_rayon_threads(args.rayon_threads, num_workers)
 
     if args.stop_all:
         sys.exit(stop_all_running_tasks(logs_layout, args.stop_wait_seconds))
@@ -1344,6 +1373,7 @@ def main():
     print(f"  Mode:     {mode_desc.get(mode_arg, mode_arg)}")
     print(f"  Timeout:  {timeout}s per simulation")
     print(f"  Binary:   {binary_path}")
+    print(f"  Rayon:    {rayon_threads} thread(s) per process")
     print(f"  Logs:     {logs_layout['root']}")
     print(f"  Events:   {logs_layout['session_events']}")
     print(f"  Files:    {{special|regular}}_NNNN_{{seed}}")
@@ -1360,8 +1390,8 @@ def main():
 
     overall_start = time.monotonic()
     task_id = 0
-
-    with ThreadPoolExecutor(max_workers=num_workers) as executor:
+    executor = ThreadPoolExecutor(max_workers=num_workers)
+    try:
         futures: dict = {}
 
         # Submit initial batch of tasks
@@ -1380,6 +1410,7 @@ def main():
                 args.binary_log_level,
                 args.binary_log_format,
                 args.diagnostic_tail_bytes,
+                rayon_threads,
             )
             futures[future] = task_id
             task_id += 1
@@ -1420,24 +1451,35 @@ def main():
                         args.binary_log_level,
                         args.binary_log_format,
                         args.diagnostic_tail_bytes,
+                        rayon_threads,
                     )
                     futures[new_future] = task_id
                     task_id += 1
 
         # Wait for remaining tasks to complete
         if futures:
-            print(f"\nWaiting for {len(futures)} remaining tasks to complete...")
-            for future in as_completed(futures):
-                try:
-                    result = future.result()
-                    success = result['success']
-                    elapsed = result['elapsed_seconds']
-                    is_special = result['is_special']
-                    with stats_lock:
-                        record_result(success, is_special, elapsed)
-                except Exception:
-                    with stats_lock:
-                        stats['failed'] += 1
+            if force_shutdown_event.is_set():
+                print(f"\nForce shutdown requested, cancelling {len(futures)} pending tasks...")
+                for future in futures:
+                    future.cancel()
+            else:
+                print(f"\nWaiting for {len(futures)} remaining tasks to complete...")
+                for future in as_completed(futures):
+                    try:
+                        result = future.result()
+                        success = result['success']
+                        elapsed = result['elapsed_seconds']
+                        is_special = result['is_special']
+                        with stats_lock:
+                            record_result(success, is_special, elapsed)
+                    except Exception:
+                        with stats_lock:
+                            stats['failed'] += 1
+    finally:
+        executor.shutdown(
+            wait=not force_shutdown_event.is_set(),
+            cancel_futures=force_shutdown_event.is_set(),
+        )
 
     overall_elapsed = time.monotonic() - overall_start
     completed = stats['successful'] + stats['failed']

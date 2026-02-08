@@ -13,7 +13,7 @@ use crate::post_effects;
 use crate::render::{
     self, constants, generate_body_color_sequences,
     save_image_as_png_16bit, ChannelLevels, DogBloomConfig, RenderConfig,
-    VideoEncodingOptions, compute_black_white_gamma,
+    VideoEncodingOptions,
     pass_1_build_histogram_spectral, pass_2_write_frames_spectral,
     render_single_frame_spectral, create_video_from_frames_singlepass,
 };
@@ -266,34 +266,25 @@ pub fn build_histogram_and_levels(
 ) -> Result<ChannelLevels> {
     info!("STAGE 5/7: PASS 1 => building global histogram...");
     
-    let target_frames = constants::DEFAULT_TARGET_FRAMES;
+    let target_frames = if render_config.histogram_fast_mode {
+        // Fast curation histogram mode: enough temporal coverage without full-frame count.
+        320
+    } else {
+        constants::DEFAULT_TARGET_FRAMES
+    };
     let frame_interval = (positions[0].len() / target_frames as usize).max(1);
-    
-    let mut all_r = Vec::new();
-    let mut all_g = Vec::new();
-    let mut all_b = Vec::new();
-    
-    pass_1_build_histogram_spectral(
+
+    let (black_r, white_r, black_g, white_g, black_b, white_b) = pass_1_build_histogram_spectral(
         positions,
         colors,
         body_alphas,
         resolved_config,
         frame_interval,
-        &mut all_r,
-        &mut all_g,
-        &mut all_b,
         noise_seed,
         render_config,
     );
     
     info!("STAGE 6/7: Determine global black/white/gamma...");
-    let (black_r, white_r, black_g, white_g, black_b, white_b) = compute_black_white_gamma(
-        &mut all_r,
-        &mut all_g,
-        &mut all_b,
-        resolved_config.clip_black,
-        resolved_config.clip_white,
-    );
     
     info!(
         "   => R:[{:.3e},{:.3e}] G:[{:.3e},{:.3e}] B:[{:.3e},{:.3e}]",

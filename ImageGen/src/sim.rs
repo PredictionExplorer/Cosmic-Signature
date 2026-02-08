@@ -335,71 +335,130 @@ pub fn select_best_trajectory(
             v
         })
         .collect();
-    let pc = AtomicUsize::new(0);
-    let cs = (num_sims / 10).max(1);
-    let dc = AtomicUsize::new(0);
-    let results: Vec<Option<(TrajectoryResult, usize)>> = many
+    let coarse_steps = ((steps / 8).max(1)).clamp(2_000, 80_000).min(steps.max(1));
+    let min_shortlist = num_sims.min(64).max(1);
+    let shortlist_target = ((num_sims as f64 * 0.22).ceil() as usize)
+        .max(min_shortlist)
+        .min(num_sims.max(1));
+    const MIN_VIABLE_CHAOS: f64 = 0.1; // Below this, too chaotic
+    const MIN_VIABLE_EQUILATERAL: f64 = 0.01; // Below this, too linear
+
+    let prefilter_discarded = AtomicUsize::new(0);
+    let coarse_progress = AtomicUsize::new(0);
+    let coarse_progress_chunk = (num_sims / 10).max(1);
+
+    let coarse_scores: Vec<(f64, usize)> = many
         .par_iter()
         .enumerate()
-        .map(|(i, b)| {
-            let cnt = pc.fetch_add(1, Ordering::Relaxed) + 1;
-            if cnt.is_multiple_of(cs) {
+        .filter_map(|(i, bodies)| {
+            let cnt = coarse_progress.fetch_add(1, Ordering::Relaxed) + 1;
+            if cnt.is_multiple_of(coarse_progress_chunk) {
                 info!(
-                    "   Borda search: {:.0}% done",
+                    "   Coarse screening: {:.0}% done",
                     (cnt as f64 / num_sims as f64) * crate::render::constants::PERCENT_FACTOR
                 );
             }
-            // Quick rejection: check energy and angular momentum first
-            let e = calculate_total_energy(b);
-            let ang = calculate_total_angular_momentum(b).norm();
-            if e > 10.0 || ang < 10.0 {
-                dc.fetch_add(1, Ordering::Relaxed);
+
+            // Quick rejection: check energy and angular momentum first.
+            let energy = calculate_total_energy(bodies);
+            let angular = calculate_total_angular_momentum(bodies).norm();
+            if energy > 10.0 || angular < 10.0 {
+                prefilter_discarded.fetch_add(1, Ordering::Relaxed);
                 return None;
             }
-            
-            // Run simulation with early-exit checks for escaping bodies
-            let simr = match get_positions_with_early_exit(b.clone(), steps, th) {
+
+            let simr = match get_positions_with_early_exit(bodies.clone(), coarse_steps, th) {
                 Some(result) => result,
                 None => {
-                    // Early-exit triggered - body escaped during simulation
-                    dc.fetch_add(1, Ordering::Relaxed);
+                    prefilter_discarded.fetch_add(1, Ordering::Relaxed);
                     return None;
                 }
             };
-            
-            let pos = simr.positions;
-            let m1 = b[0].mass;
-            let m2 = b[1].mass;
-            let m3 = b[2].mass;
-            
-            // Compute quality metrics
-            let c = non_chaoticness(m1, m2, m3, &pos);
-            let eq = equilateralness_score(&pos);
-            
-            // Early rejection: if both metrics are terrible, skip
-            // This saves time on Borda ranking for clearly unsuitable candidates
-            const MIN_VIABLE_CHAOS: f64 = 0.1;     // Below this, too chaotic
-            const MIN_VIABLE_EQUILATERAL: f64 = 0.01; // Below this, too linear
-            
-            if c < MIN_VIABLE_CHAOS && eq < MIN_VIABLE_EQUILATERAL {
-                dc.fetch_add(1, Ordering::Relaxed);
+            let positions = simr.positions;
+            let m1 = bodies[0].mass;
+            let m2 = bodies[1].mass;
+            let m3 = bodies[2].mass;
+            let chaos = non_chaoticness(m1, m2, m3, &positions);
+            let equilateral = equilateralness_score(&positions);
+            if chaos < MIN_VIABLE_CHAOS && equilateral < MIN_VIABLE_EQUILATERAL {
+                prefilter_discarded.fetch_add(1, Ordering::Relaxed);
                 return None;
             }
-            
+
+            // Coarse score favors high equilateralness and low chaoticness.
+            let coarse_score = (ew * equilateral) - (cw * chaos);
+            Some((coarse_score, i))
+        })
+        .collect();
+
+    if coarse_scores.is_empty() {
+        let discarded = prefilter_discarded.load(Ordering::Relaxed);
+        return Err(SimulationError::NoValidOrbits {
+            total_attempted: num_sims,
+            discarded,
+            reason: format!(
+                "All orbits filtered out during coarse screening (coarse_steps={coarse_steps}, threshold={th})"
+            ),
+        }
+        .into());
+    }
+
+    let shortlist_indices = select_shortlist_indices(coarse_scores, shortlist_target);
+    info!(
+        "   Coarse screening complete: shortlisted {}/{} candidates (coarse_steps={coarse_steps})",
+        shortlist_indices.len(),
+        num_sims
+    );
+
+    let full_discarded = AtomicUsize::new(0);
+    let full_progress = AtomicUsize::new(0);
+    let full_progress_chunk = (shortlist_indices.len() / 10).max(1);
+    let results: Vec<Option<(TrajectoryResult, usize)>> = shortlist_indices
+        .par_iter()
+        .map(|&candidate_index| {
+            let cnt = full_progress.fetch_add(1, Ordering::Relaxed) + 1;
+            if cnt.is_multiple_of(full_progress_chunk) {
+                info!(
+                    "   Full simulation: {:.0}% done",
+                    (cnt as f64 / shortlist_indices.len() as f64)
+                        * crate::render::constants::PERCENT_FACTOR
+                );
+            }
+
+            let bodies = &many[candidate_index];
+            let simr = match get_positions_with_early_exit(bodies.clone(), steps, th) {
+                Some(result) => result,
+                None => {
+                    full_discarded.fetch_add(1, Ordering::Relaxed);
+                    return None;
+                }
+            };
+            let positions = simr.positions;
+            let m1 = bodies[0].mass;
+            let m2 = bodies[1].mass;
+            let m3 = bodies[2].mass;
+            let chaos = non_chaoticness(m1, m2, m3, &positions);
+            let equilateral = equilateralness_score(&positions);
+            if chaos < MIN_VIABLE_CHAOS && equilateral < MIN_VIABLE_EQUILATERAL {
+                full_discarded.fetch_add(1, Ordering::Relaxed);
+                return None;
+            }
+
             Some((
                 TrajectoryResult {
-                    chaos: c,
-                    equilateralness: eq,
+                    chaos,
+                    equilateralness: equilateral,
                     chaos_pts: 0,
                     equil_pts: 0,
                     total_score: 0,
                     total_score_weighted: 0.0,
                 },
-                i,
+                candidate_index,
             ))
         })
         .collect();
-    let dtot = dc.load(Ordering::Relaxed);
+
+    let dtot = prefilter_discarded.load(Ordering::Relaxed) + full_discarded.load(Ordering::Relaxed);
     info!(
         "   => Discarded {dtot}/{num_sims} ({:.1}%) orbits due to filters or escapes.",
         crate::render::constants::PERCENT_FACTOR * dtot as f64 / num_sims as f64
@@ -450,4 +509,29 @@ pub fn select_best_trajectory(
     let bt = iv[0].0.clone();
     info!("\n   => Chosen orbit idx {bi} with weighted score {:.3}", bt.total_score_weighted);
     Ok((many[bi].clone(), bt))
+}
+
+fn select_shortlist_indices(mut coarse_scores: Vec<(f64, usize)>, shortlist_target: usize) -> Vec<usize> {
+    coarse_scores.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
+    coarse_scores.truncate(shortlist_target.max(1).min(coarse_scores.len()));
+    coarse_scores.into_iter().map(|(_, index)| index).collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::select_shortlist_indices;
+
+    #[test]
+    fn shortlist_indices_are_ranked_by_score() {
+        let scores = vec![(0.2, 1usize), (0.9, 4usize), (0.7, 3usize), (0.8, 2usize)];
+        let shortlist = select_shortlist_indices(scores, 3);
+        assert_eq!(shortlist, vec![4, 2, 3]);
+    }
+
+    #[test]
+    fn shortlist_indices_keep_at_least_one() {
+        let scores = vec![(0.1, 10usize)];
+        let shortlist = select_shortlist_indices(scores, 0);
+        assert_eq!(shortlist, vec![10]);
+    }
 }

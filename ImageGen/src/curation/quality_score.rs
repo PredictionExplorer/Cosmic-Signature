@@ -296,6 +296,112 @@ pub fn estimate_temporal_scores(positions: &[Vec<Vector3<f64>>]) -> (f64, f64, f
     (temporal_stability, motion_smoothness, exposure_consistency)
 }
 
+fn probe_frame_signature(frame: &ImageBuffer<Rgb<u16>, Vec<u16>>) -> (f64, f64, f64, f64) {
+    let width = frame.width() as usize;
+    let height = frame.height() as usize;
+    let pixel_count = (width * height).max(1) as f64;
+
+    let mut sum_luma = 0.0;
+    let mut sum_chroma = 0.0;
+    let mut weighted_x = 0.0;
+    let mut weighted_y = 0.0;
+
+    for y in 0..height {
+        for x in 0..width {
+            let p = frame.get_pixel(x as u32, y as u32).0;
+            let r = p[0] as f64 / 65535.0;
+            let g = p[1] as f64 / 65535.0;
+            let b = p[2] as f64 / 65535.0;
+            let luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+            let chroma = r.max(g).max(b) - r.min(g).min(b);
+
+            sum_luma += luma;
+            sum_chroma += chroma;
+            weighted_x += x as f64 * luma;
+            weighted_y += y as f64 * luma;
+        }
+    }
+
+    let mean_luma = sum_luma / pixel_count;
+    let mean_chroma = sum_chroma / pixel_count;
+    let denom = sum_luma.max(1e-9);
+    let centroid_x = if width > 1 {
+        (weighted_x / denom) / (width as f64 - 1.0)
+    } else {
+        0.5
+    };
+    let centroid_y = if height > 1 {
+        (weighted_y / denom) / (height as f64 - 1.0)
+    } else {
+        0.5
+    };
+
+    (mean_luma, mean_chroma, centroid_x, centroid_y)
+}
+
+pub fn score_temporal_probe_frames(
+    probe_frames: &[ImageBuffer<Rgb<u16>, Vec<u16>>],
+) -> (f64, f64, f64) {
+    if probe_frames.is_empty() {
+        return (0.5, 0.5, 0.5);
+    }
+    if probe_frames.len() == 1 {
+        return (0.65, 0.65, 0.65);
+    }
+
+    let signatures: Vec<(f64, f64, f64, f64)> =
+        probe_frames.iter().map(probe_frame_signature).collect();
+
+    let mut luminance_deltas = Vec::with_capacity(signatures.len().saturating_sub(1));
+    let mut chroma_deltas = Vec::with_capacity(signatures.len().saturating_sub(1));
+    let mut centroid_velocity = Vec::with_capacity(signatures.len().saturating_sub(1));
+
+    for i in 1..signatures.len() {
+        let prev = signatures[i - 1];
+        let curr = signatures[i];
+        luminance_deltas.push((curr.0 - prev.0).abs());
+        chroma_deltas.push((curr.1 - prev.1).abs());
+        let dx = curr.2 - prev.2;
+        let dy = curr.3 - prev.3;
+        centroid_velocity.push((dx * dx + dy * dy).sqrt());
+    }
+
+    let avg_luma_delta =
+        luminance_deltas.iter().sum::<f64>() / luminance_deltas.len().max(1) as f64;
+    let avg_chroma_delta = chroma_deltas.iter().sum::<f64>() / chroma_deltas.len().max(1) as f64;
+    let avg_velocity = centroid_velocity.iter().sum::<f64>() / centroid_velocity.len().max(1) as f64;
+
+    let mut jerk_sum = 0.0;
+    let mut jerk_count = 0usize;
+    for i in 1..centroid_velocity.len() {
+        jerk_sum += (centroid_velocity[i] - centroid_velocity[i - 1]).abs();
+        jerk_count += 1;
+    }
+    let avg_jerk = if jerk_count > 0 {
+        jerk_sum / jerk_count as f64
+    } else {
+        0.0
+    };
+
+    let mean_luma = signatures.iter().map(|s| s.0).sum::<f64>() / signatures.len() as f64;
+    let luma_std = (signatures
+        .iter()
+        .map(|s| {
+            let d = s.0 - mean_luma;
+            d * d
+        })
+        .sum::<f64>()
+        / signatures.len() as f64)
+        .sqrt();
+
+    let temporal_stability =
+        clamp01(1.0 / (1.0 + 12.0 * avg_luma_delta + 9.0 * avg_chroma_delta));
+    let motion_smoothness = clamp01(1.0 / (1.0 + 6.0 * avg_velocity + 16.0 * avg_jerk));
+    let exposure_consistency = clamp01(1.0 / (1.0 + 24.0 * luma_std + 12.0 * avg_luma_delta));
+
+    (temporal_stability, motion_smoothness, exposure_consistency)
+}
+
 pub fn apply_video_and_novelty(
     scores: &mut QualityScores,
     temporal_stability: f64,
@@ -408,5 +514,70 @@ mod tests {
         let (scores, _features) = score_image_frame(&img, &config);
         assert!((0.0..=1.0).contains(&scores.image_composite));
         assert!((0.0..=1.0).contains(&scores.final_composite));
+    }
+
+    fn solid_frame(width: u32, height: u32, v: u16) -> ImageBuffer<Rgb<u16>, Vec<u16>> {
+        let mut img = ImageBuffer::<Rgb<u16>, Vec<u16>>::new(width, height);
+        for p in img.pixels_mut() {
+            *p = Rgb([v, v, v]);
+        }
+        img
+    }
+
+    fn moving_spot_frames(width: u32, height: u32, count: usize) -> Vec<ImageBuffer<Rgb<u16>, Vec<u16>>> {
+        let mut frames = Vec::with_capacity(count);
+        for i in 0..count {
+            let mut img = ImageBuffer::<Rgb<u16>, Vec<u16>>::new(width, height);
+            let x = (i.min(width.saturating_sub(1) as usize)) as u32;
+            let y = (height / 2).min(height.saturating_sub(1));
+            img.put_pixel(x, y, Rgb([65535, 65535, 65535]));
+            frames.push(img);
+        }
+        frames
+    }
+
+    fn single_spot_frame(width: u32, height: u32, x: u32) -> ImageBuffer<Rgb<u16>, Vec<u16>> {
+        let mut img = ImageBuffer::<Rgb<u16>, Vec<u16>>::new(width, height);
+        let clamped_x = x.min(width.saturating_sub(1));
+        let y = (height / 2).min(height.saturating_sub(1));
+        img.put_pixel(clamped_x, y, Rgb([65535, 65535, 65535]));
+        img
+    }
+
+    #[test]
+    fn probe_temporal_scores_reward_stability() {
+        let stable = vec![
+            solid_frame(16, 16, 12_000),
+            solid_frame(16, 16, 12_000),
+            solid_frame(16, 16, 12_000),
+            solid_frame(16, 16, 12_000),
+        ];
+        let flicker = vec![
+            solid_frame(16, 16, 6_000),
+            solid_frame(16, 16, 50_000),
+            solid_frame(16, 16, 6_000),
+            solid_frame(16, 16, 50_000),
+        ];
+
+        let stable_scores = score_temporal_probe_frames(&stable);
+        let flicker_scores = score_temporal_probe_frames(&flicker);
+        assert!(stable_scores.0 > flicker_scores.0);
+        assert!(stable_scores.2 > flicker_scores.2);
+    }
+
+    #[test]
+    fn probe_temporal_scores_capture_motion_smoothness() {
+        let smooth = moving_spot_frames(32, 16, 5);
+        let jitter = vec![
+            single_spot_frame(32, 16, 1),
+            single_spot_frame(32, 16, 2),
+            single_spot_frame(32, 16, 31),
+            single_spot_frame(32, 16, 2),
+            single_spot_frame(32, 16, 28),
+        ];
+
+        let smooth_scores = score_temporal_probe_frames(&smooth);
+        let jitter_scores = score_temporal_probe_frames(&jitter);
+        assert!(smooth_scores.1 > jitter_scores.1);
     }
 }
