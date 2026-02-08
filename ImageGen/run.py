@@ -33,8 +33,8 @@ from pathlib import Path
 from typing import Any, Optional
 
 # Defaults
-DEFAULT_WORKERS = 4
-DEFAULT_SUBPROCESS_TIMEOUT = 16000  # 100 minutes per simulation
+DEFAULT_WORKERS = 6
+DEFAULT_SUBPROCESS_TIMEOUT = 160000  # ~44.4 hours per simulation
 BINARY_PATH = Path('./target/release/three_body_problem')
 DEFAULT_LOGS_DIR = Path("./runner_logs")
 DEFAULT_BINARY_LOG_LEVEL = "info"
@@ -44,7 +44,12 @@ DEFAULT_STOP_WAIT_SECONDS = 6.0
 
 # Global state for graceful shutdown
 shutdown_event = threading.Event()
+force_shutdown_event = threading.Event()
 stats_lock = threading.Lock()
+active_processes_lock = threading.Lock()
+interrupt_lock = threading.Lock()
+active_processes: dict[int, subprocess.Popen] = {}
+interrupt_count = 0
 stats = {
     'started': 0,
     'successful': 0,
@@ -489,6 +494,56 @@ def update_session_control(path: Path, updates: dict[str, Any]) -> None:
     write_json_file(path, payload)
 
 
+def register_active_process(task_id: int, process: subprocess.Popen) -> None:
+    """Track active child processes for interrupt escalation."""
+    with active_processes_lock:
+        active_processes[task_id] = process
+
+
+def unregister_active_process(task_id: int) -> None:
+    """Remove a child process from active tracking."""
+    with active_processes_lock:
+        active_processes.pop(task_id, None)
+
+
+def snapshot_active_processes() -> list[subprocess.Popen]:
+    """Return a snapshot of currently tracked child processes."""
+    with active_processes_lock:
+        return list(active_processes.values())
+
+
+def send_signal_to_process_tree(process: subprocess.Popen, sig: signal.Signals) -> bool:
+    """Signal an active process tree, preferring process groups."""
+    pid = process.pid
+    if pid is None:
+        return False
+    try:
+        os.killpg(pid, sig)
+        return True
+    except Exception:
+        try:
+            if sig == signal.SIGKILL:
+                process.kill()
+            elif sig == signal.SIGTERM:
+                process.terminate()
+            else:
+                os.kill(pid, sig)
+            return True
+        except Exception:
+            return False
+
+
+def signal_active_processes(sig: signal.Signals) -> int:
+    """Signal all active child process trees and return count signaled."""
+    count = 0
+    for process in snapshot_active_processes():
+        if process.poll() is not None:
+            continue
+        if send_signal_to_process_tree(process, sig):
+            count += 1
+    return count
+
+
 def append_jsonl(path: Path, payload: dict[str, Any]) -> None:
     """Append a JSON object line in a thread-safe way."""
     line = json.dumps(payload, sort_keys=True)
@@ -763,8 +818,8 @@ def stop_all_running_tasks(logs_layout: dict[str, Path], wait_seconds: float) ->
         send_signal_if_alive(pid, signal.SIGKILL)
     still_alive = wait_for_exit(still_alive, 1.0)
 
-    stopped_runners = sorted(pid for pid in runner_pids if pid not in runners_left)
-    stopped_renderers = sorted(pid for pid in renderer_pids if pid not in renderers_left)
+    stopped_runners = sorted(pid for pid in runner_pids if pid not in still_alive)
+    stopped_renderers = sorted(pid for pid in renderer_pids if pid not in still_alive)
 
     write_session_event(
         logs_layout['session_events'],
@@ -819,7 +874,7 @@ def run_simulation(
 
     Returns a structured result payload for stats and diagnostics.
     """
-    if shutdown_event.is_set():
+    if shutdown_event.is_set() or force_shutdown_event.is_set():
         return {
             'task_id': task_id,
             'success': False,
@@ -892,6 +947,9 @@ def run_simulation(
                 stderr=stderr_file,
                 start_new_session=True,
             )
+            register_active_process(task_id, process)
+            if force_shutdown_event.is_set():
+                send_signal_to_process_tree(process, signal.SIGTERM)
             try:
                 return_code = process.wait(timeout=timeout)
             except subprocess.TimeoutExpired:
@@ -1180,6 +1238,8 @@ def run_simulation(
             'elapsed_seconds': elapsed,
             'is_special': is_special,
         }
+    finally:
+        unregister_active_process(task_id)
 
 
 def record_result(success: bool, is_special: bool, elapsed: float) -> None:
@@ -1201,7 +1261,32 @@ def record_result(success: bool, is_special: bool, elapsed: float) -> None:
 
 def signal_handler(signum, frame):
     """Handle CTRL+C / SIGTERM gracefully."""
-    print("\n\nShutting down... waiting for running tasks to complete.")
+    global interrupt_count
+    with interrupt_lock:
+        interrupt_count += 1
+        current_interrupt = interrupt_count
+
+    if current_interrupt == 1:
+        print("\n\nShutting down... waiting for running tasks to complete.")
+        print("Press Ctrl+C again to force-stop active simulations.")
+        shutdown_event.set()
+        return
+
+    shutdown_event.set()
+    force_shutdown_event.set()
+
+    if current_interrupt == 2:
+        print("\nForce-stopping active simulations (SIGTERM)...")
+        signaled = signal_active_processes(signal.SIGTERM)
+        if signaled == 0:
+            print("No active simulations were found to terminate.")
+        print("Press Ctrl+C once more to hard-kill remaining simulations.")
+        return
+
+    print("\nHard-stopping active simulations (SIGKILL)...")
+    signaled = signal_active_processes(signal.SIGKILL)
+    if signaled == 0:
+        print("No active simulations were found to kill.")
     shutdown_event.set()
 
 
