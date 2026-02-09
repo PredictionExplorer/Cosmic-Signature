@@ -190,6 +190,11 @@ describe("StakingWalletRandomWalkNft", function () {
 					transactionResponsePromises_.push(contracts_.randomWalkNft.connect(signer_).mint({value: 10n ** 18n,}));
 				}
 			}
+
+			// [Comment-202602041]
+			// Issue. Is it possible that in case this call fails due to an error, some `async` calls
+			// will reach Hardhat Network after the next test begins?
+			// [/Comment-202602041]
 			let transactionResponses_ = await Promise.all(transactionResponsePromises_);
 
 			// Comment-202507252 relates.
@@ -222,13 +227,18 @@ describe("StakingWalletRandomWalkNft", function () {
 				const signer_ = contracts_.signers[stakerIndex_];
 				transactionResponsePromises_.push(contracts_.stakingWalletRandomWalkNft.connect(signer_).stakeMany(allNftIds_[stakerIndex_]));
 			}
+
+			// Comment-202602041 applies.
 			transactionResponses_ = await Promise.all(transactionResponsePromises_);
 
 			// Comment-202507252 relates.
 			const transactionResponseWaiters_ = [hre.ethers.provider.send("evm_mine")];
 
 			transactionResponseWaiters_.push( ... transactionResponses_.map((transactionResponse_) => (transactionResponse_.wait())) );
+
+			// Comment-202602041 applies.
 			await Promise.all(transactionResponseWaiters_);
+
 			expect(await contracts_.stakingWalletRandomWalkNft.numStakedNfts()).equal(BigInt(numStakers_ * numNftsPerStaker_));
 		} finally {
 			await hre.ethers.provider.send("evm_setAutomine", [true]);

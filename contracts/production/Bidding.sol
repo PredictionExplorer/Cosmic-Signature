@@ -1,7 +1,7 @@
 // #region
 
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.30;
+pragma solidity 0.8.33;
 
 // #endregion
 // #region
@@ -84,7 +84,7 @@ abstract contract Bidding is
 		// Validating that the ETH Dutch auction has ended some duration ago.
 		// The most correct requirement would be that the ETH bid price returned by `getNextEthBidPrice`
 		// has reached its minimum in a past block.
-		// This condition isn't necessarily a perfet substiturte for that in case a block spans multiple seconds, and that's OK.
+		// This condition isn't necessarily a perfect substiturte for that in case a block spans multiple seconds, and that's OK.
 		// [/Comment-202508096]
 		if ( ! (ethDutchAuctionElapsedDuration_ > int256(ethDutchAuctionDuration_)) ) {
 			revert CosmicSignatureErrors.InvalidOperationInCurrentState("Too early.");

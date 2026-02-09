@@ -21,11 +21,11 @@ With that note out of the way, here are a few words about explicitly compiling t
    ```
 
 3. Install the Solidity Compiler.\
-   This Hardhat project uses the binary solc compiler (not solc-js) 0.8.30.\
+   This Hardhat project uses the binary solc compiler (not solc-js) 0.8.33.\
    We recommend using solc-select:
    ```bash
    pip3 install solc-select
-   solc-select use 0.8.30 --always-install
+   solc-select use 0.8.33 --always-install
    ```   
    For more info on solc setup and about other solc setup options see Comment-202409011.
 

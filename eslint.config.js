@@ -9,6 +9,7 @@
 const globals = require("globals");
 const esLintJs = require("@eslint/js");
 const typeScriptEsLint = require("typescript-eslint");
+const stylisticEsLintPlugin = require("@stylistic/eslint-plugin");
 
 const esLintConfigArray =
 	typeScriptEsLint.config(
@@ -19,6 +20,7 @@ const esLintConfigArray =
 				],
 				plugins: {
 					"@typescript-eslint": typeScriptEsLint.plugin,
+					"@stylistic-eslint-plugin": stylisticEsLintPlugin,
 				},
 				languageOptions: {
 					parser: typeScriptEsLint.parser,
@@ -35,6 +37,9 @@ const esLintConfigArray =
 				extends: [
 					esLintJs.configs.recommended,
 					typeScriptEsLint.configs.recommendedTypeChecked,
+
+					// // todo-3 This generates a zillion lints. Maybe revisit this some day.
+					// stylisticEsLintPlugin.configs.recommended,
 				],
 				rules: {
 					"@typescript-eslint/no-require-imports": "off",
@@ -43,6 +48,9 @@ const esLintConfigArray =
 					"@typescript-eslint/no-unsafe-member-access": "off",
 					"@typescript-eslint/no-unsafe-argument": "off",
 					"@typescript-eslint/no-unsafe-return": "off",
+					"@stylistic-eslint-plugin/semi": ["warn", "always",],
+					"@stylistic-eslint-plugin/semi-style": ["warn", "last",],
+					"@stylistic-eslint-plugin/no-extra-semi": "warn",
 				},
 			},
 		]

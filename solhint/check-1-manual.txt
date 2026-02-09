@@ -1,6 +1,6 @@
     How to execute SolHint.
 
-@ If necessary, edit "../.solhint.json".
+@ If necessary, edit `../.solhint.json`.
 
 @ Execute `./check-1.bash`.
 
