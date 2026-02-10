@@ -60,6 +60,7 @@ pub use image::{DynamicImage, ImageBuffer, Rgb};
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum EffectBudget {
     Preview,
+    #[allow(dead_code)] // Reserved for optional intermediate scoring/render pipelines.
     Finalist,
     Full,
 }
@@ -357,6 +358,35 @@ fn generate_nebula_background(
         .expect("Failed to generate nebula background")
 }
 
+/// Keep nebula visible in open background while preventing dominance over trajectories.
+#[inline]
+fn controlled_nebula_alpha(base_alpha: f64, foreground_alpha: f64) -> (f64, f64) {
+    if base_alpha <= 0.0 {
+        return (0.0, 1.0);
+    }
+
+    // When trajectories are sparse, gently lift very low nebula coverage.
+    const MIN_FLOOR_ALPHA: f64 = 0.010;
+    const MAX_FLOOR_ALPHA: f64 = 0.028;
+    const FLOOR_PUSH_MAX: f64 = 0.55;
+
+    // Always cap maximum nebula coverage, with a stricter cap under dense foreground.
+    const DENSE_REGION_CEILING: f64 = 0.040;
+    const OPEN_REGION_CEILING: f64 = 0.130;
+
+    let fg = foreground_alpha.clamp(0.0, 1.0);
+    let open_space = (1.0 - fg).clamp(0.0, 1.0);
+    let floor_push = ((0.10 - fg) / 0.10).clamp(0.0, 1.0) * FLOOR_PUSH_MAX;
+    let floor_alpha = MIN_FLOOR_ALPHA + (MAX_FLOOR_ALPHA - MIN_FLOOR_ALPHA) * open_space.powf(1.2);
+    let ceiling =
+        DENSE_REGION_CEILING + (OPEN_REGION_CEILING - DENSE_REGION_CEILING) * open_space.powf(1.6);
+
+    let lifted = base_alpha + (floor_alpha - base_alpha).max(0.0) * floor_push;
+    let controlled = lifted.min(ceiling).max(0.0);
+    let gain = controlled / base_alpha.max(1e-9);
+    (controlled, gain)
+}
+
 /// Composite background and foreground buffers using enhanced "over" operator
 /// Background goes first (underneath), then foreground on top
 ///
@@ -376,6 +406,8 @@ fn composite_buffers(background: &PixelBuffer, foreground: &PixelBuffer) -> Pixe
         .par_iter()
         .zip(foreground.par_iter())
         .map(|(&(br, bg, bb, ba), &(fr, fg, fb, fa))| {
+            let (controlled_ba, _) = controlled_nebula_alpha(ba, fa);
+
             // Stage 1: Apply alpha boost to strengthen trajectory coverage
             let boosted_fa = (fa * ALPHA_BOOST_FACTOR).min(1.0);
 
@@ -385,20 +417,20 @@ fn composite_buffers(background: &PixelBuffer, foreground: &PixelBuffer) -> Pixe
             } else if boosted_fa <= 0.0 {
                 // No foreground - only background visible
                 // Convert background from straight to premultiplied for output consistency
-                (br * ba, bg * ba, bb * ba, ba)
+                (br * controlled_ba, bg * controlled_ba, bb * controlled_ba, controlled_ba)
             } else {
                 // Standard "over" compositing with enhanced alpha
                 // Result alpha: original fa + background * (1 - boosted_fa)
-                let alpha_out = fa + ba * (1.0 - boosted_fa);
+                let alpha_out = fa + controlled_ba * (1.0 - boosted_fa);
 
                 if alpha_out <= 0.0 {
                     (0.0, 0.0, 0.0, 0.0)
                 } else {
                     // Composite colors with boosted foreground coverage
                     // Output = premult_foreground + premult_background * (1 - boosted_alpha_foreground)
-                    let mut r_out = fr + (br * ba) * (1.0 - boosted_fa);
-                    let mut g_out = fg + (bg * ba) * (1.0 - boosted_fa);
-                    let mut b_out = fb + (bb * ba) * (1.0 - boosted_fa);
+                    let mut r_out = fr + (br * controlled_ba) * (1.0 - boosted_fa);
+                    let mut g_out = fg + (bg * controlled_ba) * (1.0 - boosted_fa);
+                    let mut b_out = fb + (bb * controlled_ba) * (1.0 - boosted_fa);
 
                     // Stage 2: Saturation boost for trajectory-dominant regions
                     // This restores gold richness that may be dulled by nebula bleed
@@ -460,7 +492,26 @@ fn build_nebula_config(
     config.octaves = resolved_config.nebula_octaves.max(1);
     config.base_frequency = resolved_config.nebula_base_frequency.max(1e-6);
     config.noise_seed = noise_seed as i64;
+    config.palette_id = NebulaCloudConfig::palette_index_from_seed(
+        config.noise_seed,
+        resolved_config.gradient_map_palette,
+    );
+    config.colors = NebulaCloudConfig::palette_for_index(config.palette_id);
     config
+}
+
+pub fn nebula_palette_id_for_config(
+    resolved_config: &randomizable_config::ResolvedEffectConfig,
+    noise_seed: i32,
+) -> Option<usize> {
+    if !resolved_config.special_mode || resolved_config.nebula_strength <= 0.0 {
+        return None;
+    }
+
+    Some(NebulaCloudConfig::palette_index_from_seed(
+        noise_seed as i64,
+        resolved_config.gradient_map_palette,
+    ))
 }
 
 /// Build effect configuration from resolved randomizable config
@@ -1484,5 +1535,57 @@ mod tests {
 
         let frame = generate_nebula_background(64, 64, 10, &config);
         assert!(frame.iter().all(|&(r, g, b, a)| r == 0.0 && g == 0.0 && b == 0.0 && a == 0.0));
+    }
+
+    #[test]
+    fn nebula_controller_lifts_visibility_in_open_background() {
+        let (controlled, gain) = controlled_nebula_alpha(0.006, 0.0);
+        assert!(controlled > 0.006, "controller should gently lift very faint nebula");
+        assert!(gain > 1.0);
+        assert!(controlled <= 0.13);
+    }
+
+    #[test]
+    fn nebula_controller_caps_dominance_under_dense_foreground() {
+        let (controlled, _) = controlled_nebula_alpha(0.14, 0.85);
+        assert!(
+            controlled <= 0.05,
+            "dense foreground should aggressively cap nebula alpha, got {controlled}"
+        );
+    }
+
+    #[test]
+    fn nebula_palette_is_deterministic_and_hint_sensitive() {
+        let mut resolved = sample_resolved(true);
+        resolved.gradient_map_palette = 1;
+        let a = build_nebula_config(&resolved, 31415);
+        let b = build_nebula_config(&resolved, 31415);
+        assert_eq!(a.palette_id, b.palette_id);
+        assert_eq!(a.colors, b.colors);
+
+        resolved.gradient_map_palette = 6;
+        let c = build_nebula_config(&resolved, 31415);
+        assert_ne!(
+            a.palette_id, c.palette_id,
+            "palette hint should influence nebula palette selection"
+        );
+    }
+
+    #[test]
+    fn nebula_palette_id_helper_returns_none_when_nebula_disabled() {
+        let mut resolved = sample_resolved(false);
+        resolved.nebula_strength = 0.0;
+        assert!(nebula_palette_id_for_config(&resolved, 100).is_none());
+    }
+
+    #[test]
+    fn nebula_palette_id_helper_matches_config_builder() {
+        let mut resolved = sample_resolved(true);
+        resolved.gradient_map_palette = 9;
+        resolved.nebula_strength = 0.07;
+
+        let config = build_nebula_config(&resolved, 2026);
+        let palette_id = nebula_palette_id_for_config(&resolved, 2026).expect("palette expected");
+        assert_eq!(palette_id, config.palette_id);
     }
 }

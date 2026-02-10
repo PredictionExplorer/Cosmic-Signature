@@ -90,10 +90,22 @@ pub fn accept_candidate(
     min_image_score: f64,
     min_video_score: f64,
     min_novelty_score: f64,
+    max_perimeter_speckle_penalty: f64,
+    min_nebula_visibility_score: f64,
+    max_nebula_dominance_penalty: f64,
 ) -> bool {
+    let nebula_ok = if candidate.config.special_mode && candidate.config.nebula_strength > 0.0 {
+        candidate.scores.nebula_visibility_score >= min_nebula_visibility_score
+            && candidate.scores.nebula_dominance_penalty <= max_nebula_dominance_penalty
+    } else {
+        true
+    };
+
     candidate.scores.image_composite >= min_image_score
         && candidate.scores.video_composite >= min_video_score
         && candidate.novelty_score >= min_novelty_score
+        && candidate.scores.perimeter_speckle_penalty <= max_perimeter_speckle_penalty
+        && nebula_ok
 }
 
 pub fn pick_winner(finalists: &[CandidateEvaluation]) -> Option<CandidateEvaluation> {
@@ -256,8 +268,47 @@ mod tests {
     #[test]
     fn acceptance_uses_all_thresholds() {
         let c = candidate(0.8);
-        assert!(accept_candidate(&c, 0.7, 0.7, 0.7));
-        assert!(!accept_candidate(&c, 0.9, 0.7, 0.7));
+        assert!(accept_candidate(&c, 0.7, 0.7, 0.7, 0.0, 0.0, 1.0));
+        assert!(!accept_candidate(&c, 0.9, 0.7, 0.7, 0.0, 0.0, 1.0));
+    }
+
+    #[test]
+    fn acceptance_rejects_perimeter_speckle_artifacts() {
+        let mut c = candidate(0.9);
+        c.scores.perimeter_speckle_penalty = 0.31;
+        assert!(!accept_candidate(&c, 0.7, 0.7, 0.7, 0.0, 0.0, 1.0));
+        assert!(accept_candidate(&c, 0.7, 0.7, 0.7, 0.35, 0.0, 1.0));
+    }
+
+    #[test]
+    fn acceptance_checks_nebula_thresholds_for_special_mode() {
+        let mut c = candidate(0.9);
+        c.config.special_mode = true;
+        c.config.nebula_strength = 0.08;
+        c.scores.nebula_visibility_score = 0.18;
+        c.scores.nebula_dominance_penalty = 0.12;
+        assert!(!accept_candidate(&c, 0.7, 0.7, 0.7, 0.0, 0.22, 0.35));
+
+        c.scores.nebula_visibility_score = 0.42;
+        c.scores.nebula_dominance_penalty = 0.41;
+        assert!(!accept_candidate(&c, 0.7, 0.7, 0.7, 0.0, 0.22, 0.35));
+
+        c.scores.nebula_dominance_penalty = 0.20;
+        assert!(accept_candidate(&c, 0.7, 0.7, 0.7, 0.0, 0.22, 0.35));
+    }
+
+    #[test]
+    fn acceptance_ignores_nebula_thresholds_when_not_special() {
+        let mut c = candidate(0.9);
+        c.config.special_mode = false;
+        c.config.nebula_strength = 0.0;
+        c.scores.nebula_visibility_score = 0.0;
+        c.scores.nebula_dominance_penalty = 1.0;
+
+        assert!(
+            accept_candidate(&c, 0.7, 0.7, 0.7, 0.0, 0.50, 0.05),
+            "non-special candidate should not be rejected by nebula-specific thresholds"
+        );
     }
 
     #[test]

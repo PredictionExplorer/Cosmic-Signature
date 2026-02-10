@@ -9,6 +9,25 @@ use opensimplex2::smooth;
 use rayon::prelude::*;
 use std::error::Error;
 
+const NEBULA_PALETTE_BANK: [[[f64; 3]; 4]; 8] = [
+    // Deep indigo + cyan glass
+    [[0.07, 0.04, 0.19], [0.05, 0.16, 0.22], [0.11, 0.07, 0.24], [0.03, 0.09, 0.20]],
+    // Teal + cobalt + ember
+    [[0.04, 0.14, 0.20], [0.10, 0.09, 0.23], [0.17, 0.08, 0.14], [0.03, 0.08, 0.17]],
+    // Violet manuscript
+    [[0.10, 0.05, 0.24], [0.12, 0.10, 0.19], [0.06, 0.15, 0.20], [0.04, 0.08, 0.18]],
+    // Mineral cyan + ultramarine
+    [[0.03, 0.12, 0.18], [0.06, 0.18, 0.22], [0.09, 0.09, 0.24], [0.03, 0.07, 0.16]],
+    // Bronze haze (kept dark and subtle)
+    [[0.10, 0.08, 0.14], [0.14, 0.10, 0.12], [0.08, 0.12, 0.17], [0.04, 0.07, 0.13]],
+    // Polar aurora
+    [[0.03, 0.10, 0.16], [0.04, 0.18, 0.20], [0.07, 0.12, 0.23], [0.02, 0.08, 0.15]],
+    // Coral vacuum
+    [[0.13, 0.07, 0.16], [0.08, 0.11, 0.20], [0.15, 0.09, 0.12], [0.04, 0.08, 0.14]],
+    // Ether filigree
+    [[0.07, 0.05, 0.22], [0.04, 0.14, 0.21], [0.10, 0.08, 0.19], [0.03, 0.08, 0.17]],
+];
+
 /// Configuration for nebula dust clouds effect
 #[derive(Clone, Debug)]
 pub struct NebulaCloudConfig {
@@ -30,6 +49,8 @@ pub struct NebulaCloudConfig {
     pub noise_seed: i64,
     /// Edge fade distance (0.0 = no fade, 0.2 = fade 20% from edges)
     pub edge_fade: f64,
+    /// Selected palette variant (for diagnostics / reproducibility)
+    pub palette_id: usize,
 }
 
 impl Default for NebulaCloudConfig {
@@ -39,25 +60,34 @@ impl Default for NebulaCloudConfig {
 }
 
 impl NebulaCloudConfig {
+    pub fn palette_count() -> usize {
+        NEBULA_PALETTE_BANK.len()
+    }
+
+    pub fn palette_for_index(index: usize) -> [[f64; 3]; 4] {
+        NEBULA_PALETTE_BANK[index % Self::palette_count()]
+    }
+
+    pub fn palette_index_from_seed(seed: i64, hint: usize) -> usize {
+        (seed.unsigned_abs() as usize).wrapping_add(hint.wrapping_mul(3)) % Self::palette_count()
+    }
+
     /// Create configuration for special mode with enhanced atmosphere
     #[allow(dead_code)] // Legacy helper - kept for backward compatibility
     pub fn special_mode(width: usize, height: usize, seed: i32) -> Self {
         let min_dim = width.min(height) as f64;
+        let palette_id = Self::palette_index_from_seed(seed as i64, 0);
         Self {
             strength: 0.10, // Deliberately subtle for background atmosphere
             octaves: 4,     // Rich multi-scale detail
             base_frequency: 0.0014 * (1080.0 / min_dim), // Medium-scale features
             persistence: 0.54, // Natural octave contribution
             lacunarity: 2.15, // Good variation between scales
-            colors: [
-                [0.12, 0.06, 0.28], // Rich purple - visible and mysterious
-                [0.05, 0.20, 0.24], // Vibrant teal - clear complement to gold
-                [0.22, 0.05, 0.24], // Vibrant magenta - adds visual interest
-                [0.03, 0.08, 0.20], // Deep blue - strong foundation
-            ],
+            colors: Self::palette_for_index(palette_id),
             time_scale: 0.0022, // Gentle drift - ~4 units over 30sec @60fps
             noise_seed: seed as i64,
             edge_fade: 0.25, // Gentle radial vignette
+            palette_id,
         }
     }
 
@@ -73,6 +103,7 @@ impl NebulaCloudConfig {
             time_scale: 0.002,
             noise_seed: seed as i64,
             edge_fade: 0.0,
+            palette_id: 0,
         }
     }
 }
@@ -343,6 +374,7 @@ mod tests {
             config.strength
         );
         assert!(config.time_scale > 0.0 && config.time_scale <= 0.0030);
+        assert!(config.palette_id < NebulaCloudConfig::palette_count());
     }
 
     #[test]
@@ -355,6 +387,28 @@ mod tests {
         let noise1 = nebula1.evaluate_noise(100.0, 200.0, 1.0);
         let noise2 = nebula2.evaluate_noise(100.0, 200.0, 1.0);
         assert_eq!(noise1, noise2, "Determinism failed!");
+    }
+
+    #[test]
+    fn test_palette_selection_is_deterministic() {
+        let a = NebulaCloudConfig::special_mode(1920, 1080, 1234);
+        let b = NebulaCloudConfig::special_mode(1920, 1080, 1234);
+        assert_eq!(a.palette_id, b.palette_id);
+        assert_eq!(a.colors, b.colors);
+    }
+
+    #[test]
+    fn test_palette_bank_has_subtle_luminance() {
+        for idx in 0..NebulaCloudConfig::palette_count() {
+            let colors = NebulaCloudConfig::palette_for_index(idx);
+            for color in colors {
+                let lum = 0.2126 * color[0] + 0.7152 * color[1] + 0.0722 * color[2];
+                assert!(
+                    (0.05..=0.20).contains(&lum),
+                    "palette {idx} should remain subtle; luminance={lum}"
+                );
+            }
+        }
     }
 
     #[test]

@@ -10,6 +10,14 @@ pub struct QualityScores {
     pub composition_energy: f64,
     pub color_harmony: f64,
     pub effect_coherence: f64,
+    #[serde(default)]
+    pub perimeter_speckle_penalty: f64,
+    #[serde(default)]
+    pub nebula_visibility_score: f64,
+    #[serde(default)]
+    pub nebula_dominance_penalty: f64,
+    #[serde(default)]
+    pub nebula_signal_ratio: f64,
     pub temporal_stability: f64,
     pub motion_smoothness: f64,
     pub exposure_consistency: f64,
@@ -72,6 +80,10 @@ pub fn score_image_frame(
     let mut center_energy = 0.0f64;
     let mut total_energy = 0.0f64;
     let mut saturation_sum = 0.0f64;
+    let mut dark_region_count = 0usize;
+    let mut dark_region_luma_sum = 0.0f64;
+    let mut dark_region_sat_sum = 0.0f64;
+    let mut nebula_signal_count = 0usize;
     let mut luma_map = vec![0.0f64; pixel_count];
     let mut near_white_map = vec![false; pixel_count];
 
@@ -118,7 +130,17 @@ pub fn score_image_frame(
 
             let ch_max = r.max(g).max(b);
             let ch_min = r.min(g).min(b);
-            saturation_sum += ch_max - ch_min;
+            let saturation = ch_max - ch_min;
+            saturation_sum += saturation;
+
+            if lum <= 0.30 {
+                dark_region_count += 1;
+                dark_region_luma_sum += lum;
+                dark_region_sat_sum += saturation;
+                if lum >= 0.008 && saturation >= 0.014 {
+                    nebula_signal_count += 1;
+                }
+            }
 
             if x > 0 {
                 let dl = (lum - prev_luma).abs();
@@ -215,6 +237,30 @@ pub fn score_image_frame(
         clamp01((perimeter_speckle_ratio - 0.00010) / 0.00040)
     };
 
+    let nebula_expected = config.special_mode && config.nebula_strength > 0.0;
+    let dark_region_count_f = dark_region_count.max(1) as f64;
+    let nebula_signal_ratio =
+        if nebula_expected { nebula_signal_count as f64 / dark_region_count_f } else { 0.0 };
+    let dark_region_luma_mean =
+        if dark_region_count > 0 { dark_region_luma_sum / dark_region_count_f } else { 0.0 };
+    let dark_region_sat_mean =
+        if dark_region_count > 0 { dark_region_sat_sum / dark_region_count_f } else { 0.0 };
+
+    let nebula_visibility_score = if nebula_expected {
+        score_soft_range(nebula_signal_ratio, 0.06, 0.32, 0.012, 0.55)
+    } else {
+        1.0
+    };
+    let nebula_dominance_penalty = if nebula_expected {
+        clamp01(
+            ((nebula_signal_ratio - 0.40) / 0.22).max(0.0)
+                + 0.80 * ((dark_region_luma_mean - 0.11) / 0.10).max(0.0)
+                + 0.60 * ((dark_region_sat_mean - 0.19) / 0.14).max(0.0),
+        )
+    } else {
+        0.0
+    };
+
     let occupancy_score = score_soft_range(occupancy_ratio, 0.12, 0.72, 0.03, 0.90);
     let edge_score = score_soft_range(edge_density, 0.04, 0.28, 0.005, 0.45);
     let center_score = score_soft_range(center_energy_ratio, 0.22, 0.60, 0.06, 0.85);
@@ -230,7 +276,9 @@ pub fn score_image_frame(
             + 0.18 * banding_penalty
             + 0.12 * overblur_penalty
             + 0.08 * oversharp_penalty
-            + 0.26 * perimeter_speckle_penalty),
+            + 0.26 * perimeter_speckle_penalty
+            + 0.14 * nebula_dominance_penalty
+            + 0.06 * (1.0 - nebula_visibility_score)),
     );
 
     let composition_energy =
@@ -265,6 +313,8 @@ pub fn score_image_frame(
         coherence_penalty += 0.25;
     }
     coherence_penalty += 0.40 * perimeter_speckle_penalty;
+    coherence_penalty += 0.30 * nebula_dominance_penalty;
+    coherence_penalty += 0.22 * (1.0 - nebula_visibility_score);
     let effect_coherence = clamp01(1.0 - coherence_penalty);
 
     let image_composite = clamp01(
@@ -291,6 +341,10 @@ pub fn score_image_frame(
         composition_energy,
         color_harmony,
         effect_coherence,
+        perimeter_speckle_penalty,
+        nebula_visibility_score,
+        nebula_dominance_penalty,
+        nebula_signal_ratio,
         temporal_stability: image_composite,
         motion_smoothness: image_composite,
         exposure_consistency: image_composite,
@@ -619,6 +673,26 @@ mod tests {
         }
     }
 
+    fn apply_nebula_wisps(
+        img: &mut ImageBuffer<Rgb<u16>, Vec<u16>>,
+        modulus: u32,
+        threshold: u32,
+        color: [u16; 3],
+    ) {
+        for (x, y, p) in img.enumerate_pixels_mut() {
+            let is_bright_structure = p.0[0] > 4_000 || p.0[1] > 4_000 || p.0[2] > 4_000;
+            if is_bright_structure {
+                continue;
+            }
+            let hash = (x.wrapping_mul(37))
+                .wrapping_add(y.wrapping_mul(17))
+                .wrapping_add(x.wrapping_mul(y));
+            if hash % modulus < threshold {
+                *p = Rgb(color);
+            }
+        }
+    }
+
     #[test]
     fn image_score_is_bounded() {
         let mut img = ImageBuffer::<Rgb<u16>, Vec<u16>>::new(16, 16);
@@ -644,6 +718,8 @@ mod tests {
         let (clean_scores, _) = score_image_frame(&clean, &config);
         let (artifact_scores, _) = score_image_frame(&artifacted, &config);
 
+        assert_eq!(clean_scores.perimeter_speckle_penalty, 0.0);
+        assert!(artifact_scores.perimeter_speckle_penalty > 0.25);
         assert!(artifact_scores.technical_integrity < clean_scores.technical_integrity - 0.20);
         assert!(artifact_scores.image_composite < clean_scores.image_composite - 0.10);
     }
@@ -661,6 +737,8 @@ mod tests {
         let (center_scores, _) = score_image_frame(&center_hot, &config);
         let (perimeter_scores, _) = score_image_frame(&perimeter_hot, &config);
 
+        assert_eq!(center_scores.perimeter_speckle_penalty, 0.0);
+        assert!(perimeter_scores.perimeter_speckle_penalty > 0.20);
         assert!(perimeter_scores.technical_integrity < center_scores.technical_integrity - 0.15);
         assert!(perimeter_scores.image_composite < center_scores.image_composite - 0.08);
     }
@@ -675,6 +753,7 @@ mod tests {
         let (clean_scores, _) = score_image_frame(&clean, &config);
         let (sparse_scores, _) = score_image_frame(&sparse, &config);
 
+        assert_eq!(sparse_scores.perimeter_speckle_penalty, 0.0);
         assert!(sparse_scores.technical_integrity > clean_scores.technical_integrity - 0.06);
         assert!(sparse_scores.image_composite > clean_scores.image_composite - 0.04);
     }
@@ -690,6 +769,62 @@ mod tests {
         let (artifact_scores, _) = score_image_frame(&artifacted, &config);
 
         assert!(artifact_scores.effect_coherence < clean_scores.effect_coherence - 0.25);
+    }
+
+    #[test]
+    fn nebula_visibility_scores_reward_subtle_presence() {
+        let mut config = test_config(256, 256);
+        config.special_mode = true;
+        config.nebula_strength = 0.08;
+
+        let baseline = gradient_frame(256, 256);
+        let mut subtle = baseline.clone();
+        apply_nebula_wisps(&mut subtle, 13, 3, [1_500, 2_150, 3_200]);
+
+        let (baseline_scores, _) = score_image_frame(&baseline, &config);
+        let (subtle_scores, _) = score_image_frame(&subtle, &config);
+
+        assert!(subtle_scores.nebula_visibility_score > baseline_scores.nebula_visibility_score);
+        assert!(
+            subtle_scores.nebula_dominance_penalty < 0.45,
+            "subtle wisps should not be treated as overpowering"
+        );
+    }
+
+    #[test]
+    fn nebula_dominance_penalty_flags_overpowering_backgrounds() {
+        let mut config = test_config(256, 256);
+        config.special_mode = true;
+        config.nebula_strength = 0.10;
+
+        let mut subtle = gradient_frame(256, 256);
+        apply_nebula_wisps(&mut subtle, 13, 3, [1_500, 2_150, 3_200]);
+
+        let mut overpowering = gradient_frame(256, 256);
+        apply_nebula_wisps(&mut overpowering, 7, 5, [13_500, 4_800, 17_000]);
+
+        let (subtle_scores, _) = score_image_frame(&subtle, &config);
+        let (overpower_scores, _) = score_image_frame(&overpowering, &config);
+
+        assert!(
+            overpower_scores.nebula_dominance_penalty
+                > subtle_scores.nebula_dominance_penalty + 0.20
+        );
+        assert!(overpower_scores.effect_coherence < subtle_scores.effect_coherence);
+    }
+
+    #[test]
+    fn nebula_metrics_are_neutral_when_nebula_not_expected() {
+        let mut config = test_config(256, 256);
+        config.special_mode = false;
+        config.nebula_strength = 0.0;
+
+        let mut frame = gradient_frame(256, 256);
+        apply_nebula_wisps(&mut frame, 7, 6, [13_500, 4_800, 17_000]);
+
+        let (scores, _) = score_image_frame(&frame, &config);
+        assert_eq!(scores.nebula_visibility_score, 1.0);
+        assert_eq!(scores.nebula_dominance_penalty, 0.0);
     }
 
     fn solid_frame(width: u32, height: u32, v: u16) -> ImageBuffer<Rgb<u16>, Vec<u16>> {

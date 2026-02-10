@@ -988,6 +988,9 @@ fn run_curation_search(
     const PREVIEW_TARGET_STEPS: usize = 12_000;
     const FINALIST_TARGET_STEPS: usize = 36_000;
     const EPSILON_EXPLORATION: f64 = 0.25;
+    const MAX_PERIMETER_SPECKLE_PENALTY: f64 = 0.0;
+    const MIN_NEBULA_VISIBILITY_SCORE: f64 = 0.22;
+    const MAX_NEBULA_DOMINANCE_PENALTY: f64 = 0.35;
 
     let (preview_width, preview_height) = preview_dimensions(args.width, args.height);
     let (preview_positions, preview_colors) =
@@ -998,14 +1001,19 @@ fn run_curation_search(
     let preview_temporal = estimate_temporal_scores(&preview_positions);
     let final_temporal = estimate_temporal_scores(&final_positions);
 
-    let mut best_overall: Option<CandidateEvaluation> = None;
     let mut total_candidates = 0usize;
     let mut finalists_considered = 0usize;
-    let mut rounds_used = 0usize;
     let mut family_stats: HashMap<String, (usize, usize)> = HashMap::new();
 
-    for round_id in 1..=curation_options.max_curation_rounds {
-        rounds_used = round_id;
+    let mut round_id = 0usize;
+    loop {
+        round_id = round_id.saturating_add(1);
+        if round_id == curation_options.max_curation_rounds.saturating_add(1) {
+            warn!(
+                "No candidate met strict acceptance gates after {} rounds; continuing rerolls until one passes.",
+                curation_options.max_curation_rounds
+            );
+        }
         info!(
             "Curation round {}/{} (preview candidates: {})",
             round_id,
@@ -1144,7 +1152,7 @@ fn run_curation_search(
                 args,
                 curation_options.quality_mode,
                 &finalist.config,
-                render::EffectBudget::Finalist,
+                render::EffectBudget::Full,
             );
             let (scores, features, novelty_score, composite) = evaluate_candidate(
                 &final_positions,
@@ -1166,24 +1174,20 @@ fn run_curation_search(
             if let Some(stats) = family_stats.get_mut(&round_winner.style_family) {
                 stats.1 += 1;
             }
-            if best_overall
-                .as_ref()
-                .map(|b| round_winner.composite_score > b.composite_score)
-                .unwrap_or(true)
-            {
-                best_overall = Some(round_winner.clone());
-            }
 
             if accept_candidate(
                 &round_winner,
                 curation_options.min_image_score,
                 curation_options.min_video_score,
                 curation_options.min_novelty_score,
+                MAX_PERIMETER_SPECKLE_PENALTY,
+                MIN_NEBULA_VISIBILITY_SCORE,
+                MAX_NEBULA_DOMINANCE_PENALTY,
             ) {
                 novelty_memory.remember(round_winner.features.clone());
                 let summary = CurationSummary {
                     quality_mode: curation_options.quality_mode.as_str().to_string(),
-                    rounds_used,
+                    rounds_used: round_id,
                     accepted: true,
                     total_candidates,
                     finalists_considered,
@@ -1191,23 +1195,26 @@ fn run_curation_search(
                 };
                 return Ok((round_winner, summary));
             }
+            warn!(
+                "Round {} winner rejected: image={:.3} (<{:.3}) video={:.3} (<{:.3}) novelty={:.3} (<{:.3}) perimeter_penalty={:.4} (>{:.4}) nebula_visibility={:.3} (<{:.3}) nebula_dominance={:.3} (>{:.3})",
+                round_id,
+                round_winner.scores.image_composite,
+                curation_options.min_image_score,
+                round_winner.scores.video_composite,
+                curation_options.min_video_score,
+                round_winner.novelty_score,
+                curation_options.min_novelty_score,
+                round_winner.scores.perimeter_speckle_penalty,
+                MAX_PERIMETER_SPECKLE_PENALTY,
+                round_winner.scores.nebula_visibility_score,
+                MIN_NEBULA_VISIBILITY_SCORE,
+                round_winner.scores.nebula_dominance_penalty,
+                MAX_NEBULA_DOMINANCE_PENALTY,
+            );
+        } else {
+            warn!("Round {} produced no finalists; rerolling.", round_id);
         }
     }
-
-    let fallback = best_overall.ok_or_else(|| {
-        warn!("Curation produced no candidates; this should not happen with min(1) defaults.");
-        std::io::Error::other("Curation produced no candidates")
-    })?;
-    novelty_memory.remember(fallback.features.clone());
-    let summary = CurationSummary {
-        quality_mode: curation_options.quality_mode.as_str().to_string(),
-        rounds_used,
-        accepted: false,
-        total_candidates,
-        finalists_considered,
-        rejection_reason: Some("no-candidate-met-thresholds; selected-best-overall".to_string()),
-    };
-    Ok((fallback, summary))
 }
 
 struct SelectedCuration {
@@ -1386,6 +1393,18 @@ fn main() -> Result<()> {
     if let Some(reason) = &selected.curation_summary.rejection_reason {
         warn!("Curation fallback reason: {reason}");
     }
+    if let Some(scores) = &selected.quality_scores {
+        info!(
+            "Selected quality scores: image={:.3}, video={:.3}, final={:.3}, perimeter_penalty={:.4}, nebula_visibility={:.3}, nebula_dominance={:.3}, nebula_signal_ratio={:.3}",
+            scores.image_composite,
+            scores.video_composite,
+            scores.final_composite,
+            scores.perimeter_speckle_penalty,
+            scores.nebula_visibility_score,
+            scores.nebula_dominance_penalty,
+            scores.nebula_signal_ratio
+        );
+    }
     if args.gallery_quality {
         info!("Gallery quality mode enabled (conservative randomization ranges).");
     }
@@ -1508,6 +1527,20 @@ fn main() -> Result<()> {
         chaos_weight: args.chaos_weight,
         equil_weight: args.equil_weight,
     };
+    let nebula_palette_id =
+        render::nebula_palette_id_for_config(&selected.resolved_effect_config, noise_seed);
+    let nebula_strength = if selected.resolved_effect_config.special_mode {
+        Some(selected.resolved_effect_config.nebula_strength)
+    } else {
+        None
+    };
+    if let Some(palette_id) = nebula_palette_id {
+        info!(
+            "Selected nebula diagnostics: palette_id={}, strength={:.4}",
+            palette_id,
+            nebula_strength.unwrap_or_default()
+        );
+    }
 
     app::log_generation(
         &app_config,
@@ -1524,6 +1557,8 @@ fn main() -> Result<()> {
         selected.quality_scores.as_ref(),
         selected.frame_features.as_ref(),
         selected.novelty_score,
+        nebula_palette_id,
+        nebula_strength,
         &selected.repair_actions,
     );
     log_stage_telemetry("total_pipeline", total_start);

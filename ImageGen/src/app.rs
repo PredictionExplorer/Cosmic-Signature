@@ -413,6 +413,8 @@ pub fn log_generation(
     quality_scores: Option<&crate::curation::quality_score::QualityScores>,
     frame_features: Option<&crate::curation::quality_score::FrameFeatures>,
     novelty_score: Option<f64>,
+    nebula_palette_id: Option<usize>,
+    nebula_strength: Option<f64>,
     repair_actions: &[String],
 ) {
     let logger = GenerationLogger::new();
@@ -489,6 +491,8 @@ pub fn log_generation(
         quality_scores: quality_scores.cloned(),
         frame_features: frame_features.cloned(),
         novelty_score,
+        nebula_palette_id,
+        nebula_strength,
         repair_actions: repair_actions.to_vec(),
     });
 
