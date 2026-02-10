@@ -66,6 +66,8 @@ pub fn score_image_frame(
     let mut center_energy = 0.0f64;
     let mut total_energy = 0.0f64;
     let mut saturation_sum = 0.0f64;
+    let mut luma_map = vec![0.0f64; pixel_count];
+    let mut near_white_map = vec![false; pixel_count];
 
     let cx = (width as f64 - 1.0) * 0.5;
     let cy = (height as f64 - 1.0) * 0.5;
@@ -92,6 +94,9 @@ pub fn score_image_frame(
             sum_sq[2] += b * b;
 
             let lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+            let idx = y * width + x;
+            luma_map[idx] = lum;
+            near_white_map[idx] = r >= 0.98 && g >= 0.98 && b >= 0.98;
             total_energy += lum;
 
             if lum > 0.004 {
@@ -163,6 +168,53 @@ pub fn score_image_frame(
     };
     let saturation_mean = saturation_sum / pixel_count as f64;
 
+    let border_x = ((width as f64) * 0.12).ceil() as usize;
+    let border_y = ((height as f64) * 0.12).ceil() as usize;
+    let interior_w = width.saturating_sub(border_x.saturating_mul(2));
+    let interior_h = height.saturating_sub(border_y.saturating_mul(2));
+    let perimeter_pixels = pixel_count.saturating_sub(interior_w.saturating_mul(interior_h)).max(1);
+    let mut perimeter_speckle_count = 0usize;
+    if width > 2 && height > 2 {
+        for y in 1..(height - 1) {
+            for x in 1..(width - 1) {
+                let is_perimeter =
+                    x < border_x || x >= width - border_x || y < border_y || y >= height - border_y;
+                if !is_perimeter {
+                    continue;
+                }
+                let idx = y * width + x;
+                if !near_white_map[idx] {
+                    continue;
+                }
+
+                let mut has_dark_neighbor = false;
+                for ny in (y - 1)..=(y + 1) {
+                    for nx in (x - 1)..=(x + 1) {
+                        if nx == x && ny == y {
+                            continue;
+                        }
+                        if luma_map[ny * width + nx] < 0.18 {
+                            has_dark_neighbor = true;
+                            break;
+                        }
+                    }
+                    if has_dark_neighbor {
+                        break;
+                    }
+                }
+                if has_dark_neighbor {
+                    perimeter_speckle_count += 1;
+                }
+            }
+        }
+    }
+    let perimeter_speckle_ratio = perimeter_speckle_count as f64 / perimeter_pixels as f64;
+    let perimeter_speckle_penalty = if perimeter_speckle_count < 6 {
+        0.0
+    } else {
+        clamp01((perimeter_speckle_ratio - 0.00010) / 0.00040)
+    };
+
     let occupancy_score = score_soft_range(occupancy_ratio, 0.12, 0.72, 0.03, 0.90);
     let edge_score = score_soft_range(edge_density, 0.04, 0.28, 0.005, 0.45);
     let center_score = score_soft_range(center_energy_ratio, 0.22, 0.60, 0.06, 0.85);
@@ -177,7 +229,12 @@ pub fn score_image_frame(
     let oversharp_penalty = if config.micro_contrast_strength > 0.55 { 0.20 } else { 0.0 };
 
     let technical_integrity = clamp01(
-        1.0 - (0.46 * clip_penalty + 0.24 * banding_penalty + 0.18 * overblur_penalty + 0.12 * oversharp_penalty),
+        1.0
+            - (0.36 * clip_penalty
+                + 0.18 * banding_penalty
+                + 0.12 * overblur_penalty
+                + 0.08 * oversharp_penalty
+                + 0.26 * perimeter_speckle_penalty),
     );
 
     let composition_energy = clamp01(0.40 * occupancy_score + 0.35 * edge_score + 0.25 * center_score);
@@ -207,6 +264,7 @@ pub fn score_image_frame(
     if config.clip_black > 0.020 && config.clip_white < 0.985 {
         coherence_penalty += 0.25;
     }
+    coherence_penalty += 0.40 * perimeter_speckle_penalty;
     let effect_coherence = clamp01(1.0 - coherence_penalty);
 
     let image_composite = clamp01(
@@ -426,17 +484,10 @@ pub fn apply_video_and_novelty(
 mod tests {
     use super::*;
 
-    #[test]
-    fn image_score_is_bounded() {
-        let mut img = ImageBuffer::<Rgb<u16>, Vec<u16>>::new(16, 16);
-        for (x, y, p) in img.enumerate_pixels_mut() {
-            let v = (((x + y) as f64 / 30.0) * 65535.0) as u16;
-            *p = Rgb([v, v, v]);
-        }
-
-        let config = ResolvedEffectConfig {
-            width: 16,
-            height: 16,
+    fn test_config(width: u32, height: u32) -> ResolvedEffectConfig {
+        ResolvedEffectConfig {
+            width,
+            height,
             gallery_quality: false,
             special_mode: false,
             enable_bloom: true,
@@ -509,11 +560,146 @@ mod tests {
             nebula_strength: 0.05,
             nebula_octaves: 4,
             nebula_base_frequency: 0.001,
-        };
+        }
+    }
+
+    fn gradient_frame(width: u32, height: u32) -> ImageBuffer<Rgb<u16>, Vec<u16>> {
+        let mut img = ImageBuffer::<Rgb<u16>, Vec<u16>>::new(width, height);
+        let cx = width as f64 * 0.5;
+        let cy = height as f64 * 0.5;
+        let rx = width as f64 * 0.28;
+        let ry = height as f64 * 0.22;
+        for (x, y, p) in img.enumerate_pixels_mut() {
+            let dx = (x as f64 - cx) / rx.max(1.0);
+            let dy = (y as f64 - cy) / ry.max(1.0);
+            let d2 = dx * dx + dy * dy;
+            if d2 <= 1.0 {
+                let core = (1.0 - d2).powf(0.65);
+                let v = ((0.22 + 0.53 * core) * 65535.0).round() as u16;
+                *p = Rgb([v, v, v]);
+            } else {
+                *p = Rgb([0, 0, 0]);
+            }
+        }
+        img
+    }
+
+    fn add_perimeter_speckles(img: &mut ImageBuffer<Rgb<u16>, Vec<u16>>, count: usize) {
+        let width = img.width() as usize;
+        let height = img.height() as usize;
+        let border_y = ((height as f64) * 0.12).ceil() as usize;
+        let mut written = 0usize;
+        let mut x = 1usize;
+        while written < count && x + 1 < width {
+            let y = if written.is_multiple_of(2) {
+                border_y.max(1).saturating_sub(1).min(height - 2)
+            } else {
+                (height - border_y.max(1)).min(height - 2)
+            };
+            img.put_pixel(x as u32, y as u32, Rgb([65535, 65535, 65535]));
+            written += 1;
+            x = x.saturating_add(3);
+            if x + 1 >= width {
+                x = 1;
+            }
+        }
+    }
+
+    fn add_center_highlights(img: &mut ImageBuffer<Rgb<u16>, Vec<u16>>, count: usize) {
+        let width = img.width() as usize;
+        let height = img.height() as usize;
+        let x0 = width / 3;
+        let x1 = (2 * width / 3).max(x0 + 1);
+        let y0 = height / 3;
+        let y1 = (2 * height / 3).max(y0 + 1);
+        let mut written = 0usize;
+        let mut x = x0;
+        let mut y = y0;
+        while written < count {
+            img.put_pixel(x as u32, y as u32, Rgb([65535, 65535, 65535]));
+            written += 1;
+            x += 5;
+            if x >= x1 {
+                x = x0;
+                y += 5;
+                if y >= y1 {
+                    y = y0;
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn image_score_is_bounded() {
+        let mut img = ImageBuffer::<Rgb<u16>, Vec<u16>>::new(16, 16);
+        for (x, y, p) in img.enumerate_pixels_mut() {
+            let v = (((x + y) as f64 / 30.0) * 65535.0) as u16;
+            *p = Rgb([v, v, v]);
+        }
+
+        let config = test_config(16, 16);
 
         let (scores, _features) = score_image_frame(&img, &config);
         assert!((0.0..=1.0).contains(&scores.image_composite));
         assert!((0.0..=1.0).contains(&scores.final_composite));
+    }
+
+    #[test]
+    fn perimeter_white_speckles_are_heavily_penalized() {
+        let config = test_config(256, 256);
+        let clean = gradient_frame(256, 256);
+        let mut artifacted = clean.clone();
+        add_perimeter_speckles(&mut artifacted, 220);
+
+        let (clean_scores, _) = score_image_frame(&clean, &config);
+        let (artifact_scores, _) = score_image_frame(&artifacted, &config);
+
+        assert!(artifact_scores.technical_integrity < clean_scores.technical_integrity - 0.20);
+        assert!(artifact_scores.image_composite < clean_scores.image_composite - 0.10);
+    }
+
+    #[test]
+    fn center_highlights_are_not_treated_as_perimeter_speckles() {
+        let config = test_config(256, 256);
+        let base = gradient_frame(256, 256);
+        let mut center_hot = base.clone();
+        let mut perimeter_hot = base.clone();
+
+        add_center_highlights(&mut center_hot, 220);
+        add_perimeter_speckles(&mut perimeter_hot, 220);
+
+        let (center_scores, _) = score_image_frame(&center_hot, &config);
+        let (perimeter_scores, _) = score_image_frame(&perimeter_hot, &config);
+
+        assert!(perimeter_scores.technical_integrity < center_scores.technical_integrity - 0.15);
+        assert!(perimeter_scores.image_composite < center_scores.image_composite - 0.08);
+    }
+
+    #[test]
+    fn tiny_number_of_perimeter_speckles_does_not_overpenalize() {
+        let config = test_config(256, 256);
+        let clean = gradient_frame(256, 256);
+        let mut sparse = clean.clone();
+        add_perimeter_speckles(&mut sparse, 4);
+
+        let (clean_scores, _) = score_image_frame(&clean, &config);
+        let (sparse_scores, _) = score_image_frame(&sparse, &config);
+
+        assert!(sparse_scores.technical_integrity > clean_scores.technical_integrity - 0.06);
+        assert!(sparse_scores.image_composite > clean_scores.image_composite - 0.04);
+    }
+
+    #[test]
+    fn severe_perimeter_speckles_reduce_effect_coherence() {
+        let config = test_config(256, 256);
+        let clean = gradient_frame(256, 256);
+        let mut artifacted = clean.clone();
+        add_perimeter_speckles(&mut artifacted, 240);
+
+        let (clean_scores, _) = score_image_frame(&clean, &config);
+        let (artifact_scores, _) = score_image_frame(&artifacted, &config);
+
+        assert!(artifact_scores.effect_coherence < clean_scores.effect_coherence - 0.25);
     }
 
     fn solid_frame(width: u32, height: u32, v: u16) -> ImageBuffer<Rgb<u16>, Vec<u16>> {
