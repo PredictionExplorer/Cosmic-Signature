@@ -111,7 +111,7 @@ impl HistogramData {
     pub fn len(&self) -> usize {
         self.r.seen.min(usize::MAX as u64) as usize
     }
-    
+
     /// Check if the histogram is empty
     pub fn is_empty(&self) -> bool {
         self.r.seen == 0

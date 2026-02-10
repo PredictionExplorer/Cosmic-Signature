@@ -153,26 +153,26 @@ pub const DEFAULT_AETHER_CAUSTIC_SOFTNESS: f64 = 3.0;
 
 /// Spectral dispersion strength - controls prismatic trail separation
 /// Higher values create wider rainbow trails (pixels per wavelength bin)
-pub const SPECTRAL_DISPERSION_STRENGTH: f64 = 0.8;  // Increased from 0.15 for dramatic effect
+pub const SPECTRAL_DISPERSION_STRENGTH: f64 = 0.8; // Increased from 0.15 for dramatic effect
 
 /// Number of wavelength bins to spread dispersion across (±bins from center)
-pub const SPECTRAL_DISPERSION_BINS: usize = 5;  // Increased from 3 for fuller spectrum
+pub const SPECTRAL_DISPERSION_BINS: usize = 5; // Increased from 3 for fuller spectrum
 
 /// Velocity-based HDR boost factor - multiplies HDR scale at high velocities
 /// 1.0 = no boost, 2.0 = double brightness at max velocity
-pub const VELOCITY_HDR_BOOST_FACTOR: f64 = 8.0;  // Increased from 2.5 for dramatic flares
+pub const VELOCITY_HDR_BOOST_FACTOR: f64 = 8.0; // Increased from 2.5 for dramatic flares
 
 /// Velocity threshold for HDR boost (normalized units per timestep)
 /// Velocities above this get maximum boost
-pub const VELOCITY_HDR_BOOST_THRESHOLD: f64 = 0.15;  // Lowered from 0.3 to activate earlier
+pub const VELOCITY_HDR_BOOST_THRESHOLD: f64 = 0.15; // Lowered from 0.3 to activate earlier
 
 /// Energy density threshold for wavelength shift (normalized energy)
 /// Pixels above this threshold shift toward red (heat)
-pub const ENERGY_DENSITY_SHIFT_THRESHOLD: f64 = 0.08;  // Lowered from 0.25 to affect more pixels
+pub const ENERGY_DENSITY_SHIFT_THRESHOLD: f64 = 0.08; // Lowered from 0.25 to affect more pixels
 
 /// Wavelength shift strength (fraction of bin to shift per density unit)
 /// Higher values create stronger red-shift in high-energy regions
-pub const ENERGY_DENSITY_SHIFT_STRENGTH: f64 = 0.75;  // Increased from 0.35 for stronger heat effect
+pub const ENERGY_DENSITY_SHIFT_STRENGTH: f64 = 0.75; // Increased from 0.35 for stronger heat effect
 
 // ========== Video Encoding Constants ==========
 
@@ -211,4 +211,3 @@ pub const TWO_PI: f64 = 2.0 * std::f64::consts::PI;
 
 /// Percentage conversion factor
 pub const PERCENT_FACTOR: f64 = 100.0;
-

@@ -106,16 +106,16 @@ fn verlet_step(bodies: &mut [Body], dt: f64) {
     // Use fixed-size arrays for 3-body problem (eliminates heap allocations)
     // This optimization saves ~2M allocations during Borda search!
     debug_assert_eq!(bodies.len(), 3, "Optimized for 3-body problem");
-    
+
     // Stack-allocated arrays (zero heap allocation!)
     let mut pos = [Vector3::zeros(); 3];
     let mut mass = [0.0; 3];
-    
+
     for (i, b) in bodies.iter().enumerate().take(3) {
         pos[i] = b.position;
         mass[i] = b.mass;
     }
-    
+
     // First acceleration calculation
     for (i, b) in bodies.iter_mut().enumerate().take(3) {
         b.reset_acceleration();
@@ -125,17 +125,17 @@ fn verlet_step(bodies: &mut [Body], dt: f64) {
             }
         }
     }
-    
+
     // Update positions
     for b in bodies.iter_mut() {
         b.position += b.velocity * dt + 0.5 * b.acceleration * dt * dt;
     }
-    
+
     // Update positions array for second pass
     for (i, b) in bodies.iter().enumerate().take(3) {
         pos[i] = b.position;
     }
-    
+
     // Second acceleration calculation
     for (i, b) in bodies.iter_mut().enumerate().take(3) {
         b.reset_acceleration();
@@ -145,7 +145,7 @@ fn verlet_step(bodies: &mut [Body], dt: f64) {
             }
         }
     }
-    
+
     // Update velocities
     for b in bodies.iter_mut() {
         b.velocity += b.acceleration * dt;
@@ -186,23 +186,26 @@ pub fn get_positions_with_early_exit(
     // Ensure the initial state is expressed in the centre-of-mass (COM) frame
     shift_bodies_to_com(&mut bodies);
     let dt = crate::render::constants::DEFAULT_DT;
-    
+
     // Warmup phase with periodic escape checks
     const CHECK_INTERVAL: usize = 10000; // Check every 10k steps during warmup
     for step in 0..steps {
         verlet_step(&mut bodies, dt);
-        
+
         // Early-exit check: detect escaping bodies during warmup
-        if step % CHECK_INTERVAL == 0 && step > 0 && is_definitely_escaping(&bodies, escape_threshold) {
+        if step % CHECK_INTERVAL == 0
+            && step > 0
+            && is_definitely_escaping(&bodies, escape_threshold)
+        {
             return None; // Body escaping, skip this candidate
         }
     }
-    
+
     // Final escape check after warmup
     if is_definitely_escaping(&bodies, escape_threshold) {
         return None;
     }
-    
+
     // Record phase - body configuration is good, record the full trajectory
     let mut b2 = bodies.clone();
     let mut all = vec![vec![Vector3::zeros(); steps]; bodies.len()];
@@ -212,7 +215,7 @@ pub fn get_positions_with_early_exit(
         }
         verlet_step(&mut b2, dt);
     }
-    
+
     Some(FullSim { positions: all })
 }
 
@@ -337,9 +340,8 @@ pub fn select_best_trajectory(
         .collect();
     let coarse_steps = ((steps / 8).max(1)).clamp(2_000, 80_000).min(steps.max(1));
     let min_shortlist = num_sims.min(64).max(1);
-    let shortlist_target = ((num_sims as f64 * 0.22).ceil() as usize)
-        .max(min_shortlist)
-        .min(num_sims.max(1));
+    let shortlist_target =
+        ((num_sims as f64 * 0.22).ceil() as usize).max(min_shortlist).min(num_sims.max(1));
     const MIN_VIABLE_CHAOS: f64 = 0.1; // Below this, too chaotic
     const MIN_VIABLE_EQUILATERAL: f64 = 0.01; // Below this, too linear
 
@@ -511,7 +513,10 @@ pub fn select_best_trajectory(
     Ok((many[bi].clone(), bt))
 }
 
-fn select_shortlist_indices(mut coarse_scores: Vec<(f64, usize)>, shortlist_target: usize) -> Vec<usize> {
+fn select_shortlist_indices(
+    mut coarse_scores: Vec<(f64, usize)>,
+    shortlist_target: usize,
+) -> Vec<usize> {
     coarse_scores.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
     coarse_scores.truncate(shortlist_target.max(1).min(coarse_scores.len()));
     coarse_scores.into_iter().map(|(_, index)| index).collect()

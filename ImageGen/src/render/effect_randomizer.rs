@@ -44,12 +44,8 @@ impl<'a> EffectRandomizer<'a> {
     ) -> (f64, f64) {
         let val_a = self.randomize_float(desc_a);
         let val_b = self.randomize_float(desc_b);
-        
-        if val_a < val_b {
-            (val_a, val_b)
-        } else {
-            (val_b, val_a)
-        }
+
+        if val_a < val_b { (val_a, val_b) } else { (val_b, val_a) }
     }
 
     /// Generate a random float in [min, max] using the RNG.
@@ -72,10 +68,10 @@ impl<'a> EffectRandomizer<'a> {
         let b1 = self.rng.next_byte() as u32;
         let b2 = self.rng.next_byte() as u32;
         let b3 = self.rng.next_byte() as u32;
-        
+
         // Combine into a 32-bit integer
         let bits = (b0 << 24) | (b1 << 16) | (b2 << 8) | b3;
-        
+
         // Convert to [0.0, 1.0) range
         (bits as f64) / (u32::MAX as f64)
     }
@@ -106,12 +102,7 @@ pub struct RandomizedParameter {
 
 impl RandomizationRecord {
     pub fn new(effect_name: String, enabled: bool, was_randomized: bool) -> Self {
-        Self {
-            effect_name,
-            enabled,
-            was_randomized,
-            parameters: Vec::new(),
-        }
+        Self { effect_name, enabled, was_randomized, parameters: Vec::new() }
     }
 
     pub fn add_float(&mut self, name: String, value: f64, was_randomized: bool, range: (f64, f64)) {
@@ -123,7 +114,13 @@ impl RandomizationRecord {
         });
     }
 
-    pub fn add_int(&mut self, name: String, value: usize, was_randomized: bool, range: (usize, usize)) {
+    pub fn add_int(
+        &mut self,
+        name: String,
+        value: usize,
+        was_randomized: bool,
+        range: (usize, usize),
+    ) {
         self.parameters.push(RandomizedParameter {
             name,
             value: value.to_string(),
@@ -142,10 +139,7 @@ pub struct RandomizationLog {
 
 impl RandomizationLog {
     pub fn new(gallery_quality: bool) -> Self {
-        Self {
-            gallery_quality,
-            effects: Vec::new(),
-        }
+        Self { gallery_quality, effects: Vec::new() }
     }
 
     pub fn add_record(&mut self, record: RandomizationRecord) {
@@ -166,7 +160,7 @@ mod tests {
     fn test_randomize_enable() {
         let mut rng = make_test_rng();
         let mut randomizer = EffectRandomizer::new(&mut rng, false);
-        
+
         // Generate many samples and check they're roughly 50/50
         let mut count_true = 0;
         for _ in 0..1000 {
@@ -174,7 +168,7 @@ mod tests {
                 count_true += 1;
             }
         }
-        
+
         // Should be roughly 500 ± 100
         assert!(count_true > 400 && count_true < 600);
     }
@@ -183,7 +177,7 @@ mod tests {
     fn test_randomize_float_range() {
         let mut rng = make_test_rng();
         let mut randomizer = EffectRandomizer::new(&mut rng, false);
-        
+
         let descriptor = FloatParamDescriptor {
             name: "test",
             min: 10.0,
@@ -192,7 +186,7 @@ mod tests {
             gallery_max: 18.0,
             description: "Test parameter",
         };
-        
+
         for _ in 0..100 {
             let value = randomizer.randomize_float(&descriptor);
             assert!((10.0..=20.0).contains(&value));
@@ -203,10 +197,10 @@ mod tests {
     fn test_gallery_quality_narrows_range() {
         let mut rng1 = make_test_rng();
         let mut randomizer_normal = EffectRandomizer::new(&mut rng1, false);
-        
+
         let mut rng2 = make_test_rng();
         let mut randomizer_gallery = EffectRandomizer::new(&mut rng2, true);
-        
+
         let descriptor = FloatParamDescriptor {
             name: "test",
             min: 0.0,
@@ -215,10 +209,10 @@ mod tests {
             gallery_max: 60.0,
             description: "Test parameter",
         };
-        
+
         let normal_val = randomizer_normal.randomize_float(&descriptor);
         let gallery_val = randomizer_gallery.randomize_float(&descriptor);
-        
+
         // Gallery value must be in narrower range
         assert!((40.0..=60.0).contains(&gallery_val));
         // Normal value in wider range (might also be in narrow range by chance)
@@ -229,7 +223,7 @@ mod tests {
     fn test_randomize_ordered_pair() {
         let mut rng = make_test_rng();
         let mut randomizer = EffectRandomizer::new(&mut rng, false);
-        
+
         let desc = FloatParamDescriptor {
             name: "test",
             min: 0.0,
@@ -238,11 +232,10 @@ mod tests {
             gallery_max: 0.8,
             description: "Test parameter",
         };
-        
+
         for _ in 0..100 {
             let (a, b) = randomizer.randomize_ordered_pair(&desc, &desc);
             assert!(a < b, "First value must be less than second: {} < {}", a, b);
         }
     }
 }
-

@@ -1,7 +1,7 @@
 //! Curation pipeline for high-variability, high-beauty output selection.
 
-use crate::render::randomizable_config::ResolvedEffectConfig;
 use crate::render::effect_randomizer::RandomizationLog;
+use crate::render::randomizable_config::ResolvedEffectConfig;
 
 pub mod novelty;
 pub mod quality_score;

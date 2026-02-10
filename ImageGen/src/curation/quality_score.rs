@@ -35,7 +35,13 @@ fn clamp01(x: f64) -> f64 {
     x.clamp(0.0, 1.0)
 }
 
-fn score_soft_range(value: f64, ideal_min: f64, ideal_max: f64, hard_min: f64, hard_max: f64) -> f64 {
+fn score_soft_range(
+    value: f64,
+    ideal_min: f64,
+    ideal_max: f64,
+    hard_min: f64,
+    hard_max: f64,
+) -> f64 {
     if value < hard_min || value > hard_max {
         return 0.0;
     }
@@ -145,11 +151,8 @@ pub fn score_image_frame(
         }
     }
 
-    let means = [
-        sum[0] / pixel_count as f64,
-        sum[1] / pixel_count as f64,
-        sum[2] / pixel_count as f64,
-    ];
+    let means =
+        [sum[0] / pixel_count as f64, sum[1] / pixel_count as f64, sum[2] / pixel_count as f64];
     let std = [
         (sum_sq[0] / pixel_count as f64 - means[0] * means[0]).max(0.0).sqrt(),
         (sum_sq[1] / pixel_count as f64 - means[1] * means[1]).max(0.0).sqrt(),
@@ -161,11 +164,8 @@ pub fn score_image_frame(
     let center_energy_ratio = if total_energy > 1e-12 { center_energy / total_energy } else { 0.0 };
     let clip_black_ratio = clip_black_count as f64 / pixel_count as f64;
     let clip_white_ratio = clip_white_count as f64 / pixel_count as f64;
-    let banding_proxy = if banding_checks > 0 {
-        banding_hits as f64 / banding_checks as f64
-    } else {
-        0.0
-    };
+    let banding_proxy =
+        if banding_checks > 0 { banding_hits as f64 / banding_checks as f64 } else { 0.0 };
     let saturation_mean = saturation_sum / pixel_count as f64;
 
     let border_x = ((width as f64) * 0.12).ceil() as usize;
@@ -221,23 +221,20 @@ pub fn score_image_frame(
 
     let clip_penalty = clamp01((clip_black_ratio - 0.10) * 1.8 + (clip_white_ratio - 0.04) * 5.0);
     let banding_penalty = clamp01((banding_proxy - 0.20) * 1.6);
-    let overblur_penalty = if config.blur_radius_scale > 0.05 && config.blur_strength > 18.0 {
-        0.30
-    } else {
-        0.0
-    };
+    let overblur_penalty =
+        if config.blur_radius_scale > 0.05 && config.blur_strength > 18.0 { 0.30 } else { 0.0 };
     let oversharp_penalty = if config.micro_contrast_strength > 0.55 { 0.20 } else { 0.0 };
 
     let technical_integrity = clamp01(
-        1.0
-            - (0.36 * clip_penalty
-                + 0.18 * banding_penalty
-                + 0.12 * overblur_penalty
-                + 0.08 * oversharp_penalty
-                + 0.26 * perimeter_speckle_penalty),
+        1.0 - (0.36 * clip_penalty
+            + 0.18 * banding_penalty
+            + 0.12 * overblur_penalty
+            + 0.08 * oversharp_penalty
+            + 0.26 * perimeter_speckle_penalty),
     );
 
-    let composition_energy = clamp01(0.40 * occupancy_score + 0.35 * edge_score + 0.25 * center_score);
+    let composition_energy =
+        clamp01(0.40 * occupancy_score + 0.35 * edge_score + 0.25 * center_score);
 
     let sat_score = score_soft_range(saturation_mean, 0.14, 0.55, 0.03, 0.85);
     let channel_balance = {
@@ -258,7 +255,10 @@ pub fn score_image_frame(
     if !config.enable_bloom && !config.enable_glow && !config.enable_chromatic_bloom {
         coherence_penalty += 0.35;
     }
-    if config.enable_opalescence && config.opalescence_layers >= 5 && config.fine_texture_contrast > 0.40 {
+    if config.enable_opalescence
+        && config.opalescence_layers >= 5
+        && config.fine_texture_contrast > 0.40
+    {
         coherence_penalty += 0.20;
     }
     if config.clip_black > 0.020 && config.clip_white < 0.985 {
@@ -383,16 +383,8 @@ fn probe_frame_signature(frame: &ImageBuffer<Rgb<u16>, Vec<u16>>) -> (f64, f64, 
     let mean_luma = sum_luma / pixel_count;
     let mean_chroma = sum_chroma / pixel_count;
     let denom = sum_luma.max(1e-9);
-    let centroid_x = if width > 1 {
-        (weighted_x / denom) / (width as f64 - 1.0)
-    } else {
-        0.5
-    };
-    let centroid_y = if height > 1 {
-        (weighted_y / denom) / (height as f64 - 1.0)
-    } else {
-        0.5
-    };
+    let centroid_x = if width > 1 { (weighted_x / denom) / (width as f64 - 1.0) } else { 0.5 };
+    let centroid_y = if height > 1 { (weighted_y / denom) / (height as f64 - 1.0) } else { 0.5 };
 
     (mean_luma, mean_chroma, centroid_x, centroid_y)
 }
@@ -427,7 +419,8 @@ pub fn score_temporal_probe_frames(
     let avg_luma_delta =
         luminance_deltas.iter().sum::<f64>() / luminance_deltas.len().max(1) as f64;
     let avg_chroma_delta = chroma_deltas.iter().sum::<f64>() / chroma_deltas.len().max(1) as f64;
-    let avg_velocity = centroid_velocity.iter().sum::<f64>() / centroid_velocity.len().max(1) as f64;
+    let avg_velocity =
+        centroid_velocity.iter().sum::<f64>() / centroid_velocity.len().max(1) as f64;
 
     let mut jerk_sum = 0.0;
     let mut jerk_count = 0usize;
@@ -435,11 +428,7 @@ pub fn score_temporal_probe_frames(
         jerk_sum += (centroid_velocity[i] - centroid_velocity[i - 1]).abs();
         jerk_count += 1;
     }
-    let avg_jerk = if jerk_count > 0 {
-        jerk_sum / jerk_count as f64
-    } else {
-        0.0
-    };
+    let avg_jerk = if jerk_count > 0 { jerk_sum / jerk_count as f64 } else { 0.0 };
 
     let mean_luma = signatures.iter().map(|s| s.0).sum::<f64>() / signatures.len() as f64;
     let luma_std = (signatures
@@ -452,8 +441,7 @@ pub fn score_temporal_probe_frames(
         / signatures.len() as f64)
         .sqrt();
 
-    let temporal_stability =
-        clamp01(1.0 / (1.0 + 12.0 * avg_luma_delta + 9.0 * avg_chroma_delta));
+    let temporal_stability = clamp01(1.0 / (1.0 + 12.0 * avg_luma_delta + 9.0 * avg_chroma_delta));
     let motion_smoothness = clamp01(1.0 / (1.0 + 6.0 * avg_velocity + 16.0 * avg_jerk));
     let exposure_consistency = clamp01(1.0 / (1.0 + 24.0 * luma_std + 12.0 * avg_luma_delta));
 
@@ -477,7 +465,9 @@ pub fn apply_video_and_novelty(
             + 0.25 * scores.exposure_consistency,
     );
 
-    scores.final_composite = clamp01(0.70 * scores.image_composite + 0.20 * scores.video_composite + 0.10 * novelty_score);
+    scores.final_composite = clamp01(
+        0.70 * scores.image_composite + 0.20 * scores.video_composite + 0.10 * novelty_score,
+    );
 }
 
 #[cfg(test)]
@@ -710,7 +700,11 @@ mod tests {
         img
     }
 
-    fn moving_spot_frames(width: u32, height: u32, count: usize) -> Vec<ImageBuffer<Rgb<u16>, Vec<u16>>> {
+    fn moving_spot_frames(
+        width: u32,
+        height: u32,
+        count: usize,
+    ) -> Vec<ImageBuffer<Rgb<u16>, Vec<u16>>> {
         let mut frames = Vec::with_capacity(count);
         for i in 0..count {
             let mut img = ImageBuffer::<Rgb<u16>, Vec<u16>>::new(width, height);

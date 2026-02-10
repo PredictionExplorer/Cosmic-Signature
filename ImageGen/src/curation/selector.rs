@@ -10,7 +10,10 @@ pub fn composite_score(scores: &QualityScores, novelty_score: f64) -> f64 {
     clamp01(0.70 * scores.image_composite + 0.20 * scores.video_composite + 0.10 * novelty_score)
 }
 
-fn feature_distance(a: &crate::curation::quality_score::FrameFeatures, b: &crate::curation::quality_score::FrameFeatures) -> f64 {
+fn feature_distance(
+    a: &crate::curation::quality_score::FrameFeatures,
+    b: &crate::curation::quality_score::FrameFeatures,
+) -> f64 {
     let mut sum = 0.0;
     for i in 0..3 {
         let d_mean = a.mean_rgb[i] - b.mean_rgb[i];
@@ -31,10 +34,7 @@ fn feature_distance(a: &crate::curation::quality_score::FrameFeatures, b: &crate
     sum.sqrt()
 }
 
-fn diversity_score(
-    candidate: &CandidateEvaluation,
-    selected: &[CandidateEvaluation],
-) -> f64 {
+fn diversity_score(candidate: &CandidateEvaluation, selected: &[CandidateEvaluation]) -> f64 {
     if selected.is_empty() {
         return 1.0;
     }
@@ -42,14 +42,8 @@ fn diversity_score(
         .iter()
         .map(|s| feature_distance(&candidate.features, &s.features))
         .fold(f64::INFINITY, f64::min);
-    let style_bonus = if selected
-        .iter()
-        .all(|s| s.style_family != candidate.style_family)
-    {
-        0.12
-    } else {
-        0.0
-    };
+    let style_bonus =
+        if selected.iter().all(|s| s.style_family != candidate.style_family) { 0.12 } else { 0.0 };
     clamp01((min_distance / 0.35).clamp(0.0, 1.0) + style_bonus)
 }
 
@@ -62,9 +56,7 @@ pub fn choose_finalists(
     }
     let target = finalist_count.max(1).min(candidates.len());
     candidates.sort_by(|a, b| {
-        b.composite_score
-            .partial_cmp(&a.composite_score)
-            .unwrap_or(std::cmp::Ordering::Equal)
+        b.composite_score.partial_cmp(&a.composite_score).unwrap_or(std::cmp::Ordering::Equal)
     });
     if target == candidates.len() {
         return candidates;
@@ -88,9 +80,7 @@ pub fn choose_finalists(
     }
 
     selected.sort_by(|a, b| {
-        b.composite_score
-            .partial_cmp(&a.composite_score)
-            .unwrap_or(std::cmp::Ordering::Equal)
+        b.composite_score.partial_cmp(&a.composite_score).unwrap_or(std::cmp::Ordering::Equal)
     });
     selected
 }
@@ -110,9 +100,7 @@ pub fn pick_winner(finalists: &[CandidateEvaluation]) -> Option<CandidateEvaluat
     finalists
         .iter()
         .max_by(|a, b| {
-            a.composite_score
-                .partial_cmp(&b.composite_score)
-                .unwrap_or(std::cmp::Ordering::Equal)
+            a.composite_score.partial_cmp(&b.composite_score).unwrap_or(std::cmp::Ordering::Equal)
         })
         .cloned()
 }
@@ -278,10 +266,8 @@ mod tests {
         let near_duplicate_b = candidate_with_features(2, 0.94, "Velvet Nebula", 0.205);
         let distinct_style = candidate_with_features(3, 0.90, "Glass Aurora", 0.85);
 
-        let finalists = choose_finalists(
-            vec![near_duplicate_a, near_duplicate_b, distinct_style],
-            2,
-        );
+        let finalists =
+            choose_finalists(vec![near_duplicate_a, near_duplicate_b, distinct_style], 2);
 
         assert_eq!(finalists.len(), 2);
         let ids: Vec<usize> = finalists.iter().map(|c| c.candidate_id).collect();

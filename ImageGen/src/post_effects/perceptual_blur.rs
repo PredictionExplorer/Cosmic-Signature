@@ -190,10 +190,7 @@ mod tests {
 
     #[test]
     fn test_perceptual_blur_zero_radius() {
-        let config = PerceptualBlurConfig {
-            radius: 0,
-            ..Default::default()
-        };
+        let config = PerceptualBlurConfig { radius: 0, ..Default::default() };
         let blur = PerceptualBlur::new(config);
 
         let input = vec![(0.5, 0.5, 0.5, 1.0); 100];

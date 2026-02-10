@@ -22,9 +22,8 @@ pub enum LuxuryPalette {
     IndigoGold,
     /// Ethereal blue to warm orange
     BlueOrange,
-    
+
     // === MUSEUM-QUALITY ADDITIONS ===
-    
     /// Venetian Renaissance: Deep crimson, burnt sienna, gold leaf, ultramarine
     VenetianRenaissance,
     /// Japanese Ukiyo-e: Prussian blue, vermillion, gold, ink black
@@ -61,7 +60,8 @@ impl LuxuryPalette {
     /// Convert an integer index (0-19) to a palette variant.
     /// Useful for randomized palette selection.
     pub fn from_index(index: usize) -> Self {
-        match index % 20 {  // Modulo ensures we always get a valid palette
+        match index % 20 {
+            // Modulo ensures we always get a valid palette
             0 => LuxuryPalette::GoldPurple,
             1 => LuxuryPalette::CosmicTealPink,
             2 => LuxuryPalette::AmberCyan,
@@ -106,11 +106,7 @@ pub struct GradientMapConfig {
 
 impl Default for GradientMapConfig {
     fn default() -> Self {
-        Self {
-            palette: LuxuryPalette::GoldPurple,
-            strength: 0.55,
-            hue_preservation: 0.25,
-        }
+        Self { palette: LuxuryPalette::GoldPurple, strength: 0.55, hue_preservation: 0.25 }
     }
 }
 
@@ -128,7 +124,7 @@ impl GradientMap {
     /// Get color from palette at normalized position (0.0 to 1.0)
     fn sample_palette(&self, t: f64) -> (f64, f64, f64) {
         let t = t.clamp(0.0, 1.0);
-        
+
         match self.config.palette {
             LuxuryPalette::GoldPurple => {
                 // Deep purple -> Rich gold
@@ -185,9 +181,8 @@ impl GradientMap {
                 ];
                 Self::interpolate_gradient(&colors, t)
             }
-            
+
             // === MUSEUM-QUALITY PALETTE DEFINITIONS ===
-            
             LuxuryPalette::VenetianRenaissance => {
                 // Inspired by Titian, Tintoretto: rich, warm, luxurious
                 let colors = [
@@ -366,19 +361,19 @@ impl GradientMap {
         let segment = (t * n as f64).min(n as f64 - 0.0001);
         let idx = segment.floor() as usize;
         let local_t = segment - idx as f64;
-        
+
         let c0 = colors[idx];
         let c1 = colors[(idx + 1).min(n)];
-        
+
         // Convert both stops to OKLab for perceptually uniform interpolation
         let (l0, a0, b0) = linear_srgb_to_oklab(c0.0, c0.1, c0.2);
         let (l1, a1, b1) = linear_srgb_to_oklab(c1.0, c1.1, c1.2);
-        
+
         // Interpolate in OKLab space
         let l = l0 + (l1 - l0) * local_t;
         let a = a0 + (a1 - a0) * local_t;
         let b = b0 + (b1 - b0) * local_t;
-        
+
         // Convert back to linear sRGB with gamut clamping
         let (r, g, b) = oklab_to_linear_srgb(l, a, b);
         (r.clamp(0.0, 1.0), g.clamp(0.0, 1.0), b.clamp(0.0, 1.0))
@@ -386,15 +381,15 @@ impl GradientMap {
 
     /// Convert RGB to HSV
     fn rgb_to_hsv(r: f64, g: f64, b: f64) -> (f64, f64, f64) {
-        use crate::utils::{is_zero, approx_eq};
-        
+        use crate::utils::{approx_eq, is_zero};
+
         let max = r.max(g).max(b);
         let min = r.min(g).min(b);
         let delta = max - min;
-        
+
         let v = max;
         let s = if max > 0.0 { delta / max } else { 0.0 };
-        
+
         let h = if is_zero(delta) {
             0.0
         } else if approx_eq(max, r) {
@@ -404,9 +399,9 @@ impl GradientMap {
         } else {
             60.0 * (((r - g) / delta) + 4.0)
         };
-        
+
         let h = if h < 0.0 { h + 360.0 } else { h };
-        
+
         (h, s, v)
     }
 
@@ -438,7 +433,7 @@ impl GradientMap {
         let h_prime = h / 60.0;
         let x = c * (1.0 - ((h_prime % 2.0) - 1.0).abs());
         let m = v - c;
-        
+
         let (r, g, b) = match h_prime as i32 {
             0 => (c, x, 0.0),
             1 => (x, c, 0.0),
@@ -447,7 +442,7 @@ impl GradientMap {
             4 => (x, 0.0, c),
             _ => (c, 0.0, x),
         };
-        
+
         (r + m, g + m, b + m)
     }
 }
@@ -489,13 +484,13 @@ impl PostEffect for GradientMap {
                 let (final_r, final_g, final_b) = if self.config.hue_preservation > 0.0 {
                     let (orig_h, orig_s, _) = Self::rgb_to_hsv(sr, sg, sb);
                     let (grad_h, grad_s, grad_v) = Self::rgb_to_hsv(gr, gg, gb);
-                    
+
                     // Blend hues using shortest-arc interpolation to avoid
                     // artifacts at the 0/360 degree boundary (red/magenta)
                     let blended_h = Self::lerp_hue(grad_h, orig_h, self.config.hue_preservation);
-                    let blended_s = orig_s * self.config.hue_preservation 
+                    let blended_s = orig_s * self.config.hue_preservation
                         + grad_s * (1.0 - self.config.hue_preservation);
-                    
+
                     Self::hsv_to_rgb(blended_h, blended_s, grad_v)
                 } else {
                     (gr, gg, gb)
@@ -508,12 +503,7 @@ impl PostEffect for GradientMap {
                 let blended_b = sb * (1.0 - strength) + final_b * strength;
 
                 // Convert back to premultiplied alpha
-                (
-                    (blended_r * a).max(0.0),
-                    (blended_g * a).max(0.0),
-                    (blended_b * a).max(0.0),
-                    a,
-                )
+                ((blended_r * a).max(0.0), (blended_g * a).max(0.0), (blended_b * a).max(0.0), a)
             })
             .collect();
 
@@ -556,11 +546,7 @@ mod tests {
     #[test]
     fn test_interpolate_gradient_endpoints() {
         // At t=0 should return the first color, at t=1 the last
-        let colors = [
-            (0.1, 0.2, 0.3),
-            (0.5, 0.5, 0.5),
-            (0.9, 0.8, 0.7),
-        ];
+        let colors = [(0.1, 0.2, 0.3), (0.5, 0.5, 0.5), (0.9, 0.8, 0.7)];
 
         let start = GradientMap::interpolate_gradient(&colors, 0.0);
         assert!((start.0 - 0.1).abs() < EPSILON, "Start R mismatch: {}", start.0);
@@ -586,25 +572,16 @@ mod tests {
         let mid = GradientMap::interpolate_gradient(&colors, 0.5);
 
         // The OKLab midpoint should have higher luminance than sRGB midpoint
-        let srgb_mid = (
-            0.10 * 0.5 + 0.85 * 0.5,
-            0.15 * 0.5 + 0.55 * 0.5,
-            0.65 * 0.5 + 0.15 * 0.5,
-        );
+        let srgb_mid = (0.10 * 0.5 + 0.85 * 0.5, 0.15 * 0.5 + 0.55 * 0.5, 0.65 * 0.5 + 0.15 * 0.5);
 
         // OKLab interpolation should produce a different (more vivid) result
         let oklab_lum = 0.2126 * mid.0 + 0.7152 * mid.1 + 0.0722 * mid.2;
         let srgb_lum = 0.2126 * srgb_mid.0 + 0.7152 * srgb_mid.1 + 0.0722 * srgb_mid.2;
 
         // The results should differ (proving OKLab is active, not sRGB)
-        let diff = (mid.0 - srgb_mid.0).abs()
-            + (mid.1 - srgb_mid.1).abs()
-            + (mid.2 - srgb_mid.2).abs();
-        assert!(
-            diff > 0.01,
-            "OKLab midpoint should differ from sRGB midpoint (diff={})",
-            diff
-        );
+        let diff =
+            (mid.0 - srgb_mid.0).abs() + (mid.1 - srgb_mid.1).abs() + (mid.2 - srgb_mid.2).abs();
+        assert!(diff > 0.01, "OKLab midpoint should differ from sRGB midpoint (diff={})", diff);
 
         // Both should have reasonable luminance
         assert!(oklab_lum > 0.1, "OKLab luminance too low: {}", oklab_lum);
@@ -614,11 +591,7 @@ mod tests {
     #[test]
     fn test_interpolate_gradient_values_in_gamut() {
         // All interpolated values should be in [0, 1] range
-        let colors = [
-            (0.05, 0.02, 0.12),
-            (0.95, 0.75, 0.35),
-            (0.15, 0.55, 0.70),
-        ];
+        let colors = [(0.05, 0.02, 0.12), (0.95, 0.75, 0.35), (0.15, 0.55, 0.70)];
 
         for i in 0..=100 {
             let t = i as f64 / 100.0;
@@ -626,7 +599,10 @@ mod tests {
             assert!(
                 (0.0..=1.0).contains(&r) && (0.0..=1.0).contains(&g) && (0.0..=1.0).contains(&b),
                 "Out of gamut at t={}: ({}, {}, {})",
-                t, r, g, b
+                t,
+                r,
+                g,
+                b
             );
         }
     }
@@ -679,11 +655,7 @@ mod tests {
         // 90 to 270 degrees: both arcs are 180 degrees, should still work
         let result = GradientMap::lerp_hue(90.0, 270.0, 0.5);
         // Could go either way, but should be valid (0 or 180)
-        assert!(
-            (0.0..360.0).contains(&result),
-            "Result should be in valid range: {}",
-            result
-        );
+        assert!((0.0..360.0).contains(&result), "Result should be in valid range: {}", result);
     }
 
     #[test]
@@ -697,7 +669,10 @@ mod tests {
                     assert!(
                         (0.0..360.0).contains(&result),
                         "lerp_hue({}, {}, {}) = {} out of range",
-                        h0, h1, t, result
+                        h0,
+                        h1,
+                        t,
+                        result
                     );
                 }
             }
@@ -725,7 +700,11 @@ mod tests {
                         && (0.0..=1.0).contains(&g)
                         && (0.0..=1.0).contains(&b),
                     "Palette {} at t={}: out of gamut ({}, {}, {})",
-                    idx, t, r, g, b
+                    idx,
+                    t,
+                    r,
+                    g,
+                    b
                 );
             }
         }
@@ -754,7 +733,9 @@ mod tests {
                 assert!(
                     diff > 0.05,
                     "Palettes {} and {} too similar (diff={})",
-                    i + 15, j + 15, diff
+                    i + 15,
+                    j + 15,
+                    diff
                 );
             }
         }
@@ -832,11 +813,11 @@ mod tests {
     #[test]
     fn test_hsv_roundtrip() {
         let test_colors = [
-            (1.0, 0.0, 0.0),   // Pure red
-            (0.0, 1.0, 0.0),   // Pure green
-            (0.0, 0.0, 1.0),   // Pure blue
-            (0.5, 0.5, 0.5),   // Gray
-            (0.8, 0.4, 0.2),   // Warm tone
+            (1.0, 0.0, 0.0), // Pure red
+            (0.0, 1.0, 0.0), // Pure green
+            (0.0, 0.0, 1.0), // Pure blue
+            (0.5, 0.5, 0.5), // Gray
+            (0.8, 0.4, 0.2), // Warm tone
         ];
 
         for &(r, g, b) in &test_colors {
@@ -845,9 +826,13 @@ mod tests {
             assert!(
                 (r - r2).abs() < 0.01 && (g - g2).abs() < 0.01 && (b - b2).abs() < 0.01,
                 "HSV roundtrip failed for ({}, {}, {}): got ({}, {}, {})",
-                r, g, b, r2, g2, b2
+                r,
+                g,
+                b,
+                r2,
+                g2,
+                b2
             );
         }
     }
 }
-

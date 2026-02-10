@@ -117,7 +117,7 @@ impl FineTexture {
     /// Canvas weave pattern (two perpendicular wave patterns)
     fn canvas_pattern(&self, x: f64, y: f64) -> f64 {
         let scale = 1.0 / self.config.scale;
-        
+
         // Horizontal threads
         let h_wave = (y * scale * 8.0).sin();
         let h_noise = self.value_noise(x * scale * 0.5, y * scale * 8.0);
@@ -130,23 +130,23 @@ impl FineTexture {
 
         // Combine with slight offset for weave pattern
         let weave = (h_thread + v_thread) * 0.5 + h_thread * v_thread * 0.3;
-        
+
         // Add fine grain
         let grain = self.value_noise(x * scale * 20.0, y * scale * 20.0) * 0.2;
-        
+
         weave + grain
     }
 
     /// Film grain (fine random texture)
     fn film_grain_pattern(&self, x: f64, y: f64) -> f64 {
         let scale = 1.0 / self.config.scale;
-        
+
         // High-frequency noise for grain
         let grain = Self::hash2d(x * scale * 80.0, y * scale * 80.0);
-        
+
         // Slight clumping
         let clump = self.value_noise(x * scale * 10.0, y * scale * 10.0) * 0.3;
-        
+
         grain * 0.7 + clump
     }
 
@@ -159,7 +159,7 @@ impl FineTexture {
 
         // Apply contrast
         let centered = raw_value * self.config.contrast;
-        
+
         // Apply anisotropy (makes texture more directional)
         if self.config.anisotropy > 0.0 {
             let angle_rad = self.config.angle.to_radians();
@@ -220,10 +220,7 @@ mod tests {
 
     #[test]
     fn test_texture_disabled() {
-        let config = FineTextureConfig {
-            strength: 0.0,
-            ..FineTextureConfig::default()
-        };
+        let config = FineTextureConfig { strength: 0.0, ..FineTextureConfig::default() };
         let texture = FineTexture::new(config);
         assert!(!texture.is_enabled());
     }
@@ -253,18 +250,13 @@ mod tests {
 
         // Verify texture has been applied (values should vary)
         assert_eq!(result.len(), buffer.len());
-        let has_variation = result
-            .windows(2)
-            .any(|w| (w[0].0 - w[1].0).abs() > 0.001);
+        let has_variation = result.windows(2).any(|w| (w[0].0 - w[1].0).abs() > 0.001);
         assert!(has_variation, "Texture should add variation");
     }
 
     #[test]
     fn test_all_texture_types() {
-        let types = [
-            TextureType::Canvas,
-            TextureType::FilmGrain,
-        ];
+        let types = [TextureType::Canvas, TextureType::FilmGrain];
 
         for texture_type in types {
             let config = FineTextureConfig {
@@ -276,10 +268,10 @@ mod tests {
                 angle: 0.0,
             };
             let texture = FineTexture::new(config);
-            
+
             // Should be enabled
             assert!(texture.is_enabled());
-            
+
             // Should produce varying values
             let v1 = texture.get_texture_value(0.0, 0.0);
             let v2 = texture.get_texture_value(10.0, 10.0);
@@ -287,4 +279,3 @@ mod tests {
         }
     }
 }
-

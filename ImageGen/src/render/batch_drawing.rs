@@ -43,7 +43,7 @@ pub fn draw_triangle_batch_spectral(
 ) {
     // Draw all three edges with optimized batching
     // The compiler can better optimize this sequence for cache and instruction pipelining
-    
+
     // Edge 0→1
     draw_line_segment_aa_spectral_with_dispersion(
         accum,
@@ -60,7 +60,7 @@ pub fn draw_triangle_batch_spectral(
         hdr_scale * hdr_mult_01,
         special_mode,
     );
-    
+
     // Edge 1→2 (follows immediately for better cache locality)
     draw_line_segment_aa_spectral_with_dispersion(
         accum,
@@ -77,7 +77,7 @@ pub fn draw_triangle_batch_spectral(
         hdr_scale * hdr_mult_12,
         special_mode,
     );
-    
+
     // Edge 2→0 (completes the triangle)
     draw_line_segment_aa_spectral_with_dispersion(
         accum,
@@ -110,30 +110,15 @@ pub fn prepare_triangle_vertices(
     let p0 = positions[0][step];
     let p1 = positions[1][step];
     let p2 = positions[2][step];
-    
+
     let (x0, y0) = ctx.to_pixel(p0[0], p0[1]);
     let (x1, y1) = ctx.to_pixel(p1[0], p1[1]);
     let (x2, y2) = ctx.to_pixel(p2[0], p2[1]);
-    
+
     [
-        TriangleVertex {
-            x: x0,
-            y: y0,
-            color: colors[0][step],
-            alpha: body_alphas[0],
-        },
-        TriangleVertex {
-            x: x1,
-            y: y1,
-            color: colors[1][step],
-            alpha: body_alphas[1],
-        },
-        TriangleVertex {
-            x: x2,
-            y: y2,
-            color: colors[2][step],
-            alpha: body_alphas[2],
-        },
+        TriangleVertex { x: x0, y: y0, color: colors[0][step], alpha: body_alphas[0] },
+        TriangleVertex { x: x1, y: y1, color: colors[1][step], alpha: body_alphas[1] },
+        TriangleVertex { x: x2, y: y2, color: colors[2][step], alpha: body_alphas[2] },
     ]
 }
 
@@ -143,44 +128,34 @@ mod tests {
 
     #[test]
     fn test_triangle_vertex_creation() {
-        let vertex = TriangleVertex {
-            x: 100.0,
-            y: 200.0,
-            color: (0.5, 0.1, 0.1),
-            alpha: 0.5,
-        };
-        
+        let vertex = TriangleVertex { x: 100.0, y: 200.0, color: (0.5, 0.1, 0.1), alpha: 0.5 };
+
         assert_eq!(vertex.x, 100.0);
         assert_eq!(vertex.y, 200.0);
         assert_eq!(vertex.alpha, 0.5);
     }
-    
+
     #[test]
     fn test_prepare_triangle_vertices() {
-        use nalgebra::Vector3;
         use crate::render::context::RenderContext;
-        
+        use nalgebra::Vector3;
+
         let positions = vec![
             vec![Vector3::new(0.0, 0.0, 0.0)],
             vec![Vector3::new(10.0, 0.0, 0.0)],
             vec![Vector3::new(5.0, 10.0, 0.0)],
         ];
-        
-        let colors = vec![
-            vec![(0.5, 0.1, 0.1)],
-            vec![(0.5, -0.1, 0.0)],
-            vec![(0.5, 0.0, -0.1)],
-        ];
-        
+
+        let colors = vec![vec![(0.5, 0.1, 0.1)], vec![(0.5, -0.1, 0.0)], vec![(0.5, 0.0, -0.1)]];
+
         let body_alphas = [0.5, 0.6, 0.7];
-        
+
         let ctx = RenderContext::new(1920, 1080, &positions);
         let vertices = prepare_triangle_vertices(&positions, &colors, &body_alphas, 0, &ctx);
-        
+
         assert_eq!(vertices.len(), 3);
         assert_eq!(vertices[0].alpha, 0.5);
         assert_eq!(vertices[1].alpha, 0.6);
         assert_eq!(vertices[2].alpha, 0.7);
     }
 }
-

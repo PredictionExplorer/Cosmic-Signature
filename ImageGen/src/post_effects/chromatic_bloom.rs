@@ -73,7 +73,8 @@ impl ChromaticBloom {
                 let lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
 
                 // Threshold-based extraction with smooth falloff
-                let brightness = (lum - self.config.threshold).max(0.0) / (1.0 - self.config.threshold);
+                let brightness =
+                    (lum - self.config.threshold).max(0.0) / (1.0 - self.config.threshold);
                 let factor = brightness.min(1.0).powf(1.5); // Smooth curve
 
                 (r * factor, g * factor, b * factor, a * factor)
@@ -150,20 +151,18 @@ impl ChromaticBloom {
                 let dx = x as f64 - cx;
                 let dy = y as f64 - cy;
                 let dist = (dx * dx + dy * dy).sqrt().max(1.0);
-                
+
                 let offset_x = x as f64 + (dx / dist) * sep;
                 let offset_y = y as f64 + (dy / dist) * sep;
-                
+
                 let (r, _, _, a) = Self::sample_bilinear(bright, width, height, offset_x, offset_y);
                 (r, 0.0, 0.0, a)
             })
             .collect();
 
         // Green channel: centered (no offset)
-        let green_buffer: PixelBuffer = bright
-            .par_iter()
-            .map(|&(_, g, _, a)| (0.0, g, 0.0, a))
-            .collect();
+        let green_buffer: PixelBuffer =
+            bright.par_iter().map(|&(_, g, _, a)| (0.0, g, 0.0, a)).collect();
 
         // Blue channel: offset inward toward center
         let blue_buffer: PixelBuffer = (0..size)
@@ -174,10 +173,10 @@ impl ChromaticBloom {
                 let dx = x as f64 - cx;
                 let dy = y as f64 - cy;
                 let dist = (dx * dx + dy * dy).sqrt().max(1.0);
-                
+
                 let offset_x = x as f64 - (dx / dist) * sep;
                 let offset_y = y as f64 - (dy / dist) * sep;
-                
+
                 let (_, _, b, a) = Self::sample_bilinear(bright, width, height, offset_x, offset_y);
                 (0.0, 0.0, b, a)
             })
@@ -193,7 +192,7 @@ impl ChromaticBloom {
         }
 
         let radius = self.config.radius;
-        
+
         // Horizontal pass
         let mut temp = buffer.clone();
         for y in 0..height {
@@ -212,12 +211,8 @@ impl ChromaticBloom {
                 }
 
                 let inv_count = 1.0 / count as f64;
-                temp[y * width + x] = (
-                    sum.0 * inv_count,
-                    sum.1 * inv_count,
-                    sum.2 * inv_count,
-                    sum.3 * inv_count,
-                );
+                temp[y * width + x] =
+                    (sum.0 * inv_count, sum.1 * inv_count, sum.2 * inv_count, sum.3 * inv_count);
             }
         }
 
@@ -238,12 +233,8 @@ impl ChromaticBloom {
                 }
 
                 let inv_count = 1.0 / count as f64;
-                buffer[y * width + x] = (
-                    sum.0 * inv_count,
-                    sum.1 * inv_count,
-                    sum.2 * inv_count,
-                    sum.3 * inv_count,
-                );
+                buffer[y * width + x] =
+                    (sum.0 * inv_count, sum.1 * inv_count, sum.2 * inv_count, sum.3 * inv_count);
             }
         }
     }
@@ -298,4 +289,3 @@ impl PostEffect for ChromaticBloom {
         Ok(output)
     }
 }
-

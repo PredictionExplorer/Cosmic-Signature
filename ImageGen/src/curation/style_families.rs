@@ -488,7 +488,7 @@ pub fn apply_style_family(
         + 0.5 * sample_centered(rng, priors.clip_white_center, 0.010, 0.980, 0.998, mode);
     config.hdr_scale = 0.5 * config.hdr_scale
         + 0.5 * sample_centered(rng, priors.hdr_scale_center, 0.05, 0.06, 0.24, mode);
-    config.nebula_strength = sample_centered(rng, 0.09, 0.08, 0.02, 0.20, mode);
+    config.nebula_strength = sample_centered(rng, 0.07, 0.05, 0.02, 0.12, mode);
 
     actions.extend(apply_beauty_constraints(config));
     actions
@@ -516,7 +516,10 @@ pub fn apply_beauty_constraints(config: &mut ResolvedEffectConfig) -> Vec<String
     }
 
     // High opalescence layers can get noisy with strong texture.
-    if config.enable_opalescence && config.opalescence_layers >= 5 && config.fine_texture_contrast > 0.40 {
+    if config.enable_opalescence
+        && config.opalescence_layers >= 5
+        && config.fine_texture_contrast > 0.40
+    {
         config.fine_texture_contrast = 0.40;
         actions.push("constraint:reduced_texture_contrast_for_high_opalescence".to_string());
     }
@@ -642,9 +645,52 @@ mod tests {
     fn style_application_is_bounded() {
         let mut config = sample_config();
         let mut rng = rng();
-        let _ = apply_style_family(&mut config, StyleFamily::PolarCathedral, &mut rng, QualityMode::Strict);
+        let _ = apply_style_family(
+            &mut config,
+            StyleFamily::PolarCathedral,
+            &mut rng,
+            QualityMode::Strict,
+        );
         assert!((0.004..=0.030).contains(&config.clip_black));
         assert!((0.980..=0.998).contains(&config.clip_white));
         assert!((0.06..=0.24).contains(&config.hdr_scale));
+    }
+
+    #[test]
+    fn strict_mode_nebula_strength_stays_subtle() {
+        for seed in 1..64u8 {
+            let mut config = sample_config();
+            let mut rng = Sha3RandomByteStream::new(&[seed, 2, 3, 4], 100.0, 300.0, 300.0, 1.0);
+            let _ = apply_style_family(
+                &mut config,
+                StyleFamily::VelvetNebula,
+                &mut rng,
+                QualityMode::Strict,
+            );
+            assert!(
+                (0.03..=0.11).contains(&config.nebula_strength),
+                "strict mode nebula strength out of subtle range: {}",
+                config.nebula_strength
+            );
+        }
+    }
+
+    #[test]
+    fn explore_mode_nebula_strength_respects_global_cap() {
+        for seed in 1..64u8 {
+            let mut config = sample_config();
+            let mut rng = Sha3RandomByteStream::new(&[seed, 5, 6, 7], 100.0, 300.0, 300.0, 1.0);
+            let _ = apply_style_family(
+                &mut config,
+                StyleFamily::GlassAurora,
+                &mut rng,
+                QualityMode::Explore,
+            );
+            assert!(
+                (0.02..=0.12).contains(&config.nebula_strength),
+                "explore mode nebula strength must stay within global subtle bounds: {}",
+                config.nebula_strength
+            );
+        }
     }
 }

@@ -4,8 +4,8 @@
 
 pub mod analysis;
 pub mod app;
-pub mod drift;
 pub mod curation;
+pub mod drift;
 pub mod drift_config;
 pub mod error;
 pub mod generation_log;
@@ -20,4 +20,4 @@ pub mod spectrum_simd;
 pub mod utils;
 
 // Re-export common types for convenience
-pub use error::{AppError, ConfigError, RenderError, SimulationError, Result};
+pub use error::{AppError, ConfigError, RenderError, Result, SimulationError};

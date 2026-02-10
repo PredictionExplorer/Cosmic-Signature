@@ -35,22 +35,14 @@ pub fn tonemap_batch_simd(
         tonemap_batch_scalar(pixels, levels, output);
         return;
     }
-    
+
     // Try SIMD path first (conditional compilation for supported platforms)
-    #[cfg(all(
-        target_arch = "x86_64",
-        target_feature = "avx2",
-        not(miri)
-    ))]
+    #[cfg(all(target_arch = "x86_64", target_feature = "avx2", not(miri)))]
     {
         tonemap_batch_avx2(pixels, levels, output);
     }
-    
-    #[cfg(not(all(
-        target_arch = "x86_64",
-        target_feature = "avx2",
-        not(miri)
-    )))]
+
+    #[cfg(not(all(target_arch = "x86_64", target_feature = "avx2", not(miri))))]
     {
         tonemap_batch_scalar(pixels, levels, output);
     }
@@ -63,44 +55,37 @@ fn tonemap_batch_scalar(
     levels: &ChannelLevels,
     output: &mut [u8],
 ) {
-    output
-        .par_chunks_mut(3)
-        .zip(pixels.par_iter())
-        .for_each(|(chunk, &(fr, fg, fb, fa))| {
-            let mapped = tonemap_single_pixel(fr, fg, fb, fa, levels);
-            chunk[0] = mapped[0];
-            chunk[1] = mapped[1];
-            chunk[2] = mapped[2];
-        });
+    output.par_chunks_mut(3).zip(pixels.par_iter()).for_each(|(chunk, &(fr, fg, fb, fa))| {
+        let mapped = tonemap_single_pixel(fr, fg, fb, fa, levels);
+        chunk[0] = mapped[0];
+        chunk[1] = mapped[1];
+        chunk[2] = mapped[2];
+    });
 }
 
 /// AVX2 vectorized implementation (when available)
 #[cfg(all(target_arch = "x86_64", target_feature = "avx2", not(miri)))]
 #[inline]
-fn tonemap_batch_avx2(
-    pixels: &[(f64, f64, f64, f64)],
-    levels: &ChannelLevels,
-    output: &mut [u8],
-) {
+fn tonemap_batch_avx2(pixels: &[(f64, f64, f64, f64)], levels: &ChannelLevels, output: &mut [u8]) {
     use std::arch::x86_64::*;
-    
+
     // Process in chunks of 4 pixels (vectorizable)
     let chunks = pixels.len() / 4;
     let remainder = pixels.len() % 4;
-    
+
     unsafe {
         // Load channel levels into SIMD registers
         let black_r = _mm256_set1_pd(levels.black[0]);
         let black_g = _mm256_set1_pd(levels.black[1]);
         let black_b = _mm256_set1_pd(levels.black[2]);
-        
+
         let range_r = _mm256_set1_pd(levels.range[0]);
         let range_g = _mm256_set1_pd(levels.range[1]);
         let range_b = _mm256_set1_pd(levels.range[2]);
-        
+
         for i in 0..chunks {
             let base = i * 4;
-            
+
             // Load 4 pixels worth of data
             let r_vals = _mm256_set_pd(
                 pixels[base + 3].0,
@@ -126,33 +111,30 @@ fn tonemap_batch_avx2(
                 pixels[base + 1].3,
                 pixels[base].3,
             );
-            
+
             // Apply levels normalization: (value - black) / range
             let r_norm = _mm256_div_pd(_mm256_sub_pd(r_vals, black_r), range_r);
             let g_norm = _mm256_div_pd(_mm256_sub_pd(g_vals, black_g), range_g);
             let b_norm = _mm256_div_pd(_mm256_sub_pd(b_vals, black_b), range_b);
-            
+
             // For simplicity, extract and process individual values
             // (Full SIMD tone curve would require vector exponentials)
             let mut r_array = [0.0; 4];
             let mut g_array = [0.0; 4];
             let mut b_array = [0.0; 4];
             let mut a_array = [0.0; 4];
-            
+
             _mm256_storeu_pd(r_array.as_mut_ptr(), r_norm);
             _mm256_storeu_pd(g_array.as_mut_ptr(), g_norm);
             _mm256_storeu_pd(b_array.as_mut_ptr(), b_norm);
             _mm256_storeu_pd(a_array.as_mut_ptr(), a_vals);
-            
+
             // Apply ACES tone curve and convert to 8-bit
             for j in 0..4 {
                 let idx = (base + j) * 3;
                 if idx + 2 < output.len() {
                     let mapped = tonemap_single_pixel_normalized(
-                        r_array[j],
-                        g_array[j],
-                        b_array[j],
-                        a_array[j],
+                        r_array[j], g_array[j], b_array[j], a_array[j],
                     );
                     output[idx] = mapped[0];
                     output[idx + 1] = mapped[1];
@@ -161,7 +143,7 @@ fn tonemap_batch_avx2(
             }
         }
     }
-    
+
     // Handle remainder pixels with scalar code
     if remainder > 0 {
         let start_pixel = chunks * 4;
@@ -174,7 +156,7 @@ fn tonemap_batch_avx2(
 fn tonemap_single_pixel(fr: f64, fg: f64, fb: f64, fa: f64, levels: &ChannelLevels) -> [u8; 3] {
     // Import ACES LUT from parent module
     use super::ACES_LUT;
-    
+
     let alpha = fa.clamp(0.0, 1.0);
     if alpha <= 0.0 {
         return [0, 0, 0];
@@ -245,26 +227,26 @@ fn tonemap_single_pixel(fr: f64, fg: f64, fb: f64, fa: f64, levels: &ChannelLeve
 #[cfg(all(target_arch = "x86_64", target_feature = "avx2", not(miri)))]
 fn tonemap_single_pixel_normalized(r: f64, g: f64, b: f64, alpha: f64) -> [u8; 3] {
     use super::ACES_LUT;
-    
+
     let alpha = alpha.clamp(0.0, 1.0);
     if alpha <= 0.0 {
         return [0, 0, 0];
     }
-    
+
     let r = r.max(0.0).clamp(0.0, 10.0);
     let g = g.max(0.0).clamp(0.0, 10.0);
     let b = b.max(0.0).clamp(0.0, 10.0);
-    
+
     // Apply ACES tone curve
     let r_mapped = ACES_LUT.apply(r);
     let g_mapped = ACES_LUT.apply(g);
     let b_mapped = ACES_LUT.apply(b);
-    
+
     // Simple alpha blend
     let r_final = r_mapped * alpha;
     let g_final = g_mapped * alpha;
     let b_final = b_mapped * alpha;
-    
+
     [
         (r_final * 255.0).round().clamp(0.0, 255.0) as u8,
         (g_final * 255.0).round().clamp(0.0, 255.0) as u8,
@@ -281,9 +263,9 @@ mod tests {
         let pixels = vec![(0.5, 0.5, 0.5, 1.0); 10];
         let levels = ChannelLevels::new(0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
         let mut output = vec![0u8; 30];
-        
+
         tonemap_batch_scalar(&pixels, &levels, &mut output);
-        
+
         // Should produce non-zero output
         assert!(output.iter().any(|&x| x > 0));
     }
@@ -299,7 +281,7 @@ mod tests {
     fn test_tonemap_single_pixel_white() {
         let levels = ChannelLevels::new(0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
         let result = tonemap_single_pixel(1.0, 1.0, 1.0, 1.0, &levels);
-        
+
         // Should be bright but not necessarily pure white due to ACES
         assert!(result[0] > 200);
         assert!(result[1] > 200);
@@ -314,21 +296,26 @@ mod tests {
             (0.9, 0.1, 0.1, 0.6),
             (0.2, 0.8, 0.4, 0.9),
         ];
-        
+
         let levels = ChannelLevels::new(0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
-        
+
         let mut output_scalar = vec![0u8; 12];
         let mut output_simd = vec![0u8; 12];
-        
+
         tonemap_batch_scalar(&pixels, &levels, &mut output_scalar);
         tonemap_batch_simd(&pixels, &levels, &mut output_simd);
-        
+
         // Results should be very similar (allowing for small rounding differences)
         for i in 0..12 {
             let diff = (output_scalar[i] as i16 - output_simd[i] as i16).abs();
-            assert!(diff <= 2, "Pixel {} differs by {} (scalar={}, simd={})", 
-                    i, diff, output_scalar[i], output_simd[i]);
+            assert!(
+                diff <= 2,
+                "Pixel {} differs by {} (scalar={}, simd={})",
+                i,
+                diff,
+                output_scalar[i],
+                output_simd[i]
+            );
         }
     }
 }
-

@@ -149,10 +149,11 @@ pub use gaussian_bloom::GaussianBloom;
 pub use glow_enhancement::{GlowEnhancement, GlowEnhancementConfig};
 pub use gradient_map::{GradientMap, GradientMapConfig, LuxuryPalette};
 pub use micro_contrast::{MicroContrast, MicroContrastConfig};
-pub use nebula_clouds::{NebulaClouds, NebulaCloudConfig};
+pub use nebula_clouds::{NebulaCloudConfig, NebulaClouds};
 pub use opalescence::{Opalescence, OpalescenceConfig};
 pub use perceptual_blur::{PerceptualBlur, PerceptualBlurConfig};
-#[allow(unused_imports)] // Temporal smoothing requires special video integration (stateful effect)
+#[allow(unused_imports)]
+// Temporal smoothing requires special video integration (stateful effect)
 pub use temporal_smoothing::{TemporalSmoothing, TemporalSmoothingConfig};
 
 #[cfg(test)]

@@ -143,10 +143,7 @@ mod tests {
     #[test]
     fn repair_applies_at_most_two_actions() {
         let mut cfg = config();
-        let scores = QualityScores {
-            technical_integrity: 0.5,
-            ..Default::default()
-        };
+        let scores = QualityScores { technical_integrity: 0.5, ..Default::default() };
         let actions = repair_candidate(&mut cfg, &scores);
         assert!(actions.len() <= 2);
     }

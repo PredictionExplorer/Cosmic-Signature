@@ -8,8 +8,8 @@ use tracing_subscriber::EnvFilter;
 
 mod analysis;
 mod app;
-mod drift;
 mod curation;
+mod drift;
 mod drift_config;
 mod error;
 mod generation_log;
@@ -23,9 +23,6 @@ mod spectrum;
 mod spectrum_simd;
 mod utils;
 
-use error::Result;
-use render::RenderConfig;
-use sim::Sha3RandomByteStream;
 use crate::curation::{
     CandidateEvaluation, CurationOptions, CurationSummary, QualityMode,
     novelty::NoveltyMemory,
@@ -35,8 +32,11 @@ use crate::curation::{
     },
     repair::repair_candidate,
     selector::{accept_candidate, choose_finalists, composite_score, pick_winner},
-    style_families::{apply_style_family, resolve_style_family, StyleFamily},
+    style_families::{StyleFamily, apply_style_family, resolve_style_family},
 };
+use error::Result;
+use render::RenderConfig;
+use sim::Sha3RandomByteStream;
 
 /// Command-line arguments
 #[derive(Parser, Debug)]
@@ -193,7 +193,6 @@ struct Args {
     log_level: String,
 
     // ==== Curation & Quality Search ====
-
     /// Quality mode: strict, balanced, or explore
     #[arg(long, default_value = "strict")]
     quality_mode: String,
@@ -235,7 +234,6 @@ struct Args {
     save_master: bool,
 
     // ==== Effect Control Flags (All effects enabled by default) ====
-    
     /// Disable ALL post-processing effects (show pure spectral rendering + basic bloom)
     #[arg(long, default_value_t = false)]
     disable_all_effects: bool,
@@ -297,13 +295,11 @@ struct Args {
     disable_temporal_smoothing: bool,
 
     // ==== Gallery Quality Mode ====
-    
     /// Enable gallery quality mode (narrower randomization ranges for exhibition-ready results)
     #[arg(long, default_value_t = false)]
     gallery_quality: bool,
 
     // ==== Bloom & Glow Parameters ====
-    
     /// Gaussian blur strength (if not specified, randomized in range 4.0-18.0)
     #[arg(long)]
     param_blur_strength: Option<f64>,
@@ -349,7 +345,6 @@ struct Args {
     param_glow_saturation_boost: Option<f64>,
 
     // ==== Chromatic Bloom Parameters ====
-    
     /// Chromatic bloom strength (if not specified, randomized in range 0.35-0.85)
     #[arg(long)]
     param_chromatic_bloom_strength: Option<f64>,
@@ -367,13 +362,11 @@ struct Args {
     param_chromatic_bloom_threshold: Option<f64>,
 
     // ==== Perceptual Blur Parameters ====
-    
     /// Perceptual blur strength (if not specified, randomized in range 0.35-0.85)
     #[arg(long)]
     param_perceptual_blur_strength: Option<f64>,
 
     // ==== Color Grading Parameters ====
-    
     /// Color grading strength (if not specified, randomized in range 0.0-0.75)
     #[arg(long)]
     param_color_grade_strength: Option<f64>,
@@ -399,7 +392,6 @@ struct Args {
     param_tone_curve_strength: Option<f64>,
 
     // ==== Gradient Mapping Parameters ====
-    
     /// Gradient map strength (if not specified, randomized in range 0.40-1.0)
     #[arg(long)]
     param_gradient_map_strength: Option<f64>,
@@ -413,7 +405,6 @@ struct Args {
     param_gradient_map_palette: Option<usize>,
 
     // ==== Opalescence Parameters ====
-    
     /// Opalescence strength (if not specified, randomized in range 0.0-0.35)
     #[arg(long)]
     param_opalescence_strength: Option<f64>,
@@ -427,7 +418,6 @@ struct Args {
     param_opalescence_layers: Option<usize>,
 
     // ==== Champlevé Parameters ====
-    
     /// Champlevé flow alignment (if not specified, randomized in range 0.20-0.85)
     #[arg(long)]
     param_champleve_flow_alignment: Option<f64>,
@@ -449,7 +439,6 @@ struct Args {
     param_champleve_interior_lift: Option<f64>,
 
     // ==== Aether Parameters ====
-    
     /// Aether flow alignment (if not specified, randomized in range 0.30-0.95)
     #[arg(long)]
     param_aether_flow_alignment: Option<f64>,
@@ -467,7 +456,6 @@ struct Args {
     param_aether_caustic_strength: Option<f64>,
 
     // ==== Micro-Contrast Parameters ====
-    
     /// Micro-contrast strength (if not specified, randomized in range 0.10-0.45)
     #[arg(long)]
     param_micro_contrast_strength: Option<f64>,
@@ -477,7 +465,6 @@ struct Args {
     param_micro_contrast_radius: Option<usize>,
 
     // ==== Edge Luminance Parameters ====
-    
     /// Edge luminance strength (if not specified, randomized in range 0.08-0.40)
     #[arg(long)]
     param_edge_luminance_strength: Option<f64>,
@@ -491,7 +478,6 @@ struct Args {
     param_edge_luminance_brightness_boost: Option<f64>,
 
     // ==== Atmospheric Depth Parameters ====
-    
     /// Atmospheric depth strength (if not specified, randomized in range 0.0-0.45)
     #[arg(long)]
     param_atmospheric_depth_strength: Option<f64>,
@@ -517,7 +503,6 @@ struct Args {
     param_atmospheric_fog_color_b: Option<f64>,
 
     // ==== Fine Texture Parameters ====
-    
     /// Fine texture strength (if not specified, randomized in range 0.02-0.25)
     #[arg(long)]
     param_fine_texture_strength: Option<f64>,
@@ -531,13 +516,11 @@ struct Args {
     param_fine_texture_contrast: Option<f64>,
 
     // ==== HDR Parameters ====
-    
     /// HDR scale (if not specified, randomized in range 0.06-0.25)
     #[arg(long)]
     param_hdr_scale: Option<f64>,
 
     // ==== Clipping Parameters ====
-    
     /// Black point clipping (if not specified, randomized in range 0.005-0.025, constrained < clip_white)
     #[arg(long)]
     param_clip_black: Option<f64>,
@@ -547,16 +530,15 @@ struct Args {
     param_clip_white: Option<f64>,
 
     // ==== Nebula Parameters ====
-    
-    /// Nebula strength (if not specified, randomized in range 0.0-0.30)
+    /// Nebula strength (if not specified, randomized in range 0.02-0.12)
     #[arg(long)]
     param_nebula_strength: Option<f64>,
 
-    /// Nebula octaves (if not specified, randomized in range 3-5)
+    /// Nebula octaves (if not specified, randomized in range 2-7)
     #[arg(long)]
     param_nebula_octaves: Option<usize>,
 
-    /// Nebula base frequency (if not specified, randomized in range 0.0008-0.0025)
+    /// Nebula base frequency (if not specified, randomized in range 0.0005-0.0035)
     #[arg(long)]
     param_nebula_base_frequency: Option<f64>,
 }
@@ -585,10 +567,7 @@ fn setup_logging(json: bool, level: &str) {
 fn parse_status_kib(status_text: &str, key: &str) -> Option<u64> {
     for line in status_text.lines() {
         if let Some(rest) = line.strip_prefix(key) {
-            let value = rest
-                .split_whitespace()
-                .next()
-                .and_then(|v| v.parse::<u64>().ok());
+            let value = rest.split_whitespace().next().and_then(|v| v.parse::<u64>().ok());
             if value.is_some() {
                 return value;
             }
@@ -600,10 +579,7 @@ fn parse_status_kib(status_text: &str, key: &str) -> Option<u64> {
 fn parse_status_threads(status_text: &str) -> Option<usize> {
     for line in status_text.lines() {
         if let Some(rest) = line.strip_prefix("Threads:") {
-            let value = rest
-                .split_whitespace()
-                .next()
-                .and_then(|v| v.parse::<usize>().ok());
+            let value = rest.split_whitespace().next().and_then(|v| v.parse::<usize>().ok());
             if value.is_some() {
                 return value;
             }
@@ -865,11 +841,7 @@ fn build_render_config(
     };
 
     RenderConfig {
-        hdr_scale: if hdr_mode == "auto" {
-            resolved_effect_config.hdr_scale
-        } else {
-            1.0
-        },
+        hdr_scale: if hdr_mode == "auto" { resolved_effect_config.hdr_scale } else { 1.0 },
         bloom_mode,
         hdr_mode,
         temporal_smoothing_enabled,
@@ -924,14 +896,10 @@ fn downsample_scene(
         indices.push(total_steps - 1);
     }
 
-    let sampled_positions = positions
-        .iter()
-        .map(|body| indices.iter().map(|&i| body[i]).collect())
-        .collect();
-    let sampled_colors = colors
-        .iter()
-        .map(|body| indices.iter().map(|&i| body[i]).collect())
-        .collect();
+    let sampled_positions =
+        positions.iter().map(|body| indices.iter().map(|&i| body[i]).collect()).collect();
+    let sampled_colors =
+        colors.iter().map(|body| indices.iter().map(|&i| body[i]).collect()).collect();
     (sampled_positions, sampled_colors)
 }
 
@@ -1022,8 +990,10 @@ fn run_curation_search(
     const EPSILON_EXPLORATION: f64 = 0.25;
 
     let (preview_width, preview_height) = preview_dimensions(args.width, args.height);
-    let (preview_positions, preview_colors) = downsample_scene(positions, colors, PREVIEW_TARGET_STEPS);
-    let (final_positions, final_colors) = downsample_scene(positions, colors, FINALIST_TARGET_STEPS);
+    let (preview_positions, preview_colors) =
+        downsample_scene(positions, colors, PREVIEW_TARGET_STEPS);
+    let (final_positions, final_colors) =
+        downsample_scene(positions, colors, FINALIST_TARGET_STEPS);
 
     let preview_temporal = estimate_temporal_scores(&preview_positions);
     let final_temporal = estimate_temporal_scores(&final_positions);
@@ -1048,13 +1018,10 @@ fn run_curation_search(
         for local_candidate_id in 1..=curation_options.candidate_count_preview {
             total_candidates += 1;
             let candidate_id = total_candidates;
-            let randomizable_config = build_randomizable_config(args, curation_options.quality_mode);
-            let (mut resolved_config, randomization_log) = randomizable_config.resolve(
-                rng,
-                preview_width,
-                preview_height,
-                args.special,
-            );
+            let randomizable_config =
+                build_randomizable_config(args, curation_options.quality_mode);
+            let (mut resolved_config, randomization_log) =
+                randomizable_config.resolve(rng, preview_width, preview_height, args.special);
 
             let style_family = if let Some(explicit) = curation_options.style_family.as_deref() {
                 resolve_style_family(Some(explicit), rng)
@@ -1113,13 +1080,12 @@ fn run_curation_search(
                 let mut suggested_repairs = repair_candidate(&mut repaired_config, &scores);
                 if !suggested_repairs.is_empty() {
                     apply_effect_disable_overrides(args, &mut repaired_config);
-                    let repaired_render_config =
-                        build_render_config(
-                            args,
-                            curation_options.quality_mode,
-                            &repaired_config,
-                            render::EffectBudget::Preview,
-                        );
+                    let repaired_render_config = build_render_config(
+                        args,
+                        curation_options.quality_mode,
+                        &repaired_config,
+                        render::EffectBudget::Preview,
+                    );
                     let (repaired_scores, repaired_features, repaired_novelty, repaired_composite) =
                         evaluate_candidate(
                             &preview_positions,
@@ -1174,13 +1140,12 @@ fn run_curation_search(
             finalist.config.width = args.width;
             finalist.config.height = args.height;
             apply_effect_disable_overrides(args, &mut finalist.config);
-            let finalist_render_config =
-                build_render_config(
-                    args,
-                    curation_options.quality_mode,
-                    &finalist.config,
-                    render::EffectBudget::Finalist,
-                );
+            let finalist_render_config = build_render_config(
+                args,
+                curation_options.quality_mode,
+                &finalist.config,
+                render::EffectBudget::Finalist,
+            );
             let (scores, features, novelty_score, composite) = evaluate_candidate(
                 &final_positions,
                 &final_colors,
@@ -1273,11 +1238,11 @@ fn main() -> Result<()> {
     // Setup
     app::setup_directories()?;
     error::validation::validate_dimensions(args.width, args.height)?;
-    
+
     let seed_bytes = app::parse_seed(&args.seed)?;
     let hex_seed = if args.seed.starts_with("0x") { &args.seed[2..] } else { &args.seed };
     let noise_seed = app::derive_noise_seed(&seed_bytes);
-    
+
     let mut rng = Sha3RandomByteStream::new(
         &seed_bytes,
         args.min_mass,
@@ -1323,12 +1288,8 @@ fn main() -> Result<()> {
 
     // Stage 3: Generate colors
     let stage_3_start = Instant::now();
-    let (colors, body_alphas) = app::generate_colors(
-        &mut rng,
-        args.num_steps_sim,
-        args.alpha_denom,
-        args.alpha_compress,
-    );
+    let (colors, body_alphas) =
+        app::generate_colors(&mut rng, args.num_steps_sim, args.alpha_denom, args.alpha_compress);
     log_stage_telemetry("stage_3_color_generation", stage_3_start);
 
     let mut novelty_memory = NoveltyMemory::new(64);
@@ -1337,22 +1298,15 @@ fn main() -> Result<()> {
         novelty_memory.remember(feature);
     }
     if novelty_memory.len() > 0 {
-        info!(
-            "Loaded {} prior frame signatures for novelty gating.",
-            novelty_memory.len()
-        );
+        info!("Loaded {} prior frame signatures for novelty gating.", novelty_memory.len());
     }
 
     let stage_curation_start = Instant::now();
     let selected = if matches!(curation_options.quality_mode, QualityMode::Explore) {
         info!("Explore mode selected: using single-pass randomization without strict curation.");
         let randomizable_config = build_randomizable_config(&args, curation_options.quality_mode);
-        let (mut resolved_effect_config, randomization_log) = randomizable_config.resolve(
-            &mut rng,
-            args.width,
-            args.height,
-            args.special,
-        );
+        let (mut resolved_effect_config, randomization_log) =
+            randomizable_config.resolve(&mut rng, args.width, args.height, args.special);
         apply_effect_disable_overrides(&args, &mut resolved_effect_config);
         SelectedCuration {
             resolved_effect_config,
@@ -1440,7 +1394,10 @@ fn main() -> Result<()> {
     info!("STAGE 4/7: Determining bounding box...");
     let render_ctx = render::context::RenderContext::new(args.width, args.height, &positions);
     let bbox = render_ctx.bounds();
-    info!("   => X: [{:.3}, {:.3}], Y: [{:.3}, {:.3}]", bbox.min_x, bbox.max_x, bbox.min_y, bbox.max_y);
+    info!(
+        "   => X: [{:.3}, {:.3}], Y: [{:.3}, {:.3}]",
+        bbox.min_x, bbox.max_x, bbox.min_y, bbox.max_y
+    );
 
     // Configure rendering from resolved parameters
     let render_config = build_render_config(
@@ -1511,7 +1468,7 @@ fn main() -> Result<()> {
         "Done! Best orbit => Weighted Borda = {:.3}\nHave a nice day!",
         best_info.total_score_weighted
     );
-    
+
     // Log generation parameters for reproducibility
     let app_config = app::AppConfig {
         seed: args.seed.clone(),
@@ -1551,7 +1508,7 @@ fn main() -> Result<()> {
         chaos_weight: args.chaos_weight,
         equil_weight: args.equil_weight,
     };
-    
+
     app::log_generation(
         &app_config,
         &base_filename,
@@ -1570,7 +1527,7 @@ fn main() -> Result<()> {
         &selected.repair_actions,
     );
     log_stage_telemetry("total_pipeline", total_start);
-    
+
     Ok(())
 }
 

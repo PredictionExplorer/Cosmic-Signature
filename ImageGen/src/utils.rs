@@ -120,7 +120,7 @@ mod tests {
     fn test_bounding_box_single_point() {
         let positions = vec![vec![Vector3::new(1.0, 2.0, 3.0)]];
         let (min_x, max_x, min_y, max_y) = bounding_box(&positions);
-        
+
         // Should have padding
         assert!(min_x < 1.0);
         assert!(max_x > 1.0);
@@ -135,13 +135,13 @@ mod tests {
             vec![Vector3::new(0.0, 10.0, 0.0), Vector3::new(10.0, 10.0, 0.0)],
         ];
         let (min_x, max_x, min_y, max_y) = bounding_box(&positions);
-        
+
         // Should include all points with padding
         assert!(min_x < 0.0);
         assert!(max_x > 10.0);
         assert!(min_y < 0.0);
         assert!(max_y > 10.0);
-        
+
         // Width and height should be reasonable
         let width = max_x - min_x;
         let height = max_y - min_y;
@@ -159,19 +159,19 @@ mod tests {
     fn test_gaussian_kernel_properties() {
         let radius = 5;
         let kernel = build_gaussian_kernel(radius);
-        
+
         // Kernel should have correct size
         assert_eq!(kernel.len(), 2 * radius + 1);
-        
+
         // Kernel should sum to approximately 1.0 (normalized)
         let sum: f64 = kernel.iter().sum();
         assert!((sum - 1.0).abs() < 1e-10, "Kernel sum = {}, expected 1.0", sum);
-        
+
         // Kernel should be symmetric
         for i in 0..radius {
             assert!(approx_eq(kernel[i], kernel[2 * radius - i]));
         }
-        
+
         // Center should be the maximum value
         let center = kernel[radius];
         for &value in &kernel {
@@ -190,7 +190,7 @@ mod tests {
     fn test_fourier_transform_zero() {
         let input = vec![0.0; 10];
         let output = fourier_transform(&input);
-        
+
         // FFT of all zeros should be all zeros (approximately)
         for c in output {
             assert!(c.norm() < 1e-10);

@@ -10,10 +10,7 @@ pub struct NoveltyMemory {
 
 impl NoveltyMemory {
     pub fn new(max_entries: usize) -> Self {
-        Self {
-            accepted: Vec::new(),
-            max_entries: max_entries.max(1),
-        }
+        Self { accepted: Vec::new(), max_entries: max_entries.max(1) }
     }
 
     pub fn len(&self) -> usize {

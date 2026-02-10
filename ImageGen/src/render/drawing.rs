@@ -1,16 +1,20 @@
 //! Line drawing, plot functions, and primitive rendering
 
 use super::color::OklabColor;
-use crate::{spectral_constants, spectrum::NUM_BINS, utils::{build_gaussian_kernel, is_zero}};
-use spectral_constants::{LAMBDA_START, LAMBDA_END};
+use crate::{
+    spectral_constants,
+    spectrum::NUM_BINS,
+    utils::{build_gaussian_kernel, is_zero},
+};
 use rayon::prelude::*;
 use smallvec::SmallVec;
+use spectral_constants::{LAMBDA_END, LAMBDA_START};
 
 /// Convert OkLab hue to wavelength with perceptually uniform distribution.
-/// 
+///
 /// This mapping ensures that the full visible spectrum (380-700nm) is utilized,
 /// providing rich color diversity across blues, greens, yellows, oranges, and reds.
-/// 
+///
 /// The mapping is designed to align with perceptual color relationships:
 /// - Red hues (around 0°) map to long wavelengths (650-700nm)
 /// - Yellow hues (around 60°) map to yellow wavelengths (570-590nm)
@@ -22,13 +26,13 @@ use smallvec::SmallVec;
 pub(crate) fn oklab_hue_to_wavelength(a: f64, b: f64) -> f64 {
     // Calculate hue angle in radians (-π to +π)
     let hue_rad = b.atan2(a);
-    
+
     // Convert to degrees (0 to 360)
     let mut hue_deg = hue_rad.to_degrees();
     if hue_deg < 0.0 {
         hue_deg += 360.0;
     }
-    
+
     // Map hue to wavelength using a perceptually uniform distribution
     // This mapping is designed to maximize color variety and align with
     // the natural color spectrum while accounting for OkLab's hue distribution
@@ -58,7 +62,7 @@ pub(crate) fn oklab_hue_to_wavelength(a: f64, b: f64) -> f64 {
         // Create smooth transition back to red
         380.0 + ((hue_deg - 330.0) / 30.0) * 320.0
     };
-    
+
     // Ensure wavelength is within valid bounds
     wavelength.clamp(LAMBDA_START, LAMBDA_END)
 }
@@ -76,13 +80,9 @@ impl GaussianBlurContext {
         let kernel_len = kernel.len();
         let mut small_kernel = SmallVec::with_capacity(kernel_len);
         small_kernel.extend_from_slice(&kernel);
-        Self { 
-            kernel: small_kernel, 
-            radius,
-            temp_buffer: vec![(0.0, 0.0, 0.0, 0.0); buffer_size],
-        }
+        Self { kernel: small_kernel, radius, temp_buffer: vec![(0.0, 0.0, 0.0, 0.0); buffer_size] }
     }
-    
+
     /// Ensure temp buffer has correct capacity
     fn ensure_capacity(&mut self, size: usize) {
         if self.temp_buffer.len() != size {
@@ -251,7 +251,7 @@ pub fn draw_line_segment_aa_spectral_with_dispersion(
     let dx = x1 - x0;
     let dy = y1 - y0;
     let len = (dx * dx + dy * dy).sqrt();
-    
+
     if len < 0.001 {
         // Line too short, just draw normally
         draw_line_segment_aa_spectral_internal(
@@ -259,48 +259,50 @@ pub fn draw_line_segment_aa_spectral_with_dispersion(
         );
         return;
     }
-    
+
     // Perpendicular unit vector (rotated 90 degrees)
     let perp_x = -dy / len;
     let perp_y = dx / len;
-    
+
     // Convert colors to wavelengths to find the center bins
     let (_l0, a0, b0) = col0;
     let (_l1, a1, b1) = col1;
     let wavelength0 = oklab_hue_to_wavelength(a0, b0);
     let wavelength1 = oklab_hue_to_wavelength(a1, b1);
-    
-    let center_bin0 = ((wavelength0 - LAMBDA_START) / spectral_constants::BIN_WIDTH).round() as isize;
-    let center_bin1 = ((wavelength1 - LAMBDA_START) / spectral_constants::BIN_WIDTH).round() as isize;
-    
+
+    let center_bin0 =
+        ((wavelength0 - LAMBDA_START) / spectral_constants::BIN_WIDTH).round() as isize;
+    let center_bin1 =
+        ((wavelength1 - LAMBDA_START) / spectral_constants::BIN_WIDTH).round() as isize;
+
     use crate::render::constants::{SPECTRAL_DISPERSION_BINS, SPECTRAL_DISPERSION_STRENGTH};
     let dispersion_range = SPECTRAL_DISPERSION_BINS as isize;
-    
+
     // Draw multiple passes, one for each wavelength bin with spatial offset
     for bin_offset in -dispersion_range..=dispersion_range {
         // Calculate offset distance based on bin offset (creates rainbow spread)
         let offset_dist = bin_offset as f32 * SPECTRAL_DISPERSION_STRENGTH as f32;
-        
+
         // Offset the line perpendicular to its direction
         let offset_x = perp_x * offset_dist;
         let offset_y = perp_y * offset_dist;
-        
+
         // Create modified wavelengths for this dispersed pass
         let bin0 = (center_bin0 + bin_offset).clamp(0, (NUM_BINS - 1) as isize) as usize;
         let bin1 = (center_bin1 + bin_offset).clamp(0, (NUM_BINS - 1) as isize) as usize;
-        
+
         // Convert bins back to wavelengths
         let disp_wavelength0 = spectral_constants::bin_to_wavelength(bin0);
         let disp_wavelength1 = spectral_constants::bin_to_wavelength(bin1);
-        
+
         // Create new colors by preserving lightness but using dispersed wavelengths
         // We reconstruct OkLab from wavelength (approximate reverse)
         let disp_col0 = wavelength_to_oklab(disp_wavelength0, col0.0);
         let disp_col1 = wavelength_to_oklab(disp_wavelength1, col1.0);
-        
+
         // Reduce alpha for dispersed copies to maintain total energy
         let dispersion_alpha_factor = 1.0 / (2.0 * dispersion_range as f64 + 1.0);
-        
+
         // Draw the offset line
         draw_line_segment_aa_spectral_internal(
             accum,
@@ -345,13 +347,13 @@ fn wavelength_to_oklab(wavelength: f64, lightness: f64) -> OklabColor {
         // Violet region: 380-450nm -> 270-330°
         270.0 + (450.0 - wavelength) / 70.0 * 60.0
     };
-    
+
     // Convert hue angle to OkLab a,b components
     let hue_rad = hue_deg.to_radians();
     let chroma = 0.15; // Fixed moderate chroma for dispersion
     let a = chroma * hue_rad.cos();
     let b = chroma * hue_rad.sin();
-    
+
     (lightness, a, b)
 }
 
@@ -399,11 +401,11 @@ fn draw_line_segment_aa_spectral_internal(
     // Convert OkLab colors to wavelengths using perceptually uniform mapping
     let (_l0, a0, b0) = col0;
     let (_l1, a1, b1) = col1;
-    
+
     // Map OkLab hue to wavelength with full spectrum coverage
     let wavelength0 = oklab_hue_to_wavelength(a0, b0);
     let wavelength1 = oklab_hue_to_wavelength(a1, b1);
-    
+
     // Convert wavelengths to fractional bin positions
     let bin0_f = spectral_constants::wavelength_to_bin(wavelength0);
     let bin1_f = spectral_constants::wavelength_to_bin(wavelength1);

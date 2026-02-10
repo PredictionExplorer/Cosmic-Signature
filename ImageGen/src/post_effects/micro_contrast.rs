@@ -31,19 +31,19 @@ impl MicroContrastConfig {
     /// Create configuration for special mode (strong clarity)
     pub fn special_mode() -> Self {
         Self {
-            strength: 0.35,           // Noticeable clarity boost
-            radius: 2,                // Very local (2-pixel radius)
-            edge_threshold: 0.12,     // Moderate edge protection
-            luminance_weight: 0.7,    // Focus on luminance contrast
+            strength: 0.35,        // Noticeable clarity boost
+            radius: 2,             // Very local (2-pixel radius)
+            edge_threshold: 0.12,  // Moderate edge protection
+            luminance_weight: 0.7, // Focus on luminance contrast
         }
     }
 
     /// Create configuration for standard mode (refined clarity)
     pub fn standard_mode() -> Self {
         Self {
-            strength: 0.25,           // Noticeable clarity boost
+            strength: 0.25, // Noticeable clarity boost
             radius: 2,
-            edge_threshold: 0.14,     // Balanced edge protection
+            edge_threshold: 0.14, // Balanced edge protection
             luminance_weight: 0.65,
         }
     }
@@ -127,20 +127,11 @@ impl MicroContrast {
         let idx = y * width + x;
         let center_lum = {
             let (r, g, b, a) = buffer[idx];
-            if a > 0.0 {
-                Self::luminance(r / a, g / a, b / a)
-            } else {
-                0.0
-            }
+            if a > 0.0 { Self::luminance(r / a, g / a, b / a) } else { 0.0 }
         };
 
         // Check horizontal and vertical neighbors
-        let neighbors = [
-            (x.wrapping_sub(1), y),
-            (x + 1, y),
-            (x, y.wrapping_sub(1)),
-            (x, y + 1),
-        ];
+        let neighbors = [(x.wrapping_sub(1), y), (x + 1, y), (x, y.wrapping_sub(1)), (x, y + 1)];
 
         for (nx, ny) in neighbors {
             if nx < width && ny < height {
@@ -257,10 +248,7 @@ mod tests {
 
     #[test]
     fn test_micro_contrast_disabled() {
-        let config = MicroContrastConfig {
-            strength: 0.0,
-            ..MicroContrastConfig::default()
-        };
+        let config = MicroContrastConfig { strength: 0.0, ..MicroContrastConfig::default() };
         let mc = MicroContrast::new(config);
         assert!(!mc.is_enabled());
     }
@@ -298,7 +286,7 @@ mod tests {
             .collect();
 
         let avg = MicroContrast::local_average(&buffer, 10, 10, 5, 5, 1);
-        
+
         // Should be non-zero
         assert!(avg.0 > 0.0);
         assert!(avg.3 > 0.0); // Alpha should be averaged too
@@ -321,4 +309,3 @@ mod tests {
         assert_eq!(result.len(), buffer.len());
     }
 }
-

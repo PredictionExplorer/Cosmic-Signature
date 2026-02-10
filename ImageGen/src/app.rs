@@ -5,19 +5,21 @@
 //! maintainability.
 
 use crate::drift::parse_drift_mode;
-use crate::drift_config::{resolve_drift_config, ResolvedDriftConfig};
+use crate::drift_config::{ResolvedDriftConfig, resolve_drift_config};
 use crate::error::{ConfigError, Result};
-use crate::generation_log::{GenerationLogger, GenerationRecord, LoggedRenderConfig, DriftConfig, SimulationConfig, OrbitInfo};
+use crate::generation_log::{
+    DriftConfig, GenerationLogger, GenerationRecord, LoggedRenderConfig, OrbitInfo,
+    SimulationConfig,
+};
 use crate::oklab;
 use crate::post_effects;
 use crate::render::{
-    self, constants, generate_body_color_sequences,
-    save_image_as_png_16bit, ChannelLevels, DogBloomConfig, RenderConfig,
-    VideoEncodingOptions,
-    pass_1_build_histogram_spectral, pass_2_write_frames_spectral,
-    render_single_frame_spectral, create_video_from_frames_singlepass,
+    self, ChannelLevels, DogBloomConfig, RenderConfig, VideoEncodingOptions, constants,
+    create_video_from_frames_singlepass, generate_body_color_sequences,
+    pass_1_build_histogram_spectral, pass_2_write_frames_spectral, render_single_frame_spectral,
+    save_image_as_png_16bit,
 };
-use crate::sim::{self, Sha3RandomByteStream, Body, TrajectoryResult};
+use crate::sim::{self, Body, Sha3RandomByteStream, TrajectoryResult};
 use image::{ImageBuffer, Rgb};
 use nalgebra::Vector3;
 use std::fs;
@@ -71,35 +73,28 @@ pub fn setup_directories() -> Result<()> {
         path: "pics".to_string(),
         error: e,
     })?;
-    
+
     fs::create_dir_all("vids").map_err(|e| ConfigError::FileSystem {
         operation: "create directory".to_string(),
         path: "vids".to_string(),
         error: e,
     })?;
-    
+
     Ok(())
 }
 
 /// Parse and validate hex seed
 pub fn parse_seed(seed: &str) -> Result<Vec<u8>> {
     let hex_seed = seed.strip_prefix("0x").unwrap_or(seed);
-    
-    hex::decode(hex_seed).map_err(|e| ConfigError::InvalidSeed {
-        seed: seed.to_string(),
-        error: e,
-    }.into())
+
+    hex::decode(hex_seed)
+        .map_err(|e| ConfigError::InvalidSeed { seed: seed.to_string(), error: e }.into())
 }
 
 /// Derive noise seed from simulation seed for nebula generation
 pub fn derive_noise_seed(seed_bytes: &[u8]) -> i32 {
     let get_or_zero = |idx| seed_bytes.get(idx).copied().unwrap_or(0);
-    i32::from_le_bytes([
-        get_or_zero(0),
-        get_or_zero(1),
-        get_or_zero(2),
-        get_or_zero(3),
-    ])
+    i32::from_le_bytes([get_or_zero(0), get_or_zero(1), get_or_zero(2), get_or_zero(3)])
 }
 
 /// Run Borda selection to find the best orbit
@@ -112,7 +107,7 @@ pub fn run_borda_selection(
     escape_threshold: f64,
 ) -> Result<(Vec<Body>, TrajectoryResult)> {
     info!("STAGE 1/7: Borda search over {} random orbits...", num_sims);
-    
+
     sim::select_best_trajectory(
         rng,
         num_sims,
@@ -124,10 +119,7 @@ pub fn run_borda_selection(
 }
 
 /// Re-run the best orbit to get full trajectory
-pub fn simulate_best_orbit(
-    best_bodies: Vec<Body>,
-    num_steps_sim: usize,
-) -> Vec<Vec<Vector3<f64>>> {
+pub fn simulate_best_orbit(best_bodies: Vec<Body>, num_steps_sim: usize) -> Vec<Vec<Vector3<f64>>> {
     info!("STAGE 2/7: Re-running best orbit for {} steps...", num_steps_sim);
     let sim_result = sim::get_positions(best_bodies, num_steps_sim);
     info!("   => Done.");
@@ -145,7 +137,7 @@ pub fn apply_drift_transformation(
     special: bool,
 ) -> Option<ResolvedDriftConfig> {
     info!("STAGE 2.5/7: Resolving drift configuration...");
-    
+
     let resolved = resolve_drift_config(
         drift_scale,
         drift_arc_fraction,
@@ -153,20 +145,20 @@ pub fn apply_drift_transformation(
         rng,
         special,
     );
-    
+
     info!("Applying {} drift...", drift_mode);
     let num_steps = positions[0].len();
     let drift_params = resolved.to_drift_parameters();
-    
-    if crate::utils::is_zero(drift_params.arc_fraction) 
-        && drift_mode.to_lowercase().starts_with("ell") 
+
+    if crate::utils::is_zero(drift_params.arc_fraction)
+        && drift_mode.to_lowercase().starts_with("ell")
     {
         warn!("Elliptical drift requested with zero arc fraction; skipping motion");
     }
-    
+
     let mut drift_transform = parse_drift_mode(drift_mode, rng, drift_params, num_steps);
     drift_transform.apply(positions, constants::DEFAULT_DT);
-    
+
     info!("   => Drift applied successfully");
     Some(resolved)
 }
@@ -194,17 +186,9 @@ pub fn generate_colors(
 #[allow(dead_code)] // Legacy helper - kept for backward compatibility
 pub fn create_blur_config(special: bool, width: u32, height: u32) -> (usize, f64, f64) {
     if special {
-        (
-            (0.032 * std::cmp::min(width, height) as f64).round() as usize,
-            12.0,
-            12.0,
-        )
+        ((0.032 * std::cmp::min(width, height) as f64).round() as usize, 12.0, 12.0)
     } else {
-        (
-            (0.014 * std::cmp::min(width, height) as f64).round() as usize,
-            7.0,
-            7.0,
-        )
+        ((0.014 * std::cmp::min(width, height) as f64).round() as usize, 7.0, 7.0)
     }
 }
 
@@ -217,10 +201,8 @@ pub fn create_dog_config(
     dog_ratio: f64,
     dog_strength: f64,
 ) -> DogBloomConfig {
-    let sigma = dog_sigma.unwrap_or_else(|| {
-        0.0065 * std::cmp::min(width, height) as f64
-    });
-    
+    let sigma = dog_sigma.unwrap_or_else(|| 0.0065 * std::cmp::min(width, height) as f64);
+
     DogBloomConfig {
         inner_sigma: sigma,
         outer_ratio: dog_ratio,
@@ -241,9 +223,9 @@ pub fn create_perceptual_blur_config(
     if !enabled {
         return None;
     }
-    
+
     use oklab::GamutMapMode;
-    
+
     Some(post_effects::PerceptualBlurConfig {
         radius: perceptual_blur_radius.unwrap_or(blur_radius_px),
         strength: perceptual_blur_strength,
@@ -265,7 +247,7 @@ pub fn build_histogram_and_levels(
     render_config: &RenderConfig,
 ) -> Result<ChannelLevels> {
     info!("STAGE 5/7: PASS 1 => building global histogram...");
-    
+
     let target_frames = if render_config.histogram_fast_mode {
         // Fast curation histogram mode: enough temporal coverage without full-frame count.
         320
@@ -283,14 +265,14 @@ pub fn build_histogram_and_levels(
         noise_seed,
         render_config,
     );
-    
+
     info!("STAGE 6/7: Determine global black/white/gamma...");
-    
+
     info!(
         "   => R:[{:.3e},{:.3e}] G:[{:.3e},{:.3e}] B:[{:.3e},{:.3e}]",
         black_r, white_r, black_g, white_g, black_b, white_b
     );
-    
+
     Ok(ChannelLevels::new(black_r, white_r, black_g, white_g, black_b, white_b))
 }
 
@@ -317,7 +299,7 @@ pub fn render_test_frame(
     best_info: &TrajectoryResult,
 ) -> Result<()> {
     info!("STAGE 7/7: TEST FRAME MODE => rendering first frame only...");
-    
+
     let test_frame = render_single_frame_spectral(
         positions,
         colors,
@@ -332,16 +314,13 @@ pub fn render_test_frame(
         noise_seed,
         render_config,
     )?;
-    
+
     info!("Saving test frame to: {}", output_png);
     save_image_as_png_16bit(&test_frame, output_png)?;
-    
+
     info!("✓ Test frame saved successfully (16-bit PNG)!");
-    info!(
-        "Best orbit => Weighted Borda = {:.3}\nTest complete!",
-        best_info.total_score_weighted
-    );
-    
+    info!("Best orbit => Weighted Borda = {:.3}\nTest complete!", best_info.total_score_weighted);
+
     Ok(())
 }
 
@@ -364,18 +343,18 @@ pub fn render_video(
     } else {
         info!("STAGE 7/7: PASS 2 => final frames => video (HIGH QUALITY MODE)...");
     }
-    
+
     let frame_rate = constants::DEFAULT_VIDEO_FPS;
     let target_frames = constants::DEFAULT_TARGET_FRAMES;
     let frame_interval = (positions[0].len() / target_frames as usize).max(1);
-    
+
     let mut last_frame_png: Option<ImageBuffer<Rgb<u16>, Vec<u16>>> = None;
     let video_options = if fast_encode {
         VideoEncodingOptions::fast_encode()
     } else {
         VideoEncodingOptions::default()
     };
-    
+
     create_video_from_frames_singlepass(
         resolved_config.width,
         resolved_config.height,
@@ -406,7 +385,7 @@ pub fn render_video(
         output_vid,
         &video_options,
     )?;
-    
+
     // Save final frame
     if let Some(last_frame) = last_frame_png {
         info!("Attempting to save 16-bit PNG to: {}", output_png);
@@ -414,7 +393,7 @@ pub fn render_video(
     } else {
         warn!("Warning: No final frame was generated to save as PNG.");
     }
-    
+
     Ok(())
 }
 
@@ -437,13 +416,10 @@ pub fn log_generation(
     repair_actions: &[String],
 ) {
     let logger = GenerationLogger::new();
-    
-    let mut record = GenerationRecord::new(
-        file_name.to_string(),
-        format!("0x{}", seed),
-        config.special,
-    );
-    
+
+    let mut record =
+        GenerationRecord::new(file_name.to_string(), format!("0x{}", seed), config.special);
+
     record.render_config = LoggedRenderConfig {
         width: config.width,
         height: config.height,
@@ -463,7 +439,7 @@ pub fn log_generation(
         perceptual_blur_strength: config.perceptual_blur_strength,
         perceptual_gamut_mode: config.perceptual_gamut_mode.clone(),
     };
-    
+
     record.drift_config = if let Some(drift) = drift_config {
         DriftConfig {
             enabled: true,
@@ -483,7 +459,7 @@ pub fn log_generation(
             randomized: false,
         }
     };
-    
+
     record.simulation_config = SimulationConfig {
         num_sims,
         num_steps_sim: config.num_steps_sim,
@@ -495,14 +471,14 @@ pub fn log_generation(
         equil_weight: config.equil_weight,
         escape_threshold: config.escape_threshold,
     };
-    
+
     record.orbit_info = OrbitInfo {
         selected_index: 0,
         weighted_score: best_info.total_score_weighted,
         total_candidates: num_sims,
         discarded_count: 0,
     };
-    
+
     // Include randomization log if provided
     record.randomization_log = randomization_log.cloned();
     record.curation = curation_summary.map(|summary| crate::generation_log::CurationRecord {
@@ -515,7 +491,7 @@ pub fn log_generation(
         novelty_score,
         repair_actions: repair_actions.to_vec(),
     });
-    
+
     logger.log_generation(record);
 }
 
@@ -527,7 +503,7 @@ mod tests {
     fn test_parse_seed_valid() {
         let result = parse_seed("0x100033");
         assert!(result.is_ok());
-        
+
         let bytes = result.unwrap();
         assert_eq!(bytes, vec![0x10, 0x00, 0x33]);
     }

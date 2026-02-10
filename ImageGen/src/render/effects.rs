@@ -8,19 +8,18 @@ use super::context::PixelBuffer;
 use super::drawing::parallel_blur_2d_rgba;
 use super::error::{RenderError, Result};
 use crate::post_effects::{
-    AutoExposure, ChampleveConfig, ChromaticBloom, ChromaticBloomConfig, CinematicColorGrade,
-    ColorGradeParams, DogBloom, GaussianBloom, GlowEnhancement, GlowEnhancementConfig,
-    GradientMap, GradientMapConfig, MicroContrast, MicroContrastConfig,
-    PerceptualBlur, PerceptualBlurConfig, PostEffect,
+    AtmosphericDepth, AtmosphericDepthConfig, AutoExposure, ChampleveConfig, ChromaticBloom,
+    ChromaticBloomConfig, CinematicColorGrade, ColorGradeParams, DogBloom, EdgeLuminance,
+    EdgeLuminanceConfig, FineTexture, FineTextureConfig, GaussianBloom, GlowEnhancement,
+    GlowEnhancementConfig, GradientMap, GradientMapConfig, MicroContrast, MicroContrastConfig,
+    Opalescence, OpalescenceConfig, PerceptualBlur, PerceptualBlurConfig, PostEffect,
     PostEffectChain, aether::AetherConfig, apply_aether_weave, apply_champleve_iridescence,
-    AtmosphericDepth, AtmosphericDepthConfig, EdgeLuminance, EdgeLuminanceConfig,
-    FineTexture, FineTextureConfig, Opalescence, OpalescenceConfig,
 };
 use crate::spectrum::{NUM_BINS, spd_to_rgba};
 use rayon::prelude::*;
 
 /// Configuration for effect chain creation
-/// 
+///
 /// Controls which effects are enabled and their parameters. Effects are applied
 /// in a carefully ordered sequence for optimal visual quality:
 /// 1. Bloom effects (diffuse glow)
@@ -40,13 +39,13 @@ pub struct EffectConfig {
     pub hdr_mode: String,
     pub perceptual_blur_enabled: bool,
     pub perceptual_blur_config: Option<PerceptualBlurConfig>,
-    
+
     // Color manipulation effects
     pub color_grade_enabled: bool,
     pub color_grade_params: ColorGradeParams,
     pub gradient_map_enabled: bool,
     pub gradient_map_config: GradientMapConfig,
-    
+
     // Material and iridescence effects
     pub champleve_enabled: bool,
     pub champleve_config: ChampleveConfig,
@@ -56,7 +55,7 @@ pub struct EffectConfig {
     pub chromatic_bloom_config: ChromaticBloomConfig,
     pub opalescence_enabled: bool,
     pub opalescence_config: OpalescenceConfig,
-    
+
     // Detail and clarity effects
     pub edge_luminance_enabled: bool,
     pub edge_luminance_config: EdgeLuminanceConfig,
@@ -64,7 +63,7 @@ pub struct EffectConfig {
     pub micro_contrast_config: MicroContrastConfig,
     pub glow_enhancement_enabled: bool,
     pub glow_enhancement_config: GlowEnhancementConfig,
-    
+
     // Atmospheric and surface effects
     pub atmospheric_depth_enabled: bool,
     pub atmospheric_depth_config: AtmosphericDepthConfig,
@@ -93,7 +92,7 @@ impl EffectChainBuilder {
     }
 
     /// Build the effect chain based on configuration
-    /// 
+    ///
     /// Effects are applied in a carefully optimized order:
     /// 1. Bloom effects (diffuse and tight glow)
     /// 2. Tone mapping and perceptual smoothing
@@ -107,7 +106,7 @@ impl EffectChainBuilder {
 
         // ===== PHASE 1: BLOOM & GLOW =====
         // Base lighting effects that work on bright areas
-        
+
         // 1a. Traditional bloom (large diffuse glow)
         if config.blur_radius_px > 0 {
             chain.add(Box::new(GaussianBloom::new(
@@ -139,7 +138,7 @@ impl EffectChainBuilder {
 
         // ===== PHASE 2: TONE MAPPING & BLUR =====
         // Perceptual processing for smooth, natural appearance
-        
+
         // 2a. Perceptual blur (OKLab space smoothing)
         if config.perceptual_blur_enabled && config.perceptual_blur_config.is_some() {
             let blur_config = config.perceptual_blur_config.as_ref().unwrap();
@@ -153,7 +152,7 @@ impl EffectChainBuilder {
 
         // ===== PHASE 3: DETAIL ENHANCEMENT =====
         // Clarity and definition improvements
-        
+
         // 3. Micro-contrast (local contrast enhancement for detail clarity) [NEW]
         if config.micro_contrast_enabled {
             chain.add(Box::new(MicroContrast::new(config.micro_contrast_config.clone())));
@@ -161,7 +160,7 @@ impl EffectChainBuilder {
 
         // ===== PHASE 4: COLOR MANIPULATION =====
         // Artistic color transformations
-        
+
         // 4a. Gradient mapping (luxury color palettes)
         if config.gradient_map_enabled {
             chain.add(Box::new(GradientMap::new(config.gradient_map_config.clone())));
@@ -174,7 +173,7 @@ impl EffectChainBuilder {
 
         // ===== PHASE 5: MATERIAL PROPERTIES =====
         // Iridescence and material quality (layered for depth)
-        
+
         // 5a. Opalescence (base gem-like shimmer layer) [MOVED EARLIER]
         if config.opalescence_enabled {
             chain.add(Box::new(Opalescence::new(config.opalescence_config.clone())));
@@ -192,7 +191,7 @@ impl EffectChainBuilder {
 
         // ===== PHASE 6: FORM REFINEMENT =====
         // Edge and shape definition
-        
+
         // 6. Edge luminance (selective edge brightening for refined forms)
         if config.edge_luminance_enabled {
             chain.add(Box::new(EdgeLuminance::new(config.edge_luminance_config.clone())));
@@ -200,7 +199,7 @@ impl EffectChainBuilder {
 
         // ===== PHASE 7: ATMOSPHERIC & SURFACE =====
         // Final spatial and material qualities
-        
+
         // 7a. Atmospheric depth (spatial perspective + fog)
         if config.atmospheric_depth_enabled {
             chain.add(Box::new(AtmosphericDepth::new(config.atmospheric_depth_config.clone())));
@@ -340,7 +339,6 @@ impl MipPyramid {
 
         pyramid
     }
-
 }
 
 /// Standalone bilinear upsampling function for arbitrary data

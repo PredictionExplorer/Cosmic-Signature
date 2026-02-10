@@ -37,12 +37,12 @@ impl OpalescenceConfig {
     pub fn special_mode(width: usize, height: usize) -> Self {
         let base_scale = (width as f64 * height as f64).sqrt();
         Self {
-            strength: 0.18,                    // Noticeable but refined
-            scale: base_scale * 0.008,         // Medium-scale features
-            layers: 3,                         // Multiple interference layers
-            chromatic_shift: 0.35,             // Moderate rainbow shift
-            angle_sensitivity: 1.25,           // Strong angle dependency
-            pearl_sheen: 0.22,                 // Subtle pearl highlights
+            strength: 0.18,            // Noticeable but refined
+            scale: base_scale * 0.008, // Medium-scale features
+            layers: 3,                 // Multiple interference layers
+            chromatic_shift: 0.35,     // Moderate rainbow shift
+            angle_sensitivity: 1.25,   // Strong angle dependency
+            pearl_sheen: 0.22,         // Subtle pearl highlights
         }
     }
 
@@ -50,12 +50,12 @@ impl OpalescenceConfig {
     pub fn standard_mode(width: usize, height: usize) -> Self {
         let base_scale = (width as f64 * height as f64).sqrt();
         Self {
-            strength: 0.12,                    // Visible but refined
-            scale: base_scale * 0.010,         // Medium-scale features
-            layers: 2,                         // Fewer layers
-            chromatic_shift: 0.22,             // Noticeable rainbow
-            angle_sensitivity: 0.85,           // Stronger angle dependency
-            pearl_sheen: 0.12,                 // Subtle sheen
+            strength: 0.12,            // Visible but refined
+            scale: base_scale * 0.010, // Medium-scale features
+            layers: 2,                 // Fewer layers
+            chromatic_shift: 0.22,     // Noticeable rainbow
+            angle_sensitivity: 0.85,   // Stronger angle dependency
+            pearl_sheen: 0.12,         // Subtle sheen
         }
     }
 }
@@ -236,10 +236,7 @@ mod tests {
 
     #[test]
     fn test_opalescence_disabled() {
-        let config = OpalescenceConfig {
-            strength: 0.0,
-            ..OpalescenceConfig::default()
-        };
+        let config = OpalescenceConfig { strength: 0.0, ..OpalescenceConfig::default() };
         let opal = Opalescence::new(config);
         assert!(!opal.is_enabled());
     }
@@ -282,15 +279,11 @@ mod tests {
 
         // Verify colors have been shifted
         assert_eq!(result.len(), buffer.len());
-        let has_shift = buffer
-            .iter()
-            .zip(result.iter())
-            .any(|(&orig, &proc)| {
-                (orig.0 - proc.0).abs() > 0.001
-                    || (orig.1 - proc.1).abs() > 0.001
-                    || (orig.2 - proc.2).abs() > 0.001
-            });
+        let has_shift = buffer.iter().zip(result.iter()).any(|(&orig, &proc)| {
+            (orig.0 - proc.0).abs() > 0.001
+                || (orig.1 - proc.1).abs() > 0.001
+                || (orig.2 - proc.2).abs() > 0.001
+        });
         assert!(has_shift, "Opalescence should modify colors");
     }
 }
-
