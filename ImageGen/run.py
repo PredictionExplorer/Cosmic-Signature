@@ -134,6 +134,14 @@ def parse_args() -> argparse.Namespace:
         help=f"Log level passed to binary via --log-level (default: {DEFAULT_BINARY_LOG_LEVEL})",
     )
     parser.add_argument(
+        '--binary-args',
+        type=str,
+        default='',
+        help=(
+            'Extra args appended to the binary command (example: "--no-curation --variants 16 --style-family \"Bronze Mirage\"")'
+        ),
+    )
+    parser.add_argument(
         '--binary-log-format',
         choices=['json', 'text'],
         default='json',
@@ -887,6 +895,7 @@ def run_simulation(
     runs_index_path: Path,
     session_events_path: Path,
     binary_log_level: str,
+    binary_args: str,
     binary_log_format: str,
     diagnostic_tail_bytes: int,
     rayon_threads: int,
@@ -925,6 +934,9 @@ def run_simulation(
 
     if is_special:
         command.append('--special')
+
+    if binary_args:
+        command.extend(shlex.split(binary_args))
 
     with stats_lock:
         stats['started'] += 1
@@ -1408,7 +1420,8 @@ def main():
                 logs_layout['runs_index'],
                 logs_layout['session_events'],
                 args.binary_log_level,
-                args.binary_log_format,
+                        args.binary_args,
+                        args.binary_log_format,
                 args.diagnostic_tail_bytes,
                 rayon_threads,
             )
@@ -1449,6 +1462,7 @@ def main():
                         logs_layout['runs_index'],
                         logs_layout['session_events'],
                         args.binary_log_level,
+                        args.binary_args,
                         args.binary_log_format,
                         args.diagnostic_tail_bytes,
                         rayon_threads,

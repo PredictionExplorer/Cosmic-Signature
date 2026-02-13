@@ -138,6 +138,12 @@ pub enum ConfigError {
 
     /// File system error
     FileSystem { operation: String, path: String, error: std::io::Error },
+
+    /// JSON serialization/deserialization error
+    Json { operation: String, path: String, error: serde_json::Error },
+
+    /// Invalid profile or preset contents
+    InvalidProfile { reason: String },
 }
 
 impl fmt::Display for ConfigError {
@@ -149,6 +155,12 @@ impl fmt::Display for ConfigError {
             Self::FileSystem { operation, path, error } => {
                 write!(f, "Failed to {} '{}': {}", operation, path, error)
             }
+            Self::Json { operation, path, error } => {
+                write!(f, "Failed to {} JSON '{}': {}", operation, path, error)
+            }
+            Self::InvalidProfile { reason } => {
+                write!(f, "Invalid profile: {reason}")
+            }
         }
     }
 }
@@ -158,6 +170,8 @@ impl Error for ConfigError {
         match self {
             Self::InvalidSeed { error, .. } => Some(error),
             Self::FileSystem { error, .. } => Some(error),
+            Self::Json { error, .. } => Some(error),
+            Self::InvalidProfile { .. } => None,
         }
     }
 }

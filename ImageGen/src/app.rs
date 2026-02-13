@@ -9,6 +9,7 @@ use crate::drift_config::{ResolvedDriftConfig, resolve_drift_config};
 use crate::error::{ConfigError, Result};
 use crate::generation_log::{
     DriftConfig, GenerationLogger, GenerationRecord, LoggedRenderConfig, OrbitInfo,
+    LoggedBody,
     SimulationConfig,
 };
 use crate::oklab;
@@ -105,7 +106,7 @@ pub fn run_borda_selection(
     chaos_weight: f64,
     equil_weight: f64,
     escape_threshold: f64,
-) -> Result<(Vec<Body>, TrajectoryResult)> {
+) -> Result<(Vec<Body>, TrajectoryResult, usize, usize)> {
     info!("STAGE 1/7: Borda search over {} random orbits...", num_sims);
 
     sim::select_best_trajectory(
@@ -405,6 +406,10 @@ pub fn log_generation(
     drift_config: &Option<ResolvedDriftConfig>,
     num_sims: usize,
     best_info: &TrajectoryResult,
+    orbit_selected_index: Option<usize>,
+    orbit_discarded_count: Option<usize>,
+    orbit_bodies: Option<&[Body]>,
+    resolved_effect_config: Option<&render::randomizable_config::ResolvedEffectConfig>,
     randomization_log: Option<&render::effect_randomizer::RandomizationLog>,
     curation_summary: Option<&crate::curation::CurationSummary>,
     style_family: Option<&str>,
@@ -475,11 +480,24 @@ pub fn log_generation(
     };
 
     record.orbit_info = OrbitInfo {
-        selected_index: 0,
+        selected_index: orbit_selected_index.unwrap_or(0),
         weighted_score: best_info.total_score_weighted,
         total_candidates: num_sims,
-        discarded_count: 0,
+        discarded_count: orbit_discarded_count.unwrap_or(0),
     };
+
+    record.orbit_bodies = orbit_bodies.map(|bodies| {
+        bodies
+            .iter()
+            .map(|b| LoggedBody {
+                mass: b.mass,
+                position: [b.position.x, b.position.y, b.position.z],
+                velocity: [b.velocity.x, b.velocity.y, b.velocity.z],
+            })
+            .collect()
+    });
+
+    record.resolved_effect_config = resolved_effect_config.cloned();
 
     // Include randomization log if provided
     record.randomization_log = randomization_log.cloned();

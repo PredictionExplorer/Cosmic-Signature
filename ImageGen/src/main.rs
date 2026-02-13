@@ -13,6 +13,8 @@ mod drift;
 mod drift_config;
 mod error;
 mod generation_log;
+mod orbit_preset;
+mod profile;
 mod oklab;
 mod post_effects;
 mod render;
@@ -232,6 +234,43 @@ struct Args {
     /// Save optional archival master output in strict mode
     #[arg(long, default_value_t = false)]
     save_master: bool,
+
+    // ==== Fast Generation / Profiles ====
+    /// Skip curation search (single-pass), even in strict/balanced modes
+    #[arg(long, default_value_t = false)]
+    no_curation: bool,
+
+    /// Load a frozen effect profile (JSON). Disables effect randomization and style-family mutation
+    #[arg(long)]
+    effect_profile_in: Option<String>,
+
+    /// Save the final resolved effect profile to JSON
+    #[arg(long)]
+    effect_profile_out: Option<String>,
+
+    /// Load orbit preset (JSON) and skip Borda orbit search
+    #[arg(long)]
+    orbit_in: Option<String>,
+
+    /// Save selected orbit to an orbit preset (JSON)
+    #[arg(long)]
+    orbit_out: Option<String>,
+
+    /// Load orbit bodies from generation_log.json by file_name
+    #[arg(long)]
+    orbit_from_log: Option<String>,
+
+    /// Load effect profile from generation_log.json by file_name
+    #[arg(long)]
+    effect_from_log: Option<String>,
+
+    /// Generate multiple variants for the same orbit (colors/effects vary per variant)
+    #[arg(long, default_value_t = 1)]
+    variants: usize,
+
+    /// Variant start index (useful for resumable batches)
+    #[arg(long, default_value_t = 0)]
+    variant_start: usize,
 
     // ==== Effect Control Flags (All effects enabled by default) ====
     /// Disable ALL post-processing effects (show pure spectral rendering + basic bloom)
@@ -1258,20 +1297,431 @@ fn main() -> Result<()> {
         args.velocity,
     );
 
-    // Stage 1: Borda selection
+    let fast_mode = args.no_curation
+        || args.effect_profile_in.is_some()
+        || args.effect_profile_out.is_some()
+        || args.orbit_in.is_some()
+        || args.orbit_out.is_some()
+        || args.orbit_from_log.is_some()
+        || args.effect_from_log.is_some()
+        || args.variants != 1
+        || args.variant_start != 0;
+
+    if !fast_mode {
+        // Stage 1: Borda selection
+        let stage_1_start = Instant::now();
+        let (best_bodies, best_info, orbit_selected_index, orbit_discarded_count) =
+            app::run_borda_selection(
+                &mut rng,
+                num_sims,
+                args.num_steps_sim,
+                args.chaos_weight,
+                args.equil_weight,
+                args.escape_threshold,
+            )?;
+        log_stage_telemetry("stage_1_borda", stage_1_start);
+
+        // Stage 2: Re-run best orbit
+        let stage_2_start = Instant::now();
+        let best_bodies_for_log = best_bodies.clone();
+        let mut positions = app::simulate_best_orbit(best_bodies, args.num_steps_sim);
+        log_stage_telemetry("stage_2_resimulate", stage_2_start);
+
+        // Stage 2.5: Apply drift (if enabled)
+        let stage_25_start = Instant::now();
+        let drift_config = if !args.no_drift {
+            app::apply_drift_transformation(
+                &mut positions,
+                &args.drift_mode,
+                args.drift_scale,
+                args.drift_arc_fraction,
+                args.drift_orbit_eccentricity,
+                &mut rng,
+                args.special,
+            )
+        } else {
+            info!("STAGE 2.5/7: Drift disabled (--no-drift flag)");
+            None
+        };
+        log_stage_telemetry("stage_2_5_drift", stage_25_start);
+
+        // Stage 3: Generate colors
+        let stage_3_start = Instant::now();
+        let (colors, body_alphas) =
+            app::generate_colors(&mut rng, args.num_steps_sim, args.alpha_denom, args.alpha_compress);
+        log_stage_telemetry("stage_3_color_generation", stage_3_start);
+
+        let mut novelty_memory = NoveltyMemory::new(64);
+        let historical_features = generation_log::load_recent_frame_features(64);
+        for feature in historical_features {
+            novelty_memory.remember(feature);
+        }
+        if novelty_memory.len() > 0 {
+            info!(
+                "Loaded {} prior frame signatures for novelty gating.",
+                novelty_memory.len()
+            );
+        }
+
+        let stage_curation_start = Instant::now();
+        let selected = if matches!(curation_options.quality_mode, QualityMode::Explore) {
+            info!("Explore mode selected: using single-pass randomization without strict curation.");
+            let randomizable_config = build_randomizable_config(&args, curation_options.quality_mode);
+            let (mut resolved_effect_config, randomization_log) =
+                randomizable_config.resolve(&mut rng, args.width, args.height, args.special);
+            apply_effect_disable_overrides(&args, &mut resolved_effect_config);
+            SelectedCuration {
+                resolved_effect_config,
+                randomization_log,
+                style_family: None,
+                candidate_id: None,
+                round_id: None,
+                quality_scores: None,
+                frame_features: None,
+                novelty_score: None,
+                repair_actions: Vec::new(),
+                curation_summary: CurationSummary {
+                    quality_mode: curation_options.quality_mode.as_str().to_string(),
+                    rounds_used: 1,
+                    accepted: true,
+                    total_candidates: 1,
+                    finalists_considered: 1,
+                    rejection_reason: None,
+                },
+            }
+        } else {
+            info!("Running curated candidate search...");
+            let (winner, summary) = run_curation_search(
+                &args,
+                &curation_options,
+                &mut rng,
+                &positions,
+                &colors,
+                &body_alphas,
+                noise_seed,
+                &mut novelty_memory,
+            )?;
+            SelectedCuration {
+                resolved_effect_config: winner.config,
+                randomization_log: winner.randomization_log,
+                style_family: Some(winner.style_family),
+                candidate_id: Some(winner.candidate_id),
+                round_id: Some(winner.round_id),
+                quality_scores: Some(winner.scores),
+                frame_features: Some(winner.features),
+                novelty_score: Some(winner.novelty_score),
+                repair_actions: winner.repair_actions,
+                curation_summary: summary,
+            }
+        };
+        log_stage_telemetry("stage_3_5_curation", stage_curation_start);
+
+        let num_randomized = selected
+            .randomization_log
+            .effects
+            .iter()
+            .map(|e| e.parameters.iter().filter(|p| p.was_randomized).count())
+            .sum::<usize>();
+
+        info!(
+            "Resolved {} effects ({} parameters randomized, {} explicit)",
+            selected.randomization_log.effects.len(),
+            num_randomized,
+            selected
+                .randomization_log
+                .effects
+                .iter()
+                .map(|e| e.parameters.len())
+                .sum::<usize>()
+                .saturating_sub(num_randomized)
+        );
+        if let Some(style_family) = &selected.style_family {
+            info!("Selected style family: {}", style_family);
+        }
+        info!(
+            "Curation summary: rounds={}, accepted={}, candidates={}, finalists={}",
+            selected.curation_summary.rounds_used,
+            selected.curation_summary.accepted,
+            selected.curation_summary.total_candidates,
+            selected.curation_summary.finalists_considered
+        );
+        if let Some(reason) = &selected.curation_summary.rejection_reason {
+            warn!("Curation fallback reason: {reason}");
+        }
+        if let Some(scores) = &selected.quality_scores {
+            info!(
+                "Selected quality scores: image={:.3}, video={:.3}, final={:.3}, perimeter_penalty={:.4}, nebula_visibility={:.3}, nebula_dominance={:.3}, nebula_signal_ratio={:.3}",
+                scores.image_composite,
+                scores.video_composite,
+                scores.final_composite,
+                scores.perimeter_speckle_penalty,
+                scores.nebula_visibility_score,
+                scores.nebula_dominance_penalty,
+                scores.nebula_signal_ratio
+            );
+        }
+        if args.gallery_quality {
+            info!("Gallery quality mode enabled (conservative randomization ranges).");
+        }
+
+        // Stage 4: Bounding box
+        info!("STAGE 4/7: Determining bounding box...");
+        let render_ctx = render::context::RenderContext::new(args.width, args.height, &positions);
+        let bbox = render_ctx.bounds();
+        info!(
+            "   => X: [{:.3}, {:.3}], Y: [{:.3}, {:.3}]",
+            bbox.min_x, bbox.max_x, bbox.min_y, bbox.max_y
+        );
+
+        // Configure rendering from resolved parameters
+        let render_config = build_render_config(
+            &args,
+            curation_options.quality_mode,
+            &selected.resolved_effect_config,
+            render::EffectBudget::Full,
+        );
+
+        // Stage 5-6: Build histogram and compute levels
+        let stage_56_start = Instant::now();
+        let levels = app::build_histogram_and_levels(
+            &positions,
+            &colors,
+            &body_alphas,
+            &selected.resolved_effect_config,
+            noise_seed,
+            &render_config,
+        )?;
+        log_stage_telemetry("stage_5_6_histogram_levels", stage_56_start);
+
+        let base_filename = app::generate_filename(&args.file_name, &args.profile_tag);
+        let output_png = format!("pics/{}.png", base_filename);
+
+        // Stage 7: Render
+        let stage_7_start = Instant::now();
+        if args.test_frame {
+            app::render_test_frame(
+                &positions,
+                &colors,
+                &body_alphas,
+                &selected.resolved_effect_config,
+                &levels,
+                noise_seed,
+                &render_config,
+                &output_png,
+                &best_info,
+            )?;
+        } else {
+            // Normal mode: Render full video
+            let output_vid = format!("vids/{}.mp4", base_filename);
+
+            app::render_video(
+                &positions,
+                &colors,
+                &body_alphas,
+                &selected.resolved_effect_config,
+                &levels,
+                noise_seed,
+                &render_config,
+                &output_vid,
+                &output_png,
+                args.fast_encode,
+            )?;
+
+            if args.save_master && matches!(curation_options.quality_mode, QualityMode::Strict) {
+                fs::create_dir_all("masters")?;
+                let master_png = format!("masters/{}_master.png", base_filename);
+                let master_vid = format!("masters/{}_master.mp4", base_filename);
+                fs::copy(&output_png, &master_png)?;
+                fs::copy(&output_vid, &master_vid)?;
+                info!("Saved archival master outputs: {}, {}", master_png, master_vid);
+            }
+        }
+        log_stage_telemetry("stage_7_render", stage_7_start);
+
+        info!(
+            "Done! Best orbit => Weighted Borda = {:.3}\nHave a nice day!",
+            best_info.total_score_weighted
+        );
+
+        // Log generation parameters for reproducibility
+        let app_config = app::AppConfig {
+            seed: args.seed.clone(),
+            file_name: args.file_name.clone(),
+            num_sims,
+            num_steps_sim: args.num_steps_sim,
+            width: args.width,
+            height: args.height,
+            special: args.special,
+            test_frame: args.test_frame,
+            clip_black: selected.resolved_effect_config.clip_black,
+            clip_white: selected.resolved_effect_config.clip_white,
+            alpha_denom: args.alpha_denom,
+            alpha_compress: args.alpha_compress,
+            escape_threshold: args.escape_threshold,
+            drift_enabled: !args.no_drift,
+            drift_mode: args.drift_mode.clone(),
+            drift_scale: args.drift_scale,
+            drift_arc_fraction: args.drift_arc_fraction,
+            drift_orbit_eccentricity: args.drift_orbit_eccentricity,
+            profile_tag: args.profile_tag.clone(),
+            bloom_mode: args.bloom_mode.clone(),
+            dog_strength: args.dog_strength,
+            dog_sigma: args.dog_sigma,
+            dog_ratio: args.dog_ratio,
+            hdr_mode: render_config.hdr_mode.clone(),
+            hdr_scale: render_config.hdr_scale,
+            quality_mode: curation_options.quality_mode.as_str().to_string(),
+            perceptual_blur: args.perceptual_blur.clone(),
+            perceptual_blur_radius: args.perceptual_blur_radius,
+            perceptual_blur_strength: args.perceptual_blur_strength,
+            perceptual_gamut_mode: args.perceptual_gamut_mode.clone(),
+            min_mass: args.min_mass,
+            max_mass: args.max_mass,
+            location: args.location,
+            velocity: args.velocity,
+            chaos_weight: args.chaos_weight,
+            equil_weight: args.equil_weight,
+        };
+        let nebula_palette_id =
+            render::nebula_palette_id_for_config(&selected.resolved_effect_config, noise_seed);
+        let nebula_strength = if selected.resolved_effect_config.special_mode {
+            Some(selected.resolved_effect_config.nebula_strength)
+        } else {
+            None
+        };
+        if let Some(palette_id) = nebula_palette_id {
+            info!(
+                "Selected nebula diagnostics: palette_id={}, strength={:.4}",
+                palette_id,
+                nebula_strength.unwrap_or_default()
+            );
+        }
+
+        app::log_generation(
+            &app_config,
+            &base_filename,
+            hex_seed,
+            &drift_config,
+            num_sims,
+            &best_info,
+            Some(orbit_selected_index),
+            Some(orbit_discarded_count),
+            Some(&best_bodies_for_log),
+            Some(&selected.resolved_effect_config),
+            Some(&selected.randomization_log),
+            Some(&selected.curation_summary),
+            selected.style_family.as_deref(),
+            selected.candidate_id,
+            selected.round_id,
+            selected.quality_scores.as_ref(),
+            selected.frame_features.as_ref(),
+            selected.novelty_score,
+            nebula_palette_id,
+            nebula_strength,
+            &selected.repair_actions,
+        );
+        log_stage_telemetry("total_pipeline", total_start);
+
+        return Ok(());
+    }
+
+    // =========================
+    // Fast / Batch pipeline
+    // =========================
+
+    let log_records = crate::generation_log::GenerationLogger::new().load_records();
+
     let stage_1_start = Instant::now();
-    let (best_bodies, best_info) = app::run_borda_selection(
-        &mut rng,
-        num_sims,
-        args.num_steps_sim,
-        args.chaos_weight,
-        args.equil_weight,
-        args.escape_threshold,
-    )?;
-    log_stage_telemetry("stage_1_borda", stage_1_start);
+    let (best_bodies, best_info, orbit_selected_index, orbit_discarded_count, effective_num_sims) =
+        if let Some(path) = &args.orbit_in {
+            let preset = crate::orbit_preset::load_orbit_preset(path)?;
+            (
+                preset.to_bodies(),
+                sim::TrajectoryResult {
+                    chaos: 0.0,
+                    equilateralness: 0.0,
+                    chaos_pts: 0,
+                    equil_pts: 0,
+                    total_score: 0,
+                    total_score_weighted: 0.0,
+                },
+                None,
+                None,
+                0usize,
+            )
+        } else if let Some(file_name) = &args.orbit_from_log {
+            let record = log_records
+                .iter()
+                .rev()
+                .find(|r| r.file_name == *file_name)
+                .cloned()
+                .ok_or_else(|| {
+                    crate::error::ConfigError::InvalidProfile {
+                        reason: format!("generation log has no record for file_name '{file_name}'"),
+                    }
+                })?;
+
+            let logged_bodies = record.orbit_bodies.ok_or_else(|| {
+                crate::error::ConfigError::InvalidProfile {
+                    reason: format!(
+                        "generation log record '{file_name}' is missing orbit_bodies (regenerate once with the updated binary)"
+                    ),
+                }
+            })?;
+
+            let bodies = logged_bodies
+                .into_iter()
+                .map(|b| {
+                    sim::Body::new(
+                        b.mass,
+                        Vector3::new(b.position[0], b.position[1], b.position[2]),
+                        Vector3::new(b.velocity[0], b.velocity[1], b.velocity[2]),
+                    )
+                })
+                .collect::<Vec<_>>();
+
+            (
+                bodies,
+                sim::TrajectoryResult {
+                    chaos: 0.0,
+                    equilateralness: 0.0,
+                    chaos_pts: 0,
+                    equil_pts: 0,
+                    total_score: 0,
+                    total_score_weighted: 0.0,
+                },
+                None,
+                None,
+                0usize,
+            )
+        } else {
+            let (bodies, info, idx, discarded) = app::run_borda_selection(
+                &mut rng,
+                num_sims,
+                args.num_steps_sim,
+                args.chaos_weight,
+                args.equil_weight,
+                args.escape_threshold,
+            )?;
+            (
+                bodies,
+                info,
+                Some(idx),
+                Some(discarded),
+                num_sims,
+            )
+        };
+    log_stage_telemetry("stage_1_orbit", stage_1_start);
+
+    if let Some(path) = &args.orbit_out {
+        let preset = crate::orbit_preset::OrbitPreset::from_bodies(Some(args.file_name.clone()), &best_bodies);
+        crate::orbit_preset::save_orbit_preset(path, &preset)?;
+        info!("Saved orbit preset to: {}", path);
+    }
 
     // Stage 2: Re-run best orbit
     let stage_2_start = Instant::now();
+    let best_bodies_for_log = best_bodies.clone();
     let mut positions = app::simulate_best_orbit(best_bodies, args.num_steps_sim);
     log_stage_telemetry("stage_2_resimulate", stage_2_start);
 
@@ -1293,123 +1743,7 @@ fn main() -> Result<()> {
     };
     log_stage_telemetry("stage_2_5_drift", stage_25_start);
 
-    // Stage 3: Generate colors
-    let stage_3_start = Instant::now();
-    let (colors, body_alphas) =
-        app::generate_colors(&mut rng, args.num_steps_sim, args.alpha_denom, args.alpha_compress);
-    log_stage_telemetry("stage_3_color_generation", stage_3_start);
-
-    let mut novelty_memory = NoveltyMemory::new(64);
-    let historical_features = generation_log::load_recent_frame_features(64);
-    for feature in historical_features {
-        novelty_memory.remember(feature);
-    }
-    if novelty_memory.len() > 0 {
-        info!("Loaded {} prior frame signatures for novelty gating.", novelty_memory.len());
-    }
-
-    let stage_curation_start = Instant::now();
-    let selected = if matches!(curation_options.quality_mode, QualityMode::Explore) {
-        info!("Explore mode selected: using single-pass randomization without strict curation.");
-        let randomizable_config = build_randomizable_config(&args, curation_options.quality_mode);
-        let (mut resolved_effect_config, randomization_log) =
-            randomizable_config.resolve(&mut rng, args.width, args.height, args.special);
-        apply_effect_disable_overrides(&args, &mut resolved_effect_config);
-        SelectedCuration {
-            resolved_effect_config,
-            randomization_log,
-            style_family: None,
-            candidate_id: None,
-            round_id: None,
-            quality_scores: None,
-            frame_features: None,
-            novelty_score: None,
-            repair_actions: Vec::new(),
-            curation_summary: CurationSummary {
-                quality_mode: curation_options.quality_mode.as_str().to_string(),
-                rounds_used: 1,
-                accepted: true,
-                total_candidates: 1,
-                finalists_considered: 1,
-                rejection_reason: None,
-            },
-        }
-    } else {
-        info!("Running curated candidate search...");
-        let (winner, summary) = run_curation_search(
-            &args,
-            &curation_options,
-            &mut rng,
-            &positions,
-            &colors,
-            &body_alphas,
-            noise_seed,
-            &mut novelty_memory,
-        )?;
-        SelectedCuration {
-            resolved_effect_config: winner.config,
-            randomization_log: winner.randomization_log,
-            style_family: Some(winner.style_family),
-            candidate_id: Some(winner.candidate_id),
-            round_id: Some(winner.round_id),
-            quality_scores: Some(winner.scores),
-            frame_features: Some(winner.features),
-            novelty_score: Some(winner.novelty_score),
-            repair_actions: winner.repair_actions,
-            curation_summary: summary,
-        }
-    };
-    log_stage_telemetry("stage_3_5_curation", stage_curation_start);
-
-    let num_randomized = selected
-        .randomization_log
-        .effects
-        .iter()
-        .map(|e| e.parameters.iter().filter(|p| p.was_randomized).count())
-        .sum::<usize>();
-
-    info!(
-        "Resolved {} effects ({} parameters randomized, {} explicit)",
-        selected.randomization_log.effects.len(),
-        num_randomized,
-        selected
-            .randomization_log
-            .effects
-            .iter()
-            .map(|e| e.parameters.len())
-            .sum::<usize>()
-            .saturating_sub(num_randomized)
-    );
-    if let Some(style_family) = &selected.style_family {
-        info!("Selected style family: {}", style_family);
-    }
-    info!(
-        "Curation summary: rounds={}, accepted={}, candidates={}, finalists={}",
-        selected.curation_summary.rounds_used,
-        selected.curation_summary.accepted,
-        selected.curation_summary.total_candidates,
-        selected.curation_summary.finalists_considered
-    );
-    if let Some(reason) = &selected.curation_summary.rejection_reason {
-        warn!("Curation fallback reason: {reason}");
-    }
-    if let Some(scores) = &selected.quality_scores {
-        info!(
-            "Selected quality scores: image={:.3}, video={:.3}, final={:.3}, perimeter_penalty={:.4}, nebula_visibility={:.3}, nebula_dominance={:.3}, nebula_signal_ratio={:.3}",
-            scores.image_composite,
-            scores.video_composite,
-            scores.final_composite,
-            scores.perimeter_speckle_penalty,
-            scores.nebula_visibility_score,
-            scores.nebula_dominance_penalty,
-            scores.nebula_signal_ratio
-        );
-    }
-    if args.gallery_quality {
-        info!("Gallery quality mode enabled (conservative randomization ranges).");
-    }
-
-    // Stage 4: Bounding box
+    // Stage 4: Bounding box (once per orbit)
     info!("STAGE 4/7: Determining bounding box...");
     let render_ctx = render::context::RenderContext::new(args.width, args.height, &positions);
     let bbox = render_ctx.bounds();
@@ -1418,154 +1752,340 @@ fn main() -> Result<()> {
         bbox.min_x, bbox.max_x, bbox.min_y, bbox.max_y
     );
 
-    // Configure rendering from resolved parameters
-    let render_config = build_render_config(
-        &args,
-        curation_options.quality_mode,
-        &selected.resolved_effect_config,
-        render::EffectBudget::Full,
-    );
+    let loaded_effect_config: Option<render::randomizable_config::ResolvedEffectConfig> =
+        if let Some(path) = &args.effect_profile_in {
+            let profile = crate::profile::load_effect_profile(path)?;
+            Some(profile.config)
+        } else if let Some(file_name) = &args.effect_from_log {
+            let record = log_records
+                .iter()
+                .rev()
+                .find(|r| r.file_name == *file_name)
+                .cloned()
+                .ok_or_else(|| {
+                    crate::error::ConfigError::InvalidProfile {
+                        reason: format!("generation log has no record for file_name '{file_name}'"),
+                    }
+                })?;
 
-    // Stage 5-6: Build histogram and compute levels
-    let stage_56_start = Instant::now();
-    let levels = app::build_histogram_and_levels(
-        &positions,
-        &colors,
-        &body_alphas,
-        &selected.resolved_effect_config,
-        noise_seed,
-        &render_config,
-    )?;
-    log_stage_telemetry("stage_5_6_histogram_levels", stage_56_start);
+            if let Some(config) = record.resolved_effect_config {
+                Some(config)
+            } else if let Some(log) = record.randomization_log {
+                Some(crate::profile::resolved_config_from_randomization_log(
+                    &log,
+                    args.width,
+                    args.height,
+                    args.special,
+                )?)
+            } else {
+                return Err(crate::error::ConfigError::InvalidProfile {
+                    reason: format!(
+                        "generation log record '{file_name}' has no resolved_effect_config or randomization_log"
+                    ),
+                }
+                .into());
+            }
+        } else {
+            None
+        };
 
-    let base_filename = app::generate_filename(&args.file_name, &args.profile_tag);
-    let output_png = format!("pics/{}.png", base_filename);
-
-    // Stage 7: Render
-    let stage_7_start = Instant::now();
-    if args.test_frame {
-        app::render_test_frame(
-            &positions,
-            &colors,
-            &body_alphas,
-            &selected.resolved_effect_config,
-            &levels,
-            noise_seed,
-            &render_config,
-            &output_png,
-            &best_info,
-        )?;
-    } else {
-        // Normal mode: Render full video
-        let output_vid = format!("vids/{}.mp4", base_filename);
-
-        app::render_video(
-            &positions,
-            &colors,
-            &body_alphas,
-            &selected.resolved_effect_config,
-            &levels,
-            noise_seed,
-            &render_config,
-            &output_vid,
-            &output_png,
-            args.fast_encode,
-        )?;
-
-        if args.save_master && matches!(curation_options.quality_mode, QualityMode::Strict) {
-            fs::create_dir_all("masters")?;
-            let master_png = format!("masters/{}_master.png", base_filename);
-            let master_vid = format!("masters/{}_master.mp4", base_filename);
-            fs::copy(&output_png, &master_png)?;
-            fs::copy(&output_vid, &master_vid)?;
-            info!("Saved archival master outputs: {}, {}", master_png, master_vid);
-        }
+    let mut novelty_memory = NoveltyMemory::new(64);
+    let historical_features = generation_log::load_recent_frame_features(64);
+    for feature in historical_features {
+        novelty_memory.remember(feature);
     }
-    log_stage_telemetry("stage_7_render", stage_7_start);
+
+    let base_filename_root = app::generate_filename(&args.file_name, &args.profile_tag);
+    let variants = args.variants.max(1);
+    let mut saved_profile = false;
+
+    for local_variant in 0..variants {
+        let variant_index = args.variant_start.saturating_add(local_variant);
+        let variant_number = variant_index.saturating_add(1);
+
+        let base_filename = if variants > 1 || args.variant_start > 0 {
+            format!("{}_v{:04}", base_filename_root, variant_number)
+        } else {
+            base_filename_root.clone()
+        };
+
+        // Variant RNG: preserve legacy behavior for the first variant, then derive additional RNGs.
+        let mut derived_rng: Option<Sha3RandomByteStream> = None;
+        let mut variant_noise_seed = noise_seed;
+        if local_variant != 0 {
+            use sha3::{Digest, Sha3_256};
+            let mut hasher = Sha3_256::new();
+            hasher.update(&seed_bytes);
+            hasher.update(b"variant");
+            hasher.update((variant_index as u64).to_le_bytes());
+            let derived_seed = hasher.finalize().to_vec();
+            variant_noise_seed = app::derive_noise_seed(&derived_seed);
+            derived_rng = Some(Sha3RandomByteStream::new(
+                &derived_seed,
+                args.min_mass,
+                args.max_mass,
+                args.location,
+                args.velocity,
+            ));
+        }
+        let variant_rng = derived_rng.as_mut().unwrap_or(&mut rng);
+
+        // Stage 3: Generate colors
+        let stage_3_start = Instant::now();
+        let (colors, body_alphas) =
+            app::generate_colors(variant_rng, args.num_steps_sim, args.alpha_denom, args.alpha_compress);
+        log_stage_telemetry("stage_3_color_generation", stage_3_start);
+
+        let stage_curation_start = Instant::now();
+        let selected = if let Some(profile_config) = &loaded_effect_config {
+            // Use frozen config exactly (no randomization, no style-family mutation).
+            let mut resolved = profile_config.clone();
+            resolved.width = args.width;
+            resolved.height = args.height;
+            resolved.special_mode = args.special;
+
+            apply_effect_disable_overrides(&args, &mut resolved);
+
+            let mut randomization_log =
+                render::effect_randomizer::RandomizationLog::new(resolved.gallery_quality);
+            randomization_log.add_record(render::effect_randomizer::RandomizationRecord::new(
+                "effect_profile".to_string(),
+                true,
+                false,
+            ));
+
+            SelectedCuration {
+                resolved_effect_config: resolved,
+                randomization_log,
+                style_family: None,
+                candidate_id: None,
+                round_id: None,
+                quality_scores: None,
+                frame_features: None,
+                novelty_score: None,
+                repair_actions: Vec::new(),
+                curation_summary: CurationSummary {
+                    quality_mode: curation_options.quality_mode.as_str().to_string(),
+                    rounds_used: 1,
+                    accepted: true,
+                    total_candidates: 1,
+                    finalists_considered: 1,
+                    rejection_reason: None,
+                },
+            }
+        } else if args.no_curation || matches!(curation_options.quality_mode, QualityMode::Explore) {
+            info!("Fast single-pass selection (no curation)");
+            let randomizable_config = build_randomizable_config(&args, curation_options.quality_mode);
+            let (mut resolved_effect_config, randomization_log) =
+                randomizable_config.resolve(variant_rng, args.width, args.height, args.special);
+
+            let mut style_family_name = None;
+            let mut repair_actions = Vec::new();
+
+            if args.no_curation {
+                let family = resolve_style_family(args.style_family.as_deref(), variant_rng);
+                repair_actions = apply_style_family(
+                    &mut resolved_effect_config,
+                    family,
+                    variant_rng,
+                    curation_options.quality_mode,
+                );
+                style_family_name = Some(family.name().to_string());
+            }
+
+            apply_effect_disable_overrides(&args, &mut resolved_effect_config);
+
+            SelectedCuration {
+                resolved_effect_config,
+                randomization_log,
+                style_family: style_family_name,
+                candidate_id: None,
+                round_id: None,
+                quality_scores: None,
+                frame_features: None,
+                novelty_score: None,
+                repair_actions,
+                curation_summary: CurationSummary {
+                    quality_mode: curation_options.quality_mode.as_str().to_string(),
+                    rounds_used: 1,
+                    accepted: true,
+                    total_candidates: 1,
+                    finalists_considered: 1,
+                    rejection_reason: None,
+                },
+            }
+        } else {
+            info!("Running curated candidate search...");
+            let (winner, summary) = run_curation_search(
+                &args,
+                &curation_options,
+                variant_rng,
+                &positions,
+                &colors,
+                &body_alphas,
+                variant_noise_seed,
+                &mut novelty_memory,
+            )?;
+            SelectedCuration {
+                resolved_effect_config: winner.config,
+                randomization_log: winner.randomization_log,
+                style_family: Some(winner.style_family),
+                candidate_id: Some(winner.candidate_id),
+                round_id: Some(winner.round_id),
+                quality_scores: Some(winner.scores),
+                frame_features: Some(winner.features),
+                novelty_score: Some(winner.novelty_score),
+                repair_actions: winner.repair_actions,
+                curation_summary: summary,
+            }
+        };
+        log_stage_telemetry("stage_3_5_curation", stage_curation_start);
+
+        if let Some(path) = &args.effect_profile_out {
+            if !saved_profile {
+                let profile = crate::profile::EffectProfile::new(
+                    Some(base_filename.clone()),
+                    selected.resolved_effect_config.clone(),
+                );
+                crate::profile::save_effect_profile(path, &profile)?;
+                info!("Saved effect profile to: {}", path);
+                saved_profile = true;
+            }
+        }
+
+        // Configure rendering from resolved parameters
+        let render_config = build_render_config(
+            &args,
+            curation_options.quality_mode,
+            &selected.resolved_effect_config,
+            render::EffectBudget::Full,
+        );
+
+        // Stage 5-6: Build histogram and compute levels
+        let stage_56_start = Instant::now();
+        let levels = app::build_histogram_and_levels(
+            &positions,
+            &colors,
+            &body_alphas,
+            &selected.resolved_effect_config,
+            variant_noise_seed,
+            &render_config,
+        )?;
+        log_stage_telemetry("stage_5_6_histogram_levels", stage_56_start);
+
+        let output_png = format!("pics/{}.png", base_filename);
+
+        // Stage 7: Render
+        let stage_7_start = Instant::now();
+        if args.test_frame {
+            app::render_test_frame(
+                &positions,
+                &colors,
+                &body_alphas,
+                &selected.resolved_effect_config,
+                &levels,
+                variant_noise_seed,
+                &render_config,
+                &output_png,
+                &best_info,
+            )?;
+        } else {
+            let output_vid = format!("vids/{}.mp4", base_filename);
+            app::render_video(
+                &positions,
+                &colors,
+                &body_alphas,
+                &selected.resolved_effect_config,
+                &levels,
+                variant_noise_seed,
+                &render_config,
+                &output_vid,
+                &output_png,
+                args.fast_encode,
+            )?;
+        }
+        log_stage_telemetry("stage_7_render", stage_7_start);
+
+        let app_config = app::AppConfig {
+            seed: args.seed.clone(),
+            file_name: args.file_name.clone(),
+            num_sims: effective_num_sims,
+            num_steps_sim: args.num_steps_sim,
+            width: args.width,
+            height: args.height,
+            special: args.special,
+            test_frame: args.test_frame,
+            clip_black: selected.resolved_effect_config.clip_black,
+            clip_white: selected.resolved_effect_config.clip_white,
+            alpha_denom: args.alpha_denom,
+            alpha_compress: args.alpha_compress,
+            escape_threshold: args.escape_threshold,
+            drift_enabled: !args.no_drift,
+            drift_mode: args.drift_mode.clone(),
+            drift_scale: args.drift_scale,
+            drift_arc_fraction: args.drift_arc_fraction,
+            drift_orbit_eccentricity: args.drift_orbit_eccentricity,
+            profile_tag: args.profile_tag.clone(),
+            bloom_mode: args.bloom_mode.clone(),
+            dog_strength: args.dog_strength,
+            dog_sigma: args.dog_sigma,
+            dog_ratio: args.dog_ratio,
+            hdr_mode: render_config.hdr_mode.clone(),
+            hdr_scale: render_config.hdr_scale,
+            quality_mode: curation_options.quality_mode.as_str().to_string(),
+            perceptual_blur: args.perceptual_blur.clone(),
+            perceptual_blur_radius: args.perceptual_blur_radius,
+            perceptual_blur_strength: args.perceptual_blur_strength,
+            perceptual_gamut_mode: args.perceptual_gamut_mode.clone(),
+            min_mass: args.min_mass,
+            max_mass: args.max_mass,
+            location: args.location,
+            velocity: args.velocity,
+            chaos_weight: args.chaos_weight,
+            equil_weight: args.equil_weight,
+        };
+
+        let nebula_palette_id =
+            render::nebula_palette_id_for_config(&selected.resolved_effect_config, variant_noise_seed);
+        let nebula_strength = if selected.resolved_effect_config.special_mode {
+            Some(selected.resolved_effect_config.nebula_strength)
+        } else {
+            None
+        };
+
+        app::log_generation(
+            &app_config,
+            &base_filename,
+            hex_seed,
+            &drift_config,
+            effective_num_sims,
+            &best_info,
+            orbit_selected_index,
+            orbit_discarded_count,
+            Some(&best_bodies_for_log),
+            Some(&selected.resolved_effect_config),
+            Some(&selected.randomization_log),
+            Some(&selected.curation_summary),
+            selected.style_family.as_deref(),
+            selected.candidate_id,
+            selected.round_id,
+            selected.quality_scores.as_ref(),
+            selected.frame_features.as_ref(),
+            selected.novelty_score,
+            nebula_palette_id,
+            nebula_strength,
+            &selected.repair_actions,
+        );
+    }
 
     info!(
         "Done! Best orbit => Weighted Borda = {:.3}\nHave a nice day!",
         best_info.total_score_weighted
     );
 
-    // Log generation parameters for reproducibility
-    let app_config = app::AppConfig {
-        seed: args.seed.clone(),
-        file_name: args.file_name.clone(),
-        num_sims,
-        num_steps_sim: args.num_steps_sim,
-        width: args.width,
-        height: args.height,
-        special: args.special,
-        test_frame: args.test_frame,
-        clip_black: selected.resolved_effect_config.clip_black,
-        clip_white: selected.resolved_effect_config.clip_white,
-        alpha_denom: args.alpha_denom,
-        alpha_compress: args.alpha_compress,
-        escape_threshold: args.escape_threshold,
-        drift_enabled: !args.no_drift,
-        drift_mode: args.drift_mode.clone(),
-        drift_scale: args.drift_scale,
-        drift_arc_fraction: args.drift_arc_fraction,
-        drift_orbit_eccentricity: args.drift_orbit_eccentricity,
-        profile_tag: args.profile_tag.clone(),
-        bloom_mode: args.bloom_mode.clone(),
-        dog_strength: args.dog_strength,
-        dog_sigma: args.dog_sigma,
-        dog_ratio: args.dog_ratio,
-        hdr_mode: render_config.hdr_mode.clone(),
-        hdr_scale: render_config.hdr_scale,
-        quality_mode: curation_options.quality_mode.as_str().to_string(),
-        perceptual_blur: args.perceptual_blur.clone(),
-        perceptual_blur_radius: args.perceptual_blur_radius,
-        perceptual_blur_strength: args.perceptual_blur_strength,
-        perceptual_gamut_mode: args.perceptual_gamut_mode.clone(),
-        min_mass: args.min_mass,
-        max_mass: args.max_mass,
-        location: args.location,
-        velocity: args.velocity,
-        chaos_weight: args.chaos_weight,
-        equil_weight: args.equil_weight,
-    };
-    let nebula_palette_id =
-        render::nebula_palette_id_for_config(&selected.resolved_effect_config, noise_seed);
-    let nebula_strength = if selected.resolved_effect_config.special_mode {
-        Some(selected.resolved_effect_config.nebula_strength)
-    } else {
-        None
-    };
-    if let Some(palette_id) = nebula_palette_id {
-        info!(
-            "Selected nebula diagnostics: palette_id={}, strength={:.4}",
-            palette_id,
-            nebula_strength.unwrap_or_default()
-        );
-    }
-
-    app::log_generation(
-        &app_config,
-        &base_filename,
-        hex_seed,
-        &drift_config,
-        num_sims,
-        &best_info,
-        Some(&selected.randomization_log),
-        Some(&selected.curation_summary),
-        selected.style_family.as_deref(),
-        selected.candidate_id,
-        selected.round_id,
-        selected.quality_scores.as_ref(),
-        selected.frame_features.as_ref(),
-        selected.novelty_score,
-        nebula_palette_id,
-        nebula_strength,
-        &selected.repair_actions,
-    );
     log_stage_telemetry("total_pipeline", total_start);
-
     Ok(())
 }
-
 #[cfg(test)]
 mod telemetry_tests {
     use super::{parse_status_kib, parse_status_threads};

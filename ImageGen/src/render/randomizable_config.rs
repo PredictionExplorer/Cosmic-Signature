@@ -746,7 +746,7 @@ impl RandomizableEffectConfig {
 }
 
 /// Fully resolved effect configuration with all parameters determined.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct ResolvedEffectConfig {
     pub width: u32,
     pub height: u32,

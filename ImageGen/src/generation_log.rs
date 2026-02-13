@@ -43,6 +43,14 @@ pub struct GenerationRecord {
     /// Selected orbit information from Borda selection
     pub orbit_info: OrbitInfo,
 
+    /// Orbit bodies (for fast reproduction / skipping Borda search)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub orbit_bodies: Option<Vec<LoggedBody>>,
+
+    /// Fully resolved effect configuration (for fast reproduction)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub resolved_effect_config: Option<crate::render::randomizable_config::ResolvedEffectConfig>,
+
     /// Randomization log (if any parameters were randomized)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub randomization_log: Option<crate::render::effect_randomizer::RandomizationLog>,
@@ -133,6 +141,13 @@ pub struct OrbitInfo {
     pub discarded_count: usize,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LoggedBody {
+    pub mass: f64,
+    pub position: [f64; 3],
+    pub velocity: [f64; 3],
+}
+
 impl GenerationRecord {
     /// Create a new generation record with the current timestamp
     pub fn new(file_name: String, seed: String, special_mode: bool) -> Self {
@@ -147,6 +162,8 @@ impl GenerationRecord {
             drift_config: DriftConfig::default(),
             simulation_config: SimulationConfig::default(),
             orbit_info: OrbitInfo::default(),
+            orbit_bodies: None,
+            resolved_effect_config: None,
             randomization_log: None,
             curation: None,
         }
@@ -224,7 +241,7 @@ impl GenerationLogger {
     }
 
     /// Load all existing records from the log file
-    fn load_records(&self) -> Vec<GenerationRecord> {
+    pub fn load_records(&self) -> Vec<GenerationRecord> {
         let path = Path::new(&self.log_file_path);
 
         if !path.exists() {

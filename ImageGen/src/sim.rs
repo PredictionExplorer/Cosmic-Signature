@@ -287,7 +287,7 @@ pub fn select_best_trajectory(
     cw: f64,
     ew: f64,
     th: f64,
-) -> Result<(Vec<Body>, TrajectoryResult)> {
+) -> Result<(Vec<Body>, TrajectoryResult, usize, usize)> {
     info!("STAGE 1/7: Borda search over {num_sims} random orbits...");
     // Generate random triples and immediately transform them to the COM frame so
     // the total linear momentum and the COM position are exactly zero.
@@ -510,7 +510,7 @@ pub fn select_best_trajectory(
     let bi = iv[0].1;
     let bt = iv[0].0.clone();
     info!("\n   => Chosen orbit idx {bi} with weighted score {:.3}", bt.total_score_weighted);
-    Ok((many[bi].clone(), bt))
+    Ok((many[bi].clone(), bt, bi, dtot))
 }
 
 fn select_shortlist_indices(
