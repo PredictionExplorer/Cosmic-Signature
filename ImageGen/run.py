@@ -33,7 +33,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 # Defaults
-DEFAULT_WORKERS = 3
+DEFAULT_WORKERS = 6
 DEFAULT_SUBPROCESS_TIMEOUT = 160000  # ~44.4 hours per simulation
 BINARY_PATH = Path('./target/release/three_body_problem')
 DEFAULT_LOGS_DIR = Path("./runner_logs")

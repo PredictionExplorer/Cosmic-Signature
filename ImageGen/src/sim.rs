@@ -157,66 +157,18 @@ pub struct FullSim {
     pub positions: Vec<Vec<Vector3<f64>>>,
 }
 
-/// warmup + record with optional early-exit checks
+/// Record positions for `steps` iterations (no warmup -- records from step 0).
 pub fn get_positions(mut bodies: Vec<Body>, steps: usize) -> FullSim {
-    // Ensure the initial state is expressed in the centre-of-mass (COM) frame
     shift_bodies_to_com(&mut bodies);
     let dt = crate::render::constants::DEFAULT_DT;
-    for _ in 0..steps {
-        verlet_step(&mut bodies, dt);
-    }
-    let mut b2 = bodies.clone();
     let mut all = vec![vec![Vector3::zeros(); steps]; bodies.len()];
     for i in 0..steps {
-        for (j, b) in b2.iter().enumerate() {
+        for (j, b) in bodies.iter().enumerate() {
             all[j][i] = b.position;
         }
-        verlet_step(&mut b2, dt);
+        verlet_step(&mut bodies, dt);
     }
     FullSim { positions: all }
-}
-
-/// Fast trajectory simulation with early-exit for clearly bad candidates
-/// Returns None if the trajectory is clearly unsuitable (saves expensive full simulation)
-pub fn get_positions_with_early_exit(
-    mut bodies: Vec<Body>,
-    steps: usize,
-    escape_threshold: f64,
-) -> Option<FullSim> {
-    // Ensure the initial state is expressed in the centre-of-mass (COM) frame
-    shift_bodies_to_com(&mut bodies);
-    let dt = crate::render::constants::DEFAULT_DT;
-
-    // Warmup phase with periodic escape checks
-    const CHECK_INTERVAL: usize = 10000; // Check every 10k steps during warmup
-    for step in 0..steps {
-        verlet_step(&mut bodies, dt);
-
-        // Early-exit check: detect escaping bodies during warmup
-        if step % CHECK_INTERVAL == 0
-            && step > 0
-            && is_definitely_escaping(&bodies, escape_threshold)
-        {
-            return None; // Body escaping, skip this candidate
-        }
-    }
-
-    // Final escape check after warmup
-    if is_definitely_escaping(&bodies, escape_threshold) {
-        return None;
-    }
-
-    // Record phase - body configuration is good, record the full trajectory
-    let mut b2 = bodies.clone();
-    let mut all = vec![vec![Vector3::zeros(); steps]; bodies.len()];
-    for i in 0..steps {
-        for (j, b) in b2.iter().enumerate() {
-            all[j][i] = b.position;
-        }
-        verlet_step(&mut b2, dt);
-    }
-
-    Some(FullSim { positions: all })
 }
 
 /// Shift to COM
@@ -268,8 +220,29 @@ pub fn is_definitely_escaping(b: &[Body], th: f64) -> bool {
     false
 }
 
-/// Borda result
+/// Lightweight survival check: runs Verlet integration for `steps` iterations
+/// with periodic escape checks but NO position recording (zero memory per orbit
+/// beyond the 3 body structs).
+pub fn survives_simulation(bodies: &[Body], steps: usize, escape_threshold: f64) -> bool {
+    let mut bodies = bodies.to_vec();
+    shift_bodies_to_com(&mut bodies);
+    let dt = crate::render::constants::DEFAULT_DT;
+    const CHECK_INTERVAL: usize = 10_000;
+    for step in 0..steps {
+        verlet_step(&mut bodies, dt);
+        if step % CHECK_INTERVAL == 0
+            && step > 0
+            && is_definitely_escaping(&bodies, escape_threshold)
+        {
+            return false;
+        }
+    }
+    !is_definitely_escaping(&bodies, escape_threshold)
+}
+
+/// Orbit search result
 #[derive(Clone)]
+#[allow(dead_code)]
 pub struct TrajectoryResult {
     pub chaos: f64,
     pub equilateralness: f64,
@@ -279,7 +252,7 @@ pub struct TrajectoryResult {
     pub total_score_weighted: f64,
 }
 
-/// Borda search
+/// Streaming orbit search: prefilter -> survive full-length -> record + score -> keep best.
 pub fn select_best_trajectory(
     rng: &mut Sha3RandomByteStream,
     num_sims: usize,
@@ -288,7 +261,8 @@ pub fn select_best_trajectory(
     ew: f64,
     th: f64,
 ) -> Result<(Vec<Body>, TrajectoryResult, usize, usize)> {
-    info!("STAGE 1/7: Borda search over {num_sims} random orbits...");
+    info!("STAGE 1/7: Streaming orbit search over {num_sims} candidates ({steps} steps each)...");
+
     // Generate random triples and immediately transform them to the COM frame so
     // the total linear momentum and the COM position are exactly zero.
     let many: Vec<Vec<Body>> = (0..num_sims)
@@ -338,37 +312,29 @@ pub fn select_best_trajectory(
             v
         })
         .collect();
-    let coarse_steps = ((steps / 8).max(1)).clamp(2_000, 80_000).min(steps.max(1));
-    let min_shortlist = num_sims.min(64).max(1);
-    // Full-length simulations are expensive. Keep the shortlist bounded and rely on coarse
-    // screening to narrow the search space.
-    let shortlist_fraction = 0.05;
-    let shortlist_cap = 256usize;
-    let shortlist_target = ((num_sims as f64 * shortlist_fraction).ceil() as usize)
-        .max(min_shortlist)
-        .min(num_sims.max(1))
-        .min(shortlist_cap)
-        .max(min_shortlist);
-    const MIN_VIABLE_CHAOS: f64 = 0.1; // Below this, too chaotic
-    const MIN_VIABLE_EQUILATERAL: f64 = 0.01; // Below this, too linear
 
     let prefilter_discarded = AtomicUsize::new(0);
-    let coarse_progress = AtomicUsize::new(0);
-    let coarse_progress_chunk = (num_sims / 10).max(1);
+    let survivors_count = AtomicUsize::new(0);
+    let progress = AtomicUsize::new(0);
+    let progress_chunk = (num_sims / 10).max(1);
 
-    let coarse_scores: Vec<(f64, usize)> = many
+    // Streaming search: for each orbit, prefilter -> survive -> record -> score.
+    // Each thread holds at most one orbit's positions at a time (~72 MB), freed
+    // immediately after scoring. reduce_with keeps only the best composite score.
+    let best = many
         .par_iter()
         .enumerate()
         .filter_map(|(i, bodies)| {
-            let cnt = coarse_progress.fetch_add(1, Ordering::Relaxed) + 1;
-            if cnt.is_multiple_of(coarse_progress_chunk) {
+            let cnt = progress.fetch_add(1, Ordering::Relaxed) + 1;
+            if cnt.is_multiple_of(progress_chunk) {
                 info!(
-                    "   Coarse screening: {:.0}% done",
-                    (cnt as f64 / num_sims as f64) * crate::render::constants::PERCENT_FACTOR
+                    "   Search: {:.0}% done, {} survivors so far",
+                    (cnt as f64 / num_sims as f64) * crate::render::constants::PERCENT_FACTOR,
+                    survivors_count.load(Ordering::Relaxed),
                 );
             }
 
-            // Quick rejection: check energy and angular momentum first.
+            // Prefilter: energy + angular momentum (instant, no simulation).
             let energy = calculate_total_energy(bodies);
             let angular = calculate_total_angular_momentum(bodies).norm();
             if energy > 10.0 || angular < 10.0 {
@@ -376,174 +342,54 @@ pub fn select_best_trajectory(
                 return None;
             }
 
-            let simr = match get_positions_with_early_exit(bodies.clone(), coarse_steps, th) {
-                Some(result) => result,
-                None => {
-                    prefilter_discarded.fetch_add(1, Ordering::Relaxed);
-                    return None;
-                }
-            };
-            let positions = simr.positions;
+            // Full-length survival check (no position recording, ~96 bytes).
+            if !survives_simulation(bodies, steps, th) {
+                return None;
+            }
+            survivors_count.fetch_add(1, Ordering::Relaxed);
+
+            // Record positions and score (positions freed at end of closure).
+            let sim = get_positions(bodies.clone(), steps);
             let m1 = bodies[0].mass;
             let m2 = bodies[1].mass;
             let m3 = bodies[2].mass;
-            let chaos = non_chaoticness(m1, m2, m3, &positions);
-            let equilateral = equilateralness_score(&positions);
-            if chaos < MIN_VIABLE_CHAOS && equilateral < MIN_VIABLE_EQUILATERAL {
-                prefilter_discarded.fetch_add(1, Ordering::Relaxed);
-                return None;
-            }
+            let chaos = non_chaoticness(m1, m2, m3, &sim.positions);
+            let equil = equilateralness_score(&sim.positions);
 
-            // Coarse score favors high equilateralness and low chaoticness.
-            let coarse_score = (ew * equilateral) - (cw * chaos);
-            Some((coarse_score, i))
+            let composite = ew * equil - cw * chaos;
+            Some((composite, i, chaos, equil))
         })
-        .collect();
+        .reduce_with(|a, b| if a.0 >= b.0 { a } else { b });
 
-    if coarse_scores.is_empty() {
-        let discarded = prefilter_discarded.load(Ordering::Relaxed);
-        return Err(SimulationError::NoValidOrbits {
+    let discarded = prefilter_discarded.load(Ordering::Relaxed);
+    let total_survivors = survivors_count.load(Ordering::Relaxed);
+    info!(
+        "   => {total_survivors} survivors from {num_sims} candidates ({discarded} prefilter discarded)."
+    );
+
+    match best {
+        Some((composite, idx, chaos, equil)) => {
+            info!(
+                "\n   => Chosen orbit idx {idx} with composite score {composite:.3} (chaos={chaos:.4}, equil={equil:.4})"
+            );
+            let result = TrajectoryResult {
+                chaos,
+                equilateralness: equil,
+                chaos_pts: 0,
+                equil_pts: 0,
+                total_score: 0,
+                total_score_weighted: composite,
+            };
+            Ok((many[idx].clone(), result, idx, num_sims - total_survivors))
+        }
+        None => Err(SimulationError::NoValidOrbits {
             total_attempted: num_sims,
             discarded,
             reason: format!(
-                "All orbits filtered out during coarse screening (coarse_steps={coarse_steps}, threshold={th})"
+                "No orbits survived {steps} steps with escape threshold {th}"
             ),
         }
-        .into());
-    }
-
-    let shortlist_indices = select_shortlist_indices(coarse_scores, shortlist_target);
-    info!(
-        "   Coarse screening complete: shortlisted {}/{} candidates (coarse_steps={coarse_steps})",
-        shortlist_indices.len(),
-        num_sims
-    );
-
-    let full_discarded = AtomicUsize::new(0);
-    let full_progress = AtomicUsize::new(0);
-    let full_progress_chunk = (shortlist_indices.len() / 10).max(1);
-    let results: Vec<Option<(TrajectoryResult, usize)>> = shortlist_indices
-        .par_iter()
-        .map(|&candidate_index| {
-            let cnt = full_progress.fetch_add(1, Ordering::Relaxed) + 1;
-            if cnt.is_multiple_of(full_progress_chunk) {
-                info!(
-                    "   Full simulation: {:.0}% done",
-                    (cnt as f64 / shortlist_indices.len() as f64)
-                        * crate::render::constants::PERCENT_FACTOR
-                );
-            }
-
-            let bodies = &many[candidate_index];
-            let simr = match get_positions_with_early_exit(bodies.clone(), steps, th) {
-                Some(result) => result,
-                None => {
-                    full_discarded.fetch_add(1, Ordering::Relaxed);
-                    return None;
-                }
-            };
-            let positions = simr.positions;
-            let m1 = bodies[0].mass;
-            let m2 = bodies[1].mass;
-            let m3 = bodies[2].mass;
-            let chaos = non_chaoticness(m1, m2, m3, &positions);
-            let equilateral = equilateralness_score(&positions);
-            if chaos < MIN_VIABLE_CHAOS && equilateral < MIN_VIABLE_EQUILATERAL {
-                full_discarded.fetch_add(1, Ordering::Relaxed);
-                return None;
-            }
-
-            Some((
-                TrajectoryResult {
-                    chaos,
-                    equilateralness: equilateral,
-                    chaos_pts: 0,
-                    equil_pts: 0,
-                    total_score: 0,
-                    total_score_weighted: 0.0,
-                },
-                candidate_index,
-            ))
-        })
-        .collect();
-
-    let dtot = prefilter_discarded.load(Ordering::Relaxed) + full_discarded.load(Ordering::Relaxed);
-    info!(
-        "   => Discarded {dtot}/{num_sims} ({:.1}%) orbits due to filters or escapes.",
-        crate::render::constants::PERCENT_FACTOR * dtot as f64 / num_sims as f64
-    );
-    let mut iv: Vec<(TrajectoryResult, usize)> = results.into_iter().flatten().collect();
-    if iv.is_empty() {
-        return Err(SimulationError::NoValidOrbits {
-            total_attempted: num_sims,
-            discarded: dtot,
-            reason: format!(
-                "All orbits filtered out due to: high energy (E > 10), \
-                low angular momentum (L < 10), or escaping bodies (threshold: {})",
-                th
-            ),
-        }
-        .into());
-    }
-    fn assign(vals: Vec<(f64, usize)>, hb: bool) -> Vec<usize> {
-        let mut v = vals;
-        if hb {
-            v.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap());
-        } else {
-            v.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
-        }
-        let n = v.len();
-        let mut out = vec![0; n];
-        for (r, (_, i)) in v.into_iter().enumerate() {
-            out[i] = n - r;
-        }
-        out
-    }
-    let mut cv = Vec::with_capacity(iv.len());
-    let mut ev = Vec::with_capacity(iv.len());
-    for (i, (t, _)) in iv.iter().enumerate() {
-        cv.push((t.chaos, i));
-        ev.push((t.equilateralness, i));
-    }
-    let cps = assign(cv, false);
-    let eps = assign(ev, true);
-    for (i, (t, _)) in iv.iter_mut().enumerate() {
-        t.chaos_pts = cps[i];
-        t.equil_pts = eps[i];
-        t.total_score = t.chaos_pts + t.equil_pts;
-        t.total_score_weighted = cw * (t.chaos_pts as f64) + ew * (t.equil_pts as f64);
-    }
-    iv.sort_by(|a, b| b.0.total_score_weighted.partial_cmp(&a.0.total_score_weighted).unwrap());
-    let bi = iv[0].1;
-    let bt = iv[0].0.clone();
-    info!("\n   => Chosen orbit idx {bi} with weighted score {:.3}", bt.total_score_weighted);
-    Ok((many[bi].clone(), bt, bi, dtot))
-}
-
-fn select_shortlist_indices(
-    mut coarse_scores: Vec<(f64, usize)>,
-    shortlist_target: usize,
-) -> Vec<usize> {
-    coarse_scores.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
-    coarse_scores.truncate(shortlist_target.max(1).min(coarse_scores.len()));
-    coarse_scores.into_iter().map(|(_, index)| index).collect()
-}
-
-#[cfg(test)]
-mod tests {
-    use super::select_shortlist_indices;
-
-    #[test]
-    fn shortlist_indices_are_ranked_by_score() {
-        let scores = vec![(0.2, 1usize), (0.9, 4usize), (0.7, 3usize), (0.8, 2usize)];
-        let shortlist = select_shortlist_indices(scores, 3);
-        assert_eq!(shortlist, vec![4, 2, 3]);
-    }
-
-    #[test]
-    fn shortlist_indices_keep_at_least_one() {
-        let scores = vec![(0.1, 10usize)];
-        let shortlist = select_shortlist_indices(scores, 0);
-        assert_eq!(shortlist, vec![10]);
+        .into()),
     }
 }
+
