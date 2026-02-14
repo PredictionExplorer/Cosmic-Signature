@@ -30,8 +30,8 @@ use crate::curation::{
     CandidateEvaluation, CurationOptions, CurationSummary, QualityMode,
     novelty::NoveltyMemory,
     quality_score::{
-        apply_video_and_novelty, estimate_temporal_scores, score_image_frame,
-        score_temporal_probe_frames,
+        apply_video_and_novelty, estimate_temporal_scores, quick_reject_config,
+        score_image_frame, score_temporal_probe_frames,
     },
     repair::repair_candidate,
     selector::{accept_candidate, choose_finalists, composite_score, pick_winner},
@@ -205,7 +205,7 @@ struct Args {
     quality_mode: String,
 
     /// Number of preview candidates per curation round
-    #[arg(long, default_value_t = 10)]
+    #[arg(long, default_value_t = 30)]
     candidate_count_preview: usize,
 
     /// Number of finalists re-rendered at target resolution
@@ -920,6 +920,24 @@ fn preview_dimensions(width: u32, height: u32) -> (u32, u32) {
     (w.max(2), h.max(2))
 }
 
+/// Ultra-cheap screening resolution (roughly 320x180) used for the first
+/// pass of two-tier candidate evaluation.  4x fewer pixels than preview.
+fn screening_dimensions(width: u32, height: u32) -> (u32, u32) {
+    let scale_w = 320.0 / width as f64;
+    let scale_h = 180.0 / height as f64;
+    let scale = scale_w.min(scale_h).min(1.0);
+
+    let mut w = ((width as f64 * scale).round() as u32).max(64);
+    let mut h = ((height as f64 * scale).round() as u32).max(64);
+    if w % 2 == 1 {
+        w = w.saturating_sub(1);
+    }
+    if h % 2 == 1 {
+        h = h.saturating_sub(1);
+    }
+    (w.max(2), h.max(2))
+}
+
 fn downsample_scene(
     positions: &[Vec<Vector3<f64>>],
     colors: &[Vec<render::OklabColor>],
@@ -973,6 +991,7 @@ fn evaluate_candidate(
     )?;
 
     let probe_count = match render_config.effect_budget {
+        render::EffectBudget::Screening => 2,
         render::EffectBudget::Preview => 4,
         render::EffectBudget::Finalist => 8,
         render::EffectBudget::Full => 10,
@@ -1026,6 +1045,7 @@ fn evaluate_candidate_still_cached(
     noise_seed: i32,
     render_config: &RenderConfig,
     novelty_memory: &NoveltyMemory,
+    temporal_prior: Option<(f64, f64, f64)>,
 ) -> Result<(
     crate::curation::quality_score::QualityScores,
     crate::curation::quality_score::FrameFeatures,
@@ -1043,8 +1063,9 @@ fn evaluate_candidate_still_cached(
     let (mut scores, features) = score_image_frame(&frame, resolved_config);
     let novelty_score = novelty_memory.score_candidate(&features);
 
-    // Still mode: treat temporal metrics as fully stable to avoid video gating.
-    apply_video_and_novelty(&mut scores, 1.0, 1.0, 1.0, novelty_score);
+    // Use provided temporal prior or treat as fully stable (still mode).
+    let (ts, ms, ec) = temporal_prior.unwrap_or((1.0, 1.0, 1.0));
+    apply_video_and_novelty(&mut scores, ts, ms, ec, novelty_score);
 
     let composite = composite_score(&scores, novelty_score);
     Ok((scores, features, novelty_score, composite))
@@ -1083,7 +1104,16 @@ fn run_curation_search(
     /// Stop evaluating preview candidates once one scores above this threshold.
     const EARLY_EXIT_SCORE: f64 = 0.92;
 
+    const SCREENING_TARGET_STEPS: usize = 6_000;
+
+    // Pin hdr_scale during preview to enable SPD buffer caching (same strategy
+    // as the still-mode path).  Candidates only differ in post-processing.
+    let fixed_hdr_scale = args.param_hdr_scale.unwrap_or(0.12);
+
+    let (screening_width, screening_height) = screening_dimensions(args.width, args.height);
     let (preview_width, preview_height) = preview_dimensions(args.width, args.height);
+    let (screening_positions, screening_colors) =
+        downsample_scene(positions, colors, SCREENING_TARGET_STEPS);
     let (preview_positions, preview_colors) =
         downsample_scene(positions, colors, PREVIEW_TARGET_STEPS);
     let (final_positions, final_colors) =
@@ -1091,6 +1121,37 @@ fn run_curation_search(
 
     let preview_temporal = estimate_temporal_scores(&preview_positions);
     let final_temporal = estimate_temporal_scores(&final_positions);
+
+    let screening_steps = screening_positions.first().map(|b| b.len()).unwrap_or(0);
+    let preview_steps = preview_positions.first().map(|b| b.len()).unwrap_or(0);
+
+    /// Number of top candidates promoted from screening to preview tier.
+    const SCREENING_PROMOTE_COUNT: usize = 4;
+
+    // ── Pre-compute geometry (SPD) buffers once ──
+    // Screening tier: ultra-low resolution for fast ranking.
+    let mut screening_spd = render::accumulate_spd_buffer_spectral(
+        &screening_positions,
+        &screening_colors,
+        body_alphas,
+        screening_width,
+        screening_height,
+        fixed_hdr_scale,
+        args.special,
+    );
+    render::apply_energy_density_shift_inplace(&mut screening_spd, args.special);
+
+    // Preview tier: moderate resolution for accurate scoring of promoted candidates.
+    let mut preview_spd = render::accumulate_spd_buffer_spectral(
+        &preview_positions,
+        &preview_colors,
+        body_alphas,
+        preview_width,
+        preview_height,
+        fixed_hdr_scale,
+        args.special,
+    );
+    render::apply_energy_density_shift_inplace(&mut preview_spd, args.special);
 
     let mut total_candidates = 0usize;
     let mut finalists_considered = 0usize;
@@ -1130,45 +1191,69 @@ fn run_curation_search(
             total_candidates += 1;
             let candidate_id = total_candidates;
 
-            let randomizable_config =
-                build_randomizable_config(args, quality_mode);
-            let (mut resolved_config, randomization_log) =
-                randomizable_config.resolve(rng, preview_width, preview_height, args.special);
+            // Retry loop: regenerate config when the config-only pre-filter
+            // detects that the candidate cannot possibly meet acceptance gates.
+            const MAX_REJECT_RETRIES: usize = 5;
+            let mut resolved_config;
+            let mut randomization_log;
+            let mut style_family;
+            let mut style_repair_actions;
+            let mut retries = 0usize;
+            loop {
+                let randomizable_config =
+                    build_randomizable_config(args, quality_mode);
+                let resolved = randomizable_config.resolve(rng, preview_width, preview_height, args.special);
+                resolved_config = resolved.0;
+                randomization_log = resolved.1;
 
-            let style_family = if let Some(explicit) = curation_options.style_family.as_deref() {
-                resolve_style_family(Some(explicit), rng)
-            } else if rng.next_f64() < EPSILON_EXPLORATION || family_stats.is_empty() {
-                StyleFamily::random(rng)
-            } else {
-                let mut best_family = StyleFamily::random(rng);
-                let mut best_score = f64::MIN;
-                for family in StyleFamily::all() {
-                    let (attempts, successes) =
-                        family_stats.get(family.name()).copied().unwrap_or((0, 0));
-                    let score = if attempts == 0 {
-                        1.0
-                    } else {
-                        (successes as f64 + 1.0) / (attempts as f64 + 2.0)
-                    };
-                    if score > best_score {
-                        best_score = score;
-                        best_family = family;
+                style_family = if let Some(explicit) = curation_options.style_family.as_deref() {
+                    resolve_style_family(Some(explicit), rng)
+                } else if rng.next_f64() < EPSILON_EXPLORATION || family_stats.is_empty() {
+                    StyleFamily::random(rng)
+                } else {
+                    let mut best_family = StyleFamily::random(rng);
+                    let mut best_score = f64::MIN;
+                    for family in StyleFamily::all() {
+                        let (attempts, successes) =
+                            family_stats.get(family.name()).copied().unwrap_or((0, 0));
+                        let score = if attempts == 0 {
+                            1.0
+                        } else {
+                            (successes as f64 + 1.0) / (attempts as f64 + 2.0)
+                        };
+                        if score > best_score {
+                            best_score = score;
+                            best_family = family;
+                        }
                     }
+                    best_family
+                };
+                style_repair_actions = apply_style_family(
+                    &mut resolved_config,
+                    style_family,
+                    rng,
+                    quality_mode,
+                );
+                resolved_config.hdr_scale = fixed_hdr_scale;
+                apply_effect_disable_overrides(args, &mut resolved_config);
+
+                if retries >= MAX_REJECT_RETRIES
+                    || !quick_reject_config(&resolved_config, curation_options.min_image_score)
+                {
+                    break;
                 }
-                best_family
-            };
+                retries += 1;
+            }
+
             let style_key = style_family.name().to_string();
             family_stats
                 .entry(style_key.clone())
                 .and_modify(|entry| entry.0 += 1)
                 .or_insert((1, 0));
-            let repair_actions = apply_style_family(
-                &mut resolved_config,
-                style_family,
-                rng,
-                quality_mode,
-            );
-            apply_effect_disable_overrides(args, &mut resolved_config);
+            let mut repair_actions = style_repair_actions;
+            if retries > 0 {
+                repair_actions.push(format!("config_prefilter_retried_{retries}"));
+            }
 
             specs.push(CandidateSpec {
                 candidate_id,
@@ -1179,62 +1264,30 @@ fn run_curation_search(
             });
         }
 
-        // ── Phase 2: evaluate candidates in parallel (expensive rendering + scoring) ──
-        let preview_candidates: Vec<CandidateEvaluation> = specs
+        // ── Phase 2a: SCREENING – evaluate all candidates at low resolution ──
+        // Uses Screening budget (expensive effects disabled) + small SPD buffer.
+        let screening_candidates: Vec<CandidateEvaluation> = specs
             .into_par_iter()
-            .map(|mut spec| {
+            .map(|spec| {
+                let mut screening_config = spec.resolved_config.clone();
+                screening_config.width = screening_width;
+                screening_config.height = screening_height;
                 let render_config = build_render_config(
                     args,
                     quality_mode,
-                    &spec.resolved_config,
-                    render::EffectBudget::Preview,
+                    &screening_config,
+                    render::EffectBudget::Screening,
                 );
-                let (mut scores, mut features, mut novelty_score, mut composite) =
-                    evaluate_candidate(
-                        &preview_positions,
-                        &preview_colors,
-                        body_alphas,
-                        &spec.resolved_config,
+                let (scores, features, novelty_score, composite) =
+                    evaluate_candidate_still_cached(
+                        &screening_spd,
+                        screening_steps,
+                        &screening_config,
                         noise_seed,
                         &render_config,
-                        preview_temporal,
                         novelty_memory,
+                        Some(preview_temporal),
                     )?;
-
-                if allow_repair && (0.70..0.80).contains(&composite) {
-                    let mut repaired_config = spec.resolved_config.clone();
-                    let mut suggested_repairs = repair_candidate(&mut repaired_config, &scores);
-                    if !suggested_repairs.is_empty() {
-                        apply_effect_disable_overrides(args, &mut repaired_config);
-                        let repaired_render_config = build_render_config(
-                            args,
-                            quality_mode,
-                            &repaired_config,
-                            render::EffectBudget::Preview,
-                        );
-                        let (repaired_scores, repaired_features, repaired_novelty, repaired_composite) =
-                            evaluate_candidate(
-                                &preview_positions,
-                                &preview_colors,
-                                body_alphas,
-                                &repaired_config,
-                                noise_seed,
-                                &repaired_render_config,
-                                preview_temporal,
-                                novelty_memory,
-                            )?;
-
-                        if repaired_composite > composite {
-                            spec.resolved_config = repaired_config;
-                            scores = repaired_scores;
-                            features = repaired_features;
-                            novelty_score = repaired_novelty;
-                            composite = repaired_composite;
-                            spec.repair_actions.append(&mut suggested_repairs);
-                        }
-                    }
-                }
-
                 Ok(CandidateEvaluation {
                     round_id,
                     candidate_id: spec.candidate_id,
@@ -1250,11 +1303,91 @@ fn run_curation_search(
             })
             .collect::<Result<Vec<_>>>()?;
 
+        for (i, evaluation) in screening_candidates.iter().enumerate() {
+            info!(
+                "  Screening candidate {}/{} -> score {:.3} (image {:.3})",
+                i + 1,
+                count,
+                evaluation.composite_score,
+                evaluation.scores.image_composite,
+            );
+        }
+
+        // ── Phase 2b: PREVIEW – promote top candidates to higher-fidelity evaluation ──
+        let promote_count = SCREENING_PROMOTE_COUNT.min(screening_candidates.len());
+        let promoted = choose_finalists(screening_candidates, promote_count);
+
+        // Re-evaluate promoted candidates at full preview resolution with
+        // Preview budget (more effects enabled, higher resolution).
+        let preview_candidates: Vec<CandidateEvaluation> = promoted
+            .into_par_iter()
+            .map(|mut cand| {
+                cand.config.width = preview_width;
+                cand.config.height = preview_height;
+                let render_config = build_render_config(
+                    args,
+                    quality_mode,
+                    &cand.config,
+                    render::EffectBudget::Preview,
+                );
+                let (mut scores, mut features, mut novelty_score, mut composite) =
+                    evaluate_candidate_still_cached(
+                        &preview_spd,
+                        preview_steps,
+                        &cand.config,
+                        noise_seed,
+                        &render_config,
+                        novelty_memory,
+                        Some(preview_temporal),
+                    )?;
+
+                if allow_repair && (0.70..0.80).contains(&composite) {
+                    let mut repaired_config = cand.config.clone();
+                    repaired_config.hdr_scale = fixed_hdr_scale;
+                    let mut suggested_repairs = repair_candidate(&mut repaired_config, &scores);
+                    if !suggested_repairs.is_empty() {
+                        apply_effect_disable_overrides(args, &mut repaired_config);
+                        let repaired_render_config = build_render_config(
+                            args,
+                            quality_mode,
+                            &repaired_config,
+                            render::EffectBudget::Preview,
+                        );
+                        let (repaired_scores, repaired_features, repaired_novelty, repaired_composite) =
+                            evaluate_candidate_still_cached(
+                                &preview_spd,
+                                preview_steps,
+                                &repaired_config,
+                                noise_seed,
+                                &repaired_render_config,
+                                novelty_memory,
+                                Some(preview_temporal),
+                            )?;
+
+                        if repaired_composite > composite {
+                            cand.config = repaired_config;
+                            scores = repaired_scores;
+                            features = repaired_features;
+                            novelty_score = repaired_novelty;
+                            composite = repaired_composite;
+                            cand.repair_actions.append(&mut suggested_repairs);
+                        }
+                    }
+                }
+
+                cand.scores = scores;
+                cand.features = features;
+                cand.novelty_score = novelty_score;
+                cand.composite_score = composite;
+                Ok(cand)
+            })
+            .collect::<Result<Vec<_>>>()?;
+
         for (i, evaluation) in preview_candidates.iter().enumerate() {
             info!(
                 "  Preview candidate {}/{} -> score {:.3} (image {:.3}, video {:.3}, novelty {:.3})",
                 i + 1,
-                count,
+                promote_count,
                 evaluation.composite_score,
                 evaluation.scores.image_composite,
                 evaluation.scores.video_composite,
@@ -1275,7 +1408,7 @@ fn run_curation_search(
         let mut finalists = choose_finalists(preview_candidates, curation_options.finalist_count);
         finalists_considered += finalists.len();
 
-        // ── Phase 3: re-render finalists at full resolution in parallel ──
+        // ── Phase 3: re-render finalists with full probe frames for accurate temporal scoring ──
         for finalist in &mut finalists {
             finalist.config.width = args.width;
             finalist.config.height = args.height;
@@ -1450,32 +1583,60 @@ fn run_curation_search_still(
             total_candidates += 1;
             let candidate_id = total_candidates;
 
-            let randomizable_config = build_randomizable_config(args, quality_mode);
-            let (mut resolved_config, randomization_log) =
-                randomizable_config.resolve(rng, preview_width, preview_height, args.special);
+            // Retry loop: regenerate config when the config-only pre-filter
+            // detects that the candidate cannot possibly meet acceptance gates.
+            const MAX_REJECT_RETRIES: usize = 5;
+            let mut resolved_config;
+            let mut randomization_log;
+            let mut style_family;
+            let mut style_repair_actions;
+            let mut retries = 0usize;
+            loop {
+                let randomizable_config = build_randomizable_config(args, quality_mode);
+                let resolved = randomizable_config.resolve(rng, preview_width, preview_height, args.special);
+                resolved_config = resolved.0;
+                randomization_log = resolved.1;
 
-            let style_family = if let Some(explicit) = curation_options.style_family.as_deref() {
-                resolve_style_family(Some(explicit), rng)
-            } else if rng.next_f64() < EPSILON_EXPLORATION || family_stats.is_empty() {
-                StyleFamily::random(rng)
-            } else {
-                let mut best_family = StyleFamily::random(rng);
-                let mut best_score = f64::MIN;
-                for family in StyleFamily::all() {
-                    let (attempts, successes) =
-                        family_stats.get(family.name()).copied().unwrap_or((0, 0));
-                    let score = if attempts == 0 {
-                        1.0
-                    } else {
-                        (successes as f64 + 1.0) / (attempts as f64 + 2.0)
-                    };
-                    if score > best_score {
-                        best_score = score;
-                        best_family = family;
+                style_family = if let Some(explicit) = curation_options.style_family.as_deref() {
+                    resolve_style_family(Some(explicit), rng)
+                } else if rng.next_f64() < EPSILON_EXPLORATION || family_stats.is_empty() {
+                    StyleFamily::random(rng)
+                } else {
+                    let mut best_family = StyleFamily::random(rng);
+                    let mut best_score = f64::MIN;
+                    for family in StyleFamily::all() {
+                        let (attempts, successes) =
+                            family_stats.get(family.name()).copied().unwrap_or((0, 0));
+                        let score = if attempts == 0 {
+                            1.0
+                        } else {
+                            (successes as f64 + 1.0) / (attempts as f64 + 2.0)
+                        };
+                        if score > best_score {
+                            best_score = score;
+                            best_family = family;
+                        }
                     }
+                    best_family
+                };
+
+                style_repair_actions = apply_style_family(
+                    &mut resolved_config,
+                    style_family,
+                    rng,
+                    quality_mode,
+                );
+                // Keep HDR scale stable for still-mode caching.
+                resolved_config.hdr_scale = fixed_hdr_scale;
+                apply_effect_disable_overrides(args, &mut resolved_config);
+
+                if retries >= MAX_REJECT_RETRIES
+                    || !quick_reject_config(&resolved_config, curation_options.min_image_score)
+                {
+                    break;
                 }
-                best_family
-            };
+                retries += 1;
+            }
 
             let style_key = style_family.name().to_string();
             family_stats
@@ -1483,15 +1644,10 @@ fn run_curation_search_still(
                 .and_modify(|entry| entry.0 += 1)
                 .or_insert((1, 0));
 
-            let repair_actions = apply_style_family(
-                &mut resolved_config,
-                style_family,
-                rng,
-                quality_mode,
-            );
-            // Keep HDR scale stable for still-mode caching.
-            resolved_config.hdr_scale = fixed_hdr_scale;
-            apply_effect_disable_overrides(args, &mut resolved_config);
+            let mut repair_actions = style_repair_actions;
+            if retries > 0 {
+                repair_actions.push(format!("config_prefilter_retried_{retries}"));
+            }
 
             specs.push(CandidateSpec {
                 candidate_id,
@@ -1521,6 +1677,7 @@ fn run_curation_search_still(
                         noise_seed,
                         &render_config,
                         novelty_memory,
+                        None,
                     )?;
 
                 if allow_repair && (0.70..0.80).contains(&composite) {
@@ -1544,6 +1701,7 @@ fn run_curation_search_still(
                                 noise_seed,
                                 &repaired_render_config,
                                 novelty_memory,
+                                None,
                             )?;
 
                         if repaired_composite > composite {
@@ -1620,6 +1778,7 @@ fn run_curation_search_still(
                     noise_seed,
                     &finalist_render_config,
                     novelty_memory,
+                    None,
                 )
             })
             .collect::<Vec<_>>();
@@ -1701,7 +1860,7 @@ fn main() -> Result<()> {
     info!("Quality mode: {}", curation_options.quality_mode.as_str());
 
     // Determine number of simulations
-    let num_sims = args.num_sims.unwrap_or(if args.special { 100_000 } else { 30_000 });
+    let num_sims = args.num_sims.unwrap_or(100_000);
 
     // Setup
     app::setup_directories()?;

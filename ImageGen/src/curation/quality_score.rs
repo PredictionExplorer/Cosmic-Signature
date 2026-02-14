@@ -62,6 +62,52 @@ fn score_soft_range(
     (hard_max - value) / (hard_max - ideal_max)
 }
 
+/// Fast config-only pre-filter: returns `true` when a configuration has
+/// accumulated enough config-derived penalties that even perfect pixel-level
+/// metrics cannot bring `image_composite` above `min_image_score`.
+///
+/// This avoids the cost of rendering and scoring obviously-flawed candidates.
+pub fn quick_reject_config(config: &ResolvedEffectConfig, min_image_score: f64) -> bool {
+    // ── Technical-integrity penalties (config-only subset) ──
+    let overblur_penalty =
+        if config.blur_radius_scale > 0.05 && config.blur_strength > 18.0 { 0.30 } else { 0.0 };
+    let oversharp_penalty = if config.micro_contrast_strength > 0.55 { 0.20 } else { 0.0 };
+
+    // Assume zero pixel-based penalties (best case) for technical_integrity.
+    let tech_penalty = 0.12 * overblur_penalty + 0.08 * oversharp_penalty;
+    let tech_ceiling = clamp01(1.0 - tech_penalty);
+
+    // ── Effect-coherence penalties (config-only subset) ──
+    let mut coherence_penalty = 0.0;
+    if config.enable_gradient_map && config.enable_color_grade {
+        let combo = config.gradient_map_strength + config.color_grade_strength;
+        if combo > 1.35 {
+            coherence_penalty += 0.28;
+        }
+    }
+    if !config.enable_bloom && !config.enable_glow && !config.enable_chromatic_bloom {
+        coherence_penalty += 0.35;
+    }
+    if config.enable_opalescence
+        && config.opalescence_layers >= 5
+        && config.fine_texture_contrast > 0.40
+    {
+        coherence_penalty += 0.20;
+    }
+    if config.clip_black > 0.020 && config.clip_white < 0.985 {
+        coherence_penalty += 0.25;
+    }
+    let coherence_ceiling = clamp01(1.0 - coherence_penalty);
+
+    // Compute image_composite ceiling assuming perfect pixel metrics
+    // (composition_energy = 1.0, color_harmony = 1.0).
+    let image_ceiling = clamp01(
+        0.30 * tech_ceiling + 0.30 * 1.0 + 0.20 * 1.0 + 0.20 * coherence_ceiling,
+    );
+
+    image_ceiling < min_image_score
+}
+
 pub fn score_image_frame(
     frame: &ImageBuffer<Rgb<u16>, Vec<u16>>,
     config: &ResolvedEffectConfig,

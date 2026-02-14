@@ -240,23 +240,20 @@ def build_default_binary_args(is_special: bool) -> list[str]:
     """Default binary args when --binary-args is not provided.
 
     Goals:
-    - Still-image first (skip MP4) for much higher throughput.
+    - Generate both still image and video (relies on Rust binary defaults).
     - Museum-leaning quality defaults.
     - Always run random Borda orbit search (never reuse a fixed orbit shape).
-    - Avoid special-mode default orbit search explosion (special defaults to 100k sims).
+    - Orbit search size and step count use Rust binary defaults (100k sims, 1M steps).
     """
     args: list[str] = [
-        "--no-video",
         "--gallery-quality",
         "--quality-mode", "strict",
-        "--candidate-count-preview", "10",
+        "--candidate-count-preview", "30",
         "--finalist-count", "2",
         "--max-curation-rounds", "2",
         "--min-image-score", "0.80",
         "--min-novelty-score", "0.20",
         "--min-video-score", "0.0",
-        # Keep orbit search bounded even when not using a preset.
-        "--num-sims", "6000",
     ]
     return args
 

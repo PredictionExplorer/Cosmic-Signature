@@ -57,7 +57,7 @@ impl Default for CurationOptions {
     fn default() -> Self {
         Self {
             quality_mode: QualityMode::Strict,
-            candidate_count_preview: 10,
+            candidate_count_preview: 30,
             finalist_count: 2,
             max_curation_rounds: 2,
             min_image_score: 0.78,

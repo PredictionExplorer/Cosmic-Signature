@@ -59,6 +59,9 @@ pub use image::{DynamicImage, ImageBuffer, Rgb};
 /// Render-time effect budget used by curation tiers.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum EffectBudget {
+    /// Ultra-cheap screening: skips expensive effects (champleve, aether,
+    /// chromatic bloom, perceptual blur) so candidates can be ranked quickly.
+    Screening,
     Preview,
     #[allow(dead_code)] // Reserved for optional intermediate scoring/render pipelines.
     Finalist,
@@ -533,13 +536,15 @@ fn build_effect_config_from_resolved(
     let height = resolved.height as usize;
     let min_dim = width.min(height);
     let budget = render_config.effect_budget;
-    let preview_budget = matches!(budget, EffectBudget::Preview);
+    let screening_budget = matches!(budget, EffectBudget::Screening);
+    let preview_budget = matches!(budget, EffectBudget::Preview | EffectBudget::Screening);
     let finalist_budget = matches!(budget, EffectBudget::Finalist);
     let full_budget = matches!(budget, EffectBudget::Full);
 
     // Calculate derived parameters from resolved scales
     let bloom_enabled = resolved.enable_bloom;
     let radius_scale = match budget {
+        EffectBudget::Screening => 0.45,
         EffectBudget::Preview => 0.60,
         EffectBudget::Finalist => 0.80,
         EffectBudget::Full => 1.0,
@@ -559,6 +564,7 @@ fn build_effect_config_from_resolved(
     let opalescence_scale_abs = resolved.opalescence_scale * ((width * height) as f64).sqrt();
     let fine_texture_scale_abs = resolved.fine_texture_scale * ((width * height) as f64).sqrt();
     let chroma_strength_scale = match budget {
+        EffectBudget::Screening => 0.55,
         EffectBudget::Preview => 0.75,
         EffectBudget::Finalist => 0.90,
         EffectBudget::Full => 1.0,
@@ -597,6 +603,13 @@ fn build_effect_config_from_resolved(
     let enable_atmospheric_depth = resolved.enable_atmospheric_depth && !preview_budget;
     let enable_fine_texture = resolved.enable_fine_texture && full_budget;
 
+    // Screening tier: disable the most expensive per-pixel effects to keep
+    // candidate ranking fast.  Chromatic bloom and perceptual blur are the
+    // costliest effects that don't change fundamental composition metrics.
+    let enable_chromatic_bloom = resolved.enable_chromatic_bloom && !screening_budget;
+    let enable_perceptual_blur = resolved.enable_perceptual_blur && !screening_budget;
+    let enable_glow = resolved.enable_glow && !screening_budget;
+
     EffectConfig {
         // Core bloom and blur
         bloom_mode: if !bloom_enabled {
@@ -615,8 +628,8 @@ fn build_effect_config_from_resolved(
         blur_core_brightness: resolved.blur_core_brightness,
         dog_config,
         hdr_mode: render_config.hdr_mode.clone(),
-        perceptual_blur_enabled: resolved.enable_perceptual_blur,
-        perceptual_blur_config,
+        perceptual_blur_enabled: enable_perceptual_blur,
+        perceptual_blur_config: if enable_perceptual_blur { perceptual_blur_config } else { None },
 
         // Color manipulation
         color_grade_enabled: resolved.enable_color_grade,
@@ -661,7 +674,7 @@ fn build_effect_config_from_resolved(
             caustic_softness: constants::DEFAULT_AETHER_CAUSTIC_SOFTNESS,
             luxury_mode: resolved.special_mode,
         },
-        chromatic_bloom_enabled: resolved.enable_chromatic_bloom,
+        chromatic_bloom_enabled: enable_chromatic_bloom,
         chromatic_bloom_config: ChromaticBloomConfig {
             radius: chromatic_bloom_radius,
             strength: resolved.chromatic_bloom_strength * chroma_strength_scale,
@@ -702,7 +715,7 @@ fn build_effect_config_from_resolved(
             edge_threshold: 0.15,  // Fixed
             luminance_weight: 0.7, // Fixed
         },
-        glow_enhancement_enabled: resolved.enable_glow,
+        glow_enhancement_enabled: enable_glow,
         glow_enhancement_config: GlowEnhancementConfig {
             strength: resolved.glow_strength,
             threshold: resolved.glow_threshold,
