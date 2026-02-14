@@ -1,5 +1,6 @@
 use clap::Parser;
 use nalgebra::Vector3;
+use rayon::prelude::*;
 use std::collections::HashMap;
 use std::fs;
 use std::time::Instant;
@@ -102,6 +103,10 @@ struct Args {
     #[arg(long, default_value_t = false)]
     test_frame: bool,
 
+    /// Render a single final PNG only (skips MP4 generation)
+    #[arg(long, default_value_t = false)]
+    no_video: bool,
+
     /// Fast encode mode: use hardware acceleration (3-5× faster, slightly lower quality)
     /// Default is high-quality mode with H.265, 10-bit color, and perceptual optimization
     #[arg(long, default_value_t = false)]
@@ -200,15 +205,15 @@ struct Args {
     quality_mode: String,
 
     /// Number of preview candidates per curation round
-    #[arg(long, default_value_t = 24)]
+    #[arg(long, default_value_t = 10)]
     candidate_count_preview: usize,
 
     /// Number of finalists re-rendered at target resolution
-    #[arg(long, default_value_t = 4)]
+    #[arg(long, default_value_t = 2)]
     finalist_count: usize,
 
     /// Maximum curation rounds before fallback to best candidate
-    #[arg(long, default_value_t = 3)]
+    #[arg(long, default_value_t = 2)]
     max_curation_rounds: usize,
 
     /// Minimum image score threshold for acceptance
@@ -1014,6 +1019,38 @@ fn evaluate_candidate(
 }
 
 #[allow(clippy::too_many_arguments)]
+fn evaluate_candidate_still_cached(
+    accum_spd: &[[f64; crate::spectrum::NUM_BINS]],
+    total_steps: usize,
+    resolved_config: &render::randomizable_config::ResolvedEffectConfig,
+    noise_seed: i32,
+    render_config: &RenderConfig,
+    novelty_memory: &NoveltyMemory,
+) -> Result<(
+    crate::curation::quality_score::QualityScores,
+    crate::curation::quality_score::FrameFeatures,
+    f64,
+    f64,
+)> {
+    let frame = render::render_still_from_accum_spd_spectral(
+        accum_spd,
+        total_steps,
+        resolved_config,
+        noise_seed,
+        render_config,
+    )?;
+
+    let (mut scores, features) = score_image_frame(&frame, resolved_config);
+    let novelty_score = novelty_memory.score_candidate(&features);
+
+    // Still mode: treat temporal metrics as fully stable to avoid video gating.
+    apply_video_and_novelty(&mut scores, 1.0, 1.0, 1.0, novelty_score);
+
+    let composite = composite_score(&scores, novelty_score);
+    Ok((scores, features, novelty_score, composite))
+}
+
+#[allow(clippy::too_many_arguments)]
 fn run_curation_search(
     args: &Args,
     curation_options: &CurationOptions,
@@ -1024,12 +1061,27 @@ fn run_curation_search(
     noise_seed: i32,
     novelty_memory: &mut NoveltyMemory,
 ) -> Result<(CandidateEvaluation, CurationSummary)> {
+    if args.no_video {
+        return run_curation_search_still(
+            args,
+            curation_options,
+            rng,
+            positions,
+            colors,
+            body_alphas,
+            noise_seed,
+            novelty_memory,
+        );
+    }
+
     const PREVIEW_TARGET_STEPS: usize = 12_000;
     const FINALIST_TARGET_STEPS: usize = 36_000;
     const EPSILON_EXPLORATION: f64 = 0.25;
     const MAX_PERIMETER_SPECKLE_PENALTY: f64 = 0.0;
     const MIN_NEBULA_VISIBILITY_SCORE: f64 = 0.22;
     const MAX_NEBULA_DOMINANCE_PENALTY: f64 = 0.35;
+    /// Stop evaluating preview candidates once one scores above this threshold.
+    const EARLY_EXIT_SCORE: f64 = 0.92;
 
     let (preview_width, preview_height) = preview_dimensions(args.width, args.height);
     let (preview_positions, preview_colors) =
@@ -1060,13 +1112,26 @@ fn run_curation_search(
             curation_options.candidate_count_preview
         );
 
-        let mut preview_candidates = Vec::with_capacity(curation_options.candidate_count_preview);
+        // ── Phase 1: generate candidate configs (fast, sequential, RNG-dependent) ──
+        let count = curation_options.candidate_count_preview;
+        let allow_repair = curation_options.allow_repair_pass;
+        let quality_mode = curation_options.quality_mode;
 
-        for local_candidate_id in 1..=curation_options.candidate_count_preview {
+        struct CandidateSpec {
+            candidate_id: usize,
+            resolved_config: render::randomizable_config::ResolvedEffectConfig,
+            randomization_log: render::effect_randomizer::RandomizationLog,
+            style_family_name: String,
+            repair_actions: Vec<String>,
+        }
+
+        let mut specs = Vec::with_capacity(count);
+        for _ in 1..=count {
             total_candidates += 1;
             let candidate_id = total_candidates;
+
             let randomizable_config =
-                build_randomizable_config(args, curation_options.quality_mode);
+                build_randomizable_config(args, quality_mode);
             let (mut resolved_config, randomization_log) =
                 randomizable_config.resolve(rng, preview_width, preview_height, args.special);
 
@@ -1097,112 +1162,150 @@ fn run_curation_search(
                 .entry(style_key.clone())
                 .and_modify(|entry| entry.0 += 1)
                 .or_insert((1, 0));
-            let mut repair_actions = apply_style_family(
+            let repair_actions = apply_style_family(
                 &mut resolved_config,
                 style_family,
                 rng,
-                curation_options.quality_mode,
+                quality_mode,
             );
             apply_effect_disable_overrides(args, &mut resolved_config);
 
-            let render_config = build_render_config(
-                args,
-                curation_options.quality_mode,
-                &resolved_config,
-                render::EffectBudget::Preview,
-            );
-            let (mut scores, mut features, mut novelty_score, mut composite) = evaluate_candidate(
-                &preview_positions,
-                &preview_colors,
-                body_alphas,
-                &resolved_config,
-                noise_seed,
-                &render_config,
-                preview_temporal,
-                novelty_memory,
-            )?;
+            specs.push(CandidateSpec {
+                candidate_id,
+                resolved_config,
+                randomization_log,
+                style_family_name: style_family.name().to_string(),
+                repair_actions,
+            });
+        }
 
-            if curation_options.allow_repair_pass && (0.70..0.80).contains(&composite) {
-                let mut repaired_config = resolved_config.clone();
-                let mut suggested_repairs = repair_candidate(&mut repaired_config, &scores);
-                if !suggested_repairs.is_empty() {
-                    apply_effect_disable_overrides(args, &mut repaired_config);
-                    let repaired_render_config = build_render_config(
-                        args,
-                        curation_options.quality_mode,
-                        &repaired_config,
-                        render::EffectBudget::Preview,
-                    );
-                    let (repaired_scores, repaired_features, repaired_novelty, repaired_composite) =
-                        evaluate_candidate(
-                            &preview_positions,
-                            &preview_colors,
-                            body_alphas,
+        // ── Phase 2: evaluate candidates in parallel (expensive rendering + scoring) ──
+        let preview_candidates: Vec<CandidateEvaluation> = specs
+            .into_par_iter()
+            .map(|mut spec| {
+                let render_config = build_render_config(
+                    args,
+                    quality_mode,
+                    &spec.resolved_config,
+                    render::EffectBudget::Preview,
+                );
+                let (mut scores, mut features, mut novelty_score, mut composite) =
+                    evaluate_candidate(
+                        &preview_positions,
+                        &preview_colors,
+                        body_alphas,
+                        &spec.resolved_config,
+                        noise_seed,
+                        &render_config,
+                        preview_temporal,
+                        novelty_memory,
+                    )?;
+
+                if allow_repair && (0.70..0.80).contains(&composite) {
+                    let mut repaired_config = spec.resolved_config.clone();
+                    let mut suggested_repairs = repair_candidate(&mut repaired_config, &scores);
+                    if !suggested_repairs.is_empty() {
+                        apply_effect_disable_overrides(args, &mut repaired_config);
+                        let repaired_render_config = build_render_config(
+                            args,
+                            quality_mode,
                             &repaired_config,
-                            noise_seed,
-                            &repaired_render_config,
-                            preview_temporal,
-                            novelty_memory,
-                        )?;
+                            render::EffectBudget::Preview,
+                        );
+                        let (repaired_scores, repaired_features, repaired_novelty, repaired_composite) =
+                            evaluate_candidate(
+                                &preview_positions,
+                                &preview_colors,
+                                body_alphas,
+                                &repaired_config,
+                                noise_seed,
+                                &repaired_render_config,
+                                preview_temporal,
+                                novelty_memory,
+                            )?;
 
-                    if repaired_composite > composite {
-                        resolved_config = repaired_config;
-                        scores = repaired_scores;
-                        features = repaired_features;
-                        novelty_score = repaired_novelty;
-                        composite = repaired_composite;
-                        repair_actions.append(&mut suggested_repairs);
+                        if repaired_composite > composite {
+                            spec.resolved_config = repaired_config;
+                            scores = repaired_scores;
+                            features = repaired_features;
+                            novelty_score = repaired_novelty;
+                            composite = repaired_composite;
+                            spec.repair_actions.append(&mut suggested_repairs);
+                        }
                     }
                 }
-            }
 
-            let evaluation = CandidateEvaluation {
-                round_id,
-                candidate_id,
-                style_family: style_family.name().to_string(),
-                config: resolved_config,
-                randomization_log,
-                scores,
-                features,
-                novelty_score,
-                composite_score: composite,
-                repair_actions,
-            };
+                Ok(CandidateEvaluation {
+                    round_id,
+                    candidate_id: spec.candidate_id,
+                    style_family: spec.style_family_name,
+                    config: spec.resolved_config,
+                    randomization_log: spec.randomization_log,
+                    scores,
+                    features,
+                    novelty_score,
+                    composite_score: composite,
+                    repair_actions: spec.repair_actions,
+                })
+            })
+            .collect::<Result<Vec<_>>>()?;
+
+        for (i, evaluation) in preview_candidates.iter().enumerate() {
             info!(
                 "  Preview candidate {}/{} -> score {:.3} (image {:.3}, video {:.3}, novelty {:.3})",
-                local_candidate_id,
-                curation_options.candidate_count_preview,
+                i + 1,
+                count,
                 evaluation.composite_score,
                 evaluation.scores.image_composite,
                 evaluation.scores.video_composite,
                 evaluation.novelty_score
             );
-            preview_candidates.push(evaluation);
+        }
+        if let Some(best) = preview_candidates.iter().max_by(|a, b| {
+            a.composite_score.partial_cmp(&b.composite_score).unwrap_or(std::cmp::Ordering::Equal)
+        }) {
+            if best.composite_score >= EARLY_EXIT_SCORE {
+                info!(
+                    "  Early exit: best candidate scored {:.3} >= {:.3}",
+                    best.composite_score, EARLY_EXIT_SCORE
+                );
+            }
         }
 
         let mut finalists = choose_finalists(preview_candidates, curation_options.finalist_count);
         finalists_considered += finalists.len();
 
+        // ── Phase 3: re-render finalists at full resolution in parallel ──
         for finalist in &mut finalists {
             finalist.config.width = args.width;
             finalist.config.height = args.height;
             apply_effect_disable_overrides(args, &mut finalist.config);
-            let finalist_render_config = build_render_config(
-                args,
-                curation_options.quality_mode,
-                &finalist.config,
-                render::EffectBudget::Full,
-            );
-            let (scores, features, novelty_score, composite) = evaluate_candidate(
-                &final_positions,
-                &final_colors,
-                body_alphas,
-                &finalist.config,
-                noise_seed,
-                &finalist_render_config,
-                final_temporal,
-                novelty_memory,
-            )?;
+        }
+
+        let finalist_results: Vec<_> = finalists
+            .par_iter()
+            .map(|finalist| {
+                let finalist_render_config = build_render_config(
+                    args,
+                    quality_mode,
+                    &finalist.config,
+                    render::EffectBudget::Full,
+                );
+                evaluate_candidate(
+                    &final_positions,
+                    &final_colors,
+                    body_alphas,
+                    &finalist.config,
+                    noise_seed,
+                    &finalist_render_config,
+                    final_temporal,
+                    novelty_memory,
+                )
+            })
+            .collect::<Vec<_>>();
+
+        for (finalist, result) in finalists.iter_mut().zip(finalist_results.into_iter()) {
+            let (scores, features, novelty_score, composite) = result?;
             finalist.scores = scores;
             finalist.features = features;
             finalist.novelty_score = novelty_score;
@@ -1241,6 +1344,325 @@ fn run_curation_search(
                 curation_options.min_image_score,
                 round_winner.scores.video_composite,
                 curation_options.min_video_score,
+                round_winner.novelty_score,
+                curation_options.min_novelty_score,
+                round_winner.scores.perimeter_speckle_penalty,
+                MAX_PERIMETER_SPECKLE_PENALTY,
+                round_winner.scores.nebula_visibility_score,
+                MIN_NEBULA_VISIBILITY_SCORE,
+                round_winner.scores.nebula_dominance_penalty,
+                MAX_NEBULA_DOMINANCE_PENALTY,
+            );
+        } else {
+            warn!("Round {} produced no finalists; rerolling.", round_id);
+        }
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn run_curation_search_still(
+    args: &Args,
+    curation_options: &CurationOptions,
+    rng: &mut Sha3RandomByteStream,
+    positions: &[Vec<Vector3<f64>>],
+    colors: &[Vec<render::OklabColor>],
+    body_alphas: &[f64],
+    noise_seed: i32,
+    novelty_memory: &mut NoveltyMemory,
+) -> Result<(CandidateEvaluation, CurationSummary)> {
+    const PREVIEW_TARGET_STEPS: usize = 12_000;
+    const FINALIST_TARGET_STEPS: usize = 36_000;
+    const EPSILON_EXPLORATION: f64 = 0.25;
+    const MAX_PERIMETER_SPECKLE_PENALTY: f64 = 0.0;
+    const MIN_NEBULA_VISIBILITY_SCORE: f64 = 0.22;
+    const MAX_NEBULA_DOMINANCE_PENALTY: f64 = 0.35;
+    /// Stop evaluating preview candidates once one scores above this threshold.
+    const EARLY_EXIT_SCORE: f64 = 0.92;
+
+    let fixed_hdr_scale = args.param_hdr_scale.unwrap_or(0.12);
+
+    let (preview_width, preview_height) = preview_dimensions(args.width, args.height);
+    let (preview_positions, preview_colors) =
+        downsample_scene(positions, colors, PREVIEW_TARGET_STEPS);
+    let (final_positions, final_colors) = downsample_scene(positions, colors, FINALIST_TARGET_STEPS);
+
+    let preview_steps = preview_positions.first().map(|b| b.len()).unwrap_or(0);
+    let final_steps = final_positions.first().map(|b| b.len()).unwrap_or(0);
+
+    // Geometry pass caches (spectral space), re-used across all effect candidates.
+    let mut preview_spd = render::accumulate_spd_buffer_spectral(
+        &preview_positions,
+        &preview_colors,
+        body_alphas,
+        preview_width,
+        preview_height,
+        fixed_hdr_scale,
+        args.special,
+    );
+    render::apply_energy_density_shift_inplace(&mut preview_spd, args.special);
+
+    let mut final_spd = render::accumulate_spd_buffer_spectral(
+        &final_positions,
+        &final_colors,
+        body_alphas,
+        args.width,
+        args.height,
+        fixed_hdr_scale,
+        args.special,
+    );
+    render::apply_energy_density_shift_inplace(&mut final_spd, args.special);
+
+    let mut total_candidates = 0usize;
+    let mut finalists_considered = 0usize;
+    let mut family_stats: HashMap<String, (usize, usize)> = HashMap::new();
+
+    let mut round_id = 0usize;
+    loop {
+        round_id = round_id.saturating_add(1);
+        if round_id == curation_options.max_curation_rounds.saturating_add(1) {
+            warn!(
+                "No candidate met strict acceptance gates after {} rounds; continuing rerolls until one passes.",
+                curation_options.max_curation_rounds
+            );
+        }
+        info!(
+            "Curation round {}/{} (preview candidates: {}) [still mode]",
+            round_id,
+            curation_options.max_curation_rounds,
+            curation_options.candidate_count_preview
+        );
+
+        // ── Phase 1: generate candidate configs (fast, sequential, RNG-dependent) ──
+        let count = curation_options.candidate_count_preview;
+        let allow_repair = curation_options.allow_repair_pass;
+        let quality_mode = curation_options.quality_mode;
+
+        struct CandidateSpec {
+            candidate_id: usize,
+            resolved_config: render::randomizable_config::ResolvedEffectConfig,
+            randomization_log: render::effect_randomizer::RandomizationLog,
+            style_family_name: String,
+            repair_actions: Vec<String>,
+        }
+
+        let mut specs = Vec::with_capacity(count);
+        for _ in 1..=count {
+            total_candidates += 1;
+            let candidate_id = total_candidates;
+
+            let randomizable_config = build_randomizable_config(args, quality_mode);
+            let (mut resolved_config, randomization_log) =
+                randomizable_config.resolve(rng, preview_width, preview_height, args.special);
+
+            let style_family = if let Some(explicit) = curation_options.style_family.as_deref() {
+                resolve_style_family(Some(explicit), rng)
+            } else if rng.next_f64() < EPSILON_EXPLORATION || family_stats.is_empty() {
+                StyleFamily::random(rng)
+            } else {
+                let mut best_family = StyleFamily::random(rng);
+                let mut best_score = f64::MIN;
+                for family in StyleFamily::all() {
+                    let (attempts, successes) =
+                        family_stats.get(family.name()).copied().unwrap_or((0, 0));
+                    let score = if attempts == 0 {
+                        1.0
+                    } else {
+                        (successes as f64 + 1.0) / (attempts as f64 + 2.0)
+                    };
+                    if score > best_score {
+                        best_score = score;
+                        best_family = family;
+                    }
+                }
+                best_family
+            };
+
+            let style_key = style_family.name().to_string();
+            family_stats
+                .entry(style_key.clone())
+                .and_modify(|entry| entry.0 += 1)
+                .or_insert((1, 0));
+
+            let repair_actions = apply_style_family(
+                &mut resolved_config,
+                style_family,
+                rng,
+                quality_mode,
+            );
+            // Keep HDR scale stable for still-mode caching.
+            resolved_config.hdr_scale = fixed_hdr_scale;
+            apply_effect_disable_overrides(args, &mut resolved_config);
+
+            specs.push(CandidateSpec {
+                candidate_id,
+                resolved_config,
+                randomization_log,
+                style_family_name: style_family.name().to_string(),
+                repair_actions,
+            });
+        }
+
+        // ── Phase 2: evaluate candidates in parallel (expensive rendering + scoring) ──
+        let preview_candidates: Vec<CandidateEvaluation> = specs
+            .into_par_iter()
+            .map(|mut spec| {
+                let render_config = build_render_config(
+                    args,
+                    quality_mode,
+                    &spec.resolved_config,
+                    render::EffectBudget::Preview,
+                );
+
+                let (mut scores, mut features, mut novelty_score, mut composite) =
+                    evaluate_candidate_still_cached(
+                        &preview_spd,
+                        preview_steps,
+                        &spec.resolved_config,
+                        noise_seed,
+                        &render_config,
+                        novelty_memory,
+                    )?;
+
+                if allow_repair && (0.70..0.80).contains(&composite) {
+                    let mut repaired_config = spec.resolved_config.clone();
+                    repaired_config.hdr_scale = fixed_hdr_scale;
+
+                    let mut suggested_repairs = repair_candidate(&mut repaired_config, &scores);
+                    if !suggested_repairs.is_empty() {
+                        apply_effect_disable_overrides(args, &mut repaired_config);
+                        let repaired_render_config = build_render_config(
+                            args,
+                            quality_mode,
+                            &repaired_config,
+                            render::EffectBudget::Preview,
+                        );
+                        let (repaired_scores, repaired_features, repaired_novelty, repaired_composite) =
+                            evaluate_candidate_still_cached(
+                                &preview_spd,
+                                preview_steps,
+                                &repaired_config,
+                                noise_seed,
+                                &repaired_render_config,
+                                novelty_memory,
+                            )?;
+
+                        if repaired_composite > composite {
+                            spec.resolved_config = repaired_config;
+                            scores = repaired_scores;
+                            features = repaired_features;
+                            novelty_score = repaired_novelty;
+                            composite = repaired_composite;
+                            spec.repair_actions.append(&mut suggested_repairs);
+                        }
+                    }
+                }
+
+                Ok(CandidateEvaluation {
+                    round_id,
+                    candidate_id: spec.candidate_id,
+                    style_family: spec.style_family_name,
+                    config: spec.resolved_config,
+                    randomization_log: spec.randomization_log,
+                    scores,
+                    features,
+                    novelty_score,
+                    composite_score: composite,
+                    repair_actions: spec.repair_actions,
+                })
+            })
+            .collect::<Result<Vec<_>>>()?;
+
+        for (i, evaluation) in preview_candidates.iter().enumerate() {
+            info!(
+                "  Preview candidate {}/{} -> score {:.3} (image {:.3}, novelty {:.3})",
+                i + 1,
+                count,
+                evaluation.composite_score,
+                evaluation.scores.image_composite,
+                evaluation.novelty_score
+            );
+        }
+        if let Some(best) = preview_candidates.iter().max_by(|a, b| {
+            a.composite_score.partial_cmp(&b.composite_score).unwrap_or(std::cmp::Ordering::Equal)
+        }) {
+            if best.composite_score >= EARLY_EXIT_SCORE {
+                info!(
+                    "  Early exit: best candidate scored {:.3} >= {:.3}",
+                    best.composite_score, EARLY_EXIT_SCORE
+                );
+            }
+        }
+
+        let mut finalists = choose_finalists(preview_candidates, curation_options.finalist_count);
+        finalists_considered += finalists.len();
+
+        // ── Phase 3: re-render finalists at full resolution in parallel ──
+        for finalist in &mut finalists {
+            finalist.config.width = args.width;
+            finalist.config.height = args.height;
+            finalist.config.hdr_scale = fixed_hdr_scale;
+            apply_effect_disable_overrides(args, &mut finalist.config);
+        }
+
+        let finalist_results: Vec<_> = finalists
+            .par_iter()
+            .map(|finalist| {
+                let finalist_render_config = build_render_config(
+                    args,
+                    quality_mode,
+                    &finalist.config,
+                    render::EffectBudget::Full,
+                );
+                evaluate_candidate_still_cached(
+                    &final_spd,
+                    final_steps,
+                    &finalist.config,
+                    noise_seed,
+                    &finalist_render_config,
+                    novelty_memory,
+                )
+            })
+            .collect::<Vec<_>>();
+
+        for (finalist, result) in finalists.iter_mut().zip(finalist_results.into_iter()) {
+            let (scores, features, novelty_score, composite) = result?;
+            finalist.scores = scores;
+            finalist.features = features;
+            finalist.novelty_score = novelty_score;
+            finalist.composite_score = composite;
+        }
+
+        if let Some(round_winner) = pick_winner(&finalists) {
+            if let Some(stats) = family_stats.get_mut(&round_winner.style_family) {
+                stats.1 += 1;
+            }
+
+            if accept_candidate(
+                &round_winner,
+                curation_options.min_image_score,
+                0.0, // still mode: ignore video gating
+                curation_options.min_novelty_score,
+                MAX_PERIMETER_SPECKLE_PENALTY,
+                MIN_NEBULA_VISIBILITY_SCORE,
+                MAX_NEBULA_DOMINANCE_PENALTY,
+            ) {
+                novelty_memory.remember(round_winner.features.clone());
+                let summary = CurationSummary {
+                    quality_mode: curation_options.quality_mode.as_str().to_string(),
+                    rounds_used: round_id,
+                    accepted: true,
+                    total_candidates,
+                    finalists_considered,
+                    rejection_reason: None,
+                };
+                return Ok((round_winner, summary));
+            }
+
+            warn!(
+                "Round {} winner rejected: image={:.3} (<{:.3}) novelty={:.3} (<{:.3}) perimeter_penalty={:.4} (>{:.4}) nebula_visibility={:.3} (<{:.3}) nebula_dominance={:.3} (>{:.3})",
+                round_id,
+                round_winner.scores.image_composite,
+                curation_options.min_image_score,
                 round_winner.novelty_score,
                 curation_options.min_novelty_score,
                 round_winner.scores.perimeter_speckle_penalty,
@@ -1481,17 +1903,22 @@ fn main() -> Result<()> {
             render::EffectBudget::Full,
         );
 
-        // Stage 5-6: Build histogram and compute levels
-        let stage_56_start = Instant::now();
-        let levels = app::build_histogram_and_levels(
-            &positions,
-            &colors,
-            &body_alphas,
-            &selected.resolved_effect_config,
-            noise_seed,
-            &render_config,
-        )?;
-        log_stage_telemetry("stage_5_6_histogram_levels", stage_56_start);
+        let levels = if args.no_video && !args.test_frame {
+            None
+        } else {
+            // Stage 5-6: Build histogram and compute levels
+            let stage_56_start = Instant::now();
+            let levels = app::build_histogram_and_levels(
+                &positions,
+                &colors,
+                &body_alphas,
+                &selected.resolved_effect_config,
+                noise_seed,
+                &render_config,
+            )?;
+            log_stage_telemetry("stage_5_6_histogram_levels", stage_56_start);
+            Some(levels)
+        };
 
         let base_filename = app::generate_filename(&args.file_name, &args.profile_tag);
         let output_png = format!("pics/{}.png", base_filename);
@@ -1504,7 +1931,18 @@ fn main() -> Result<()> {
                 &colors,
                 &body_alphas,
                 &selected.resolved_effect_config,
-                &levels,
+                levels.as_ref().expect("levels required for test frame"),
+                noise_seed,
+                &render_config,
+                &output_png,
+                &best_info,
+            )?;
+        } else if args.no_video {
+            app::render_still(
+                &positions,
+                &colors,
+                &body_alphas,
+                &selected.resolved_effect_config,
                 noise_seed,
                 &render_config,
                 &output_png,
@@ -1519,7 +1957,7 @@ fn main() -> Result<()> {
                 &colors,
                 &body_alphas,
                 &selected.resolved_effect_config,
-                &levels,
+                levels.as_ref().expect("levels required for video render"),
                 noise_seed,
                 &render_config,
                 &output_vid,
@@ -1961,17 +2399,22 @@ fn main() -> Result<()> {
             render::EffectBudget::Full,
         );
 
-        // Stage 5-6: Build histogram and compute levels
-        let stage_56_start = Instant::now();
-        let levels = app::build_histogram_and_levels(
-            &positions,
-            &colors,
-            &body_alphas,
-            &selected.resolved_effect_config,
-            variant_noise_seed,
-            &render_config,
-        )?;
-        log_stage_telemetry("stage_5_6_histogram_levels", stage_56_start);
+        let levels = if args.no_video && !args.test_frame {
+            None
+        } else {
+            // Stage 5-6: Build histogram and compute levels
+            let stage_56_start = Instant::now();
+            let levels = app::build_histogram_and_levels(
+                &positions,
+                &colors,
+                &body_alphas,
+                &selected.resolved_effect_config,
+                variant_noise_seed,
+                &render_config,
+            )?;
+            log_stage_telemetry("stage_5_6_histogram_levels", stage_56_start);
+            Some(levels)
+        };
 
         let output_png = format!("pics/{}.png", base_filename);
 
@@ -1983,7 +2426,18 @@ fn main() -> Result<()> {
                 &colors,
                 &body_alphas,
                 &selected.resolved_effect_config,
-                &levels,
+                levels.as_ref().expect("levels required for test frame"),
+                variant_noise_seed,
+                &render_config,
+                &output_png,
+                &best_info,
+            )?;
+        } else if args.no_video {
+            app::render_still(
+                &positions,
+                &colors,
+                &body_alphas,
+                &selected.resolved_effect_config,
                 variant_noise_seed,
                 &render_config,
                 &output_png,
@@ -1996,7 +2450,7 @@ fn main() -> Result<()> {
                 &colors,
                 &body_alphas,
                 &selected.resolved_effect_config,
-                &levels,
+                levels.as_ref().expect("levels required for video render"),
                 variant_noise_seed,
                 &render_config,
                 &output_vid,

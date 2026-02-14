@@ -17,7 +17,8 @@ use crate::post_effects;
 use crate::render::{
     self, ChannelLevels, DogBloomConfig, RenderConfig, VideoEncodingOptions, constants,
     create_video_from_frames_singlepass, generate_body_color_sequences,
-    pass_1_build_histogram_spectral, pass_2_write_frames_spectral, render_single_frame_spectral,
+    pass_1_build_histogram_spectral, pass_2_write_frames_spectral, render_final_still_spectral,
+    render_single_frame_spectral,
     save_image_as_png_16bit,
 };
 use crate::sim::{self, Body, Sha3RandomByteStream, TrajectoryResult};
@@ -321,6 +322,40 @@ pub fn render_test_frame(
 
     info!("✓ Test frame saved successfully (16-bit PNG)!");
     info!("Best orbit => Weighted Borda = {:.3}\nTest complete!", best_info.total_score_weighted);
+
+    Ok(())
+}
+
+/// Render a single final still frame (full accumulation) as 16-bit PNG (skips video generation).
+#[allow(clippy::too_many_arguments)] // Core rendering function requires all parameters
+pub fn render_still(
+    positions: &[Vec<Vector3<f64>>],
+    colors: &[Vec<render::OklabColor>],
+    body_alphas: &[f64],
+    resolved_config: &render::randomizable_config::ResolvedEffectConfig,
+    noise_seed: i32,
+    render_config: &RenderConfig,
+    output_png: &str,
+    best_info: &TrajectoryResult,
+) -> Result<()> {
+    info!("STAGE 7/7: STILL MODE => rendering final still frame only...");
+
+    let still_frame = render_final_still_spectral(
+        positions,
+        colors,
+        body_alphas,
+        resolved_config,
+        noise_seed,
+        render_config,
+    )?;
+
+    info!("Saving still frame to: {}", output_png);
+    save_image_as_png_16bit(&still_frame, output_png)?;
+
+    info!(
+        "✓ Still frame saved successfully (16-bit PNG)!\nBest orbit => Weighted Borda = {:.3}\nStill render complete!",
+        best_info.total_score_weighted
+    );
 
     Ok(())
 }

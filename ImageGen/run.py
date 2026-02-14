@@ -33,7 +33,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 # Defaults
-DEFAULT_WORKERS = 6
+DEFAULT_WORKERS = 3
 DEFAULT_SUBPROCESS_TIMEOUT = 160000  # ~44.4 hours per simulation
 BINARY_PATH = Path('./target/release/three_body_problem')
 DEFAULT_LOGS_DIR = Path("./runner_logs")
@@ -217,8 +217,8 @@ def compute_rayon_threads(rayon_threads: int, workers: int) -> int:
 
 
 def generate_random_seed() -> str:
-    """Generate a random 6-byte hex seed."""
-    return "0x" + secrets.token_hex(6)
+    """Generate a random 16-byte hex seed."""
+    return "0x" + secrets.token_hex(16)
 
 
 def choose_mode(mode_arg: str, task_id: int) -> bool:
@@ -235,6 +235,30 @@ def choose_mode(mode_arg: str, task_id: int) -> bool:
         return task_id % 2 == 0  # Even tasks = special, odd = regular
     else:  # 'random'
         return random.choice([True, False])
+
+def build_default_binary_args(is_special: bool) -> list[str]:
+    """Default binary args when --binary-args is not provided.
+
+    Goals:
+    - Still-image first (skip MP4) for much higher throughput.
+    - Museum-leaning quality defaults.
+    - Always run random Borda orbit search (never reuse a fixed orbit shape).
+    - Avoid special-mode default orbit search explosion (special defaults to 100k sims).
+    """
+    args: list[str] = [
+        "--no-video",
+        "--gallery-quality",
+        "--quality-mode", "strict",
+        "--candidate-count-preview", "10",
+        "--finalist-count", "2",
+        "--max-curation-rounds", "2",
+        "--min-image-score", "0.80",
+        "--min-novelty-score", "0.20",
+        "--min-video-score", "0.0",
+        # Keep orbit search bounded even when not using a preset.
+        "--num-sims", "6000",
+    ]
+    return args
 
 
 def build_filename(seq: int, seed: str, is_special: bool) -> str:
@@ -935,8 +959,10 @@ def run_simulation(
     if is_special:
         command.append('--special')
 
-    if binary_args:
+    if binary_args.strip():
         command.extend(shlex.split(binary_args))
+    else:
+        command.extend(build_default_binary_args(is_special))
 
     with stats_lock:
         stats['started'] += 1

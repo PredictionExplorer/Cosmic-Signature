@@ -340,8 +340,15 @@ pub fn select_best_trajectory(
         .collect();
     let coarse_steps = ((steps / 8).max(1)).clamp(2_000, 80_000).min(steps.max(1));
     let min_shortlist = num_sims.min(64).max(1);
-    let shortlist_target =
-        ((num_sims as f64 * 0.22).ceil() as usize).max(min_shortlist).min(num_sims.max(1));
+    // Full-length simulations are expensive. Keep the shortlist bounded and rely on coarse
+    // screening to narrow the search space.
+    let shortlist_fraction = 0.05;
+    let shortlist_cap = 256usize;
+    let shortlist_target = ((num_sims as f64 * shortlist_fraction).ceil() as usize)
+        .max(min_shortlist)
+        .min(num_sims.max(1))
+        .min(shortlist_cap)
+        .max(min_shortlist);
     const MIN_VIABLE_CHAOS: f64 = 0.1; // Below this, too chaotic
     const MIN_VIABLE_EQUILATERAL: f64 = 0.01; // Below this, too linear
 

@@ -1160,6 +1160,183 @@ pub fn pass_2_write_frames_spectral(
     Ok(())
 }
 
+// ====================== FINAL STILL (SPECTRAL) ===========================
+/// Accumulate a full-resolution SPD buffer for an orbit (spectral space).
+///
+/// This is the expensive geometry pass; downstream post-processing and tone mapping
+/// can then be re-run quickly for multiple effect configurations.
+pub fn accumulate_spd_buffer_spectral(
+    positions: &[Vec<Vector3<f64>>],
+    colors: &[Vec<OklabColor>],
+    body_alphas: &[f64],
+    width: u32,
+    height: u32,
+    hdr_scale: f64,
+    special_mode: bool,
+) -> Vec<[f64; NUM_BINS]> {
+    let ctx = RenderContext::new(width, height, positions);
+    let mut accum_spd = vec![[0.0f64; NUM_BINS]; ctx.pixel_count()];
+
+    let total_steps = positions.first().map(|b| b.len()).unwrap_or(0);
+    if total_steps == 0 {
+        return accum_spd;
+    }
+
+    let dt = constants::DEFAULT_DT;
+    let velocity_calc = velocity_hdr::VelocityHdrCalculator::new(positions, dt, special_mode);
+
+    for step in 0..total_steps {
+        let vertices = prepare_triangle_vertices(
+            positions,
+            colors,
+            &[body_alphas[0], body_alphas[1], body_alphas[2]],
+            step,
+            &ctx,
+        );
+
+        let hdr_mult_01 = velocity_calc.compute_segment_multiplier(step, 0, 1);
+        let hdr_mult_12 = velocity_calc.compute_segment_multiplier(step, 1, 2);
+        let hdr_mult_20 = velocity_calc.compute_segment_multiplier(step, 2, 0);
+
+        draw_triangle_batch_spectral(
+            &mut accum_spd,
+            width,
+            height,
+            vertices[0],
+            vertices[1],
+            vertices[2],
+            hdr_mult_01,
+            hdr_mult_12,
+            hdr_mult_20,
+            hdr_scale,
+            special_mode,
+        );
+    }
+
+    accum_spd
+}
+
+/// Public wrapper for energy-density wavelength shifting (special mode only).
+pub fn apply_energy_density_shift_inplace(accum_spd: &mut [[f64; NUM_BINS]], special_mode: bool) {
+    apply_energy_density_shift(accum_spd, special_mode);
+}
+
+/// Render a still frame from an already-accumulated SPD buffer.
+///
+/// The caller is responsible for applying `apply_energy_density_shift_inplace` (if desired)
+/// before calling this function.
+pub fn render_still_from_accum_spd_spectral(
+    accum_spd: &[[f64; NUM_BINS]],
+    total_steps: usize,
+    resolved_config: &randomizable_config::ResolvedEffectConfig,
+    noise_seed: i32,
+    render_config: &RenderConfig,
+) -> Result<ImageBuffer<Rgb<u16>, Vec<u16>>> {
+    let width = resolved_config.width;
+    let height = resolved_config.height;
+
+    let expected_pixels = (width as usize).saturating_mul(height as usize);
+    if accum_spd.len() != expected_pixels {
+        return Err(RenderError::ImageEncoding(format!(
+            "SPD buffer pixel count mismatch: expected {expected_pixels}, got {}",
+            accum_spd.len()
+        )));
+    }
+
+    // Match the "final frame number" semantics used by video rendering so
+    // deterministic, frame-indexed effects behave consistently.
+    let frame_interval = (total_steps / constants::DEFAULT_TARGET_FRAMES as usize).max(1);
+    let frame_number = total_steps / frame_interval;
+
+    let mut accum_rgba = vec![(0.0, 0.0, 0.0, 0.0); expected_pixels];
+
+    let effect_config = build_effect_config_from_resolved(resolved_config, render_config);
+    let effect_chain = EffectChainBuilder::new(effect_config);
+    let nebula_config = build_nebula_config(resolved_config, noise_seed);
+
+    convert_spd_buffer_to_rgba(accum_spd, &mut accum_rgba);
+
+    let frame_params = FrameParams { _frame_number: frame_number, _density: None };
+    let trajectory_pixels = effect_chain.process_frame(
+        accum_rgba,
+        width as usize,
+        height as usize,
+        &frame_params,
+    )?;
+
+    // Skip background compositing entirely when nebula is disabled.
+    let final_pixels = if nebula_config.strength > 0.0 {
+        let nebula_background = generate_nebula_background(
+            width as usize,
+            height as usize,
+            frame_number,
+            &nebula_config,
+        );
+        composite_buffers(&nebula_background, &trajectory_pixels)
+    } else {
+        trajectory_pixels
+    };
+
+    // Compute exposure levels from the final still frame only.
+    let mut histogram = HistogramData::with_capacity(expected_pixels * 4);
+    for &(r, g, b, a) in &final_pixels {
+        histogram.push(r * a, g * a, b * a);
+    }
+    let (black_r, white_r, black_g, white_g, black_b, white_b) =
+        histogram.black_white_points(resolved_config.clip_black, resolved_config.clip_white);
+    let levels = ChannelLevels::new(black_r, white_r, black_g, white_g, black_b, white_b);
+
+    // Tonemap to 16-bit
+    let mut buf_16bit = vec![0u16; expected_pixels * 3];
+    buf_16bit.par_chunks_mut(3).zip(final_pixels.par_iter()).for_each(
+        |(chunk, &(fr, fg, fb, fa))| {
+            let mapped = tonemap_to_16bit(fr, fg, fb, fa, &levels);
+            chunk[0] = mapped[0];
+            chunk[1] = mapped[1];
+            chunk[2] = mapped[2];
+        },
+    );
+    if render_config.output_dither_enabled {
+        apply_output_dither(&mut buf_16bit, width as usize, frame_number);
+    }
+
+    ImageBuffer::from_raw(width, height, buf_16bit).ok_or_else(|| {
+        RenderError::ImageEncoding("Failed to create 16-bit still image buffer".to_string())
+    })
+}
+
+/// Render a single final still frame (full accumulation) as 16-bit output.
+///
+/// This skips video generation entirely and computes exposure levels from the final
+/// composited frame only (rather than across a temporal histogram).
+#[allow(clippy::too_many_arguments)] // Core rendering primitive requires all parameters
+pub fn render_final_still_spectral(
+    positions: &[Vec<Vector3<f64>>],
+    colors: &[Vec<OklabColor>],
+    body_alphas: &[f64],
+    resolved_config: &randomizable_config::ResolvedEffectConfig,
+    noise_seed: i32,
+    render_config: &RenderConfig,
+) -> Result<ImageBuffer<Rgb<u16>, Vec<u16>>> {
+    let width = resolved_config.width;
+    let height = resolved_config.height;
+    let special_mode = resolved_config.special_mode;
+
+    let total_steps = positions.first().map(|b| b.len()).unwrap_or(0);
+    let mut accum_spd = accumulate_spd_buffer_spectral(
+        positions,
+        colors,
+        body_alphas,
+        width,
+        height,
+        render_config.hdr_scale,
+        special_mode,
+    );
+    apply_energy_density_shift_inplace(&mut accum_spd, special_mode);
+
+    render_still_from_accum_spd_spectral(&accum_spd, total_steps, resolved_config, noise_seed, render_config)
+}
+
 // ====================== SINGLE FRAME RENDERING ===========================
 /// Render a single test frame (first frame only) for quick testing (16-bit output)
 #[allow(clippy::too_many_arguments)] // Low-level rendering primitive requires all parameters
