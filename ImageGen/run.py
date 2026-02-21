@@ -9,6 +9,10 @@ import secrets
 import random
 import time
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+
+CONCURRENT_SIMULATIONS = 6
 
 
 def generate_random_seed() -> str:
@@ -58,7 +62,7 @@ def main():
     print("\n" + "="*60)
     print("Three Body Problem - Infinite Random Runner")
     print("="*60)
-    print("Generating random seeds and modes...")
+    print(f"Generating random seeds and modes ({CONCURRENT_SIMULATIONS} at a time)...")
     print("Press Ctrl+C to stop")
     print("="*60 + "\n")
 
@@ -71,24 +75,33 @@ def main():
     failed = 0
 
     try:
-        while True:
-            count += 1
+        with ThreadPoolExecutor(max_workers=CONCURRENT_SIMULATIONS) as executor:
+            while True:
+                batch: list[tuple[int, str, bool]] = []
+                futures = []
 
-            # Generate random seed and mode
-            seed = generate_random_seed()
-            is_special = random.choice([True, False])
+                for _ in range(CONCURRENT_SIMULATIONS):
+                    count += 1
+                    seed = generate_random_seed()
+                    is_special = random.choice([True, False])
+                    batch.append((count, seed, is_special))
+                    futures.append(executor.submit(run_simulation, seed, is_special))
 
-            print(f"\n[Generation {count}] (Success: {successful}, Failed: {failed})")
+                start_run = batch[0][0]
+                end_run = batch[-1][0]
+                print(
+                    f"\n[Runs {start_run}-{end_run}] "
+                    f"(Success: {successful}, Failed: {failed})"
+                )
 
-            # Run simulation
-            success = run_simulation(seed, is_special)
-
-            if success:
-                successful += 1
-            else:
-                failed += 1
-                # Brief pause on failure to avoid rapid error loops
-                time.sleep(2)
+                for future in as_completed(futures):
+                    success = future.result()
+                    if success:
+                        successful += 1
+                    else:
+                        failed += 1
+                        # Brief pause on failure to avoid rapid error loops
+                        time.sleep(2)
 
     except KeyboardInterrupt:
         print("\n\n" + "="*60)

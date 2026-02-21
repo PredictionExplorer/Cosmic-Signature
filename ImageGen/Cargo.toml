@@ -43,10 +43,6 @@ default = []
 [dev-dependencies]
 criterion = "0.7"
 
-[[bench]]
-name = "rendering_benchmark"
-harness = false
-
 [profile.release]
 opt-level       = 3
 lto             = "fat"
