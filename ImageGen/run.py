@@ -2,13 +2,19 @@
 """
 Batch runner for Three Body Problem image generation.
 
-Runs concurrent simulations with random seeds, randomly choosing
-special or standard mode. Designed for long unattended runs.
+A/B comparison mode: each seed is rendered twice — once with museum-quality
+enhancements enabled ("enhanced") and once with them disabled ("classic").
+Output filenames: enhanced_{seed}.png/mp4  vs  classic_{seed}.png/mp4
 
-Screen: compact progress line per batch.
+Uses a rolling pool to keep exactly CONCURRENT_SIMS slots busy at all times.
+Runs forever until Ctrl+C.
+
+Screen: compact progress line every few completions.
 File:   full subprocess output written to run.log for debugging.
 """
 
+import collections
+import concurrent.futures
 import logging
 import os
 import secrets
@@ -16,14 +22,13 @@ import signal
 import subprocess
 import sys
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime, timezone
 from pathlib import Path
 
-CONCURRENT_SIMS = 6
+CONCURRENT_SIMS = 3
 BINARY = "./target/release/three_body_problem"
 LOG_FILE = "run.log"
 SIM_TIMEOUT = 86400  # seconds per simulation (24 hours)
+REPORT_EVERY = 6     # print a status line every N completions
 
 # ---------------------------------------------------------------------------
 # Logging setup: file gets everything, console gets one-liners
@@ -78,11 +83,14 @@ def fmt_duration(seconds: float) -> str:
 # Single simulation
 # ---------------------------------------------------------------------------
 
-def run_one(seed: str, run_id: int) -> tuple:
+def run_one(seed: str, enhanced: bool, run_id: int) -> tuple:
     """Returns (success, filename, elapsed_secs)."""
-    filename = seed[2:]
+    variant = "enhanced" if enhanced else "classic"
+    filename = f"{variant}_{seed[2:]}"
 
     cmd = [BINARY, "--seed", seed, "--file-name", filename]
+    if not enhanced:
+        cmd.append("--no-enhancements")
 
     _log_to_file(logging.DEBUG, f"[{run_id}] START {filename}  cmd={' '.join(cmd)}")
     t0 = time.monotonic()
@@ -123,24 +131,30 @@ def run_one(seed: str, run_id: int) -> tuple:
 
 
 # ---------------------------------------------------------------------------
-# Main loop
+# Main loop — rolling pool keeps all slots busy at all times
 # ---------------------------------------------------------------------------
 
 def main() -> None:
     check_prerequisites()
 
     _log_to_file(logging.INFO, f"{'=' * 60}")
-    _log_to_file(logging.INFO, f"Session started  concurrency={CONCURRENT_SIMS}")
+    _log_to_file(logging.INFO, f"Session started  concurrency={CONCURRENT_SIMS}  mode=A/B rolling")
     _log_to_file(logging.INFO, f"{'=' * 60}")
 
-    print(f"Three Body Problem batch runner  ({CONCURRENT_SIMS} concurrent)")
+    print(f"Three Body Problem A/B rolling runner  ({CONCURRENT_SIMS} concurrent)")
+    print(f"Each seed rendered twice: enhanced vs classic")
     print(f"Detailed logs -> {LOG_FILE}")
     print("Ctrl+C to stop gracefully (twice to force)\n")
 
+    # ---- State ----
     run_id = 0
     ok_total = 0
     fail_total = 0
+    completions_since_report = 0
     t_session = time.monotonic()
+
+    pending: collections.deque = collections.deque()
+    in_flight: dict = {}
 
     shutdown = False
     orig_sigint = signal.getsignal(signal.SIGINT)
@@ -151,62 +165,71 @@ def main() -> None:
             signal.signal(signal.SIGINT, orig_sigint)
             raise KeyboardInterrupt
         shutdown = True
-        print("\n-- finishing current batch, then stopping --")
+        print("\n-- stopping: draining in-flight jobs --")
 
     signal.signal(signal.SIGINT, on_sigint)
 
+    def enqueue_seed():
+        seed = random_seed()
+        pending.append((seed, True))
+        pending.append((seed, False))
+
+    def submit_next(pool):
+        nonlocal run_id
+        if not pending:
+            enqueue_seed()
+        seed, enhanced = pending.popleft()
+        run_id += 1
+        fut = pool.submit(run_one, seed, enhanced, run_id)
+        in_flight[fut] = (run_id, seed, enhanced)
+
+    def print_status():
+        total = ok_total + fail_total
+        pct = ok_total / total * 100 if total else 0
+        elapsed = fmt_duration(time.monotonic() - t_session)
+        line = f"  completed {total}  (+{ok_total} ok"
+        if fail_total:
+            line += f"  -{fail_total} fail"
+        line += f")  {elapsed}"
+        print(line)
+        _log_to_file(logging.INFO, line)
+
     try:
-        batch_num = 0
-        with ThreadPoolExecutor(max_workers=CONCURRENT_SIMS) as pool:
-            while not shutdown:
-                batch_num += 1
-                futures = {}
-                for _ in range(CONCURRENT_SIMS):
-                    run_id += 1
-                    seed = random_seed()
-                    fut = pool.submit(run_one, seed, run_id)
-                    futures[fut] = (run_id, seed)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=CONCURRENT_SIMS) as pool:
+            for _ in range(CONCURRENT_SIMS):
+                submit_next(pool)
 
-                first = run_id - CONCURRENT_SIMS + 1
-                t_batch = time.monotonic()
+            while in_flight:
+                done, _ = concurrent.futures.wait(
+                    in_flight, return_when=concurrent.futures.FIRST_COMPLETED
+                )
 
-                batch_ok = 0
-                batch_fail = 0
-                for fut in as_completed(futures):
+                for fut in done:
                     success, _fname, _elapsed = fut.result()
+                    del in_flight[fut]
+
                     if success:
-                        batch_ok += 1
                         ok_total += 1
                     else:
-                        batch_fail += 1
                         fail_total += 1
 
-                batch_elapsed = time.monotonic() - t_batch
-                total = ok_total + fail_total
-                pct = ok_total / total * 100 if total else 0
-                session_elapsed = time.monotonic() - t_session
+                    completions_since_report += 1
+                    if completions_since_report >= REPORT_EVERY:
+                        print_status()
+                        completions_since_report = 0
 
-                status = f"Batch {batch_num:>3} [{first}-{run_id}]  "
-                status += f"+{batch_ok} ok"
-                if batch_fail:
-                    status += f"  -{batch_fail} fail"
-                status += f"  ({fmt_duration(batch_elapsed)})"
-                status += f"  |  total {ok_total}/{total} ({pct:.0f}%)  {fmt_duration(session_elapsed)}"
-                print(status)
-                _log_to_file(logging.INFO, status)
+                    if not shutdown:
+                        submit_next(pool)
 
     except KeyboardInterrupt:
         pass
 
     finally:
         signal.signal(signal.SIGINT, orig_sigint)
-        session_elapsed = time.monotonic() - t_session
         total = ok_total + fail_total
+        elapsed = fmt_duration(time.monotonic() - t_session)
 
-        summary = (
-            f"\nDone: {ok_total} ok, {fail_total} failed"
-            f" / {total} total in {fmt_duration(session_elapsed)}"
-        )
+        summary = f"\nDone: {ok_total} ok, {fail_total} failed / {total} total in {elapsed}"
         print(summary)
         _log_to_file(logging.INFO, summary)
         _log_to_file(logging.INFO, "Session ended\n")
