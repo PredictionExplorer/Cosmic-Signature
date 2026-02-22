@@ -29,10 +29,10 @@ pub struct IntParamDescriptor {
 // Derived from empirical analysis of visually pleasing outputs.
 // Each value is the probability [0.0, 1.0] that the effect is enabled when randomized.
 
-pub const ENABLE_PROB_BLOOM: f64 = 0.50;
-pub const ENABLE_PROB_GLOW: f64 = 0.70;
-pub const ENABLE_PROB_CHROMATIC_BLOOM: f64 = 0.70;
-pub const ENABLE_PROB_PERCEPTUAL_BLUR: f64 = 0.20;
+pub const ENABLE_PROB_BLOOM: f64 = 0.35;
+pub const ENABLE_PROB_GLOW: f64 = 0.50;
+pub const ENABLE_PROB_CHROMATIC_BLOOM: f64 = 0.50;
+pub const ENABLE_PROB_PERCEPTUAL_BLUR: f64 = 0.10;
 pub const ENABLE_PROB_MICRO_CONTRAST: f64 = 0.70;
 pub const ENABLE_PROB_GRADIENT_MAP: f64 = 0.30;
 pub const ENABLE_PROB_COLOR_GRADE: f64 = 0.30;
