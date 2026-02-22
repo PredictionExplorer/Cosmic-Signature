@@ -274,6 +274,10 @@ pub struct TrajectoryResult {
     pub equil_pts: usize,
     pub total_score: usize,
     pub total_score_weighted: f64,
+    /// Original simulation index of the selected orbit.
+    pub selected_index: usize,
+    /// Number of orbits discarded by quality filters.
+    pub discarded_count: usize,
 }
 
 /// Borda search
@@ -394,6 +398,8 @@ pub fn select_best_trajectory(
                     equil_pts: 0,
                     total_score: 0,
                     total_score_weighted: 0.0,
+                    selected_index: 0,
+                    discarded_count: 0,
                 },
                 i,
             ))
@@ -447,7 +453,9 @@ pub fn select_best_trajectory(
     }
     iv.sort_by(|a, b| b.0.total_score_weighted.partial_cmp(&a.0.total_score_weighted).unwrap());
     let bi = iv[0].1;
-    let bt = iv[0].0.clone();
+    let mut bt = iv[0].0.clone();
+    bt.selected_index = bi;
+    bt.discarded_count = dtot;
     info!("\n   => Chosen orbit idx {bi} with weighted score {:.3}", bt.total_score_weighted);
     Ok((many[bi].clone(), bt))
 }

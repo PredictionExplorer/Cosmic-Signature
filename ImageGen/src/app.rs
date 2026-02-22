@@ -487,10 +487,10 @@ pub fn log_generation(
     };
     
     record.orbit_info = OrbitInfo {
-        selected_index: 0,
+        selected_index: best_info.selected_index,
         weighted_score: best_info.total_score_weighted,
         total_candidates: num_sims,
-        discarded_count: 0,
+        discarded_count: best_info.discarded_count,
     };
     
     // Include randomization log if provided

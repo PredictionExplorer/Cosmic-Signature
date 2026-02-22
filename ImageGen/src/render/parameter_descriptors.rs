@@ -51,6 +51,24 @@ impl IntParamDescriptor {
     }
 }
 
+// ==================== EFFECT ENABLE PROBABILITIES ====================
+// Derived from empirical analysis of visually pleasing outputs.
+// Each value is the probability [0.0, 1.0] that the effect is enabled when randomized.
+
+pub const ENABLE_PROB_BLOOM: f64 = 0.50;
+pub const ENABLE_PROB_GLOW: f64 = 0.70;
+pub const ENABLE_PROB_CHROMATIC_BLOOM: f64 = 0.70;
+pub const ENABLE_PROB_PERCEPTUAL_BLUR: f64 = 0.20;
+pub const ENABLE_PROB_MICRO_CONTRAST: f64 = 0.70;
+pub const ENABLE_PROB_GRADIENT_MAP: f64 = 0.30;
+pub const ENABLE_PROB_COLOR_GRADE: f64 = 0.30;
+pub const ENABLE_PROB_CHAMPLEVE: f64 = 0.40;
+pub const ENABLE_PROB_AETHER: f64 = 0.20;
+pub const ENABLE_PROB_OPALESCENCE: f64 = 0.60;
+pub const ENABLE_PROB_EDGE_LUMINANCE: f64 = 0.40;
+pub const ENABLE_PROB_ATMOSPHERIC_DEPTH: f64 = 0.40;
+pub const ENABLE_PROB_FINE_TEXTURE: f64 = 0.40;
+
 // ==================== BLOOM & GLOW PARAMETERS ====================
 // EXPLORATORY RANGES WIDENED: Aggressive exploration of bloom/glow parameter space
 
@@ -236,7 +254,7 @@ pub const VIGNETTE_SOFTNESS: FloatParamDescriptor = FloatParamDescriptor {
 
 pub const VIBRANCE: FloatParamDescriptor = FloatParamDescriptor {
     name: "vibrance",
-    min: 0.50,   // Ultra-exploratory: very desaturated/muted
+    min: 0.90,   // Raised from 0.50 — avoids overly muted outputs
     max: 1.80,   // Ultra-exploratory: hyper-saturated
     gallery_min: 0.95,
     gallery_max: 1.20,

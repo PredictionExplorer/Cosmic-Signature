@@ -1,116 +1,220 @@
 #!/usr/bin/env python3
 """
-Simple infinite runner for Three Body Problem simulations.
-Generates random seeds and randomly chooses special/standard mode.
+Batch runner for Three Body Problem image generation.
+
+Runs concurrent simulations with random seeds, randomly choosing
+special or standard mode. Designed for long unattended runs.
+
+Screen: compact progress line per batch.
+File:   full subprocess output written to run.log for debugging.
 """
 
-import subprocess
-import secrets
+import logging
+import os
 import random
+import secrets
+import signal
+import subprocess
+import sys
 import time
-from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime, timezone
+from pathlib import Path
+
+CONCURRENT_SIMS = 6
+BINARY = "./target/release/three_body_problem"
+LOG_FILE = "run.log"
+SIM_TIMEOUT = 3600  # seconds per simulation
+
+# ---------------------------------------------------------------------------
+# Logging setup: file gets everything, console gets one-liners
+# ---------------------------------------------------------------------------
+
+logger = logging.getLogger("run")
+logger.setLevel(logging.DEBUG)
+
+_file_handler = logging.FileHandler(LOG_FILE, encoding="utf-8")
+_file_handler.setLevel(logging.DEBUG)
+_file_handler.setFormatter(
+    logging.Formatter("%(asctime)s [%(levelname)-5s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
+)
+logger.addHandler(_file_handler)
 
 
-CONCURRENT_SIMULATIONS = 6
+def _log_to_file(level: int, msg: str) -> None:
+    logger.log(level, msg)
 
 
-def generate_random_seed() -> str:
-    """Generate a random 6-byte hex seed."""
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def check_prerequisites() -> None:
+    if not os.path.isfile(BINARY):
+        print(f"Error: binary not found at {BINARY}")
+        print("Build it first:  cargo build --release")
+        sys.exit(1)
+    if not os.access(BINARY, os.X_OK):
+        print(f"Error: {BINARY} is not executable")
+        sys.exit(1)
+    for d in ("pics", "vids"):
+        Path(d).mkdir(exist_ok=True)
+
+
+def random_seed() -> str:
     return "0x" + secrets.token_hex(6)
 
 
-def run_simulation(seed: str, is_special: bool) -> bool:
-    """Run a single simulation with the given parameters."""
-    mode = "special" if is_special else "standard"
-    filename = f"{seed[2:]}_{mode}"  # Remove '0x' prefix for filename
-
-    command = [
-        './target/release/three_body_problem',
-        '--seed', seed,
-        '--file-name', filename,
-    ]
-
-    if is_special:
-        command.append('--special')
-
-    print(f"\n{'='*60}")
-    print(f"Seed: {seed} | Mode: {mode.upper()}")
-    print(f"File: {filename}")
-    print('='*60)
-
-    try:
-        result = subprocess.run(command, check=False)
-        success = result.returncode == 0
-
-        if success:
-            print(f"✓ Completed: {filename}")
-        else:
-            print(f"✗ Failed: {filename}")
-
-        return success
-
-    except KeyboardInterrupt:
-        raise
-    except Exception as e:
-        print(f"✗ Error: {e}")
-        return False
+def fmt_duration(seconds: float) -> str:
+    m, s = divmod(int(seconds), 60)
+    h, m = divmod(m, 60)
+    if h:
+        return f"{h}h{m:02d}m{s:02d}s"
+    if m:
+        return f"{m}m{s:02d}s"
+    return f"{s}s"
 
 
-def main():
-    """Run simulations indefinitely with random seeds and modes."""
-    print("\n" + "="*60)
-    print("Three Body Problem - Infinite Random Runner")
-    print("="*60)
-    print(f"Generating random seeds and modes ({CONCURRENT_SIMULATIONS} at a time)...")
-    print("Press Ctrl+C to stop")
-    print("="*60 + "\n")
+# ---------------------------------------------------------------------------
+# Single simulation
+# ---------------------------------------------------------------------------
 
-    # Ensure output directories exist
-    Path('pics').mkdir(exist_ok=True)
-    Path('vids').mkdir(exist_ok=True)
+def run_one(seed: str, special: bool, run_id: int) -> tuple:
+    """Returns (success, filename, elapsed_secs)."""
+    mode = "special" if special else "standard"
+    filename = f"{seed[2:]}_{mode}"
 
-    count = 0
-    successful = 0
-    failed = 0
+    cmd = [BINARY, "--seed", seed, "--file-name", filename]
+    if special:
+        cmd.append("--special")
+
+    _log_to_file(logging.DEBUG, f"[{run_id}] START {filename}  cmd={' '.join(cmd)}")
+    t0 = time.monotonic()
 
     try:
-        with ThreadPoolExecutor(max_workers=CONCURRENT_SIMULATIONS) as executor:
-            while True:
-                batch: list[tuple[int, str, bool]] = []
-                futures = []
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=SIM_TIMEOUT)
+        elapsed = time.monotonic() - t0
 
-                for _ in range(CONCURRENT_SIMULATIONS):
-                    count += 1
-                    seed = generate_random_seed()
-                    is_special = random.choice([True, False])
-                    batch.append((count, seed, is_special))
-                    futures.append(executor.submit(run_simulation, seed, is_special))
+        if proc.stdout:
+            _log_to_file(logging.DEBUG, f"[{run_id}] stdout:\n{proc.stdout.rstrip()}")
+        if proc.stderr:
+            _log_to_file(logging.DEBUG, f"[{run_id}] stderr:\n{proc.stderr.rstrip()}")
 
-                start_run = batch[0][0]
-                end_run = batch[-1][0]
-                print(
-                    f"\n[Runs {start_run}-{end_run}] "
-                    f"(Success: {successful}, Failed: {failed})"
-                )
+        if proc.returncode == 0:
+            _log_to_file(logging.INFO, f"[{run_id}] OK    {filename}  ({fmt_duration(elapsed)})")
+            return (True, filename, elapsed)
 
-                for future in as_completed(futures):
-                    success = future.result()
+        _log_to_file(
+            logging.WARNING,
+            f"[{run_id}] FAIL  {filename}  exit={proc.returncode}  ({fmt_duration(elapsed)})",
+        )
+        return (False, filename, elapsed)
+
+    except subprocess.TimeoutExpired:
+        elapsed = time.monotonic() - t0
+        _log_to_file(logging.ERROR, f"[{run_id}] TIMEOUT {filename}  ({fmt_duration(elapsed)})")
+        return (False, filename, elapsed)
+
+    except OSError as exc:
+        elapsed = time.monotonic() - t0
+        _log_to_file(logging.ERROR, f"[{run_id}] OS ERROR {filename}: {exc}")
+        return (False, filename, elapsed)
+
+    except Exception as exc:
+        elapsed = time.monotonic() - t0
+        _log_to_file(logging.ERROR, f"[{run_id}] UNEXPECTED {filename}: {exc}")
+        return (False, filename, elapsed)
+
+
+# ---------------------------------------------------------------------------
+# Main loop
+# ---------------------------------------------------------------------------
+
+def main() -> None:
+    check_prerequisites()
+
+    _log_to_file(logging.INFO, f"{'=' * 60}")
+    _log_to_file(logging.INFO, f"Session started  concurrency={CONCURRENT_SIMS}")
+    _log_to_file(logging.INFO, f"{'=' * 60}")
+
+    print(f"Three Body Problem batch runner  ({CONCURRENT_SIMS} concurrent)")
+    print(f"Detailed logs -> {LOG_FILE}")
+    print("Ctrl+C to stop gracefully (twice to force)\n")
+
+    run_id = 0
+    ok_total = 0
+    fail_total = 0
+    t_session = time.monotonic()
+
+    shutdown = False
+    orig_sigint = signal.getsignal(signal.SIGINT)
+
+    def on_sigint(_sig, _frame):
+        nonlocal shutdown
+        if shutdown:
+            signal.signal(signal.SIGINT, orig_sigint)
+            raise KeyboardInterrupt
+        shutdown = True
+        print("\n-- finishing current batch, then stopping --")
+
+    signal.signal(signal.SIGINT, on_sigint)
+
+    try:
+        batch_num = 0
+        with ThreadPoolExecutor(max_workers=CONCURRENT_SIMS) as pool:
+            while not shutdown:
+                batch_num += 1
+                futures = {}
+                for _ in range(CONCURRENT_SIMS):
+                    run_id += 1
+                    seed = random_seed()
+                    special = random.choice([True, False])
+                    fut = pool.submit(run_one, seed, special, run_id)
+                    futures[fut] = (run_id, seed, special)
+
+                first = run_id - CONCURRENT_SIMS + 1
+                t_batch = time.monotonic()
+
+                batch_ok = 0
+                batch_fail = 0
+                for fut in as_completed(futures):
+                    success, _fname, _elapsed = fut.result()
                     if success:
-                        successful += 1
+                        batch_ok += 1
+                        ok_total += 1
                     else:
-                        failed += 1
-                        # Brief pause on failure to avoid rapid error loops
-                        time.sleep(2)
+                        batch_fail += 1
+                        fail_total += 1
+
+                batch_elapsed = time.monotonic() - t_batch
+                total = ok_total + fail_total
+                pct = ok_total / total * 100 if total else 0
+                session_elapsed = time.monotonic() - t_session
+
+                status = f"Batch {batch_num:>3} [{first}-{run_id}]  "
+                status += f"+{batch_ok} ok"
+                if batch_fail:
+                    status += f"  -{batch_fail} fail"
+                status += f"  ({fmt_duration(batch_elapsed)})"
+                status += f"  |  total {ok_total}/{total} ({pct:.0f}%)  {fmt_duration(session_elapsed)}"
+                print(status)
+                _log_to_file(logging.INFO, status)
 
     except KeyboardInterrupt:
-        print("\n\n" + "="*60)
-        print("Stopped by user")
-        print("="*60)
-        print(f"Total runs: {count}")
-        print(f"Successful: {successful}")
-        print(f"Failed: {failed}")
-        print("="*60 + "\n")
+        pass
+
+    finally:
+        signal.signal(signal.SIGINT, orig_sigint)
+        session_elapsed = time.monotonic() - t_session
+        total = ok_total + fail_total
+
+        summary = (
+            f"\nDone: {ok_total} ok, {fail_total} failed"
+            f" / {total} total in {fmt_duration(session_elapsed)}"
+        )
+        print(summary)
+        _log_to_file(logging.INFO, summary)
+        _log_to_file(logging.INFO, "Session ended\n")
 
 
 if __name__ == "__main__":

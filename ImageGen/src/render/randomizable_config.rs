@@ -133,67 +133,77 @@ impl RandomizableEffectConfig {
             gallery_quality: self.gallery_quality,
             special_mode,
 
-            // Effect enables
-            enable_bloom: self.resolve_enable("bloom", self.enable_bloom, &mut randomizer, &mut log),
-            enable_glow: self.resolve_enable("glow", self.enable_glow, &mut randomizer, &mut log),
+            // Effect enables (per-effect probabilities from empirical analysis)
+            enable_bloom: self.resolve_enable("bloom", self.enable_bloom, pd::ENABLE_PROB_BLOOM, &mut randomizer, &mut log),
+            enable_glow: self.resolve_enable("glow", self.enable_glow, pd::ENABLE_PROB_GLOW, &mut randomizer, &mut log),
             enable_chromatic_bloom: self.resolve_enable(
                 "chromatic_bloom",
                 self.enable_chromatic_bloom,
+                pd::ENABLE_PROB_CHROMATIC_BLOOM,
                 &mut randomizer,
                 &mut log,
             ),
             enable_perceptual_blur: self.resolve_enable(
                 "perceptual_blur",
                 self.enable_perceptual_blur,
+                pd::ENABLE_PROB_PERCEPTUAL_BLUR,
                 &mut randomizer,
                 &mut log,
             ),
             enable_micro_contrast: self.resolve_enable(
                 "micro_contrast",
                 self.enable_micro_contrast,
+                pd::ENABLE_PROB_MICRO_CONTRAST,
                 &mut randomizer,
                 &mut log,
             ),
             enable_gradient_map: self.resolve_enable(
                 "gradient_map",
                 self.enable_gradient_map,
+                pd::ENABLE_PROB_GRADIENT_MAP,
                 &mut randomizer,
                 &mut log,
             ),
             enable_color_grade: self.resolve_enable(
                 "color_grade",
                 self.enable_color_grade,
+                pd::ENABLE_PROB_COLOR_GRADE,
                 &mut randomizer,
                 &mut log,
             ),
             enable_champleve: self.resolve_enable(
                 "champleve",
                 self.enable_champleve,
+                pd::ENABLE_PROB_CHAMPLEVE,
                 &mut randomizer,
                 &mut log,
             ),
-            enable_aether: self.resolve_enable("aether", self.enable_aether, &mut randomizer, &mut log),
+            enable_aether: self.resolve_enable("aether", self.enable_aether, pd::ENABLE_PROB_AETHER, &mut randomizer, &mut log),
             enable_opalescence: self.resolve_enable(
                 "opalescence",
                 self.enable_opalescence,
+                pd::ENABLE_PROB_OPALESCENCE,
                 &mut randomizer,
                 &mut log,
             ),
             enable_edge_luminance: self.resolve_enable(
                 "edge_luminance",
                 self.enable_edge_luminance,
+                pd::ENABLE_PROB_EDGE_LUMINANCE,
                 &mut randomizer,
                 &mut log,
             ),
             enable_atmospheric_depth: self.resolve_enable(
                 "atmospheric_depth",
                 self.enable_atmospheric_depth,
+                pd::ENABLE_PROB_ATMOSPHERIC_DEPTH,
                 &mut randomizer,
                 &mut log,
             ),
             enable_fine_texture: self.resolve_enable(
                 "fine_texture",
                 self.enable_fine_texture,
+                pd::ENABLE_PROB_FINE_TEXTURE,
                 &mut randomizer,
                 &mut log,
             ),
@@ -326,12 +336,13 @@ impl RandomizableEffectConfig {
         &self,
         name: &str,
         value: Option<bool>,
+        probability: f64,
         randomizer: &mut EffectRandomizer,
         log: &mut RandomizationLog,
     ) -> bool {
         let (enabled, was_randomized) = match value {
             Some(v) => (v, false),
-            None => (randomizer.randomize_enable(), true),
+            None => (randomizer.randomize_enable(probability), true),
         };
 
         log.add_record(RandomizationRecord::new(
@@ -1008,11 +1019,13 @@ mod tests {
         let mut rng = Sha3RandomByteStream::new(&seed, 100.0, 300.0, 300.0, 1.0);
         let (resolved, log) = config.resolve(&mut rng, 1920, 1080, false);
 
-        // Verify all parameters are within their ultra-widened exploratory ranges
+        // Verify all parameters are within their exploratory ranges
         assert!(resolved.blur_strength >= 0.8 && resolved.blur_strength <= 35.0);
         assert!(resolved.blur_radius_scale >= 0.004 && resolved.blur_radius_scale <= 0.065);
         assert!(resolved.glow_strength >= 0.0 && resolved.glow_strength <= 1.0);
         assert!(resolved.chromatic_bloom_strength >= 0.10 && resolved.chromatic_bloom_strength <= 1.0);
+        assert!(resolved.vibrance >= 0.90 && resolved.vibrance <= 1.80,
+            "vibrance {} outside [0.90, 1.80]", resolved.vibrance);
         assert!(resolved.opalescence_layers >= 1 && resolved.opalescence_layers <= 6);
         assert!(resolved.gradient_map_palette <= 14, "Palette index should be 0-14");
         assert!(resolved.atmospheric_fog_color_r >= 0.0 && resolved.atmospheric_fog_color_r <= 0.30);
@@ -1073,6 +1086,95 @@ mod tests {
                 resolved.atmospheric_fog_color_b >= 0.0 && resolved.atmospheric_fog_color_b <= 0.30,
                 "Fog color B {} out of range", resolved.atmospheric_fog_color_b
             );
+        }
+    }
+
+    /// Test that per-effect enable probabilities produce statistically correct distributions.
+    /// Runs many resolutions and verifies each effect's enable rate matches its probability.
+    #[test]
+    fn test_effect_enable_probabilities_statistical() {
+        let n = 500;
+        let mut counts = std::collections::HashMap::<&str, usize>::new();
+
+        for seed_val in 0..n {
+            let seed = [(seed_val & 0xFF) as u8, ((seed_val >> 8) & 0xFF) as u8, 3, 4, 5, 6, 7, 8];
+            let mut rng = Sha3RandomByteStream::new(&seed, 100.0, 300.0, 300.0, 1.0);
+            let config = RandomizableEffectConfig::default();
+            let (resolved, _) = config.resolve(&mut rng, 1920, 1080, false);
+
+            if resolved.enable_bloom { *counts.entry("bloom").or_default() += 1; }
+            if resolved.enable_glow { *counts.entry("glow").or_default() += 1; }
+            if resolved.enable_chromatic_bloom { *counts.entry("chromatic_bloom").or_default() += 1; }
+            if resolved.enable_perceptual_blur { *counts.entry("perceptual_blur").or_default() += 1; }
+            if resolved.enable_micro_contrast { *counts.entry("micro_contrast").or_default() += 1; }
+            if resolved.enable_gradient_map { *counts.entry("gradient_map").or_default() += 1; }
+            if resolved.enable_color_grade { *counts.entry("color_grade").or_default() += 1; }
+            if resolved.enable_champleve { *counts.entry("champleve").or_default() += 1; }
+            if resolved.enable_aether { *counts.entry("aether").or_default() += 1; }
+            if resolved.enable_opalescence { *counts.entry("opalescence").or_default() += 1; }
+            if resolved.enable_edge_luminance { *counts.entry("edge_luminance").or_default() += 1; }
+            if resolved.enable_atmospheric_depth { *counts.entry("atmospheric_depth").or_default() += 1; }
+            if resolved.enable_fine_texture { *counts.entry("fine_texture").or_default() += 1; }
+        }
+
+        let check = |name: &str, expected_prob: f64| {
+            let count = *counts.get(name).unwrap_or(&0) as f64;
+            let rate = count / n as f64;
+            let tolerance = 0.12; // generous tolerance for 500 samples
+            assert!(
+                (rate - expected_prob).abs() < tolerance,
+                "{}: rate {:.3} deviates from expected {:.2} by more than {:.2}",
+                name, rate, expected_prob, tolerance,
+            );
+        };
+
+        check("bloom", pd::ENABLE_PROB_BLOOM);
+        check("glow", pd::ENABLE_PROB_GLOW);
+        check("chromatic_bloom", pd::ENABLE_PROB_CHROMATIC_BLOOM);
+        check("perceptual_blur", pd::ENABLE_PROB_PERCEPTUAL_BLUR);
+        check("micro_contrast", pd::ENABLE_PROB_MICRO_CONTRAST);
+        check("gradient_map", pd::ENABLE_PROB_GRADIENT_MAP);
+        check("color_grade", pd::ENABLE_PROB_COLOR_GRADE);
+        check("champleve", pd::ENABLE_PROB_CHAMPLEVE);
+        check("aether", pd::ENABLE_PROB_AETHER);
+        check("opalescence", pd::ENABLE_PROB_OPALESCENCE);
+        check("edge_luminance", pd::ENABLE_PROB_EDGE_LUMINANCE);
+        check("atmospheric_depth", pd::ENABLE_PROB_ATMOSPHERIC_DEPTH);
+        check("fine_texture", pd::ENABLE_PROB_FINE_TEXTURE);
+    }
+
+    /// Test that explicit enable values always override the probability.
+    #[test]
+    fn test_explicit_enable_overrides_probability() {
+        let config = RandomizableEffectConfig {
+            enable_perceptual_blur: Some(true),
+            enable_chromatic_bloom: Some(false),
+            ..Default::default()
+        };
+
+        let seed = [42, 43, 44, 45, 46, 47, 48, 49];
+        let mut rng = Sha3RandomByteStream::new(&seed, 100.0, 300.0, 300.0, 1.0);
+        let (resolved, _) = config.resolve(&mut rng, 1920, 1080, false);
+
+        assert!(resolved.enable_perceptual_blur,
+            "explicit Some(true) must override 20% probability");
+        assert!(!resolved.enable_chromatic_bloom,
+            "explicit Some(false) must override 70% probability");
+    }
+
+    /// Test that vibrance always falls within the raised floor [0.90, 1.80].
+    #[test]
+    fn test_vibrance_raised_floor() {
+        for seed_val in 0u16..200 {
+            let seed = [(seed_val & 0xFF) as u8, ((seed_val >> 8) & 0xFF) as u8, 99, 4, 5, 6, 7, 8];
+            let mut rng = Sha3RandomByteStream::new(&seed, 100.0, 300.0, 300.0, 1.0);
+            let config = RandomizableEffectConfig::default();
+            let (resolved, _) = config.resolve(&mut rng, 1920, 1080, false);
+
+            assert!(resolved.vibrance >= 0.90,
+                "seed {} produced vibrance {} below 0.90 floor", seed_val, resolved.vibrance);
+            assert!(resolved.vibrance <= 1.80,
+                "seed {} produced vibrance {} above 1.80 ceiling", seed_val, resolved.vibrance);
         }
     }
 

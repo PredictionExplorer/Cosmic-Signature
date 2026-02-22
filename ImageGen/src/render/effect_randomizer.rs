@@ -19,9 +19,17 @@ impl<'a> EffectRandomizer<'a> {
         Self { rng, gallery_quality }
     }
 
-    /// Randomly decide whether an effect should be enabled (50% probability).
-    pub fn randomize_enable(&mut self) -> bool {
-        self.random_f64() < 0.5
+    /// Randomly decide whether an effect should be enabled.
+    ///
+    /// `probability` is the chance of enabling (0.0 = never, 1.0 = always).
+    /// Derived from empirical analysis of visually pleasing outputs.
+    pub fn randomize_enable(&mut self, probability: f64) -> bool {
+        debug_assert!(
+            (0.0..=1.0).contains(&probability),
+            "enable probability must be in [0.0, 1.0], got {}",
+            probability,
+        );
+        self.random_f64() < probability
     }
 
     /// Generate a random float within the descriptor's range.
@@ -163,20 +171,65 @@ mod tests {
     }
 
     #[test]
-    fn test_randomize_enable() {
+    fn test_randomize_enable_half() {
         let mut rng = make_test_rng();
         let mut randomizer = EffectRandomizer::new(&mut rng, false);
         
-        // Generate many samples and check they're roughly 50/50
         let mut count_true = 0;
         for _ in 0..1000 {
-            if randomizer.randomize_enable() {
+            if randomizer.randomize_enable(0.5) {
                 count_true += 1;
             }
         }
         
-        // Should be roughly 500 ± 100
-        assert!(count_true > 400 && count_true < 600);
+        assert!(count_true > 400 && count_true < 600,
+            "50% probability produced {} / 1000", count_true);
+    }
+
+    #[test]
+    fn test_randomize_enable_high_probability() {
+        let mut rng = make_test_rng();
+        let mut randomizer = EffectRandomizer::new(&mut rng, false);
+        
+        let mut count_true = 0;
+        for _ in 0..1000 {
+            if randomizer.randomize_enable(0.80) {
+                count_true += 1;
+            }
+        }
+        
+        assert!(count_true > 700 && count_true < 900,
+            "80% probability produced {} / 1000", count_true);
+    }
+
+    #[test]
+    fn test_randomize_enable_low_probability() {
+        let mut rng = make_test_rng();
+        let mut randomizer = EffectRandomizer::new(&mut rng, false);
+        
+        let mut count_true = 0;
+        for _ in 0..1000 {
+            if randomizer.randomize_enable(0.20) {
+                count_true += 1;
+            }
+        }
+        
+        assert!(count_true > 100 && count_true < 300,
+            "20% probability produced {} / 1000", count_true);
+    }
+
+    #[test]
+    fn test_randomize_enable_extremes() {
+        let mut rng = make_test_rng();
+        let mut randomizer = EffectRandomizer::new(&mut rng, false);
+
+        for _ in 0..100 {
+            assert!(!randomizer.randomize_enable(0.0), "0% should never enable");
+        }
+
+        for _ in 0..100 {
+            assert!(randomizer.randomize_enable(1.0), "100% should always enable");
+        }
     }
 
     #[test]
