@@ -23,28 +23,11 @@ pub struct MicroContrastConfig {
 
 impl Default for MicroContrastConfig {
     fn default() -> Self {
-        Self::special_mode()
-    }
-}
-
-impl MicroContrastConfig {
-    /// Create configuration for special mode (strong clarity)
-    pub fn special_mode() -> Self {
         Self {
-            strength: 0.35,           // Noticeable clarity boost
-            radius: 2,                // Very local (2-pixel radius)
-            edge_threshold: 0.12,     // Moderate edge protection
-            luminance_weight: 0.7,    // Focus on luminance contrast
-        }
-    }
-
-    /// Create configuration for standard mode (subtle clarity)
-    pub fn standard_mode() -> Self {
-        Self {
-            strength: 0.18,           // Subtle clarity boost
+            strength: 0.35,
             radius: 2,
-            edge_threshold: 0.15,     // More edge protection
-            luminance_weight: 0.6,
+            edge_threshold: 0.12,
+            luminance_weight: 0.7,
         }
     }
 }
@@ -267,7 +250,7 @@ mod tests {
 
     #[test]
     fn test_micro_contrast_enabled() {
-        let config = MicroContrastConfig::special_mode();
+        let config = MicroContrastConfig::default();
         let mc = MicroContrast::new(config);
         assert!(mc.is_enabled());
     }
@@ -306,7 +289,7 @@ mod tests {
 
     #[test]
     fn test_buffer_processing() {
-        let config = MicroContrastConfig::standard_mode();
+        let config = MicroContrastConfig::default();
         let mc = MicroContrast::new(config);
 
         // Create test buffer with gradient

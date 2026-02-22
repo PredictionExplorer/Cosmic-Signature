@@ -11,7 +11,6 @@ File:   full subprocess output written to run.log for debugging.
 
 import logging
 import os
-import random
 import secrets
 import signal
 import subprocess
@@ -24,7 +23,7 @@ from pathlib import Path
 CONCURRENT_SIMS = 6
 BINARY = "./target/release/three_body_problem"
 LOG_FILE = "run.log"
-SIM_TIMEOUT = 3600  # seconds per simulation
+SIM_TIMEOUT = 86400  # seconds per simulation (24 hours)
 
 # ---------------------------------------------------------------------------
 # Logging setup: file gets everything, console gets one-liners
@@ -79,14 +78,11 @@ def fmt_duration(seconds: float) -> str:
 # Single simulation
 # ---------------------------------------------------------------------------
 
-def run_one(seed: str, special: bool, run_id: int) -> tuple:
+def run_one(seed: str, run_id: int) -> tuple:
     """Returns (success, filename, elapsed_secs)."""
-    mode = "special" if special else "standard"
-    filename = f"{seed[2:]}_{mode}"
+    filename = seed[2:]
 
     cmd = [BINARY, "--seed", seed, "--file-name", filename]
-    if special:
-        cmd.append("--special")
 
     _log_to_file(logging.DEBUG, f"[{run_id}] START {filename}  cmd={' '.join(cmd)}")
     t0 = time.monotonic()
@@ -168,9 +164,8 @@ def main() -> None:
                 for _ in range(CONCURRENT_SIMS):
                     run_id += 1
                     seed = random_seed()
-                    special = random.choice([True, False])
-                    fut = pool.submit(run_one, seed, special, run_id)
-                    futures[fut] = (run_id, seed, special)
+                    fut = pool.submit(run_one, seed, run_id)
+                    futures[fut] = (run_id, seed)
 
                 first = run_id - CONCURRENT_SIMS + 1
                 t_batch = time.monotonic()

@@ -28,34 +28,14 @@ pub struct OpalescenceConfig {
 
 impl Default for OpalescenceConfig {
     fn default() -> Self {
-        Self::special_mode(1920, 1080)
-    }
-}
-
-impl OpalescenceConfig {
-    /// Create configuration optimized for special mode (full effect)
-    pub fn special_mode(width: usize, height: usize) -> Self {
-        let base_scale = (width as f64 * height as f64).sqrt();
+        let base_scale = (1920.0_f64 * 1080.0).sqrt();
         Self {
-            strength: 0.18,                    // Noticeable but refined
-            scale: base_scale * 0.008,         // Medium-scale features
-            layers: 3,                         // Multiple interference layers
-            chromatic_shift: 0.35,             // Moderate rainbow shift
-            angle_sensitivity: 1.25,           // Strong angle dependency
-            pearl_sheen: 0.22,                 // Subtle pearl highlights
-        }
-    }
-
-    /// Create configuration for standard mode (subtle effect)
-    pub fn standard_mode(width: usize, height: usize) -> Self {
-        let base_scale = (width as f64 * height as f64).sqrt();
-        Self {
-            strength: 0.08,                    // Very subtle
-            scale: base_scale * 0.012,         // Slightly larger features
-            layers: 2,                         // Fewer layers
-            chromatic_shift: 0.15,             // Minimal rainbow
-            angle_sensitivity: 0.65,           // Less angle-dependent
-            pearl_sheen: 0.08,                 // Minimal sheen
+            strength: 0.18,
+            scale: base_scale * 0.008,
+            layers: 3,
+            chromatic_shift: 0.35,
+            angle_sensitivity: 1.25,
+            pearl_sheen: 0.22,
         }
     }
 }
@@ -246,7 +226,7 @@ mod tests {
 
     #[test]
     fn test_opalescence_enabled() {
-        let config = OpalescenceConfig::special_mode(1920, 1080);
+        let config = OpalescenceConfig::default();
         let opal = Opalescence::new(config);
         assert!(opal.is_enabled());
     }
@@ -267,7 +247,7 @@ mod tests {
 
     #[test]
     fn test_buffer_processing() {
-        let config = OpalescenceConfig::special_mode(100, 100);
+        let config = OpalescenceConfig::default();
         let opal = Opalescence::new(config);
 
         // Create test buffer with varying luminance

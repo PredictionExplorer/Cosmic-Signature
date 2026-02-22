@@ -26,32 +26,13 @@ pub struct GlowEnhancementConfig {
 
 impl Default for GlowEnhancementConfig {
     fn default() -> Self {
-        Self::special_mode(1920, 1080)
-    }
-}
-
-impl GlowEnhancementConfig {
-    /// Create configuration for special mode (strong sparkle)
-    pub fn special_mode(width: usize, height: usize) -> Self {
-        let min_dim = width.min(height) as f64;
+        let min_dim = 1920_usize.min(1080) as f64;
         Self {
-            strength: 0.45,                           // Strong glow effect
-            threshold: 0.65,                          // Only very bright areas
-            radius: (0.008 * min_dim).round() as usize, // ~8px at 1080p
-            sharpness: 2.5,                           // Sharp, tight glow
-            saturation_boost: 0.25,                   // Boost color in glows
-        }
-    }
-
-    /// Create configuration for standard mode (subtle sparkle)
-    pub fn standard_mode(width: usize, height: usize) -> Self {
-        let min_dim = width.min(height) as f64;
-        Self {
-            strength: 0.25,                           // Subtle glow
-            threshold: 0.70,                          // Only brightest areas
-            radius: (0.006 * min_dim).round() as usize, // ~6px at 1080p
-            sharpness: 2.8,                           // Very sharp
-            saturation_boost: 0.15,                   // Gentle color boost
+            strength: 0.45,
+            threshold: 0.65,
+            radius: (0.008 * min_dim).round() as usize,
+            sharpness: 2.5,
+            saturation_boost: 0.25,
         }
     }
 }
@@ -242,7 +223,7 @@ mod tests {
 
     #[test]
     fn test_glow_enabled() {
-        let config = GlowEnhancementConfig::special_mode(1920, 1080);
+        let config = GlowEnhancementConfig::default();
         let glow = GlowEnhancement::new(config);
         assert!(glow.is_enabled());
     }
@@ -288,7 +269,7 @@ mod tests {
 
     #[test]
     fn test_buffer_processing() {
-        let config = GlowEnhancementConfig::standard_mode(100, 100);
+        let config = GlowEnhancementConfig::default();
         let glow = GlowEnhancement::new(config);
 
         // Create test buffer with gradient

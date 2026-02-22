@@ -25,9 +25,6 @@ pub struct GenerationRecord {
     /// Hex seed used for generation
     pub seed: String,
     
-    /// Whether special mode was enabled
-    pub special_mode: bool,
-    
     /// Rendering configuration
     pub render_config: LoggedRenderConfig,
     
@@ -99,14 +96,13 @@ pub struct OrbitInfo {
 
 impl GenerationRecord {
     /// Create a new generation record with the current timestamp
-    pub fn new(file_name: String, seed: String, special_mode: bool) -> Self {
+    pub fn new(file_name: String, seed: String) -> Self {
         let timestamp = Local::now().to_rfc3339();
         
         Self {
             timestamp,
             file_name,
             seed,
-            special_mode,
             render_config: LoggedRenderConfig::default(),
             drift_config: DriftConfig::default(),
             simulation_config: SimulationConfig::default(),
@@ -228,10 +224,7 @@ impl GenerationLogger {
 
         match result {
             Ok(_) => {
-                info!("Generation logged: {} ({})",
-                    record.file_name,
-                    if record.special_mode { "special" } else { "standard" },
-                );
+                info!("Generation logged: {}", record.file_name);
             }
             Err(e) => {
                 error!("Failed to save generation log: {}", e);
@@ -325,7 +318,7 @@ mod tests {
     }
 
     fn make_record(name: &str) -> GenerationRecord {
-        let mut r = GenerationRecord::new(name.to_string(), "0xdead".to_string(), false);
+        let mut r = GenerationRecord::new(name.to_string(), "0xdead".to_string());
         r.simulation_config.num_sims = 100;
         r
     }

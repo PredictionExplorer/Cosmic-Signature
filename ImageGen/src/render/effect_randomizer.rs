@@ -1,8 +1,7 @@
-//! Effect randomization system for exploratory parameter generation.
+//! Effect randomization system for museum-quality parameter generation.
 //!
 //! This module provides type-safe randomization of effect parameters within
-//! carefully tuned ranges, enabling exploration of the visual parameter space
-//! while maintaining aesthetic coherence.
+//! curated ranges, ensuring every output meets exhibition standards.
 
 use super::parameter_descriptors::{FloatParamDescriptor, IntParamDescriptor};
 use crate::sim::Sha3RandomByteStream;
@@ -10,13 +9,11 @@ use crate::sim::Sha3RandomByteStream;
 /// Randomizer for effect parameters using the deterministic RNG.
 pub struct EffectRandomizer<'a> {
     rng: &'a mut Sha3RandomByteStream,
-    gallery_quality: bool,
 }
 
 impl<'a> EffectRandomizer<'a> {
-    /// Create a new effect randomizer.
-    pub fn new(rng: &'a mut Sha3RandomByteStream, gallery_quality: bool) -> Self {
-        Self { rng, gallery_quality }
+    pub fn new(rng: &'a mut Sha3RandomByteStream) -> Self {
+        Self { rng }
     }
 
     /// Randomly decide whether an effect should be enabled.
@@ -34,14 +31,12 @@ impl<'a> EffectRandomizer<'a> {
 
     /// Generate a random float within the descriptor's range.
     pub fn randomize_float(&mut self, descriptor: &FloatParamDescriptor) -> f64 {
-        let (min, max) = descriptor.range(self.gallery_quality);
-        self.random_range(min, max)
+        self.random_range(descriptor.min, descriptor.max)
     }
 
     /// Generate a random integer within the descriptor's range.
     pub fn randomize_int(&mut self, descriptor: &IntParamDescriptor) -> usize {
-        let (min, max) = descriptor.range(self.gallery_quality);
-        self.random_range_int(min, max)
+        self.random_range_int(descriptor.min, descriptor.max)
     }
 
     /// Generate two floats ensuring first < second (for constrained pairs).
@@ -75,22 +70,12 @@ impl<'a> EffectRandomizer<'a> {
 
     /// Get a random f64 in [0.0, 1.0) from the RNG.
     fn random_f64(&mut self) -> f64 {
-        // Use 4 bytes to construct a uniform random float
         let b0 = self.rng.next_byte() as u32;
         let b1 = self.rng.next_byte() as u32;
         let b2 = self.rng.next_byte() as u32;
         let b3 = self.rng.next_byte() as u32;
-        
-        // Combine into a 32-bit integer
         let bits = (b0 << 24) | (b1 << 16) | (b2 << 8) | b3;
-        
-        // Convert to [0.0, 1.0) range
         (bits as f64) / (u32::MAX as f64)
-    }
-
-    /// Get the gallery quality setting.
-    pub fn gallery_quality(&self) -> bool {
-        self.gallery_quality
     }
 }
 
@@ -107,7 +92,7 @@ pub struct RandomizationRecord {
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct RandomizedParameter {
     pub name: String,
-    pub value: String, // String to handle both float and int
+    pub value: String,
     pub was_randomized: bool,
     pub range_used: String,
 }
@@ -144,16 +129,12 @@ impl RandomizationRecord {
 /// Collection of all randomization records for a render session.
 #[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
 pub struct RandomizationLog {
-    pub gallery_quality: bool,
     pub effects: Vec<RandomizationRecord>,
 }
 
 impl RandomizationLog {
-    pub fn new(gallery_quality: bool) -> Self {
-        Self {
-            gallery_quality,
-            effects: Vec::new(),
-        }
+    pub fn new() -> Self {
+        Self { effects: Vec::new() }
     }
 
     pub fn add_record(&mut self, record: RandomizationRecord) {
@@ -173,7 +154,7 @@ mod tests {
     #[test]
     fn test_randomize_enable_half() {
         let mut rng = make_test_rng();
-        let mut randomizer = EffectRandomizer::new(&mut rng, false);
+        let mut randomizer = EffectRandomizer::new(&mut rng);
         
         let mut count_true = 0;
         for _ in 0..1000 {
@@ -189,7 +170,7 @@ mod tests {
     #[test]
     fn test_randomize_enable_high_probability() {
         let mut rng = make_test_rng();
-        let mut randomizer = EffectRandomizer::new(&mut rng, false);
+        let mut randomizer = EffectRandomizer::new(&mut rng);
         
         let mut count_true = 0;
         for _ in 0..1000 {
@@ -205,7 +186,7 @@ mod tests {
     #[test]
     fn test_randomize_enable_low_probability() {
         let mut rng = make_test_rng();
-        let mut randomizer = EffectRandomizer::new(&mut rng, false);
+        let mut randomizer = EffectRandomizer::new(&mut rng);
         
         let mut count_true = 0;
         for _ in 0..1000 {
@@ -221,7 +202,7 @@ mod tests {
     #[test]
     fn test_randomize_enable_extremes() {
         let mut rng = make_test_rng();
-        let mut randomizer = EffectRandomizer::new(&mut rng, false);
+        let mut randomizer = EffectRandomizer::new(&mut rng);
 
         for _ in 0..100 {
             assert!(!randomizer.randomize_enable(0.0), "0% should never enable");
@@ -235,14 +216,12 @@ mod tests {
     #[test]
     fn test_randomize_float_range() {
         let mut rng = make_test_rng();
-        let mut randomizer = EffectRandomizer::new(&mut rng, false);
+        let mut randomizer = EffectRandomizer::new(&mut rng);
         
         let descriptor = FloatParamDescriptor {
             name: "test",
             min: 10.0,
             max: 20.0,
-            gallery_min: 12.0,
-            gallery_max: 18.0,
             description: "Test parameter",
         };
         
@@ -253,42 +232,14 @@ mod tests {
     }
 
     #[test]
-    fn test_gallery_quality_narrows_range() {
-        let mut rng1 = make_test_rng();
-        let mut randomizer_normal = EffectRandomizer::new(&mut rng1, false);
-        
-        let mut rng2 = make_test_rng();
-        let mut randomizer_gallery = EffectRandomizer::new(&mut rng2, true);
-        
-        let descriptor = FloatParamDescriptor {
-            name: "test",
-            min: 0.0,
-            max: 100.0,
-            gallery_min: 40.0,
-            gallery_max: 60.0,
-            description: "Test parameter",
-        };
-        
-        let normal_val = randomizer_normal.randomize_float(&descriptor);
-        let gallery_val = randomizer_gallery.randomize_float(&descriptor);
-        
-        // Gallery value must be in narrower range
-        assert!((40.0..=60.0).contains(&gallery_val));
-        // Normal value in wider range (might also be in narrow range by chance)
-        assert!((0.0..=100.0).contains(&normal_val));
-    }
-
-    #[test]
     fn test_randomize_ordered_pair() {
         let mut rng = make_test_rng();
-        let mut randomizer = EffectRandomizer::new(&mut rng, false);
+        let mut randomizer = EffectRandomizer::new(&mut rng);
         
         let desc = FloatParamDescriptor {
             name: "test",
             min: 0.0,
             max: 1.0,
-            gallery_min: 0.2,
-            gallery_max: 0.8,
             description: "Test parameter",
         };
         
@@ -298,4 +249,3 @@ mod tests {
         }
     }
 }
-

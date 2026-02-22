@@ -27,34 +27,13 @@ pub struct AtmosphericDepthConfig {
 
 impl Default for AtmosphericDepthConfig {
     fn default() -> Self {
-        Self::special_mode()
-    }
-}
-
-impl AtmosphericDepthConfig {
-    /// Create configuration optimized for special mode (full cinematic effect)
-    pub fn special_mode() -> Self {
         Self {
             strength: 0.28,
-            // Deep blue-purple atmospheric tint (cosmic/nebula atmosphere)
             fog_color: (0.08, 0.12, 0.22),
             density_threshold: 0.15,
             desaturation: 0.45,
             darkening: 0.18,
             density_radius: 3,
-        }
-    }
-
-    /// Create configuration for standard mode (minimal effect)
-    pub fn standard_mode() -> Self {
-        Self {
-            strength: 0.08,
-            // Subtle cool tint
-            fog_color: (0.05, 0.08, 0.15),
-            density_threshold: 0.25,
-            desaturation: 0.20,
-            darkening: 0.08,
-            density_radius: 2,
         }
     }
 }
@@ -282,7 +261,7 @@ mod tests {
 
     #[test]
     fn test_atmospheric_depth_enabled() {
-        let config = AtmosphericDepthConfig::special_mode();
+        let config = AtmosphericDepthConfig::default();
         let atmos = AtmosphericDepth::new(config);
         assert!(atmos.is_enabled());
     }

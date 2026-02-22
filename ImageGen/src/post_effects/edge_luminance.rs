@@ -25,30 +25,12 @@ pub struct EdgeLuminanceConfig {
 
 impl Default for EdgeLuminanceConfig {
     fn default() -> Self {
-        Self::special_mode()
-    }
-}
-
-impl EdgeLuminanceConfig {
-    /// Create configuration optimized for special mode (refined highlighting)
-    pub fn special_mode() -> Self {
         Self {
             strength: 0.25,
             threshold: 0.15,
             brightness_boost: 0.35,
             bright_edges_only: true,
             min_luminance: 0.25,
-        }
-    }
-
-    /// Create configuration for standard mode (subtle enhancement)
-    pub fn standard_mode() -> Self {
-        Self {
-            strength: 0.12,
-            threshold: 0.20,
-            brightness_boost: 0.20,
-            bright_edges_only: true,
-            min_luminance: 0.30,
         }
     }
 }
@@ -248,7 +230,7 @@ mod tests {
 
     #[test]
     fn test_edge_luminance_enabled() {
-        let config = EdgeLuminanceConfig::special_mode();
+        let config = EdgeLuminanceConfig::default();
         let edge = EdgeLuminance::new(config);
         assert!(edge.is_enabled());
     }
@@ -291,7 +273,7 @@ mod tests {
 
     #[test]
     fn test_buffer_processing() {
-        let config = EdgeLuminanceConfig::special_mode();
+        let config = EdgeLuminanceConfig::default();
         let edge = EdgeLuminance::new(config);
 
         // Create simple gradient (creates edges)

@@ -17,8 +17,6 @@ use std::error::Error;
 pub enum TextureType {
     /// Canvas weave pattern (like oil painting canvas)
     Canvas,
-    /// Subtle film grain
-    FilmGrain,
 }
 
 /// Configuration for fine texture overlay
@@ -40,14 +38,7 @@ pub struct FineTextureConfig {
 
 impl Default for FineTextureConfig {
     fn default() -> Self {
-        Self::special_mode_canvas(1920, 1080)
-    }
-}
-
-impl FineTextureConfig {
-    /// Canvas texture for special mode (subtle, refined)
-    pub fn special_mode_canvas(width: usize, height: usize) -> Self {
-        let base_scale = (width as f64 * height as f64).sqrt();
+        let base_scale = (1920.0_f64 * 1080.0).sqrt();
         Self {
             texture_type: TextureType::Canvas,
             strength: 0.12,
@@ -55,19 +46,6 @@ impl FineTextureConfig {
             contrast: 0.35,
             anisotropy: 0.25,
             angle: 45.0,
-        }
-    }
-
-    /// Standard mode (minimal texture)
-    pub fn standard_mode(width: usize, height: usize) -> Self {
-        let base_scale = (width as f64 * height as f64).sqrt();
-        Self {
-            texture_type: TextureType::FilmGrain,
-            strength: 0.04,
-            scale: base_scale * 0.0008,
-            contrast: 0.20,
-            anisotropy: 0.0,
-            angle: 0.0,
         }
     }
 }
@@ -137,24 +115,10 @@ impl FineTexture {
         weave + grain
     }
 
-    /// Film grain (fine random texture)
-    fn film_grain_pattern(&self, x: f64, y: f64) -> f64 {
-        let scale = 1.0 / self.config.scale;
-        
-        // High-frequency noise for grain
-        let grain = Self::hash2d(x * scale * 80.0, y * scale * 80.0);
-        
-        // Slight clumping
-        let clump = self.value_noise(x * scale * 10.0, y * scale * 10.0) * 0.3;
-        
-        grain * 0.7 + clump
-    }
-
     /// Get texture value for a given position
     fn get_texture_value(&self, x: f64, y: f64) -> f64 {
         let raw_value = match self.config.texture_type {
             TextureType::Canvas => self.canvas_pattern(x, y),
-            TextureType::FilmGrain => self.film_grain_pattern(x, y),
         };
 
         // Apply contrast
@@ -230,7 +194,7 @@ mod tests {
 
     #[test]
     fn test_texture_enabled() {
-        let config = FineTextureConfig::special_mode_canvas(1920, 1080);
+        let config = FineTextureConfig::default();
         let texture = FineTexture::new(config);
         assert!(texture.is_enabled());
     }
@@ -244,7 +208,7 @@ mod tests {
 
     #[test]
     fn test_buffer_processing() {
-        let config = FineTextureConfig::special_mode_canvas(100, 100);
+        let config = FineTextureConfig::default();
         let texture = FineTexture::new(config);
 
         // Create uniform test buffer
@@ -263,7 +227,6 @@ mod tests {
     fn test_all_texture_types() {
         let types = [
             TextureType::Canvas,
-            TextureType::FilmGrain,
         ];
 
         for texture_type in types {

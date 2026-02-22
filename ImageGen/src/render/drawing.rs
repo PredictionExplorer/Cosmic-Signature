@@ -5,6 +5,9 @@ use crate::{spectral_constants, spectrum::NUM_BINS, utils::{build_gaussian_kerne
 use spectral_constants::{LAMBDA_START, LAMBDA_END};
 use rayon::prelude::*;
 use smallvec::SmallVec;
+use std::sync::atomic::{AtomicBool, Ordering};
+
+pub static DISPERSION_BOOST_ENABLED: AtomicBool = AtomicBool::new(true);
 
 /// Convert OkLab hue to wavelength with perceptually uniform distribution.
 /// 
@@ -273,13 +276,18 @@ pub fn draw_line_segment_aa_spectral_with_dispersion(
     let center_bin0 = ((wavelength0 - LAMBDA_START) / spectral_constants::BIN_WIDTH).round() as isize;
     let center_bin1 = ((wavelength1 - LAMBDA_START) / spectral_constants::BIN_WIDTH).round() as isize;
     
-    use crate::render::constants::{SPECTRAL_DISPERSION_BINS, SPECTRAL_DISPERSION_STRENGTH};
+    use crate::render::constants::{SPECTRAL_DISPERSION_BINS, SPECTRAL_DISPERSION_STRENGTH, SPECTRAL_DISPERSION_STRENGTH_BOOSTED};
+    let dispersion_strength = if DISPERSION_BOOST_ENABLED.load(Ordering::Relaxed) {
+        SPECTRAL_DISPERSION_STRENGTH_BOOSTED
+    } else {
+        SPECTRAL_DISPERSION_STRENGTH
+    };
     let dispersion_range = SPECTRAL_DISPERSION_BINS as isize;
     
     // Draw multiple passes, one for each wavelength bin with spatial offset
     for bin_offset in -dispersion_range..=dispersion_range {
         // Calculate offset distance based on bin offset (creates rainbow spread)
-        let offset_dist = bin_offset as f32 * SPECTRAL_DISPERSION_STRENGTH as f32;
+        let offset_dist = bin_offset as f32 * dispersion_strength as f32;
         
         // Offset the line perpendicular to its direction
         let offset_x = perp_x * offset_dist;
@@ -622,5 +630,45 @@ fn draw_line_segment_aa_spectral_internal(
 
             intery += gradient;
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_dispersion_boost_default_enabled() {
+        assert!(DISPERSION_BOOST_ENABLED.load(Ordering::Relaxed),
+            "dispersion boost should be enabled by default");
+    }
+
+    #[test]
+    fn test_oklab_hue_to_wavelength_range() {
+        for deg in (0..360).step_by(10) {
+            let rad = (deg as f64).to_radians();
+            let a = 0.15 * rad.cos();
+            let b = 0.15 * rad.sin();
+            let wl = oklab_hue_to_wavelength(a, b);
+            assert!(wl >= 380.0 && wl <= 700.0,
+                "hue {deg}\u{00b0} -> wavelength {wl} out of visible range");
+        }
+    }
+
+    #[test]
+    fn test_wavelength_to_oklab_roundtrip() {
+        let wl = 620.0;
+        let (l, a, b) = wavelength_to_oklab(wl, 0.7);
+        assert!(l > 0.0, "lightness should be positive");
+        let chroma = (a * a + b * b).sqrt();
+        assert!(chroma > 0.0, "wavelength {wl} should produce colored output");
+    }
+
+    #[test]
+    fn test_wavelength_to_oklab_endpoints() {
+        let blue = wavelength_to_oklab(420.0, 0.7);
+        let red = wavelength_to_oklab(650.0, 0.7);
+        assert!(blue.0 > 0.0, "blue lightness should be positive");
+        assert!(red.0 > 0.0, "red lightness should be positive");
     }
 }

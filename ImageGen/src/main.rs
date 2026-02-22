@@ -77,9 +77,6 @@ struct Args {
     #[arg(long, default_value_t = 0.990)]
     clip_white: f64,
 
-    #[arg(long, default_value_t = false)]
-    special: bool,
-
     /// Test mode: render only the first frame as PNG and exit (skips video generation)
     #[arg(long, default_value_t = false)]
     test_frame: bool,
@@ -238,11 +235,35 @@ struct Args {
     #[arg(long, default_value_t = false)]
     disable_temporal_smoothing: bool,
 
-    // ==== Gallery Quality Mode ====
-    
-    /// Enable gallery quality mode (narrower randomization ranges for exhibition-ready results)
+    // ==== Museum Quality Enhancements (all enabled by default) ====
+
+    /// Disable ALL museum-quality enhancements at once (classic rendering)
     #[arg(long, default_value_t = false)]
-    gallery_quality: bool,
+    no_enhancements: bool,
+
+    /// Disable boosted OKLab chroma for richer color saturation
+    #[arg(long, default_value_t = false)]
+    no_chroma_boost: bool,
+
+    /// Disable boosted saturation in spectral-to-RGB conversion
+    #[arg(long, default_value_t = false)]
+    no_sat_boost: bool,
+
+    /// Disable refined ACES tonemapping curve (more midtone contrast)
+    #[arg(long, default_value_t = false)]
+    no_aces_tweak: bool,
+
+    /// Disable per-body alpha variation (depth hierarchy in trail brightness)
+    #[arg(long, default_value_t = false)]
+    no_alpha_variation: bool,
+
+    /// Disable aspect-aware bounding box (prevents orbit stretching)
+    #[arg(long, default_value_t = false)]
+    no_aspect_correction: bool,
+
+    /// Disable boosted spectral dispersion (wider rainbow trails)
+    #[arg(long, default_value_t = false)]
+    no_dispersion_boost: bool,
 
     // ==== Bloom & Glow Parameters ====
     
@@ -530,7 +551,6 @@ fn build_randomizable_config(args: &Args) -> render::randomizable_config::Random
     use render::randomizable_config::RandomizableEffectConfig;
 
     RandomizableEffectConfig {
-        gallery_quality: args.gallery_quality,
 
         // Effect enables (convert disable flags to enable options)
         enable_bloom: if args.disable_all_effects || args.disable_bloom { Some(false) } else { None },
@@ -642,8 +662,20 @@ fn main() -> Result<()> {
     // Initialize tracing
     setup_logging(args.json_logs, &args.log_level);
 
-    // Determine number of simulations
-    let num_sims = args.num_sims.unwrap_or(if args.special { 100_000 } else { 30_000 });
+    let num_sims = args.num_sims.unwrap_or(100_000);
+
+    let enhancements = app::Enhancements {
+        chroma_boost: !args.no_enhancements && !args.no_chroma_boost,
+        sat_boost: !args.no_enhancements && !args.no_sat_boost,
+        aces_tweak: !args.no_enhancements && !args.no_aces_tweak,
+        alpha_variation: !args.no_enhancements && !args.no_alpha_variation,
+        aspect_correction: !args.no_enhancements && !args.no_aspect_correction,
+        dispersion_boost: !args.no_enhancements && !args.no_dispersion_boost,
+    };
+
+    crate::spectrum_simd::SAT_BOOST_ENABLED.store(enhancements.sat_boost, std::sync::atomic::Ordering::Relaxed);
+    crate::render::ACES_TWEAK_ENABLED.store(enhancements.aces_tweak, std::sync::atomic::Ordering::Relaxed);
+    crate::render::drawing::DISPERSION_BOOST_ENABLED.store(enhancements.dispersion_boost, std::sync::atomic::Ordering::Relaxed);
 
     // Setup
     app::setup_directories()?;
@@ -668,7 +700,6 @@ fn main() -> Result<()> {
         &mut rng,
         args.width,
         args.height,
-        args.special,
     );
     
     let num_randomized = randomization_log.effects.iter()
@@ -684,10 +715,6 @@ fn main() -> Result<()> {
             .sum::<usize>() - num_randomized
     );
     
-    if args.gallery_quality {
-        info!("   => Gallery quality mode enabled (conservative randomization ranges)");
-    }
-
     // Stage 1: Borda selection
     let (best_bodies, best_info) = app::run_borda_selection(
         &mut rng,
@@ -710,7 +737,6 @@ fn main() -> Result<()> {
             args.drift_arc_fraction,
             args.drift_orbit_eccentricity,
             &mut rng,
-            args.special,
         )
     } else {
         info!("STAGE 2.5/7: Drift disabled (--no-drift flag)");
@@ -722,6 +748,7 @@ fn main() -> Result<()> {
         &mut rng,
         args.num_steps_sim,
         args.alpha_denom,
+        &enhancements,
     );
 
     // Using OKLab color space
@@ -729,7 +756,7 @@ fn main() -> Result<()> {
 
     // Stage 4: Bounding box
     info!("STAGE 4/7: Determining bounding box...");
-    let render_ctx = render::context::RenderContext::new(args.width, args.height, &positions);
+    let render_ctx = render::context::RenderContext::new(args.width, args.height, &positions, enhancements.aspect_correction);
     let bbox = render_ctx.bounds();
     info!("   => X: [{:.3}, {:.3}], Y: [{:.3}, {:.3}]", bbox.min_x, bbox.max_x, bbox.min_y, bbox.max_y);
 
@@ -746,6 +773,7 @@ fn main() -> Result<()> {
         &resolved_effect_config,
         noise_seed,
         &render_config,
+        enhancements.aspect_correction,
     )?;
 
     let base_filename = app::generate_filename(&args.file_name, &args.profile_tag);
@@ -763,6 +791,7 @@ fn main() -> Result<()> {
             &render_config,
             &output_png,
             &best_info,
+            enhancements.aspect_correction,
         )?;
         return Ok(());
     }
@@ -781,6 +810,8 @@ fn main() -> Result<()> {
         &output_vid,
         &output_png,
         args.fast_encode,
+        enhancements.aspect_correction,
+        !args.disable_temporal_smoothing,
     )?;
 
     info!(
@@ -796,7 +827,6 @@ fn main() -> Result<()> {
         num_steps_sim: args.num_steps_sim,
         width: args.width,
         height: args.height,
-        special: args.special,
         test_frame: args.test_frame,
         clip_black: args.clip_black,
         clip_white: args.clip_white,

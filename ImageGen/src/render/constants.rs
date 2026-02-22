@@ -22,7 +22,8 @@ pub const BASE_HUE_DRIFT: f64 = 1.4;
 /// Amplitude, in degrees, applied by the palette sway wave
 pub const HUE_WAVE_AMPLITUDE: f64 = 52.0;
 
-/// Frequency, in cycles, of the palette sway wave across a trajectory
+/// Base frequency (cycles) of the palette sway wave (now randomized per-seed in [1.8, 4.0])
+#[allow(dead_code)]
 pub const HUE_WAVE_FREQUENCY: f64 = 2.6;
 
 /// Additional per-body phase offsets (degrees) to guarantee separation
@@ -31,14 +32,19 @@ pub const BODY_HUE_PHASE: [f64; 3] = [0.0, 120.0, 240.0];
 // ========== OKLab Perceptual Color Space Constants ==========
 
 /// Base chroma value (typical range 0-0.3 for natural colors)
-/// Higher values produce more saturated colors
 pub const OKLAB_CHROMA_BASE: f64 = 0.18;
+/// Boosted base chroma for museum-quality output
+pub const OKLAB_CHROMA_BASE_BOOSTED: f64 = 0.22;
 
 /// Range of chroma variation around the base value
 pub const OKLAB_CHROMA_RANGE: f64 = 0.12;
+/// Boosted chroma range
+pub const OKLAB_CHROMA_RANGE_BOOSTED: f64 = 0.14;
 
 /// Additional chroma modulation applied via palette waves
 pub const OKLAB_CHROMA_WAVE_AMPLITUDE: f64 = 0.07;
+/// Boosted chroma wave amplitude
+pub const OKLAB_CHROMA_WAVE_AMPLITUDE_BOOSTED: f64 = 0.10;
 
 /// Base lightness value (0=black, 1=white)
 pub const OKLAB_LIGHTNESS_BASE: f64 = 0.62;
@@ -47,7 +53,7 @@ pub const OKLAB_LIGHTNESS_BASE: f64 = 0.62;
 pub const OKLAB_LIGHTNESS_RANGE: f64 = 0.32;
 
 /// Additional lightness modulation applied via palette waves
-pub const OKLAB_LIGHTNESS_WAVE_AMPLITUDE: f64 = 0.22;
+pub const OKLAB_LIGHTNESS_WAVE_AMPLITUDE: f64 = 0.28;
 
 // ========== Rendering Constants ==========
 
@@ -152,8 +158,9 @@ pub const DEFAULT_AETHER_CAUSTIC_SOFTNESS: f64 = 3.0;
 // ========== Special Mode Enhancement Constants ==========
 
 /// Spectral dispersion strength - controls prismatic trail separation
-/// Higher values create wider rainbow trails (pixels per wavelength bin)
-pub const SPECTRAL_DISPERSION_STRENGTH: f64 = 0.8;  // Increased from 0.15 for dramatic effect
+pub const SPECTRAL_DISPERSION_STRENGTH: f64 = 0.8;
+/// Boosted dispersion for wider rainbow trails
+pub const SPECTRAL_DISPERSION_STRENGTH_BOOSTED: f64 = 1.1;
 
 /// Number of wavelength bins to spread dispersion across (±bins from center)
 pub const SPECTRAL_DISPERSION_BINS: usize = 5;  // Increased from 3 for fuller spectrum

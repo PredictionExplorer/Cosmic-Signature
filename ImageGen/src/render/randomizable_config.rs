@@ -11,9 +11,6 @@ use crate::sim::Sha3RandomByteStream;
 /// Each field is Option<T>: None means "randomize this", Some(T) means "use explicit value".
 #[derive(Clone, Debug, Default)]
 pub struct RandomizableEffectConfig {
-    // Gallery quality mode
-    pub gallery_quality: bool,
-
     // Effect enable/disable flags
     pub enable_bloom: Option<bool>,
     pub enable_glow: Option<bool>,
@@ -121,17 +118,13 @@ impl RandomizableEffectConfig {
         rng: &mut Sha3RandomByteStream,
         width: u32,
         height: u32,
-        special_mode: bool,
     ) -> (ResolvedEffectConfig, RandomizationLog) {
-        let mut randomizer = EffectRandomizer::new(rng, self.gallery_quality);
-        let mut log = RandomizationLog::new(self.gallery_quality);
+        let mut randomizer = EffectRandomizer::new(rng);
+        let mut log = RandomizationLog::new();
 
-        // Resolve all parameters with logging
         let resolved = ResolvedEffectConfig {
             width,
             height,
-            gallery_quality: self.gallery_quality,
-            special_mode,
 
             // Effect enables (per-effect probabilities from empirical analysis)
             enable_bloom: self.resolve_enable("bloom", self.enable_bloom, pd::ENABLE_PROB_BLOOM, &mut randomizer, &mut log),
@@ -316,13 +309,13 @@ impl RandomizableEffectConfig {
             "clip_black".to_string(),
             clip_black,
             self.clip_black.is_none(),
-            pd::CLIP_BLACK.range(self.gallery_quality),
+            (pd::CLIP_BLACK.min, pd::CLIP_BLACK.max),
         );
         clip_record.add_float(
             "clip_white".to_string(),
             clip_white,
             self.clip_white.is_none(),
-            pd::CLIP_WHITE.range(self.gallery_quality),
+            (pd::CLIP_WHITE.min, pd::CLIP_WHITE.max),
         );
         log.add_record(clip_record);
 
@@ -371,21 +364,12 @@ impl RandomizableEffectConfig {
         let effect_name = Self::effect_group_name(name);
         let record_idx = log.effects.iter().position(|r| r.effect_name == effect_name);
         
+        let range = (descriptor.min, descriptor.max);
         if let Some(idx) = record_idx {
-            log.effects[idx].add_float(
-                name.to_string(),
-                resolved,
-                was_randomized,
-                descriptor.range(randomizer.gallery_quality()),
-            );
+            log.effects[idx].add_float(name.to_string(), resolved, was_randomized, range);
         } else {
             let mut record = RandomizationRecord::new(effect_name, true, false);
-            record.add_float(
-                name.to_string(),
-                resolved,
-                was_randomized,
-                descriptor.range(randomizer.gallery_quality()),
-            );
+            record.add_float(name.to_string(), resolved, was_randomized, range);
             log.add_record(record);
         }
 
@@ -405,25 +389,15 @@ impl RandomizableEffectConfig {
             None => (randomizer.randomize_int(descriptor), true),
         };
 
-        // Find or create record for this parameter's effect group
         let effect_name = Self::effect_group_name(name);
         let record_idx = log.effects.iter().position(|r| r.effect_name == effect_name);
         
+        let range = (descriptor.min, descriptor.max);
         if let Some(idx) = record_idx {
-            log.effects[idx].add_int(
-                name.to_string(),
-                resolved,
-                was_randomized,
-                descriptor.range(randomizer.gallery_quality()),
-            );
+            log.effects[idx].add_int(name.to_string(), resolved, was_randomized, range);
         } else {
             let mut record = RandomizationRecord::new(effect_name, true, false);
-            record.add_int(
-                name.to_string(),
-                resolved,
-                was_randomized,
-                descriptor.range(randomizer.gallery_quality()),
-            );
+            record.add_int(name.to_string(), resolved, was_randomized, range);
             log.add_record(record);
         }
 
@@ -441,9 +415,6 @@ impl RandomizableEffectConfig {
 pub struct ResolvedEffectConfig {
     pub width: u32,
     pub height: u32,
-    #[allow(dead_code)] // Stored for logging purposes
-    pub gallery_quality: bool,
-    pub special_mode: bool,
 
     // Effect enables
     pub enable_bloom: bool,
@@ -615,8 +586,6 @@ mod tests {
         let config = ResolvedEffectConfig {
             width: 1920,
             height: 1080,
-            gallery_quality: false,
-            special_mode: false,
             enable_bloom: true,
             blur_radius_scale: 0.070, // Extreme radius (above 0.060 threshold)
             blur_strength: 26.0,       // Extreme strength (above 24.0 threshold)
@@ -690,7 +659,7 @@ mod tests {
             nebula_base_frequency: 0.0015,
         };
 
-        let mut log = RandomizationLog::new(false);
+        let mut log = RandomizationLog::new();
         let result = apply_conflict_detection(config.clone(), &mut log);
 
         // Verify that both parameters were scaled down
@@ -720,8 +689,6 @@ mod tests {
         let config = ResolvedEffectConfig {
             width: 1920,
             height: 1080,
-            gallery_quality: false,
-            special_mode: false,
             enable_bloom: true,
             blur_radius_scale: 0.055, // Below 0.060 threshold
             blur_strength: 23.0,       // Below 24.0 threshold
@@ -795,7 +762,7 @@ mod tests {
             nebula_base_frequency: 0.0015,
         };
 
-        let mut log = RandomizationLog::new(false);
+        let mut log = RandomizationLog::new();
         let result = apply_conflict_detection(config.clone(), &mut log);
 
         // Verify parameters are unchanged
@@ -821,8 +788,6 @@ mod tests {
         let config = ResolvedEffectConfig {
             width: 1920,
             height: 1080,
-            gallery_quality: false,
-            special_mode: false,
             enable_bloom: false,
             enable_glow: false,
             enable_chromatic_bloom: false,
@@ -895,7 +860,7 @@ mod tests {
             nebula_base_frequency: 0.0015,
         };
 
-        let mut log = RandomizationLog::new(false);
+        let mut log = RandomizationLog::new();
         let result = apply_conflict_detection(config.clone(), &mut log);
 
         // Verify layers were capped at 5
@@ -917,8 +882,6 @@ mod tests {
         let config = ResolvedEffectConfig {
             width: 1920,
             height: 1080,
-            gallery_quality: false,
-            special_mode: false,
             enable_bloom: false,
             enable_glow: false,
             enable_chromatic_bloom: false,
@@ -991,7 +954,7 @@ mod tests {
             nebula_base_frequency: 0.0015,
         };
 
-        let mut log = RandomizationLog::new(false);
+        let mut log = RandomizationLog::new();
         let result = apply_conflict_detection(config.clone(), &mut log);
 
         // Verify layers are NOT capped (strength too low)
@@ -1010,14 +973,11 @@ mod tests {
     /// Test that parameter randomization works end-to-end with new wider ranges
     #[test]
     fn test_wide_range_randomization() {
-        let config = RandomizableEffectConfig {
-            gallery_quality: false,
-            ..Default::default()
-        };
+        let config = RandomizableEffectConfig::default();
 
         let seed = [1, 2, 3, 4, 5, 6, 7, 8];
         let mut rng = Sha3RandomByteStream::new(&seed, 100.0, 300.0, 300.0, 1.0);
-        let (resolved, log) = config.resolve(&mut rng, 1920, 1080, false);
+        let (resolved, log) = config.resolve(&mut rng, 1920, 1080);
 
         // Verify all parameters are within their exploratory ranges
         assert!(resolved.blur_strength >= 0.8 && resolved.blur_strength <= 35.0);
@@ -1039,16 +999,13 @@ mod tests {
     /// Test that gradient palette randomization produces valid palette indices
     #[test]
     fn test_gradient_palette_randomization() {
-        let config = RandomizableEffectConfig {
-            gallery_quality: false,
-            ..Default::default()
-        };
+        let config = RandomizableEffectConfig::default();
 
         // Test multiple random seeds to ensure variety
         for seed_val in 1..20 {
             let seed = [seed_val, 2, 3, 4, 5, 6, 7, 8];
             let mut rng = Sha3RandomByteStream::new(&seed, 100.0, 300.0, 300.0, 1.0);
-            let (resolved, _log) = config.resolve(&mut rng, 1920, 1080, false);
+            let (resolved, _log) = config.resolve(&mut rng, 1920, 1080);
 
             // Verify palette index is always within valid range
             assert!(
@@ -1062,16 +1019,13 @@ mod tests {
     /// Test that atmospheric fog color randomization produces valid RGB values
     #[test]
     fn test_atmospheric_fog_color_randomization() {
-        let config = RandomizableEffectConfig {
-            gallery_quality: false,
-            ..Default::default()
-        };
+        let config = RandomizableEffectConfig::default();
 
         // Test multiple random seeds to ensure variety
         for seed_val in 1..20 {
             let seed = [seed_val, 10, 20, 30, 40, 50, 60, 70];
             let mut rng = Sha3RandomByteStream::new(&seed, 100.0, 300.0, 300.0, 1.0);
-            let (resolved, _log) = config.resolve(&mut rng, 1920, 1080, false);
+            let (resolved, _log) = config.resolve(&mut rng, 1920, 1080);
 
             // Verify fog colors are within valid dark tone range
             assert!(
@@ -1100,7 +1054,7 @@ mod tests {
             let seed = [(seed_val & 0xFF) as u8, ((seed_val >> 8) & 0xFF) as u8, 3, 4, 5, 6, 7, 8];
             let mut rng = Sha3RandomByteStream::new(&seed, 100.0, 300.0, 300.0, 1.0);
             let config = RandomizableEffectConfig::default();
-            let (resolved, _) = config.resolve(&mut rng, 1920, 1080, false);
+            let (resolved, _) = config.resolve(&mut rng, 1920, 1080);
 
             if resolved.enable_bloom { *counts.entry("bloom").or_default() += 1; }
             if resolved.enable_glow { *counts.entry("glow").or_default() += 1; }
@@ -1154,7 +1108,7 @@ mod tests {
 
         let seed = [42, 43, 44, 45, 46, 47, 48, 49];
         let mut rng = Sha3RandomByteStream::new(&seed, 100.0, 300.0, 300.0, 1.0);
-        let (resolved, _) = config.resolve(&mut rng, 1920, 1080, false);
+        let (resolved, _) = config.resolve(&mut rng, 1920, 1080);
 
         assert!(resolved.enable_perceptual_blur,
             "explicit Some(true) must override 20% probability");
@@ -1169,7 +1123,7 @@ mod tests {
             let seed = [(seed_val & 0xFF) as u8, ((seed_val >> 8) & 0xFF) as u8, 99, 4, 5, 6, 7, 8];
             let mut rng = Sha3RandomByteStream::new(&seed, 100.0, 300.0, 300.0, 1.0);
             let config = RandomizableEffectConfig::default();
-            let (resolved, _) = config.resolve(&mut rng, 1920, 1080, false);
+            let (resolved, _) = config.resolve(&mut rng, 1920, 1080);
 
             assert!(resolved.vibrance >= 0.90,
                 "seed {} produced vibrance {} below 0.90 floor", seed_val, resolved.vibrance);

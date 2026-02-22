@@ -39,60 +39,26 @@ pub fn draw_triangle_batch_spectral(
     hdr_mult_12: f64,
     hdr_mult_20: f64,
     hdr_scale: f64,
-    special_mode: bool,
 ) {
-    // Draw all three edges with optimized batching
-    // The compiler can better optimize this sequence for cache and instruction pipelining
-    
-    // Edge 0→1
     draw_line_segment_aa_spectral_with_dispersion(
-        accum,
-        width,
-        height,
-        v0.x,
-        v0.y,
-        v1.x,
-        v1.y,
-        v0.color,
-        v1.color,
-        v0.alpha,
-        v1.alpha,
-        hdr_scale * hdr_mult_01,
-        special_mode,
+        accum, width, height,
+        v0.x, v0.y, v1.x, v1.y,
+        v0.color, v1.color, v0.alpha, v1.alpha,
+        hdr_scale * hdr_mult_01, true,
     );
     
-    // Edge 1→2 (follows immediately for better cache locality)
     draw_line_segment_aa_spectral_with_dispersion(
-        accum,
-        width,
-        height,
-        v1.x,
-        v1.y,
-        v2.x,
-        v2.y,
-        v1.color,
-        v2.color,
-        v1.alpha,
-        v2.alpha,
-        hdr_scale * hdr_mult_12,
-        special_mode,
+        accum, width, height,
+        v1.x, v1.y, v2.x, v2.y,
+        v1.color, v2.color, v1.alpha, v2.alpha,
+        hdr_scale * hdr_mult_12, true,
     );
     
-    // Edge 2→0 (completes the triangle)
     draw_line_segment_aa_spectral_with_dispersion(
-        accum,
-        width,
-        height,
-        v2.x,
-        v2.y,
-        v0.x,
-        v0.y,
-        v2.color,
-        v0.color,
-        v2.alpha,
-        v0.alpha,
-        hdr_scale * hdr_mult_20,
-        special_mode,
+        accum, width, height,
+        v2.x, v2.y, v0.x, v0.y,
+        v2.color, v0.color, v2.alpha, v0.alpha,
+        hdr_scale * hdr_mult_20, true,
     );
 }
 
@@ -174,7 +140,7 @@ mod tests {
         
         let body_alphas = [0.5, 0.6, 0.7];
         
-        let ctx = RenderContext::new(1920, 1080, &positions);
+        let ctx = RenderContext::new(1920, 1080, &positions, false);
         let vertices = prepare_triangle_vertices(&positions, &colors, &body_alphas, 0, &ctx);
         
         assert_eq!(vertices.len(), 3);

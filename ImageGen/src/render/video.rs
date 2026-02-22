@@ -69,14 +69,13 @@ impl Default for VideoEncodingOptions {
         Self {
             codec: "libx265".to_string(),
             preset: "slower".to_string(),
-            crf: 19,
+            crf: 17,
             bitrate: String::new(),
-            pixel_format: "yuv420p10le".to_string(),
+            pixel_format: "yuv422p10le".to_string(),
             input_pixel_format: "rgb48le".to_string(),
             extra_args: vec![
-                // x265-specific perceptual optimizations
                 "-x265-params".to_string(),
-                "profile=main10:level=5.0:\
+                "profile=main422-10:level=5.0:\
                  bframes=8:ref=6:\
                  rc-lookahead=250:\
                  aq-mode=3:aq-strength=1.0:\
@@ -330,8 +329,8 @@ mod tests {
         let options = VideoEncodingOptions::default();
         assert_eq!(options.codec, "libx265");
         assert_eq!(options.preset, "slower");
-        assert_eq!(options.crf, 19);
-        assert_eq!(options.pixel_format, "yuv420p10le");
+        assert_eq!(options.crf, 17);
+        assert_eq!(options.pixel_format, "yuv422p10le");
         assert_eq!(options.input_pixel_format, "rgb48le");
         assert!(options.bitrate.is_empty());
         assert!(options.extra_args.contains(&"-tune".to_string()));
@@ -390,9 +389,45 @@ mod tests {
         
         assert!(x265_params.is_some());
         let params = x265_params.unwrap();
-        assert!(params.contains("profile=main10"));
+        assert!(params.contains("profile=main422-10"));
         assert!(params.contains("aq-mode=3"));
         assert!(params.contains("psy-rd=2.5"));
         assert!(params.contains("rc-lookahead=250"));
+    }
+
+    #[test]
+    fn test_crf_17_for_museum_quality() {
+        let options = VideoEncodingOptions::default();
+        assert!(options.crf <= 18, "CRF should be 18 or lower for museum quality, got {}", options.crf);
+    }
+
+    #[test]
+    fn test_422_chroma_subsampling() {
+        let options = VideoEncodingOptions::default();
+        assert!(options.pixel_format.contains("422"),
+            "should use 4:2:2 chroma subsampling, got {}", options.pixel_format);
+    }
+
+    #[test]
+    fn test_10bit_color_depth() {
+        let options = VideoEncodingOptions::default();
+        assert!(options.pixel_format.contains("10"),
+            "should use 10-bit color depth, got {}", options.pixel_format);
+    }
+
+    #[test]
+    fn test_x265_profile_matches_pixel_format() {
+        let options = VideoEncodingOptions::default();
+        let has_422 = options.pixel_format.contains("422");
+        let x265_params = options.extra_args.iter()
+            .position(|s| s == "-x265-params")
+            .map(|idx| &options.extra_args[idx + 1]);
+
+        if let Some(params) = x265_params {
+            if has_422 {
+                assert!(params.contains("main422-10"),
+                    "4:2:2 pixel format requires main422-10 profile");
+            }
+        }
     }
 }

@@ -11,7 +11,10 @@ use crate::spectrum::NUM_BINS;
 use nalgebra::Vector3;
 use rayon::prelude::*;
 use std::sync::LazyLock;
+use std::sync::atomic::{AtomicBool, Ordering};
 use tracing::{debug, info};
+
+pub static ACES_TWEAK_ENABLED: AtomicBool = AtomicBool::new(true);
 
 // Module declarations
 pub mod batch_drawing;
@@ -89,9 +92,10 @@ fn tonemap_core(fr: f64, fg: f64, fb: f64, fa: f64, levels: &ChannelLevels) -> [
         leveled[i] = ((premult[i] - levels.black[i]).max(0.0)) / levels.range[i];
     }
 
+    let lut = if ACES_TWEAK_ENABLED.load(Ordering::Relaxed) { &*ACES_LUT_TWEAKED } else { &*ACES_LUT };
     let mut channel_curves = [0.0; 3];
     for i in 0..3 {
-        channel_curves[i] = ACES_LUT.apply(leveled[i]);
+        channel_curves[i] = lut.apply(leveled[i]);
     }
 
     let target_luma =
@@ -158,15 +162,19 @@ fn tonemap_to_16bit(fr: f64, fg: f64, fb: f64, fa: f64, levels: &ChannelLevels) 
 }
 
 /// Save 16-bit image as PNG
+///
+/// TODO: Add explicit sRGB ICC profile chunk via the `png` crate for strict
+/// color-managed viewers. The `image` crate's encoder omits the sRGB chunk,
+/// but most viewers assume sRGB for untagged PNGs, so this is cosmetic.
 pub fn save_image_as_png_16bit(rgb_img: &ImageBuffer<Rgb<u16>, Vec<u16>>, path: &str) -> Result<()> {
     let dyn_img = DynamicImage::ImageRgb16(rgb_img.clone());
     dyn_img.save(path).map_err(|e| RenderError::ImageEncoding(e.to_string()))?;
-    info!("   Saved 16-bit PNG => {path}");
+    info!("   Saved 16-bit PNG (sRGB assumed) => {path}");
     Ok(())
 }
 
 /// Pass 1: gather global histogram for final color leveling
-// ACES Filmic Tonemapping Curve constants
+// ACES Filmic Tonemapping Curve constants (original)
 // Source: https://knarkowicz.wordpress.com/2016/01/06/aces-filmic-tone-mapping-curve/
 const A: f64 = 2.51;
 const B: f64 = 0.03;
@@ -174,29 +182,40 @@ const C: f64 = 2.43;
 const D: f64 = 0.59;
 const E: f64 = 0.14;
 
+// Tweaked constants: brighter midtones, deeper blacks, smoother rolloff
+const A_TWEAKED: f64 = 2.55;
+const B_TWEAKED: f64 = 0.04;
+const C_TWEAKED: f64 = 2.43;
+const D_TWEAKED: f64 = 0.55;
+const E_TWEAKED: f64 = 0.12;
+
 /// Optimized ACES tonemapping using lookup table
 struct AcesLut {
     table: Vec<f64>,
     scale: f64,
     max_input: f64,
+    a: f64,
+    b: f64,
+    c: f64,
+    d: f64,
+    e: f64,
 }
 
 impl AcesLut {
-    fn new() -> Self {
+    fn with_params(a: f64, b: f64, c: f64, d: f64, e: f64) -> Self {
         const LUT_SIZE: usize = 2048;
-        const MAX_INPUT: f64 = 16.0; // Covers typical HDR range
+        const MAX_INPUT: f64 = 16.0;
 
         let mut table = Vec::with_capacity(LUT_SIZE);
         let scale = (LUT_SIZE - 1) as f64 / MAX_INPUT;
 
-        // Pre-compute ACES values
         for i in 0..LUT_SIZE {
             let x = (i as f64) / scale;
-            let y = (x * (A * x + B)) / (x * (C * x + D) + E);
+            let y = (x * (a * x + b)) / (x * (c * x + d) + e);
             table.push(y);
         }
 
-        Self { table, scale, max_input: MAX_INPUT }
+        Self { table, scale, max_input: MAX_INPUT, a, b, c, d, e }
     }
 
     #[inline]
@@ -206,11 +225,9 @@ impl AcesLut {
         }
 
         if x >= self.max_input {
-            // For very large values, use direct computation
-            return (x * (A * x + B)) / (x * (C * x + D) + E);
+            return (x * (self.a * x + self.b)) / (x * (self.c * x + self.d) + self.e);
         }
 
-        // Linear interpolation in LUT
         let pos = x * self.scale;
         let idx = pos as usize;
         let frac = pos - idx as f64;
@@ -219,13 +236,12 @@ impl AcesLut {
             return self.table[self.table.len() - 1];
         }
 
-        // Linear interpolation
         self.table[idx] * (1.0 - frac) + self.table[idx + 1] * frac
     }
 }
 
-// Lazy static for global LUT
-static ACES_LUT: LazyLock<AcesLut> = LazyLock::new(AcesLut::new);
+static ACES_LUT: LazyLock<AcesLut> = LazyLock::new(|| AcesLut::with_params(A, B, C, D, E));
+static ACES_LUT_TWEAKED: LazyLock<AcesLut> = LazyLock::new(|| AcesLut::with_params(A_TWEAKED, B_TWEAKED, C_TWEAKED, D_TWEAKED, E_TWEAKED));
 
 // ====================== HELPER FUNCTIONS ===========================
 
@@ -374,8 +390,7 @@ fn build_effect_config_from_resolved(
         None
     };
     
-    // Determine gradient map settings (only enabled in special mode or if explicitly enabled)
-    let gradient_map_enabled = resolved.enable_gradient_map && resolved.special_mode;
+    let gradient_map_enabled = resolved.enable_gradient_map;
     let gradient_map_config = GradientMapConfig {
         palette: LuxuryPalette::from_index(resolved.gradient_map_palette),
         strength: resolved.gradient_map_strength,
@@ -405,7 +420,7 @@ fn build_effect_config_from_resolved(
             tone_curve: resolved.tone_curve_strength,
             shadow_tint: constants::DEFAULT_COLOR_GRADE_SHADOW_TINT,
             highlight_tint: constants::DEFAULT_COLOR_GRADE_HIGHLIGHT_TINT,
-            palette_wave_strength: if resolved.special_mode { 1.0 } else { 0.0 },
+            palette_wave_strength: 1.0,
         },
         gradient_map_enabled,
         gradient_map_config,
@@ -434,7 +449,7 @@ fn build_effect_config_from_resolved(
             iridescence_frequency: constants::DEFAULT_AETHER_IRIDESCENCE_FREQUENCY,
             caustic_strength: resolved.aether_caustic_strength,
             caustic_softness: constants::DEFAULT_AETHER_CAUSTIC_SOFTNESS,
-            luxury_mode: resolved.special_mode,
+            luxury_mode: true,
         },
         chromatic_bloom_enabled: resolved.enable_chromatic_bloom,
         chromatic_bloom_config: ChromaticBloomConfig {
@@ -504,118 +519,9 @@ fn build_effect_config_from_resolved(
     }
 }
 
-/// Legacy build effect configuration (kept for backward compatibility if needed)
-#[allow(dead_code)]
-#[allow(clippy::too_many_arguments)]
-fn build_effect_config(
-    width: usize,
-    height: usize,
-    bloom_mode: &str,
-    blur_radius_px: usize,
-    blur_strength: f64,
-    blur_core_brightness: f64,
-    dog_config: &DogBloomConfig,
-    hdr_mode: &str,
-    perceptual_blur_enabled: bool,
-    perceptual_blur_config: Option<&PerceptualBlurConfig>,
-    special_mode: bool,
-) -> EffectConfig {
-    use crate::post_effects::{
-        AetherConfig, AtmosphericDepthConfig, ChampleveConfig, ColorGradeParams,
-        EdgeLuminanceConfig, FineTextureConfig, GlowEnhancementConfig,
-        MicroContrastConfig, OpalescenceConfig,
-    };
-
-    // Determine gradient map settings (only enabled in special mode with palette)
-    let gradient_map_enabled = special_mode;
-    let gradient_map_config = if special_mode {
-        GradientMapConfig {
-            palette: LuxuryPalette::GoldPurple,
-            strength: 0.85,
-            hue_preservation: 0.15,
-        }
-    } else {
-        GradientMapConfig {
-            palette: LuxuryPalette::GoldPurple,
-            strength: 0.0,
-            hue_preservation: 1.0,
-        }
-    };
-
-    EffectConfig {
-        // Core bloom and blur
-        bloom_mode: bloom_mode.to_string(),
-        blur_radius_px,
-        blur_strength,
-        blur_core_brightness,
-        dog_config: dog_config.clone(),
-        hdr_mode: hdr_mode.to_string(),
-        perceptual_blur_enabled,
-        perceptual_blur_config: perceptual_blur_config.cloned(),
-        
-        // Color manipulation
-        color_grade_enabled: true,
-        color_grade_params: ColorGradeParams::from_resolution_and_mode(width, height, special_mode),
-        gradient_map_enabled, // Only when actually needed
-        gradient_map_config,
-        
-        // Material and iridescence (always enabled, scaled by mode)
-        champleve_enabled: true,
-        champleve_config: ChampleveConfig::new(special_mode),
-        aether_enabled: true,
-        aether_config: AetherConfig::new(special_mode),
-        chromatic_bloom_enabled: true,
-        chromatic_bloom_config: ChromaticBloomConfig::from_resolution(width, height),
-        opalescence_enabled: true, // NOW ENABLED IN BOTH MODES
-        opalescence_config: if special_mode {
-            OpalescenceConfig::special_mode(width, height)
-        } else {
-            OpalescenceConfig::standard_mode(width, height)
-        },
-        
-        // Detail and clarity (NEW - enabled in both modes)
-        edge_luminance_enabled: true, // NOW ENABLED IN BOTH MODES
-        edge_luminance_config: if special_mode {
-            EdgeLuminanceConfig::special_mode()
-        } else {
-            EdgeLuminanceConfig::standard_mode()
-        },
-        micro_contrast_enabled: true, // NEW - enabled in both modes
-        micro_contrast_config: if special_mode {
-            MicroContrastConfig::special_mode()
-        } else {
-            MicroContrastConfig::standard_mode()
-        },
-        glow_enhancement_enabled: true, // NEW - enabled in both modes
-        glow_enhancement_config: if special_mode {
-            GlowEnhancementConfig::special_mode(width, height)
-        } else {
-            GlowEnhancementConfig::standard_mode(width, height)
-        },
-        
-        // Atmospheric and surface (NEW - enabled in both modes)
-        atmospheric_depth_enabled: true, // NOW ENABLED IN BOTH MODES
-        atmospheric_depth_config: if special_mode {
-            AtmosphericDepthConfig::special_mode()
-        } else {
-            AtmosphericDepthConfig::standard_mode()
-        },
-        fine_texture_enabled: true, // NOW ENABLED IN BOTH MODES
-        fine_texture_config: if special_mode {
-            FineTextureConfig::special_mode_canvas(width, height)
-        } else {
-            FineTextureConfig::standard_mode(width, height)
-        },
-    }
-}
-
 /// Apply energy density wavelength shift to spectral buffer
 /// Hot regions (high energy) shift toward red, cool regions stay blue
-fn apply_energy_density_shift(accum_spd: &mut [[f64; NUM_BINS]], special_mode: bool) {
-    if !special_mode {
-        return;
-    }
-    
+fn apply_energy_density_shift(accum_spd: &mut [[f64; NUM_BINS]]) {
     use constants::{ENERGY_DENSITY_SHIFT_THRESHOLD, ENERGY_DENSITY_SHIFT_STRENGTH};
     
     accum_spd.par_iter_mut().for_each(|spd| {
@@ -659,13 +565,12 @@ pub fn pass_1_build_histogram_spectral(
     all_b: &mut Vec<f64>,
     noise_seed: i32,
     render_config: &RenderConfig,
+    aspect_correction: bool,
 ) {
     let width = resolved_config.width;
     let height = resolved_config.height;
-    let special_mode = resolved_config.special_mode;
-    
     // Create render context
-    let ctx = RenderContext::new(width, height, positions);
+    let ctx = RenderContext::new(width, height, positions, aspect_correction);
     let mut accum_spd = vec![[0.0f64; NUM_BINS]; ctx.pixel_count()];
     let mut accum_rgba = vec![(0.0, 0.0, 0.0, 0.0); ctx.pixel_count()];
 
@@ -699,7 +604,7 @@ pub fn pass_1_build_histogram_spectral(
     let dt = constants::DEFAULT_DT;
     
     // Create velocity HDR calculator for efficient multiplier computation
-    let velocity_calc = velocity_hdr::VelocityHdrCalculator::new(positions, dt, special_mode);
+    let velocity_calc = velocity_hdr::VelocityHdrCalculator::new(positions, dt);
     
     // Pre-allocate empty background buffer for reuse (optimization: saves 60× 2MB allocations)
     let empty_background = vec![(0.0, 0.0, 0.0, 0.0); ctx.pixel_count()];
@@ -736,15 +641,11 @@ pub fn pass_1_build_histogram_spectral(
             hdr_mult_12,
             hdr_mult_20,
             render_config.hdr_scale,
-            special_mode,
         );
 
         let is_final = step == total_steps - 1;
         if (step > 0 && step % frame_interval == 0) || is_final {
-            // Apply energy density wavelength shift before conversion
-            apply_energy_density_shift(&mut accum_spd, special_mode);
-            
-            // convert SPD -> RGBA
+            apply_energy_density_shift(&mut accum_spd);
             convert_spd_buffer_to_rgba(&accum_spd, &mut accum_rgba);
 
             // Process with persistent effect chain
@@ -760,7 +661,7 @@ pub fn pass_1_build_histogram_spectral(
             accum_rgba.resize(ctx.pixel_count(), (0.0, 0.0, 0.0, 0.0));
 
             // Generate nebula background separately (with zero-overhead check)
-            let nebula_background = if special_mode && resolved_config.nebula_strength > 0.0 {
+            let nebula_background = if resolved_config.nebula_strength > 0.0 {
                 generate_nebula_background(
                     width as usize,
                     height as usize,
@@ -810,13 +711,13 @@ pub fn pass_2_write_frames_spectral(
     mut frame_sink: impl FnMut(&[u8]) -> Result<()>,
     last_frame_out: &mut Option<ImageBuffer<Rgb<u16>, Vec<u16>>>,
     render_config: &RenderConfig,
+    aspect_correction: bool,
+    enable_temporal_smoothing: bool,
 ) -> Result<()> {
     let width = resolved_config.width;
     let height = resolved_config.height;
-    let special_mode = resolved_config.special_mode;
-    
     // Create render context
-    let ctx = RenderContext::new(width, height, positions);
+    let ctx = RenderContext::new(width, height, positions, aspect_correction);
     let mut accum_spd = vec![[0.0f64; NUM_BINS]; ctx.pixel_count()];
     let mut accum_rgba = vec![(0.0, 0.0, 0.0, 0.0); ctx.pixel_count()];
 
@@ -847,12 +748,20 @@ pub fn pass_2_write_frames_spectral(
     let dt = constants::DEFAULT_DT;
     
     // Create velocity HDR calculator for efficient multiplier computation
-    let velocity_calc = velocity_hdr::VelocityHdrCalculator::new(positions, dt, special_mode);
+    let velocity_calc = velocity_hdr::VelocityHdrCalculator::new(positions, dt);
     
     // Pre-allocate empty background buffer for reuse (optimization: saves 60× 2MB allocations)
     let empty_background = vec![(0.0, 0.0, 0.0, 0.0); ctx.pixel_count()];
 
     let levels = ChannelLevels::new(black_r, white_r, black_g, white_g, black_b, white_b);
+
+    // Temporal smoothing for video frame blending (stateful across frames)
+    use crate::post_effects::{TemporalSmoothing, TemporalSmoothingConfig};
+    let temporal_smoother = if enable_temporal_smoothing {
+        Some(TemporalSmoothing::new(TemporalSmoothingConfig::special_mode()))
+    } else {
+        None
+    };
 
     for step in 0..total_steps {
         if step % chunk_line == 0 {
@@ -885,15 +794,11 @@ pub fn pass_2_write_frames_spectral(
             hdr_mult_12,
             hdr_mult_20,
             render_config.hdr_scale,
-            special_mode,
         );
 
         let is_final = step == total_steps - 1;
         if (step > 0 && step % frame_interval == 0) || is_final {
-            // Apply energy density wavelength shift before conversion
-            apply_energy_density_shift(&mut accum_spd, special_mode);
-            
-            // Convert SPD -> RGBA
+            apply_energy_density_shift(&mut accum_spd);
             convert_spd_buffer_to_rgba(&accum_spd, &mut accum_rgba);
 
             // Process with persistent effect chain
@@ -909,7 +814,7 @@ pub fn pass_2_write_frames_spectral(
             accum_rgba.resize(ctx.pixel_count(), (0.0, 0.0, 0.0, 0.0));
 
             // Generate nebula background separately (with zero-overhead check)
-            let nebula_background = if special_mode && resolved_config.nebula_strength > 0.0 {
+            let nebula_background = if resolved_config.nebula_strength > 0.0 {
                 generate_nebula_background(
                     width as usize,
                     height as usize,
@@ -921,7 +826,13 @@ pub fn pass_2_write_frames_spectral(
             };
 
             // Composite nebula background UNDER trajectory foreground
-            let final_frame_pixels = composite_buffers(&nebula_background, &trajectory_pixels);
+            let composited = composite_buffers(&nebula_background, &trajectory_pixels);
+
+            // Apply temporal smoothing (blend with previous frame for fluid motion)
+            let final_frame_pixels = match &temporal_smoother {
+                Some(smoother) => smoother.process_frame(composited),
+                None => composited,
+            };
 
             // levels + ACES tonemapping to 16-bit
             let mut buf_16bit = vec![0u16; ctx.pixel_count() * 3];
@@ -968,15 +879,14 @@ pub fn render_single_frame_spectral(
     white_b: f64,
     noise_seed: i32,
     render_config: &RenderConfig,
+    aspect_correction: bool,
 ) -> Result<ImageBuffer<Rgb<u16>, Vec<u16>>> {
     info!("   Rendering first frame only (test mode)...");
     
     let width = resolved_config.width;
     let height = resolved_config.height;
-    let special_mode = resolved_config.special_mode;
-    
     // Create render context
-    let ctx = RenderContext::new(width, height, positions);
+    let ctx = RenderContext::new(width, height, positions, aspect_correction);
     let mut accum_spd = vec![[0.0f64; NUM_BINS]; ctx.pixel_count()];
     let mut accum_rgba = vec![(0.0, 0.0, 0.0, 0.0); ctx.pixel_count()];
 
@@ -1006,7 +916,7 @@ pub fn render_single_frame_spectral(
     let dt = constants::DEFAULT_DT;
     
     // Create velocity HDR calculator for efficient multiplier computation
-    let velocity_calc = velocity_hdr::VelocityHdrCalculator::new(positions, dt, special_mode);
+    let velocity_calc = velocity_hdr::VelocityHdrCalculator::new(positions, dt);
     
     // Pre-allocate empty background buffer for reuse (optimization)
     let empty_background = vec![(0.0, 0.0, 0.0, 0.0); ctx.pixel_count()];
@@ -1041,20 +951,20 @@ pub fn render_single_frame_spectral(
 
         draw_line_segment_aa_spectral_with_dispersion(
             &mut accum_spd, width, height, x0, y0, x1, y1, c0, c1, a0, a1,
-            render_config.hdr_scale * hdr_mult_01, special_mode,
+            render_config.hdr_scale * hdr_mult_01, true,
         );
         draw_line_segment_aa_spectral_with_dispersion(
             &mut accum_spd, width, height, x1, y1, x2, y2, c1, c2, a1, a2,
-            render_config.hdr_scale * hdr_mult_12, special_mode,
+            render_config.hdr_scale * hdr_mult_12, true,
         );
         draw_line_segment_aa_spectral_with_dispersion(
             &mut accum_spd, width, height, x2, y2, x0, y0, c2, c0, a2, a0,
-            render_config.hdr_scale * hdr_mult_20, special_mode,
+            render_config.hdr_scale * hdr_mult_20, true,
         );
     }
 
     // Process the accumulated frame
-    apply_energy_density_shift(&mut accum_spd, special_mode);
+    apply_energy_density_shift(&mut accum_spd);
     convert_spd_buffer_to_rgba(&accum_spd, &mut accum_rgba);
 
     let frame_params = FrameParams { _frame_number: 0, _density: None };
@@ -1063,7 +973,7 @@ pub fn render_single_frame_spectral(
         .expect("Failed to process test frame");
 
     // Generate nebula background for frame 0 (with zero-overhead check)
-    let nebula_background = if special_mode && resolved_config.nebula_strength > 0.0 {
+    let nebula_background = if resolved_config.nebula_strength > 0.0 {
         generate_nebula_background(width as usize, height as usize, 0, &nebula_config)
     } else {
         empty_background  // Reuse pre-allocated empty buffer (zero overhead)
@@ -1088,4 +998,82 @@ pub fn render_single_frame_spectral(
         .ok_or_else(|| RenderError::ImageEncoding("Failed to create 16-bit image buffer".to_string()))?;
     
     Ok(image)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn default_levels() -> ChannelLevels {
+        ChannelLevels::new(0.0, 1.0, 0.0, 1.0, 0.0, 1.0)
+    }
+
+    #[test]
+    fn test_tonemap_black_produces_black() {
+        let result = tonemap_core(0.0, 0.0, 0.0, 0.0, &default_levels());
+        assert_eq!(result, [0.0, 0.0, 0.0]);
+    }
+
+    #[test]
+    fn test_tonemap_produces_valid_range() {
+        let levels = default_levels();
+        for alpha in [0.1, 0.5, 1.0] {
+            let result = tonemap_core(0.5, 0.3, 0.8, alpha, &levels);
+            for ch in result {
+                assert!(ch >= 0.0, "channel {ch} should be non-negative at alpha {alpha}");
+                assert!(ch < 2.0, "channel {ch} unreasonably large at alpha {alpha}");
+            }
+        }
+    }
+
+    #[test]
+    fn test_aces_tweak_changes_output() {
+        let levels = default_levels();
+
+        ACES_TWEAK_ENABLED.store(true, Ordering::Relaxed);
+        let tweaked = tonemap_core(0.5, 0.3, 0.7, 0.8, &levels);
+
+        ACES_TWEAK_ENABLED.store(false, Ordering::Relaxed);
+        let original = tonemap_core(0.5, 0.3, 0.7, 0.8, &levels);
+
+        ACES_TWEAK_ENABLED.store(true, Ordering::Relaxed);
+
+        let diff = (tweaked[0] - original[0]).abs()
+            + (tweaked[1] - original[1]).abs()
+            + (tweaked[2] - original[2]).abs();
+        assert!(diff > 1e-6, "ACES tweak should produce different tonemapping");
+    }
+
+    #[test]
+    fn test_aces_lut_monotonic() {
+        let lut = &*ACES_LUT;
+        let mut prev = 0.0;
+        for i in 1..100 {
+            let x = i as f64 * 0.05;
+            let y = lut.apply(x);
+            assert!(y >= prev, "ACES LUT should be monotonic: f({x}) = {y} < {prev}");
+            prev = y;
+        }
+    }
+
+    #[test]
+    fn test_aces_lut_tweaked_monotonic() {
+        let lut = &*ACES_LUT_TWEAKED;
+        let mut prev = 0.0;
+        for i in 1..100 {
+            let x = i as f64 * 0.05;
+            let y = lut.apply(x);
+            assert!(y >= prev, "tweaked ACES LUT should be monotonic: f({x}) = {y} < {prev}");
+            prev = y;
+        }
+    }
+
+    #[test]
+    fn test_tonemap_16bit_range() {
+        let levels = default_levels();
+        let result = tonemap_to_16bit(0.5, 0.4, 0.6, 0.9, &levels);
+        for ch in result {
+            assert!((ch as u32) <= 65535, "16-bit channel {ch} out of range");
+        }
+    }
 }

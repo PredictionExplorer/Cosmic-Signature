@@ -48,45 +48,19 @@ impl Default for ColorGradeParams {
 
 impl ColorGradeParams {
     /// Create parameters scaled for the given resolution.
-    /// This ensures the clarity effect looks consistent across different resolutions.
     pub fn from_resolution(width: usize, height: usize) -> Self {
-        Self::from_resolution_and_mode(width, height, false)
-    }
-
-    /// Create parameters with special mode flag to control color biasing
-    pub fn from_resolution_and_mode(width: usize, height: usize, special_mode: bool) -> Self {
         let min_dim = width.min(height) as f64;
-        
-        if special_mode {
-            // Full cinematic grading for special mode
-            Self {
-                strength: constants::DEFAULT_COLOR_GRADE_STRENGTH,
-                vignette_strength: constants::DEFAULT_COLOR_GRADE_VIGNETTE,
-                vignette_softness: constants::DEFAULT_COLOR_GRADE_VIGNETTE_SOFTNESS,
-                vibrance: constants::DEFAULT_COLOR_GRADE_VIBRANCE,
-                clarity_strength: constants::DEFAULT_COLOR_GRADE_CLARITY,
-                clarity_radius: (0.0028 * min_dim).round().max(1.0) as usize,
-                tone_curve: constants::DEFAULT_COLOR_GRADE_TONE_CURVE,
-                shadow_tint: constants::DEFAULT_COLOR_GRADE_SHADOW_TINT,
-                highlight_tint: constants::DEFAULT_COLOR_GRADE_HIGHLIGHT_TINT,
-                palette_wave_strength: 1.0, // Full palette wave
-            }
-        } else {
-            // Neutral color grading for standard mode - avoids red/warm bias
-            Self {
-                strength: constants::DEFAULT_COLOR_GRADE_STRENGTH * 0.5, // Reduced overall strength
-                vignette_strength: constants::DEFAULT_COLOR_GRADE_VIGNETTE * 0.6,
-                vignette_softness: constants::DEFAULT_COLOR_GRADE_VIGNETTE_SOFTNESS,
-                vibrance: constants::DEFAULT_COLOR_GRADE_VIBRANCE * 0.8, // Slightly reduced
-                clarity_strength: constants::DEFAULT_COLOR_GRADE_CLARITY * 0.7,
-                clarity_radius: (0.0028 * min_dim).round().max(1.0) as usize,
-                tone_curve: constants::DEFAULT_COLOR_GRADE_TONE_CURVE * 0.7,
-                // Neutral shadow tint - no warm bias
-                shadow_tint: [-0.04, -0.01, 0.08], // Reduced from original
-                // Neutral highlight tint - no red/yellow bias
-                highlight_tint: [0.03, 0.02, 0.0], // Greatly reduced from original
-                palette_wave_strength: 0.0, // Disable palette wave to prevent red bias
-            }
+        Self {
+            strength: constants::DEFAULT_COLOR_GRADE_STRENGTH * 0.5,
+            vignette_strength: constants::DEFAULT_COLOR_GRADE_VIGNETTE * 0.6,
+            vignette_softness: constants::DEFAULT_COLOR_GRADE_VIGNETTE_SOFTNESS,
+            vibrance: constants::DEFAULT_COLOR_GRADE_VIBRANCE * 0.8,
+            clarity_strength: constants::DEFAULT_COLOR_GRADE_CLARITY * 0.7,
+            clarity_radius: (0.0028 * min_dim).round().max(1.0) as usize,
+            tone_curve: constants::DEFAULT_COLOR_GRADE_TONE_CURVE * 0.7,
+            shadow_tint: [-0.04, -0.01, 0.08],
+            highlight_tint: [0.03, 0.02, 0.0],
+            palette_wave_strength: 0.0,
         }
     }
 }

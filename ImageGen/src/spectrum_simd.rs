@@ -5,6 +5,9 @@
 
 use crate::spectrum::{NUM_BINS, BIN_COMBINED_LUT};
 use crate::utils::is_zero;
+use std::sync::atomic::{AtomicBool, Ordering};
+
+pub static SAT_BOOST_ENABLED: AtomicBool = AtomicBool::new(true);
 
 /// Convert SPD to RGBA using SIMD when available (3-4x faster)
 ///
@@ -70,12 +73,13 @@ fn spd_to_rgba_scalar(spd: &[f64; NUM_BINS]) -> (f64, f64, f64, f64) {
     let min_channel = r.min(g).min(b);
     let color_range = max_channel - min_channel;
     
+    let boosted = SAT_BOOST_ENABLED.load(Ordering::Relaxed);
     let sat_boost = if color_range < 0.1 {
-        2.5
+        if boosted { 3.0 } else { 2.5 }
     } else if color_range < 0.3 {
-        2.2
+        if boosted { 2.6 } else { 2.2 }
     } else {
-        1.8
+        if boosted { 2.2 } else { 1.8 }
     };
     
     r = mean + (r - mean) * sat_boost;
@@ -183,12 +187,13 @@ unsafe fn spd_to_rgba_avx2(spd: &[f64; NUM_BINS]) -> (f64, f64, f64, f64) {
     let min_channel = r.min(g).min(b);
     let color_range = max_channel - min_channel;
     
+    let boosted = SAT_BOOST_ENABLED.load(Ordering::Relaxed);
     let sat_boost = if color_range < 0.1 {
-        2.5
+        if boosted { 3.0 } else { 2.5 }
     } else if color_range < 0.3 {
-        2.2
+        if boosted { 2.6 } else { 2.2 }
     } else {
-        1.8
+        if boosted { 2.2 } else { 1.8 }
     };
     
     r = mean + (r - mean) * sat_boost;
@@ -251,6 +256,59 @@ mod tests {
         
         let result = spd_to_rgba_simd(&spd);
         assert!(result.3 > 0.0, "Should have non-zero alpha");
+    }
+
+    #[test]
+    fn test_sat_boost_toggle_changes_output() {
+        let mut spd = [0.0; NUM_BINS];
+        spd[4] = 0.5;
+        spd[10] = 0.3;
+        
+        SAT_BOOST_ENABLED.store(true, Ordering::Relaxed);
+        let boosted = spd_to_rgba_scalar(&spd);
+        
+        SAT_BOOST_ENABLED.store(false, Ordering::Relaxed);
+        let original = spd_to_rgba_scalar(&spd);
+        
+        SAT_BOOST_ENABLED.store(true, Ordering::Relaxed);
+        
+        let boosted_sat = {
+            let max_c = boosted.0.max(boosted.1).max(boosted.2);
+            let min_c = boosted.0.min(boosted.1).min(boosted.2);
+            if max_c > 0.0 { (max_c - min_c) / max_c } else { 0.0 }
+        };
+        let original_sat = {
+            let max_c = original.0.max(original.1).max(original.2);
+            let min_c = original.0.min(original.1).min(original.2);
+            if max_c > 0.0 { (max_c - min_c) / max_c } else { 0.0 }
+        };
+        
+        assert!(boosted_sat >= original_sat,
+            "boosted saturation {:.4} should be >= original {:.4}", boosted_sat, original_sat);
+    }
+
+    #[test]
+    fn test_output_values_clamped() {
+        let spd = [10.0; NUM_BINS];
+        let result = spd_to_rgba_simd(&spd);
+        assert!(result.0 >= 0.0 && result.0 <= 1.0, "R out of range: {}", result.0);
+        assert!(result.1 >= 0.0 && result.1 <= 1.0, "G out of range: {}", result.1);
+        assert!(result.2 >= 0.0 && result.2 <= 1.0, "B out of range: {}", result.2);
+        assert!(result.3 >= 0.0 && result.3 <= 1.0, "A out of range: {}", result.3);
+    }
+
+    #[test]
+    fn test_brightness_increases_with_energy() {
+        let mut low = [0.0; NUM_BINS];
+        low[8] = 0.1;
+        let mut high = [0.0; NUM_BINS];
+        high[8] = 5.0;
+        
+        let low_result = spd_to_rgba_simd(&low);
+        let high_result = spd_to_rgba_simd(&high);
+        
+        assert!(high_result.3 > low_result.3,
+            "higher energy should produce higher brightness");
     }
 }
 

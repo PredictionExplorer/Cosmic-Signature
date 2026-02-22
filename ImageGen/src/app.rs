@@ -23,6 +23,31 @@ use nalgebra::Vector3;
 use std::fs;
 use tracing::{info, warn};
 
+/// Museum-quality enhancement flags (all default to true / enabled).
+#[derive(Clone, Debug)]
+#[allow(dead_code)]
+pub struct Enhancements {
+    pub chroma_boost: bool,
+    pub sat_boost: bool,
+    pub aces_tweak: bool,
+    pub alpha_variation: bool,
+    pub aspect_correction: bool,
+    pub dispersion_boost: bool,
+}
+
+impl Default for Enhancements {
+    fn default() -> Self {
+        Self {
+            chroma_boost: true,
+            sat_boost: true,
+            aces_tweak: true,
+            alpha_variation: true,
+            aspect_correction: true,
+            dispersion_boost: true,
+        }
+    }
+}
+
 /// Application configuration derived from command-line arguments
 #[allow(dead_code)] // Some fields used in logging, others reserved for future use
 pub struct AppConfig {
@@ -32,7 +57,6 @@ pub struct AppConfig {
     pub num_steps_sim: usize,
     pub width: u32,
     pub height: u32,
-    pub special: bool,
     pub test_frame: bool,
     pub clip_black: f64,
     pub clip_white: f64,
@@ -140,7 +164,6 @@ pub fn apply_drift_transformation(
     drift_arc_fraction: Option<f64>,
     drift_orbit_eccentricity: Option<f64>,
     rng: &mut Sha3RandomByteStream,
-    special: bool,
 ) -> Option<ResolvedDriftConfig> {
     info!("STAGE 2.5/7: Resolving drift configuration...");
     
@@ -149,7 +172,6 @@ pub fn apply_drift_transformation(
         drift_arc_fraction,
         drift_orbit_eccentricity,
         rng,
-        special,
     );
     
     info!("Applying {} drift...", drift_mode);
@@ -174,10 +196,16 @@ pub fn generate_colors(
     rng: &mut Sha3RandomByteStream,
     num_steps_sim: usize,
     alpha_denom: usize,
+    enhancements: &Enhancements,
 ) -> (Vec<Vec<render::OklabColor>>, Vec<f64>) {
     info!("STAGE 3/7: Generating color sequences + alpha...");
-    let alpha_value = 1.0 / (alpha_denom as f64);
-    generate_body_color_sequences(rng, num_steps_sim, alpha_value)
+    generate_body_color_sequences(
+        rng,
+        num_steps_sim,
+        alpha_denom,
+        enhancements.chroma_boost,
+        enhancements.alpha_variation,
+    )
 }
 
 /// Create blur configuration based on mode and resolution
@@ -253,6 +281,7 @@ pub fn build_histogram_and_levels(
     resolved_config: &render::randomizable_config::ResolvedEffectConfig,
     noise_seed: i32,
     render_config: &RenderConfig,
+    aspect_correction: bool,
 ) -> Result<ChannelLevels> {
     info!("STAGE 5/7: PASS 1 => building global histogram...");
     
@@ -274,6 +303,7 @@ pub fn build_histogram_and_levels(
         &mut all_b,
         noise_seed,
         render_config,
+        aspect_correction,
     );
     
     info!("STAGE 6/7: Determine global black/white/gamma...");
@@ -314,6 +344,7 @@ pub fn render_test_frame(
     render_config: &RenderConfig,
     output_png: &str,
     best_info: &TrajectoryResult,
+    aspect_correction: bool,
 ) -> Result<()> {
     info!("STAGE 7/7: TEST FRAME MODE => rendering first frame only...");
     
@@ -330,6 +361,7 @@ pub fn render_test_frame(
         levels.range[2] + levels.black[2],
         noise_seed,
         render_config,
+        aspect_correction,
     )?;
     
     info!("Saving test frame to: {}", output_png);
@@ -357,6 +389,8 @@ pub fn render_video(
     output_vid: &str,
     output_png: &str,
     fast_encode: bool,
+    aspect_correction: bool,
+    enable_temporal_smoothing: bool,
 ) -> Result<()> {
     if fast_encode {
         info!("STAGE 7/7: PASS 2 => final frames => video (FAST ENCODE MODE)...");
@@ -399,6 +433,8 @@ pub fn render_video(
                 },
                 &mut last_frame_png,
                 render_config,
+                aspect_correction,
+                enable_temporal_smoothing,
             )?;
             Ok(())
         },
@@ -432,7 +468,6 @@ pub fn log_generation(
     let mut record = GenerationRecord::new(
         file_name.to_string(),
         format!("0x{}", seed),
-        config.special,
     );
     
     record.render_config = LoggedRenderConfig {
@@ -557,6 +592,67 @@ mod tests {
         assert_eq!(radius, (0.032_f64 * 1080.0).round() as usize);
         assert_eq!(strength, 12.0);
         assert_eq!(brightness, 12.0);
+    }
+
+    #[test]
+    fn test_enhancements_default_all_enabled() {
+        let e = Enhancements::default();
+        assert!(e.chroma_boost);
+        assert!(e.sat_boost);
+        assert!(e.aces_tweak);
+        assert!(e.alpha_variation);
+        assert!(e.aspect_correction);
+        assert!(e.dispersion_boost);
+    }
+
+    #[test]
+    fn test_enhancements_selective_disable() {
+        let e = Enhancements {
+            chroma_boost: false,
+            sat_boost: true,
+            aces_tweak: false,
+            alpha_variation: true,
+            aspect_correction: false,
+            dispersion_boost: true,
+        };
+        assert!(!e.chroma_boost);
+        assert!(e.sat_boost);
+        assert!(!e.aces_tweak);
+        assert!(e.alpha_variation);
+        assert!(!e.aspect_correction);
+        assert!(e.dispersion_boost);
+    }
+
+    #[test]
+    fn test_generate_colors_with_enhancements() {
+        use crate::sim::Sha3RandomByteStream;
+        let mut rng = Sha3RandomByteStream::new(&[1, 2, 3, 4], 100.0, 300.0, 300.0, 1.0);
+        let enhancements = Enhancements::default();
+        let (colors, alphas) = generate_colors(&mut rng, 100, 15_000_000, &enhancements);
+        
+        assert_eq!(colors.len(), 3);
+        assert_eq!(alphas.len(), 3);
+        for body_colors in &colors {
+            assert_eq!(body_colors.len(), 100);
+        }
+        let unique: std::collections::HashSet<u64> = alphas.iter().map(|a| a.to_bits()).collect();
+        assert!(unique.len() > 1, "default enhancements should enable alpha variation");
+    }
+
+    #[test]
+    fn test_generate_colors_no_enhancements() {
+        use crate::sim::Sha3RandomByteStream;
+        let mut rng = Sha3RandomByteStream::new(&[1, 2, 3, 4], 100.0, 300.0, 300.0, 1.0);
+        let enhancements = Enhancements {
+            alpha_variation: false,
+            chroma_boost: false,
+            ..Enhancements::default()
+        };
+        let (colors, alphas) = generate_colors(&mut rng, 100, 15_000_000, &enhancements);
+        
+        assert_eq!(colors.len(), 3);
+        assert_eq!(alphas[0], alphas[1]);
+        assert_eq!(alphas[1], alphas[2]);
     }
 }
 

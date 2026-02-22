@@ -22,33 +22,16 @@ impl ResolvedDriftConfig {
         Self { scale, arc_fraction, orbit_eccentricity, was_randomized: false }
     }
     
-    /// Generate random drift configuration based on special mode
-    pub fn generate_random(rng: &mut Sha3RandomByteStream, special_mode: bool) -> Self {
-        let (scale, arc_fraction, orbit_eccentricity) = if special_mode {
-            // Special mode: wider ranges for more dramatic motion
-            let scale = rng.next_f64() * 7.0;  // 0.0 to 7.0
-            let arc_fraction = rng.next_f64() * 0.5;  // 0.0 to 0.5
-            let orbit_eccentricity = 0.1 + rng.next_f64() * 0.4;  // 0.1 to 0.5
-            
-            info!("Generated random drift parameters (special mode):");
-            info!("  scale: {:.3}", scale);
-            info!("  arc_fraction: {:.3}", arc_fraction);
-            info!("  orbit_eccentricity: {:.3}", orbit_eccentricity);
-            
-            (scale, arc_fraction, orbit_eccentricity)
-        } else {
-            // Standard mode: biased toward higher drift for more complex orbital patterns
-            let scale = 0.8 + rng.next_f64() * 1.2;  // 0.8 to 2.0
-            let arc_fraction = rng.next_f64() * 0.8;  // 0.0 to 0.8
-            let orbit_eccentricity = 0.4 + rng.next_f64() * 0.1;  // 0.4 to 0.5
-            
-            info!("Generated random drift parameters (standard mode):");
-            info!("  scale: {:.3}", scale);
-            info!("  arc_fraction: {:.3}", arc_fraction);
-            info!("  orbit_eccentricity: {:.3}", orbit_eccentricity);
-            
-            (scale, arc_fraction, orbit_eccentricity)
-        };
+    /// Generate random drift configuration with curated ranges.
+    pub fn generate_random(rng: &mut Sha3RandomByteStream) -> Self {
+        let scale = 0.8 + rng.next_f64() * 1.2;  // 0.8 to 2.0
+        let arc_fraction = rng.next_f64() * 0.8;  // 0.0 to 0.8
+        let orbit_eccentricity = 0.4 + rng.next_f64() * 0.1;  // 0.4 to 0.5
+        
+        info!("Generated random drift parameters:");
+        info!("  scale: {:.3}", scale);
+        info!("  arc_fraction: {:.3}", arc_fraction);
+        info!("  orbit_eccentricity: {:.3}", orbit_eccentricity);
         
         Self { scale, arc_fraction, orbit_eccentricity, was_randomized: true }
     }
@@ -65,7 +48,6 @@ pub fn resolve_drift_config(
     arc_fraction_opt: Option<f64>,
     eccentricity_opt: Option<f64>,
     rng: &mut Sha3RandomByteStream,
-    special_mode: bool,
 ) -> ResolvedDriftConfig {
     match (scale_opt, arc_fraction_opt, eccentricity_opt) {
         (Some(scale), Some(arc), Some(ecc)) => {
@@ -79,7 +61,7 @@ pub fn resolve_drift_config(
         (None, None, None) => {
             // No parameters provided - generate random
             info!("No drift parameters specified, generating random values...");
-            ResolvedDriftConfig::generate_random(rng, special_mode)
+            ResolvedDriftConfig::generate_random(rng)
         }
         _ => {
             // Partial specification - this is an error condition
@@ -111,25 +93,12 @@ mod tests {
     }
     
     #[test]
-    fn test_generate_random_special() {
+    fn test_generate_random() {
         let mut rng = make_rng();
-        let config = ResolvedDriftConfig::generate_random(&mut rng, true);
+        let config = ResolvedDriftConfig::generate_random(&mut rng);
         
-        // Special mode ranges
-        assert!(config.scale >= 0.0 && config.scale <= 7.0);
-        assert!(config.arc_fraction >= 0.0 && config.arc_fraction <= 0.5);
-        assert!(config.orbit_eccentricity >= 0.1 && config.orbit_eccentricity <= 0.5);
-        assert!(config.was_randomized);
-    }
-    
-    #[test]
-    fn test_generate_random_standard() {
-        let mut rng = make_rng();
-        let config = ResolvedDriftConfig::generate_random(&mut rng, false);
-        
-        // Standard mode ranges (drift_scale raised from 0.0 to 0.8 minimum)
         assert!(config.scale >= 0.8 && config.scale <= 2.0,
-            "standard drift_scale {} outside [0.8, 2.0]", config.scale);
+            "drift_scale {} outside [0.8, 2.0]", config.scale);
         assert!(config.arc_fraction >= 0.0 && config.arc_fraction <= 0.8);
         assert!(config.orbit_eccentricity >= 0.4 && config.orbit_eccentricity <= 0.5);
         assert!(config.was_randomized);
@@ -138,7 +107,7 @@ mod tests {
     #[test]
     fn test_resolve_all_provided() {
         let mut rng = make_rng();
-        let config = resolve_drift_config(Some(1.0), Some(0.5), Some(0.3), &mut rng, false);
+        let config = resolve_drift_config(Some(1.0), Some(0.5), Some(0.3), &mut rng);
         assert_eq!(config.scale, 1.0);
         assert!(!config.was_randomized);
     }
@@ -146,7 +115,7 @@ mod tests {
     #[test]
     fn test_resolve_none_provided() {
         let mut rng = make_rng();
-        let config = resolve_drift_config(None, None, None, &mut rng, false);
+        let config = resolve_drift_config(None, None, None, &mut rng);
         assert!(config.was_randomized);
     }
     
@@ -154,32 +123,20 @@ mod tests {
     #[should_panic(expected = "must be either all specified or all omitted")]
     fn test_resolve_partial_panics() {
         let mut rng = make_rng();
-        resolve_drift_config(Some(1.0), None, None, &mut rng, false);
+        resolve_drift_config(Some(1.0), None, None, &mut rng);
     }
 
     #[test]
-    fn test_standard_drift_scale_always_above_floor() {
+    fn test_drift_scale_always_above_floor() {
         for seed_byte in 0u8..=255 {
             let seed = [seed_byte; 32];
             let mut rng = Sha3RandomByteStream::new(&seed, 1.0, 2.0, 1.0, 1.0);
-            let config = ResolvedDriftConfig::generate_random(&mut rng, false);
+            let config = ResolvedDriftConfig::generate_random(&mut rng);
 
             assert!(config.scale >= 0.8,
                 "seed {} produced drift_scale {} below 0.8 floor", seed_byte, config.scale);
             assert!(config.scale <= 2.0,
                 "seed {} produced drift_scale {} above 2.0 ceiling", seed_byte, config.scale);
-        }
-    }
-
-    #[test]
-    fn test_special_drift_scale_unchanged() {
-        for seed_byte in 0u8..50 {
-            let seed = [seed_byte; 32];
-            let mut rng = Sha3RandomByteStream::new(&seed, 1.0, 2.0, 1.0, 1.0);
-            let config = ResolvedDriftConfig::generate_random(&mut rng, true);
-
-            assert!(config.scale >= 0.0 && config.scale <= 7.0,
-                "special drift_scale {} outside [0.0, 7.0]", config.scale);
         }
     }
 }
