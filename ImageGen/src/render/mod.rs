@@ -362,8 +362,11 @@ fn build_effect_config_from_resolved(
     let height = resolved.height as usize;
     let min_dim = width.min(height);
     
-    // Calculate derived parameters from resolved scales
-    let blur_radius_px = (resolved.blur_radius_scale * min_dim as f64).round() as usize;
+    let blur_radius_px = if resolved.enable_bloom {
+        (resolved.blur_radius_scale * min_dim as f64).round() as usize
+    } else {
+        0
+    };
     let dog_inner_sigma = resolved.dog_sigma_scale * min_dim as f64;
     let glow_radius = (resolved.glow_radius_scale * min_dim as f64).round() as usize;
     let chromatic_bloom_radius = (resolved.chromatic_bloom_radius_scale * min_dim as f64).round() as usize;
@@ -381,10 +384,11 @@ fn build_effect_config_from_resolved(
     
     // Build perceptual blur config if enabled
     let perceptual_blur_config = if resolved.enable_perceptual_blur {
+        let perceptual_radius = (0.004 * min_dim as f64).round().max(2.0) as usize;
         Some(PerceptualBlurConfig {
-            radius: blur_radius_px, // Use main blur radius
+            radius: perceptual_radius,
             strength: resolved.perceptual_blur_strength,
-            gamut_mode: GamutMapMode::PreserveHue, // Fixed mode
+            gamut_mode: GamutMapMode::PreserveHue,
         })
     } else {
         None
@@ -758,7 +762,10 @@ pub fn pass_2_write_frames_spectral(
     // Temporal smoothing for video frame blending (stateful across frames)
     use crate::post_effects::{TemporalSmoothing, TemporalSmoothingConfig};
     let temporal_smoother = if enable_temporal_smoothing {
-        Some(TemporalSmoothing::new(TemporalSmoothingConfig::special_mode()))
+        Some(TemporalSmoothing::new(TemporalSmoothingConfig {
+            blend_factor: 0.10,
+            alpha_threshold: 0.01,
+        }))
     } else {
         None
     };

@@ -47,21 +47,21 @@ pub const ENABLE_PROB_FINE_TEXTURE: f64 = 0.40;
 
 pub const BLUR_STRENGTH: FloatParamDescriptor = FloatParamDescriptor {
     name: "blur_strength",
-    min: 6.0,
-    max: 14.0,
+    min: 4.0,
+    max: 9.0,
     description: "Strength of Gaussian blur bloom effect",
 };
 
 pub const BLUR_RADIUS_SCALE: FloatParamDescriptor = FloatParamDescriptor {
     name: "blur_radius_scale",
-    min: 0.012,
-    max: 0.035,
+    min: 0.008,
+    max: 0.020,
     description: "Radius scale for blur (relative to resolution)",
 };
 
 pub const BLUR_CORE_BRIGHTNESS: FloatParamDescriptor = FloatParamDescriptor {
     name: "blur_core_brightness",
-    min: 6.0,
+    min: 8.0,
     max: 14.0,
     description: "Brightness preservation in blur core",
 };
@@ -103,8 +103,8 @@ pub const GLOW_THRESHOLD: FloatParamDescriptor = FloatParamDescriptor {
 
 pub const GLOW_RADIUS_SCALE: FloatParamDescriptor = FloatParamDescriptor {
     name: "glow_radius_scale",
-    min: 0.005,
-    max: 0.009,
+    min: 0.003,
+    max: 0.006,
     description: "Glow radius scale (relative to resolution)",
 };
 
@@ -133,8 +133,8 @@ pub const CHROMATIC_BLOOM_STRENGTH: FloatParamDescriptor = FloatParamDescriptor 
 
 pub const CHROMATIC_BLOOM_RADIUS_SCALE: FloatParamDescriptor = FloatParamDescriptor {
     name: "chromatic_bloom_radius_scale",
-    min: 0.009,
-    max: 0.014,
+    min: 0.006,
+    max: 0.010,
     description: "Chromatic bloom radius scale",
 };
 
