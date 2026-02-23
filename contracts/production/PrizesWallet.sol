@@ -20,6 +20,18 @@ import { IPrizesWallet } from "./interfaces/IPrizesWallet.sol";
 // #endregion
 // #region
 
+/// @title PrizesWallet
+/// @author Cosmic Signature Team
+/// @notice Escrow contract for secondary prizes including ETH, donated ERC-20 tokens, and NFTs.
+/// @dev This contract holds prizes won during bidding rounds until they are claimed.
+/// Features:
+/// - ETH prize management: Deposits and withdrawals for raffle winners and Chrono-Warrior.
+/// - Token donation handling: ERC-20 tokens donated alongside bids are held here.
+/// - NFT donation handling: ERC-721 NFTs donated alongside bids are held here.
+/// - Timeout mechanism: After a configurable timeout, anyone can claim unclaimed prizes.
+///
+/// Only the `CosmicSignatureGame` contract can deposit prizes. The main prize beneficiary
+/// (round winner) can claim donations; others can claim only after the timeout expires.
 contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IPrizesWallet {
 	// #region State
 
@@ -45,12 +57,15 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 	uint256[1 << 64] public roundTimeoutTimesToWithdrawPrizes;
 
 	/// @notice For each bidding round number and prize winner address, contains not yet withdrawn ETH balance amount.
+	/// @dev Indexed by [roundNum][uint160(prizeWinnerAddress)].
 	uint256[1 << 160][1 << 64] private _ethBalanceAmounts;
 
 	/// @notice Details about ERC-20 token donations made to the Game.
-	/// Contains 1 item for each bidding round number.
+	/// @dev Contains 1 `DonatedTokenHolder` contract address for each bidding round.
+	/// All ERC-20 tokens donated in a round are held by that holder.
 	DonatedToken[1 << 64] public donatedTokens;
 
+	/// @notice Counter for the next donated NFT index.
 	uint256 public nextDonatedNftIndex = 0;
 
 	/// @notice Contains info about NFT donations.
@@ -90,6 +105,7 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 	// #endregion
 	// #region `setTimeoutDurationToWithdrawPrizes`
 
+	/// @inheritdoc IPrizesWallet
 	function setTimeoutDurationToWithdrawPrizes(uint256 newValue_) external override onlyOwner {
 		timeoutDurationToWithdrawPrizes = newValue_;
 		emit TimeoutDurationToWithdrawPrizesChanged(newValue_);
@@ -98,6 +114,9 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 	// #endregion
 	// #region `registerRoundEndAndDepositEthMany`
 
+	/// @inheritdoc IPrizesWallet
+	/// @dev Called by the Game contract at the end of each bidding round to register the winner
+	/// and deposit ETH prizes for raffle winners and Chrono-Warrior.
 	function registerRoundEndAndDepositEthMany(uint256 roundNum_, address mainPrizeBeneficiaryAddress_, EthDeposit[] calldata ethDeposits_) external payable override nonReentrant _onlyGame returns (uint256) {
 		uint256 roundTimeoutTimeToWithdrawPrizes_ = _registerRoundEnd(roundNum_, mainPrizeBeneficiaryAddress_);
 		// #enable_asserts uint256 ethDepositAmountSum_ = 0;
@@ -114,6 +133,7 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 	// #endregion
 	// #region `registerRoundEnd`
 
+	/// @inheritdoc IPrizesWallet
 	function registerRoundEnd(uint256 roundNum_, address mainPrizeBeneficiaryAddress_) external override nonReentrant _onlyGame returns (uint256) {
 		uint256 roundTimeoutTimeToWithdrawPrizes_ = _registerRoundEnd(roundNum_, mainPrizeBeneficiaryAddress_);
 		return roundTimeoutTimeToWithdrawPrizes_;
@@ -137,6 +157,7 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 	// #endregion
 	// #region `withdrawEverything`
 
+	/// @inheritdoc IPrizesWallet
 	function withdrawEverything(
 		uint256[] calldata ethPrizeRoundNums_,
 		DonatedTokenToClaim[] calldata donatedTokensToClaim_,
@@ -150,6 +171,7 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 	// #endregion
 	// #region `depositEth`
 
+	/// @inheritdoc IPrizesWallet
 	function depositEth(uint256 roundNum_, uint256 prizeWinnerIndex_, address prizeWinnerAddress_) external payable override nonReentrant _onlyGame {
 		_depositEth(roundNum_, prizeWinnerIndex_, prizeWinnerAddress_, msg.value);
 	}
@@ -169,6 +191,7 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 	// #endregion
 	// #region `withdrawEth`
 
+	/// @inheritdoc IPrizesWallet
 	function withdrawEth(uint256 roundNum_) external override nonReentrant {
 		_withdrawEth(roundNum_, _msgSender());
 	}
@@ -176,6 +199,8 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 	// #endregion
 	// #region `withdrawEth`
 
+	/// @inheritdoc IPrizesWallet
+	/// @dev Allows anyone to withdraw ETH for a specific winner after the timeout has expired.
 	function withdrawEth(uint256 roundNum_, address prizeWinnerAddress_) external override nonReentrant {
 		uint256 roundTimeoutTimeToWithdrawPrizes_ = roundTimeoutTimesToWithdrawPrizes[roundNum_];
 		require(
@@ -248,8 +273,10 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 	function _prepareWithdrawEth(uint256 roundNum_, address prizeWinnerAddress_) private returns (uint256) {
 		// It's OK if this is zero.
 		uint256 ethBalanceAmountCopy_ = _ethBalanceAmounts[roundNum_][uint256(uint160(prizeWinnerAddress_))];
+		// #enable_asserts assert(ethBalanceAmountCopy_ <= address(this).balance);
 
 		delete _ethBalanceAmounts[roundNum_][uint256(uint160(prizeWinnerAddress_))];
+		// #enable_asserts assert(_ethBalanceAmounts[roundNum_][uint256(uint160(prizeWinnerAddress_))] == 0);
 		emit EthWithdrawn(roundNum_, prizeWinnerAddress_, _msgSender(), ethBalanceAmountCopy_);
 		return ethBalanceAmountCopy_;
 	}

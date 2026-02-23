@@ -24,6 +24,14 @@ import { IMainPrize } from "./interfaces/IMainPrize.sol";
 // #endregion
 // #region
 
+/// @title MainPrize
+/// @author Cosmic Signature Team
+/// @notice Manages main prize claiming and distribution for the Cosmic Signature game.
+/// @dev This contract implements:
+/// - Main prize claim eligibility (last bidder after timeout, or anyone after extended timeout).
+/// - Prize distribution: ETH to main prize winner, charity, and CS NFT stakers.
+/// - Secondary prize allocation: ETH raffles, CST and NFT prizes to winners.
+/// - Round transition: preparing state for the next bidding round.
 abstract contract MainPrize is
 	ReentrancyGuardTransientUpgradeable,
 	OwnableUpgradeableWithReservedStorageGaps,
@@ -35,6 +43,7 @@ abstract contract MainPrize is
 	IMainPrize {
 	// #region `claimMainPrize`
 
+	/// @inheritdoc IMainPrize
 	/// @dev Comment-202411169 relates and/or applies.
 	/// Comment-202411078 relates and/or applies.
 	///
@@ -141,8 +150,16 @@ abstract contract MainPrize is
 	// #endregion
 	// #region `_distributePrizes`
 
+	/// @dev Distributes all prizes for the current bidding round.
+	/// This includes:
+	/// - Main ETH prize to the caller (main prize beneficiary).
+	/// - Chrono-Warrior ETH prize.
+	/// - Raffle ETH prizes to random bidders.
+	/// - ETH rewards to CS NFT stakers.
+	/// - ETH donation to charity.
+	/// - CST and CS NFT prizes to various winners.
 	function _distributePrizes() private {
-		// #region
+		// #region Initialize random number generator and calculate prize amounts
 
 		// Issue. It appears that the optimization idea described in Comment-202502077 would be difficult to implement here.
 		RandomNumberHelpers.RandomNumberSeedWrapper memory randomNumberSeedWrapper_;
@@ -665,8 +682,10 @@ abstract contract MainPrize is
 	// #endregion
 	// #region `_prepareNextRound`
 
+	/// @dev Resets state variables and increments the round number for the next bidding round.
+	/// Updates the main prize time increment and sets the next round's activation time.
 	function _prepareNextRound() private {
-		// lastBidType = BidType.ETH;
+		// Reset bidder tracking variables.
 		lastBidderAddress = address(0);
 		lastCstBidderAddress = address(0);
 		enduranceChampionAddress = address(0);
@@ -697,6 +716,7 @@ abstract contract MainPrize is
 	// #endregion
 	// #region `getMainEthPrizeAmount`
 
+	/// @inheritdoc IMainPrize
 	function getMainEthPrizeAmount() public view override returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
@@ -709,6 +729,7 @@ abstract contract MainPrize is
 	// #endregion
 	// #region `getCharityEthDonationAmount`
 
+	/// @inheritdoc IMainPrize
 	function getCharityEthDonationAmount() public view override returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked

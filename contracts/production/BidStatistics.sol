@@ -12,9 +12,18 @@ import { IBidStatistics } from "./interfaces/IBidStatistics.sol";
 // #endregion
 // #region
 
+/// @title BidStatistics
+/// @author Cosmic Signature Team
+/// @notice Provides functions for retrieving bid-related statistics and updating champion tracking.
+/// @dev This abstract contract handles:
+/// - Query functions for bid counts and bidder information.
+/// - Endurance Champion tracking (longest single continuous bid duration).
+/// - Chrono-Warrior tracking (longest duration as Endurance Champion).
+/// See `${workspaceFolder}/docs/endurance-chrono-README.md` for detailed champion definitions.
 abstract contract BidStatistics is CosmicSignatureGameStorage, IBidStatistics {
 	// #region `getTotalNumBids`
 
+	/// @inheritdoc IBidStatistics
 	function getTotalNumBids(uint256 roundNum_) external view override returns (uint256) {
 		BidderAddresses storage bidderAddressesReference_ = bidderAddresses[roundNum_];
 		uint256 totalNumBids_ = bidderAddressesReference_.numItems;
@@ -24,6 +33,7 @@ abstract contract BidStatistics is CosmicSignatureGameStorage, IBidStatistics {
 	// #endregion
 	// #region `getBidderAddressAt`
 
+	/// @inheritdoc IBidStatistics
 	function getBidderAddressAt(uint256 roundNum_, uint256 bidIndex_) external view override returns (address) {
 		address bidderAddress_ = bidderAddresses[roundNum_].items[bidIndex_];
 		return bidderAddress_;
@@ -32,6 +42,7 @@ abstract contract BidStatistics is CosmicSignatureGameStorage, IBidStatistics {
 	// #endregion
 	// #region `getBidderTotalSpentAmounts`
 
+	/// @inheritdoc IBidStatistics
 	function getBidderTotalSpentAmounts(uint256 roundNum_, address bidderAddress_) external view override returns (uint256, uint256) {
 		BidderInfo storage bidderInfoReference_ = biddersInfo[roundNum_][bidderAddress_];
 		return (bidderInfoReference_.totalSpentEthAmount, bidderInfoReference_.totalSpentCstAmount);
@@ -40,7 +51,9 @@ abstract contract BidStatistics is CosmicSignatureGameStorage, IBidStatistics {
 	// #endregion
 	// #region `_updateChampionsIfNeeded`
 
-	/// @notice Updates Endurance Champion and Chrono-Warrior info if needed.
+	/// @dev Updates Endurance Champion and Chrono-Warrior info if the last bidder has held
+	/// the position longer than the current champion.
+	/// Called on each bid (except the first) and when claiming the main prize.
 	function _updateChampionsIfNeeded() internal {
 		// if (lastBidderAddress == address(0)) return;
 		// #enable_asserts assert(lastBidderAddress != address(0));
@@ -69,7 +82,9 @@ abstract contract BidStatistics is CosmicSignatureGameStorage, IBidStatistics {
 	// #endregion
 	// #region `_updateChronoWarriorIfNeeded`
 
-	/// @notice Updates Chrono-Warrior info if needed.
+	/// @dev Updates Chrono-Warrior if the current Endurance Champion has held the title
+	/// longer than the previous Chrono-Warrior.
+	/// @param chronoEndTimeStamp_ The timestamp marking the end of the current champion's reign.
 	function _updateChronoWarriorIfNeeded(uint256 chronoEndTimeStamp_) internal {
 		// #enable_asserts assert(enduranceChampionAddress != address(0));
 		// #enable_asserts assert(int256(chronoWarriorDuration) >= -1);
@@ -106,6 +121,9 @@ abstract contract BidStatistics is CosmicSignatureGameStorage, IBidStatistics {
 	// #endregion
 	// #region `tryGetCurrentChampions`
 
+	/// @inheritdoc IBidStatistics
+	/// @dev This is a view function that simulates what the champion values would be
+	/// if `_updateChampionsIfNeeded` were called at `block.timestamp`.
 	function tryGetCurrentChampions() external view override
 		returns (
 			address enduranceChampionAddress_,

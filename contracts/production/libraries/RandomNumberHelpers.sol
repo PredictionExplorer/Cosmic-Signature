@@ -4,8 +4,19 @@ pragma solidity 0.8.33;
 import { CryptographyHelpers } from "./CryptographyHelpers.sol";
 import { ArbitrumHelpers } from "./ArbitrumHelpers.sol";
 
+/// @title Random Number Generation Helpers.
+/// @author The Cosmic Signature Development Team.
+/// @notice Provides on-chain pseudo-random number generation for the Cosmic Signature protocol.
+/// @dev Randomness is derived from multiple entropy sources:
+/// - L2 block hash and base fee
+/// - Arbitrum L1 block hash
+/// - Arbitrum gas backlog and L1 pricing units
+/// While not cryptographically secure, this provides sufficient randomness for prize distribution.
 library RandomNumberHelpers {
+	/// @notice Wrapper struct for random number seed to enable pass-by-reference semantics.
+	/// @dev Used to maintain state across multiple random number generation calls.
 	struct RandomNumberSeedWrapper {
+		/// @notice The random number seed value.
 		/// @dev
 		/// [Comment-202502075]
 		/// This is a random number seed.
@@ -22,16 +33,17 @@ library RandomNumberHelpers {
 		uint256 value;
 	}
 
-	/// @notice
+	/// @notice Generates an initial random number seed from multiple entropy sources.
+	/// @return A pseudo-random seed value derived from blockchain state.
+	/// @dev
 	/// [Comment-202504067]
 	/// Similar logic exists in multiple places.
 	/// [/Comment-202504067]
 	/// Comment-202502075 applies to the return value.
-	/// @dev
 	/// [Comment-202503254]
 	/// It's safe to call this function without any additional logic only if it's guaranteed
 	/// that we can call it no more than once per L2 block.
-	/// It's because multiple calls from different trasnactions within a particular L2 block would return correlated
+	/// It's because multiple calls from different transactions within a particular L2 block would return correlated
 	/// and maybe even potentially equal values, while calls within the same transaction would return equal value.
 	/// That said, some correlation is OK because, according to Comment-202502075, we will not use this value as is.
 	/// Comment-202506298 relates.
@@ -89,7 +101,11 @@ library RandomNumberHelpers {
 		return randomNumberSeed_;
 	}
 
-	/// @notice
+	/// @notice Generates a random number using a seed wrapper (increments seed before hashing).
+	/// @param seedWrapper_ The seed wrapper containing the current seed value.
+	/// The seed is incremented before use, allowing for sequential random number generation.
+	/// @return A pseudo-random number derived from the incremented seed.
+	/// @dev
 	/// [Comment-202504065]
 	/// Similar logic exists in multiple places.
 	/// [/Comment-202504065]
@@ -98,7 +114,10 @@ library RandomNumberHelpers {
 		return generateRandomNumber(seedWrapper_.value);
 	}
 
-	/// @notice
+	/// @notice Generates a random number by hashing the provided seed.
+	/// @param seed_ The seed value to hash.
+	/// @return A pseudo-random number derived from the Keccak-256 hash of the seed.
+	/// @dev
 	/// [Comment-202504063]
 	/// Similar logic exists in multiple places.
 	/// [/Comment-202504063]

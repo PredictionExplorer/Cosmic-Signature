@@ -17,16 +17,34 @@ import { ICosmicSignatureGameStorage } from "./interfaces/ICosmicSignatureGameSt
 // #endregion
 // #region
 
+/// @title CosmicSignatureGameStorage
+/// @author Cosmic Signature Team
+/// @notice Declares all state variables for the CosmicSignatureGame contract.
+/// @dev This abstract contract serves as the central storage definition for the game.
+/// It is inherited by CosmicSignatureGame and organizes state variables into logical groups:
+/// - System Management
+/// - ETH Donations
+/// - Bid Statistics (including Endurance Champion and Chrono-Warrior tracking)
+/// - Bidding (ETH and CST Dutch auction parameters)
+/// - Secondary Prizes
+/// - Main Prize
+/// - Contract addresses (Token, NFT, Wallets)
+/// - Marketing and Charity
+///
+/// Storage Layout Note: This contract uses a large storage gap (`__gap_persistent`) to reserve
+/// storage slots for future upgrades, following the OpenZeppelin upgradeable contracts pattern.
+///
 /// todo-1 +++ Avoid combining big arrays with `mapping`s or dynamic arrays in the same contract.
 /// todo-1 +++ But where we do so, consider validating that a big array item index passed to a method,
-/// todo-1 +++ such as `roundNum_`,  is not too big.
+/// todo-1 +++ such as `roundNum_`, is not too big.
 /// todo-1 +++ Otherwise a collision can create a vulnerability.
 /// todo-1 +++ Really, `mapping`s and dynamic arrays (including strings) are evil. Avoid them!
 /// todo-1 --- Write a better todo near each `mapping` and dynamic array to eliminate them and/or review the code.
 abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #region System Management
 
-	// Empty.
+	// No system management state variables are defined in this section.
+	// System management functions are provided by the `SystemManagement` contract.
 
 	// #endregion
 	// #region ETH Donations
@@ -53,6 +71,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// This will remain zero if nobody bids with CST.
 	address public lastCstBidderAddress;
 
+	/// @notice Stores all bidder addresses for each bidding round.
 	/// @dev
 	/// [Comment-202411098]
 	/// Issue. One might want to not save info about past bidding rounds.
@@ -62,6 +81,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Comment-202502044 relates.
 	mapping(uint256 roundNum => BidderAddresses) public bidderAddresses;
 
+	/// @notice Stores detailed bidding information for each bidder in each round.
 	/// @dev Comment-202411098 applies.
 	mapping(uint256 roundNum => mapping(address bidderAddress => BidderInfo)) public biddersInfo;
 
@@ -89,6 +109,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// @notice Comment-202501308 applies.
 	uint256 public enduranceChampionDuration;
 
+	/// @notice The previous Endurance Champion's duration, used for comparison when updating the champion.
 	uint256 public prevEnduranceChampionDuration;
 
 	/// @notice Chrono-Warrior is the participant who remained Endurance Champion for the longest continuous duration
@@ -107,8 +128,9 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #endregion
 	// #region Bidding
 
-	/// @notice Bidding round counter.
+	/// @notice The current bidding round number (zero-indexed).
 	/// @dev Comment-202503092 applies.
+	/// Incremented each time a main prize is claimed.
 	uint256 public roundNum;
 
 	/// @notice Delay duration from when the main prize gets claimed until the next bidding round activates.
@@ -153,7 +175,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [/Comment-202503092]
 	uint256 public roundActivationTime;
 
-	/// @notice Comment-202501025 applies.
+	/// @notice Divisor used to calculate the ETH Dutch auction duration from `mainPrizeTimeIncrementInMicroSeconds`.
+	/// Comment-202501025 applies.
 	/// Comment-202508288 relates.
 	/// Comment-202411064 applies.
 	/// See also: `halveEthDutchAuctionEndingBidPrice`.
@@ -187,11 +210,14 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [/Comment-202411065]
 	uint256 public nextEthBidPrice;
 
-	/// @notice Comment-202411065 relates.
+	/// @notice Divisor used to calculate the ETH bid price increase after each bid.
+	/// Comment-202411065 relates.
 	/// Comment-202411064 applies.
 	uint256 public ethBidPriceIncreaseDivisor;
 
-	/// @notice Comment-202502052 applies.
+	/// @notice Maximum gas value (in wei) that can be "swallowed" when refunding excess ETH.
+	/// If overpayment is less than this threshold times gas price, no refund is issued to save gas.
+	/// Comment-202502052 applies.
 	/// Comment-202411064 applies.
 	uint256 public ethBidRefundAmountInGasToSwallowMaxLimit;
 
@@ -199,7 +225,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Comment-202501022 applies.
 	uint256 public cstDutchAuctionBeginningTimeStamp;
 
-	/// @notice
+	/// @notice Divisor used to calculate the CST Dutch auction duration from `mainPrizeTimeIncrementInMicroSeconds`.
 	/// [Comment-202501025]
 	/// We divide `mainPrizeTimeIncrementInMicroSeconds` by this.
 	/// [/Comment-202501025]
@@ -220,7 +246,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Comment-202504212 applies.
 	uint256 public nextRoundFirstCstDutchAuctionBeginningBidPrice;
 
-	/// @notice Comment-202411066 relates.
+	/// @notice Minimum allowed value for the CST Dutch auction beginning bid price.
+	/// Comment-202411066 relates.
 	/// Comment-202411064 applies.
 	/// Comment-202504212 relates.
 	uint256 public cstDutchAuctionBeginningBidPriceMinLimit;
@@ -282,7 +309,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #endregion
 	// #region Main Prize
 
-	/// @notice Comment-202501025 applies.
+	/// @notice Divisor used to calculate the initial duration until the main prize can be claimed.
+	/// Comment-202501025 applies.
 	/// Comment-202508288 relates.
 	/// Comment-202411064 applies.
 	uint256 public initialDurationUntilMainPrizeDivisor;
@@ -294,7 +322,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [/Comment-202412152]
 	uint256 public mainPrizeTime;
 
-	/// @notice Comment-202412152 relates.
+	/// @notice The time increment (in microseconds) added to `mainPrizeTime` on each bid.
+	/// Comment-202412152 relates.
 	/// Comment-202501025 relates.
 	/// Comment-202411064 applies.
 	/// Comment-202411172 applies.
@@ -304,7 +333,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [/Comment-202411067]
 	uint256 public mainPrizeTimeIncrementInMicroSeconds;
 
-	/// @notice Comment-202501025 applies.
+	/// @notice Divisor for exponential increase of `mainPrizeTimeIncrementInMicroSeconds` after each round.
+	/// Comment-202501025 applies.
 	/// Comment-202411067 relates.
 	/// Comment-202411064 applies.
 	uint256 public mainPrizeTimeIncrementIncreaseDivisor;
@@ -343,16 +373,19 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #endregion
 	// #region Prizes Wallet
 
-	/// @notice Comment-202411064 applies.
+	/// @notice The `PrizesWallet` contract address, used for storing and distributing secondary prizes.
+	/// Comment-202411064 applies.
 	PrizesWallet public prizesWallet;
 
 	// #endregion
 	// #region NFT Staking
 
-	/// @notice Comment-202411064 applies.
+	/// @notice The `StakingWalletRandomWalkNft` contract address for Random Walk NFT staking.
+	/// Comment-202411064 applies.
 	StakingWalletRandomWalkNft public stakingWalletRandomWalkNft;
 
-	/// @notice Comment-202411064 applies.
+	/// @notice The `StakingWalletCosmicSignatureNft` contract address for Cosmic Signature NFT staking.
+	/// Comment-202411064 applies.
 	StakingWalletCosmicSignatureNft public stakingWalletCosmicSignatureNft;
 
 	// #endregion
@@ -389,7 +422,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #endregion
 	// #region DAO
 
-	// Empty.
+	// No DAO state variables are defined in this section.
+	// DAO functionality is provided by the separate `CosmicSignatureDao` contract.
 
 	// #endregion
 	// #region Gap
@@ -406,8 +440,9 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// solhint-disable-next-line var-name-mixedcase
 	uint256[1 << 255] private __gap_persistent;
 
-	// todo-1 Transient storage is not yet supported for reference types.
-	/// @dev Comment-202412142 applies.
+	/// @dev Reserved transient storage space for future use.
+	/// todo-1 Transient storage is not yet supported for reference types.
+	/// Comment-202412142 applies.
 	/// Comment-202412148 applies.
 	// uint256[1 << 255] private transient __gap_transient;
 	// solhint-disable-next-line var-name-mixedcase

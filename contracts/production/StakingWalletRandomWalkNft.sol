@@ -15,21 +15,32 @@ import { IStakingWalletRandomWalkNft } from "./interfaces/IStakingWalletRandomWa
 // #endregion
 // #region
 
+/// @title Staking Wallet for Random Walk NFTs.
+/// @author The Cosmic Signature Development Team.
+/// @notice Allows users to stake Random Walk NFTs for random prize eligibility.
+/// @dev Staked NFTs can be randomly selected to receive Cosmic Signature NFT prizes at the end of bidding rounds.
+/// This contract maintains a compact array of stake action IDs to enable efficient random selection.
+/// Each NFT can only be staked once in its lifetime to ensure fair distribution of prizes.
 contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRandomWalkNft {
 	// #region Data Types
 
 	/// @notice Stores details about an NFT stake action.
+	/// @dev Used to track ownership and array position of each staked NFT.
 	struct StakeAction {
+		/// @notice The ID of the staked NFT.
 		uint256 nftId;
 
+		/// @notice Address of the NFT owner who staked it.
 		/// @dev Comment-202504011 applies.
 		address nftOwnerAddress;
 
-		/// @notice
+		/// @notice Current index of this `StakeAction` in the `stakeActionIds` array.
+		/// @dev
 		/// [Comment-202502271]
 		/// Index of this `StakeAction` instance in `StakingWalletRandomWalkNft.stakeActionIds`.
 		/// [/Comment-202502271]
-		/// @dev It can change zero or more times over the `StakeAction` instance lifetime.
+		/// This index can change during the `StakeAction` lifetime when other NFTs are unstaked
+		/// and this stake action is moved to fill the gap (swap-and-pop pattern).
 		uint256 index;
 	}
 
@@ -39,13 +50,14 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	/// @notice The `RandomWalkNFT` contract address.
 	RandomWalkNFT public immutable randomWalkNft;
 
-	/// @notice Details about currently staked NFTs.
-	/// Item index corresponds to stake action ID.
+	/// @notice Maps stake action IDs to stake action details.
+	/// @dev Item index corresponds to stake action ID.
 	/// Comment-202502266 relates.
-	/// Unlike `stakeActionIds`, this array is sparse (can contain gaps).
+	/// Unlike `stakeActionIds`, this array is sparse (can contain gaps after unstaking).
 	StakeAction[1 << 64] public stakeActions;
 
-	/// @notice An item contains a stake action ID.
+	/// @notice Compact array of stake action IDs for efficient random selection.
+	/// @dev Each item contains a stake action ID.
 	/// Comment-202502271 relates.
 	/// Comment-202502266 relates.
 	/// Unlike `stakeActions`, this array is not sparse (contains no gaps).
@@ -57,7 +69,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	// #endregion
 	// #region `constructor`
 
-	/// @notice Constructor.
+	/// @notice Initializes the staking wallet with the Random Walk NFT contract address.
 	/// @param randomWalkNft_ The `RandomWalkNFT` contract address.
 	/// @dev
 	/// Observable universe entities accessed here:
@@ -71,7 +83,9 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	// #endregion
 	// #region `_stake`
 
-	/// @dev
+	/// @notice Internal implementation to stake a Random Walk NFT.
+	/// @param nftId_ The ID of the NFT to stake.
+	/// @dev Creates a new stake action, records it in both data structures, and transfers the NFT.
 	/// Observable universe entities accessed here:
 	///    `msg.sender`.
 	///    `numStakedNfts`.
@@ -100,9 +114,12 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 		// It's possible that this item is already populated because we didn't delete it near Comment-202502263.
 		// We are now overwriting it.
 		stakeActionIds[newStakeActionIndex_] = newStakeActionId_;
+		// #enable_asserts assert(stakeActionIds[newStakeActionIndex_] == newStakeActionId_);
 
 		++ newNumStakedNfts_;
 		numStakedNfts = newNumStakedNfts_;
+		// #enable_asserts assert(newNumStakedNfts_ > 0);
+		// #enable_asserts assert(newActionCounter_ > 0);
 		emit NftStaked(newStakeActionId_, nftId_, msg.sender, newNumStakedNfts_);
 
 		// [Comment-202501145]
@@ -110,12 +127,14 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 		// it could make sense to use the feature Comment-202501144 is talking about.
 		// [/Comment-202501145]
 		randomWalkNft.transferFrom(msg.sender, address(this), nftId_);
+		// #enable_asserts assert(randomWalkNft.ownerOf(nftId_) == address(this));
 	}
 
 	// #endregion
 	// #region `unstake`
 
-	/// @dev
+	/// @inheritdoc IStakingWalletRandomWalkNft
+	/// @dev Uses swap-and-pop pattern to maintain a compact `stakeActionIds` array without gaps.
 	/// Observable universe entities accessed here:
 	///    `msg.sender`.
 	///    `CosmicSignatureErrors.NftStakeActionInvalidId`.
@@ -134,7 +153,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 		StakeAction memory stakeActionCopy_ = stakeActionReference_;
 
 		// #endregion
-		// #region
+		// #region Validate caller is the NFT owner
 
 		if (msg.sender != stakeActionCopy_.nftOwnerAddress) {
 			if (stakeActionCopy_.nftOwnerAddress == address(0)) {
@@ -147,25 +166,28 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 		// #enable_asserts assert(stakeActionIds[stakeActions[stakeActionId_].index] == stakeActionId_);
 
 		// #endregion
-		// #region
+		// #region Update state using swap-and-pop pattern
 
 		delete stakeActionReference_.nftId;
 		delete stakeActionReference_.nftOwnerAddress;
+		// #enable_asserts assert(stakeActionReference_.nftOwnerAddress == address(0));
 		uint256 newNumStakedNfts_ = numStakedNfts - 1;
 		numStakedNfts = newNumStakedNfts_;
 
 		// Nothing would be broken if this happens to be equal `stakeActionId_`,
 		// meaning we are unstaking the stake action that is the last in `stakeActionIds`.
 		uint256 lastStakeActionId_ = stakeActionIds[newNumStakedNfts_];
+		// #enable_asserts assert(lastStakeActionId_ > 0);
 
 		stakeActions[lastStakeActionId_].index = stakeActionCopy_.index;
 		delete stakeActionReference_.index;
 		stakeActionIds[stakeActionCopy_.index] = lastStakeActionId_;
+		// #enable_asserts assert(stakeActionIds[stakeActionCopy_.index] == lastStakeActionId_);
 
-		// // [Comment-202502263]
-		// // This is unnecessary. Therefore Comment-202502261.
-		// // [/Comment-202502263]
-		// delete stakeActionIds[newNumStakedNfts_];
+		// [Comment-202502263]
+		// Deleting the last element is unnecessary for correctness because we track `numStakedNfts`.
+		// Therefore Comment-202502261.
+		// [/Comment-202502263]
 
 		uint256 newActionCounter_ = actionCounter + 1;
 		actionCounter = newActionCounter_;
@@ -180,7 +202,8 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	// #endregion
 	// #region `unstakeMany`
 
-	/// @dev
+	/// @inheritdoc IStakingWalletRandomWalkNft
+	/// @dev Iterates in reverse order for gas optimization.
 	/// Observable universe entities accessed here:
 	///    `unstake`.
 	function unstakeMany(uint256[] calldata stakeActionIds_) external override {
@@ -193,7 +216,9 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	// #endregion
 	// #region `pickRandomStakerAddressesIfPossible`
 
-	/// @dev
+	/// @inheritdoc IStakingWalletRandomWalkNft
+	/// @dev Uses on-chain randomness to select stakers. The compact `stakeActionIds` array
+	/// enables O(1) random access for efficient random selection.
 	/// Observable universe entities accessed here:
 	///    `RandomNumberHelpers.generateRandomNumber`.
 	///    `numStakedNfts`.

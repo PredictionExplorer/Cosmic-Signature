@@ -13,30 +13,39 @@ import { IStakingWalletNftBase } from "./interfaces/IStakingWalletNftBase.sol";
 // #endregion
 // #region
 
+/// @title NFT Staking Wallet Base Contract.
+/// @author The Cosmic Signature Development Team.
+/// @notice Abstract base contract providing common NFT staking functionality.
+/// @dev This contract enforces the one-time staking rule for NFTs and provides base stake/unstake logic.
+/// Derived contracts extend this with specific staking mechanics.
 abstract contract StakingWalletNftBase is AddressValidator, IStakingWalletNftBase {
 	// #region State
 
 	/// @notice The current staked NFT count.
+	/// @dev
 	/// [Comment-202502266]
-	/// This is the number of populated `stakeActions` items.
-	/// `stakeActionIds` contains the same number of populated items.
+	/// This is the number of populated `stakeActions` items in derived contracts.
+	/// In `StakingWalletRandomWalkNft`, the `stakeActionIds` array contains the same number of populated items.
 	/// [/Comment-202502266]
 	uint256 public numStakedNfts = 0;
 
-	/// @notice Each Random Walk or Cosmic Signature NFT is allowed to be used for staking only once.
-	/// If an item of this array at a particular index is a nonzero it means the NFT with that ID has already been used for staking.
-	/// It doesn't specify whether the given NFT is still staked or has already been unstaked.
+	/// @notice Tracks which NFTs have been used for staking.
+	/// @dev Each Random Walk or Cosmic Signature NFT is allowed to be used for staking only once.
+	/// A nonzero value at a given index indicates the NFT with that ID has already been used for staking.
+	/// This flag remains set even after unstaking, preventing re-staking of the same NFT.
+	/// This design ensures fairness by preventing gaming of the reward distribution system.
 	/// See also: `CosmicSignatureGameStorage.usedRandomWalkNfts`.
 	uint256[1 << 64] public usedNfts;
 
-	/// @notice This variable is used to generate monotonic unique IDs.
-	/// @dev One might want to declare this variable `internal` (and name it `_...`), but Nick needs it to be `public`.
+	/// @notice Monotonically increasing counter used to generate unique action IDs.
+	/// @dev Incremented for each stake and unstake action across the contract's lifetime.
+	/// One might want to declare this variable `internal` (and name it `_...`), but Nick needs it to be `public`.
 	uint256 public actionCounter = 0;
 
 	// #endregion
 	// #region `constructor`
 
-	/// @notice Constructor.
+	/// @notice Initializes the base staking wallet contract.
 	/// @dev
 	/// Observable universe entities accessed here:
 	///    Inherited `constructor`s.
@@ -47,6 +56,7 @@ abstract contract StakingWalletNftBase is AddressValidator, IStakingWalletNftBas
 	// #endregion
 	// #region `stake`
 
+	/// @inheritdoc IStakingWalletNftBase
 	/// @dev
 	/// Observable universe entities accessed here:
 	///    `_stake`.
@@ -57,7 +67,12 @@ abstract contract StakingWalletNftBase is AddressValidator, IStakingWalletNftBas
 	// #endregion
 	// #region `_stake`
 
-	/// @dev
+	/// @notice Internal staking implementation that enforces the one-time staking rule.
+	/// @param nftId_ The ID of the NFT to stake.
+	/// @dev This base implementation marks the NFT as used for staking.
+	/// Derived contracts must call `super._stake()` and extend with additional logic
+	/// (e.g., transferring the NFT, recording stake action details).
+	/// Reverts with `NftHasAlreadyBeenStaked` if the NFT was previously staked.
 	/// Observable universe entities accessed here:
 	///    `CosmicSignatureErrors.NftHasAlreadyBeenStaked`.
 	///    `usedNfts`.
@@ -72,6 +87,7 @@ abstract contract StakingWalletNftBase is AddressValidator, IStakingWalletNftBas
 	// #endregion
 	// #region `stakeMany`
 
+	/// @inheritdoc IStakingWalletNftBase
 	/// @dev
 	/// Observable universe entities accessed here:
 	///    `_stakeMany`.
@@ -82,7 +98,10 @@ abstract contract StakingWalletNftBase is AddressValidator, IStakingWalletNftBas
 	// #endregion
 	// #region `_stakeMany`
 
-	/// @dev
+	/// @notice Internal implementation to stake multiple NFTs in a single transaction.
+	/// @param nftIds_ Array of NFT IDs to stake.
+	/// @dev Iterates in reverse order for gas optimization.
+	/// Calls `_stake` for each NFT, which enforces individual staking rules.
 	/// Observable universe entities accessed here:
 	///    `_stake`.
 	function _stakeMany(uint256[] calldata nftIds_) internal {

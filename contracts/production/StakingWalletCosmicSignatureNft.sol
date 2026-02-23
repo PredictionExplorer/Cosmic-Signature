@@ -17,22 +17,34 @@ import { IStakingWalletCosmicSignatureNft } from "./interfaces/IStakingWalletCos
 // #endregion
 // #region
 
+/// @title Staking Wallet for Cosmic Signature NFTs.
+/// @author The Cosmic Signature Development Team.
+/// @notice Allows users to stake Cosmic Signature NFTs to earn ETH rewards.
+/// @dev Rewards are distributed proportionally to all staked NFTs using a cumulative reward pattern.
+/// When ETH is deposited via `deposit()`, the `rewardAmountPerStakedNft` increases by `deposit / numStakedNfts`.
+/// Each stake action records the initial `rewardAmountPerStakedNft` at stake time.
+/// On unstake, the reward equals the difference between current and initial `rewardAmountPerStakedNft`.
+/// This approach is gas-efficient: deposits are O(1) regardless of staker count.
 contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, StakingWalletNftBase, IStakingWalletCosmicSignatureNft {
 	// #region Data Types
 
 	/// @notice Stores details about an NFT stake action.
+	/// @dev Tracks ownership and reward calculation data for each staked NFT.
 	struct StakeAction {
+		/// @notice The ID of the staked NFT.
 		uint256 nftId;
 
+		/// @notice Address of the NFT owner who staked it.
 		/// @dev
 		/// [Comment-202504011]
-		/// Would it make sense to reorder variables like `nftOwnerAddress` and `stakerAddress` to before `NftId`?
+		/// Would it make sense to reorder variables like `nftOwnerAddress` and `stakerAddress` to before `nftId`?
 		/// Regardless, let's leave it alone.
 		/// [/Comment-202504011]
 		address nftOwnerAddress;
 
-		/// @notice A copy of `StakingWalletCosmicSignatureNft.rewardAmountPerStakedNft`
-		/// saved when creating this `StakeAction` instance.
+		/// @notice Snapshot of `rewardAmountPerStakedNft` at stake time.
+		/// @dev Used to calculate the staker's reward on unstake.
+		/// Reward = current `rewardAmountPerStakedNft` - `initialRewardAmountPerStakedNft`.
 		uint256 initialRewardAmountPerStakedNft;
 	}
 
@@ -43,21 +55,23 @@ contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, S
 	CosmicSignatureNft public immutable nft;
 
 	/// @notice The `CosmicSignatureGame` contract address.
+	/// @dev Only this address is permitted to call `deposit()`.
 	address public immutable game;
 
-	/// @notice Details about currently staked NFTs.
-	/// Item index corresponds to stake action ID.
+	/// @notice Maps stake action IDs to stake action details.
+	/// @dev Item index corresponds to stake action ID.
 	/// Comment-202502266 relates.
-	/// This array is sparse (can contain gaps).
+	/// This array is sparse (can contain gaps after unstaking).
 	StakeAction[1 << 64] public stakeActions;
 
 	/// @notice The all-time cumulative staking ETH reward amount per staked NFT.
+	/// @dev Increases with each `deposit()` call. Used to calculate individual staker rewards.
 	uint256 public rewardAmountPerStakedNft = 0;
 
 	// #endregion
 	// #region `constructor`
 
-	/// @notice Constructor.
+	/// @notice Initializes the staking wallet with required contract addresses.
 	/// @param nft_ The `CosmicSignatureNft` contract address.
 	/// @param game_ The `CosmicSignatureGame` contract address.
 	/// @dev
@@ -78,6 +92,7 @@ contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, S
 	// #endregion
 	// #region `_onlyGame`
 
+	/// @notice Modifier that restricts access to the `CosmicSignatureGame` contract.
 	/// @dev Comment-202411253 applies.
 	modifier _onlyGame() {
 		_checkOnlyGame();
@@ -87,6 +102,7 @@ contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, S
 	// #endregion
 	// #region `_checkOnlyGame`
 
+	/// @notice Validates that the caller is the `CosmicSignatureGame` contract.
 	/// @dev Comment-202411253 applies.
 	function _checkOnlyGame() private view {
 		if (_msgSender() != game) {
@@ -97,6 +113,7 @@ contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, S
 	// #endregion
 	// #region `stake`
 
+	/// @inheritdoc IStakingWalletNftBase
 	/// @dev
 	/// Observable universe entities accessed here:
 	///    `nonReentrant`.
@@ -108,7 +125,10 @@ contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, S
 	// #endregion
 	// #region `_stake`
 
-	/// @dev
+	/// @notice Internal implementation to stake a Cosmic Signature NFT.
+	/// @param nftId_ The ID of the NFT to stake.
+	/// @dev Creates a new stake action, records the current `rewardAmountPerStakedNft`,
+	/// and transfers the NFT to this contract.
 	/// Observable universe entities accessed here:
 	///    `_msgSender`.
 	///    `numStakedNfts`.
@@ -134,15 +154,19 @@ contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, S
 		newStakeActionReference_.initialRewardAmountPerStakedNft = rewardAmountPerStakedNftCopy_;
 		uint256 newNumStakedNfts_ = numStakedNfts + 1;
 		numStakedNfts = newNumStakedNfts_;
+		// #enable_asserts assert(newNumStakedNfts_ > 0);
+		// #enable_asserts assert(newActionCounter_ > 0);
 		emit NftStaked(newStakeActionId_, nftId_, _msgSender(), newNumStakedNfts_, rewardAmountPerStakedNftCopy_);
 
 		// Comment-202501145 applies.
 		nft.transferFrom(_msgSender(), address(this), nftId_);
+		// #enable_asserts assert(nft.ownerOf(nftId_) == address(this));
 	}
 
 	// #endregion
 	// #region `stakeMany`
 
+	/// @inheritdoc IStakingWalletNftBase
 	/// @dev
 	/// Observable universe entities accessed here:
 	///    `nonReentrant`.
@@ -154,6 +178,7 @@ contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, S
 	// #endregion
 	// #region `unstake`
 
+	/// @inheritdoc IStakingWalletCosmicSignatureNft
 	/// @dev
 	/// Observable universe entities accessed here:
 	///    `nonReentrant`.
@@ -169,7 +194,9 @@ contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, S
 	// #endregion
 	// #region `unstakeMany`
 
-	/// @dev
+	/// @inheritdoc IStakingWalletCosmicSignatureNft
+	/// @dev Aggregates rewards from all unstaked NFTs and pays them in a single transfer.
+	/// Iterates in reverse order for gas optimization.
 	/// Observable universe entities accessed here:
 	///    `nonReentrant`.
 	///    `_unstake`.
@@ -191,10 +218,11 @@ contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, S
 	// #region `_unstake`
 
 	/// @notice Makes state updates needed to unstake an NFT.
-	/// @return The staking ETH reward amount.
+	/// @param stakeActionId_ The stake action ID to unstake.
+	/// @return The staking ETH reward amount owed to the staker.
 	/// It can potentially be zero.
 	/// The caller is required to pay it to the staker.
-	/// @dev
+	/// @dev Calculates reward as the difference between current and initial `rewardAmountPerStakedNft`.
 	/// Observable universe entities accessed here:
 	///    `CosmicSignatureErrors.NftStakeActionInvalidId`.
 	///    `CosmicSignatureErrors.NftStakeActionAccessDenied`.
@@ -239,7 +267,7 @@ contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, S
 	// #endregion
 	// #region `_payReward`
 
-	/// @notice This stupid method just transfers the given ETH amount to whoever calls it.
+	/// @notice Transfers the accumulated staking ETH reward to the caller.
 	/// @param rewardAmount_ The ETH amount to transfer.
 	/// It's OK if it's zero.
 	/// @dev
@@ -259,7 +287,8 @@ contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, S
 	// #endregion
 	// #region `deposit`
 
-	/// @dev
+	/// @inheritdoc IStakingWalletCosmicSignatureNft
+	/// @dev Increases `rewardAmountPerStakedNft` by `msg.value / numStakedNfts`.
 	/// Observable universe entities accessed here:
 	///    `msg.value`.
 	///    `nonReentrant`.
@@ -289,6 +318,7 @@ contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, S
 	// #endregion
 	// #region `tryPerformMaintenance`
 
+	/// @inheritdoc IStakingWalletCosmicSignatureNft
 	/// @dev
 	/// Observable universe entities accessed here:
 	///    `address.balance`.
@@ -302,7 +332,7 @@ contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, S
 	/// I have made this method `nonReentrant`. Although that could be unnecessary if we assumed
 	/// that the owner is not malicious. But at least this is helpful to silence Certora.
 	function tryPerformMaintenance(address charityAddress_) external override nonReentrant onlyOwner returns (bool) {
-		// #region
+		// #region Validate no staked NFTs remain
 
 		require(numStakedNfts == 0, CosmicSignatureErrors.ThereAreStakedNfts("There are still staked NFTs."));
 
@@ -312,7 +342,7 @@ contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, S
 		bool returnValue_ = true;
 
 		// #endregion
-		// #region
+		// #region Transfer remaining balance to charity if address provided
 
 		if (charityAddress_ != address(0)) {
 			// It's OK if this is zero.
