@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.33;
+pragma solidity 0.8.34;
 
 // // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";

@@ -1,7 +1,7 @@
 // #region
 
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.33;
+pragma solidity 0.8.34;
 
 // #endregion
 // #region
