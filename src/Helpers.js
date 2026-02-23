@@ -210,6 +210,7 @@ function uint32ToPaddedHexString(value_) {
 // #region `uint256ToPaddedHexString`
 
 /**
+ * Issue. Can we use `hre.ethers.toBeHex` instead of this?
  * @param {bigint} value_
  */
 function uint256ToPaddedHexString(value_) {
