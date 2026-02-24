@@ -19,7 +19,7 @@ describe("Arbitrum", function () {
 		const durationToWaitBeforePlacingFirstBid_ =
 			await contracts_.cosmicSignatureGameProxy.delayDurationBeforeRoundActivation() +
 			(await contracts_.cosmicSignatureGameProxy.getEthDutchAuctionDurations())[0];
-		// console.info("%s", Number(durationToWaitBeforePlacingFirstBid_) / (60.0 * 60.0));
+		// console.info("%f", Number(durationToWaitBeforePlacingFirstBid_) / (60.0 * 60.0));
 
 		// // This tests Comment-202507116.
 		// {

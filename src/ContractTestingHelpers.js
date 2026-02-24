@@ -62,7 +62,7 @@ async function loadFixtureDeployContractsForTesting(roundActivationTime) {
 		
 		nextBlockDate.setUTCFullYear(nextBlockDate.getUTCFullYear() + 10);
 		const nextBlockTimeStamp = Math.trunc(nextBlockDate.getTime() / 1000);
-		// console.info("%s", nextBlockTimeStamp);
+		// console.info("%d", nextBlockTimeStamp);
 
 		// Issue. Currently, this doesn't fail due to the new timestamp not being in the future from the latest block.
 		// Otherwise we would need a loop adding 10 years and trying on each iteration until succeeded.
@@ -283,7 +283,7 @@ async function makeNextBlockTimeDeterministic(currentSecondRemainingDurationMinL
 		// [/Comment-202506264]
 		await sleepForMilliSeconds(currentSecondRemainingDurationInMilliSeconds + 1);
 
-		// console.info("%s", Date.now());
+		// console.info("%d", Date.now());
 		secondBeginningReachCount = 1;
 	} else {
 		secondBeginningReachCount = 0;

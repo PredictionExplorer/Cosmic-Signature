@@ -43,7 +43,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 				const cosmicSignatureNftNftMintedParsedLog_ = contracts_.cosmicSignatureNft.interface.parseLog(cosmicSignatureNftNftMintedLog_);
 				nftIds_.push(cosmicSignatureNftNftMintedParsedLog_.args.nftId);
 			}
-			// console.info("%s %s", performance.now().toFixed(1), nftIds_.length);
+			// console.info("%s %d", performance.now().toFixed(1), nftIds_.length);
 			if (roundNum_ >= 2n && nftIds_.length >= 10) {
 				break;
 			}
@@ -537,7 +537,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 		let transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 		const stakingWalletCosmicSignatureNftNftStakedLog_ = transactionReceipt_.logs.find((log_) => (log_.topics.includes(stakingWalletCosmicSignatureNftNftStakedTopicHash_)));
 		const stakingWalletCosmicSignatureNftNftStakedParsedLog_ = contracts_.stakingWalletCosmicSignatureNft.interface.parseLog(stakingWalletCosmicSignatureNftNftStakedLog_);
-		// console.info("%s", stakingWalletCosmicSignatureNftNftStakedParsedLog_.args.stakeActionId);
+		// console.info("%d", stakingWalletCosmicSignatureNftNftStakedParsedLog_.args.stakeActionId);
 
 		for ( let counter_ = 0; counter_ < 2; ++ counter_ ) {
 			transactionResponsePromise_ =
@@ -569,7 +569,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 		let transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 		const stakingWalletCosmicSignatureNftNftStakedLog_ = transactionReceipt_.logs.find((log_) => (log_.topics.includes(stakingWalletCosmicSignatureNftNftStakedTopicHash_)));
 		const stakingWalletCosmicSignatureNftNftStakedParsedLog_ = contracts_.stakingWalletCosmicSignatureNft.interface.parseLog(stakingWalletCosmicSignatureNftNftStakedLog_);
-		// console.info("%s", stakingWalletCosmicSignatureNftNftStakedParsedLog_.args.stakeActionId);
+		// console.info("%d", stakingWalletCosmicSignatureNftNftStakedParsedLog_.args.stakeActionId);
 
 		{
 			const stakeActionId_ = stakingWalletCosmicSignatureNftNftStakedParsedLog_.args.stakeActionId + BigInt(1 - (generateRandomUInt32() & 2));

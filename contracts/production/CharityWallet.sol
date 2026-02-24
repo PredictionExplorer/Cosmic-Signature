@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.33;
+pragma solidity 0.8.34;
 
 import { ReentrancyGuardTransient } from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";

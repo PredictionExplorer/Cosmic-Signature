@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.33;
+pragma solidity 0.8.34;
 
 import { IAddressValidator } from "../../production/interfaces/IAddressValidator.sol";
 import { ICosmicSignatureGameStorage } from "../../production/interfaces/ICosmicSignatureGameStorage.sol";

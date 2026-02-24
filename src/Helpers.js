@@ -213,6 +213,7 @@ function uint32ToPaddedHexString(value_) {
  * @param {bigint} value_
  */
 function uint256ToPaddedHexString(value_) {
+	// Issue. Can we use `hre.ethers.toBeHex` here?
 	return   "0x" + value_.toString(16).padStart(256 / 8 * 2, "0");
 }
 
