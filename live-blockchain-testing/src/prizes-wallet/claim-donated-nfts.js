@@ -79,7 +79,7 @@
 // 	let cosmicSignatureGame = await getCosmicSignatureGameContract();
 // 	let nfts = await get_unclaimed_donated_nfts(cosmicSignatureGame);
 // 	if (nfts.length <= 0) {
-// 		console.info("%s", "Map of donated unclaimed NFTs is empty, no claiming is possible");
+// 		console.warn("%s", "Warning. Map of donated unclaimed NFTs is empty, no claiming is possible");
 // 		return;
 // 	}
 // 	if (privKey == undefined || privKey.length <= 0) {
@@ -91,7 +91,7 @@
 // 	}
 // 	let roundNumStr = process.env.ROUND_NUM;
 // 	if (roundNumStr == undefined || roundNumStr.length <= 0) {
-// 		console.info("%s", "Please provide ROUND_NUM environment variable to claim NFTs");
+// 		console.error("%s", "Error. Please provide the ROUND_NUM environment variable to claim NFTs.");
 // 		process.exit(1);
 // 	}
 // 	let roundToClaim = parseInt(roundNumStr, 10);
@@ -99,7 +99,7 @@
 // 	// todo-9 `cosmicSignatureGame.winners` no longer exists. A similar variable exists in `PrizesWallet`.
 // 	let mainPrizeBeneficiaryAddress = await cosmicSignatureGame.winners(roundToClaim, {blockTag: "pending",});
 // 	if (mainPrizeBeneficiaryAddress.toString() != testingAcct.address.toString()) {
-// 		console.info("%s", `You aren't the beneficiary of main prize ${roundToClaim}, beneficiary is ${mainPrizeBeneficiaryAddress}`);
+// 		console.error("%s", `Error. You aren't the beneficiary of main prize ${roundToClaim}, beneficiary is ${mainPrizeBeneficiaryAddress}`);
 // 		process.exit(1);
 // 	}
 //

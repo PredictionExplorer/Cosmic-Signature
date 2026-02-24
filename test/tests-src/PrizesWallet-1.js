@@ -21,7 +21,7 @@ describe("PrizesWallet-1", function () {
 		// #region
 
 		if (SKIP_LONG_TESTS) {
-			// todo-1 Review all calls to `console` to make sure we specify a correct error severity.
+			// todo-1 +++ Review all calls to `console` to make sure we specify a correct error severity.
 			// todo-1 +++ Also remember that it treats sequences like "%s" in a special way.
 			console.warn("%s", "Warning 202506083. Skipping a long test.");
 			// return;

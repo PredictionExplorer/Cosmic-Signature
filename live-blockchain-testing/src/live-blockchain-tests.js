@@ -71,7 +71,7 @@ main()
 function prepare1() {
 	// // Testing.
 	// process.on("unhandledRejection", (reason_, promise_) => {
-	// 	console.error(/*"%s",*/ "Unhandled rejection from:", promise_, `${nodeOsModule.EOL}Reason:`, reason_);
+	// 	console.error(/*"%s",*/ "Error. Unhandled rejection from:", promise_, `${nodeOsModule.EOL}Reason:`, reason_);
 	// });
 
 	validateConfiguration();
@@ -181,12 +181,11 @@ async function main() {
 	await tryWithdrawEverythingIfNeeded();
 	await finalizeTestingIfNeeded();
 	await payMarketingRewardsIfNeeded();
-	console.info(
-		"%s",
-		( ! (process.exitCode > 0) ) ?
-		`${nodeOsModule.EOL}Live blockchain tests completed successfully.` :
-		`${nodeOsModule.EOL}Live blockchain tests completed with errors.`
-	);
+	if ( ! (process.exitCode > 0) ) {
+		console.info("%s", `${nodeOsModule.EOL}Live blockchain tests completed successfully.`);
+	} else {
+		console.error("%s", `${nodeOsModule.EOL}Error. Live blockchain tests completed with errors.`);
+	}
 }
 
 // #endregion
@@ -386,13 +385,13 @@ async function tryPlayCosmicSignatureGameIfNeeded() {
 	// // Testing.
 	// console.info("%s", `${nodeOsModule.EOL}Test 202510024.`);
 	// await waitForTransactionReceipt(state.contracts.cosmicSignatureGameProxy.connect(state.ownerSigner).setRoundActivationTime(0n));
-	// console.info("%s", Date.now());
+	// console.info("%d", Date.now());
 	// await waitForTransactionReceipt(state.contracts.cosmicSignatureGameProxy.connect(state.ownerSigner).setRoundActivationTime(10n ** 11n));
-	// console.info("%s", Date.now());
+	// console.info("%d", Date.now());
 	// await waitForTransactionReceipt(state.contracts.cosmicSignatureGameProxy.connect(state.ownerSigner).setRoundActivationTime(0n));
-	// console.info("%s", Date.now());
+	// console.info("%d", Date.now());
 	// await waitForTransactionReceipt(state.contracts.cosmicSignatureGameProxy.connect(state.ownerSigner).setRoundActivationTime(10n ** 11n));
-	// console.info("%s", Date.now());
+	// console.info("%d", Date.now());
 	// console.info("%s", "End Test 202510024.");
 
 	if ( ! configuration.playCosmicSignatureGame ) {
@@ -426,8 +425,8 @@ async function tryPlayCosmicSignatureGameIfNeeded() {
 			await claimMainPrize(state.contracts.cosmicSignatureGameProxy, state.contracts.prizesWallet, state.bidder2Signer, state.accountEthPrizeRoundNums);
 		}
 	} catch(errorObject_) {
-		// console.error("%s %s", errorObject_.errorName, errorObject_.args);
-		// console.error("%s", errorObject_.shortMessage || errorObject_.reason);
+		// console.error("Error. %s %s", errorObject_.errorName, errorObject_.args);
+		// console.error("Error. %s", errorObject_.shortMessage || errorObject_.reason);
 		console.error("%o", errorObject_);
 		process.exitCode = 1;
 	}
