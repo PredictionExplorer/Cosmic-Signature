@@ -6,7 +6,7 @@ library CosmicSignatureHelpers {
 
 	/// @dev Issue. In some places where we transfer ETH by calling `address.call`,
 	/// it could make sense to call this method instead.
-	/// But I have no immediate plans to refactorr anything.
+	/// But I have no immediate plans to refactor anything.
 	function transferEthTo(address payable toAddress_, uint256 amount_) internal {
 		// [Comment-202502043]
 		// In most cases, we make high level calls to strongly typed addresses --
