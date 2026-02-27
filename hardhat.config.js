@@ -86,6 +86,7 @@ const solidityCompilationCacheSubFolderName = ENABLE_HARDHAT_PREPROCESSOR ? ("de
 // [/Comment-202409011]
 
 // Comment-202409011 applies.
+// todo-1 Periodically check out known Solidity compiler bugs at https://www.soliditylang.org/blog/category/security-alerts/ .
 // [ToDo-202409098-2]
 // When changing this, remember to revisit the configuration near Comment-202411136, Comment-202408026, Comment-202408025.
 // [/ToDo-202409098-2]
