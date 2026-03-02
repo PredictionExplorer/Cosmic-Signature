@@ -50,7 +50,7 @@ describe("StakingWalletRandomWalkNft", function () {
 				contracts_.stakingWalletRandomWalkNft.connect(contracts_.signers[0]).stake(nftId_) :
 				contracts_.stakingWalletRandomWalkNft.connect(contracts_.signers[0]).stakeMany([nftId_]);
 			const transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
-			const stakingWalletRandomWalkNftNftStakedLog_ = transactionReceipt_.logs.find((log_) => (log_.topics.includes(stakingWalletRandomWalkNftNftStakedTopicHash_)));
+			const stakingWalletRandomWalkNftNftStakedLog_ = transactionReceipt_.logs.find((log_) => (log_.topics[0] == stakingWalletRandomWalkNftNftStakedTopicHash_));
 			const stakingWalletRandomWalkNftNftStakedParsedLog_ = contracts_.stakingWalletRandomWalkNft.interface.parseLog(stakingWalletRandomWalkNftNftStakedLog_);
 			stakeActions_.push(
 				{
@@ -123,7 +123,7 @@ describe("StakingWalletRandomWalkNft", function () {
 			const transactionResponsePromise_ = contracts_.stakingWalletRandomWalkNft.connect(contracts_.signers[0]).stakeMany(nftIds_);
 			const transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 			expect(transactionReceipt_.logs.length).equals(numNfts_ * 2);
-			const stakingWalletRandomWalkNftNftStakedLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.includes(stakingWalletRandomWalkNftNftStakedTopicHash_)));
+			const stakingWalletRandomWalkNftNftStakedLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics[0] == stakingWalletRandomWalkNftNftStakedTopicHash_));
 			expect(stakingWalletRandomWalkNftNftStakedLogs_.length).equals(numNfts_);
 			for (let stakingWalletRandomWalkNftNftStakedLogIndex_ = numNfts_; ( -- stakingWalletRandomWalkNftNftStakedLogIndex_ ) >= 0; ) {
 				const stakingWalletRandomWalkNftNftStakedLog_ = stakingWalletRandomWalkNftNftStakedLogs_[stakingWalletRandomWalkNftNftStakedLogIndex_];
@@ -148,7 +148,7 @@ describe("StakingWalletRandomWalkNft", function () {
 			const transactionResponsePromise_ = contracts_.stakingWalletRandomWalkNft.connect(contracts_.signers[0]).unstakeMany(stakeActionIds_);
 			const transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
 			expect(transactionReceipt_.logs.length).equals(numNfts_ * 2);
-			const stakingWalletRandomWalkNftNftUnstakedLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.includes(stakingWalletRandomWalkNftNftUnstakedTopicHash_)));
+			const stakingWalletRandomWalkNftNftUnstakedLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics[0] == stakingWalletRandomWalkNftNftUnstakedTopicHash_));
 			expect(stakingWalletRandomWalkNftNftUnstakedLogs_.length).equals(numNfts_);
 			for (let stakingWalletRandomWalkNftNftUnstakedLogIndex_ = numNfts_; ( -- stakingWalletRandomWalkNftNftUnstakedLogIndex_ ) >= 0; ) {
 				const stakingWalletRandomWalkNftNftUnstakedLog_ = stakingWalletRandomWalkNftNftUnstakedLogs_[stakingWalletRandomWalkNftNftUnstakedLogIndex_];
@@ -325,7 +325,7 @@ describe("StakingWalletRandomWalkNft", function () {
 			const transactionResponsePromise_ = contracts_.stakingWalletRandomWalkNft.connect(contracts_.signers[0]).stake(nftId_);
 			if (counter_ <= 0) {
 				const transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
-				const stakingWalletRandomWalkNftNftStakedLog_ = transactionReceipt_.logs.find((log_) => (log_.topics.includes(stakingWalletRandomWalkNftNftStakedTopicHash_)));
+				const stakingWalletRandomWalkNftNftStakedLog_ = transactionReceipt_.logs.find((log_) => (log_.topics[0] == stakingWalletRandomWalkNftNftStakedTopicHash_));
 				const stakingWalletRandomWalkNftNftStakedParsedLog_ = contracts_.stakingWalletRandomWalkNft.interface.parseLog(stakingWalletRandomWalkNftNftStakedLog_);
 				await waitForTransactionReceipt(contracts_.stakingWalletRandomWalkNft.connect(contracts_.signers[0]).unstake(stakingWalletRandomWalkNftNftStakedParsedLog_.args.stakeActionId));
 				expect(await contracts_.stakingWalletRandomWalkNft.usedNfts(nftId_)).equal(1n);
@@ -350,7 +350,7 @@ describe("StakingWalletRandomWalkNft", function () {
 		/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 		let transactionResponsePromise_ = contracts_.stakingWalletRandomWalkNft.connect(contracts_.signers[0]).stake(nftId_);
 		let transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
-		const stakingWalletRandomWalkNftNftStakedLog_ = transactionReceipt_.logs.find((log_) => (log_.topics.includes(stakingWalletRandomWalkNftNftStakedTopicHash_)));
+		const stakingWalletRandomWalkNftNftStakedLog_ = transactionReceipt_.logs.find((log_) => (log_.topics[0] == stakingWalletRandomWalkNftNftStakedTopicHash_));
 		const stakingWalletRandomWalkNftNftStakedParsedLog_ = contracts_.stakingWalletRandomWalkNft.interface.parseLog(stakingWalletRandomWalkNftNftStakedLog_);
 		// console.info("%d", stakingWalletRandomWalkNftNftStakedParsedLog_.args.stakeActionId);
 
@@ -376,7 +376,7 @@ describe("StakingWalletRandomWalkNft", function () {
 		/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 		let transactionResponsePromise_ = contracts_.stakingWalletRandomWalkNft.connect(contracts_.signers[0]).stake(nftId_);
 		let transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
-		const stakingWalletRandomWalkNftNftStakedLog_ = transactionReceipt_.logs.find((log_) => (log_.topics.includes(stakingWalletRandomWalkNftNftStakedTopicHash_)));
+		const stakingWalletRandomWalkNftNftStakedLog_ = transactionReceipt_.logs.find((log_) => (log_.topics[0] == stakingWalletRandomWalkNftNftStakedTopicHash_));
 		const stakingWalletRandomWalkNftNftStakedParsedLog_ = contracts_.stakingWalletRandomWalkNft.interface.parseLog(stakingWalletRandomWalkNftNftStakedLog_);
 		// console.info("%d", stakingWalletRandomWalkNftNftStakedParsedLog_.args.stakeActionId);
 
@@ -429,7 +429,7 @@ describe("StakingWalletRandomWalkNft", function () {
 			/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 			const transactionResponsePromise_ = contracts_.stakingWalletRandomWalkNft.connect(contracts_.signers[0]).stakeMany(nftIds_);
 			const transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
-			const stakingWalletRandomWalkNftNftStakedLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics.includes(stakingWalletRandomWalkNftNftStakedTopicHash_)));
+			const stakingWalletRandomWalkNftNftStakedLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics[0] == stakingWalletRandomWalkNftNftStakedTopicHash_));
 			for (const stakingWalletRandomWalkNftNftStakedLog_ of stakingWalletRandomWalkNftNftStakedLogs_) {
 				const stakingWalletRandomWalkNftNftStakedParsedLog_ = contracts_.stakingWalletRandomWalkNft.interface.parseLog(stakingWalletRandomWalkNftNftStakedLog_);
 				// console.info("%s", `202507277 ${stakingWalletRandomWalkNftNftStakedParsedLog_.args.nftId} ${stakingWalletRandomWalkNftNftStakedParsedLog_.args.stakeActionId}`);
