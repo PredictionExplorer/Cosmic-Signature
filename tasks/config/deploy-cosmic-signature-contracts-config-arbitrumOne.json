@@ -2,7 +2,7 @@
 	"deployerPrivateKey": "",
 	"cosmicSignatureGameContractName": "CosmicSignatureGame",
 	"randomWalkNftAddress": "0x895a6F444BE4ba9d124F61DF736605792B35D66b",
-	"charityAddress": "",
+	"charityAddress": "0x7F8DCFd764bA8e9B3BA577dC641D5c664B74c47b",
 	"transferContractOwnershipToCosmicSignatureDao": false,
 	"roundActivationTime": -1e9,
 	"donateEthToCosmicSignatureGame": false,
