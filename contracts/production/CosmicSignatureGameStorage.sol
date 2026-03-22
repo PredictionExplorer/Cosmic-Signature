@@ -22,7 +22,6 @@ import { ICosmicSignatureGameStorage } from "./interfaces/ICosmicSignatureGameSt
 /// todo-1 +++ such as `roundNum_`,  is not too big.
 /// todo-1 +++ Otherwise a collision can create a vulnerability.
 /// todo-1 +++ Really, `mapping`s and dynamic arrays (including strings) are evil. Avoid them!
-/// todo-1 --- Write a better todo near each `mapping` and dynamic array to eliminate them and/or review the code.
 abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #region System Management
 
@@ -114,7 +113,6 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// @notice Delay duration from when the main prize gets claimed until the next bidding round activates.
 	/// [Comment-202411064]
 	/// This is a configurable parameter.
-	/// todo-1 +++ Review where this comment is referenced. Done on Mar 9 2025.
 	/// [/Comment-202411064]
 	/// [Comment-202412312]
 	/// We do not automatically increase this.
