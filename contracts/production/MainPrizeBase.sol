@@ -23,7 +23,6 @@ abstract contract MainPrizeBase is CosmicSignatureGameStorage, IMainPrizeBase {
 	}
 
 	function getDurationUntilMainPrizeRaw() public view override returns (int256) {
-		// todo-1 +++ Review all `unchecked`.
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */

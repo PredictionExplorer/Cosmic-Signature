@@ -191,7 +191,7 @@ library CosmicSignatureErrors {
 	// #endregion
 	// #region NFT Staking
 
-	// todo-1 +++ Keep this commented.
+	// todo-1 +++ Keep this commented. Don't delete.
 	// /// @notice Thrown when there are no staked NFTs.
 	// /// @param errStr Description of the error.
 	// error NoStakedNfts(string errStr);
@@ -206,7 +206,7 @@ library CosmicSignatureErrors {
 	/// @param nftId NFT ID.
 	error NftHasAlreadyBeenStaked(string errStr, uint256 nftId);
 
-	// todo-1 +++ Keep this commented.
+	// todo-1 +++ Keep this commented. Don't delete.
 	// /// @notice Thrown when attempting to unstake an already unstaked NFT.
 	// /// @param errStr Description of the error.
 	// /// @param stakeActionId NFT stake action ID.
