@@ -125,11 +125,11 @@ The **Cosmic Signature** protocol contains more than 30 on-chain modules coverin
 
 | Area | Contract(s) | What *must* hold | Why it matters |
 |------|-------------|------------------|----------------|
-| **Auctions** | `Bidding.sol`, `BiddingBase.sol`, `BidStatistics.sol` | • Highest bid never decreases  \\ • Bidder ETH/CSN balance ≥ committed amount  \\ • Sum(all item highestBids) ≤ `PrizesWallet` balance | Prevents phantom bids & insolvency;
+| **Auctions** | `Bidding.sol`, `BiddingBase.sol`, `BidStatistics.sol` | • Highest bid never decreases  \\ • Bidder ETH/CST balance ≥ committed amount  \\ • Sum(all item highestBids) ≤ `PrizesWallet` balance | Prevents phantom bids & insolvency;
 market integrity. |
 | **Game State** | `CosmicSignatureGame*.sol`, `SystemManagement.sol` | • `currentRoundId` monotonically increases  \\ • Only *one* main-prize winner per round  \\ • Phase transitions follow enum order | Detect logic bugs that skip rounds or
 award multiple prizes. |
-| **Treasury Flows** | `PrizesWallet.sol`, `CharityWallet.sol`, `MarketingWallet.sol` | • ETH/CSN conservation: inflows – outflows == Δbalance  \\ • Withdrawals only to whitelisted recipients | Ensures solvency; stops treasury drain. |
+| **Treasury Flows** | `PrizesWallet.sol`, `CharityWallet.sol`, `MarketingWallet.sol` | • ETH/CST conservation: inflows – outflows == Δbalance  \\ • Withdrawals only to whitelisted recipients | Ensures solvency; stops treasury drain. |
 | **Tokenomics** | `CosmicSignatureToken.sol`, `CosmicSignatureNft.sol` | • `totalSupply == Σ balances` (ERC20/721)  \\ • Staking escrow + liquid == total  \\ • No duplicate token IDs | Canonical supply invariants many
 bugs slip on. |
 | **Randomness** | `RandomNumberHelpers.sol`, `FairRandomNumberGenerator.js` | • Output is uniform & unpredictable (model via `uninterp rnd`)  \\ • Winner selection unbiased | Game fairness & legal compliance. |
@@ -175,7 +175,7 @@ rule oneMainPrizePerRound(method f, env e, calldataarg data) {
 ```
 
 ### 9.3 Heuristics for Our Specs
-1. **Ghost tracking of escrowed tokens** – several contracts move CSN/NFTs between user wallets and staking contracts; introduce ghost variable `totalEscrowed` to reconcile flows.
+1. **Ghost tracking of escrowed tokens** – several contracts move COSMIC/NFTs between user wallets and staking contracts; introduce ghost variable `totalEscrowed` to reconcile flows.
 2. **Time-window checks** – file names like *set-short-durations.js* hint at configurable delays; encode temporal predicates using block.timestamp snapshots.
 3. **Reentrancy hooks** – `Bidding.sol` emits external calls after state-changes; add `afterExternalCall()` hook to ensure bid maps not mutated twice.
 4. **Role separation** – Model DAO vs. owner powers via environment `env e` roles to prevent capability overlap.

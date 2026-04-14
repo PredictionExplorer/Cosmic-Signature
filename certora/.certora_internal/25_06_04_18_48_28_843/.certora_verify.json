@@ -1,8 +1,0 @@
-{
-    "importFilesToOrigRelpaths": {},
-    "primary_contract": "CosmicSignatureGame",
-    "specfile": "certora/BiddingMechanicsCore.spec",
-    "specfileOrigRelpath": "certora/BiddingMechanicsCore.spec",
-    "specfilesToImportDecls": {},
-    "type": "spec"
-}

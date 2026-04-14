@@ -10,7 +10,7 @@ This document lists all prizes awarded by our game.
 
 - A newly minted Cosmic Signature Token (CST) amount.
 
-- A newly minted Cosmic Signature NFT (CSN).
+- A newly minted Cosmic Signature NFT (COSMIC).
 
 - A third party ERC-20 token amount.
 

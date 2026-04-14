@@ -1,8 +1,0 @@
-{
-    "importFilesToOrigRelpaths": {},
-    "primary_contract": "CosmicSignatureGame",
-    "specfile": "certora/PrizeClaimStateTransitions.spec",
-    "specfileOrigRelpath": "certora/PrizeClaimStateTransitions.spec",
-    "specfilesToImportDecls": {},
-    "type": "spec"
-}
