@@ -66,7 +66,7 @@ These roles are maintained in `BidStatistics`:
 - Main Prize (25%): 2.5 ETH → Last Bidder
 - Chrono-Warrior (8%): 0.8 ETH → longest EC streak holder
 - Bidder Raffles (4% ÷ 3): 0.133 ETH each → 3 random bidders
-- CSN Staking (6%): 0.6 ETH → distributed to all CSN stakers
+- COSMIC Staking (6%): 0.6 ETH → distributed to all COSMIC stakers
 - Charity (7%): 0.7 ETH → Charity Wallet
 - Remaining (50%): 5 ETH → stays for the next round
 

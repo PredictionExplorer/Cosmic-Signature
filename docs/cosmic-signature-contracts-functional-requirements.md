@@ -34,7 +34,7 @@ This document goes a little bit beyond purely functional requirements. It's inte
 
 - `RandomWalkNFT`. It's an ERC-721 NFT contract that has already been deployed. Its symbol is RWLK. It can be considered a third party contract that is not a part of this project, but it plays an important role. This contract does not need to be audited.
 
-- `CosmicSignatureNft`. The Official ERC-721 NFT for the Cosmic Signature Ecosystem. Its symbol is CSN. Only the `CosmicSignatureGame` contract is permitted to mint new NFTs.
+- `CosmicSignatureNft`. The Official ERC-721 NFT for the Cosmic Signature Ecosystem. Its symbol is COSMIC. Only the `CosmicSignatureGame` contract is permitted to mint new NFTs.
 
 - `PrizesWallet`. A wallet to hold the Cosmic Signature Game prizes and donations. It supports depositing ETH, donating third party ERC-20 token amounts and ERC-721 NFTs, and allows prize winners (and after a timeout anybody) to withdraw their prizes.
 
@@ -150,7 +150,7 @@ One of the prizes is a charitable donation ETH to be transferred to `CosmicSigna
 
 - Donated third party ERC-20 token amounts and ERC-721 NFTs are transferred to `PrizesWallet`. They are claimable by main prize winner.
 
-- CST and CSN prizes are minted to the winner addresses by making calls to respective token contracts. There is nothing to withdraw in this case.
+- CST and COSMIC prizes are minted to the winner addresses by making calls to respective token contracts. There is nothing to withdraw in this case.
 
 - Winners are required to withdraw/claim their prizes held in `PrizesWallet`. They are given a configurable timeout window after the round end to do so before anybody is allowed to withdraw/claim unclaimed prizes.
 
@@ -177,13 +177,13 @@ A user also can force-send ETH to the Game contract by `selfdestruct`ing a contr
 
 - While a round is active, a user can place an ETH bid. The current ETH bid price, or a half of it if an RWLK was provided, is transferred to the Game contract.
 
-- At the end of each round, a half of the Game contract ETH balance is awarded to various beneficiaries: main prize winner gets paid directly to their address; CSN staking awards are transferred to `StakingWalletCosmicSignatureNft`; ETH to be donated to charity is transferred to `CharityWallet`; other winners' ETH prizes, including any secondary prizes won by main prize winner, are transferred to `PrizesWallet`.
+- At the end of each round, a half of the Game contract ETH balance is awarded to various beneficiaries: main prize winner gets paid directly to their address; COSMIC staking awards are transferred to `StakingWalletCosmicSignatureNft`; ETH to be donated to charity is transferred to `CharityWallet`; other winners' ETH prizes, including any secondary prizes won by main prize winner, are transferred to `PrizesWallet`.
 
 - At any time, a user can withdraw their ETH prizes from `PrizesWallet`. After a timeout, anybody is allowed to withdraw unclaimed assets from there.
 
 - At any time, a user can transfer ETH from `CharityWallet` to the charity.
 
-- At any time, a staker can unstake their CSN and get their staking ETH rewards.
+- At any time, a staker can unstake their COSMIC and get their staking ETH rewards.
 
 #### Cosmic Signature Token (Symbol = "CST")
 
@@ -205,13 +205,13 @@ A user also can force-send ETH to the Game contract by `selfdestruct`ing a contr
 
 - At any time, a staker can unstake their RWLK.
 
-#### Cosmic Signature NFT (Symbol = "CSN")
+#### Cosmic Signature NFT (Symbol = "COSMIC")
 
-- At the end of a round, a number of CSNs are minted for various beneficiaries.
+- At the end of a round, a number of COSMICs are minted for various beneficiaries.
 
-- At any time, a CSN can be staked. A CSN is allowed to be staked only once.
+- At any time, a COSMIC can be staked. A COSMIC is allowed to be staked only once.
 
-- At any time, a staker can unstake their CSN and get their staking ETH rewards.
+- At any time, a staker can unstake their COSMIC and get their staking ETH rewards.
 
 #### Third party ERC-20 token amount and ERC-721 NFT
 

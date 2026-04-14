@@ -43,7 +43,7 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 	constructor(address game_)
 		_providedAddressIsNonZero(game_)
 		Ownable(_msgSender())
-		ERC721("CosmicSignatureNft", "CSN") {
+		ERC721("CosmicSignatureNft", "COSMIC") {
 		game = game_;
 	}
 
