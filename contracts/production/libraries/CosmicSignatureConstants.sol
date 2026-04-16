@@ -163,8 +163,7 @@ library CosmicSignatureConstants {
 	string internal constant COSMIC_SIGNATURE_NFT_DEFAULT_NFT_BASE_URI = "https://nfts.cosmicsignature.com/cg/metadata/";
 
 	/// @notice Default `CosmicSignatureNft.nftGenerationScriptUri`.
-	/// @dev todo-0 Hardcode a valid value here.
-	string internal constant COSMIC_SIGNATURE_NFT_DEFAULT_NFT_GENERATION_SCRIPT_URI = "ipfs://TBD";
+	string internal constant COSMIC_SIGNATURE_NFT_DEFAULT_NFT_GENERATION_SCRIPT_URI = "ipfs://bafybeig7qgsl2c3hnxrt2mnbarestfzof7u3s3o2rw7c6fitryx3ruxora";
 
 	// #endregion
 	// #region Prizes Wallet
