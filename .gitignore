@@ -1,5 +1,30 @@
+# Dependencies
 node_modules
-# .env
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Editor / IDE temp files
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
 
 # Hardhat files
 /cache
