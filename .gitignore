@@ -23,6 +23,15 @@ venv/
 *.swo
 *~
 
+# IDE and editor local config (not required for the project to build or run)
+.cursor/
+.vscode/
+.idea/
+*.iml
+.fleet/
+*.sublime-project
+*.sublime-workspace
+
 # Logs
 *.log
 
