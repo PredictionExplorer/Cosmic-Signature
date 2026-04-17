@@ -159,8 +159,7 @@ library CosmicSignatureConstants {
 	uint256 internal constant COSMIC_SIGNATURE_NFT_NFT_NAME_LENGTH_MAX_LIMIT = 32;
 
 	/// @notice Default `CosmicSignatureNft.nftBaseUri`.
-	/// @dev todo-0 Hardcode a valid value here. Done, but recheck again that it's correct.
-	string internal constant COSMIC_SIGNATURE_NFT_DEFAULT_NFT_BASE_URI = "https://nfts.cosmicsignature.com/cg/metadata/";
+	string internal constant COSMIC_SIGNATURE_NFT_DEFAULT_NFT_BASE_URI = "https://nfts.cosmicsignature.com/metadata/";
 
 	/// @notice Default `CosmicSignatureNft.nftGenerationScriptUri`.
 	string internal constant COSMIC_SIGNATURE_NFT_DEFAULT_NFT_GENERATION_SCRIPT_URI = "ipfs://bafybeig7qgsl2c3hnxrt2mnbarestfzof7u3s3o2rw7c6fitryx3ruxora";
