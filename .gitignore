@@ -72,3 +72,38 @@ venv/
 /live-blockchain-testing/output
 
 /certora/emv*
+
+# macOS resource forks and metadata
+._*
+.AppleDouble
+.LSOverride
+
+# Python tooling caches (pytest, mypy, ruff, coverage, tox)
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+
+# TypeScript incremental build info
+*.tsbuildinfo
+
+# Certora extra working directories (in addition to /certora/emv*)
+/certora/.certora_config/
+/certora/.certora_internal/
+/certora/.last_confs/
+/certora/certora_internal/
+
+# Merge / backup leftovers (also covers /eslint/eslint-1-report.bak.txt listed above)
+*.orig
+*.rej
+*.bak
+
+# Non-npm lock files (project standardizes on npm via .npmrc + package-lock.json)
+yarn.lock
+pnpm-lock.yaml
+.pnp.*
+.yarn/cache
+.yarn/install-state.gz
