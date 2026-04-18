@@ -1,54 +1,59 @@
-# Dependencies
-node_modules
+# Non-npm lock files (project standardizes on npm via .npmrc + package-lock.json).
+# yarn.lock
+# .yarn/cache/
+# .yarn/install-state.gz
+# pnpm-lock.yaml
+# .pnp.*
 
-# Environment and secrets
-.env
-.env.*
-!.env.example
+# Dependencies.
+/node_modules/
 
-# OS-generated files
-.DS_Store
-Thumbs.db
+# TypeScript incremental build info.
+# *.tsbuildinfo
 
-# Python
-__pycache__/
-*.py[cod]
-*.pyo
-.venv/
-venv/
-*.egg-info/
+# Python.
+# __pycache__/
+# *.py[cod]
+# # *.pyo # The above will match this.
+# .venv/
+# venv/
+# *.egg-info/
 
-# Editor / IDE temp files
-*.swp
-*.swo
-*~
+# Python tooling caches (pytest, mypy, ruff, coverage, tox).
+# .pytest_cache/
+# .mypy_cache/
+# .ruff_cache/
+# .coverage
+# .coverage.*
+# htmlcov/
+# .tox/
 
-# IDE and editor local config (not required for the project to build or run)
-.cursor/
-.vscode/
-.idea/
-*.iml
-.fleet/
-*.sublime-project
-*.sublime-workspace
+# Environment and secrets.
+# .env
+# .env.*
+# !.env.example
 
-# Logs
-*.log
+# Logs.
+# *.log
 
-# Hardhat files
-/cache
-/artifacts
+# Hardhat generated files.
+/cache/
+/artifacts/
 
-# TypeChain files
-/typechain
-/typechain-types
+# # Comment-202408024 applies.
+# /abi/
 
-# solidity-coverage files
-/coverage
-/coverage.json
+# TypeChain files.
+# Issue. Hardhat does not create these, at least in this project.
+/typechain/
+/typechain-types/
 
-# Hardhat Ignition default folder for deployments against a local node
-/ignition/deployments/chain-31337
+# solidity-coverage files.
+# /coverage/
+# /coverage.json
+
+# Hardhat Ignition default folder for deployments against a local node.
+# /ignition/deployments/chain-31337/
 
 # Comment-202409124 applies.
 /solhint/check-1-output.txt
@@ -57,53 +62,48 @@ venv/
 /slither/slither-1-output.md
 
 # Comment-202409014 applies.
-/smtchecker/compile-1-output
+/smtchecker/compile-1-output/
 
 # Comment-202505307 applies.
 /eslint/eslint-1-report.txt
 /eslint/eslint-1-report.bak.txt
 
-# # Comment-202408024 applies.
-# /abi
+/tasks/output/
+/live-blockchain-testing/output/
 
-# /config.sh
-
-/tasks/output
-/live-blockchain-testing/output
-
+/certora/.venv/
 /certora/emv*
 
-# macOS resource forks and metadata
-._*
-.AppleDouble
-.LSOverride
-
-# Python tooling caches (pytest, mypy, ruff, coverage, tox)
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-.coverage
-.coverage.*
-htmlcov/
-.tox/
-
-# TypeScript incremental build info
-*.tsbuildinfo
-
-# Certora extra working directories (in addition to /certora/emv*)
+# Certora extra working directories (in addition to `/certora/emv*`).
 /certora/.certora_config/
 /certora/.certora_internal/
 /certora/.last_confs/
 /certora/certora_internal/
 
-# Merge / backup leftovers (also covers /eslint/eslint-1-report.bak.txt listed above)
-*.orig
-*.rej
-*.bak
+# Merge / backup leftovers.
+# *.orig
+# *.rej
+# *.bak
 
-# Non-npm lock files (project standardizes on npm via .npmrc + package-lock.json)
-yarn.lock
-pnpm-lock.yaml
-.pnp.*
-.yarn/cache
-.yarn/install-state.gz
+# Editor / IDE temp files.
+# *.swp
+# *.swo
+# *~
+
+# IDE and editor local config (not required for the project to build or run).
+# /.cursor/
+# /.vscode/
+# /.idea/
+# /*.iml
+# /.fleet/
+# /*.sublime-project
+# /*.sublime-workspace
+
+# Windows generated files.
+# Thumbs.db
+
+# macOS resource forks and metadata.
+# ._*
+# .AppleDouble
+# .LSOverride
+.DS_Store
