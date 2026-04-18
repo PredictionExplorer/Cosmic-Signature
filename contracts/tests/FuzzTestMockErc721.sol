@@ -4,7 +4,7 @@ pragma solidity 0.8.34;
 import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
 /// @notice Minimal mintable ERC-721 for Hardhat fuzz tests (`FuzzTest.js`). Not used in production.
-contract FuzzTestMockERC721 is ERC721 {
+contract FuzzTestMockErc721 is ERC721 {
 	uint256 private nextTokenId = 1;
 
 	constructor() ERC721("FuzzTest ERC721", "FZ721") {

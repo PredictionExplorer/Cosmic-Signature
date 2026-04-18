@@ -1,5 +1,5 @@
 // #region Header
-//
+
 // Cosmic Signature — comprehensive protocol fuzz test (Hardhat + Mocha + Chai)
 //
 // Goals:
@@ -13,10 +13,14 @@
 //
 // Recommended run (Solidity asserts on):
 //   HARDHAT_MODE_CODE=1 ENABLE_HARDHAT_PREPROCESSOR=true ENABLE_ASSERTS=true npx hardhat test test/tests-src/FuzzTest.js
-//
+
 // #endregion
+// #region
 
 "use strict";
+
+// #endregion
+// #region Imports
 
 const { describe, it } = require("mocha");
 const { expect } = require("chai");
@@ -32,6 +36,7 @@ const {
 	loadFixtureDeployContractsForTesting,
 } = require("../../src/ContractTestingHelpers.js");
 
+// #endregion
 // #region Configuration
 
 /** Every named fuzz action must appear here so statistics counters are always defined. */
@@ -371,7 +376,7 @@ class Participant {
 		this.cosmicSignatureDao = contracts_.cosmicSignatureDao.connect(signer_);
 		this.mockErc20 = contracts_.fuzzTestMockErc20.connect(signer_);
 		this.mockErc721 = contracts_.fuzzTestMockErc721.connect(signer_);
-		/// @type {bigint} Populated after `FuzzTestMockERC721.mint` in test setup (one mock NFT per participant).
+		/// @type {bigint} Populated after `FuzzTestMockErc721.mint` in test setup (one mock NFT per participant).
 		this.mockDonatedNftTokenId = 0n;
 	}
 
@@ -919,7 +924,11 @@ async function runProtocolInvariants(contracts_, participants_, baselineRound_, 
 // #region `describe`
 
 describe("FuzzTest", function () {
+	// #region `it`
+
 	it("Comprehensive multi-participant fuzz with invariants, negative probes, and broad API coverage", async function () {
+		// #region
+
 		const fuzzConfig_ = buildFuzzConfig(SKIP_LONG_TESTS);
 		// Wall-clock ceiling for Mocha (long default run can take tens of minutes).
 		this.timeout(SKIP_LONG_TESTS ? 3_600_000 : 14_400_000);
@@ -945,16 +954,17 @@ describe("FuzzTest", function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(roundActivationTimeOffset_);
 		contracts_.fuzzConfig = fuzzConfig_;
 
+		// #endregion
 		// #region Deploy fuzz-only mock ERC-20 / ERC-721 (used for bid donation paths)
 
 		const deployerForMocks_ = contracts_.signers[0];
-		const FuzzTestMockERC20Factory_ = await hre.ethers.getContractFactory("FuzzTestMockERC20", deployerForMocks_);
-		const fuzzTestMockErc20_ = await FuzzTestMockERC20Factory_.deploy();
+		const FuzzTestMockErc20Factory_ = await hre.ethers.getContractFactory("FuzzTestMockErc20", deployerForMocks_);
+		const fuzzTestMockErc20_ = await FuzzTestMockErc20Factory_.deploy();
 		await fuzzTestMockErc20_.waitForDeployment();
 		const fuzzTestMockErc20Address_ = await fuzzTestMockErc20_.getAddress();
 
-		const FuzzTestMockERC721Factory_ = await hre.ethers.getContractFactory("FuzzTestMockERC721", deployerForMocks_);
-		const fuzzTestMockErc721_ = await FuzzTestMockERC721Factory_.deploy();
+		const FuzzTestMockErc721Factory_ = await hre.ethers.getContractFactory("FuzzTestMockErc721", deployerForMocks_);
+		const fuzzTestMockErc721_ = await FuzzTestMockErc721Factory_.deploy();
 		await fuzzTestMockErc721_.waitForDeployment();
 		const fuzzTestMockErc721Address_ = await fuzzTestMockErc721_.getAddress();
 
@@ -2355,6 +2365,8 @@ describe("FuzzTest", function () {
 
 		// #endregion
 	});
+
+	// #endregion
 });
 
 // #endregion
