@@ -163,7 +163,7 @@ async function assertRandomCosmicSignatureNftStakeAction(stakingWalletCosmicSign
 async function assertCosmicSignatureNftStakeAction(stakingWalletCosmicSignatureNftSimulator_, contracts_, stakeActionId_) {
 	const stakeActionFromContract_ = await contracts_.stakingWalletCosmicSignatureNft.stakeActions(stakeActionId_);
 	const stakeActionFromContractSimulator_ = stakingWalletCosmicSignatureNftSimulator_.stakeActions[Number(stakeActionId_)];
-	if (stakeActionFromContractSimulator_ == undefined) {
+	if (stakeActionFromContractSimulator_ === undefined) {
 		expect(stakeActionFromContract_[0]).equal(0n);
 		expect(stakeActionFromContract_[1]).equal(hre.ethers.ZeroAddress);
 		expect(stakeActionFromContract_[2]).equal(0n);

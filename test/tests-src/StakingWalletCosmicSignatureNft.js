@@ -394,7 +394,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 		for ( let nftId_ = 0n; nftId_ < cosmicSignatureNftTotalSupply_; ++ nftId_ ) {
 			const nftStakerAddress_ = await contracts_.cosmicSignatureNft.ownerOf(nftId_);
 			let nftStakerNftIds_ = nftIdsByStakerAddress_[nftStakerAddress_];
-			if (nftStakerNftIds_ == undefined) {
+			if (nftStakerNftIds_ === undefined) {
 				nftStakerNftIds_ = [];
 				nftIdsByStakerAddress_[nftStakerAddress_] = nftStakerNftIds_;
 			}
@@ -448,7 +448,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 				expect(nftId_).greaterThanOrEqual(cosmicSignatureNftTotalSupplyBefore_);
 				const nftStakerAddress_ = await contracts_.cosmicSignatureNft.ownerOf(nftId_);
 				let nftStakerNftIds_ = nftIdsByStakerAddress_[nftStakerAddress_];
-				if (nftStakerNftIds_ == undefined) {
+				if (nftStakerNftIds_ === undefined) {
 					nftStakerNftIds_ = [];
 					nftIdsByStakerAddress_[nftStakerAddress_] = nftStakerNftIds_;
 				}

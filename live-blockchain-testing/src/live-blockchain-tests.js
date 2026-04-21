@@ -198,7 +198,7 @@ async function runDeployCosmicSignatureContractsIfNeeded() {
 			.replaceAll("${cosmicSignatureGameContractName}", configuration.cosmicSignatureContractsDeployment.cosmicSignatureGameContractName);
 	if (configuration.deployCosmicSignatureContracts) {
 		const deployCosmicSignatureContractsReportFileStats_ = nodeFsModule.statSync(deployCosmicSignatureContractsReportFilePath_, {throwIfNoEntry: false,});
-		if (deployCosmicSignatureContractsReportFileStats_ == undefined) {
+		if (deployCosmicSignatureContractsReportFileStats_ === undefined) {
 			const deployCosmicSignatureContractsConfigurationFilePath_ =
 				configuration.cosmicSignatureContractsDeployment.deployCosmicSignatureContractsConfigurationFilePath
 					.replaceAll("${networkName}", hre.network.name)

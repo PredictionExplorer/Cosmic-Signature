@@ -197,7 +197,7 @@ let networkIsMainNet = undefined;
 @param {import("hardhat")} hre
 */
 function populateNetworkIsMainNetOnce(hre) {
-	if (networkIsMainNet != undefined) {
+	if (networkIsMainNet !== undefined) {
 		return;
 	}
 

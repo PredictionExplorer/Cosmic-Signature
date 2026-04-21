@@ -80,7 +80,7 @@ const { assertAddressIsValid, assertEvent } = require("../../../src/ContractTest
 			{
 				// const prizeWinnerNewEthBalanceAmount_ = this.getEthBalanceAmount(roundNum_, prizeWinnerAddress_) + amount_;
 				let prizeWinnerEthBalanceAmounts_ = this.accountEthBalanceAmounts[prizeWinnerAddress_];
-				if (prizeWinnerEthBalanceAmounts_ == undefined) {
+				if (prizeWinnerEthBalanceAmounts_ === undefined) {
 					prizeWinnerEthBalanceAmounts_ = [];
 					this.accountEthBalanceAmounts[prizeWinnerAddress_] = prizeWinnerEthBalanceAmounts_;
 				}
@@ -104,7 +104,7 @@ const { assertAddressIsValid, assertEvent } = require("../../../src/ContractTest
 			expect(roundNum_).greaterThanOrEqual(0n);
 			expect(prizeWinnerAddress_).properAddress;
 			const prizeWinnerEthBalanceAmounts_ = this.accountEthBalanceAmounts[prizeWinnerAddress_];
-			return (prizeWinnerEthBalanceAmounts_ == undefined) ? 0n : (prizeWinnerEthBalanceAmounts_[Number(roundNum_)] ?? 0n);
+			return (prizeWinnerEthBalanceAmounts_ === undefined) ? 0n : (prizeWinnerEthBalanceAmounts_[Number(roundNum_)] ?? 0n);
 		},
 
 		// #endregion

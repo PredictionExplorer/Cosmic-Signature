@@ -260,7 +260,7 @@ describe("MainPrize", function () {
 		const uniqueSecondaryEthPrizeWinners_ = {};
 		for ( let prizesWalletEthDepositIndex_ = 0; prizesWalletEthDepositIndex_ < prizesWalletEthReceivedLogs_.length; ++ prizesWalletEthDepositIndex_ ) {
 			const parsedLog_ = contracts_.prizesWallet.interface.parseLog(prizesWalletEthReceivedLogs_[prizesWalletEthDepositIndex_]);
-			if (uniqueSecondaryEthPrizeWinners_[parsedLog_.args.prizeWinnerAddress] == undefined) {
+			if (uniqueSecondaryEthPrizeWinners_[parsedLog_.args.prizeWinnerAddress] === undefined) {
 				uniqueSecondaryEthPrizeWinners_[parsedLog_.args.prizeWinnerAddress] = true;
 				const prizeWinnerSigner_ = contracts_.signers[contracts_.signerAddressToIndexMapping[parsedLog_.args.prizeWinnerAddress]];
 
@@ -342,7 +342,7 @@ describe("MainPrize", function () {
 		for ( let counter_ = 0; counter_ < cosmicSignatureGameProxyRaffleWinnerBidderEthPrizeAllocatedLogs_.length; ++ counter_ ) {
 			const parsedLog_ = contracts_.cosmicSignatureGameProxy.interface.parseLog(cosmicSignatureGameProxyRaffleWinnerBidderEthPrizeAllocatedLogs_[counter_]);
 			sumRaffleWinnerBidderEthPrizes_ += parsedLog_.args.ethPrizeAmount;
-			if (uniqueRaffleWinnerBidderEthPrizeWinners_[parsedLog_.args.winnerAddress] == undefined) {
+			if (uniqueRaffleWinnerBidderEthPrizeWinners_[parsedLog_.args.winnerAddress] === undefined) {
 				uniqueRaffleWinnerBidderEthPrizeWinners_[parsedLog_.args.winnerAddress] = true;
 				if (parsedLog_.args.winnerAddress != bidderContractAddress_) {
 					const prizeWinnerSigner_ = contracts_.signers[contracts_.signerAddressToIndexMapping[parsedLog_.args.winnerAddress]];

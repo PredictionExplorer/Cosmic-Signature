@@ -297,7 +297,7 @@ function buildFuzzConfig(skipLongTests_) {
  * @returns {bigint | undefined} Uint256 seed, or undefined to generate fresh randomness.
  */
 function parseFuzzSeedFromEnvironment(raw_) {
-	if (raw_ == undefined || raw_.length <= 0) {
+	if (raw_ === undefined || raw_.length <= 0) {
 		return undefined;
 	}
 	const normalized_ = raw_.startsWith("0x") || raw_.startsWith("0X") ? raw_ : `0x${raw_}`;
@@ -760,7 +760,7 @@ async function buildCurrentRoundBidderAddressSet(gameProxy_, roundNum_, numBids_
  * @param {Set<string> | null} bidderSetLowercase_
  */
 async function assertChampionAddressesAmongBidders(gameProxy_, bidderSetLowercase_) {
-	if (bidderSetLowercase_ == null) {
+	if (bidderSetLowercase_ === null) {
 		return;
 	}
 	const last_ = await gameProxy_.lastBidderAddress();
@@ -789,7 +789,7 @@ async function assertChampionAddressesAmongBidders(gameProxy_, bidderSetLowercas
  */
 async function assertRewardAmountPerStakedNftMonotonic(contracts_, snapshotWrapper_) {
 	const current_ = await contracts_.stakingWalletCosmicSignatureNft.rewardAmountPerStakedNft();
-	if (snapshotWrapper_.lastValue == null) {
+	if (snapshotWrapper_.lastValue === null) {
 		snapshotWrapper_.lastValue = current_;
 		return;
 	}
@@ -815,7 +815,7 @@ async function assertTryGetCurrentChampionsSmoke(gameProxy_, bidderSetLowercase_
 
 	const enduranceView_ = /** @type {string} */ (tuple_[0]);
 	if (enduranceView_ !== hre.ethers.ZeroAddress) {
-		if (bidderSetLowercase_ == null) {
+		if (bidderSetLowercase_ === null) {
 			const storageEndurance_ = await gameProxy_.enduranceChampionAddress();
 			const ok_ =
 				enduranceView_.toLowerCase() === lastBidderAddress_.toLowerCase() ||
@@ -833,7 +833,7 @@ async function assertTryGetCurrentChampionsSmoke(gameProxy_, bidderSetLowercase_
 	if (chronoView_ === hre.ethers.ZeroAddress) {
 		return;
 	}
-	if (bidderSetLowercase_ == null) {
+	if (bidderSetLowercase_ === null) {
 		const storageChrono_ = await gameProxy_.chronoWarriorAddress();
 		const storageEndurance_ = await gameProxy_.enduranceChampionAddress();
 		const okChrono_ =
@@ -2198,7 +2198,7 @@ describe("FuzzTest", function () {
 								// Ignore.
 							}
 						}
-						if (proposalId_ == undefined) {
+						if (proposalId_ === undefined) {
 							break;
 						}
 						await hre.ethers.provider.send("evm_increaseTime", [Number(votingDelay_) + 1]);

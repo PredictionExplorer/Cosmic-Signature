@@ -485,7 +485,7 @@ describe("CosmicSignatureGame-1", function () {
 								contracts_,
 								transactionResponsePromise_
 							);
-						expect(transactionShouldHaveSucceeded_).equal(transactionReceipt_ != undefined);
+						expect(transactionShouldHaveSucceeded_).equal(transactionReceipt_ !== undefined);
 						if (transactionShouldHaveSucceeded_) {
 							// console.info("%s", `202505111 ${signerIndex_}`);
 							await cosmicSignatureGameProxySimulator_.bidWithEth(
@@ -549,7 +549,7 @@ describe("CosmicSignatureGame-1", function () {
 								contracts_,
 								transactionResponsePromise_
 							);
-						expect(transactionShouldHaveSucceeded_).equal(transactionReceipt_ != undefined);
+						expect(transactionShouldHaveSucceeded_).equal(transactionReceipt_ !== undefined);
 						if (transactionShouldHaveSucceeded_) {
 							// console.info("%s", `202505112 ${signerIndex_}`);
 							/*await*/ cosmicSignatureGameProxySimulator_.bidWithCst(
@@ -598,7 +598,7 @@ describe("CosmicSignatureGame-1", function () {
 								transactionResponsePromise_
 							);
 						// const timeStamp2_ = performance.now();
-						expect(transactionShouldHaveSucceeded_).equal(transactionReceipt_ != undefined);
+						expect(transactionShouldHaveSucceeded_).equal(transactionReceipt_ !== undefined);
 						if (transactionShouldHaveSucceeded_) {
 							// console.info("%s", `202505113 ${signerIndex_}`);
 							// console.info("%s", `202505142 ${cosmicSignatureGameProxySimulator_.getTotalNumBids()}`);
@@ -666,7 +666,7 @@ describe("CosmicSignatureGame-1", function () {
 				// #endregion
 				// #region
 
-				if (blockBeforeTransaction_ != undefined) {
+				if (blockBeforeTransaction_ !== undefined) {
 					expect(transactionBlock_.number).equal(blockBeforeTransaction_.number + 1);
 					{
 						const adjacentBlockTimeStampDifference_ = transactionBlock_.timestamp - blockBeforeTransaction_.timestamp;
@@ -680,7 +680,7 @@ describe("CosmicSignatureGame-1", function () {
 							console.warn("%s", `Warning 202505017. Adjacent block timestamp difference is ${adjacentBlockTimeStampDifference_}.`);
 						}
 					}
-					if (transactionReceipt_ != undefined) {
+					if (transactionReceipt_ !== undefined) {
 						// console.info("%s", "202505075");
 						expect(transactionReceipt_.logs.length).equal(eventIndexWrapper_.value);
 						await assertContractSimulators_();
