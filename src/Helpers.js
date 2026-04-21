@@ -183,7 +183,7 @@ function parseBooleanEnvironmentVariable(environmentVariableName_, defaultValue_
 function parseIntegerEnvironmentVariable(environmentVariableName_, defaultValue_) {
 	const rawValue_ = process.env[environmentVariableName_];
 
-	if (rawValue_ == undefined || rawValue_.length <= 0) {
+	if (rawValue_ === undefined || rawValue_.length <= 0) {
 		return defaultValue_;
 	}
 
@@ -264,7 +264,7 @@ function hackApplyGasMultiplierIfNeeded() {
 	// 	return;
 	// }
 	const gasMultiplier_ = hre.network.config.gasMultiplier;
-	// if (gasMultiplier_ == undefined) {
+	// if (gasMultiplier_ === undefined) {
 	// 	return;
 	// }
 	// if (typeof gasMultiplier_ != "number") {

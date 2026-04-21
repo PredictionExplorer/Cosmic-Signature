@@ -10,7 +10,7 @@
 
 // async function main() {
 // 	const privKey = process.env.PRIVKEY;
-// 	if (privKey == undefined || privKey.length <= 0) {
+// 	if (privKey === undefined || privKey.length <= 0) {
 // 		console.error(
 // 			"%s",
 // 			// todo-9 "scripts/deploy.js" no longer exists.

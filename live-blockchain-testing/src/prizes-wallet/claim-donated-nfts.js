@@ -27,7 +27,7 @@
 // 		}
 // 		let prizeArr = prizeData[record.roundNum];
 // 		// todo-9 Why would it be `undefined`?
-// 		if (prizeArr == undefined) {
+// 		if (prizeArr === undefined) {
 // 			prizeArr = new Array();
 // 		}
 // 		prizeArr.push(record);
@@ -42,7 +42,7 @@
 // 	for (let i = 0; i < numNfts; i++) {
 // 		const roundNfts = nfts[i];
 // 		console.info("%s", `Bidding round ${i}`);
-// 		if (roundNfts == undefined || roundNfts.length <= 0) {
+// 		if (roundNfts === undefined || roundNfts.length <= 0) {
 // 			console.info("%s", "\t(no claimable NFTs)");
 // 			continue;
 // 		}
@@ -82,7 +82,7 @@
 // 		console.warn("%s", "Warning. Map of donated unclaimed NFTs is empty, no claiming is possible");
 // 		return;
 // 	}
-// 	if (privKey == undefined || privKey.length <= 0) {
+// 	if (privKey === undefined || privKey.length <= 0) {
 // 		console.info("%s", "Fetching NFTs, please wait ...");
 // 		await list_donated_nfts(nfts);
 // 		return;
@@ -90,7 +90,7 @@
 // 		testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
 // 	}
 // 	let roundNumStr = process.env.ROUND_NUM;
-// 	if (roundNumStr == undefined || roundNumStr.length <= 0) {
+// 	if (roundNumStr === undefined || roundNumStr.length <= 0) {
 // 		console.error("%s", "Error. Please provide the ROUND_NUM environment variable to claim NFTs.");
 // 		process.exit(1);
 // 	}

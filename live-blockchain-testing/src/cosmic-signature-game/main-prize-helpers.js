@@ -121,7 +121,7 @@ async function claimMainPrize(cosmicSignatureGameProxy_, prizesWallet_, bidderSi
 // 		let prizeWinnerAddress = wlog.args.prizeWinnerAddress;
 // 		if (prizeWinnerAddress == testingAcct.address) {
 // 			// todo-9 Do we now need to check that we haven't yet seen this combination of `prizeWinnerAddress` and `wlog.args.roundNum`?
-// 			if (unique_winners[prizeWinnerAddress] == undefined) {
+// 			if (unique_winners[prizeWinnerAddress] === undefined) {
 // 				await waitForTransactionReceipt(prizesWallet.connect(testingAcct).withdrawEth(wlog.args.roundNum));
 // 				unique_winners[prizeWinnerAddress] = 1;
 // 			}
