@@ -55,3 +55,30 @@ See "Cosmic-Signature-Contracts-Deployment-And-Registration.md".
 #### Afterwards
 
 See "Cosmic-Signature-Contracts-Deployment-And-Registration.md".
+
+#### V2 CST Sqrt Emission Upgrade
+
+`CosmicSignatureGameV2` changes only the bid-time CST reward generation rule. It does not redeploy `CosmicSignatureToken`, and it keeps the game proxy address unchanged.
+
+Before upgrading:
+
+- Run the full Hardhat test suite.
+- Run `npx hardhat check`.
+- Run Slither and `slither-check-upgradeability` against `CosmicSignatureGameV2`.
+- Run OpenZeppelin `validateUpgrade`.
+- Rehearse on Arbitrum Sepolia using `live-blockchain-testing/src/cosmic-signature-game-upgrade-cst-sqrt/`.
+
+Configuration:
+
+- In `../config/upgrade-cosmic-signature-game-config-<network_name>.json`, set `newCosmicSignatureGameContractName` to `CosmicSignatureGameV2`.
+- Set `newInitializerMethodName` to `initialize2`.
+
+Mainnet runbook:
+
+1. Wait for the active round to end and for `claimMainPrize` to prepare the next round.
+2. Before the next round receives its first bid, optionally call `setRoundActivationTime` to create a safe buffer.
+3. Execute `../runners/run-upgrade-cosmic-signature-game-arbitrumOne.bash`.
+4. Confirm the proxy address is unchanged and the implementation address changed.
+5. Execute `../runners/run-register-upgraded-cosmic-signature-game-arbitrumOne.bash`.
+6. Restore `roundActivationTime` if it was moved for the buffer.
+7. Place or observe the first post-upgrade bid and verify `CstBidRewardMinted`.

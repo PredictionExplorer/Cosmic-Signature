@@ -29,3 +29,30 @@
 @ While it's running, you might want to review "hardhat.config.js" to get an idea what's under the hood.
 
 @ After the script finishes, review the newly created file in the subfolder specified near Comment-202409014.
+
+@ For the CST sqrt emission V2 formula, prefer the direct solc harness path first.
+  This avoids asking Hardhat to compile and model-check the entire project.
+
+  Example:
+
+  HARDHAT_MODE_CODE=1 \
+  ENABLE_HARDHAT_PREPROCESSOR=true \
+  ENABLE_ASSERTS=true \
+  ENABLE_SMTCHECKER=2 \
+  SMTCHECKER_ENGINE=bmc \
+  SMTCHECKER_TIMEOUT_MS=10000 \
+  SMTCHECKER_DIRECT_SOLC_FILE='contracts/tests/CstRewardCalculatorSmtHarness.sol' \
+  SMTCHECKER_DIRECT_SOLC_CONTRACT='CstRewardCalculatorSmtHarness' \
+  python3 smtchecker/compile-1.py
+
+  This proves the bounded arithmetic that feeds the CST reward square root.
+  A full `CosmicSignatureGameV2` SMT pass is much heavier and can time out,
+  especially because OpenZeppelin `Math.sqrt` is difficult for the solver.
+
+@ To attempt a targeted Hardhat SMT pass anyway, set:
+
+  SMTCHECKER_CONTRACTS='contracts/production/CosmicSignatureGameV2.sol:CosmicSignatureGameV2'
+  SMTCHECKER_ENGINE=bmc
+  SMTCHECKER_TIMEOUT_MS=10000
+
+  and execute './compile-1.bash' or 'python3 compile-1.py'.

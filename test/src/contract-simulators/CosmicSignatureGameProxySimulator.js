@@ -12,6 +12,24 @@ const { generateRandomUInt256FromSeedWrapper } = require("../../../src/Helpers.j
 const { assertAddressIsValid, assertEvent, generateRandomUInt256Seed } = require("../../../src/ContractTestingHelpers.js");
 
 // #endregion
+// #region `sqrtBigInt`
+
+function sqrtBigInt(value_) {
+	expect(typeof value_).equal("bigint");
+	expect(value_).greaterThanOrEqual(0n);
+	if (value_ < 2n) {
+		return value_;
+	}
+	let x0_ = value_;
+	let x1_ = (value_ >> 1n) + 1n;
+	while (x1_ < x0_) {
+		x0_ = x1_;
+		x1_ = (x1_ + value_ / x1_) >> 1n;
+	}
+	return x0_;
+}
+
+// #endregion
 // #region `createCosmicSignatureGameProxySimulator`
 
 /** todo-3 Another test would be to populate this with some random values. But I have no immediate plans to develop it. */
@@ -98,6 +116,7 @@ async function createCosmicSignatureGameProxySimulator(
 
 		bidMessageLengthMaxLimit: 280n,
 		cstRewardAmountForBidding: 100n * 10n ** 18n,
+		usesSqrtCstBidReward: false,
 		cstPrizeAmount: 1_000n * 10n ** 18n,
 		chronoWarriorEthPrizeAmountPercentage: 8n,
 		raffleTotalEthPrizeAmountForBiddersPercentage: 4n,
@@ -136,6 +155,28 @@ async function createCosmicSignatureGameProxySimulator(
 		getDurationElapsedSinceRoundActivation: function(latestBlock_) {
 			const durationElapsedSinceRoundActivation_ = BigInt(latestBlock_.timestamp) - this.roundActivationTime;
 			return durationElapsedSinceRoundActivation_;
+		},
+
+		// #endregion
+		// #region `useSqrtCstBidReward`
+
+		useSqrtCstBidReward: function() {
+			this.usesSqrtCstBidReward = true;
+		},
+
+		// #endregion
+		// #region `getCstBidRewardAmount`
+
+		getCstBidRewardAmount: function(transactionBlock_) {
+			if ( ! this.usesSqrtCstBidReward ) {
+				return this.cstRewardAmountForBidding;
+			}
+			if (this.lastBidderAddress == hre.ethers.ZeroAddress) {
+				return 0n;
+			}
+			const lastBidTimeStamp_ = this.biddersInfo[this.lastBidderAddress].lastBidTimeStamp;
+			const elapsedDuration_ = BigInt(transactionBlock_.timestamp) - lastBidTimeStamp_;
+			return sqrtBigInt(3n * elapsedDuration_ * 10n ** 36n);
 		},
 
 		// #endregion
@@ -555,7 +596,19 @@ async function createCosmicSignatureGameProxySimulator(
 			this.nextEthBidPrice = ethBidPrice_ + ethBidPrice_ / this.ethBidPriceIncreaseDivisor + 1n;
 
 			// [Comment-202505086/]
-			this.cosmicSignatureTokenSimulator.mint(bidderAddress_, this.cstRewardAmountForBidding, contracts_, transactionReceipt_, eventIndexWrapper_);
+			const cstBidRewardAmount_ = this.getCstBidRewardAmount(transactionBlock_);
+			if (cstBidRewardAmount_ > 0n) {
+				this.cosmicSignatureTokenSimulator.mint(bidderAddress_, cstBidRewardAmount_, contracts_, transactionReceipt_, eventIndexWrapper_);
+			}
+			if (this.usesSqrtCstBidReward) {
+				assertEvent(
+					transactionReceipt_.logs[eventIndexWrapper_.value],
+					contracts_.cosmicSignatureGameProxy,
+					"CstBidRewardMinted",
+					[this.roundNum, bidderAddress_, cstBidRewardAmount_,]
+				);
+				++ eventIndexWrapper_.value;
+			}
 
 			if (this.lastBidderAddress == hre.ethers.ZeroAddress) {
 				this.cstDutchAuctionBeginningTimeStamp = BigInt(transactionBlock_.timestamp);
@@ -730,8 +783,20 @@ async function createCosmicSignatureGameProxySimulator(
 			// console.info("%s", `bidWithCst succeeded. ${hre.ethers.formatEther(paidCstPrice_)}`);
 
 			// Comment-202505086 applies.
+			const cstBidRewardAmount_ = this.getCstBidRewardAmount(transactionBlock_);
 			this.cosmicSignatureTokenSimulator.burn(bidderAddress_, paidCstPrice_, contracts_, transactionReceipt_, eventIndexWrapper_);
-			this.cosmicSignatureTokenSimulator.mint(bidderAddress_, this.cstRewardAmountForBidding, contracts_, transactionReceipt_, eventIndexWrapper_);
+			if (cstBidRewardAmount_ > 0n) {
+				this.cosmicSignatureTokenSimulator.mint(bidderAddress_, cstBidRewardAmount_, contracts_, transactionReceipt_, eventIndexWrapper_);
+			}
+			if (this.usesSqrtCstBidReward) {
+				assertEvent(
+					transactionReceipt_.logs[eventIndexWrapper_.value],
+					contracts_.cosmicSignatureGameProxy,
+					"CstBidRewardMinted",
+					[this.roundNum, bidderAddress_, cstBidRewardAmount_,]
+				);
+				++ eventIndexWrapper_.value;
+			}
 
 			this.biddersInfo[bidderAddress_].totalSpentCstAmount += paidCstPrice_;
 			this.cstDutchAuctionBeginningTimeStamp = BigInt(transactionBlock_.timestamp);

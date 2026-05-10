@@ -2,6 +2,6 @@
 	"deploymentConfigurationFilePath": "../config/deploy-cosmic-signature-contracts-config-arbitrumOne.json",
 	"newCosmicSignatureGameContractVersionNumber": 2,
 	"newCosmicSignatureGameContractName": "CosmicSignatureGameV2",
-	"newInitializerMethodName": "",
+	"newInitializerMethodName": "initialize2",
 	"reportFilePath": "../output/upgrade-cosmic-signature-game-report-arbitrumOne.json"
 }
