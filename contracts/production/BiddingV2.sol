@@ -36,7 +36,8 @@ abstract contract BiddingV2 is
 	// #region `receive`
 
 	receive() external payable override nonReentrant /*_onlyRoundIsActive*/ {
-		_bidWithEth((-1), "");
+		// Comment-V2-RECEIVE applies. Bare-ETH transfers default to no slippage protection.
+		_bidWithEth((-1), "", 0);
 	}
 
 	// #endregion
@@ -235,30 +236,30 @@ abstract contract BiddingV2 is
 	// #endregion
 	// #region `bidWithEthAndDonateToken`
 
-	function bidWithEthAndDonateToken(int256 randomWalkNftId_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable override nonReentrant /*_onlyRoundIsActive*/ {
-		_bidWithEth(randomWalkNftId_, message_);
+	function bidWithEthAndDonateToken(int256 randomWalkNftId_, string memory message_, uint256 cstBidRewardMinLimit_, IERC20 tokenAddress_, uint256 amount_) external payable override nonReentrant /*_onlyRoundIsActive*/ {
+		_bidWithEth(randomWalkNftId_, message_, cstBidRewardMinLimit_);
 		prizesWallet.donateToken(roundNum, _msgSender(), tokenAddress_, amount_);
 	}
 
 	// #endregion
 	// #region `bidWithEthAndDonateNft`
 
-	function bidWithEthAndDonateNft(int256 randomWalkNftId_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable override nonReentrant /*_onlyRoundIsActive*/ {
-		_bidWithEth(randomWalkNftId_, message_);
+	function bidWithEthAndDonateNft(int256 randomWalkNftId_, string memory message_, uint256 cstBidRewardMinLimit_, IERC721 nftAddress_, uint256 nftId_) external payable override nonReentrant /*_onlyRoundIsActive*/ {
+		_bidWithEth(randomWalkNftId_, message_, cstBidRewardMinLimit_);
 		prizesWallet.donateNft(roundNum, _msgSender(), nftAddress_, nftId_);
 	}
 
 	// #endregion
 	// #region `bidWithEth`
 
-	function bidWithEth(int256 randomWalkNftId_, string memory message_) external payable override nonReentrant /*_onlyRoundIsActive*/ {
-		_bidWithEth(randomWalkNftId_, message_);
+	function bidWithEth(int256 randomWalkNftId_, string memory message_, uint256 cstBidRewardMinLimit_) external payable override nonReentrant /*_onlyRoundIsActive*/ {
+		_bidWithEth(randomWalkNftId_, message_, cstBidRewardMinLimit_);
 	}
 
 	// #endregion
 	// #region `_bidWithEth`
 
-	function _bidWithEth(int256 randomWalkNftId_, string memory message_) private /*nonReentrant*/ /*_onlyRoundIsActive*/ {
+	function _bidWithEth(int256 randomWalkNftId_, string memory message_, uint256 cstBidRewardMinLimit_) private /*nonReentrant*/ /*_onlyRoundIsActive*/ {
 		// #region
 
 		// BidType bidType_;
@@ -351,6 +352,16 @@ abstract contract BiddingV2 is
 		// Comment-202501125 applies.
 		uint256 cstBidRewardAmount_ = _getCstBidRewardAmount();
 		// #enable_asserts assert((lastBidderAddress != address(0)) || cstBidRewardAmount_ == 0);
+		// [Comment-V2-CST-MIN-LIMIT-CHECK]
+		// Slippage protection: if the actual reward is below the bidder's specified minimum, revert.
+		// Pass `cstBidRewardMinLimit_ == 0` to disable this check.
+		// The reward is deterministic from block-start state (Comment-V2-CST-MIN-LIMIT in `IBiddingV2`),
+		// so the check would yield the same result if performed earlier; keeping it at the existing
+		// reward call site minimizes the V2 diff.
+		// [/Comment-V2-CST-MIN-LIMIT-CHECK]
+		if (cstBidRewardAmount_ < cstBidRewardMinLimit_) {
+			revert CosmicSignatureErrors.CstBidRewardMinLimitNotReached(cstBidRewardAmount_, cstBidRewardMinLimit_);
+		}
 		if (cstBidRewardAmount_ > 0) {
 			token.mint(_msgSender(), cstBidRewardAmount_);
 		}
@@ -511,30 +522,30 @@ abstract contract BiddingV2 is
 	// #endregion
 	// #region `bidWithCstAndDonateToken`
 
-	function bidWithCstAndDonateToken(uint256 priceMaxLimit_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external override nonReentrant /*_onlyRoundIsActive*/ {
-		_bidWithCst(priceMaxLimit_, message_);
+	function bidWithCstAndDonateToken(uint256 priceMaxLimit_, string memory message_, uint256 cstBidRewardMinLimit_, IERC20 tokenAddress_, uint256 amount_) external override nonReentrant /*_onlyRoundIsActive*/ {
+		_bidWithCst(priceMaxLimit_, message_, cstBidRewardMinLimit_);
 		prizesWallet.donateToken(roundNum, _msgSender(), tokenAddress_, amount_);
 	}
 
 	// #endregion
 	// #region `bidWithCstAndDonateNft`
 
-	function bidWithCstAndDonateNft(uint256 priceMaxLimit_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external override nonReentrant /*_onlyRoundIsActive*/ {
-		_bidWithCst(priceMaxLimit_, message_);
+	function bidWithCstAndDonateNft(uint256 priceMaxLimit_, string memory message_, uint256 cstBidRewardMinLimit_, IERC721 nftAddress_, uint256 nftId_) external override nonReentrant /*_onlyRoundIsActive*/ {
+		_bidWithCst(priceMaxLimit_, message_, cstBidRewardMinLimit_);
 		prizesWallet.donateNft(roundNum, _msgSender(), nftAddress_, nftId_);
 	}
 
 	// #endregion
 	// #region `bidWithCst`
 
-	function bidWithCst(uint256 priceMaxLimit_, string memory message_) external override nonReentrant /*_onlyRoundIsActive*/ {
-		_bidWithCst(priceMaxLimit_, message_);
+	function bidWithCst(uint256 priceMaxLimit_, string memory message_, uint256 cstBidRewardMinLimit_) external override nonReentrant /*_onlyRoundIsActive*/ {
+		_bidWithCst(priceMaxLimit_, message_, cstBidRewardMinLimit_);
 	}
 
 	// #endregion
 	// #region `_bidWithCst`
 
-	function _bidWithCst(uint256 priceMaxLimit_, string memory message_) private /*nonReentrant*/ /*_onlyRoundIsActive*/ {
+	function _bidWithCst(uint256 priceMaxLimit_, string memory message_, uint256 cstBidRewardMinLimit_) private /*nonReentrant*/ /*_onlyRoundIsActive*/ {
 		// [Comment-202501045]
 		// Somewhere around here, one might want to validate that the first bid in a bidding round is ETH.
 		// But we are going to validate that near Comment-202501044.
@@ -569,6 +580,11 @@ abstract contract BiddingV2 is
 		// [/Comment-202501125]
 		{
 			uint256 cstBidRewardAmount_ = _getCstBidRewardAmount();
+			// Comment-V2-CST-MIN-LIMIT-CHECK applies. Revert before the burn-and-mint atomic batch
+			// so that the bidder's CST balance is unchanged on slippage failure.
+			if (cstBidRewardAmount_ < cstBidRewardMinLimit_) {
+				revert CosmicSignatureErrors.CstBidRewardMinLimitNotReached(cstBidRewardAmount_, cstBidRewardMinLimit_);
+			}
 			ICosmicSignatureToken.MintOrBurnSpec[] memory mintAndBurnSpecs_ = new ICosmicSignatureToken.MintOrBurnSpec[]((cstBidRewardAmount_ > 0) ? 2 : 1);
 			// #enable_asserts assert(mintAndBurnSpecs_.length == ((cstBidRewardAmount_ > 0) ? 2 : 1));
 			mintAndBurnSpecs_[0].account = _msgSender();

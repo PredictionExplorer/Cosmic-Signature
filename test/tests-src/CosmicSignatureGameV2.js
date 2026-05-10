@@ -77,13 +77,13 @@ describe("CosmicSignatureGameV2", function () {
 
 		const roundActivationTime_ = await upgradedProxy_.roundActivationTime();
 		await setNextBlockTimestamp(roundActivationTime_);
-		await waitForTransactionReceipt(upgradedProxy_.connect(contracts_.signers[1]).bidWithEth((-1), "", {value: await upgradedProxy_.getNextEthBidPrice(),}));
+		await waitForTransactionReceipt(upgradedProxy_.connect(contracts_.signers[1]).bidWithEth((-1), "", 0n, {value: await upgradedProxy_.getNextEthBidPrice(),}));
 		expect(await contracts_.cosmicSignatureToken.balanceOf(contracts_.signers[1].address)).equal(0n);
 
 		const secondBidTimestamp_ = roundActivationTime_ + 60n;
 		await setNextBlockTimestamp(secondBidTimestamp_);
 		const expectedRewardAmount_ = expectedCstBidRewardAmount(60n);
-		await expect(upgradedProxy_.connect(contracts_.signers[2]).bidWithEth((-1), "", {value: await upgradedProxy_.getNextEthBidPrice(),}))
+		await expect(upgradedProxy_.connect(contracts_.signers[2]).bidWithEth((-1), "", 0n, {value: await upgradedProxy_.getNextEthBidPrice(),}))
 			.emit(upgradedProxy_, "CstBidRewardMinted")
 			.withArgs(1n, contracts_.signers[2].address, expectedRewardAmount_);
 		expect(await contracts_.cosmicSignatureToken.balanceOf(contracts_.signers[2].address)).equal(expectedRewardAmount_);

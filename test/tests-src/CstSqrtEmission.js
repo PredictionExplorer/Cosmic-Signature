@@ -42,7 +42,7 @@ async function bidWithEthAt(contracts_, bidderSigner_, timestamp_) {
 	const ethBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice();
 	const transactionReceipt_ =
 		await waitForTransactionReceipt(
-			contracts_.cosmicSignatureGameProxy.connect(bidderSigner_).bidWithEth((-1), "", {value: ethBidPrice_,})
+			contracts_.cosmicSignatureGameProxy.connect(bidderSigner_).bidWithEth((-1), "", 0n, {value: ethBidPrice_,})
 		);
 	const transactionBlock_ = await transactionReceipt_.getBlock();
 	expect(transactionBlock_.timestamp).equal(Number(timestamp_));
@@ -59,6 +59,7 @@ describe("CST sqrt emission", function () {
 			contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).bidWithEth(
 				(-1),
 				"",
+				0n,
 				{value: await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(),}
 			);
 		await expect(transactionResponsePromise_)
@@ -80,7 +81,7 @@ describe("CST sqrt emission", function () {
 			await setNextBlockTimestamp(bidTimestamp_);
 			const ethBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice();
 			const transactionResponsePromise_ =
-				contracts_.cosmicSignatureGameProxy.connect(bidderSigner_).bidWithEth((-1), "", {value: ethBidPrice_,});
+				contracts_.cosmicSignatureGameProxy.connect(bidderSigner_).bidWithEth((-1), "", 0n, {value: ethBidPrice_,});
 			await expect(transactionResponsePromise_)
 				.emit(contracts_.cosmicSignatureGameProxy, "CstBidRewardMinted")
 				.withArgs(0n, bidderSigner_.address, expectedRewardAmount_);
@@ -126,12 +127,14 @@ describe("CST sqrt emission", function () {
 				await contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEth(
 					(-1),
 					"",
+					0n,
 					{value: secondEthBidPrice_,}
 				);
 			const tx3_ =
 				await contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[2]).bidWithEth(
 					(-1),
 					"",
+					0n,
 					{value: thirdEthBidPrice_,}
 				);
 			await hre.ethers.provider.send("evm_mine");
@@ -160,7 +163,7 @@ describe("CST sqrt emission", function () {
 		const balanceBefore_ = await contracts_.cosmicSignatureToken.balanceOf(ethBidderSigner_.address);
 
 		const transactionResponsePromise_ =
-			contracts_.cosmicSignatureGameProxy.connect(ethBidderSigner_).bidWithCst(paidCstPrice_, "");
+			contracts_.cosmicSignatureGameProxy.connect(ethBidderSigner_).bidWithCst(paidCstPrice_, "", 0n);
 		await expect(transactionResponsePromise_)
 			.emit(contracts_.cosmicSignatureGameProxy, "CstBidRewardMinted")
 			.withArgs(0n, ethBidderSigner_.address, expectedRewardAmount_);
@@ -185,6 +188,7 @@ describe("CST sqrt emission", function () {
 			contracts_.cosmicSignatureGameProxy.connect(firstBidderNextRound_).bidWithEth(
 				(-1),
 				"",
+				0n,
 				{value: await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice(),}
 			);
 		await expect(transactionResponsePromise_)
@@ -228,8 +232,10 @@ describe("CST sqrt emission", function () {
 		await v2BatchBidderContract_.waitForDeployment();
 		const v2BatchBidderContractAddress_ = await v2BatchBidderContract_.getAddress();
 
+		// Use the V2-typed batch helper with `cstBidRewardMinLimit_ = 0` so the batch farms zero CST
+		// without tripping the new slippage protection.
 		await waitForTransactionReceipt(
-			v2BatchBidderContract_.doBidWithEthMany(numBids_, {value: hre.ethers.parseEther("1.0"),})
+			v2BatchBidderContract_.doBidWithEthManyV2(numBids_, 0n, {value: hre.ethers.parseEther("1.0"),})
 		);
 		expect(await upgradedProxy_.lastBidderAddress()).equal(v2BatchBidderContractAddress_);
 		expect(await contracts_.cosmicSignatureToken.balanceOf(v2BatchBidderContractAddress_)).equal(0n);
