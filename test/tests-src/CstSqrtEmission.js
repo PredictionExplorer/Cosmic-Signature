@@ -191,4 +191,48 @@ describe("CST sqrt emission", function () {
 			.emit(contracts_.cosmicSignatureGameProxy, "CstBidRewardMinted")
 			.withArgs(1n, firstBidderNextRound_.address, 0n);
 	});
+
+	it("removes the CST farming advantage from same-transaction batch bids after upgrade", async function () {
+		const numBids_ = 100n;
+		const contracts_ = await deployContractsForTestingAdvanced("CosmicSignatureGame");
+		await setRoundActivationTimeIfNeeded(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner), 0n);
+		const bidderContractFactory_ = await hre.ethers.getContractFactory("BidderContract", contracts_.deployerSigner);
+		const v1BatchBidderContract_ = await bidderContractFactory_.deploy(contracts_.cosmicSignatureGameProxyAddress);
+		await v1BatchBidderContract_.waitForDeployment();
+		const v1BatchBidderContractAddress_ = await v1BatchBidderContract_.getAddress();
+
+		await waitForTransactionReceipt(
+			v1BatchBidderContract_.doBidWithEthMany(numBids_, {value: hre.ethers.parseEther("1.0"),})
+		);
+		expect(await contracts_.cosmicSignatureGameProxy.lastBidderAddress()).equal(v1BatchBidderContractAddress_);
+		expect(await contracts_.cosmicSignatureToken.balanceOf(v1BatchBidderContractAddress_))
+			.equal(numBids_ * await contracts_.cosmicSignatureGameProxy.cstRewardAmountForBidding());
+
+		await setNextBlockTimestamp((await contracts_.cosmicSignatureGameProxy.mainPrizeTime()) + 1n);
+		await waitForTransactionReceipt(v1BatchBidderContract_.doClaimMainPrize());
+
+		const v2Factory_ = await hre.ethers.getContractFactory("CosmicSignatureGameV2", contracts_.ownerSigner);
+		const upgradedProxy_ =
+			await hre.upgrades.upgradeProxy(
+				contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner),
+				v2Factory_,
+				{
+					kind: "uups",
+					call: "initialize2",
+				}
+			);
+		await upgradedProxy_.waitForDeployment();
+
+		await setNextBlockTimestamp(await upgradedProxy_.roundActivationTime());
+		const v2BatchBidderContract_ = await bidderContractFactory_.deploy(contracts_.cosmicSignatureGameProxyAddress);
+		await v2BatchBidderContract_.waitForDeployment();
+		const v2BatchBidderContractAddress_ = await v2BatchBidderContract_.getAddress();
+
+		await waitForTransactionReceipt(
+			v2BatchBidderContract_.doBidWithEthMany(numBids_, {value: hre.ethers.parseEther("1.0"),})
+		);
+		expect(await upgradedProxy_.lastBidderAddress()).equal(v2BatchBidderContractAddress_);
+		expect(await contracts_.cosmicSignatureToken.balanceOf(v2BatchBidderContractAddress_)).equal(0n);
+		expect(await upgradedProxy_.getCstBidRewardAmount()).equal(0n);
+	});
 });

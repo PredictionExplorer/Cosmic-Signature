@@ -45,6 +45,13 @@ contract BidderContract is BrokenEthReceiver {
 		// // #enable_asserts // #disable_smtchecker console.log("BidderContract.doBidWithEth; CosmicSignatureGame.bidWithEth gas used =", gasUsed_);
 	}
 
+	function doBidWithEthMany(uint256 numBids_) external payable {
+		for (uint256 bidIndex_; bidIndex_ < numBids_; ++ bidIndex_) {
+			uint256 ethBidPrice_ = cosmicSignatureGame.getNextEthBidPrice();
+			cosmicSignatureGame.bidWithEth{value: ethBidPrice_}(-1, "BidderContract ETH batch bid");
+		}
+	}
+
 	function doBidWithEthPlusRandomWalkNft(uint256 nftId_) external payable {
 		RandomWalkNFT randomWalkNft_ = cosmicSignatureGame.randomWalkNft();
 		randomWalkNft_.transferFrom(msg.sender, address(this), nftId_);
