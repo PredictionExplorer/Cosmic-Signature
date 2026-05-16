@@ -87,7 +87,7 @@ At round end, prizes are distributed as follows:
   - CST bonus
 
 - **Bidders (raffles)**
-  - An instant CST rewards for each bid
+  - An instant CST reward for each bid. In V2, the per-bid reward is `sqrt(3 * secondsSincePreviousBid)` CST.
   - Randomly awarded ETH raffle prizes
   - Randomly awarded Cosmic Signature NFTs and CST bonuses
 

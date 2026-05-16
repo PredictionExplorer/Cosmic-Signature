@@ -62,6 +62,13 @@ library CosmicSignatureErrors {
 	/// It can potentially be zero.
 	error InsufficientReceivedBidAmount(string errStr, uint256 bidPrice, uint256 receivedAmount);
 
+	/// @notice Thrown when the actual CST reward for a bid is below the bidder's specified minimum.
+	/// Used to protect bidders against front-running that resets the elapsed-time window
+	/// upon which the sqrt-emission bid CST reward depends.
+	/// @param bidCstRewardAmount The CST reward amount that would have been minted.
+	/// @param bidCstRewardMinLimit The minimum CST reward the bidder required.
+	error BidCstRewardMinLimitNotReached(uint256 bidCstRewardAmount, uint256 bidCstRewardMinLimit);
+
 	/// @notice Thrown when the provided bid message length exceeds the maximum allowed.
 	/// See also: `TooLongNftName`.
 	/// @param errStr Description of the error.

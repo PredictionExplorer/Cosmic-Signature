@@ -8,6 +8,7 @@ import { RandomWalkNFT } from "../production/RandomWalkNFT.sol";
 import { CosmicSignatureNft } from "../production/CosmicSignatureNft.sol";
 import { PrizesWallet } from "../production/PrizesWallet.sol";
 import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
+import { CosmicSignatureGameV2 } from "../production/CosmicSignatureGameV2.sol";
 import { BrokenEthReceiver } from "./BrokenEthReceiver.sol";
 
 /// @title A Testing Contract That Plays The Game.
@@ -18,6 +19,11 @@ import { BrokenEthReceiver } from "./BrokenEthReceiver.sol";
 /// [/Comment-202508069]
 contract BidderContract is BrokenEthReceiver {
 	CosmicSignatureGame public immutable cosmicSignatureGame;
+
+	/// @notice V2-typed handle to the same proxy address as `cosmicSignatureGame`.
+	/// V2's bid ABI adds `bidCstRewardMinLimit_`, so methods that target the V2 proxy
+	/// must call through this typed reference.
+	CosmicSignatureGameV2 public immutable cosmicSignatureGameV2;
 
 	/// @notice We are going to withdraw ETH that we could have received in these rounds.
 	/// @dev Issue. Comment-202511146 applies.
@@ -32,6 +38,7 @@ contract BidderContract is BrokenEthReceiver {
 
 	constructor(CosmicSignatureGame cosmicSignatureGame_) {
 		cosmicSignatureGame = cosmicSignatureGame_;
+		cosmicSignatureGameV2 = CosmicSignatureGameV2(payable(address(cosmicSignatureGame_)));
 	}
 
 	function doSetApprovalForAll(IERC721 nft_, address operator_, bool approved_) external {
@@ -43,6 +50,29 @@ contract BidderContract is BrokenEthReceiver {
 		cosmicSignatureGame.bidWithEth{value: msg.value}(-1, "BidderContract ETH bid");
 		// // #enable_asserts // #disable_smtchecker gasUsed_  -= gasleft();
 		// // #enable_asserts // #disable_smtchecker console.log("BidderContract.doBidWithEth; CosmicSignatureGame.bidWithEth gas used =", gasUsed_);
+	}
+
+	function doBidWithEthMany(uint256 numBids_) external payable {
+		for (uint256 bidIndex_; bidIndex_ < numBids_; ++ bidIndex_) {
+			uint256 ethBidPrice_ = cosmicSignatureGame.getNextEthBidPrice();
+			cosmicSignatureGame.bidWithEth{value: ethBidPrice_}(-1, "BidderContract ETH batch bid");
+		}
+	}
+
+	/// @notice V2 single-bid helper. Useful for sandwich-attack tests where a single
+	/// contract-originated bid must specify the slippage-protection minimum.
+	function doBidWithEthV2(int256 randomWalkNftId_, string memory message_, uint256 bidCstRewardMinLimit_) external payable {
+		cosmicSignatureGameV2.bidWithEth{value: msg.value}(randomWalkNftId_, message_, bidCstRewardMinLimit_);
+	}
+
+	/// @notice V2 batch-bid helper. Each iteration calls V2's `bidWithEth` with the same
+	/// `bidCstRewardMinLimit_`, exercising the protection across an in-tx batch.
+	/// Pass 0 to disable protection (legacy farming behavior).
+	function doBidWithEthManyV2(uint256 numBids_, uint256 bidCstRewardMinLimit_) external payable {
+		for (uint256 bidIndex_; bidIndex_ < numBids_; ++ bidIndex_) {
+			uint256 ethBidPrice_ = cosmicSignatureGameV2.getNextEthBidPrice();
+			cosmicSignatureGameV2.bidWithEth{value: ethBidPrice_}(-1, "BidderContract V2 ETH batch bid", bidCstRewardMinLimit_);
+		}
 	}
 
 	function doBidWithEthPlusRandomWalkNft(uint256 nftId_) external payable {

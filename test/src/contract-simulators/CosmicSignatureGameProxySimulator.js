@@ -8,6 +8,7 @@
 const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
+const { DEFAULT_BID_CST_REWARD_FORMULA_PRODUCT, computeBidCstRewardAmount } = require("../../../src/BidCstRewardHelpers.js");
 const { generateRandomUInt256FromSeedWrapper } = require("../../../src/Helpers.js");
 const { assertAddressIsValid, assertEvent, generateRandomUInt256Seed } = require("../../../src/ContractTestingHelpers.js");
 
@@ -98,6 +99,7 @@ async function createCosmicSignatureGameProxySimulator(
 
 		bidMessageLengthMaxLimit: 280n,
 		cstRewardAmountForBidding: 100n * 10n ** 18n,
+		usesSqrtBidCstReward: false,
 		cstPrizeAmount: 1_000n * 10n ** 18n,
 		chronoWarriorEthPrizeAmountPercentage: 8n,
 		raffleTotalEthPrizeAmountForBiddersPercentage: 4n,
@@ -136,6 +138,32 @@ async function createCosmicSignatureGameProxySimulator(
 		getDurationElapsedSinceRoundActivation: function(latestBlock_) {
 			const durationElapsedSinceRoundActivation_ = BigInt(latestBlock_.timestamp) - this.roundActivationTime;
 			return durationElapsedSinceRoundActivation_;
+		},
+
+		// #endregion
+		// #region `useSqrtBidCstReward`
+
+		useSqrtBidCstReward: function() {
+			this.usesSqrtBidCstReward = true;
+			this.cstRewardAmountForBidding = DEFAULT_BID_CST_REWARD_FORMULA_PRODUCT;
+		},
+
+		// #endregion
+		// #region `getBidCstRewardAmount`
+
+		getBidCstRewardAmount: function(transactionBlock_) {
+			if ( ! this.usesSqrtBidCstReward ) {
+				return this.cstRewardAmountForBidding;
+			}
+			const previousBidTimeStamp_ =
+				(this.lastBidderAddress == hre.ethers.ZeroAddress) ?
+				this.roundActivationTime :
+				this.biddersInfo[this.lastBidderAddress].lastBidTimeStamp;
+			const elapsedDurationInSeconds_ = BigInt(transactionBlock_.timestamp) - previousBidTimeStamp_;
+			if (elapsedDurationInSeconds_ <= 0n) {
+				return 0n;
+			}
+			return computeBidCstRewardAmount(elapsedDurationInSeconds_, this.cstRewardAmountForBidding);
 		},
 
 		// #endregion
@@ -555,8 +583,10 @@ async function createCosmicSignatureGameProxySimulator(
 			this.nextEthBidPrice = ethBidPrice_ + ethBidPrice_ / this.ethBidPriceIncreaseDivisor + 1n;
 
 			// [Comment-202505086/]
-			this.cosmicSignatureTokenSimulator.mint(bidderAddress_, this.cstRewardAmountForBidding, contracts_, transactionReceipt_, eventIndexWrapper_);
-
+			const bidCstRewardAmount_ = this.getBidCstRewardAmount(transactionBlock_);
+			if (bidCstRewardAmount_ > 0n) {
+				this.cosmicSignatureTokenSimulator.mint(bidderAddress_, bidCstRewardAmount_, contracts_, transactionReceipt_, eventIndexWrapper_);
+			}
 			if (this.lastBidderAddress == hre.ethers.ZeroAddress) {
 				this.cstDutchAuctionBeginningTimeStamp = BigInt(transactionBlock_.timestamp);
 				this.mainPrizeTime = BigInt(transactionBlock_.timestamp) + this.getInitialDurationUntilMainPrize();
@@ -578,7 +608,7 @@ async function createCosmicSignatureGameProxySimulator(
 				transactionReceipt_.logs[eventIndexWrapper_.value],
 				contracts_.cosmicSignatureGameProxy,
 				"BidPlaced",
-				[this.roundNum, bidderAddress_, paidEthPrice_, (-1n), randomWalkNftId_, message_, this.mainPrizeTime,]
+				[this.roundNum, bidderAddress_, paidEthPrice_, (-1n), randomWalkNftId_, message_, bidCstRewardAmount_, this.mainPrizeTime,]
 			);
 			++ eventIndexWrapper_.value;
 			this.ethBalanceAmount += paidEthPrice_;
@@ -730,9 +760,11 @@ async function createCosmicSignatureGameProxySimulator(
 			// console.info("%s", `bidWithCst succeeded. ${hre.ethers.formatEther(paidCstPrice_)}`);
 
 			// Comment-202505086 applies.
+			const bidCstRewardAmount_ = this.getBidCstRewardAmount(transactionBlock_);
 			this.cosmicSignatureTokenSimulator.burn(bidderAddress_, paidCstPrice_, contracts_, transactionReceipt_, eventIndexWrapper_);
-			this.cosmicSignatureTokenSimulator.mint(bidderAddress_, this.cstRewardAmountForBidding, contracts_, transactionReceipt_, eventIndexWrapper_);
-
+			if (bidCstRewardAmount_ > 0n) {
+				this.cosmicSignatureTokenSimulator.mint(bidderAddress_, bidCstRewardAmount_, contracts_, transactionReceipt_, eventIndexWrapper_);
+			}
 			this.biddersInfo[bidderAddress_].totalSpentCstAmount += paidCstPrice_;
 			this.cstDutchAuctionBeginningTimeStamp = BigInt(transactionBlock_.timestamp);
 			let newCstDutchAuctionBeginningBidPrice_ = paidCstPrice_ * this.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
@@ -755,7 +787,7 @@ async function createCosmicSignatureGameProxySimulator(
 				transactionReceipt_.logs[eventIndexWrapper_.value],
 				contracts_.cosmicSignatureGameProxy,
 				"BidPlaced",
-				[this.roundNum, bidderAddress_, (-1n), paidCstPrice_, (-1n), message_, this.mainPrizeTime,]
+				[this.roundNum, bidderAddress_, (-1n), paidCstPrice_, (-1n), message_, bidCstRewardAmount_, this.mainPrizeTime,]
 			);
 			++ eventIndexWrapper_.value;
 		},
