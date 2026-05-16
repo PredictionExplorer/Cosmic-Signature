@@ -11,6 +11,7 @@ import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upg
 import { OwnableUpgradeableWithReservedStorageGaps } from "./OwnableUpgradeableWithReservedStorageGaps.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
+import { CstRewardCalculator } from "./libraries/CstRewardCalculator.sol";
 import { AddressValidator } from "./AddressValidator.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { BiddingBase } from "./BiddingBase.sol";
@@ -73,6 +74,7 @@ contract CosmicSignatureGameV2 is
 	function initialize(address ownerAddress_) external override virtual initializer() {
 		// // #enable_asserts // #disable_smtchecker console.log("1 initialize");
 		_initialize(ownerAddress_);
+		cstRewardAmountForBidding = CstRewardCalculator.DEFAULT_FORMULA_PRODUCT;
 	}
 
 	// #endregion
@@ -82,7 +84,7 @@ contract CosmicSignatureGameV2 is
 		// // #enable_asserts // #disable_smtchecker console.log("2 initialize2");
 		// Comment-202503119 applies.
 		// #enable_asserts assert(owner() != address(0));
-		emit ContractUpgradedToV2();
+		cstRewardAmountForBidding = CstRewardCalculator.DEFAULT_FORMULA_PRODUCT;
 	}
 
 	// #endregion

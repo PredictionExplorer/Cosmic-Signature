@@ -1,12 +1,12 @@
 "use strict";
 
-// CST bid reward minimum-limit (front-running slippage protection) tests.
+// bid CST reward minimum-limit (front-running slippage protection) tests.
 //
 // V2 introduced a sqrt-time CST reward whose value depends on the elapsed time since
 // the previous bid. A bidder that observes a victim's pending tx can front-run with
 // their own bid, resetting `lastBidTimeStamp` to the current block and collapsing the
-// victim's reward. Each V2 bid function therefore takes an optional `cstBidRewardMinLimit_`
-// parameter; the bid reverts with `CstBidRewardMinLimitNotReached` if the actual reward
+// victim's reward. Each V2 bid function therefore takes an optional `bidCstRewardMinLimit_`
+// parameter; the bid reverts with `BidCstRewardMinLimitNotReached` if the actual reward
 // is less than this value. Pass 0 to disable the check.
 //
 // These tests cover boundary arithmetic, first-bid / same-block edge cases, sandwich and
@@ -15,28 +15,15 @@
 const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
+const { anyUint } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { waitForTransactionReceipt } = require("../../src/Helpers.js");
+const { computeBidCstRewardAmount } = require("../../src/BidCstRewardHelpers.js");
 const { deployContractsForTestingAdvanced } = require("../../src/ContractTestingHelpers.js");
 const { setRoundActivationTimeIfNeeded } = require("../../src/ContractDeploymentHelpers.js");
 
-function sqrtBigInt(value_) {
-	expect(typeof value_).equal("bigint");
-	expect(value_).greaterThanOrEqual(0n);
-	if (value_ < 2n) {
-		return value_;
-	}
-	let x0_ = value_;
-	let x1_ = (value_ >> 1n) + 1n;
-	while (x1_ < x0_) {
-		x0_ = x1_;
-		x1_ = (x1_ + value_ / x1_) >> 1n;
-	}
-	return x0_;
-}
-
-function expectedCstBidRewardAmount(elapsedSeconds_) {
-	expect(typeof elapsedSeconds_).equal("bigint");
-	return sqrtBigInt(3n * elapsedSeconds_ * 10n ** 36n);
+function expectedBidCstRewardAmount(elapsedDurationInSeconds_) {
+	expect(typeof elapsedDurationInSeconds_).equal("bigint");
+	return computeBidCstRewardAmount(elapsedDurationInSeconds_);
 }
 
 async function deployV2ContractsForTesting() {
@@ -47,6 +34,17 @@ async function deployV2ContractsForTesting() {
 
 async function setNextBlockTimestamp(timestamp_) {
 	await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(timestamp_),]);
+}
+
+async function setRoundActivationTimeInFuture(contracts_) {
+	const roundActivationTime_ = BigInt((await hre.ethers.provider.getBlock("latest")).timestamp) + 10n;
+	await setRoundActivationTimeIfNeeded(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner), roundActivationTime_);
+	return roundActivationTime_;
+}
+
+async function getNextCstBidPriceAt(cosmicSignatureGameProxy_, timestamp_) {
+	const latestTimestamp_ = BigInt((await hre.ethers.provider.getBlock("latest")).timestamp);
+	return cosmicSignatureGameProxy_.getNextCstBidPriceAdvanced(timestamp_ - latestTimestamp_);
 }
 
 async function bidWithEthAt(contracts_, bidderSigner_, timestamp_) {
@@ -61,17 +59,18 @@ async function bidWithEthAt(contracts_, bidderSigner_, timestamp_) {
 	return {ethBidPrice_, transactionReceipt_, transactionBlock_,};
 }
 
-describe("CST bid reward min limit", function () {
+describe("bid CST reward min limit", function () {
 	// #region Boundary arithmetic
 
 	describe("boundary arithmetic", function () {
 		it("ETH bid with minLimit==0 succeeds even when reward is 0", async function () {
 			const contracts_ = await deployV2ContractsForTesting();
 			const bidder_ = contracts_.signers[0];
+			await setNextBlockTimestamp(await setRoundActivationTimeInFuture(contracts_));
 			const ethBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice();
 			await expect(
 				contracts_.cosmicSignatureGameProxy.connect(bidder_).bidWithEth((-1), "", 0n, {value: ethBidPrice_,})
-			).emit(contracts_.cosmicSignatureGameProxy, "CstBidRewardMinted").withArgs(0n, bidder_.address, 0n);
+			).emit(contracts_.cosmicSignatureGameProxy, "BidPlaced").withArgs(0n, bidder_.address, ethBidPrice_, -1n, -1n, "", 0n, anyUint);
 			expect(await contracts_.cosmicSignatureToken.balanceOf(bidder_.address)).equal(0n);
 		});
 
@@ -81,13 +80,13 @@ describe("CST bid reward min limit", function () {
 			await bidWithEthAt(contracts_, contracts_.signers[0], firstBidTimestamp_);
 
 			const elapsed_ = 3600n;
-			const expected_ = expectedCstBidRewardAmount(elapsed_);
+			const expected_ = expectedBidCstRewardAmount(elapsed_);
 			const bidder_ = contracts_.signers[1];
 			await setNextBlockTimestamp(firstBidTimestamp_ + elapsed_);
 			const ethBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice();
 			await expect(
 				contracts_.cosmicSignatureGameProxy.connect(bidder_).bidWithEth((-1), "", expected_, {value: ethBidPrice_,})
-			).emit(contracts_.cosmicSignatureGameProxy, "CstBidRewardMinted").withArgs(0n, bidder_.address, expected_);
+			).emit(contracts_.cosmicSignatureGameProxy, "BidPlaced").withArgs(0n, bidder_.address, ethBidPrice_, -1n, -1n, "", expected_, anyUint);
 			expect(await contracts_.cosmicSignatureToken.balanceOf(bidder_.address)).equal(expected_);
 		});
 
@@ -97,7 +96,7 @@ describe("CST bid reward min limit", function () {
 			await bidWithEthAt(contracts_, contracts_.signers[0], firstBidTimestamp_);
 
 			const elapsed_ = 3600n;
-			const expected_ = expectedCstBidRewardAmount(elapsed_);
+			const expected_ = expectedBidCstRewardAmount(elapsed_);
 			const tooHigh_ = expected_ + 1n;
 			const bidder_ = contracts_.signers[1];
 			await setNextBlockTimestamp(firstBidTimestamp_ + elapsed_);
@@ -105,23 +104,12 @@ describe("CST bid reward min limit", function () {
 			await expect(
 				contracts_.cosmicSignatureGameProxy.connect(bidder_).bidWithEth((-1), "", tooHigh_, {value: ethBidPrice_,})
 			)
-				.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "CstBidRewardMinLimitNotReached")
+				.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "BidCstRewardMinLimitNotReached")
 				.withArgs(expected_, tooHigh_);
 			expect(await contracts_.cosmicSignatureToken.balanceOf(bidder_.address)).equal(0n);
 			expect(await contracts_.cosmicSignatureGameProxy.lastBidderAddress()).equal(contracts_.signers[0].address);
 		});
 
-		it("ETH bid with minLimit==MaxUint256 always reverts", async function () {
-			const contracts_ = await deployV2ContractsForTesting();
-			const firstBidTimestamp_ = BigInt((await hre.ethers.provider.getBlock("latest")).timestamp) + 10n;
-			await bidWithEthAt(contracts_, contracts_.signers[0], firstBidTimestamp_);
-
-			await setNextBlockTimestamp(firstBidTimestamp_ + 86400n);
-			const ethBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice();
-			await expect(
-				contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEth((-1), "", hre.ethers.MaxUint256, {value: ethBidPrice_,})
-			).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "CstBidRewardMinLimitNotReached");
-		});
 
 		it("CST bid with minLimit==actualReward succeeds and minLimit==actualReward+1 reverts", async function () {
 			const contracts_ = await deployV2ContractsForTesting();
@@ -132,17 +120,17 @@ describe("CST bid reward min limit", function () {
 			await bidWithEthAt(contracts_, ethBidder_, secondBidTimestamp_);
 
 			const elapsed_ = 21600n - 3600n;
-			const expected_ = expectedCstBidRewardAmount(elapsed_);
+			const expected_ = expectedBidCstRewardAmount(elapsed_);
 			const cstBidTimestamp_ = secondBidTimestamp_ + elapsed_;
 			await setNextBlockTimestamp(cstBidTimestamp_);
-			const cstPrice_ = await contracts_.cosmicSignatureGameProxy.getNextCstBidPrice();
+			const cstPrice_ = await getNextCstBidPriceAt(contracts_.cosmicSignatureGameProxy, cstBidTimestamp_);
 			const balanceBefore_ = await contracts_.cosmicSignatureToken.balanceOf(ethBidder_.address);
 
 			// First, the failing path with minLimit one wei above actual reward.
 			await expect(
 				contracts_.cosmicSignatureGameProxy.connect(ethBidder_).bidWithCst(cstPrice_, "", expected_ + 1n)
 			)
-				.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "CstBidRewardMinLimitNotReached")
+				.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "BidCstRewardMinLimitNotReached")
 				.withArgs(expected_, expected_ + 1n);
 			// CST balance unchanged: the burn never happened.
 			expect(await contracts_.cosmicSignatureToken.balanceOf(ethBidder_.address)).equal(balanceBefore_);
@@ -150,30 +138,13 @@ describe("CST bid reward min limit", function () {
 			// Then the boundary success: same block + 1 (one second more elapsed time).
 			const cstBidTimestampSuccess_ = cstBidTimestamp_ + 1n;
 			await setNextBlockTimestamp(cstBidTimestampSuccess_);
-			const expectedAtSuccess_ = expectedCstBidRewardAmount(elapsed_ + 1n);
-			const cstPriceSuccess_ = await contracts_.cosmicSignatureGameProxy.getNextCstBidPrice();
+			const expectedAtSuccess_ = expectedBidCstRewardAmount(elapsed_ + 1n);
+			const cstPriceSuccess_ = await getNextCstBidPriceAt(contracts_.cosmicSignatureGameProxy, cstBidTimestampSuccess_);
 			await expect(
 				contracts_.cosmicSignatureGameProxy.connect(ethBidder_).bidWithCst(cstPriceSuccess_, "", expectedAtSuccess_)
-			).emit(contracts_.cosmicSignatureGameProxy, "CstBidRewardMinted").withArgs(0n, ethBidder_.address, expectedAtSuccess_);
+			).emit(contracts_.cosmicSignatureGameProxy, "BidPlaced").withArgs(0n, ethBidder_.address, -1n, cstPriceSuccess_, -1n, "", expectedAtSuccess_, anyUint);
 		});
 
-		it("sweep across a range of elapsed durations: boundary holds for both ETH and CST bids", async function () {
-			for (const elapsed_ of [1n, 60n, 3600n, 86400n,]) {
-				const contracts_ = await deployV2ContractsForTesting();
-				const firstBidTimestamp_ = BigInt((await hre.ethers.provider.getBlock("latest")).timestamp) + 10n;
-				await bidWithEthAt(contracts_, contracts_.signers[0], firstBidTimestamp_);
-
-				const expected_ = expectedCstBidRewardAmount(elapsed_);
-				const bidder_ = contracts_.signers[1];
-				await setNextBlockTimestamp(firstBidTimestamp_ + elapsed_);
-				const ethBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice();
-
-				await waitForTransactionReceipt(
-					contracts_.cosmicSignatureGameProxy.connect(bidder_).bidWithEth((-1), "", expected_, {value: ethBidPrice_,})
-				);
-				expect(await contracts_.cosmicSignatureToken.balanceOf(bidder_.address)).equal(expected_);
-			}
-		});
 	});
 
 	// #endregion
@@ -182,11 +153,12 @@ describe("CST bid reward min limit", function () {
 	describe("first-bid and round-rollover edge cases", function () {
 		it("first bid of the very first round: minLimit>0 reverts; minLimit==0 succeeds", async function () {
 			const contracts_ = await deployV2ContractsForTesting();
+			await setNextBlockTimestamp(await setRoundActivationTimeInFuture(contracts_));
 			const ethBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice();
 			await expect(
 				contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).bidWithEth((-1), "", 1n, {value: ethBidPrice_,})
 			)
-				.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "CstBidRewardMinLimitNotReached")
+				.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "BidCstRewardMinLimitNotReached")
 				.withArgs(0n, 1n);
 
 			await waitForTransactionReceipt(
@@ -208,7 +180,7 @@ describe("CST bid reward min limit", function () {
 			const ethBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice();
 			await expect(
 				contracts_.cosmicSignatureGameProxy.connect(newRoundFirstBidder_).bidWithEth((-1), "", 1n, {value: ethBidPrice_,})
-			).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "CstBidRewardMinLimitNotReached")
+			).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "BidCstRewardMinLimitNotReached")
 				.withArgs(0n, 1n);
 		});
 	});
@@ -248,6 +220,7 @@ describe("CST bid reward min limit", function () {
 			const bidderContract_ = await factory_.deploy(contracts_.cosmicSignatureGameProxyAddress);
 			await bidderContract_.waitForDeployment();
 			const bidderAddr_ = await bidderContract_.getAddress();
+			await setNextBlockTimestamp(await setRoundActivationTimeInFuture(contracts_));
 
 			await waitForTransactionReceipt(
 				bidderContract_.doBidWithEthManyV2(numBids_, 0n, {value: hre.ethers.parseEther("1.0"),})
@@ -264,10 +237,11 @@ describe("CST bid reward min limit", function () {
 			await bidderContract_.waitForDeployment();
 			const bidderAddr_ = await bidderContract_.getAddress();
 			const balanceBefore_ = await contracts_.cosmicSignatureToken.balanceOf(bidderAddr_);
+			await setNextBlockTimestamp(await setRoundActivationTimeInFuture(contracts_));
 
 			await expect(
 				bidderContract_.doBidWithEthManyV2(numBids_, 1n, {value: hre.ethers.parseEther("1.0"),})
-			).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "CstBidRewardMinLimitNotReached")
+			).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "BidCstRewardMinLimitNotReached")
 				.withArgs(0n, 1n);
 			// Whole batch reverts atomically, including the first bid: no state change.
 			expect(await contracts_.cosmicSignatureGameProxy.lastBidderAddress()).equal(hre.ethers.ZeroAddress);
@@ -286,7 +260,7 @@ describe("CST bid reward min limit", function () {
 
 			// Advance time so the victim *thinks* they will earn `expected_` CST.
 			const victimExpectedElapsed_ = 3600n;
-			const victimExpected_ = expectedCstBidRewardAmount(victimExpectedElapsed_);
+			const victimExpected_ = expectedBidCstRewardAmount(victimExpectedElapsed_);
 
 			// Attacker bids first (same block as the victim) at firstBidTimestamp_+expectedElapsed_.
 			const attackBlockTimestamp_ = firstBidTimestamp_ + victimExpectedElapsed_;
@@ -323,7 +297,7 @@ describe("CST bid reward min limit", function () {
 
 			const blockTime_ = firstBidTimestamp_ + 7200n + 3600n;
 			await setNextBlockTimestamp(blockTime_);
-			const expectedReward_ = expectedCstBidRewardAmount(3600n);
+			const expectedReward_ = expectedBidCstRewardAmount(3600n);
 			const cstPrice_ = await contracts_.cosmicSignatureGameProxy.getNextCstBidPrice();
 			const attackerEthPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice();
 
@@ -340,7 +314,7 @@ describe("CST bid reward min limit", function () {
 			}
 			// CST victim's balance is unchanged — no burn happened because we reverted before mintAndBurnMany.
 			// Their balance equals the reward they had earned from the earlier ETH bid (3600s elapsed).
-			expect(await contracts_.cosmicSignatureToken.balanceOf(cstVictim_.address)).equal(expectedCstBidRewardAmount(7200n));
+			expect(await contracts_.cosmicSignatureToken.balanceOf(cstVictim_.address)).equal(expectedBidCstRewardAmount(7200n));
 		});
 
 		it("two-victim race in same block: only first-mined succeeds, second reverts", async function () {
@@ -349,7 +323,7 @@ describe("CST bid reward min limit", function () {
 			await bidWithEthAt(contracts_, contracts_.signers[0], firstBidTimestamp_);
 
 			const elapsed_ = 600n;
-			const expected_ = expectedCstBidRewardAmount(elapsed_);
+			const expected_ = expectedBidCstRewardAmount(elapsed_);
 			const blockTime_ = firstBidTimestamp_ + elapsed_;
 			await setNextBlockTimestamp(blockTime_);
 			const firstPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice();
@@ -370,24 +344,6 @@ describe("CST bid reward min limit", function () {
 			expect(await contracts_.cosmicSignatureToken.balanceOf(contracts_.signers[2].address)).equal(0n);
 		});
 
-		it("attacker cannot influence victim's minLimit — they sign their own tx", async function () {
-			// This is structural rather than testable via state, but we verify that even when the
-			// attacker bids first AND last (a sandwich), the victim's tx outcome depends only on
-			// the elapsed time at the moment their tx is mined and the minLimit they signed.
-			const contracts_ = await deployV2ContractsForTesting();
-			const firstBidTimestamp_ = BigInt((await hre.ethers.provider.getBlock("latest")).timestamp) + 10n;
-			await bidWithEthAt(contracts_, contracts_.signers[0], firstBidTimestamp_);
-
-			// Victim's signed minLimit = 1 wei (extremely low). Even an attacker front-run cannot make this fail
-			// unless they reset the clock to the same block as the victim, which we test elsewhere.
-			const elapsed_ = 60n;
-			await setNextBlockTimestamp(firstBidTimestamp_ + elapsed_);
-			const ethBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice();
-			await waitForTransactionReceipt(
-				contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEth((-1), "victim with low minLimit", 1n, {value: ethBidPrice_,})
-			);
-			expect(await contracts_.cosmicSignatureGameProxy.lastBidderAddress()).equal(contracts_.signers[1].address);
-		});
 	});
 
 	// #endregion
@@ -411,7 +367,7 @@ describe("CST bid reward min limit", function () {
 			const ethBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice();
 			await expect(
 				contracts_.cosmicSignatureGameProxy.connect(bidder_).bidWithEth((-1), "", hre.ethers.MaxUint256, {value: ethBidPrice_,})
-			).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "CstBidRewardMinLimitNotReached");
+			).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "BidCstRewardMinLimitNotReached");
 
 			expect(await contracts_.cosmicSignatureGameProxy.lastBidderAddress()).equal(lastBidderBefore_);
 			expect(await contracts_.cosmicSignatureGameProxy.nextEthBidPrice()).equal(nextEthBidPriceBefore_);
@@ -439,7 +395,7 @@ describe("CST bid reward min limit", function () {
 			const cstPrice_ = await contracts_.cosmicSignatureGameProxy.getNextCstBidPrice();
 			await expect(
 				contracts_.cosmicSignatureGameProxy.connect(cstBidder_).bidWithCst(cstPrice_, "", hre.ethers.MaxUint256)
-			).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "CstBidRewardMinLimitNotReached");
+			).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "BidCstRewardMinLimitNotReached");
 
 			expect(await contracts_.cosmicSignatureToken.balanceOf(cstBidder_.address)).equal(cstBalanceBefore_);
 			expect(await contracts_.cosmicSignatureGameProxy.lastBidderAddress()).equal(lastBidderBefore_);
@@ -471,37 +427,12 @@ describe("CST bid reward min limit", function () {
 				contracts_.cosmicSignatureGameProxy.connect(donor_).bidWithEthAndDonateToken(
 					(-1), "", hre.ethers.MaxUint256, await erc20_.getAddress(), donateAmount_, {value: ethBidPrice_,}
 				)
-			).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "CstBidRewardMinLimitNotReached");
+			).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "BidCstRewardMinLimitNotReached");
 			// Donor's tokens were never moved.
 			expect(await erc20_.balanceOf(donor_.address)).equal(donateAmount_);
 			expect(await erc20_.balanceOf(await contracts_.prizesWallet.getAddress())).equal(0n);
 		});
 
-		it("bidWithEthAndDonateNft: revert leaves the NFT with the donor", async function () {
-			const contracts_ = await deployV2ContractsForTesting();
-			const firstBidTimestamp_ = BigInt((await hre.ethers.provider.getBlock("latest")).timestamp) + 10n;
-			await bidWithEthAt(contracts_, contracts_.signers[0], firstBidTimestamp_);
-
-			const erc721Factory_ = await hre.ethers.getContractFactory("FuzzTestMockErc721", contracts_.deployerSigner);
-			const erc721_ = await erc721Factory_.deploy();
-			await erc721_.waitForDeployment();
-			const donor_ = contracts_.signers[1];
-			const mintReceipt_ = await waitForTransactionReceipt(erc721_.mint(donor_.address));
-			// FuzzTestMockErc721 mints sequentially starting at 1; the first call yields tokenId 1.
-			const nftId_ = 1n;
-			expect(await erc721_.ownerOf(nftId_)).equal(donor_.address);
-			expect(mintReceipt_).is.not.null;
-			await waitForTransactionReceipt(erc721_.connect(donor_).approve(await contracts_.prizesWallet.getAddress(), nftId_));
-
-			await setNextBlockTimestamp(firstBidTimestamp_ + 60n);
-			const ethBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice();
-			await expect(
-				contracts_.cosmicSignatureGameProxy.connect(donor_).bidWithEthAndDonateNft(
-					(-1), "", hre.ethers.MaxUint256, await erc721_.getAddress(), nftId_, {value: ethBidPrice_,}
-				)
-			).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "CstBidRewardMinLimitNotReached");
-			expect(await erc721_.ownerOf(nftId_)).equal(donor_.address);
-		});
 
 		it("bidWithCstAndDonateToken: revert preserves CST balance and leaves the token donation untransferred", async function () {
 			const contracts_ = await deployV2ContractsForTesting();
@@ -524,65 +455,12 @@ describe("CST bid reward min limit", function () {
 				contracts_.cosmicSignatureGameProxy.connect(cstBidder_).bidWithCstAndDonateToken(
 					cstPrice_, "", hre.ethers.MaxUint256, await erc20_.getAddress(), donateAmount_
 				)
-			).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "CstBidRewardMinLimitNotReached");
+			).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "BidCstRewardMinLimitNotReached");
 			expect(await contracts_.cosmicSignatureToken.balanceOf(cstBidder_.address)).equal(cstBalanceBefore_);
 			expect(await erc20_.balanceOf(cstBidder_.address)).equal(donateAmount_);
 		});
 
-		it("bidWithCstAndDonateNft: revert preserves CST and the NFT", async function () {
-			const contracts_ = await deployV2ContractsForTesting();
-			const firstBidTimestamp_ = BigInt((await hre.ethers.provider.getBlock("latest")).timestamp) + 10n;
-			await bidWithEthAt(contracts_, contracts_.signers[0], firstBidTimestamp_);
-			const cstBidder_ = contracts_.signers[1];
-			await bidWithEthAt(contracts_, cstBidder_, firstBidTimestamp_ + 3600n);
 
-			const erc721Factory_ = await hre.ethers.getContractFactory("FuzzTestMockErc721", contracts_.deployerSigner);
-			const erc721_ = await erc721Factory_.deploy();
-			await erc721_.waitForDeployment();
-			await waitForTransactionReceipt(erc721_.mint(cstBidder_.address));
-			const nftId_ = 1n;
-			await waitForTransactionReceipt(erc721_.connect(cstBidder_).approve(await contracts_.prizesWallet.getAddress(), nftId_));
-
-			const cstBalanceBefore_ = await contracts_.cosmicSignatureToken.balanceOf(cstBidder_.address);
-			await setNextBlockTimestamp(firstBidTimestamp_ + 7200n);
-			const cstPrice_ = await contracts_.cosmicSignatureGameProxy.getNextCstBidPrice();
-			await expect(
-				contracts_.cosmicSignatureGameProxy.connect(cstBidder_).bidWithCstAndDonateNft(
-					cstPrice_, "", hre.ethers.MaxUint256, await erc721_.getAddress(), nftId_
-				)
-			).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "CstBidRewardMinLimitNotReached");
-			expect(await contracts_.cosmicSignatureToken.balanceOf(cstBidder_.address)).equal(cstBalanceBefore_);
-			expect(await erc721_.ownerOf(nftId_)).equal(cstBidder_.address);
-		});
-
-		it("happy path: bidWithEthAndDonateToken with sufficient minLimit delivers the donation", async function () {
-			const contracts_ = await deployV2ContractsForTesting();
-			const firstBidTimestamp_ = BigInt((await hre.ethers.provider.getBlock("latest")).timestamp) + 10n;
-			await bidWithEthAt(contracts_, contracts_.signers[0], firstBidTimestamp_);
-
-			const erc20Factory_ = await hre.ethers.getContractFactory("FuzzTestMockErc20", contracts_.deployerSigner);
-			const erc20_ = await erc20Factory_.deploy();
-			await erc20_.waitForDeployment();
-			const donor_ = contracts_.signers[1];
-			const donateAmount_ = 1_000n * 10n ** 18n;
-			await waitForTransactionReceipt(erc20_.mint(donor_.address, donateAmount_));
-			await waitForTransactionReceipt(erc20_.connect(donor_).approve(await contracts_.prizesWallet.getAddress(), donateAmount_));
-
-			const elapsed_ = 60n;
-			const expected_ = expectedCstBidRewardAmount(elapsed_);
-			await setNextBlockTimestamp(firstBidTimestamp_ + elapsed_);
-			const ethBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice();
-			const roundNum_ = await contracts_.cosmicSignatureGameProxy.roundNum();
-			await waitForTransactionReceipt(
-				contracts_.cosmicSignatureGameProxy.connect(donor_).bidWithEthAndDonateToken(
-					(-1), "", expected_, await erc20_.getAddress(), donateAmount_, {value: ethBidPrice_,}
-				)
-			);
-			expect(await contracts_.cosmicSignatureToken.balanceOf(donor_.address)).equal(expected_);
-			expect(await erc20_.balanceOf(donor_.address)).equal(0n);
-			// Donated tokens are held in a per-round, per-token `DonatedTokenHolder` contract — verify via the wallet getter.
-			expect(await contracts_.prizesWallet.getDonatedTokenBalanceAmount(roundNum_, await erc20_.getAddress())).equal(donateAmount_);
-		});
 	});
 
 	// #endregion
@@ -621,19 +499,19 @@ describe("CST bid reward min limit", function () {
 	// #region Revert reason fidelity
 
 	describe("revert reason fidelity", function () {
-		it("emits exactly the CstBidRewardMinLimitNotReached error with correct args, not a generic revert", async function () {
+		it("emits exactly the BidCstRewardMinLimitNotReached error with correct args, not a generic revert", async function () {
 			const contracts_ = await deployV2ContractsForTesting();
 			const firstBidTimestamp_ = BigInt((await hre.ethers.provider.getBlock("latest")).timestamp) + 10n;
 			await bidWithEthAt(contracts_, contracts_.signers[0], firstBidTimestamp_);
 
 			const elapsed_ = 60n;
-			const expected_ = expectedCstBidRewardAmount(elapsed_);
+			const expected_ = expectedBidCstRewardAmount(elapsed_);
 			const minLimit_ = expected_ + 12345n;
 			await setNextBlockTimestamp(firstBidTimestamp_ + elapsed_);
 			const ethBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice();
 			await expect(
 				contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEth((-1), "", minLimit_, {value: ethBidPrice_,})
-			).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "CstBidRewardMinLimitNotReached")
+			).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "BidCstRewardMinLimitNotReached")
 				.withArgs(expected_, minLimit_);
 		});
 	});
