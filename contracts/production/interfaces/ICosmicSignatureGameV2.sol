@@ -14,10 +14,10 @@ import { ISecondaryPrizes } from "./ISecondaryPrizes.sol";
 import { IMainPrize } from "./IMainPrize.sol";
 
 /// @title The Cosmic Signature Game V2.
-/// @notice Adds sqrt time-based CST bid rewards and front-running slippage protection.
+/// @notice Adds sqrt time-based bid CST rewards and front-running slippage protection.
 /// @dev V2 deliberately does NOT inherit `ICosmicSignatureGame` because that would pull in
 /// the V1 bid function signatures from `IBidding`, which conflict with `IBiddingV2`'s
-/// updated signatures (V2 adds `cstBidRewardMinLimit_`). Instead, V2 inherits the same
+/// updated signatures (V2 adds `bidCstRewardMinLimit_`). Instead, V2 inherits the same
 /// shared base interfaces directly, replacing `IBidding` with `IBiddingV2`.
 interface ICosmicSignatureGameV2 is
 	IAddressValidator,
@@ -31,9 +31,6 @@ interface ICosmicSignatureGameV2 is
 	IBiddingV2,
 	ISecondaryPrizes,
 	IMainPrize {
-	/// @notice Emitted when the proxy is upgraded to this implementation.
-	event ContractUpgradedToV2();
-
 	/// @notice Initializes this upgradeable contract's state variables.
 	/// This method is called on the proxy contract right after deployment of both the proxy and the implementation contracts.
 	/// @param ownerAddress_ Contract owner address.

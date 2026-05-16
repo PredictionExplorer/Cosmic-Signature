@@ -6,12 +6,13 @@
 // getter and the bid-side minting envelope around that helper.
 
 methods {
-    function getCstBidRewardAmount() external returns (uint256) envfree;
+    function getBidCstRewardAmount() external returns (uint256) envfree;
     function roundNum() external returns (uint256) envfree;
+    function roundActivationTime() external returns (uint256) envfree;
     function lastBidderAddress() external returns (address) envfree;
     function biddersInfo(uint256,address) external returns (uint256,uint256,uint256) envfree;
-    function bidWithEth(int256,string) external payable;
-    function bidWithCst(uint256,string) external;
+    function bidWithEth(int256,string,uint256) external payable;
+    function bidWithCst(uint256,string,uint256) external;
 }
 
 ghost mathint cstRewardMintedByBid {
@@ -26,9 +27,10 @@ hook CALL(uint g, address recipient, uint value, bytes data) uint rc {
     }
 }
 
-rule firstBidRewardIsZero {
+rule firstBidRewardIsZeroAtOrBeforeRoundActivation {
     require lastBidderAddress() == 0;
-    assert getCstBidRewardAmount() == 0;
+    require currentContract.block.timestamp <= roundActivationTime();
+    assert getBidCstRewardAmount() == 0;
 }
 
 rule rewardIsZeroWhenElapsedIsZero {
@@ -39,7 +41,7 @@ rule rewardIsZeroWhenElapsedIsZero {
     (, , uint256 lastBidTimeStamp) = biddersInfo(rn, bidder);
     require lastBidTimeStamp == currentContract.block.timestamp;
 
-    assert getCstBidRewardAmount() == 0;
+    assert getBidCstRewardAmount() == 0;
 }
 
 rule rewardMonotonicityForObservableState {
@@ -50,10 +52,10 @@ rule rewardMonotonicityForObservableState {
     (, , uint256 lastBidTimeStamp) = biddersInfo(rn, bidder);
     require lastBidTimeStamp <= currentContract.block.timestamp;
 
-    uint256 rewardNow = getCstBidRewardAmount();
+    uint256 rewardNow = getBidCstRewardAmount();
     require currentContract.block.timestamp < max_uint256;
     currentContract.block.timestamp = currentContract.block.timestamp + 1;
-    uint256 rewardLater = getCstBidRewardAmount();
+    uint256 rewardLater = getBidCstRewardAmount();
 
     assert rewardLater >= rewardNow;
 }
@@ -63,10 +65,10 @@ rule ethBidMintsAtMostObservableReward {
     int256 randomWalkNftId;
     string message;
 
-    uint256 rewardBefore = getCstBidRewardAmount();
+    uint256 rewardBefore = getBidCstRewardAmount();
     mathint mintedBefore = cstRewardMintedByBid;
 
-    bidWithEth(e, randomWalkNftId, message);
+    bidWithEth(e, randomWalkNftId, message, 0);
 
     assert cstRewardMintedByBid - mintedBefore <= to_mathint(rewardBefore);
 }
@@ -76,10 +78,10 @@ rule cstBidMintsAtMostObservableReward {
     uint256 priceMaxLimit;
     string message;
 
-    uint256 rewardBefore = getCstBidRewardAmount();
+    uint256 rewardBefore = getBidCstRewardAmount();
     mathint mintedBefore = cstRewardMintedByBid;
 
-    bidWithCst(e, priceMaxLimit, message);
+    bidWithCst(e, priceMaxLimit, message, 0);
 
     assert cstRewardMintedByBid - mintedBefore <= to_mathint(rewardBefore);
 }

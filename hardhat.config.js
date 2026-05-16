@@ -42,63 +42,6 @@ const ENABLE_SMTCHECKER = ENABLE_HARDHAT_PREPROCESSOR ? helpersModule.parseInteg
 // #endregion
 // #region
 
-function parseSmtCheckerContractsConfiguration() {
-	const value = process.env.SMTCHECKER_CONTRACTS ?? "";
-	if (value.length <= 0) {
-		return {
-			"contracts/production/CharityWallet.sol": ["CharityWallet"],
-		};
-	}
-
-	return value
-		.split(",")
-		.map((item_) => item_.trim())
-		.filter((item_) => item_.length > 0)
-		.reduce(
-			(accumulator_, item_) => {
-				const separatorIndex_ = item_.indexOf(":");
-				if (separatorIndex_ <= 0 || separatorIndex_ >= item_.length - 1) {
-					throw new Error(`Invalid SMTCHECKER_CONTRACTS item: "${item_}". Expected "path:Contract1+Contract2".`);
-				}
-				const filePath_ = item_.slice(0, separatorIndex_);
-				const contractNames_ =
-					item_
-						.slice(separatorIndex_ + 1)
-						.split("+")
-						.map((contractName_) => contractName_.trim())
-						.filter((contractName_) => contractName_.length > 0);
-				if (contractNames_.length <= 0) {
-					throw new Error(`Invalid SMTCHECKER_CONTRACTS item: "${item_}".`);
-				}
-				accumulator_[filePath_] = contractNames_;
-				return accumulator_;
-			},
-			{}
-		);
-}
-
-function parseOptionalBooleanEnvironmentVariable(name_, defaultValue_) {
-	const value = process.env[name_];
-	if (value == undefined || value.length <= 0) {
-		return defaultValue_;
-	}
-	switch (value.toLowerCase()) {
-		case "true":
-		case "1":
-		case "yes":
-			return true;
-		case "false":
-		case "0":
-		case "no":
-			return false;
-		default:
-			throw new Error(`Invalid boolean environment variable ${name_}: "${value}".`);
-	}
-}
-
-// #endregion
-// #region
-
 // [Comment-202503272]
 // The use of different folders prevents a recompile of some Solidity sources
 // when using a different combination of environment variables.
@@ -637,10 +580,6 @@ const hardhatUserConfig = {
 // #region
 
 if (ENABLE_SMTCHECKER >= 2) {
-	const smtCheckerEngine = process.env.SMTCHECKER_ENGINE ?? "all";
-	const smtCheckerTimeout = helpersModule.parseIntegerEnvironmentVariable("SMTCHECKER_TIMEOUT_MS", 5 * 60 * 1000);
-	const smtCheckerShowProvedSafe = parseOptionalBooleanEnvironmentVariable("SMTCHECKER_SHOW_PROVED", false);
-
 	// See https://docs.soliditylang.org/en/latest/using-the-compiler.html#compiler-input-and-output-json-description
 	// On that page, find: modelChecker
 	hardhatUserConfig.solidity.settings.modelChecker = {
@@ -655,7 +594,19 @@ if (ENABLE_SMTCHECKER >= 2) {
 		// [/Comment-202409012]
 		// See https://docs.soliditylang.org/en/latest/smtchecker.html#verified-contracts
 		// [/Comment-202409013]
-		contracts: parseSmtCheckerContractsConfiguration(),
+		contracts: {
+			// "contracts/production/CosmicSignatureToken.sol": ["CosmicSignatureToken"],
+			// "contracts/production/RandomWalkNFT.sol": ["RandomWalkNFT"],
+			// "contracts/production/CosmicSignatureNft.sol": ["CosmicSignatureNft"],
+			// "contracts/production/DonatedTokenHolder.sol": ["DonatedTokenHolder"],
+			// "contracts/production/PrizesWallet.sol": ["PrizesWallet"],
+			// "contracts/production/StakingWalletRandomWalkNft.sol": ["StakingWalletRandomWalkNft"],
+			// "contracts/production/StakingWalletCosmicSignatureNft.sol": ["StakingWalletCosmicSignatureNft"],
+			// "contracts/production/MarketingWallet.sol": ["MarketingWallet"],
+			"contracts/production/CharityWallet.sol": ["CharityWallet"],
+			// "contracts/production/CosmicSignatureDao.sol": ["CosmicSignatureDao"],
+			// "contracts/production/CosmicSignatureGame.sol": ["CosmicSignatureGame"],
+		},
 
 		// // It appears to be unnecessary to configure this.
 		// // See https://docs.soliditylang.org/en/latest/smtchecker.html#division-and-modulo-with-slack-variables
@@ -666,7 +617,7 @@ if (ENABLE_SMTCHECKER >= 2) {
 		// See https://docs.soliditylang.org/en/latest/smtchecker.html#model-checking-engines
 		// See https://docs.soliditylang.org/en/latest/smtchecker.html#bounded-model-checker-bmc
 		// See https://docs.soliditylang.org/en/latest/smtchecker.html#constrained-horn-clauses-chc
-		engine: smtCheckerEngine,
+		engine: "all",
 
 		// [Comment-202502057]
 		// When we make an external call like `Contract1(address1).method1()`, SMTChecker will, by default, expect that
@@ -685,8 +636,9 @@ if (ENABLE_SMTCHECKER >= 2) {
 			"reentrancy",
 		],
 
-		// See https://docs.soliditylang.org/en/latest/smtchecker.html#proved-targets
-		showProvedSafe: smtCheckerShowProvedSafe,
+		// // We probably rarely need this.
+		// // See https://docs.soliditylang.org/en/latest/smtchecker.html#proved-targets
+		// showProvedSafe: true,
 
 		// See https://docs.soliditylang.org/en/latest/smtchecker.html#unproved-targets
 		showUnproved: true,
@@ -714,12 +666,8 @@ if (ENABLE_SMTCHECKER >= 2) {
 		],
 
 		// Milliseconds.
-		timeout: smtCheckerTimeout,
+		timeout: 24 * 60 * 60 * 1000,
 	};
-
-	console.info("%s", `SMTChecker contracts: ${JSON.stringify(hardhatUserConfig.solidity.settings.modelChecker.contracts)}`);
-	console.info("%s", `SMTChecker engine: ${smtCheckerEngine}`);
-	console.info("%s", `SMTChecker timeout: ${smtCheckerTimeout} ms`);
 }
 
 // #endregion

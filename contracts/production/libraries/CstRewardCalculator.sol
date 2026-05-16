@@ -5,35 +5,26 @@ import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 
 /// @notice Calculates the V2 per-bid CST reward.
 library CstRewardCalculator {
-	uint256 internal constant FORMULA_MULTIPLIER = 3;
-	uint256 internal constant CST_SCALE_SQUARED = 1e36;
-	uint256 internal constant MAX_SAFE_ELAPSED_SECONDS = type(uint256).max / FORMULA_MULTIPLIER / CST_SCALE_SQUARED;
+	uint256 internal constant DEFAULT_FORMULA_PRODUCT = 3 * (1 ether) * (1 ether);
 
-	error CstRewardElapsedDurationTooLong(uint256 elapsedSeconds);
-
-	function computeRadicand(uint256 elapsedSeconds_) internal pure returns (uint256) {
-		if (elapsedSeconds_ > type(uint256).max / 3 / 1e36) {
-			revert CstRewardElapsedDurationTooLong(elapsedSeconds_);
-		}
-
-		// #enable_asserts assert(elapsedSeconds_ <= type(uint256).max / 3 / 1e36);
-		uint256 radicand_ = 3 * elapsedSeconds_ * 1e36;
-		// #enable_asserts assert(elapsedSeconds_ == 0 || radicand_ >= 1e36);
-		// #enable_asserts assert(radicand_ / 1e36 / 3 == elapsedSeconds_);
+	function computeRadicand(uint256 elapsedDurationInSeconds_, uint256 formulaProduct_) internal pure returns (uint256) {
+		uint256 radicand_ = elapsedDurationInSeconds_ * formulaProduct_;
+		// #enable_asserts assert(elapsedDurationInSeconds_ == 0 || formulaProduct_ == 0 || radicand_ >= formulaProduct_);
+		// #enable_asserts assert(formulaProduct_ == 0 || radicand_ / formulaProduct_ == elapsedDurationInSeconds_);
 		return radicand_;
 	}
 
-	function compute(uint256 elapsedSeconds_) internal pure returns (uint256) {
-		uint256 radicand_ = computeRadicand(elapsedSeconds_);
-		uint256 cstBidRewardAmount_ = Math.sqrt(radicand_);
+	function compute(uint256 elapsedDurationInSeconds_, uint256 formulaProduct_) internal pure returns (uint256) {
+		uint256 radicand_ = computeRadicand(elapsedDurationInSeconds_, formulaProduct_);
+		uint256 bidCstRewardAmount_ = Math.sqrt(radicand_);
 
-		// #enable_asserts // #disable_smtchecker assert((elapsedSeconds_ == 0) == (cstBidRewardAmount_ == 0));
-		// #enable_asserts // #disable_smtchecker assert(cstBidRewardAmount_ * cstBidRewardAmount_ <= radicand_);
-		// #enable_asserts // #disable_smtchecker if (cstBidRewardAmount_ < type(uint128).max) {
-		// #enable_asserts // #disable_smtchecker 	uint256 nextCstBidRewardAmount_ = cstBidRewardAmount_ + 1;
-		// #enable_asserts // #disable_smtchecker 	assert(nextCstBidRewardAmount_ * nextCstBidRewardAmount_ > radicand_);
+		// #enable_asserts // #disable_smtchecker assert((elapsedDurationInSeconds_ == 0 || formulaProduct_ == 0) == (bidCstRewardAmount_ == 0));
+		// #enable_asserts // #disable_smtchecker assert(bidCstRewardAmount_ * bidCstRewardAmount_ <= radicand_);
+		// #enable_asserts // #disable_smtchecker if (bidCstRewardAmount_ < type(uint128).max) {
+		// #enable_asserts // #disable_smtchecker 	uint256 nextBidCstRewardAmount_ = bidCstRewardAmount_ + 1;
+		// #enable_asserts // #disable_smtchecker 	assert(nextBidCstRewardAmount_ * nextBidCstRewardAmount_ > radicand_);
 		// #enable_asserts // #disable_smtchecker }
 
-		return cstBidRewardAmount_;
+		return bidCstRewardAmount_;
 	}
 }

@@ -2,23 +2,14 @@
 
 const { expect } = require("chai");
 const hre = require("hardhat");
-const { waitForTransactionReceipt } = require("../../../src/Helpers.js");
+const { sleepForMilliSeconds, waitForTransactionReceipt } = require("../../../src/Helpers.js");
+const { computeBidCstRewardAmount } = require("../../../src/BidCstRewardHelpers.js");
 
-function sqrtBigInt(value_) {
-	if (value_ < 2n) {
-		return value_;
+async function makeNextBlockTimeDeterministic(currentSecondRemainingDurationMinLimitInMilliSeconds_ = 300) {
+	const currentSecondRemainingDurationInMilliSeconds_ = 1000 - Date.now() % 1000;
+	if (currentSecondRemainingDurationInMilliSeconds_ < currentSecondRemainingDurationMinLimitInMilliSeconds_) {
+		await sleepForMilliSeconds(currentSecondRemainingDurationInMilliSeconds_ + 1);
 	}
-	let x0_ = value_;
-	let x1_ = (value_ >> 1n) + 1n;
-	while (x1_ < x0_) {
-		x0_ = x1_;
-		x1_ = (x1_ + value_ / x1_) >> 1n;
-	}
-	return x0_;
-}
-
-function expectedCstBidRewardAmount(elapsedSeconds_) {
-	return sqrtBigInt(3n * elapsedSeconds_ * 10n ** 36n);
 }
 
 async function main() {
@@ -37,35 +28,35 @@ async function main() {
 	const cosmicSignatureToken_ = await hre.ethers.getContractAt("CosmicSignatureToken", tokenAddress_, bidderSigner_);
 	const lastBidderAddress_ = await cosmicSignatureGameProxy_.lastBidderAddress({blockTag: "pending",});
 
-	let expectedRewardAmount_;
-	if (lastBidderAddress_ == hre.ethers.ZeroAddress) {
-		expectedRewardAmount_ = 0n;
-	} else {
+	await makeNextBlockTimeDeterministic();
+	const expectedRewardAmount_ = await cosmicSignatureGameProxy_.getBidCstRewardAmountAdvanced(1n, {blockTag: "pending",});
+	if (lastBidderAddress_ != hre.ethers.ZeroAddress) {
 		const roundNum_ = await cosmicSignatureGameProxy_.roundNum({blockTag: "pending",});
 		const bidderInfo_ = await cosmicSignatureGameProxy_.biddersInfo(roundNum_, lastBidderAddress_, {blockTag: "pending",});
 		const lastBidTimeStamp_ = bidderInfo_.lastBidTimeStamp ?? bidderInfo_[2];
 		const pendingBlock_ = await hre.ethers.provider.getBlock("pending");
-		const elapsedSeconds_ = BigInt(pendingBlock_.timestamp) - lastBidTimeStamp_;
-		expectedRewardAmount_ = expectedCstBidRewardAmount(elapsedSeconds_);
+		const elapsedDurationInSeconds_ = BigInt(pendingBlock_.timestamp) + 1n - lastBidTimeStamp_;
+		expect(expectedRewardAmount_).equal(computeBidCstRewardAmount(elapsedDurationInSeconds_, await cosmicSignatureGameProxy_.cstRewardAmountForBidding({blockTag: "pending",})));
 	}
 
 	const balanceBefore_ = await cosmicSignatureToken_.balanceOf(bidderSigner_.address, {blockTag: "pending",});
 	const ethBidPrice_ = await cosmicSignatureGameProxy_.getNextEthBidPrice({blockTag: "pending",});
 	console.info("%s", `Submitting ETH bid with price ${ethBidPrice_}. Expected CST reward: ${expectedRewardAmount_}.`);
+	await makeNextBlockTimeDeterministic();
 	const receipt_ =
 		await waitForTransactionReceipt(
-			cosmicSignatureGameProxy_.bidWithEth(-1n, "cst-sqrt-emission-rehearsal", {value: ethBidPrice_,})
+			cosmicSignatureGameProxy_.bidWithEth(-1n, "cosmic-signature-game-v2-rehearsal", expectedRewardAmount_, {value: ethBidPrice_,})
 		);
 	const balanceAfter_ = await cosmicSignatureToken_.balanceOf(bidderSigner_.address);
 	const actualRewardAmount_ = balanceAfter_ - balanceBefore_;
 
 	expect(actualRewardAmount_).equal(expectedRewardAmount_);
-	const rewardEventTopic_ = cosmicSignatureGameProxy_.interface.getEvent("CstBidRewardMinted").topicHash;
-	const rewardLog_ = receipt_.logs.find((log_) => log_.topics[0] == rewardEventTopic_);
-	expect(rewardLog_).not.equal(undefined);
-	const parsedRewardLog_ = cosmicSignatureGameProxy_.interface.parseLog(rewardLog_);
-	expect(parsedRewardLog_.args.bidderAddress).equal(bidderSigner_.address);
-	expect(parsedRewardLog_.args.amount).equal(expectedRewardAmount_);
+	const bidPlacedEventTopic_ = cosmicSignatureGameProxy_.interface.getEvent("BidPlaced").topicHash;
+	const bidPlacedLog_ = receipt_.logs.find((log_) => log_.topics[0] == bidPlacedEventTopic_);
+	expect(bidPlacedLog_).not.equal(undefined);
+	const parsedBidPlacedLog_ = cosmicSignatureGameProxy_.interface.parseLog(bidPlacedLog_);
+	expect(parsedBidPlacedLog_.args.lastBidderAddress).equal(bidderSigner_.address);
+	expect(parsedBidPlacedLog_.args.bidCstRewardAmount).equal(expectedRewardAmount_);
 
 	console.info("%s", `Verified CST reward: ${actualRewardAmount_}.`);
 }

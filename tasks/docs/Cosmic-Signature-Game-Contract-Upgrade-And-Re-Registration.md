@@ -66,11 +66,11 @@ Before upgrading:
 - Run `npx hardhat check`.
 - Run Slither and `slither-check-upgradeability` against `CosmicSignatureGameV2`.
 - Run OpenZeppelin `validateUpgrade`.
-- Rehearse on Arbitrum Sepolia using `live-blockchain-testing/src/cosmic-signature-game-upgrade-cst-sqrt/`.
+- Rehearse on Arbitrum Sepolia using `live-blockchain-testing/src/cosmic-signature-game-upgrade-v2/`.
 
 Configuration:
 
-- In `../config/upgrade-cosmic-signature-game-config-<network_name>.json`, set `newCosmicSignatureGameContractName` to `CosmicSignatureGameV2`.
+- Use the V2 upgrade config, such as `../config/upgrade-cosmic-signature-game-v2-config-arbitrumSepolia.json`, or set `newCosmicSignatureGameContractName` to `CosmicSignatureGameV2`.
 - Set `newInitializerMethodName` to `initialize2`.
 
 Mainnet runbook:
@@ -81,4 +81,4 @@ Mainnet runbook:
 4. Confirm the proxy address is unchanged and the implementation address changed.
 5. Execute `../runners/run-register-upgraded-cosmic-signature-game-arbitrumOne.bash`.
 6. Restore `roundActivationTime` if it was moved for the buffer.
-7. Place or observe the first post-upgrade bid and verify `CstBidRewardMinted`.
+7. Place or observe the first post-upgrade bid and verify the bid CST reward amount in `BidPlaced`.

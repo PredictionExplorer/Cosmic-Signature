@@ -3,26 +3,13 @@
 const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
+const { anyUint } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { waitForTransactionReceipt } = require("../../src/Helpers.js");
+const { DEFAULT_BID_CST_REWARD_FORMULA_PRODUCT, computeBidCstRewardAmount } = require("../../src/BidCstRewardHelpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
 
-function sqrtBigInt(value_) {
-	expect(typeof value_).equal("bigint");
-	expect(value_).greaterThanOrEqual(0n);
-	if (value_ < 2n) {
-		return value_;
-	}
-	let x0_ = value_;
-	let x1_ = (value_ >> 1n) + 1n;
-	while (x1_ < x0_) {
-		x0_ = x1_;
-		x1_ = (x1_ + value_ / x1_) >> 1n;
-	}
-	return x0_;
-}
-
-function expectedCstBidRewardAmount(elapsedSeconds_) {
-	return sqrtBigInt(3n * elapsedSeconds_ * 10n ** 36n);
+function expectedBidCstRewardAmount(elapsedDurationInSeconds_) {
+	return computeBidCstRewardAmount(elapsedDurationInSeconds_);
 }
 
 async function setNextBlockTimestamp(timestamp_) {
@@ -44,7 +31,7 @@ async function deployV2Implementation(ownerSigner_) {
 }
 
 describe("CosmicSignatureGameV2", function () {
-	it("upgrades from V1 without changing proxy, token, or storage and switches bid rewards", async function () {
+	it("upgrades from V1 without changing proxy or token and switches bid rewards", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(0n);
 		const proxyAddress_ = await contracts_.cosmicSignatureGameProxy.getAddress();
 		const tokenAddress_ = await contracts_.cosmicSignatureToken.getAddress();
@@ -72,20 +59,21 @@ describe("CosmicSignatureGameV2", function () {
 
 		expect(await upgradedProxy_.getAddress()).equal(proxyAddress_);
 		expect(await upgradedProxy_.token()).equal(tokenAddress_);
-		expect(await upgradedProxy_.cstRewardAmountForBidding()).equal(flatRewardAmount_);
-		expect((await upgradedProxy_.queryFilter(upgradedProxy_.filters.ContractUpgradedToV2())).length).equal(1);
+		expect(await upgradedProxy_.cstRewardAmountForBidding()).equal(DEFAULT_BID_CST_REWARD_FORMULA_PRODUCT);
 
 		const roundActivationTime_ = await upgradedProxy_.roundActivationTime();
 		await setNextBlockTimestamp(roundActivationTime_);
-		await waitForTransactionReceipt(upgradedProxy_.connect(contracts_.signers[1]).bidWithEth((-1), "", 0n, {value: await upgradedProxy_.getNextEthBidPrice(),}));
+		const firstEthBidPrice_ = await upgradedProxy_.getNextEthBidPrice();
+		await waitForTransactionReceipt(upgradedProxy_.connect(contracts_.signers[1]).bidWithEth((-1), "", 0n, {value: firstEthBidPrice_,}));
 		expect(await contracts_.cosmicSignatureToken.balanceOf(contracts_.signers[1].address)).equal(0n);
 
 		const secondBidTimestamp_ = roundActivationTime_ + 60n;
 		await setNextBlockTimestamp(secondBidTimestamp_);
-		const expectedRewardAmount_ = expectedCstBidRewardAmount(60n);
-		await expect(upgradedProxy_.connect(contracts_.signers[2]).bidWithEth((-1), "", 0n, {value: await upgradedProxy_.getNextEthBidPrice(),}))
-			.emit(upgradedProxy_, "CstBidRewardMinted")
-			.withArgs(1n, contracts_.signers[2].address, expectedRewardAmount_);
+		const expectedRewardAmount_ = expectedBidCstRewardAmount(60n);
+		const secondEthBidPrice_ = await upgradedProxy_.getNextEthBidPrice();
+		await expect(upgradedProxy_.connect(contracts_.signers[2]).bidWithEth((-1), "", 0n, {value: secondEthBidPrice_,}))
+			.emit(upgradedProxy_, "BidPlaced")
+			.withArgs(1n, contracts_.signers[2].address, secondEthBidPrice_, -1n, -1n, "", expectedRewardAmount_, anyUint);
 		expect(await contracts_.cosmicSignatureToken.balanceOf(contracts_.signers[2].address)).equal(expectedRewardAmount_);
 	});
 

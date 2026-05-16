@@ -63,13 +63,3 @@ We use the same priorities for non-numbered todos as well, for example:
 ```ts
 // ToDo-0 Do this and that ASAP.
 ```
-
-#### Project-Specific Comments Added For V2
-
-```ts
-// [Comment-202605091]
-// CST sqrt emission formula:
-// reward = floor(sqrt(3 * (block.timestamp - previousBidTimestamp)) * 1e18).
-// The first bid of a round returns zero because there is no previous bid in that round.
-// [/Comment-202605091]
-```
