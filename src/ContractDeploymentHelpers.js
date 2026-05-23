@@ -68,6 +68,7 @@ const deployContractsAdvanced = async function (
 			[deployerSigner.address,],
 			{
 				kind: "uups",
+				// initializer: "initialize",
 			}
 		);
 	await cosmicSignatureGameProxy.waitForDeployment();

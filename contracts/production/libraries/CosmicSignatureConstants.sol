@@ -94,8 +94,12 @@ library CosmicSignatureConstants {
 	/// Comment-202409143 applies.
 	uint256 internal constant DEFAULT_BID_MESSAGE_LENGTH_MAX_LIMIT = 280;
 
-	/// @notice Default `cstRewardAmountForBidding` and `CosmicSignatureDao.proposalThreshold()`.
-	uint256 internal constant DEFAULT_CST_REWARD_AMOUNT_FOR_BIDDING = 100 ether;
+	/// @notice Default `bidCstRewardAmount` and `CosmicSignatureDao.proposalThreshold()`.
+	uint256 internal constant DEFAULT_BID_CST_REWARD_AMOUNT = 100 ether;
+
+	/// @notice Default `bidCstRewardAmountMultiplier`.
+	/// todo-0 Is this correct? Does this match Taras'es value and produce the same result? Tell Taras.
+	uint256 internal constant DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER = 3 * (1 ether) ** 2 * INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND;
 
 	// #endregion
 	// #region Secondary Prizes
@@ -207,7 +211,7 @@ library CosmicSignatureConstants {
 		// 3 minutes;
 		2 weeks;
 
-	// See `DEFAULT_CST_REWARD_AMOUNT_FOR_BIDDING`.
+	// See `DEFAULT_BID_CST_REWARD_AMOUNT`.
 
 	/// @notice Default `CosmicSignatureDao.quorum()`.
 	/// @dev I've reduced this from the recommended 4% -- to increase the chance that there will be a sufficient quorum.

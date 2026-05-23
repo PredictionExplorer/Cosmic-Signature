@@ -5,26 +5,28 @@ pragma solidity 0.8.34;
 import { CosmicSignatureHelpers } from "../production/libraries/CosmicSignatureHelpers.sol";
 import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 
-/// @notice This contract is used for testing on a live blockchain.
+/// @notice
+/// [Comment-202606031]
+/// This contract is used for testing on a live blockchain.
+/// [/Comment-202606031]
 /// [Comment-202508065]
 /// It will return all the assets back to the `owner()` and self-destruct.
 /// Correction: as per Comment-202509241, this contract is no longer self-destructible.
 /// [/Comment-202508065]
 contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
-	// /// @custom:oz-upgrades-unsafe-allow constructor
-	// constructor() CosmicSignatureGame() {
-	// 	// Doing nothing.
-	// }
-
-	/// @dev Comment-202503124 relates and/or applies.
-	function initialize(address ownerAddress_) external override initializer() {
-		// // #enable_asserts // #disable_smtchecker console.log("4 initialize");
-		_initialize(ownerAddress_);
+	/// @dev Comment-202606037 applies.
+	function dummyInitialize() external initializer() {
+		assert(false);
+		this.initialize(address(0));
 	}
 
 	/// @notice Comment-202508065 applies.
 	/// // @custom:oz-upgrades-unsafe-allow selfdestruct
 	function finalizeTesting() external onlyOwner {
+		// [Comment-202606032]
+		// I haven't copied most of this commented code to `SelfDestructibleCosmicSignatureGameV2`.
+		// [/Comment-202606032]
+
 		// // Cosmic Signature NFTs.
 		// // todo-9 This logic doesn't appear to make sense because we mint CS NFTs for bidders, not for the game itself, right?
 		// for (uint256 nftId_ = nft.totalSupply(); nftId_ > 0; ) {

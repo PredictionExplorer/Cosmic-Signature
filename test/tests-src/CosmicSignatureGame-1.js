@@ -162,7 +162,7 @@ describe("CosmicSignatureGame-1", function () {
 			// #endregion
 			// #region
 
-			for(;;) {
+			for (;;) {
 				// #region
 
 				const fairRandomNumber1_ = fairRandomNumberGenerator1_.getNext();

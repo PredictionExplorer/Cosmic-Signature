@@ -14,87 +14,30 @@ import { CosmicSignatureEvents } from "./libraries/CosmicSignatureEvents.sol";
 import { RandomNumberHelpers } from "./libraries/RandomNumberHelpers.sol";
 import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 import { IPrizesWallet } from "./interfaces/IPrizesWallet.sol";
-import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
-import { BiddingBase } from "./BiddingBase.sol";
-import { MainPrizeBase } from "./MainPrizeBase.sol";
-import { BidStatistics } from "./BidStatistics.sol";
-import { SecondaryPrizes } from "./SecondaryPrizes.sol";
-import { IMainPrize } from "./interfaces/IMainPrize.sol";
+import { CosmicSignatureGameStorageV2 } from "./CosmicSignatureGameStorageV2.sol";
+import { BiddingBaseV2 } from "./BiddingBaseV2.sol";
+import { MainPrizeBaseV2 } from "./MainPrizeBaseV2.sol";
+import { BidStatisticsV2 } from "./BidStatisticsV2.sol";
+import { SecondaryPrizesV2 } from "./SecondaryPrizesV2.sol";
+import { IMainPrizeV2 } from "./interfaces/IMainPrizeV2.sol";
 
 // #endregion
 // #region
 
-abstract contract MainPrize is
+abstract contract MainPrizeV2 is
 	ReentrancyGuardTransientUpgradeable,
 	OwnableUpgradeableWithReservedStorageGaps,
-	CosmicSignatureGameStorage,
-	BiddingBase,
-	MainPrizeBase,
-	BidStatistics,
-	SecondaryPrizes,
-	IMainPrize {
+	CosmicSignatureGameStorageV2,
+	BiddingBaseV2,
+	MainPrizeBaseV2,
+	BidStatisticsV2,
+	SecondaryPrizesV2,
+	IMainPrizeV2 {
 	// #region `claimMainPrize`
 
 	/// @dev Comment-202411169 relates and/or applies.
 	/// Comment-202411078 relates and/or applies.
-	///
-	/// [Comment-202605308]
-	/// Observable universe entities accessed by `claimMainPrize`, `_distributePrizes`, `_prepareNextRound`.
-	///    `OpenZeppelinPanic`.
-	///    `nonReentrant`.
-	///    `_msgSender`.
-	///    `CosmicSignatureErrors`.
-	///    `CosmicSignatureEvents`.
-	///    `RandomNumberHelpers.RandomNumberSeedWrapper`.
-	///    `RandomNumberHelpers` methods.
-	///    `ICosmicSignatureToken.MintSpec`.
-	///    `IPrizesWallet.EthDeposit`.
-	///    `BidderAddresses`.
-	///    `lastBidderAddress`.
-	///    `lastCstBidderAddress`.
-	///    `bidderAddresses`.
-	///    `enduranceChampionAddress`.
-	///    `chronoWarriorAddress`.
-	///    `roundNum`.
-	///    `delayDurationBeforeRoundActivation`.
-	///    `roundActivationTime`.
-	///    // `cstDutchAuctionBeginningBidPrice`.
-	///    // `nextRoundFirstCstDutchAuctionBeginningBidPrice`.
-	///    `cstPrizeAmount`.
-	///    `numRaffleEthPrizesForBidders`.
-	///    `numRaffleCosmicSignatureNftsForBidders`.
-	///    `numRaffleCosmicSignatureNftsForRandomWalkNftStakers`.
-	///    `mainPrizeTime`.
-	///    `mainPrizeTimeIncrementInMicroSeconds`.
-	///    `mainPrizeTimeIncrementIncreaseDivisor`.
-	///    `timeoutDurationToClaimMainPrize`.
-	///    `token`.
-	///    `nft`.
-	///    `prizesWallet`.
-	///    `stakingWalletRandomWalkNft`.
-	///    `stakingWalletCosmicSignatureNft`.
-	///    `marketingWallet`.
-	///    `marketingWalletCstContributionAmount`.
-	///    `charityAddress`.
-	///    `_setRoundActivationTime`.
-	///    `getDurationUntilMainPrizeRaw`.
-	///    `_setMainPrizeTimeIncrementInMicroSeconds`.
-	///    `_updateChampionsIfNeeded`.
-	///    `_updateChronoWarriorIfNeeded`.
-	///    `LastCstBidderPrizePaid`.
-	///    `EnduranceChampionPrizePaid`.
-	///    `ChronoWarriorPrizePaid`.
-	///    `RaffleWinnerBidderEthPrizeAllocated`.
-	///    `RaffleWinnerPrizePaid`.
-	///    `getChronoWarriorEthPrizeAmount`.
-	///    `getRaffleTotalEthPrizeAmountForBidders`.
-	///    `getCosmicSignatureNftStakingTotalEthRewardAmount`.
-	///    `MainPrizeClaimed`.
-	///    `_distributePrizes`.
-	///    `_prepareNextRound`.
-	///    `getMainEthPrizeAmount`.
-	///    `getCharityEthDonationAmount`.
-	/// [/Comment-202605308]
+	/// Comment-202605308 applies.
 	function claimMainPrize() external override nonReentrant /*_onlyRoundIsActive*/ {
 		// #region
 
@@ -129,10 +72,7 @@ abstract contract MainPrize is
 		// #endregion
 		// #region
 
-		// [Comment-202605309]
-		// According to Comment-202411254, `_msgSender()` can be different from `lastBidderAddress`,
-		// but the champion update logic anyway uses the latter.
-		// [/Comment-202605309]
+		// Comment-202605309 applies.
 		_updateChampionsIfNeeded();
 		_updateChronoWarriorIfNeeded(block.timestamp);
 
@@ -148,22 +88,16 @@ abstract contract MainPrize is
 	function _distributePrizes() private {
 		// #region
 
-		// [Comment-202605311]
-		// Issue. It appears that the optimization idea described in Comment-202502077 would be difficult to implement here.
-		// [/Comment-202605311]
+		// Comment-202605311 applies.
 		RandomNumberHelpers.RandomNumberSeedWrapper memory randomNumberSeedWrapper_;
 
-		// [Comment-202605312]
-		// Remember about Comment-202503254!
-		// [/Comment-202605312]
+		// Comment-202605312 applies.
 		randomNumberSeedWrapper_.value = RandomNumberHelpers.generateRandomNumberSeed();
 
 		BidderAddresses storage bidderAddressesReference_ = bidderAddresses[roundNum];
 		uint256 timeoutTimeToWithdrawSecondaryPrizes_;
 
-		// [Comment-202501161]
-		// It's important to calculate this before ETH transfers change our ETH balance.
-		// [/Comment-202501161]
+		// Comment-202501161 applies.
 		// This can potentially be zero.
 		uint256 mainEthPrizeAmount_ = getMainEthPrizeAmount();
 
@@ -197,17 +131,7 @@ abstract contract MainPrize is
 
 				uint256 ethDepositIndex_ = numRaffleEthPrizesForBidders;
 
-				// [Comment-202605313]
-				// ETH deposits to make to `prizesWallet`.
-				// This doesn't include `_msgSender()`, that's the main prize beneficiary, with their main ETH prize.
-				// At the same time, this does include any secondary prizes `_msgSender()` has won.
-				// So one might want instead of depositing those prizes to `prizesWallet`
-				// to transfer them directly to `_msgSender()` near Comment-202501183.
-				// But keeping it simple.
-				// Items:
-				//    `numRaffleEthPrizesForBidders` items. Bidders.
-				//    1 item. `chronoWarriorAddress`.
-				// [/Comment-202605313]
+				// Comment-202605313 applies.
 				IPrizesWallet.EthDeposit[] memory ethDeposits_ = new IPrizesWallet.EthDeposit[](ethDepositIndex_ + 1);
 
 				// This can potentially be zero.
@@ -260,9 +184,7 @@ abstract contract MainPrize is
 				// #endregion
 				// #region
 
-				// [Comment-202605314]
-				// All calculations marked with Comment-202501161 must be made before this.
-				// [/Comment-202605314]
+				// Comment-202605314 applies.
 				timeoutTimeToWithdrawSecondaryPrizes_ =
 					prizesWallet.registerRoundEndAndDepositEthMany
 						{value: ethDepositsTotalAmount_}
@@ -276,9 +198,7 @@ abstract contract MainPrize is
 
 			try stakingWalletCosmicSignatureNft.deposit{value: cosmicSignatureNftStakingTotalEthRewardAmount_}(roundNum) {
 				// Doing nothing.
-				// [Comment-202511102]
-				// There is no event to emit around here.
-				// [/Comment-202511102]
+				// Comment-202511102 applies.
 			} catch Panic(uint256 panicCode_) {
 				// Comment-202410161 relates.
 				if (panicCode_ != OpenZeppelinPanic.DIVISION_BY_ZERO) {
@@ -289,18 +209,9 @@ abstract contract MainPrize is
 			// #endregion
 			// #region
 
-			// [Comment-202411077]
-			// ETH For Charity.
-			// If somehow ETH receive by charity reverts we won't revert the transaction.
-			// It appears to be impossible to abuse this logic by something like the 63/64 rule or calling us too deep in the stack,
-			// at least given that near Comment-202501183 there is similar logic to transfer main ETH prize which would revert as well.
-			// Comment-202411078 relates and/or applies.
-			// [/Comment-202411077]
+			// Comment-202411077 applies.
 			{
-				// [Comment-202605315]
-				// I don't want to spend gas to `require` this.
-				// But if I did, this would be a wrong place for this validation.
-				// [/Comment-202605315]
+				// Comment-202605315 applies.
 				// #enable_asserts assert(charityAddress != address(0));
 
 				// Comment-202502043 applies.
@@ -319,12 +230,7 @@ abstract contract MainPrize is
 		// #endregion
 		// #region
 
-		// [Comment-202501183]
-		// Main ETH Prize For Main Prize Beneficiary.
-		// If this fails, one might want to transfer the funds to `prizesWallet`.
-		// Another option would be to transfer the funds there unconditionally.
-		// But keeping it simple.
-		// [/Comment-202501183]
+		// Comment-202501183 applies.
 		{
 			// Comment-202502043 applies.
 			(bool isSuccess_, ) = _msgSender().call{value: mainEthPrizeAmount_}("");
@@ -340,12 +246,7 @@ abstract contract MainPrize is
 		{
 			// #region
 
-			// [Comment-202605317]
-			// This initial value counts main prize beneficiary, last CST bidder (not guaranteed to exist),
-			// endurance champion, chrono-warrior, `MarketingWallet`.
-			// Minus 1.
-			// We are yet to add to this.
-			// [/Comment-202605317]
+			// Comment-202605317 applies.
 			uint256 cosmicSignatureTokenMintSpecIndex_ = (lastCstBidderAddress != address(0)) ? (4 + 1 - 1) : (4 - 1);
 
 			cosmicSignatureTokenMintSpecIndex_ += numRaffleCosmicSignatureNftsForBidders;
@@ -358,32 +259,14 @@ abstract contract MainPrize is
 					randomNumberSeedWrapper_.value ^ 0x7c6eeb003d4a6dc5ebf549935c6ffb814ba1f060f1af8a0b11c2aa94a8e716e4
 				);
 
-			// [Comment-202511104]
-			// Now this becomes the number of CST mints we are going to make minus 1,
-			// which is the same as the number of CS NFT mints.
-			// [/Comment-202511104]
+			// Comment-202511104 applies.
 			cosmicSignatureTokenMintSpecIndex_ += luckyStakerAddresses_.length;
 
-			// [Comment-202605319]
-			// Addresses for which to mint CS NFTs.
-			// [/Comment-202605319]
-			// [Comment-202511094]
-			// This contains the same items as `cosmicSignatureTokenMintSpecs_`, except its last item.
-			// Comment-202511104 relates.
-			// [/Comment-202511094]
+			// Comment-202605319 applies.
+			// Comment-202511094 applies.
 			address[] memory cosmicSignatureNftOwnerAddresses_ = new address[](cosmicSignatureTokenMintSpecIndex_);
 
-			// [Comment-202606011]
-			// CST minting specs.
-			// Items:
-			//    1 item. `_msgSender()`, that's main prize beneficiary.
-			//    0 or 1 items. `lastCstBidderAddress`.
-			//    1 item. `enduranceChampionAddress`.
-			//    1 item. `chronoWarriorAddress`.
-			//    `numRaffleCosmicSignatureNftsForBidders` items. Bidders.
-			//    0 or `numRaffleCosmicSignatureNftsForRandomWalkNftStakers` items. RW NFT stakers.
-			//    1 item. `marketingWallet`.
-			// [/Comment-202606011]
+			// Comment-202606011 applies.
 			// Comment-202511094 relates.
 			ICosmicSignatureToken.MintSpec[] memory cosmicSignatureTokenMintSpecs_ = new ICosmicSignatureToken.MintSpec[](cosmicSignatureTokenMintSpecIndex_ + 1);
 
@@ -691,9 +574,7 @@ abstract contract MainPrize is
 		lastCstBidderAddress = address(0);
 		enduranceChampionAddress = address(0);
 
-		// // [Comment-202605307]
-		// // It's unnecessary to reset this.
-		// // [/Comment-202605307]
+		// // Comment-202605307 applies.
 		// // Comment-202501308 applies.
 		// enduranceChampionStartTimeStamp = 0;
 
@@ -706,10 +587,7 @@ abstract contract MainPrize is
 		chronoWarriorDuration = uint256(int256(-1));
 		++ roundNum;
 
-		// // [Comment-202501307]
-		// // Instead of making this assignment, it appears to be more efficient
-		// // to use `nextRoundFirstCstDutchAuctionBeginningBidPrice` for the 1st CST Dutch auction in the next bidding round.
-		// // [/Comment-202501307]
+		// // Comment-202501307 applies.
 		// cstDutchAuctionBeginningBidPrice = nextRoundFirstCstDutchAuctionBeginningBidPrice;
 
 		_setMainPrizeTimeIncrementInMicroSeconds(mainPrizeTimeIncrementInMicroSeconds + mainPrizeTimeIncrementInMicroSeconds / mainPrizeTimeIncrementIncreaseDivisor);

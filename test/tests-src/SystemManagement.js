@@ -89,10 +89,10 @@ describe("SystemManagement", function () {
 
 		{
 			const newValue_ = 9n + generateRandomUInt256() % 3n;
-			await expect(cosmicSignatureGameProxyForOwner_.setCstRewardAmountForBidding(newValue_))
-				.emit(contracts_.cosmicSignatureGameProxy, "CstRewardAmountForBiddingChanged")
+			await expect(cosmicSignatureGameProxyForOwner_.setBidCstRewardAmount(newValue_))
+				.emit(contracts_.cosmicSignatureGameProxy, "BidCstRewardAmountChanged")
 				.withArgs(newValue_);
-			expect(await contracts_.cosmicSignatureGameProxy.cstRewardAmountForBidding()).equal(newValue_);
+			expect(await contracts_.cosmicSignatureGameProxy.bidCstRewardAmount()).equal(newValue_);
 		}
 
 		{
@@ -315,7 +315,7 @@ describe("SystemManagement", function () {
 		await expect(cosmicSignatureGameProxyForOwner_.setCstDutchAuctionDurationDivisor(randomNumber1_)).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "RoundIsActive");
 		await expect(cosmicSignatureGameProxyForOwner_.setCstDutchAuctionBeginningBidPriceMinLimit(randomNumber1_)).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "RoundIsActive");
 		await expect(cosmicSignatureGameProxyForOwner_.setBidMessageLengthMaxLimit(randomNumber1_)).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "RoundIsActive");
-		await expect(cosmicSignatureGameProxyForOwner_.setCstRewardAmountForBidding(randomNumber1_)).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "RoundIsActive");
+		await expect(cosmicSignatureGameProxyForOwner_.setBidCstRewardAmount(randomNumber1_)).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "RoundIsActive");
 		await expect(cosmicSignatureGameProxyForOwner_.setCstPrizeAmount(randomNumber1_)).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "RoundIsActive");
 		await expect(cosmicSignatureGameProxyForOwner_.setChronoWarriorEthPrizeAmountPercentage(randomNumber1_)).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "RoundIsActive");
 		await expect(cosmicSignatureGameProxyForOwner_.setRaffleTotalEthPrizeAmountForBiddersPercentage(randomNumber1_)).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "RoundIsActive");
@@ -361,7 +361,7 @@ describe("SystemManagement", function () {
 		await expect(cosmicSignatureGameProxyForSigner_.setCstDutchAuctionDurationDivisor(randomNumber1_)).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 		await expect(cosmicSignatureGameProxyForSigner_.setCstDutchAuctionBeginningBidPriceMinLimit(randomNumber1_)).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 		await expect(cosmicSignatureGameProxyForSigner_.setBidMessageLengthMaxLimit(randomNumber1_)).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
-		await expect(cosmicSignatureGameProxyForSigner_.setCstRewardAmountForBidding(randomNumber1_)).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
+		await expect(cosmicSignatureGameProxyForSigner_.setBidCstRewardAmount(randomNumber1_)).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 		await expect(cosmicSignatureGameProxyForSigner_.setCstPrizeAmount(randomNumber1_)).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 		await expect(cosmicSignatureGameProxyForSigner_.setChronoWarriorEthPrizeAmountPercentage(randomNumber1_)).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 		await expect(cosmicSignatureGameProxyForSigner_.setRaffleTotalEthPrizeAmountForBiddersPercentage(randomNumber1_)).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");

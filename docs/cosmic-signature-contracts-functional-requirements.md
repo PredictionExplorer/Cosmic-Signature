@@ -54,7 +54,7 @@ This document goes a little bit beyond purely functional requirements. It's inte
 
 - `roundActivationTime`. The current bidding round activation time. Starting at this point in time, people will be allowed to place bids.
 
-- `mainPrizeTime`. The time when the last bidder will be granted the premission to claim main prize.
+- `mainPrizeTime`. The time when the last bidder will be granted the premission to claim the main prize.
 
 - `charityAddress`. This variable exists in `CharityWallet`, where it contains the address to donate ETH to. The same named variable exists in `CosmicSignatureGameStorage`, where it actually points at our own `CharityWallet`. See Comment-202411078 for details.
 

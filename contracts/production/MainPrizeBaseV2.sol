@@ -3,10 +3,10 @@ pragma solidity 0.8.34;
 
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
-import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
-import { IMainPrizeBase } from "./interfaces/IMainPrizeBase.sol";
+import { CosmicSignatureGameStorageV2 } from "./CosmicSignatureGameStorageV2.sol";
+import { IMainPrizeBaseV2 } from "./interfaces/IMainPrizeBaseV2.sol";
 
-abstract contract MainPrizeBase is CosmicSignatureGameStorage, IMainPrizeBase {
+abstract contract MainPrizeBaseV2 is CosmicSignatureGameStorageV2, IMainPrizeBaseV2 {
 	function getInitialDurationUntilMainPrize() public view override returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
@@ -48,11 +48,7 @@ abstract contract MainPrizeBase is CosmicSignatureGameStorage, IMainPrizeBase {
 		emit MainPrizeTimeIncrementInMicroSecondsChanged(newValue_);
 	}
 
-	/// @notice
-	/// [Comment-202605242]
-	/// Extends `mainPrizeTime`.
-	/// This method is called on each bid, except the first one in a bidding round.
-	/// [/Comment-202605242]
+	/// @notice Comment-202605242 apples.
 	function _extendMainPrizeTime() internal {
 		// #enable_smtchecker /*
 		unchecked

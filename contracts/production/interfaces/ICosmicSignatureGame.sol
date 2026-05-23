@@ -15,15 +15,21 @@ import { IMainPrize } from "./IMainPrize.sol";
 
 /// @title The Cosmic Signature Game.
 /// @author The Cosmic Signature Development Team.
-/// @notice This contract implements the main functionality of the Cosmic Signature Game.
+/// @notice
+/// [Comment-202606014]
+/// This contract implements the main functionality of the Cosmic Signature Game.
 /// This contract is upgradeable.
-/// @dev Issue. It could make sense for this upgradeable contract to support a self-destruction of the implementation contract
+/// [/Comment-202606014]
+/// @dev
+/// [Comment-202606017]
+/// Issue. It could make sense for this upgradeable contract to support a self-destruction of the implementation contract
 /// after a successful upgrade.
 /// Note that `SelfDestructibleCosmicSignatureGame`, which is to be used only for testing, used to support a `selfdestruct`,
 /// but, according to Comment-202509241, I have now eliminated that feature.
 /// I have also implemented a self-destructability in a non-upgradeable contract prototype
 /// at "https://github.com/PredictionExplorer/big-contract-prototype".
 /// But I have no plans to implement the self-destruction feature in the production code.
+/// [/Comment-202606017]
 interface ICosmicSignatureGame is
 	IAddressValidator,
 	ICosmicSignatureGameStorage,
@@ -44,5 +50,6 @@ interface ICosmicSignatureGame is
 	/// This method is called on the proxy contract right after deployment of both the proxy and the implementation contracts.
 	/// @param ownerAddress_ Contract owner address.
 	/// It could make sense to eliminate this parameter and use `_msgSender()` instead, but let's leave it alone.
+	/// @dev Comment-202606037 relates.
 	function initialize(address ownerAddress_) external;
 }

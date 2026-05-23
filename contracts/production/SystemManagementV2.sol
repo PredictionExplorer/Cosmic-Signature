@@ -9,18 +9,18 @@ import { ICosmicSignatureNft, CosmicSignatureNft } from "./CosmicSignatureNft.so
 import { IPrizesWallet, PrizesWallet } from "./PrizesWallet.sol";
 import { IStakingWalletRandomWalkNft, StakingWalletRandomWalkNft } from "./StakingWalletRandomWalkNft.sol";
 import { IStakingWalletCosmicSignatureNft, StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
-import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
-import { BiddingBase } from "./BiddingBase.sol";
-import { MainPrizeBase } from "./MainPrizeBase.sol";
-import { ISystemManagement } from "./interfaces/ISystemManagement.sol";
+import { CosmicSignatureGameStorageV2 } from "./CosmicSignatureGameStorageV2.sol";
+import { BiddingBaseV2 } from "./BiddingBaseV2.sol";
+import { MainPrizeBaseV2 } from "./MainPrizeBaseV2.sol";
+import { ISystemManagementV2 } from "./interfaces/ISystemManagementV2.sol";
 
-abstract contract SystemManagement is
+abstract contract SystemManagementV2 is
 	OwnableUpgradeableWithReservedStorageGaps,
 	AddressValidator,
-	CosmicSignatureGameStorage,
-	BiddingBase,
-	MainPrizeBase,
-	ISystemManagement {
+	CosmicSignatureGameStorageV2,
+	BiddingBaseV2,
+	MainPrizeBaseV2,
+	ISystemManagementV2 {
 	function setDelayDurationBeforeRoundActivation(uint256 newValue_) external override onlyOwner /*_onlyRoundIsInactive*/ {
 		delayDurationBeforeRoundActivation = newValue_;
 		emit DelayDurationBeforeRoundActivationChanged(newValue_);
@@ -63,9 +63,9 @@ abstract contract SystemManagement is
 		emit BidMessageLengthMaxLimitChanged(newValue_);
 	}
 
-	function setBidCstRewardAmount(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
-		bidCstRewardAmount = newValue_;
-		emit BidCstRewardAmountChanged(newValue_);
+	function setBidCstRewardAmountMultiplier(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
+		bidCstRewardAmountMultiplier = newValue_;
+		emit BidCstRewardAmountMultiplierChanged(newValue_);
 	}
 
 	function setCstPrizeAmount(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {

@@ -9,17 +9,17 @@ import { IPrizesWallet } from "./IPrizesWallet.sol";
 import { IStakingWalletRandomWalkNft } from "./IStakingWalletRandomWalkNft.sol";
 import { IStakingWalletCosmicSignatureNft } from "./IStakingWalletCosmicSignatureNft.sol";
 import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
-import { IBiddingBase } from "./IBiddingBase.sol";
-import { IMainPrizeBase } from "./IMainPrizeBase.sol";
+import { IBiddingBaseV2 } from "./IBiddingBaseV2.sol";
+import { IMainPrizeBaseV2 } from "./IMainPrizeBaseV2.sol";
 
 /// @title Cosmic Signature Game Configuration Management.
 /// @author The Cosmic Signature Development Team.
-/// @notice This contract contains `CosmicSignatureGame` configurable parameter setters to be called only by the contract owner.
-interface ISystemManagement is
+/// @notice This contract contains `CosmicSignatureGameV2` configurable parameter setters to be called only by the contract owner.
+interface ISystemManagementV2 is
 	IAddressValidator,
 	ICosmicSignatureGameStorage,
-	IBiddingBase,
-	IMainPrizeBase {
+	IBiddingBaseV2,
+	IMainPrizeBaseV2 {
 	/// @notice Sets `delayDurationBeforeRoundActivation`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
@@ -70,10 +70,10 @@ interface ISystemManagement is
 	/// @param newValue_ The new value.
 	function setBidMessageLengthMaxLimit(uint256 newValue_) external;
 
-	/// @notice Sets `bidCstRewardAmount`.
+	/// @notice Sets `bidCstRewardAmountMultiplier`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	function setBidCstRewardAmount(uint256 newValue_) external;
+	function setBidCstRewardAmountMultiplier(uint256 newValue_) external;
 
 	/// @notice Sets `cstPrizeAmount`.
 	/// Only the contract owner is permitted to call this method.

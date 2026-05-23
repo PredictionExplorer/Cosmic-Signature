@@ -30,8 +30,6 @@ interface ICosmicSignatureGameOpenBid is
 	// /// @dev It appears that we don't need this.
 	// fallback() external payable;
 
-	/// @notice Makes additional initializations after an upgrade.
-	/// This method is called on the proxy contract right after deployment of the new implementation contract.
-	/// Comment-202503119 applies.
-	function initialize2() external;
+	/// @notice Comment-202606018 applies.
+	function initializeV2() external;
 }

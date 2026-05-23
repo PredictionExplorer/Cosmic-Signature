@@ -63,15 +63,15 @@ contract CosmicSignatureGameOpenBid is
 	// }
 
 	// #endregion
-	// #region `initialize2`
+	// #region `initializeV2`
 
-	function initialize2() external override /*onlyOwner*/ reinitializer(2) {
-		// // #enable_asserts // #disable_smtchecker console.log("2 initialize2");
+	function initializeV2() external override /*onlyOwner*/ reinitializer(2) {
+		// // #enable_asserts // #disable_smtchecker console.log("2 initializeV2");
 
 		// Comment-202503119 applies.
 		// #enable_asserts assert(owner() != address(0));
 
-		// `initialize2` is supposed to not be executed yet.
+		// Comment-202606021 applies.
 		// #enable_asserts assert(timesEthBidPrice == 0);
 
 		timesEthBidPrice = 3;
@@ -90,7 +90,7 @@ contract CosmicSignatureGameOpenBid is
 		// _providedAddressIsNonZero(newImplementationAddress_) {
 		// // #enable_asserts // #disable_smtchecker console.log("2 _authorizeUpgrade");
 
-		// `initialize2` is supposed to be already executed.
+		// Comment-202606022 applies.
 		// #enable_asserts assert(timesEthBidPrice > 0);
 	}
 

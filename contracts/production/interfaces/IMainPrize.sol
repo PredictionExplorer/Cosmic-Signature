@@ -7,15 +7,21 @@ import { IMainPrizeBase } from "./IMainPrizeBase.sol";
 import { IBidStatistics } from "./IBidStatistics.sol";
 import { ISecondaryPrizes } from "./ISecondaryPrizes.sol";
 
-/// @notice This contract supports claiming bidding round main prize.
+/// @notice
+/// [Comment-202605305]
+/// This contract supports claiming bidding round main prize.
+/// [/Comment-202605305]
 interface IMainPrize is
 	ICosmicSignatureGameStorage,
 	IBiddingBase,
 	IMainPrizeBase,
 	IBidStatistics,
 	ISecondaryPrizes {
-	/// @notice Emitted when main prize gets claimed.
+	/// @notice
+	/// [Comment-202605298]
+	/// Emitted when main prize gets claimed.
 	/// This event indicates that the bidding round has ended.
+	/// [/Comment-202605298]
 	/// @param roundNum The current bidding round number.
 	/// @param beneficiaryAddress The address receiving the prize.
 	/// [Comment-202411254]
@@ -40,21 +46,33 @@ interface IMainPrize is
 		uint256 timeoutTimeToWithdrawSecondaryPrizes
 	);
 
-	/// @notice Claims the current bidding round main prize.
+	/// @notice
+	/// [Comment-202605299]
+	/// Claims the current bidding round main prize.
 	/// This method distributes main and secondary prizes
 	/// and updates the Game contract state to begin another bidding round.
 	/// The prizes are documented in "${workspaceFolder}/docs/cosmic-signature-game-prizes.md".
 	/// Only the last bidder is permitted to call this method after `mainPrizeTime` comes,
 	/// but after a timeout expires anybody is welcomed to.
+	/// [/Comment-202605299]
 	function claimMainPrize() external;
 
-	/// @return The current main ETH prize amount, in Wei.
+	/// @return
+	/// [Comment-202605301]
+	/// The current main ETH prize amount.
 	/// It can potentially be zero.
+	/// [/Comment-202605301]
 	function getMainEthPrizeAmount() external view returns (uint256);
 
-	/// @return The current charity ETH donation amount, in Wei.
+	/// @return
+	/// [Comment-202605302]
+	/// The current charity ETH donation amount.
 	/// It can potentially be zero.
-	/// @dev This probably doesn't belong to `ISecondaryPrizes`.
+	/// [/Comment-202605302]
+	/// @dev
+	/// [Comment-202605303]
+	/// This probably doesn't belong to `ISecondaryPrizes`.
 	/// One might want to move this to a yet another separate interface and respective contract, but let's keep it simple.
+	/// [/Comment-202605303]
 	function getCharityEthDonationAmount() external view returns (uint256);
 }

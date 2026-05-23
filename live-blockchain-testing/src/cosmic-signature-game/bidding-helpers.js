@@ -9,7 +9,7 @@ async function ensureDurationElapsedSinceRoundActivationIsAtLeast(cosmicSignatur
 	const pendingBlockTimeStamp_ = await getBlockTimeStampByBlockNumber("pending");
 	const roundActivationTimeMaxLimit_ = pendingBlockTimeStamp_ - durationElapsedSinceRoundActivationMinLimit_;
 	const roundActivationTimeExcess_ = roundActivationTime_ - roundActivationTimeMaxLimit_;
-	if(roundActivationTimeExcess_ > 0n) {
+	if (roundActivationTimeExcess_ > 0n) {
 		console.info("%s", `Moving bidding round activation time back by ${roundActivationTimeExcess_} seconds.`);
 		await waitForTransactionReceipt(cosmicSignatureGameProxy_.connect(ownerSigner_).setRoundActivationTime(roundActivationTimeMaxLimit_));
 	} else {
