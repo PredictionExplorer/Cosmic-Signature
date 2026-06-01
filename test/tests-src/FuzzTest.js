@@ -311,7 +311,7 @@ function parseFuzzSeedFromEnvironment(raw_) {
  * @param {unknown} error_
  */
 function isExpectedHardhatRevertError(error_) {
-	if ( ! (error_ instanceof Error)) {
+	if ( ! (error_ instanceof Error) ) {
 		return false;
 	}
 	const message_ = error_.message ?? "";
