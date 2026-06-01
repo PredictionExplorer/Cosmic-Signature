@@ -51,7 +51,7 @@ contract CosmicSignatureGameOpenBid is
 	/// Comment-202503121 applies.
 	/// @custom:oz-upgrades-unsafe-allow constructor
 	constructor() {
-		// // #enable_asserts // #disable_smtchecker console.log("2 constructor");
+		// // #enable_asserts // #disable_smtchecker console.log("CosmicSignatureGameOpenBid.constructor");
 		_disableInitializers();
 	}
 
@@ -65,14 +65,15 @@ contract CosmicSignatureGameOpenBid is
 	// #endregion
 	// #region `initializeV2`
 
-	function initializeV2() external override /*onlyOwner*/ reinitializer(2) {
-		// // #enable_asserts // #disable_smtchecker console.log("2 initializeV2");
-
-		// Comment-202503119 applies.
-		// #enable_asserts assert(owner() != address(0));
-
-		// Comment-202606021 applies.
-		// #enable_asserts assert(timesEthBidPrice == 0);
+	/// @dev
+	/// [Comment-202606084]
+	/// Issue. It's unsafe to call `_getInitializedVersion` like this.
+	/// Instead, it would be better to hardcode a specific version number after validating the already initialized version number
+	/// with a modifier like `_onlyIfPrevVersionWasInitialized`.
+	/// It's up to the contract owner performing the upgrade to not break things.
+	/// [/Comment-202606084]
+	function initializeV2() external override /*onlyOwner*/ reinitializer(_getInitializedVersion() + 1) {
+		// // #enable_asserts // #disable_smtchecker console.log("CosmicSignatureGameOpenBid.initializeV2");
 
 		timesEthBidPrice = 3;
 	}
@@ -81,17 +82,9 @@ contract CosmicSignatureGameOpenBid is
 	// #region `_authorizeUpgrade`
 
 	/// @dev Comment-202412188 applies.
-	function _authorizeUpgrade(address newImplementationAddress_) internal view override
-		// Comment-202503119 applies.
-		// Comment-202510114 applies.
-		onlyOwner
-
-		_onlyRoundIsInactive {
+	function _authorizeUpgrade(address newImplementationAddress_) internal view override onlyOwner _onlyRoundIsInactive {
 		// _providedAddressIsNonZero(newImplementationAddress_) {
-		// // #enable_asserts // #disable_smtchecker console.log("2 _authorizeUpgrade");
-
-		// Comment-202606022 applies.
-		// #enable_asserts assert(timesEthBidPrice > 0);
+		// // #enable_asserts // #disable_smtchecker console.log("CosmicSignatureGameOpenBid._authorizeUpgrade");
 	}
 
 	// #endregion

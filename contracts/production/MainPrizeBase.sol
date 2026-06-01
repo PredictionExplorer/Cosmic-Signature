@@ -52,14 +52,15 @@ abstract contract MainPrizeBase is CosmicSignatureGameStorage, IMainPrizeBase {
 	/// [Comment-202605242]
 	/// Extends `mainPrizeTime`.
 	/// This method is called on each bid, except the first one in a bidding round.
+	/// Comment-202412152 relates and/or applies.
 	/// [/Comment-202605242]
 	function _extendMainPrizeTime() internal {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
 		{
-			uint256 mainPrizeCorrectedTime_ = Math.max(mainPrizeTime, block.timestamp);
 			uint256 mainPrizeTimeIncrement_ = getMainPrizeTimeIncrement();
+			uint256 mainPrizeCorrectedTime_ = Math.max(mainPrizeTime, block.timestamp);
 			mainPrizeTime = mainPrizeCorrectedTime_ + mainPrizeTimeIncrement_;
 		}
 	}

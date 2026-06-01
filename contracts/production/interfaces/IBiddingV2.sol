@@ -32,7 +32,9 @@ interface IBiddingV2 is ICosmicSignatureGameStorage, IBiddingBaseV2, IMainPrizeB
 	/// @param message Comment-202503155 applies.
 	/// @param bidCstRewardAmount The CST reward amount minted to the bidder.
 	/// It can be zero.
-	/// @param mainPrizeTime Comment-202605215 applies.
+	/// @param cstDutchAuctionDuration Comment-202606101 applies.
+	/// Comment-202606099 relates.
+	/// @param mainPrizeTime Comment-202412152 applies.
 	event BidPlaced(
 		uint256 indexed roundNum,
 		address indexed lastBidderAddress,
@@ -41,6 +43,7 @@ interface IBiddingV2 is ICosmicSignatureGameStorage, IBiddingBaseV2, IMainPrizeB
 		int256 indexed randomWalkNftId,
 		string message,
 		uint256 bidCstRewardAmount,
+		uint256 cstDutchAuctionDuration,
 		uint256 mainPrizeTime
 	);
 
@@ -51,7 +54,6 @@ interface IBiddingV2 is ICosmicSignatureGameStorage, IBiddingBaseV2, IMainPrizeB
 
 	/// @notice Comment-202605252 applies.
 	/// Comment-202508102 applies.
-	/// See important details in comments in this method body.
 	function halveEthDutchAuctionEndingBidPrice() external;
 
 	/// @notice Comment-202605254 applies.

@@ -48,9 +48,14 @@ abstract contract SystemManagementV2 is
 		emit EthBidRefundAmountInGasToSwallowMaxLimitChanged(newValue_);
 	}
 
-	function setCstDutchAuctionDurationDivisor(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
-		cstDutchAuctionDurationDivisor = newValue_;
-		emit CstDutchAuctionDurationDivisorChanged(newValue_);
+	function setCstDutchAuctionDuration(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
+		cstDutchAuctionDuration = newValue_;
+		emit CstDutchAuctionDurationChanged(newValue_);
+	}
+
+	function setCstDutchAuctionDurationChangeDivisor(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
+		cstDutchAuctionDurationChangeDivisor = newValue_;
+		emit CstDutchAuctionDurationChangeDivisorChanged(newValue_);
 	}
 
 	function setCstDutchAuctionBeginningBidPriceMinLimit(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {

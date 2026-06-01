@@ -396,8 +396,11 @@ abstract contract BiddingOpenBid is
 			uint256 nextEthBidPrice_;
 			if (lastBidderAddress == address(0)) {
 				nextEthBidPrice_ = ethDutchAuctionBeginningBidPrice;
+
+				// Comment-202605294 relates.
 				// #enable_asserts assert((nextEthBidPrice_ == 0) == (roundNum == 0));
 				if (nextEthBidPrice_ == 0) {
+
 					nextEthBidPrice_ = CosmicSignatureConstants.FIRST_ROUND_INITIAL_ETH_BID_PRICE;
 				} else {
 					int256 ethDutchAuctionElapsedDuration_ = getDurationElapsedSinceRoundActivation() + currentTimeOffset_;
@@ -518,6 +521,9 @@ abstract contract BiddingOpenBid is
 	// #region `_bidWithCst`
 
 	function _bidWithCst(uint256 priceMaxLimit_, string memory message_) private /*nonReentrant*/ /*_onlyRoundIsActive*/ {
+		// Comment-202412251 applies.
+		// #enable_asserts assert(_msgSender() != marketingWallet);
+
 		// Comment-202501045 applies.
 
 		// Comment-202503162 relates and/or applies.
@@ -528,15 +534,15 @@ abstract contract BiddingOpenBid is
 			revert CosmicSignatureErrors.InsufficientReceivedBidAmount("The current CST bid price is greater than the maximum you allowed.", paidPrice_, priceMaxLimit_);
 		}
 
-		// Comment-202412251 applies.
-		// #enable_asserts assert(_msgSender() != marketingWallet);
-
 		// Comment-202409177 applies.
 		// Comment-202501125 applies.
 		{
 			ICosmicSignatureToken.MintOrBurnSpec[] memory mintAndBurnSpecs_ = new ICosmicSignatureToken.MintOrBurnSpec[](2);
 			mintAndBurnSpecs_[0].account = _msgSender();
+
+			// Comment-202606074 applies.
 			mintAndBurnSpecs_[0].value = ( - int256(paidPrice_) );
+
 			mintAndBurnSpecs_[1].account = _msgSender();
 			mintAndBurnSpecs_[1].value = int256(bidCstRewardAmount);
 			token.mintAndBurnMany(mintAndBurnSpecs_);
@@ -558,7 +564,15 @@ abstract contract BiddingOpenBid is
 		}
 		lastCstBidderAddress = _msgSender();
 		_bidCommon(/*BidType.CST,*/ message_);
-		emit BidPlaced(roundNum, _msgSender(), -1, int256(paidPrice_), -1, message_, mainPrizeTime);
+		emit BidPlaced(
+			roundNum,
+			_msgSender(),
+			-1,
+			int256(paidPrice_),
+			-1,
+			message_,
+			mainPrizeTime
+		);
 	}
 
 	// #endregion
@@ -661,11 +675,11 @@ abstract contract BiddingOpenBid is
 		// Comment-202605292 applies.
 		if (lastBidderAddress == address(0)) {
 
-			// Comment-202501044 applies.
-			require(msg.value > 0, CosmicSignatureErrors.WrongBidType("The first bid in a bidding round shall be ETH."));
-
 			// Comment-202411169 relates.
 			_checkRoundIsActive();
+
+			// Comment-202501044 applies.
+			require(msg.value > 0, CosmicSignatureErrors.WrongBidType("The first bid in a bidding round shall be ETH."));
 
 			cstDutchAuctionBeginningTimeStamp = block.timestamp;
 			mainPrizeTime = block.timestamp + getInitialDurationUntilMainPrize();

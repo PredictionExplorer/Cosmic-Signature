@@ -124,6 +124,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// @notice
 	/// [Comment-202605186]
 	/// Bidding round counter.
+	/// It starts with zero.
 	/// [/Comment-202605186]
 	/// @dev Comment-202503092 applies.
 	uint256 public roundNum;
@@ -182,11 +183,9 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	uint256 public ethDutchAuctionDurationDivisor;
 
 	/// @notice
-	/// [Comment-202605189]
-	/// ETH Dutch auction beginning bid price.
-	/// [/Comment-202605189]
 	/// [Comment-202503084]
-	/// We increse this based on `ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER`.
+	/// ETH Dutch auction beginning bid price.
+	/// We calculate this based on `ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER`.
 	/// [/Comment-202503084]
 	/// [Comment-202605192]
 	/// After contract deployment, this variable remains zero until we assign a valid value to it.
@@ -206,15 +205,13 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	uint256 public ethDutchAuctionEndingBidPriceDivisor;
 
 	/// @notice
-	/// [Comment-202605193]
+	/// [Comment-202411065]
 	/// Next ETH bid price.
-	/// [/Comment-202605193]
+	/// We increase this based on `ethBidPriceIncreaseDivisor`.
+	/// [/Comment-202411065]
 	/// [Comment-202501022]
 	/// This value is valid only after the 1st ETH bid has been placed in the current bidding round.
 	/// [/Comment-202501022]
-	/// [Comment-202411065]
-	/// We increase this based on `ethBidPriceIncreaseDivisor`.
-	/// [/Comment-202411065]
 	uint256 public nextEthBidPrice;
 
 	/// @notice Comment-202411065 relates.
@@ -236,16 +233,15 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [Comment-202501025]
 	/// We divide `mainPrizeTimeIncrementInMicroSeconds` by this.
 	/// [/Comment-202501025]
-	/// Comment-202508288 relates.
 	/// Comment-202411064 applies.
+	/// Comment-202508288 relates.
+	/// @dev Comment-202606057 relates.
 	uint256 public cstDutchAuctionDurationDivisor;
 
 	/// @notice
-	/// [Comment-202605195]
-	/// CST Dutch auction beginning bid price.
-	/// [/Comment-202605195]
 	/// [Comment-202411066]
-	/// We increse this based on `CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER`.
+	/// CST Dutch auction beginning bid price.
+	/// We calculate this based on `CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER`.
 	/// We don't let this fall below `cstDutchAuctionBeginningBidPriceMinLimit`.
 	/// [/Comment-202411066]
 	/// [Comment-202605197]
@@ -295,7 +291,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	/// @notice We mint this CST amount as a bidder reward for placing a bid.
 	/// Comment-202411064 applies.
-	/// See also: `CosmicSignatureGameStorageV2.bidCstRewardAmountMultiplier`.
+	/// @dev Comment-202606053 relates.
 	uint256 public bidCstRewardAmount;
 
 	// #endregion
@@ -357,18 +353,18 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #region Main Prize
 
 	/// @notice Comment-202501025 applies.
+	/// Comment-202412152 relates.
 	/// Comment-202508288 relates.
 	/// Comment-202411064 applies.
 	uint256 public initialDurationUntilMainPrizeDivisor;
 
 	/// @notice
-	/// [Comment-202605215]
-	/// The time when the last bidder will be granted the premission to claim the main prize.
-	/// [/Comment-202605215]
-	/// Comment-202501022 applies.
 	/// [Comment-202412152]
-	/// On each bid, we increase this based on `mainPrizeTimeIncrementInMicroSeconds`.
+	/// The time when the last bidder will be granted the premission to claim the main prize.
+	/// On the first bid in a round, we set this based on `mainPrizeTimeIncrementInMicroSeconds / initialDurationUntilMainPrizeDivisor`.
+	/// On each subsequent bid, we increase this based on `mainPrizeTimeIncrementInMicroSeconds`.
 	/// [/Comment-202412152]
+	/// Comment-202501022 applies.
 	uint256 public mainPrizeTime;
 
 	/// @notice Comment-202412152 relates.

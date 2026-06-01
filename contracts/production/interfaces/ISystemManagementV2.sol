@@ -54,10 +54,15 @@ interface ISystemManagementV2 is
 	/// @param newValue_ The new value.
 	function setEthBidRefundAmountInGasToSwallowMaxLimit(uint256 newValue_) external;
 
-	/// @notice Sets `cstDutchAuctionDurationDivisor`.
+	/// @notice Sets `cstDutchAuctionDuration`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	function setCstDutchAuctionDurationDivisor(uint256 newValue_) external;
+	function setCstDutchAuctionDuration(uint256 newValue_) external;
+
+	/// @notice Sets `cstDutchAuctionDurationChangeDivisor`.
+	/// Only the contract owner is permitted to call this method.
+	/// @param newValue_ The new value.
+	function setCstDutchAuctionDurationChangeDivisor(uint256 newValue_) external;
 
 	/// @notice Sets `cstDutchAuctionBeginningBidPriceMinLimit`.
 	/// Only the contract owner is permitted to call this method.

@@ -160,6 +160,7 @@ Some prize winners are picked randomly. We have done our best to generate high q
 
 ### Exponential Duration Increase
 
+<!-- todo-0 Rewrite this for V2. -->
 At the end of each round, the following configurable durations automatically increase exponentially by a configurable fraction: ETH and CST Dutch auction durations; initial duration until main prize (used to calculate `mainPrizeTime` on the first bid in a round); `mainPrizeTime` increment (by how much `mainPrizeTime` gets extended on each subsequent bid in a round).
 
 ### Cosmic Signature and Random Walk NFT Staking

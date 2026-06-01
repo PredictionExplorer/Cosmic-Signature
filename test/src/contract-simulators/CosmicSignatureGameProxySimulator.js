@@ -698,14 +698,13 @@ async function createCosmicSignatureGameProxySimulator(
 				return false;
 			}
 			if (this.lastBidderAddress == hre.ethers.ZeroAddress) {
-				// // Our Solidity code now validates this a bit later, but here we no longer need to validate this.
-				// if ( ! (BigInt(transactionBlock_.timestamp) >= this.roundActivationTime) ) {
-				// 	// console.info("%s", "202504169");
-				// 	await expect(transactionResponsePromise_)
-				// 		.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "RoundIsInactive")
-				// 		.withArgs("The current bidding round is not active yet.", this.roundActivationTime, BigInt(transactionBlock_.timestamp));
-				// 	return false;
-				// }
+				if ( ! (BigInt(transactionBlock_.timestamp) >= this.roundActivationTime) ) {
+					// console.info("%s", "202504169");
+					await expect(transactionResponsePromise_)
+						.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "RoundIsInactive")
+						.withArgs("The current bidding round is not active yet.", this.roundActivationTime, BigInt(transactionBlock_.timestamp));
+					return false;
+				}
 
 				// console.info("%s", "202504171");
 				await expect(transactionResponsePromise_)
@@ -793,6 +792,7 @@ async function createCosmicSignatureGameProxySimulator(
 		// #endregion
 		// #region `_getCstDutchAuctionDuration`
 
+		// todo-0 This has been eliminated in V2.
 		_getCstDutchAuctionDuration: function() {
 			const cstDutchAuctionDuration_ = this.mainPrizeTimeIncrementInMicroSeconds / this.cstDutchAuctionDurationDivisor;
 			return cstDutchAuctionDuration_;

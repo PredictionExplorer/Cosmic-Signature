@@ -51,7 +51,7 @@ contract CosmicSignatureGame is
 	/// [/Comment-202503121]
 	/// @custom:oz-upgrades-unsafe-allow constructor
 	constructor() {
-		// // #enable_asserts // #disable_smtchecker console.log("1 constructor");
+		// // #enable_asserts // #disable_smtchecker console.log("CosmicSignatureGame.constructor");
 		_disableInitializers();
 	}
 
@@ -66,10 +66,7 @@ contract CosmicSignatureGame is
 	// #region `initialize`
 
 	function initialize(address ownerAddress_) external override initializer() {
-		// // #enable_asserts // #disable_smtchecker console.log("1 initialize");
-
-		// `initialize` is supposed to not be executed yet.
-		// #enable_asserts assert(owner() == address(0));
+		// // #enable_asserts // #disable_smtchecker console.log("CosmicSignatureGame.initialize");
 
 		__ReentrancyGuardTransient_init();
 		__Ownable_init(ownerAddress_);
@@ -138,18 +135,9 @@ contract CosmicSignatureGame is
 	/// to replace the contract in the middle of a bidding round, just in case a bug results in `claimMainPrize` reverting.
 	/// But such kind of feature would violate the principle of trustlessness.
 	/// [/Comment-202412188]
-	function _authorizeUpgrade(address newImplementationAddress_) internal view override
-		// [Comment-202503119]
-		// `initialize` is supposed to be already executed.
-		// [/Comment-202503119]
-		// [Comment-202510114]
-		// Otherwise `owner()` would be zero and therefore this modifier would revert.
-		// [/Comment-202510114]
-		onlyOwner
-
-		_onlyRoundIsInactive {
+	function _authorizeUpgrade(address newImplementationAddress_) internal view override onlyOwner _onlyRoundIsInactive {
 		// _providedAddressIsNonZero(newImplementationAddress_) {
-		// // #enable_asserts // #disable_smtchecker console.log("1 _authorizeUpgrade");
+		// // #enable_asserts // #disable_smtchecker console.log("CosmicSignatureGame._authorizeUpgrade");
 	}
 
 	// #endregion

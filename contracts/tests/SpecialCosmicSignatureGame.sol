@@ -19,12 +19,13 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 
 	/// @dev
 	/// [Comment-202606037]
-	/// Issue. This hack silences the upgradeable contract validating logic invoked by OpenZeppelin's `deployProxy` method
-	/// that would otherwise complain about missing initializer and/or missing initializer call.
-	/// Despite validating this method, `deployProxy` will call `initialize`.
+	/// Issue. This is a hack. The existence of this method silences the upgradeable contract validating logic
+	/// invoked by OpenZeppelin's `deployProxy` method that would otherwise complain about
+	/// missing initializer and/or missing initializer call.
+	/// Despite validating this method, `deployProxy` will then call `initialize`.
 	/// [/Comment-202606037]
 	function dummyInitialize() external initializer() {
-		assert(false);
+		revert ("This method is not intended to be called.");
 		this.initialize(address(0));
 	}
 

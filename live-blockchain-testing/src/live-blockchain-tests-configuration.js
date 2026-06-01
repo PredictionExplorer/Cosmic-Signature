@@ -102,7 +102,9 @@ const configuration =
 					delayDurationBeforeRoundActivation: 5n,
 					// ethDutchAuctionDurationDivisor: ???,
 					ethDutchAuctionDuration: 18n,
+					// todo-0 Revisit this for V2.
 					// cstDutchAuctionDurationDivisor: ???,
+					// todo-0 Now this can't be less than the change divisor. But this will still work. But comment.
 					cstDutchAuctionDuration: 15n,
 					// initialDurationUntilMainPrizeDivisor: ???,
 					initialDurationUntilMainPrize: 7n,

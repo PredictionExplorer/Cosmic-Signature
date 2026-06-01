@@ -100,8 +100,7 @@ abstract contract CosmicSignatureGameStorageV2 is ICosmicSignatureGameStorage {
 	/// See also: `halveEthDutchAuctionEndingBidPrice`.
 	uint256 public ethDutchAuctionDurationDivisor;
 
-	/// @notice Comment-202605189 applies.
-	/// Comment-202503084 applies.
+	/// @notice Comment-202503084 applies.
 	/// Comment-202605192 applies.
 	/// Comment-202501063 relates.
 	uint256 public ethDutchAuctionBeginningBidPrice;
@@ -111,9 +110,8 @@ abstract contract CosmicSignatureGameStorageV2 is ICosmicSignatureGameStorage {
 	/// See also: `halveEthDutchAuctionEndingBidPrice`.
 	uint256 public ethDutchAuctionEndingBidPriceDivisor;
 
-	/// @notice Comment-202605193 applies.
+	/// @notice Comment-202411065 applies.
 	/// Comment-202501022 applies.
-	/// Comment-202411065 applies.
 	uint256 public nextEthBidPrice;
 
 	/// @notice Comment-202411065 relates.
@@ -128,13 +126,25 @@ abstract contract CosmicSignatureGameStorageV2 is ICosmicSignatureGameStorage {
 	/// Comment-202501022 applies.
 	uint256 public cstDutchAuctionBeginningTimeStamp;
 
-	/// @notice Comment-202501025 applies.
-	/// Comment-202508288 relates.
+	/// @notice
+	/// [Comment-202606101]
+	/// How long CST Dutch auction lasts.
+	/// We reduce this on each ETH bid and increase on each CST bid,
+	/// which encourages bidders to place the same number of ETH and CST bids, which, in turn, increases the value of CST.
+	/// A consequence of the logic is that an ETH bid results in a small instant reduction of CST bid price, which is OK.
+	/// We change this based on `cstDutchAuctionDurationChangeDivisor`.
+	/// The change formulas are described in Comment-202606059.
+	/// [/Comment-202606101]
 	/// Comment-202411064 applies.
-	uint256 public cstDutchAuctionDurationDivisor;
+	/// Comment-202411172 applies.
+	/// @dev One might want to make this non-configurable. But when we increase `div` in the Comment-202606059 formula,
+	/// we also must increase `var` if `var < div`.
+	/// [Comment-202606057]
+	/// This occupies the same storage slot as `CosmicSignatureGameStorage.cstDutchAuctionDurationDivisor`.
+	/// [/Comment-202606057]
+	uint256 public cstDutchAuctionDuration;
 
-	/// @notice Comment-202605195 applies.
-	/// Comment-202411066 applies.
+	/// @notice Comment-202411066 applies.
 	/// Comment-202605197 applies.
 	/// @dev Comment-202605199 applies.
 	uint256 public cstDutchAuctionBeginningBidPrice;
@@ -160,7 +170,10 @@ abstract contract CosmicSignatureGameStorageV2 is ICosmicSignatureGameStorage {
 
 	/// @notice We use this to calculate the CST amount to mint as a bidder reward for placing a bid.
 	/// Comment-202411064 applies.
-	/// See also: `CosmicSignatureGameStorage.bidCstRewardAmount`.
+	/// @dev
+	/// [Comment-202606053]
+	/// This occupies the same storage slot as `CosmicSignatureGameStorage.bidCstRewardAmount`.
+	/// [/Comment-202606053]
 	uint256 public bidCstRewardAmountMultiplier;
 
 	// #endregion
@@ -198,13 +211,13 @@ abstract contract CosmicSignatureGameStorageV2 is ICosmicSignatureGameStorage {
 	// #region Main Prize
 
 	/// @notice Comment-202501025 applies.
+	/// Comment-202412152 relates.
 	/// Comment-202508288 relates.
 	/// Comment-202411064 applies.
 	uint256 public initialDurationUntilMainPrizeDivisor;
 
-	/// @notice Comment-202605215 applies.
+	/// @notice Comment-202412152 applies.
 	/// Comment-202501022 applies.
-	/// Comment-202412152 applies.
 	uint256 public mainPrizeTime;
 
 	/// @notice Comment-202412152 relates.
@@ -294,12 +307,19 @@ abstract contract CosmicSignatureGameStorageV2 is ICosmicSignatureGameStorage {
 	// Empty.
 
 	// #endregion
+	// #region Bidding V2
+
+	/// @notice Comment-202606101 relates.
+	/// Comment-202411064 applies.
+	uint256 public cstDutchAuctionDurationChangeDivisor;
+
+	// #endregion
 	// #region Gap
 
 	/// @dev Comment-202412142 applies.
 	/// Comment-202412148 applies.
 	// solhint-disable-next-line var-name-mixedcase
-	uint256[1 << 255] private __gap_persistent;
+	uint256[(1 << 255) - 1] private __gap_persistent;
 
 	// todo-1 Transient storage is not yet supported for reference types.
 	/// @dev Comment-202412142 applies.

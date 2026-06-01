@@ -79,9 +79,15 @@ library CosmicSignatureConstants {
 	/// [/Comment-202502052]
 	uint256 internal constant DEFAULT_ETH_BID_REFUND_AMOUNT_IN_GAS_TO_SWALLOW_MAX_LIMIT = 6843;
 
-	/// @notice Default `cstDutchAuctionDurationDivisor`.
+	/// @notice Initial `CosmicSignatureGameStorageV2.cstDutchAuctionDuration`.
+	uint256 internal constant INITIAL_CST_DUTCH_AUCTION_DURATION = (1 days) / 2;
+
+	/// @notice Default `CosmicSignatureGameStorage.cstDutchAuctionDurationDivisor`.
 	/// Comment-202508288 relates.
-	uint256 internal constant DEFAULT_CST_DUTCH_AUCTION_DURATION_DIVISOR = (INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND + ((1 days) / 2) / 2) / ((1 days) / 2);
+	uint256 internal constant DEFAULT_CST_DUTCH_AUCTION_DURATION_DIVISOR = (INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND + INITIAL_CST_DUTCH_AUCTION_DURATION / 2) / INITIAL_CST_DUTCH_AUCTION_DURATION;
+
+	/// @notice Default `CosmicSignatureGameStorageV2.cstDutchAuctionDurationChangeDivisor`.
+	uint256 internal constant DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR = 250;
 
 	/// @notice Comment-202411066 relates.
 	uint256 internal constant CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER = 2;
@@ -94,11 +100,19 @@ library CosmicSignatureConstants {
 	/// Comment-202409143 applies.
 	uint256 internal constant DEFAULT_BID_MESSAGE_LENGTH_MAX_LIMIT = 280;
 
-	/// @notice Default `bidCstRewardAmount` and `CosmicSignatureDao.proposalThreshold()`.
+	/// @notice Default `CosmicSignatureGameStorage.bidCstRewardAmount` and `CosmicSignatureDao.proposalThreshold()`.
 	uint256 internal constant DEFAULT_BID_CST_REWARD_AMOUNT = 100 ether;
 
-	/// @notice Default `bidCstRewardAmountMultiplier`.
-	/// todo-0 Is this correct? Does this match Taras'es value and produce the same result? Tell Taras.
+	/// @notice Default `CosmicSignatureGameStorageV2.bidCstRewardAmountMultiplier`.
+	/// todo-0 Test the following for both ETH and CST bids, all 4 combinations of previous and next bids.
+	/// todo-0 Keep in mind that on the 2nd round these will be a bit smaller due to main prize time increment being bigger by 1%.
+	/// todo-0 | Elapsed since previous bid | Reward |
+	/// todo-0 | --- | ---: |
+	/// todo-0 | 0 seconds | 0 CST |
+	/// todo-0 | 1 second | ~1.732 CST |
+	/// todo-0 | 60 seconds | ~13.416 CST |
+	/// todo-0 | 1 hour | ~103.923 CST |
+	/// todo-0 | 1 day | ~509.117 CST |
 	uint256 internal constant DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER = 3 * (1 ether) ** 2 * INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND;
 
 	// #endregion
@@ -237,7 +251,7 @@ library CosmicSignatureConstants {
 	uint256 internal constant MILLISECONDS_PER_DAY = MILLISECONDS_PER_SECOND * (1 days);
 
 	/// @notice This is equivalent to the midnight of 9000-01-01.
-	/// @dev JavaScript  code to calculate this.
+	/// @dev JavaScript  code to calculate and test this.
 	///		const n = /*Math.trunc*/((new Date(9000, 1 - 1, 1)).getTime() / 1000);
 	///		console.info(n);
 	///		const d = new Date(n * 1000);

@@ -393,8 +393,11 @@ abstract contract Bidding is
 			uint256 nextEthBidPrice_;
 			if (lastBidderAddress == address(0)) {
 				nextEthBidPrice_ = ethDutchAuctionBeginningBidPrice;
+
+				// Comment-202605294 relates.
 				// #enable_asserts assert((nextEthBidPrice_ == 0) == (roundNum == 0));
 				if (nextEthBidPrice_ == 0) {
+
 					nextEthBidPrice_ = CosmicSignatureConstants.FIRST_ROUND_INITIAL_ETH_BID_PRICE;
 				} else {
 					int256 ethDutchAuctionElapsedDuration_ = getDurationElapsedSinceRoundActivation() + currentTimeOffset_;
@@ -524,6 +527,16 @@ abstract contract Bidding is
 	// #region `_bidWithCst`
 
 	function _bidWithCst(uint256 priceMaxLimit_, string memory message_) private /*nonReentrant*/ /*_onlyRoundIsActive*/ {
+		// [Comment-202412251]
+		// This is a common sense requirement.
+		// The marketing wallet isn't supposed to bid with CST.
+		// The behavior isn't necessarily going to be correct if this condition is not met,
+		// but it appears that it's not going to be too bad,
+		// so it's probably unnecessary to spend gas to `require` this.
+		// That said, the marketing wallet is a contract that is not capable of bidding. So this assertion is guaranteed to succeed.
+		// [/Comment-202412251]
+		// #enable_asserts assert(_msgSender() != marketingWallet);
+
 		// [Comment-202501045]
 		// Somewhere around here, one might want to validate that the first bid in a bidding round is ETH.
 		// But we are going to validate that near Comment-202501044.
@@ -537,16 +550,6 @@ abstract contract Bidding is
 			revert CosmicSignatureErrors.InsufficientReceivedBidAmount("The current CST bid price is greater than the maximum you allowed.", paidPrice_, priceMaxLimit_);
 		}
 
-		// [Comment-202412251]
-		// This is a common sense requirement.
-		// The marketing wallet isn't supposed to bid with CST.
-		// The behavior isn't necessarily going to be correct if this condition is not met,
-		// but it appears that it's not going to be too bad,
-		// so it's probably unnecessary to spend gas to `require` this.
-		// That said, the marketing wallet is a contract that is not capable of bidding. So this assertion is guaranteed to succeed.
-		// [/Comment-202412251]
-		// #enable_asserts assert(_msgSender() != marketingWallet);
-
 		// [Comment-202409177]
 		// Burning the CST amount used for bidding.
 		// Doing it before subsequent minting, which requires the bidder to have the given amount.
@@ -558,7 +561,12 @@ abstract contract Bidding is
 		{
 			ICosmicSignatureToken.MintOrBurnSpec[] memory mintAndBurnSpecs_ = new ICosmicSignatureToken.MintOrBurnSpec[](2);
 			mintAndBurnSpecs_[0].account = _msgSender();
+
+			// [Comment-202606074]
+			// Issue. If `paidPrice_` happens to be zero, this would actually mint, rather than burn zero CSTs.
+			// [/Comment-202606074]
 			mintAndBurnSpecs_[0].value = ( - int256(paidPrice_) );
+
 			mintAndBurnSpecs_[1].account = _msgSender();
 			mintAndBurnSpecs_[1].value = int256(bidCstRewardAmount);
 			token.mintAndBurnMany(mintAndBurnSpecs_);
@@ -585,7 +593,15 @@ abstract contract Bidding is
 		}
 		lastCstBidderAddress = _msgSender();
 		_bidCommon(/*BidType.CST,*/ message_);
-		emit BidPlaced(roundNum, _msgSender(), -1, int256(paidPrice_), -1, message_, mainPrizeTime);
+		emit BidPlaced(
+			roundNum,
+			_msgSender(),
+			-1,
+			int256(paidPrice_),
+			-1,
+			message_,
+			mainPrizeTime
+		);
 	}
 
 	// #endregion
@@ -690,17 +706,17 @@ abstract contract Bidding is
 
 		// [Comment-202605292]
 		// The first bid of the current bidding round?
-		/// [/Comment-202605292]
+		// [/Comment-202605292]
 		if (lastBidderAddress == address(0)) {
+
+			// Comment-202411169 relates.
+			_checkRoundIsActive();
 
 			// [Comment-202501044]
 			// It appears to be more efficient to validate this here than to validate `lastBidderAddress` near Comment-202501045.
 			// This logic assumes that ETH bid price is guaranteed to be a nonzero, as specified in Comment-202503162.
 			// [/Comment-202501044]
 			require(msg.value > 0, CosmicSignatureErrors.WrongBidType("The first bid in a bidding round shall be ETH."));
-
-			// Comment-202411169 relates.
-			_checkRoundIsActive();
 
 			cstDutchAuctionBeginningTimeStamp = block.timestamp;
 			mainPrizeTime = block.timestamp + getInitialDurationUntilMainPrize();

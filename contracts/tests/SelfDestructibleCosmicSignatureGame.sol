@@ -16,7 +16,7 @@ import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
 	/// @dev Comment-202606037 applies.
 	function dummyInitialize() external initializer() {
-		assert(false);
+		revert ("This method is not intended to be called.");
 		this.initialize(address(0));
 	}
 

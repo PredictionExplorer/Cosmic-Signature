@@ -236,11 +236,25 @@ abstract contract BiddingV2 is
 		// Comment-202501061 applies.
 		nextEthBidPrice = ethBidPrice_ + ethBidPrice_ / ethBidPriceIncreaseDivisor + 1;
 
+		// [Comment-202606059]
+		// Given a variable `var` and a divisor `div`. Both are treated as unsigned integers.
+		// Assuming `div > 0 && var >= div`.
+		// `var` increase formula: `var += var / div`
+		// `var` reduction formula: `var = (var + 1) * div / (div + 1)`
+		// The formulas are lossless, meaning multiple increases followed by the same number of reductions
+		// or the same in the opposite order will produce the original value.
+		// The reduction formula can reach the minimum of `var == div`. Further reduction attempts will not change `var`.
+		// In other words, the losslessness breaks at that point.
+		// Obviously, the formulas can overflow. The reduction formula is more susceptible to overflow.
+		// [/Comment-202606059]
+		// Comment-202605295 applies.
+		uint256 newCstDutchAuctionDuration_ = (cstDutchAuctionDuration + 1) * cstDutchAuctionDurationChangeDivisor / (cstDutchAuctionDurationChangeDivisor + 1);
+
+		cstDutchAuctionDuration = newCstDutchAuctionDuration_;
 		if (bidCstRewardAmount_ > 0) {
 			// Comment-202501125 applies.
 			token.mint(_msgSender(), bidCstRewardAmount_);
 		}
-
 		_bidCommon(/*bidType_,*/ message_);
 		emit BidPlaced(
 			roundNum,
@@ -250,6 +264,7 @@ abstract contract BiddingV2 is
 			randomWalkNftId_,
 			message_,
 			bidCstRewardAmount_,
+			newCstDutchAuctionDuration_,
 			mainPrizeTime
 		);
 
@@ -422,6 +437,9 @@ abstract contract BiddingV2 is
 	// #region `_bidWithCst`
 
 	function _bidWithCst(uint256 priceMaxLimit_, string memory message_, uint256 bidCstRewardAmountMinLimit_) private /*nonReentrant*/ /*_onlyRoundIsActive*/ {
+		// Comment-202412251 applies.
+		// #enable_asserts assert(_msgSender() != marketingWallet);
+
 		// Comment-202501045 applies.
 
 		uint256 bidCstRewardAmount_ = getBidCstRewardAmountAdvanced(int256(0));
@@ -439,23 +457,20 @@ abstract contract BiddingV2 is
 			revert CosmicSignatureErrors.InsufficientReceivedBidAmount("The current CST bid price is greater than the maximum you allowed.", paidPrice_, priceMaxLimit_);
 		}
 
-		// Comment-202412251 applies.
-		// #enable_asserts assert(_msgSender() != marketingWallet);
-
 		// Comment-202409177 applies.
 		// Comment-202501125 applies.
 		if (bidCstRewardAmount_ > 0) {
 			ICosmicSignatureToken.MintOrBurnSpec[] memory mintAndBurnSpecs_ = new ICosmicSignatureToken.MintOrBurnSpec[](2);
 			mintAndBurnSpecs_[0].account = _msgSender();
+
+			// Comment-202606074 applies.
 			mintAndBurnSpecs_[0].value = ( - int256(paidPrice_) );
+
 			mintAndBurnSpecs_[1].account = _msgSender();
-
-			// Given that this is a square root, this cannot overflow.
-			// Comment-202605295 relates.
 			mintAndBurnSpecs_[1].value = int256(bidCstRewardAmount_);
-
 			token.mintAndBurnMany(mintAndBurnSpecs_);
 		} else {
+			// Unlike near Comment-202606074, this is an unconditional burning.
 			token.burn(_msgSender(), paidPrice_);
 		}
 
@@ -474,8 +489,25 @@ abstract contract BiddingV2 is
 			nextRoundFirstCstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
 		}
 		lastCstBidderAddress = _msgSender();
+
+		// Comment-202606059 applies.
+		// Comment-202605295 applies.
+		uint256 newCstDutchAuctionDuration_ = cstDutchAuctionDuration;
+		newCstDutchAuctionDuration_ += newCstDutchAuctionDuration_ / cstDutchAuctionDurationChangeDivisor;
+
+		cstDutchAuctionDuration = newCstDutchAuctionDuration_;
 		_bidCommon(/*BidType.CST,*/ message_);
-		emit BidPlaced(roundNum, _msgSender(), -1, int256(paidPrice_), -1, message_, bidCstRewardAmount_, mainPrizeTime);
+		emit BidPlaced(
+			roundNum,
+			_msgSender(),
+			-1,
+			int256(paidPrice_),
+			-1,
+			message_,
+			bidCstRewardAmount_,
+			newCstDutchAuctionDuration_,
+			mainPrizeTime
+		);
 	}
 
 	// #endregion
@@ -493,7 +525,7 @@ abstract contract BiddingV2 is
 		unchecked
 		// #enable_smtchecker */
 		{
-			(uint256 cstDutchAuctionDuration_, int256 cstDutchAuctionRemainingDuration_) = _getCstDutchAuctionTotalAndRemainingDurations();
+			int256 cstDutchAuctionRemainingDuration_ = _getCstDutchAuctionRemainingDuration();
 			cstDutchAuctionRemainingDuration_ -= currentTimeOffset_;
 			if (cstDutchAuctionRemainingDuration_ <= int256(0)) {
 				return 0;
@@ -503,7 +535,7 @@ abstract contract BiddingV2 is
 			uint256 cstDutchAuctionBeginningBidPrice_ =
 				(lastCstBidderAddress == address(0)) ? nextRoundFirstCstDutchAuctionBeginningBidPrice : cstDutchAuctionBeginningBidPrice;
 
-			uint256 nextCstBidPrice_ = cstDutchAuctionBeginningBidPrice_ * uint256(cstDutchAuctionRemainingDuration_) / cstDutchAuctionDuration_;
+			uint256 nextCstBidPrice_ = cstDutchAuctionBeginningBidPrice_ * uint256(cstDutchAuctionRemainingDuration_) / cstDutchAuctionDuration;
 			return nextCstBidPrice_;
 		}
 	}
@@ -516,22 +548,8 @@ abstract contract BiddingV2 is
 		unchecked
 		// #enable_smtchecker */
 		{
-			uint256 cstDutchAuctionDuration_ = _getCstDutchAuctionDuration();
 			int256 cstDutchAuctionElapsedDuration_ = _getCstDutchAuctionElapsedDuration();
-			return (cstDutchAuctionDuration_, cstDutchAuctionElapsedDuration_);
-		}
-	}
-
-	// #endregion
-	// #region `_getCstDutchAuctionDuration`
-
-	function _getCstDutchAuctionDuration() private view returns (uint256) {
-		// #enable_smtchecker /*
-		unchecked
-		// #enable_smtchecker */
-		{
-			uint256 cstDutchAuctionDuration_ = mainPrizeTimeIncrementInMicroSeconds / cstDutchAuctionDurationDivisor;
-			return cstDutchAuctionDuration_;
+			return (cstDutchAuctionDuration, cstDutchAuctionElapsedDuration_);
 		}
 	}
 
@@ -549,17 +567,16 @@ abstract contract BiddingV2 is
 	}
 
 	// #endregion
-	// #region `_getCstDutchAuctionTotalAndRemainingDurations`
+	// #region `_getCstDutchAuctionRemainingDuration`
 
-	function _getCstDutchAuctionTotalAndRemainingDurations() private view returns (uint256, int256) {
+	function _getCstDutchAuctionRemainingDuration() private view returns (int256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
 		{
-			uint256 cstDutchAuctionDuration_ = _getCstDutchAuctionDuration();
 			int256 cstDutchAuctionElapsedDuration_ = _getCstDutchAuctionElapsedDuration();
-			int256 cstDutchAuctionRemainingDuration_ = int256(cstDutchAuctionDuration_) - cstDutchAuctionElapsedDuration_;
-			return (cstDutchAuctionDuration_, cstDutchAuctionRemainingDuration_);
+			int256 cstDutchAuctionRemainingDuration_ = int256(cstDutchAuctionDuration) - cstDutchAuctionElapsedDuration_;
+			return cstDutchAuctionRemainingDuration_;
 		}
 	}
 
@@ -578,11 +595,11 @@ abstract contract BiddingV2 is
 		// Comment-202605292 applies.
 		if (lastBidderAddress == address(0)) {
 
-			// Comment-202501044 applies.
-			require(msg.value > 0, CosmicSignatureErrors.WrongBidType("The first bid in a bidding round shall be ETH."));
-
 			// Comment-202411169 relates.
 			_checkRoundIsActive();
+
+			// Comment-202501044 applies.
+			require(msg.value > 0, CosmicSignatureErrors.WrongBidType("The first bid in a bidding round shall be ETH."));
 
 			cstDutchAuctionBeginningTimeStamp = block.timestamp;
 			mainPrizeTime = block.timestamp + getInitialDurationUntilMainPrize();
@@ -615,8 +632,6 @@ abstract contract BiddingV2 is
 	// #region `getBidCstRewardAmountAdvanced`
 
 	function getBidCstRewardAmountAdvanced(int256 currentTimeOffset_) public view override returns (uint256) {
-		// todo-0 Make sure this is correct. Review Taras'es code.
-
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -627,13 +642,15 @@ abstract contract BiddingV2 is
 				biddersInfo[roundNum][lastBidderAddress].lastBidTimeStamp;
 
 			// [Comment-202605295]
-			// It's safe to assume that this will not overflow, provided `currentTimeOffset_` is reasonable.
-			// In case of an overflow, the return value will be incorrect.
+			// It's safe to assume that this is far below the point of overflow, provided `currentTimeOffset_` is relatively small,
+			// positive, negative, or zero.
 			// [/Comment-202605295]
 			int256 elapsedDuration_ = int256(block.timestamp) + currentTimeOffset_ - int256(lastBidTimeStampCopy_);
 
 			uint256 bidCstRewardAmount_ = 0;
 			if (elapsedDuration_ > int256(0)) {
+				// The numerator is expected to have tendency to be proportional to the denominator.
+				// As a result, this formula is neither inflationary nor deflationary for CST.
 				// Comment-202605295 applies.
 				uint256 radicand_ = uint256(elapsedDuration_) * bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds;
 

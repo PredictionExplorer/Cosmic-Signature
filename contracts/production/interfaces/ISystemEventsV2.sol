@@ -36,9 +36,16 @@ interface ISystemEventsV2 {
 	/// @param newValue The new value.
 	event EthBidRefundAmountInGasToSwallowMaxLimitChanged(uint256 newValue);
 
-	/// @notice Emitted when `cstDutchAuctionDurationDivisor` is changed.
+	/// @notice Emitted when `cstDutchAuctionDuration` is changed.
+	/// [Comment-202606099]
+	/// But we do not emit this event when changing `cstDutchAuctionDuration` on bid. We emit `BidPlaced` instead.
+	/// [/Comment-202606099]
 	/// @param newValue The new value.
-	event CstDutchAuctionDurationDivisorChanged(uint256 newValue);
+	event CstDutchAuctionDurationChanged(uint256 newValue);
+
+	/// @notice Emitted when `cstDutchAuctionDurationChangeDivisor` is changed.
+	/// @param newValue The new value.
+	event CstDutchAuctionDurationChangeDivisorChanged(uint256 newValue);
 
 	/// @notice Emitted when `cstDutchAuctionBeginningBidPriceMinLimit` is changed.
 	/// @param newValue The new value.

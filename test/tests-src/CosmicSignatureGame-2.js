@@ -26,7 +26,7 @@ describe("CosmicSignatureGame-2", function () {
 			"."
 		);
 		expect(await contracts_.cosmicSignatureGameImplementation.owner()).equal(hre.ethers.ZeroAddress);
-		expect(await contracts_.cosmicSignatureGameProxy.owner()).equal(contracts_.ownerSigner);
+		expect(await contracts_.cosmicSignatureGameProxy.owner()).equal(contracts_.ownerSigner.address);
 		expect(await contracts_.cosmicSignatureGameImplementation.mainPrizeTimeIncrementInMicroSeconds()).equal(0n);
 		expect(await contracts_.cosmicSignatureGameProxy.mainPrizeTimeIncrementInMicroSeconds()).equal(60n * 60n * 10n ** 6n);
 	});

@@ -50,7 +50,7 @@ contract CosmicSignatureGameV2 is
 	/// Comment-202503121 applies.
 	/// @custom:oz-upgrades-unsafe-allow constructor
 	constructor() {
-		// // #enable_asserts // #disable_smtchecker console.log("2 constructor");
+		// // #enable_asserts // #disable_smtchecker console.log("CosmicSignatureGameV2.constructor");
 		_disableInitializers();
 	}
 
@@ -64,41 +64,43 @@ contract CosmicSignatureGameV2 is
 	// #endregion
 	// #region `initializeV2`
 
-	function initializeV2() external override /*onlyOwner*/ reinitializer(2) _onlyNonFirstRound() {
-		// // #enable_asserts // #disable_smtchecker console.log("2 initializeV2");
+	/// @dev In V2+, near Comment-202605294, `_onlyNonFirstRound` only asserts a condition.
+	/// One might want to fully validate that condition here, but it's really unnecessary,
+	/// because it's guaranteed to be `true` on the mainnet.
+	/// Comment-202606084 relates.
+	function initializeV2() external override /*onlyOwner*/ _onlyIfPrevVersionWasInitialized() reinitializer(2) _onlyNonFirstRound() {
+		// // #enable_asserts // #disable_smtchecker console.log("CosmicSignatureGameV2.initializeV2");
 
-		// Comment-202503119 applies.
-		// #enable_asserts assert(owner() != address(0));
-
-		// [Comment-202606021]
-		// `initializeV2` is supposed to not be executed yet.
-		// [/Comment-202606021]
-		// [Comment-202606024]
-		// Issue. This assertion will fail if the owner changed this variable.
-		// [/Comment-202606024]
-		// #enable_asserts assert(bidCstRewardAmountMultiplier == CosmicSignatureConstants.DEFAULT_BID_CST_REWARD_AMOUNT);
-
+		cstDutchAuctionDuration = CosmicSignatureConstants.INITIAL_CST_DUTCH_AUCTION_DURATION;
+		cstDutchAuctionDurationChangeDivisor = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR;
 		bidCstRewardAmountMultiplier = CosmicSignatureConstants.DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER;
+	}
+
+	// #endregion
+	// #region `_onlyIfPrevVersionWasInitialized`
+
+	/// @dev Comment-202606084 relates.
+	modifier _onlyIfPrevVersionWasInitialized() {
+		_checkIfPrevVersionWasInitialized();
+		_;
+	}
+
+	// #endregion
+	// #region `_checkIfPrevVersionWasInitialized`
+
+	function _checkIfPrevVersionWasInitialized() private view {
+		if ( ! (_getInitializedVersion() == 1) ) {
+			revert InvalidInitialization();
+		}
 	}
 
 	// #endregion
 	// #region `_authorizeUpgrade`
 
 	/// @dev Comment-202412188 applies.
-	function _authorizeUpgrade(address newImplementationAddress_) internal view override
-		// Comment-202503119 applies.
-		// Comment-202510114 applies.
-		onlyOwner
-
-		_onlyRoundIsInactive {
+	function _authorizeUpgrade(address newImplementationAddress_) internal view override onlyOwner _onlyRoundIsInactive {
 		// _providedAddressIsNonZero(newImplementationAddress_) {
-		// // #enable_asserts // #disable_smtchecker console.log("2 _authorizeUpgrade");
-
-		// [Comment-202606022]
-		// `initializeV2` is supposed to be already executed.
-		// [/Comment-202606022]
-		// Comment-202606024 applies.
-		// #enable_asserts assert(bidCstRewardAmountMultiplier == CosmicSignatureConstants.DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER);
+		// // #enable_asserts // #disable_smtchecker console.log("CosmicSignatureGameV2._authorizeUpgrade");
 	}
 
 	// #endregion

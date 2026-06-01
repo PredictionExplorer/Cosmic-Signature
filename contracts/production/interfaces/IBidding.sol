@@ -40,7 +40,7 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// @param randomWalkNftId Provided Random Walk NFT ID.
 	/// A negative value indicates that no Random Walk NFT was used.
 	/// @param message Comment-202503155 applies.
-	/// @param mainPrizeTime Comment-202605215 applies.
+	/// @param mainPrizeTime Comment-202412152 applies.
 	event BidPlaced(
 		uint256 indexed roundNum,
 		address indexed lastBidderAddress,
@@ -66,10 +66,10 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// [Comment-202605252]
 	/// This method gives the contract owner an option to encourage people to bid when the ETH Dutch auction has ended,
 	/// but nobody is willing to bid -- by reducing ETH bid price.
+	/// See important details in comments in this method body.
 	/// Only the contract owner is permitted to call this method.
 	/// [/Comment-202605252]
 	/// Comment-202508102 applies.
-	/// See important details in comments in this method body.
 	function halveEthDutchAuctionEndingBidPrice() external;
 
 	/// @notice
@@ -148,8 +148,6 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// An ETH bid with or without a Random Walk NFT price is guaranteed to be a nonzero.
 	/// `getEthPlusRandomWalkNftBidPrice` is guaranteed to return a nonzero, provided it's passed a nonzero.
 	/// A CST bid price can potentially be zero.
-	/// That said, given that we mint a nonzero CST reward for each bid, it's unlikely that the CST bid price will fall below that.
-	/// Although in V2+ the CST reward can occasionally be zero.
 	/// [/Comment-202503162]
 	function getNextEthBidPriceAdvanced(int256 currentTimeOffset_) external view returns (uint256);
 
@@ -164,7 +162,7 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// [Comment-202605263]
 	/// A tuple containing the total and elapsed durations of the current ETH Dutch auction.
 	/// The elapsed duration counts since the current bidding round activation. It can be negative.
-	/// It probably makes no sense to use it after the Dutch auction ends.
+	/// It probably makes no sense to use it after ETH Dutch auction ends.
 	/// [/Comment-202605263]
 	function getEthDutchAuctionDurations() external view returns (uint256, int256);
 
@@ -221,7 +219,8 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// @notice
 	/// [Comment-202605271]
 	/// Calculates the current price that a bidder is required to pay to place a CST bid.
-	/// The price decreases linearly over the Dutch auction duration.
+	/// The price declines linearly over CST Dutch auction duration.
+	/// In V2+, it also slightly declines on each ETH bid, as mentioned in Comment-202606101.
 	/// [/Comment-202605271]
 	/// See also: `getNextCstBidPrice`.
 	/// @param currentTimeOffset_ .

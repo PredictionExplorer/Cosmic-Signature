@@ -54,8 +54,8 @@ abstract contract MainPrizeBaseV2 is CosmicSignatureGameStorageV2, IMainPrizeBas
 		unchecked
 		// #enable_smtchecker */
 		{
-			uint256 mainPrizeCorrectedTime_ = Math.max(mainPrizeTime, block.timestamp);
 			uint256 mainPrizeTimeIncrement_ = getMainPrizeTimeIncrement();
+			uint256 mainPrizeCorrectedTime_ = Math.max(mainPrizeTime, block.timestamp);
 			mainPrizeTime = mainPrizeCorrectedTime_ + mainPrizeTimeIncrement_;
 		}
 	}

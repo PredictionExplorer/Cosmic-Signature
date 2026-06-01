@@ -114,6 +114,8 @@ const { assertEvent } = require("../../../src/ContractTestingHelpers.js");
 				"Transfer",
 
 				// Issue. If we burned a zero value, this event parameters make it appear that it was a mint, rather than a burn.
+				// todo-0 It's because of Comment-202606074.
+				// todo-0 Cross-ref and refactor to accommodate V2.
 				(value_ > 0n) ? [account_, hre.ethers.ZeroAddress, value_,] : [hre.ethers.ZeroAddress, account_, value_,]
 			);
 			++ eventIndexWrapper_.value;
