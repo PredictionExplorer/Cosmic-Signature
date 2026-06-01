@@ -175,7 +175,6 @@ abstract contract BiddingV2 is
 			// Comment-202605286 applies.
 		} else if (overpaidEthPrice_ > int256(0)) {
 			// Comment-202605288 applies.
-			// Comment-202502052 relates and/or applies.
 			{
 				// #enable_asserts assert(tx.gasprice > 0);
 				uint256 ethBidRefundAmountToSwallowMaxLimit_ = ethBidRefundAmountInGasToSwallowMaxLimit * tx.gasprice;

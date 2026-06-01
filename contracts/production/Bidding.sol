@@ -261,8 +261,8 @@ abstract contract Bidding is
 			// [Comment-202605288]
 			// If the bidder sent more ETH than required, but we are not going to refund the excess,
 			// treating the whole received amount as what they were supposed to send.
-			// [/Comment-202605288]
 			// Comment-202502052 relates and/or applies.
+			// [/Comment-202605288]
 			{
 				// #enable_asserts assert(tx.gasprice > 0);
 				uint256 ethBidRefundAmountToSwallowMaxLimit_ = ethBidRefundAmountInGasToSwallowMaxLimit * tx.gasprice;

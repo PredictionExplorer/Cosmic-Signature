@@ -68,7 +68,7 @@ contract CosmicSignatureGameV2 is
 	/// One might want to fully validate that condition here, but it's really unnecessary,
 	/// because it's guaranteed to be `true` on the mainnet.
 	/// Comment-202606084 relates.
-	function initializeV2() external override /*onlyOwner*/ _onlyIfPrevVersionWasInitialized() reinitializer(2) _onlyNonFirstRound() {
+	function initializeV2() external override /*onlyOwner*/ _onlyIfPrevVersionWasInitialized() reinitializer(uint64(2)) _onlyNonFirstRound() {
 		// // #enable_asserts // #disable_smtchecker console.log("CosmicSignatureGameV2.initializeV2");
 
 		cstDutchAuctionDuration = CosmicSignatureConstants.INITIAL_CST_DUTCH_AUCTION_DURATION;
@@ -89,7 +89,7 @@ contract CosmicSignatureGameV2 is
 	// #region `_checkIfPrevVersionWasInitialized`
 
 	function _checkIfPrevVersionWasInitialized() private view {
-		if ( ! (_getInitializedVersion() == 1) ) {
+		if ( ! (_getInitializedVersion() == uint64(1)) ) {
 			revert InvalidInitialization();
 		}
 	}

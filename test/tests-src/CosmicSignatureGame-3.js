@@ -38,7 +38,11 @@ describe("CosmicSignatureGame-3", function () {
 		expect(cosmicSignatureGame2ImplementationAddress_).not.equal(contracts_.cosmicSignatureGameImplementationAddress);
 		const cosmicSignatureGame2Implementation_ = cosmicSignatureGameOpenBidFactory_.attach(cosmicSignatureGame2ImplementationAddress_);
 		// await expect(cosmicSignatureGame2Proxy_.connect(contracts_.ownerSigner).initialize(contracts_.ownerSigner.address)).revertedWithCustomError(cosmicSignatureGame2Proxy_, "InvalidInitialization");
-		await expect(cosmicSignatureGame2Proxy_.connect(contracts_.ownerSigner).initializeV2()).revertedWithCustomError(cosmicSignatureGame2Proxy_, "InvalidInitialization");
+
+		// Issue. This does not revert, because of Comment-202606084.
+		// await expect(cosmicSignatureGame2Proxy_.connect(contracts_.ownerSigner).initializeV2()).revertedWithCustomError(cosmicSignatureGame2Proxy_, "InvalidInitialization");
+		await waitForTransactionReceipt(cosmicSignatureGame2Proxy_.connect(contracts_.ownerSigner).initializeV2());
+
 		// await expect(cosmicSignatureGame2Implementation_.connect(contracts_.ownerSigner).initialize(contracts_.ownerSigner.address)).revertedWithCustomError(cosmicSignatureGame2Implementation_, "InvalidInitialization");
 		await expect(cosmicSignatureGame2Implementation_.connect(contracts_.ownerSigner).initializeV2()).revertedWithCustomError(cosmicSignatureGame2Implementation_, "InvalidInitialization");
 		expect(await cosmicSignatureGame2Proxy_.timesEthBidPrice()).equal(3n);

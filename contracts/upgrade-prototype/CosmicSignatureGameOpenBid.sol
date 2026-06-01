@@ -72,7 +72,7 @@ contract CosmicSignatureGameOpenBid is
 	/// with a modifier like `_onlyIfPrevVersionWasInitialized`.
 	/// It's up to the contract owner performing the upgrade to not break things.
 	/// [/Comment-202606084]
-	function initializeV2() external override /*onlyOwner*/ reinitializer(_getInitializedVersion() + 1) {
+	function initializeV2() external override /*onlyOwner*/ reinitializer(uint64(uint256(_getInitializedVersion()) + 1)) {
 		// // #enable_asserts // #disable_smtchecker console.log("CosmicSignatureGameOpenBid.initializeV2");
 
 		timesEthBidPrice = 3;
