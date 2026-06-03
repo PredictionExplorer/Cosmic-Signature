@@ -135,6 +135,7 @@ contract CosmicSignatureGame is
 	/// to replace the contract in the middle of a bidding round, just in case a bug results in `claimMainPrize` reverting.
 	/// But such kind of feature would violate the principle of trustlessness.
 	/// [/Comment-202412188]
+	/// Comment-202606128 relates.
 	function _authorizeUpgrade(address newImplementationAddress_) internal view override onlyOwner _onlyRoundIsInactive {
 		// _providedAddressIsNonZero(newImplementationAddress_) {
 		// // #enable_asserts // #disable_smtchecker console.log("CosmicSignatureGame._authorizeUpgrade");

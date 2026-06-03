@@ -1,6 +1,6 @@
 "use strict";
 
-const { expect } = require("chai");
+const { assert: chaiAssert, expect } = require("chai");
 const hre = require("hardhat");
 const helpersModule = require("./Helpers.js");
 
@@ -24,7 +24,7 @@ async function beforeAll() {
 			// [Comment-202508223/]
 			const gasLimit_ = hre.network.config.gas;
 		
-			expect(typeof gasLimit_).equal("number");
+			chaiAssert.isNumber(gasLimit_);
 			const bigGasLimit_ = BigInt(gasLimit_);
 			hre.ethers.provider.estimateGas = async () => (/*test1("2"),*/ bigGasLimit_);
 		}

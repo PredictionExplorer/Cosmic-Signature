@@ -142,6 +142,7 @@ abstract contract CosmicSignatureGameStorageV2 is ICosmicSignatureGameStorage {
 	/// [Comment-202606057]
 	/// This occupies the same storage slot as `CosmicSignatureGameStorage.cstDutchAuctionDurationDivisor`.
 	/// [/Comment-202606057]
+	/// @custom:oz-renamed-from cstDutchAuctionDurationDivisor
 	uint256 public cstDutchAuctionDuration;
 
 	/// @notice Comment-202411066 applies.
@@ -174,6 +175,7 @@ abstract contract CosmicSignatureGameStorageV2 is ICosmicSignatureGameStorage {
 	/// [Comment-202606053]
 	/// This occupies the same storage slot as `CosmicSignatureGameStorage.bidCstRewardAmount`.
 	/// [/Comment-202606053]
+	/// @custom:oz-renamed-from bidCstRewardAmount
 	uint256 public bidCstRewardAmountMultiplier;
 
 	// #endregion
@@ -319,12 +321,12 @@ abstract contract CosmicSignatureGameStorageV2 is ICosmicSignatureGameStorage {
 	/// @dev Comment-202412142 applies.
 	/// Comment-202412148 applies.
 	// solhint-disable-next-line var-name-mixedcase
-	uint256[(1 << 255) - 1] private __gap_persistent;
+	uint256[(1 << 30) - 1] private __gap_persistent;
 
 	// todo-1 Transient storage is not yet supported for reference types.
 	/// @dev Comment-202412142 applies.
 	/// Comment-202412148 applies.
-	// uint256[1 << 255] private transient __gap_transient;
+	// uint256[1 << 30] private transient __gap_transient;
 	// solhint-disable-next-line var-name-mixedcase
 	uint256 private transient __gap_transient;
 

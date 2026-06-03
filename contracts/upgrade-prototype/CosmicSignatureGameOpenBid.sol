@@ -65,15 +65,23 @@ contract CosmicSignatureGameOpenBid is
 	// #endregion
 	// #region `initializeV2`
 
-	/// @dev
+	/// @dev Comment-202606128 applies.
 	/// [Comment-202606084]
-	/// Issue. It's unsafe to call `_getInitializedVersion` like this.
-	/// Instead, it would be better to hardcode a specific version number after validating the already initialized version number
+	/// Calling `_getInitializedVersion` like this allows `CosmicSignatureGameOpenBid` to be deployed as V2, V3,
+	/// or any other version.
+	/// Issue. But it's a bad idea to do this in a production contract.
+	/// Instead, hardcode a specific version number after validating the already initialized version number
 	/// with a modifier like `_onlyIfPrevVersionWasInitialized`.
-	/// It's up to the contract owner performing the upgrade to not break things.
+	/// But if you decide to use this code pattern, it will be up to the contract owner performing the upgrade to not break things.
+	/// Comment-202606126 relates.
 	/// [/Comment-202606084]
 	function initializeV2() external override /*onlyOwner*/ reinitializer(uint64(uint256(_getInitializedVersion()) + 1)) {
 		// // #enable_asserts // #disable_smtchecker console.log("CosmicSignatureGameOpenBid.initializeV2");
+
+		// Normally, `reinitializer` prevents a redundant initialization, but we disabled that validation near Comment-202606084.
+		if ( ! (timesEthBidPrice == 0) ) {
+			revert InvalidInitialization();
+		}
 
 		timesEthBidPrice = 3;
 	}
@@ -82,6 +90,7 @@ contract CosmicSignatureGameOpenBid is
 	// #region `_authorizeUpgrade`
 
 	/// @dev Comment-202412188 applies.
+	/// Comment-202606128 relates.
 	function _authorizeUpgrade(address newImplementationAddress_) internal view override onlyOwner _onlyRoundIsInactive {
 		// _providedAddressIsNonZero(newImplementationAddress_) {
 		// // #enable_asserts // #disable_smtchecker console.log("CosmicSignatureGameOpenBid._authorizeUpgrade");

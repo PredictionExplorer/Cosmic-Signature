@@ -36,6 +36,8 @@ const {
 const {
 	SKIP_LONG_TESTS,
 	loadFixtureDeployContractsForTesting,
+	tryWaitForTransactionReceipt,
+	isExpectedTransactionErrorObject,
 } = require("../../src/ContractTestingHelpers.js");
 
 // #endregion
@@ -292,7 +294,7 @@ function buildFuzzConfig(skipLongTests_) {
 }
 
 // #endregion
-// #region RNG and parsing
+// #region Parsing
 
 /**
  * @param {string | undefined} raw_
@@ -306,45 +308,13 @@ function parseFuzzSeedFromEnvironment(raw_) {
 	return BigInt.asUintN(256, BigInt(normalized_));
 }
 
-/**
- * Returns true if `error_` is a normal Hardhat VM revert from `fuzzTryWaitForTransactionReceipt`.
- * @param {unknown} error_
- */
-function isExpectedHardhatRevertError(error_) {
-	if ( ! (error_ instanceof Error) ) {
-		return false;
-	}
-	const message_ = error_.message ?? "";
-	return (
-		message_.startsWith("VM Exception while processing transaction: reverted") ||
-		message_.includes("Transaction reverted and Hardhat couldn't infer the reason")
-	);
-}
-
-/**
- * Like `fuzzTryWaitForTransactionReceipt` but accepts Hardhat's generic revert strings
- * (e.g. `randomWalkWithdraw` when the caller is not entitled), which do not always
- * include the classic `"VM Exception ... reverted with ..."` prefix.
- * @param {Promise<import("hardhat").ethers.TransactionResponse>} transactionResponsePromise_
- */
-async function fuzzTryWaitForTransactionReceipt(transactionResponsePromise_) {
-	try {
-		return await waitForTransactionReceipt(transactionResponsePromise_);
-	} catch (error_) {
-		if (isExpectedHardhatRevertError(error_)) {
-			return undefined;
-		}
-		throw error_;
-	}
-}
-
 // #endregion
 // #region Participant
 
 class Participant {
 	/**
 	 * @param {number} index_
-	 * @param {import("hardhat").ethers.Signer} signer_
+	 * @param {import("ethers").Signer} signer_
 	 * @param {Awaited<ReturnType<typeof loadFixtureDeployContractsForTesting>>} contracts_
 	 * @param {Record<string, number>} behaviorProfile_
 	 * @param {{ value: bigint }} randomSeedWrapper_
@@ -940,16 +910,16 @@ describe("FuzzTest", function () {
 		const randomNumberSeed_ = parsedSeed_ ?? generateRandomUInt256();
 		const randomSeedWrapper_ = { value: randomNumberSeed_ };
 
-		console.log("\n" + "═".repeat(80));
-		console.log("  COSMIC SIGNATURE — COMPREHENSIVE FUZZ TEST");
-		console.log("═".repeat(80));
-		console.log(`  SKIP_LONG_TESTS: ${SKIP_LONG_TESTS}`);
-		console.log(`  Rounds: ${fuzzConfig_.numRounds}`);
-		console.log(`  Participants: ${fuzzConfig_.numActiveParticipants}`);
-		console.log(`  Actions/participant/round (max): ~${fuzzConfig_.actionsPerParticipantPerRound * 2}`);
-		console.log(`  FUZZ_SEED env: ${envSeedRaw_ ? "set" : "unset"}`);
-		console.log(`  Random seed (uint256): ${uint256ToPaddedHexString(randomNumberSeed_)}`);
-		console.log("═".repeat(80));
+		console.info("\n" + "═".repeat(80));
+		console.info("  COSMIC SIGNATURE — COMPREHENSIVE FUZZ TEST");
+		console.info("═".repeat(80));
+		console.info(`  SKIP_LONG_TESTS: ${SKIP_LONG_TESTS}`);
+		console.info(`  Rounds: ${fuzzConfig_.numRounds}`);
+		console.info(`  Participants: ${fuzzConfig_.numActiveParticipants}`);
+		console.info(`  Actions/participant/round (max): ~${fuzzConfig_.actionsPerParticipantPerRound * 2}`);
+		console.info(`  FUZZ_SEED env: ${envSeedRaw_ ? "set" : "unset"}`);
+		console.info(`  Random seed (uint256): ${uint256ToPaddedHexString(randomNumberSeed_)}`);
+		console.info("═".repeat(80));
 
 		let randomNumber_ = generateRandomUInt256FromSeedWrapper(randomSeedWrapper_);
 		const roundActivationTimeOffset_ = randomNumber_ % 4096n - 1024n;
@@ -1037,7 +1007,7 @@ describe("FuzzTest", function () {
 			}
 
 			if (fuzzConfig_.verbosity >= 2) {
-				console.log(`  Participant ${i_}: ${signer_.address.slice(0, 10)}... (${profileName_})`);
+				console.info(`  Participant ${i_}: ${signer_.address.slice(0, 10)}... (${profileName_})`);
 			}
 		}
 
@@ -1329,7 +1299,7 @@ describe("FuzzTest", function () {
 							return false;
 						}
 						await advanceTime_(1, 120);
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(
+						const receipt_ = await tryWaitForTransactionReceipt(
 							participant_.gameProxy.bidWithEth(-1n, "", { value: 1n })
 						);
 						if (receipt_ === undefined) {
@@ -1345,7 +1315,7 @@ describe("FuzzTest", function () {
 						if (lastBidder_ === hre.ethers.ZeroAddress) {
 							return false;
 						}
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(participant_.gameProxy.claimMainPrize());
+						const receipt_ = await tryWaitForTransactionReceipt(participant_.gameProxy.claimMainPrize());
 						if (receipt_ === undefined) {
 							++ globalStats_.negativeProbesRevertedAsExpected;
 							++ participant_.stats.negativeProbesExpectedRevert;
@@ -1356,7 +1326,7 @@ describe("FuzzTest", function () {
 					case 2: {
 						// Unstake with a bogus action id (likely nonexistent / not owned).
 						const bogusId_ = participant_.random() % 1_000_000n + 500_000n;
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(
+						const receipt_ = await tryWaitForTransactionReceipt(
 							participant_.stakingWalletRandomWalkNft.unstake(bogusId_)
 						);
 						if (receipt_ === undefined) {
@@ -1377,7 +1347,7 @@ describe("FuzzTest", function () {
 						if (price_ === 0n) {
 							return false;
 						}
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(
+						const receipt_ = await tryWaitForTransactionReceipt(
 							participant_.gameProxy.bidWithCst(0n, "")
 						);
 						if (receipt_ === undefined) {
@@ -1389,7 +1359,7 @@ describe("FuzzTest", function () {
 					}
 					default: {
 						// Donate ETH with zero value (allowed) — not a revert; still exercises a boundary.
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(participant_.gameProxy.donateEth({ value: 0n }));
+						const receipt_ = await tryWaitForTransactionReceipt(participant_.gameProxy.donateEth({ value: 0n }));
 						if (receipt_) {
 							++ globalStats_.negativeProbesRevertedAsExpected; // count as "handled edge"
 							return true;
@@ -1398,7 +1368,7 @@ describe("FuzzTest", function () {
 					}
 				}
 			} catch (error_) {
-				if (isExpectedHardhatRevertError(error_)) {
+				if (isExpectedTransactionErrorObject(error_)) {
 					++ globalStats_.negativeProbesRevertedAsExpected;
 					++ participant_.stats.negativeProbesExpectedRevert;
 					return true;
@@ -1423,7 +1393,7 @@ describe("FuzzTest", function () {
 				switch (action_) {
 					case "mintRandomWalkNft": {
 						const mintPrice_ = await participant_.randomWalkNft.getMintPrice();
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(
+						const receipt_ = await tryWaitForTransactionReceipt(
 							participant_.randomWalkNft.mint({ value: mintPrice_ })
 						);
 						if (receipt_) {
@@ -1437,7 +1407,7 @@ describe("FuzzTest", function () {
 						if (nftId_ < 0n) {
 							break;
 						}
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(
+						const receipt_ = await tryWaitForTransactionReceipt(
 							participant_.stakingWalletRandomWalkNft.stake(nftId_)
 						);
 						if (receipt_) {
@@ -1451,7 +1421,7 @@ describe("FuzzTest", function () {
 						if (actionId_ < 0n) {
 							break;
 						}
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(
+						const receipt_ = await tryWaitForTransactionReceipt(
 							participant_.stakingWalletRandomWalkNft.unstake(actionId_)
 						);
 						if (receipt_) {
@@ -1464,7 +1434,7 @@ describe("FuzzTest", function () {
 						if (ids_.length === 0) {
 							break;
 						}
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(
+						const receipt_ = await tryWaitForTransactionReceipt(
 							participant_.stakingWalletRandomWalkNft.stakeMany(ids_)
 						);
 						if (receipt_) {
@@ -1478,7 +1448,7 @@ describe("FuzzTest", function () {
 						if (ids_.length === 0) {
 							break;
 						}
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(
+						const receipt_ = await tryWaitForTransactionReceipt(
 							participant_.stakingWalletRandomWalkNft.unstakeMany(ids_)
 						);
 						if (receipt_) {
@@ -1491,7 +1461,7 @@ describe("FuzzTest", function () {
 						if (nftId_ < 0n) {
 							break;
 						}
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(
+						const receipt_ = await tryWaitForTransactionReceipt(
 							participant_.stakingWalletCosmicSignatureNft.stake(nftId_)
 						);
 						if (receipt_) {
@@ -1506,7 +1476,7 @@ describe("FuzzTest", function () {
 							break;
 						}
 						const balanceBefore_ = await hre.ethers.provider.getBalance(participant_.address);
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(
+						const receipt_ = await tryWaitForTransactionReceipt(
 							participant_.stakingWalletCosmicSignatureNft.unstake(actionId_)
 						);
 						if (receipt_) {
@@ -1524,7 +1494,7 @@ describe("FuzzTest", function () {
 						if (ids_.length === 0) {
 							break;
 						}
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(
+						const receipt_ = await tryWaitForTransactionReceipt(
 							participant_.stakingWalletCosmicSignatureNft.stakeMany(ids_)
 						);
 						if (receipt_) {
@@ -1538,7 +1508,7 @@ describe("FuzzTest", function () {
 						if (ids_.length === 0) {
 							break;
 						}
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(
+						const receipt_ = await tryWaitForTransactionReceipt(
 							participant_.stakingWalletCosmicSignatureNft.unstakeMany(ids_)
 						);
 						if (receipt_) {
@@ -1551,7 +1521,7 @@ describe("FuzzTest", function () {
 						const bidPrice_ = await participant_.gameProxy.getNextEthBidPrice();
 						const valueToSend_ = bidPrice_ + bidPrice_ / 5n;
 						const message_ = participant_.generateMessage();
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(
+						const receipt_ = await tryWaitForTransactionReceipt(
 							participant_.gameProxy.bidWithEth(-1n, message_, { value: valueToSend_ })
 						);
 						if (receipt_) {
@@ -1572,7 +1542,7 @@ describe("FuzzTest", function () {
 						const discountedPrice_ = bidPrice_ / 2n;
 						const valueToSend_ = discountedPrice_ + discountedPrice_ / 5n;
 						const message_ = participant_.generateMessage();
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(
+						const receipt_ = await tryWaitForTransactionReceipt(
 							participant_.gameProxy.bidWithEth(nftId_, message_, { value: valueToSend_ })
 						);
 						if (receipt_) {
@@ -1587,7 +1557,7 @@ describe("FuzzTest", function () {
 						await advanceTime_(1, 600);
 						const bidPrice_ = await participant_.gameProxy.getNextEthBidPrice();
 						const valueToSend_ = bidPrice_ + bidPrice_ / 5n;
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(
+						const receipt_ = await tryWaitForTransactionReceipt(
 							participant_.signer.sendTransaction({
 								to: contracts_.cosmicSignatureGameProxyAddress,
 								value: valueToSend_,
@@ -1607,7 +1577,7 @@ describe("FuzzTest", function () {
 						const valueToSend_ = bidPrice_ + bidPrice_ / 5n;
 						const message_ = participant_.generateMessage();
 						const donateAmount_ = participant_.random() % (10n ** 15n) + 1n; // small
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(
+						const receipt_ = await tryWaitForTransactionReceipt(
 							participant_.gameProxy.bidWithEthAndDonateToken(
 								-1n,
 								message_,
@@ -1638,7 +1608,7 @@ describe("FuzzTest", function () {
 						const discountedPrice_ = bidPrice_ / 2n;
 						const valueToSend_ = discountedPrice_ + discountedPrice_ / 5n;
 						const message_ = participant_.generateMessage();
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(
+						const receipt_ = await tryWaitForTransactionReceipt(
 							participant_.gameProxy.bidWithEthAndDonateNft(
 								nftBid_,
 								message_,
@@ -1671,7 +1641,7 @@ describe("FuzzTest", function () {
 							cstPrice_ === 0n
 								? hre.ethers.MaxUint256
 								: cstPrice_ + (participant_.random() % (cstPrice_ + 1n));
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(
+						const receipt_ = await tryWaitForTransactionReceipt(
 							participant_.gameProxy.bidWithCst(maxPrice_, message_)
 						);
 						if (receipt_) {
@@ -1694,7 +1664,7 @@ describe("FuzzTest", function () {
 							break;
 						}
 						const donateAmount_ = participant_.random() % (10n ** 15n) + 1n;
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(
+						const receipt_ = await tryWaitForTransactionReceipt(
 							participant_.gameProxy.bidWithCstAndDonateToken(
 								hre.ethers.MaxUint256,
 								participant_.generateMessage(),
@@ -1724,7 +1694,7 @@ describe("FuzzTest", function () {
 						if (cstBalance_ < cstPrice_) {
 							break;
 						}
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(
+						const receipt_ = await tryWaitForTransactionReceipt(
 							participant_.gameProxy.bidWithCstAndDonateNft(
 								hre.ethers.MaxUint256,
 								participant_.generateMessage(),
@@ -1753,7 +1723,7 @@ describe("FuzzTest", function () {
 							await hre.ethers.provider.send("evm_mine");
 						}
 						const balanceBefore_ = await hre.ethers.provider.getBalance(participant_.address);
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(participant_.gameProxy.claimMainPrize());
+						const receipt_ = await tryWaitForTransactionReceipt(participant_.gameProxy.claimMainPrize());
 						if (receipt_) {
 							const balanceAfter_ = await hre.ethers.provider.getBalance(participant_.address);
 							const earned_ = balanceAfter_ - balanceBefore_;
@@ -1776,7 +1746,7 @@ describe("FuzzTest", function () {
 							});
 							if (fuzzConfig_.verbosity >= 1) {
 								const newRound_ = await contracts_.cosmicSignatureGameProxy.roundNum();
-								console.log(`    ★ Participant ${participant_.index} claimed main prize; on-chain round now ${newRound_}`);
+								console.info(`    ★ Participant ${participant_.index} claimed main prize; on-chain round now ${newRound_}`);
 							}
 							return true;
 						}
@@ -1792,7 +1762,7 @@ describe("FuzzTest", function () {
 						if (prizeBalance_ <= 0n) {
 							break;
 						}
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(participant_.prizesWallet.withdrawEth(prizeRound_));
+						const receipt_ = await tryWaitForTransactionReceipt(participant_.prizesWallet.withdrawEth(prizeRound_));
 						if (receipt_) {
 							participant_.stats.ethEarned += prizeBalance_;
 							return await markSuccess_(action_, participant_, receipt_);
@@ -1815,7 +1785,7 @@ describe("FuzzTest", function () {
 						if (rounds_.length === 0) {
 							break;
 						}
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(participant_.prizesWallet.withdrawEthMany(rounds_));
+						const receipt_ = await tryWaitForTransactionReceipt(participant_.prizesWallet.withdrawEthMany(rounds_));
 						if (receipt_) {
 							return await markSuccess_(action_, participant_, receipt_);
 						}
@@ -1844,7 +1814,7 @@ describe("FuzzTest", function () {
 						if (pending_ <= 0n) {
 							break;
 						}
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(
+						const receipt_ = await tryWaitForTransactionReceipt(
 							participant_.prizesWallet.getFunction("withdrawEth(uint256,address)")(prizeRound_, beneficiary_)
 						);
 						if (receipt_) {
@@ -1864,7 +1834,7 @@ describe("FuzzTest", function () {
 								}
 							}
 						}
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(
+						const receipt_ = await tryWaitForTransactionReceipt(
 							participant_.prizesWallet.withdrawEverything(ethRounds_, [], [])
 						);
 						if (receipt_) {
@@ -1882,7 +1852,7 @@ describe("FuzzTest", function () {
 						if (bal_ <= 0n) {
 							break;
 						}
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(
+						const receipt_ = await tryWaitForTransactionReceipt(
 							participant_.prizesWallet.claimDonatedToken(roundPick_, fuzzTestMockErc20Address_, 0n)
 						);
 						if (receipt_) {
@@ -1901,7 +1871,7 @@ describe("FuzzTest", function () {
 							break;
 						}
 						const struct_ = { roundNum: roundPick_, tokenAddress: fuzzTestMockErc20Address_, amount: 0n };
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(
+						const receipt_ = await tryWaitForTransactionReceipt(
 							participant_.prizesWallet.claimManyDonatedTokens([struct_])
 						);
 						if (receipt_) {
@@ -1915,7 +1885,7 @@ describe("FuzzTest", function () {
 							break;
 						}
 						const index_ = participant_.random() % nextIdx_;
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(participant_.prizesWallet.claimDonatedNft(index_));
+						const receipt_ = await tryWaitForTransactionReceipt(participant_.prizesWallet.claimDonatedNft(index_));
 						if (receipt_) {
 							return await markSuccess_(action_, participant_, receipt_);
 						}
@@ -1927,7 +1897,7 @@ describe("FuzzTest", function () {
 							break;
 						}
 						const index_ = participant_.random() % nextIdx_;
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(
+						const receipt_ = await tryWaitForTransactionReceipt(
 							participant_.prizesWallet.claimManyDonatedNfts([index_])
 						);
 						if (receipt_) {
@@ -1937,7 +1907,7 @@ describe("FuzzTest", function () {
 					}
 					case "donateEth": {
 						const amount_ = (participant_.random() % (10n ** 17n)) + 10n ** 15n;
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(
+						const receipt_ = await tryWaitForTransactionReceipt(
 							participant_.gameProxy.donateEth({ value: amount_ })
 						);
 						if (receipt_) {
@@ -1949,7 +1919,7 @@ describe("FuzzTest", function () {
 					case "donateEthWithInfo": {
 						const amount_ = (participant_.random() % (10n ** 17n)) + 10n ** 15n;
 						const message_ = participant_.generateMessage();
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(
+						const receipt_ = await tryWaitForTransactionReceipt(
 							participant_.gameProxy.donateEthWithInfo(message_, { value: amount_ })
 						);
 						if (receipt_) {
@@ -1959,7 +1929,7 @@ describe("FuzzTest", function () {
 						break;
 					}
 					case "donateEthZero": {
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(participant_.gameProxy.donateEth({ value: 0n }));
+						const receipt_ = await tryWaitForTransactionReceipt(participant_.gameProxy.donateEth({ value: 0n }));
 						if (receipt_) {
 							return await markSuccess_(action_, participant_, receipt_);
 						}
@@ -1981,7 +1951,7 @@ describe("FuzzTest", function () {
 								if (owner_ !== participant_.address) {
 									continue;
 								}
-								const receipt_ = await fuzzTryWaitForTransactionReceipt(
+								const receipt_ = await tryWaitForTransactionReceipt(
 									participant_.randomWalkNft.transferFrom(participant_.address, other_.address, nftId_)
 								);
 								if (receipt_) {
@@ -2013,7 +1983,7 @@ describe("FuzzTest", function () {
 								if ( ! isNftSlotUnused_(used_)) {
 									continue;
 								}
-								const receipt_ = await fuzzTryWaitForTransactionReceipt(
+								const receipt_ = await tryWaitForTransactionReceipt(
 									participant_.cosmicSignatureNft.transferFrom(participant_.address, other_.address, nftId_)
 								);
 								if (receipt_) {
@@ -2035,7 +2005,7 @@ describe("FuzzTest", function () {
 							break;
 						}
 						const amount_ = (participant_.random() % (balance_ / 10n)) + 10n ** 18n;
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(
+						const receipt_ = await tryWaitForTransactionReceipt(
 							participant_.cosmicSignatureToken.transfer(other_.address, amount_)
 						);
 						if (receipt_) {
@@ -2053,7 +2023,7 @@ describe("FuzzTest", function () {
 							break;
 						}
 						const per_ = 10n ** 18n;
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(
+						const receipt_ = await tryWaitForTransactionReceipt(
 							participant_.cosmicSignatureToken.getFunction("transferMany(address[],uint256)")(
 								others_.map((p_) => p_.address),
 								per_
@@ -2065,7 +2035,7 @@ describe("FuzzTest", function () {
 						break;
 					}
 					case "cstDelegateSelf": {
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(
+						const receipt_ = await tryWaitForTransactionReceipt(
 							participant_.cosmicSignatureToken.delegate(participant_.address)
 						);
 						if (receipt_) {
@@ -2082,7 +2052,7 @@ describe("FuzzTest", function () {
 						if (burnAmt_ === 0n) {
 							break;
 						}
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(participant_.cosmicSignatureToken.burn(burnAmt_));
+						const receipt_ = await tryWaitForTransactionReceipt(participant_.cosmicSignatureToken.burn(burnAmt_));
 						if (receipt_) {
 							return await markSuccess_(action_, participant_, receipt_);
 						}
@@ -2100,7 +2070,7 @@ describe("FuzzTest", function () {
 								break;
 							}
 							const name_ = participant_.generateMessage(64);
-							const receipt_ = await fuzzTryWaitForTransactionReceipt(
+							const receipt_ = await tryWaitForTransactionReceipt(
 								participant_.cosmicSignatureNft.setNftName(nftId_, name_)
 							);
 							if (receipt_) {
@@ -2123,7 +2093,7 @@ describe("FuzzTest", function () {
 								break;
 							}
 							const name_ = participant_.generateMessage(40);
-							const receipt_ = await fuzzTryWaitForTransactionReceipt(
+							const receipt_ = await tryWaitForTransactionReceipt(
 								participant_.randomWalkNft.setTokenName(nftId_, name_)
 							);
 							if (receipt_) {
@@ -2135,14 +2105,14 @@ describe("FuzzTest", function () {
 						break;
 					}
 					case "randomWalkWithdraw": {
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(participant_.randomWalkNft.withdraw());
+						const receipt_ = await tryWaitForTransactionReceipt(participant_.randomWalkNft.withdraw());
 						if (receipt_) {
 							return await markSuccess_(action_, participant_, receipt_);
 						}
 						break;
 					}
 					case "charityWalletSend": {
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(
+						const receipt_ = await tryWaitForTransactionReceipt(
 							participant_.charityWallet.getFunction("send()")()
 						);
 						if (receipt_) {
@@ -2153,7 +2123,7 @@ describe("FuzzTest", function () {
 					case "charityWalletSendAmount": {
 						const bal_ = await hre.ethers.provider.getBalance(contracts_.charityWalletAddress);
 						const amount_ = bal_ > 2n ? bal_ / 3n : 0n;
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(
+						const receipt_ = await tryWaitForTransactionReceipt(
 							participant_.charityWallet.getFunction("send(uint256)")(amount_)
 						);
 						if (receipt_) {
@@ -2163,7 +2133,7 @@ describe("FuzzTest", function () {
 					}
 					case "marketingWalletPayReward": {
 						const amt_ = participant_.random() % (10n ** 18n);
-						const receipt_ = await fuzzTryWaitForTransactionReceipt(
+						const receipt_ = await tryWaitForTransactionReceipt(
 							contracts_.marketingWallet.connect(contracts_.treasurerSigner).payReward(participant_.address, amt_)
 						);
 						if (receipt_) {
@@ -2182,7 +2152,7 @@ describe("FuzzTest", function () {
 						const proposalCallData_ = contracts_.cosmicSignatureDao.interface.encodeFunctionData("setVotingDelay", [newDelay_]);
 						const description_ = "FuzzTest: setVotingDelay";
 						const descriptionHash_ = hre.ethers.id(description_);
-						const receiptProp_ = await fuzzTryWaitForTransactionReceipt(
+						const receiptProp_ = await tryWaitForTransactionReceipt(
 							daoConn_.propose([daoAddr_], [0n], [proposalCallData_], description_)
 						);
 						if ( ! receiptProp_) {
@@ -2204,9 +2174,9 @@ describe("FuzzTest", function () {
 							break;
 						}
 						await hre.ethers.provider.send("evm_increaseTime", [Number(votingDelay_) + 1]);
-						await fuzzTryWaitForTransactionReceipt(daoConn_.castVote(proposalId_, 1));
+						await tryWaitForTransactionReceipt(daoConn_.castVote(proposalId_, 1));
 						await hre.ethers.provider.send("evm_increaseTime", [Number(votingPeriod_) + 1]);
-						const receiptExec_ = await fuzzTryWaitForTransactionReceipt(
+						const receiptExec_ = await tryWaitForTransactionReceipt(
 							daoConn_.execute([daoAddr_], [0n], [proposalCallData_], descriptionHash_)
 						);
 						if (receiptExec_) {
@@ -2221,7 +2191,7 @@ describe("FuzzTest", function () {
 			} catch (error_) {
 				++ globalStats_.failedActions;
 				// Hardhat reverts are expected in fuzzing; anything else is surfaced loudly.
-				if ( ! isExpectedHardhatRevertError(error_)) {
+				if ( ! isExpectedTransactionErrorObject(error_)) {
 					console.error(`Unexpected error in action=${action_}: ${/** @type {Error} */ (error_).message}`);
 					throw error_;
 				}
@@ -2234,7 +2204,7 @@ describe("FuzzTest", function () {
 			const sgn_ = contracts_.signers[sIdx_];
 			await waitForTransactionReceipt(contracts_.cosmicSignatureToken.connect(sgn_).delegate(sgn_.address));
 			for (let b_ = 0; b_ < 6; ++ b_) {
-				await fuzzTryWaitForTransactionReceipt(
+				await tryWaitForTransactionReceipt(
 					contracts_.cosmicSignatureGameProxy.connect(sgn_).bidWithEth(-1n, "", { value: 10n ** 18n })
 				);
 			}
@@ -2252,7 +2222,7 @@ describe("FuzzTest", function () {
 			await hre.ethers.provider.send("evm_mine");
 			const lastBidderParticipant_ = participants_.find((p_) => p_.address === lastBidder_);
 			if (lastBidderParticipant_) {
-				const receipt_ = await fuzzTryWaitForTransactionReceipt(lastBidderParticipant_.gameProxy.claimMainPrize());
+				const receipt_ = await tryWaitForTransactionReceipt(lastBidderParticipant_.gameProxy.claimMainPrize());
 				if ( ! receipt_) {
 					return false;
 				}
@@ -2276,7 +2246,7 @@ describe("FuzzTest", function () {
 		// #endregion
 		// #region Main loop
 
-		console.log("\n  Starting simulation…\n");
+		console.info("\n  Starting simulation…\n");
 		const startMs_ = Date.now();
 		let lastProgressUpdate_ = 0;
 
@@ -2284,7 +2254,7 @@ describe("FuzzTest", function () {
 			if (fuzzConfig_.verbosity >= 1 && roundIndex_ - lastProgressUpdate_ >= 10) {
 				const elapsedSec_ = ((Date.now() - startMs_) / 1000).toFixed(1);
 				const currentGameRound_ = await contracts_.cosmicSignatureGameProxy.roundNum();
-				console.log(
+				console.info(
 					`  [${elapsedSec_}s] fuzzRound ${roundIndex_ + 1}/${fuzzConfig_.numRounds} | ` +
 					`chainRound ${currentGameRound_} | actions ${globalStats_.totalActions} | invariants ${globalStats_.invariantChecks}`
 				);
@@ -2327,7 +2297,7 @@ describe("FuzzTest", function () {
 			if (await tryCompleteRound_()) {
 				if (fuzzConfig_.verbosity >= 1) {
 					const newRound_ = await contracts_.cosmicSignatureGameProxy.roundNum();
-					console.log(`    → Completed on-chain round ${newRound_ - 1n}`);
+					console.info(`    → Completed on-chain round ${newRound_ - 1n}`);
 				}
 			}
 		}
@@ -2338,27 +2308,27 @@ describe("FuzzTest", function () {
 		await runProtocolInvariants(contracts_, participants_, baselineRound_, rewardPerStakedSnapshotWrapper_);
 
 		const elapsedSecFinal_ = ((Date.now() - startMs_) / 1000).toFixed(1);
-		console.log("\n" + "═".repeat(80));
-		console.log("  FUZZ TEST COMPLETE");
-		console.log("═".repeat(80));
-		console.log(`  Duration: ${elapsedSecFinal_}s`);
-		console.log(
+		console.info("\n" + "═".repeat(80));
+		console.info("  FUZZ TEST COMPLETE");
+		console.info("═".repeat(80));
+		console.info(`  Duration: ${elapsedSecFinal_}s`);
+		console.info(
 			`  Actions: total=${globalStats_.totalActions} ok=${globalStats_.successfulActions} ` +
 			`failClassified=${globalStats_.failedActions} invariants=${globalStats_.invariantChecks}`
 		);
-		console.log(
+		console.info(
 			`  Negative probes: ${globalStats_.negativeProbes} (expected-style outcomes: ${globalStats_.negativeProbesRevertedAsExpected})`
 		);
-		console.log(`  On-chain rounds completed (claim counter): ${globalStats_.roundsCompleted}`);
+		console.info(`  On-chain rounds completed (claim counter): ${globalStats_.roundsCompleted}`);
 
 		const sortedActions_ = Object.entries(globalStats_.actionCounts)
 			.filter(([, c_]) => c_.attempted > 0)
 			.sort((a_, b_) => b_[1].attempted - a_[1].attempted);
-		console.log("\n  ACTION BREAKDOWN (sample):");
+		console.info("\n  ACTION BREAKDOWN (sample):");
 		for (const [name_, counts_] of sortedActions_.slice(0, 40)) {
 			const rate_ =
 				counts_.attempted > 0 ? ((counts_.succeeded / counts_.attempted) * 100).toFixed(1) : "0.0";
-			console.log(`    ${name_.padEnd(36)} ${String(counts_.succeeded).padStart(5)} / ${String(counts_.attempted).padStart(5)} (${rate_}%)`);
+			console.info(`    ${name_.padEnd(36)} ${String(counts_.succeeded).padStart(5)} / ${String(counts_.attempted).padStart(5)} (${rate_}%)`);
 		}
 
 		expect(globalStats_.totalActions).to.be.greaterThan(0);

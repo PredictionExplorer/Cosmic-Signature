@@ -22,7 +22,7 @@
 // 	// Comment-202502096 applies.
 // 	const cosmicSignatureGameOpenBidFactory = await hre.ethers.getContractFactory("CosmicSignatureGameOpenBid");
 //
-// 	const cosmicSignatureGame2Proxy =
+// 	const cosmicSignatureGameOpenBidProxy =
 // 		await hre.upgrades.upgradeProxy(
 // 			cosmicSignatureGameProxy,
 // 			cosmicSignatureGameOpenBidFactory,
@@ -31,11 +31,11 @@
 // 				call: "initializeV2",
 // 			}
 // 		);
-// 	// await cosmicSignatureGame2Proxy.waitForDeployment();
+// 	// await cosmicSignatureGameOpenBidProxy.waitForDeployment();
 // 	// todo-9 Should we call `safeErc1967GetChangedImplementationAddress` instead?
-// 	const cosmicSignatureGame2ImplementationAddress = await hre.upgrades.erc1967.getImplementationAddress(cosmicSignatureGameProxyAddress);
-// 	console.info("%s", `Implementation address = ${cosmicSignatureGame2ImplementationAddress}`);
-// 	console.info("%s", `timesEthBidPrice = ${await cosmicSignatureGame2Proxy.timesEthBidPrice({blockTag: "pending",})}`);
+// 	const cosmicSignatureGameOpenBidImplementationAddress = await hre.upgrades.erc1967.getImplementationAddress(cosmicSignatureGameProxyAddress);
+// 	console.info("%s", `Implementation address = ${cosmicSignatureGameOpenBidImplementationAddress}`);
+// 	console.info("%s", `timesEthBidPrice = ${await cosmicSignatureGameOpenBidProxy.timesEthBidPrice({blockTag: "pending",})}`);
 // }
 
 // main()

@@ -394,7 +394,7 @@ describe("PrizesWallet-1", function () {
 
 				if ( ! (transactionBlock_.timestamp >= Number(prizeRoundTimeoutTimeToWithdrawPrizes_) && prizeRoundTimeoutTimeToWithdrawPrizes_ > 0n) ) {
 					// console.info("%s", "202506094");
-					expect(transactionReceipt_ !== undefined).false;
+					expect(transactionReceipt_).undefined;
 					await expect(transactionResponsePromise_)
 						.revertedWithCustomError(newPrizesWallet_, "EthWithdrawalDenied")
 						.withArgs(
@@ -413,7 +413,7 @@ describe("PrizesWallet-1", function () {
 					// 	console.info("%s", `202506174 ${(( ++ testCounter6_ ) / testCounter5_).toPrecision(2)}`);
 					// }
 
-					expect(transactionReceipt_ !== undefined).true;
+					expect(transactionReceipt_).not.undefined;
 					await expect(transactionResponsePromise_)
 						.emit(newPrizesWallet_, "EthWithdrawn")
 						.withArgs(prizeRoundNum_, contracts_.signers[prizeWinnerIndex_].address, contracts_.signers[strangerIndex_].address, ethBalanceAmounts_[prizeWinnerIndex_][Number(prizeRoundNum_)]);

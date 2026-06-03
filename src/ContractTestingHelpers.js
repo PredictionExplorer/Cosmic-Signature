@@ -5,7 +5,7 @@
 // #endregion
 // #region
 
-const { expect } = require("chai");
+const { assert: chaiAssert, expect } = require("chai");
 const hre = require("hardhat");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { parseBooleanEnvironmentVariable, sleepForMilliSeconds, waitForTransactionReceipt } = require("./Helpers.js");
@@ -187,7 +187,7 @@ async function hackPrepareHardhatCoverageOnceIfNeeded() {
 	// console.info("%s", "202508263");
 	preparedHardhatCoverage = true;
 
-	expect(typeof hre.network.config.gas).equal("number");
+	chaiAssert.isNumber(hre.network.config.gas);
 	expect(hre.network.config.gas).not.equal(gas);
 	hre.network.config.gas = gas;
 
@@ -211,8 +211,8 @@ async function storeContractDeployedByteCodeAtAddress(contractName, address) {
 // #region `assertAddressIsValid`
 
 /**
- * @param {string} address 
- */
+@param {string} address 
+*/
 function assertAddressIsValid(address) {
 	expect(address).not.equal(hre.ethers.ZeroAddress);
 	expect(address).properAddress;
@@ -222,13 +222,13 @@ function assertAddressIsValid(address) {
 // #region `tryWaitForTransactionReceipt`
 
 /**
- * @param {Promise<import("hardhat").ethers.TransactionResponse>} transactionResponsePromise
- */
+@param {Promise<import("hardhat").ethers.TransactionResponse>} transactionResponsePromise
+*/
 async function tryWaitForTransactionReceipt(transactionResponsePromise) {
 	try {
 		return await waitForTransactionReceipt(transactionResponsePromise);
-	} catch (transactionErrorObject) {
-		checkTransactionErrorObject(transactionErrorObject);
+	} catch (errorObject) {
+		checkTransactionErrorObject(errorObject);
 	}
 	return undefined;
 }
@@ -236,15 +236,41 @@ async function tryWaitForTransactionReceipt(transactionResponsePromise) {
 // #endregion
 // #region `checkTransactionErrorObject`
 
-/** Comment-202508253 relates. */
-function checkTransactionErrorObject(transactionErrorObject) {
-	{
-		const weExpectThisError = transactionErrorObject.message.startsWith("VM Exception while processing transaction: reverted with ");
-		if ( ! weExpectThisError ) {
-			throw transactionErrorObject;
-		}
+/**
+Comment-202508253 relates.
+@param {unknown} errorObject
+*/
+function checkTransactionErrorObject(errorObject) {
+	const errorIsExpected = isExpectedTransactionErrorObject(errorObject);
+	if ( ! errorIsExpected ) {
+		throw errorObject;
 	}
-	expect(transactionErrorObject.receipt).equal(undefined);
+}
+
+// #endregion
+// #region `isExpectedTransactionErrorObject`
+
+/**
+@returns `true` if `errorObject` is a normal Hardhat VM transaction revert.
+@param {unknown} errorObject
+*/
+function isExpectedTransactionErrorObject(errorObject) {
+	if ( ! (errorObject instanceof Error) ) {
+		return false;
+	}
+	const message = errorObject.message;
+	if ( ! message ) {
+		return false;
+	}
+	const errorIsExpected =
+		message.startsWith("VM Exception while processing transaction: reverted ") ||
+		message.startsWith("Transaction reverted ");
+	if (errorIsExpected) {
+		expect(errorObject.receipt).undefined;
+	} else {
+		// console.error("<%s>", message);
+	}
+	return errorIsExpected;
 }
 
 // #endregion
@@ -272,8 +298,8 @@ function assertEvent(event, contract, eventName, eventArgs) {
  * @param {number} currentSecondRemainingDurationMinLimitInMilliSeconds
  */
 async function makeNextBlockTimeDeterministic(currentSecondRemainingDurationMinLimitInMilliSeconds = 300) {
-	const currentDateTime = Date.now();
-	const currentSecondElapsedDurationInMilliSeconds = currentDateTime % 1000;
+	const currentDateTimeInMilliSeconds = Date.now();
+	const currentSecondElapsedDurationInMilliSeconds = currentDateTimeInMilliSeconds % 1000;
 	const currentSecondRemainingDurationInMilliSeconds = 1000 - currentSecondElapsedDurationInMilliSeconds;
 	let secondBeginningReachCount;
 	if (currentSecondRemainingDurationInMilliSeconds < currentSecondRemainingDurationMinLimitInMilliSeconds) {
@@ -346,6 +372,7 @@ module.exports = {
 	assertAddressIsValid,
 	tryWaitForTransactionReceipt,
 	checkTransactionErrorObject,
+	isExpectedTransactionErrorObject,
 	assertEvent,
 	makeNextBlockTimeDeterministic,
 	generateRandomUInt256Seed,

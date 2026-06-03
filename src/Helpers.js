@@ -42,13 +42,27 @@ switch (HARDHAT_MODE_CODE) {
 	}
 }
 
+// Disable Hardhat Preprocessor by not setting or setting to "false" this environment variable
+// when running any Hardhat task against a mainnet.
+// It's to eliminate the risk of Hardhat Preprocessor bugs breaking things.
+// If you forget to, we will throw an error near Comment-202408261.
+// Comment-202408155 relates.
+// Comment-202410099 relates.
+const ENABLE_HARDHAT_PREPROCESSOR = parseBooleanEnvironmentVariable("ENABLE_HARDHAT_PREPROCESSOR", false);
+
+// [Comment-202408155]
+// This environment variable is ignored and assumed to be `false` when `! ENABLE_HARDHAT_PREPROCESSOR`.
+// [/Comment-202408155]
+// Comment-202408156 relates and/or applies.
+const ENABLE_ASSERTS = ENABLE_HARDHAT_PREPROCESSOR && parseBooleanEnvironmentVariable("ENABLE_ASSERTS", false);
+
 // #endregion
 // #region `shuffleArray`
 
 /**
- * Randomly shuffles the given array using the Fisher-Yates (Knuth) Shuffle algorithm.
- * @param {array} array_
- */
+Randomly shuffles the given array using the Fisher-Yates (Knuth) Shuffle algorithm.
+@param {array} array_
+*/
 function shuffleArray(array_) {
 	for (let index1_ = array_.length; index1_ >= 2; ) {
 		const index2_ = generateRandomUInt32() % index1_;
@@ -111,9 +125,9 @@ function generateRandomUInt256FromSeedWrapper(seedWrapper_) {
 // #region `generateRandomUInt256FromSeed`
 
 /**
- * Comment-202504063 applies.
- * @param {bigint} seed_
- */
+Comment-202504063 applies.
+@param {bigint} seed_
+*/
 function generateRandomUInt256FromSeed(seed_) {
 	return calculateUInt256HashSumOf(seed_);
 }
@@ -122,9 +136,9 @@ function generateRandomUInt256FromSeed(seed_) {
 // #region `calculateUInt256HashSumOf`
 
 /**
- * Comment-202504061 applies.
- * @param {bigint} value_
- */
+Comment-202504061 applies.
+@param {bigint} value_
+*/
 function calculateUInt256HashSumOf(value_) {
 	// Comment-202409255 applies.
 	const hre = HardhatContext.getHardhatContext().environment;
@@ -138,8 +152,8 @@ function calculateUInt256HashSumOf(value_) {
 // #region `generateAccountPrivateKeyFromSeed`
 
 /**
- * @param {bigint} seed_
- */
+@param {bigint} seed_
+*/
 function generateAccountPrivateKeyFromSeed(seed_) {
 	const accountPrivateKeyAsBigInt_ = generateRandomUInt256FromSeed(seed_);
 	const accountPrivateKeyAsString_ = uint256ToPaddedHexString(accountPrivateKeyAsBigInt_);
@@ -150,11 +164,11 @@ function generateAccountPrivateKeyFromSeed(seed_) {
 // #region `parseBooleanEnvironmentVariable`
 
 /**
- * @param {string?} environmentVariableName_
- * @param {boolean} defaultValue_
- * @returns {boolean}
- * @throws {Error}
- */
+@param {string?} environmentVariableName_
+@param {boolean} defaultValue_
+@returns {boolean}
+@throws {Error}
+*/
 function parseBooleanEnvironmentVariable(environmentVariableName_, defaultValue_) {
 	const rawValue_ = process.env[environmentVariableName_];
 
@@ -175,11 +189,11 @@ function parseBooleanEnvironmentVariable(environmentVariableName_, defaultValue_
 // #region `parseIntegerEnvironmentVariable`
 
 /**
- * @param {string?} environmentVariableName_
- * @param {number} defaultValue_
- * @returns {number}
- * @throws {Error}
- */
+@param {string?} environmentVariableName_
+@param {number} defaultValue_
+@returns {number}
+@throws {Error}
+*/
 function parseIntegerEnvironmentVariable(environmentVariableName_, defaultValue_) {
 	const rawValue_ = process.env[environmentVariableName_];
 
@@ -200,8 +214,8 @@ function parseIntegerEnvironmentVariable(environmentVariableName_, defaultValue_
 // #region `uint32ToPaddedHexString`
 
 /**
- * @param {number} value_
- */
+@param {number} value_
+*/
 function uint32ToPaddedHexString(value_) {
 	return   "0x" + value_.toString(16).padStart(32 / 8 * 2, "0");
 }
@@ -210,8 +224,8 @@ function uint32ToPaddedHexString(value_) {
 // #region `uint256ToPaddedHexString`
 
 /**
- * @param {bigint} value_
- */
+@param {bigint} value_
+*/
 function uint256ToPaddedHexString(value_) {
 	// Issue. Can we use `hre.ethers.toBeHex` here?
 	return   "0x" + value_.toString(16).padStart(256 / 8 * 2, "0");
@@ -221,8 +235,8 @@ function uint256ToPaddedHexString(value_) {
 // #region `sleepForMilliSeconds`
 
 /**
- * @param {number} durationInMilliSeconds_
- */
+@param {number} durationInMilliSeconds_
+*/
 function sleepForMilliSeconds(durationInMilliSeconds_) {
 	// Issue. This is not the best implementation.
 	// It would be better to import "node:timers/promises" and call `await setTimeout(durationInMilliSeconds_)` from there.
@@ -233,8 +247,8 @@ function sleepForMilliSeconds(durationInMilliSeconds_) {
 // #region `getBlockTimeStampByBlockNumber`
 
 /**
- * @param {string} blockNumber_ This may be "pending", "latest", etc.
- */
+@param {string} blockNumber_ This may be "pending", "latest", etc.
+*/
 async function getBlockTimeStampByBlockNumber(blockNumber_) {
 	// Comment-202409255 applies.
 	const hre = HardhatContext.getHardhatContext().environment;
@@ -288,8 +302,8 @@ function hackApplyGasMultiplierIfNeeded() {
 // #region `waitForTransactionReceipt`
 
 /**
- * @param {Promise<import("hardhat").ethers.TransactionResponse>} transactionResponsePromise_
- */
+@param {Promise<import("hardhat").ethers.TransactionResponse>} transactionResponsePromise_
+*/
 async function waitForTransactionReceipt(transactionResponsePromise_) {
 	const transactionResponse_ = await transactionResponsePromise_;
 	const transactionReceipt_ = await transactionResponse_.wait();
@@ -326,20 +340,20 @@ async function waitForTransactionReceipt(transactionResponsePromise_) {
 // #region `safeErc1967GetChangedImplementationAddress`
 
 /**
- * [Comment-202510208]
- * Issue. ChatGPT says that `HardhatRuntimeEnvironment.upgrades.upgradeProxy` doesn't wait
- * for the upgrade transaction to be mined.
- * So we need this ugly function to reliably get the new implementation contract address.
- * A more correct solution would be to find and parse the `IERC1967.Upgraded` event.
- * But we would still have to wait for the transaction and its block to be mined.
- * It would also be helpful to throw an error if we observe that another block has been mined and/or a timeout expired,
- * but the implementation contract address has not changed. But if the upgrade transaction is still pending at that point,
- * it would still likely be mined later.
- * So keeping it simple for now.
- * [/Comment-202510208]
- * @param {string} proxyAddress_
- * @param {string} oldImplementationAddress_
- */
+[Comment-202510208]
+Issue. ChatGPT says that `HardhatRuntimeEnvironment.upgrades.upgradeProxy` doesn't wait
+for the upgrade transaction to be mined.
+So we need this ugly function to reliably get the new implementation contract address.
+A more correct solution would be to find and parse the `IERC1967.Upgraded` event.
+But we would still have to wait for the transaction and its block to be mined.
+It would also be helpful to throw an error if we observe that another block has been mined and/or a timeout expired,
+but the implementation contract address has not changed. But if the upgrade transaction is still pending at that point,
+it would still likely be mined later.
+So keeping it simple for now.
+[/Comment-202510208]
+@param {string} proxyAddress_
+@param {string} oldImplementationAddress_
+*/
 async function safeErc1967GetChangedImplementationAddress(proxyAddress_, oldImplementationAddress_) {
 	// Comment-202409255 applies.
 	const hre = HardhatContext.getHardhatContext().environment;
@@ -361,6 +375,8 @@ async function safeErc1967GetChangedImplementationAddress(proxyAddress_, oldImpl
 
 module.exports = {
 	HARDHAT_MODE_CODE,
+	ENABLE_HARDHAT_PREPROCESSOR,
+	ENABLE_ASSERTS,
 	shuffleArray,
 	generateRandomUInt32,
 	generateRandomUInt256,

@@ -64,11 +64,16 @@ contract CosmicSignatureGameV2 is
 	// #endregion
 	// #region `initializeV2`
 
-	/// @dev In V2+, near Comment-202605294, `_onlyNonFirstRound` only asserts a condition.
+	/// @dev
+	/// [Comment-202606128]
+	/// `onlyOwner` is unnecessary because the pevious version's `_authorizeUpgrade` has just checked it
+	/// within the same transaction.
+	/// [/Comment-202606128]
+	/// In V2+, near Comment-202605294, `_onlyNonFirstRound` only asserts a condition.
 	/// One might want to fully validate that condition here, but it's really unnecessary,
-	/// because it's guaranteed to be `true` on the mainnet.
-	/// Comment-202606084 relates.
-	function initializeV2() external override /*onlyOwner*/ _onlyIfPrevVersionWasInitialized() reinitializer(uint64(2)) _onlyNonFirstRound() {
+	/// because it's guaranteed to be `true` in the production.
+	/// Comment-202606084 relates and/or applies.
+	function initializeV2() external override /*onlyOwner*/ _onlyNonFirstRound() _onlyIfPrevVersionWasInitialized() reinitializer(uint64(2)) {
 		// // #enable_asserts // #disable_smtchecker console.log("CosmicSignatureGameV2.initializeV2");
 
 		cstDutchAuctionDuration = CosmicSignatureConstants.INITIAL_CST_DUTCH_AUCTION_DURATION;
@@ -89,15 +94,21 @@ contract CosmicSignatureGameV2 is
 	// #region `_checkIfPrevVersionWasInitialized`
 
 	function _checkIfPrevVersionWasInitialized() private view {
-		if ( ! (_getInitializedVersion() == uint64(1)) ) {
-			revert InvalidInitialization();
-		}
+		// Comment-202605294 applies.
+		// But after V2 this will not be guaranteed.
+		// #enable_asserts bool isSuccess_ = _getInitializedVersion() == uint64(1);
+		// #enable_asserts assert(isSuccess_);
+
+		// if ( ! isSuccess_ ) {
+		// 	revert InvalidInitialization();
+		// }
 	}
 
 	// #endregion
 	// #region `_authorizeUpgrade`
 
 	/// @dev Comment-202412188 applies.
+	/// Comment-202606128 relates.
 	function _authorizeUpgrade(address newImplementationAddress_) internal view override onlyOwner _onlyRoundIsInactive {
 		// _providedAddressIsNonZero(newImplementationAddress_) {
 		// // #enable_asserts // #disable_smtchecker console.log("CosmicSignatureGameV2._authorizeUpgrade");
