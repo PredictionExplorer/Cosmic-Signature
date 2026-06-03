@@ -152,9 +152,13 @@ library CosmicSignatureConstants {
 	/// @notice Default `mainPrizeTimeIncrementIncreaseDivisor`.
 	uint256 internal constant DEFAULT_MAIN_PRIZE_TIME_INCREMENT_INCREASE_DIVISOR = 100;
 
-	/// @notice Default `timeoutDurationToClaimMainPrize`.
-	/// See also: `DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES`.
+	/// @notice Default `CosmicSignatureGameStorage.timeoutDurationToClaimMainPrize`.
+	/// See also: `DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2`, `DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES`.
 	uint256 internal constant DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE = 1 days;
+
+	/// @notice Default `CosmicSignatureGameStorageV2.timeoutDurationToClaimMainPrize`.
+	/// See also: `DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE`, `DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES`.
+	uint256 internal constant DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2 = 2 days;
 
 	/// @notice Default `mainEthPrizeAmountPercentage`.
 	uint256 internal constant DEFAULT_MAIN_ETH_PRIZE_AMOUNT_PERCENTAGE = 25;
@@ -187,7 +191,7 @@ library CosmicSignatureConstants {
 
 	/// @notice Default `PrizesWallet.timeoutDurationToWithdrawPrizes`.
 	/// Comment-202506139 applies.
-	/// See also: `DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE`.
+	/// See also: `DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE`, `DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2`.
 	uint256 internal constant DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES = 5 weeks;
 
 	// #endregion

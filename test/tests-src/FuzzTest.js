@@ -902,8 +902,10 @@ describe("FuzzTest", function () {
 		// #region
 
 		const fuzzConfig_ = buildFuzzConfig(SKIP_LONG_TESTS);
-		// Wall-clock ceiling for Mocha (long default run can take tens of minutes).
-		this.timeout(SKIP_LONG_TESTS ? 3_600_000 : 14_400_000);
+		// // Wall-clock ceiling for Mocha (long default run can take tens of minutes).
+		// // Issue. I have configured a generous timeout for Mocha. It's also a bad idea to hardcode magic numbers here.
+		// // So I have commented this out.
+		// this.timeout(SKIP_LONG_TESTS ? 3_600_000 : 14_400_000);
 
 		const envSeedRaw_ = process.env.FUZZ_SEED;
 		const parsedSeed_ = parseFuzzSeedFromEnvironment(envSeedRaw_);

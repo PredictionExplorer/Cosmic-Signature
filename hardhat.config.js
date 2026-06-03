@@ -553,7 +553,7 @@ const hardhatUserConfig = {
 	mocha: {
 		parallel: true,
 		// jobs: nodeOsModule.availableParallelism(),
-		timeout: 2 * 60 * 60 * 1000,
+		timeout: 12 * 60 * 60 * 1000,
 
 		// Comment-202508265 relates and/or applies.
 		require: ["./src/MochaHooks.js",],

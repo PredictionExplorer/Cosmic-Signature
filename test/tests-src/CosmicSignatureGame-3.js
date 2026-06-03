@@ -131,6 +131,20 @@ describe("CosmicSignatureGame-3", function () {
 		expect(cosmicSignatureGameOpenBidImplementationAddress_).not.equal(contracts_.cosmicSignatureGameImplementationAddress);
 		expect(cosmicSignatureGameOpenBidImplementationAddress_).not.equal(cosmicSignatureGameV2ImplementationAddress_);
 		expect(await cosmicSignatureGameOpenBidProxy_.timesEthBidPrice()).equal(3n);
+
+		// Comment-202606139 applies.
+		const cosmicSignatureGameV2ImplementationByteCodeSize_ =
+			// cosmicSignatureGameV2Factory.bytecode.length / 2 - 1;
+			(await hre.ethers.provider.getCode(cosmicSignatureGameV2ImplementationAddress_)).length / 2 - 1;
+		expect(cosmicSignatureGameV2ImplementationByteCodeSize_).greaterThanOrEqual(21 * 1024);
+		console.info(
+			"%s",
+			"CosmicSignatureGameV2 implementation bytecode size is " +
+			cosmicSignatureGameV2ImplementationByteCodeSize_.toString() +
+			" bytes, which is less than the maximum allowed by " +
+			(24 * 1024 - cosmicSignatureGameV2ImplementationByteCodeSize_).toString() +
+			"."
+		);
 	});
 
 	it("Unauthorized or incorrect CosmicSignatureGame upgrade attempts", async function () {

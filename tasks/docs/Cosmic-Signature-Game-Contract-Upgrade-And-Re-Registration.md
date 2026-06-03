@@ -10,7 +10,7 @@ The same blockchains are supported, except currently involved scripts will not w
 
 #### Validate the deployed and to be deployed contracts
 
-Review, possibly edit, and then execute "${workspaceFolder}/slither/slither-check-upgradeability-1.bash". See a document in the same folder.
+Review, possibly edit, and then execute "${workspaceFolder}/slither/slither-check-upgradeability-*.bash". See a document in the same folder.
 
 #### Create API Keys
 

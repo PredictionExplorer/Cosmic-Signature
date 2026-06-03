@@ -12,11 +12,13 @@ describe("CosmicSignatureGame-2", function () {
 	it("Smoke-test", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(999n);
 
+		// [Comment-202606139]
+		// Similar logic exists in multiple places.
+		// [/Comment-202606139]
 		const cosmicSignatureGameImplementationByteCodeSize_ =
 			// cosmicSignatureGameFactory.bytecode.length / 2 - 1;
 			(await hre.ethers.provider.getCode(contracts_.cosmicSignatureGameImplementationAddress)).length / 2 - 1;
 		expect(cosmicSignatureGameImplementationByteCodeSize_).greaterThanOrEqual(21 * 1024);
-		// todo-0 Print this for the V2 as well.
 		console.info(
 			"%s",
 			"CosmicSignatureGame implementation bytecode size is " +
@@ -25,6 +27,7 @@ describe("CosmicSignatureGame-2", function () {
 			(24 * 1024 - cosmicSignatureGameImplementationByteCodeSize_).toString() +
 			"."
 		);
+
 		expect(await contracts_.cosmicSignatureGameImplementation.owner()).equal(hre.ethers.ZeroAddress);
 		expect(await contracts_.cosmicSignatureGameProxy.owner()).equal(contracts_.ownerSigner.address);
 		expect(await contracts_.cosmicSignatureGameImplementation.mainPrizeTimeIncrementInMicroSeconds()).equal(0n);
