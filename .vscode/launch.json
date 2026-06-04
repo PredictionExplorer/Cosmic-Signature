@@ -20,8 +20,8 @@
 
 				// Restricting to a grep pattern.
 				"--grep",
+				"^SystemManagement ",
 				// "^Bidding The halveEthDutchAuctionEndingBidPrice method$",
-				"^FuzzTest ",
 			],
 
 			// // Ignore stepping through internal node_modules.
