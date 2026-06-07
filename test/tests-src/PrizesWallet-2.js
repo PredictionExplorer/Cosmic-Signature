@@ -17,7 +17,7 @@ const { loadFixtureDeployContractsForTesting, assertEvent } = require("../../src
 // #region
 
 describe("PrizesWallet-2", function () {
-	// #region
+	// #region `it`
 
 	it("Deployment", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
@@ -27,7 +27,7 @@ describe("PrizesWallet-2", function () {
 	});
 
 	// #endregion
-	// #region
+	// #region `it`
 
 	it("Contract parameter setters", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
@@ -44,7 +44,7 @@ describe("PrizesWallet-2", function () {
 	});
 
 	// #endregion
-	// #region
+	// #region `it`
 
 	it("The registerRoundEndAndDepositEthMany, withdrawEverything, donateToken, claimDonatedToken, donateNft methods", async function () {
 		// #region
@@ -217,7 +217,7 @@ describe("PrizesWallet-2", function () {
 	});
 
 	// #endregion
-	// #region
+	// #region `it`
 
 	it("The withdrawEth and withdrawEthMany methods", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
@@ -286,7 +286,7 @@ describe("PrizesWallet-2", function () {
 	});
 
 	// #endregion
-	// #region
+	// #region `it`
 
 	it("The donateNft method", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
@@ -312,7 +312,7 @@ describe("PrizesWallet-2", function () {
 	});
 
 	// #endregion
-	// #region
+	// #region `it`
 
 	it("The claimManyDonatedNfts method", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
@@ -350,7 +350,7 @@ describe("PrizesWallet-2", function () {
 	});
 
 	// #endregion
-	// #region
+	// #region `it`
 
 	it("Incorrect or forbidden operations", async function () {
 		/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
@@ -388,7 +388,7 @@ describe("PrizesWallet-2", function () {
 	});
 
 	// #endregion
-	// #region
+	// #region `it`
 
 	// Comment-202507055 applies.
 	it("Reentries", async function () {

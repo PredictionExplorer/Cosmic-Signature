@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.34;
+pragma solidity =0.8.34;
 
 import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 
@@ -42,6 +42,7 @@ contract MaliciousBidder {
 
 			// [Comment-202507059]
 			// This is not an exhaustive list of all non-reentrant methods.
+			// This is also not aware of V2+.
 			// But we have another test near Comment-202507057 that attempts to reenter all of them.
 			// [/Comment-202507059]
 			if (modeCode == 1) {

@@ -181,8 +181,9 @@ async function createCosmicSignatureGameProxySimulator(
 		// #region `_extendMainPrizeTime`
 
 		_extendMainPrizeTime: function(transactionBlock_) {
-			const mainPrizeCorrectedTime_ = BigInt(Math.max(Number(this.mainPrizeTime), transactionBlock_.timestamp));
+			// Comment-202606175 applies.
 			const mainPrizeTimeIncrement_ = this.getMainPrizeTimeIncrement();
+			const mainPrizeCorrectedTime_ = BigInt(Math.max(Number(this.mainPrizeTime), transactionBlock_.timestamp));
 			this.mainPrizeTime = mainPrizeCorrectedTime_ + mainPrizeTimeIncrement_;
 		},
 

@@ -1,15 +1,17 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.34;
+pragma solidity =0.8.34;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { CosmicSignatureHelpers } from "../production/libraries/CosmicSignatureHelpers.sol";
 import { IPrizesWallet, PrizesWallet } from "../production/PrizesWallet.sol";
 import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
+import { CosmicSignatureGameV2 } from "../production/CosmicSignatureGameV2.sol";
 
 abstract contract MaliciousActorBase {
 	PrizesWallet public immutable prizesWallet;
 	CosmicSignatureGame public immutable game;
+	uint256 public contractVersionNumber = 1;
 	uint256 public modeCode = 0;
 	uint256 public transient reentryDepth;
 
@@ -20,6 +22,10 @@ abstract contract MaliciousActorBase {
 
 	receive() external payable {
 		_reenterIfNeeded();
+	}
+
+	function setContractVersionNumber(uint256 newValue_) external {
+		contractVersionNumber = newValue_;
 	}
 
 	function setModeCode(uint256 newValue_) external {
@@ -34,25 +40,61 @@ abstract contract MaliciousActorBase {
 			// Similar magic numbers exist in multiple places.
 			// [/Comment-202507062]
 			if (modeCode == 1) {
-				game.donateEth{value: 1 wei}();
+				if (contractVersionNumber != 2) {
+					game.donateEth{value: 1 wei}();
+				} else {
+					CosmicSignatureGameV2(payable(game)).donateEth{value: 1 wei}();
+				}
 			} else if (modeCode == 2) {
-				game.donateEthWithInfo{value: 1 wei}("Reentry");
+				if (contractVersionNumber != 2) {
+					game.donateEthWithInfo{value: 1 wei}("Reentry");
+				} else {
+					CosmicSignatureGameV2(payable(game)).donateEthWithInfo{value: 1 wei}("Reentry");
+				}
 			} else if (modeCode == 3) {
-				CosmicSignatureHelpers.transferEthTo(payable(address(game)), 0.01 ether);
+				CosmicSignatureHelpers.transferEthTo(payable(game), 0.01 ether);
 			} else if (modeCode == 4) {
-				game.bidWithEthAndDonateToken{value: 0.01 ether}(-1, "", IERC20(address(this)), 1);
+				if (contractVersionNumber != 2) {
+					game.bidWithEthAndDonateToken{value: 0.01 ether}(-1, "", IERC20(address(this)), 1);
+				} else {
+					CosmicSignatureGameV2(payable(game)).bidWithEthAndDonateToken{value: 0.01 ether}(-1, "", 0, IERC20(address(this)), 1);
+				}
 			} else if (modeCode == 5) {
-				game.bidWithEthAndDonateNft{value: 0.01 ether}(-1, "", IERC721(address(this)), 0);
+				if (contractVersionNumber != 2) {
+					game.bidWithEthAndDonateNft{value: 0.01 ether}(-1, "", IERC721(address(this)), 0);
+				} else {
+					CosmicSignatureGameV2(payable(game)).bidWithEthAndDonateNft{value: 0.01 ether}(-1, "", 0, IERC721(address(this)), 0);
+				}
 			} else if (modeCode == 6) {
-				game.bidWithEth{value: 0.01 ether}(-1, "");
+				if (contractVersionNumber != 2) {
+					game.bidWithEth{value: 0.01 ether}(-1, "");
+				} else {
+					CosmicSignatureGameV2(payable(game)).bidWithEth{value: 0.01 ether}(-1, "", 0);
+				}
 			} else if (modeCode == 7) {
-				game.bidWithCstAndDonateToken(10000 ether, "", IERC20(address(this)), 1);
+				if (contractVersionNumber != 2) {
+					game.bidWithCstAndDonateToken(10000 ether, "", IERC20(address(this)), 1);
+				} else {
+					CosmicSignatureGameV2(payable(game)).bidWithCstAndDonateToken(10000 ether, "", 0, IERC20(address(this)), 1);
+				}
 			} else if (modeCode == 8) {
-				game.bidWithCstAndDonateNft(10000 ether, "", IERC721(address(this)), 0);
+				if (contractVersionNumber != 2) {
+					game.bidWithCstAndDonateNft(10000 ether, "", IERC721(address(this)), 0);
+				} else {
+					CosmicSignatureGameV2(payable(game)).bidWithCstAndDonateNft(10000 ether, "", 0, IERC721(address(this)), 0);
+				}
 			} else if (modeCode == 9) {
-				game.bidWithCst(10000 ether, "");
+				if (contractVersionNumber != 2) {
+					game.bidWithCst(10000 ether, "");
+				} else {
+					CosmicSignatureGameV2(payable(game)).bidWithCst(10000 ether, "", 0);
+				}
 			} else if (modeCode == 10) {
-				game.claimMainPrize();
+				if (contractVersionNumber != 2) {
+					game.claimMainPrize();
+				} else {
+					CosmicSignatureGameV2(payable(game)).claimMainPrize();
+				}
 			} else if (modeCode == 101) {
 				IPrizesWallet.EthDeposit[] memory ethDeposits_;
 				prizesWallet.registerRoundEndAndDepositEthMany{value: 0 wei}(0, address(this), ethDeposits_);

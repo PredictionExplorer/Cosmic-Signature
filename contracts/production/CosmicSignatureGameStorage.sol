@@ -1,7 +1,7 @@
 // #region
 
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.34;
+pragma solidity =0.8.34;
 
 // #endregion
 // #region
@@ -365,6 +365,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// On each subsequent bid, we increase this based on `mainPrizeTimeIncrementInMicroSeconds`.
 	/// [/Comment-202412152]
 	/// Comment-202501022 applies.
+	/// @dev Comment-202606175 relates.
 	uint256 public mainPrizeTime;
 
 	/// @notice Comment-202412152 relates.

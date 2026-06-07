@@ -1,7 +1,5 @@
 // #region Header
 
-// todo-0 Ask Taras to fix this test.
-
 // Cosmic Signature — comprehensive protocol fuzz test (Hardhat + Mocha + Chai)
 //
 // Goals:
@@ -825,7 +823,7 @@ async function assertTryGetCurrentChampionsSmoke(gameProxy_, bidderSetLowercase_
 }
 
 /**
- * When the round is active and at least one bid exists, ETH Dutch next price should be positive (IBidding / Comment-202503162).
+ * When the round is active and at least one bid exists, ETH Dutch next price should be positive (Comment-202503162).
  * @param {import("hardhat").ethers.Contract} gameProxy_
  */
 async function assertNextEthBidPricePositiveWhenBidding(gameProxy_) {

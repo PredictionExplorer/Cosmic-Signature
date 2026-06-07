@@ -16,8 +16,8 @@
 			export ENABLE_ASSERTS="${2}"
 			export ENABLE_SMTCHECKER="${3}"
 
-			# 'npx' 'hardhat' 'test' '--grep' '^SystemManagement '
-			# 'npx' 'hardhat' 'test' '--grep' '^MainPrize Prize amounts$'
+			# 'npx' 'hardhat' 'test' '--grep' '^StakingWalletCosmicSignatureNft '
+			# 'npx' 'hardhat' 'test' '--grep' '^Bidding Reentries by donated ERC-20 and ERC-721 token contracts$'
 			# 'npx' 'hardhat' 'test' '--grep' '(?<!\bLong-term aggressive bidding behaves correctly)$'
 			# 'npx' 'hardhat' 'test' '--grep' '^PrizesWallet-\d |^StakingWalletCosmicSignatureNft |^CharityWallet |^SystemManagement |^BidStatistics |^Bidding |^MainPrize |^CosmicSignatureGame-\d |^BidderContract |^BlockTimeStamps '
 			# 'npx' 'hardhat' 'test' '--grep' '^[^ ]+(?<!-Old) '

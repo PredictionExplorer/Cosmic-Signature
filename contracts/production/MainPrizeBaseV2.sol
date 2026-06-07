@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.34;
+pragma solidity =0.8.34;
 
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
@@ -54,9 +54,9 @@ abstract contract MainPrizeBaseV2 is CosmicSignatureGameStorageV2, IMainPrizeBas
 		unchecked
 		// #enable_smtchecker */
 		{
+			// Comment-202606175 relates and/or applies.
 			uint256 mainPrizeTimeIncrement_ = getMainPrizeTimeIncrement();
-			uint256 mainPrizeCorrectedTime_ = Math.max(mainPrizeTime, block.timestamp);
-			mainPrizeTime = mainPrizeCorrectedTime_ + mainPrizeTimeIncrement_;
+			mainPrizeTime += mainPrizeTimeIncrement_;
 		}
 	}
 }

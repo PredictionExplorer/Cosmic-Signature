@@ -5,16 +5,16 @@ const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { generateRandomUInt256, waitForTransactionReceipt } = require("../../src/Helpers.js");
-// const { setRoundActivationTimeIfNeeded } = require("../../src/ContractDeploymentHelpers.js");
+const { setRoundActivationTimeIfNeeded } = require("../../src/ContractDeploymentHelpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
 
 describe("SystemManagement", function () {
 	it("Setters while the current bidding round is inactive", async function () {
-		for ( let versionNumber_ = 1; ; ++ versionNumber_ ) {
-			const contracts_ = await loadFixtureDeployContractsForTesting((versionNumber_ == 1) ? (-1_000_000_000n) : 2n);
+		for ( let contractVersionNumber_ = 1; ; ++ contractVersionNumber_ ) {
+			const contracts_ = await loadFixtureDeployContractsForTesting((contractVersionNumber_ <= 1) ? (-1_000_000_000n) : 2n);
 			let cosmicSignatureGameProxyForOwner_;
 
-			if (versionNumber_ == 1) {
+			if (contractVersionNumber_ <= 1) {
 				cosmicSignatureGameProxyForOwner_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner);
 			} else {
 				const cosmicSignatureGameProxyForSigner_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[3]);
@@ -90,7 +90,7 @@ describe("SystemManagement", function () {
 				expect(await cosmicSignatureGameProxyForOwner_.ethBidRefundAmountInGasToSwallowMaxLimit()).equal(newValue_);
 			}
 
-			if (versionNumber_ == 1) {
+			if (contractVersionNumber_ <= 1) {
 				const newValue_ = 9n + generateRandomUInt256() % 3n;
 				await expect(cosmicSignatureGameProxyForOwner_.setCstDutchAuctionDurationDivisor(newValue_))
 					.emit(cosmicSignatureGameProxyForOwner_, "CstDutchAuctionDurationDivisorChanged")
@@ -130,7 +130,7 @@ describe("SystemManagement", function () {
 				expect(await cosmicSignatureGameProxyForOwner_.bidMessageLengthMaxLimit()).equal(newValue_);
 			}
 
-			if (versionNumber_ == 1) {
+			if (contractVersionNumber_ <= 1) {
 				const newValue_ = 9n + generateRandomUInt256() % 3n;
 				await expect(cosmicSignatureGameProxyForOwner_.setBidCstRewardAmount(newValue_))
 					.emit(cosmicSignatureGameProxyForOwner_, "BidCstRewardAmountChanged")
@@ -344,7 +344,7 @@ describe("SystemManagement", function () {
 				expect(await cosmicSignatureGameProxyForOwner_.charityEthDonationAmountPercentage()).equal(newValue_);
 			}
 
-			if ( ! (versionNumber_ < 2) ) {
+			if ( ! (contractVersionNumber_ < 2) ) {
 				break;
 			}
 		}
@@ -357,7 +357,7 @@ describe("SystemManagement", function () {
 		let cosmicSignatureGameProxyForSigner_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[3]);
 		const testSigner_ = hre.ethers.Wallet.createRandom(hre.ethers.provider);
 
-		for ( let versionNumber_ = 1; ; ++ versionNumber_ ) {
+		for ( let contractVersionNumber_ = 1; ; ++ contractVersionNumber_ ) {
 			let randomNumber1_ = 9n + generateRandomUInt256() % 3n;
 
 			await waitForTransactionReceipt(cosmicSignatureGameProxyForOwner_.setDelayDurationBeforeRoundActivation(randomNumber1_));
@@ -369,7 +369,7 @@ describe("SystemManagement", function () {
 			await expect(cosmicSignatureGameProxyForOwner_.setEthDutchAuctionEndingBidPriceDivisor(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "RoundIsActive");
 			await expect(cosmicSignatureGameProxyForOwner_.setEthBidPriceIncreaseDivisor(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "RoundIsActive");
 			await expect(cosmicSignatureGameProxyForOwner_.setEthBidRefundAmountInGasToSwallowMaxLimit(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "RoundIsActive");
-			if (versionNumber_ == 1) {
+			if (contractVersionNumber_ <= 1) {
 				await expect(cosmicSignatureGameProxyForOwner_.setCstDutchAuctionDurationDivisor(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "RoundIsActive");
 			} else {
 				await expect(cosmicSignatureGameProxyForOwner_.setCstDutchAuctionDuration(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "RoundIsActive");
@@ -377,7 +377,7 @@ describe("SystemManagement", function () {
 			}
 			await expect(cosmicSignatureGameProxyForOwner_.setCstDutchAuctionBeginningBidPriceMinLimit(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "RoundIsActive");
 			await expect(cosmicSignatureGameProxyForOwner_.setBidMessageLengthMaxLimit(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "RoundIsActive");
-			if (versionNumber_ == 1) {
+			if (contractVersionNumber_ <= 1) {
 				await expect(cosmicSignatureGameProxyForOwner_.setBidCstRewardAmount(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "RoundIsActive");
 			} else {
 				await expect(cosmicSignatureGameProxyForOwner_.setBidCstRewardAmountMultiplier(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "RoundIsActive");
@@ -410,7 +410,7 @@ describe("SystemManagement", function () {
 			await waitForTransactionReceipt(cosmicSignatureGameProxyForOwner_.setDelayDurationBeforeRoundActivation(randomNumber1_));
 			await expect(cosmicSignatureGameProxyForOwner_.setRoundActivationTime(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "BidHasBeenPlacedInCurrentRound");
 
-			if ( ! (versionNumber_ < 2) ) {
+			if ( ! (contractVersionNumber_ < 2) ) {
 				break;
 			}
 
@@ -435,9 +435,7 @@ describe("SystemManagement", function () {
 			cosmicSignatureGameProxyForOwner_ = cosmicSignatureGameV2Proxy_.connect(contracts_.ownerSigner);
 			cosmicSignatureGameProxyForSigner_ = cosmicSignatureGameV2Proxy_.connect(contracts_.signers[3]);
 
-			const roundActivationTime_ = await cosmicSignatureGameV2Proxy_.roundActivationTime();
-			await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(roundActivationTime_),]);
-			// await hre.ethers.provider.send("evm_mine");
+			await setRoundActivationTimeIfNeeded(cosmicSignatureGameProxyForOwner_, 2n);
 		}
 	});
 
@@ -454,14 +452,14 @@ describe("SystemManagement", function () {
 		// await hre.ethers.provider.send("evm_mine");
 		await waitForTransactionReceipt(cosmicSignatureGameProxyForSigner_.claimMainPrize());
 
-		for ( let versionNumber_ = 1; ; ++ versionNumber_ ) {
+		for ( let contractVersionNumber_ = 1; ; ++ contractVersionNumber_ ) {
 			await expect(cosmicSignatureGameProxyForSigner_.setDelayDurationBeforeRoundActivation(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");
 			await expect(cosmicSignatureGameProxyForSigner_.setRoundActivationTime(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");
 			await expect(cosmicSignatureGameProxyForSigner_.setEthDutchAuctionDurationDivisor(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");
 			await expect(cosmicSignatureGameProxyForSigner_.setEthDutchAuctionEndingBidPriceDivisor(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");
 			await expect(cosmicSignatureGameProxyForSigner_.setEthBidPriceIncreaseDivisor(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");
 			await expect(cosmicSignatureGameProxyForSigner_.setEthBidRefundAmountInGasToSwallowMaxLimit(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");
-			if (versionNumber_ == 1) {
+			if (contractVersionNumber_ <= 1) {
 				await expect(cosmicSignatureGameProxyForSigner_.setCstDutchAuctionDurationDivisor(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");
 			} else {
 				await expect(cosmicSignatureGameProxyForSigner_.setCstDutchAuctionDuration(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");
@@ -469,7 +467,7 @@ describe("SystemManagement", function () {
 			}
 			await expect(cosmicSignatureGameProxyForSigner_.setCstDutchAuctionBeginningBidPriceMinLimit(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");
 			await expect(cosmicSignatureGameProxyForSigner_.setBidMessageLengthMaxLimit(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");
-			if (versionNumber_ == 1) {
+			if (contractVersionNumber_ <= 1) {
 				await expect(cosmicSignatureGameProxyForSigner_.setBidCstRewardAmount(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");
 			} else {
 				await expect(cosmicSignatureGameProxyForSigner_.setBidCstRewardAmountMultiplier(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");
@@ -497,7 +495,7 @@ describe("SystemManagement", function () {
 			await expect(cosmicSignatureGameProxyForSigner_.setCharityAddress(testSigner_.address)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");
 			await expect(cosmicSignatureGameProxyForSigner_.setCharityEthDonationAmountPercentage(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");
 
-			if ( ! (versionNumber_ < 2) ) {
+			if ( ! (contractVersionNumber_ < 2) ) {
 				break;
 			}
 

@@ -30,7 +30,7 @@ describe("MainPrize", function () {
 		expect(mainPrizeTimeIncrement_).equal(1n * 60n * 60n);
 
 		// If a bidder sends too much ETH, the game would refund the excess.
-		// Keeping in mind that the game would swallow a too small refund.
+		// Comment-202606162 applies.
 		await makeNextBlockTimeDeterministic();
 		nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPriceAdvanced(1n);
 		await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEth(-1n, "", {value: nextEthBidPrice_ + 10n ** (18n - 2n),}));
@@ -199,9 +199,7 @@ describe("MainPrize", function () {
 
 		// At this point, all required data has been initialized. We can start the test.
 
-		let durationUntilRoundActivation_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilRoundActivation();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilRoundActivation_) - 1,]);
-		await hre.ethers.provider.send("evm_mine");
+		await setRoundActivationTimeIfNeeded(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner), 2n);
 		nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPriceAdvanced(1n);
 		await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEth(-1n, "", {value: nextEthBidPrice_,}));
 
@@ -236,9 +234,7 @@ describe("MainPrize", function () {
 		expect(await contracts_.cosmicSignatureNft.totalSupply()).equal(expectedCosmicSignatureNftTotalSupply_);
 
 		// Next bidding round.
-		durationUntilRoundActivation_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilRoundActivation();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilRoundActivation_) - 1,]);
-		await hre.ethers.provider.send("evm_mine");
+		await setRoundActivationTimeIfNeeded(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner), 2n);
 		nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPriceAdvanced(1n);
 		await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[2]).bidWithEth(-1n, "", {value: nextEthBidPrice_,}));
 		nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPriceAdvanced(1n);
@@ -370,44 +366,66 @@ describe("MainPrize", function () {
 
 		await waitForTransactionReceipt(brokenStakingWalletCosmicSignatureNft_.connect(contracts_.signers[4]).setStakingWalletCosmicSignatureNft(newStakingWalletCosmicSignatureNftAddress_));
 		await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner).setStakingWalletCosmicSignatureNft(brokenStakingWalletCosmicSignatureNftAddress_));
-		await setRoundActivationTimeIfNeeded(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner), 2n);
 
-		const nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPriceAdvanced(1n);
-		await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[4]).bidWithEth(-1n, "", {value: nextEthBidPrice_,}));
-		const durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrizeRaw();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) - 1,]);
-		// await hre.ethers.provider.send("evm_mine");
-		await waitForTransactionReceipt(brokenStakingWalletCosmicSignatureNft_.connect(contracts_.signers[4]).setEthDepositAcceptanceModeCode(2n));
+		let cosmicSignatureGameProxy_ = contracts_.cosmicSignatureGameProxy;
 
-		// Any `StakingWalletCosmicSignatureNft.deposit` panic except the division by zero will not be handled.
-		// Comment-202410161 relates.
-		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[4]).claimMainPrize()).revertedWithPanic(0x01n);
+		for ( let contractVersionNumber_ = 1; ; ++ contractVersionNumber_ ) {
+			await setRoundActivationTimeIfNeeded(cosmicSignatureGameProxy_.connect(contracts_.ownerSigner), 2n);
 
-		await waitForTransactionReceipt(brokenStakingWalletCosmicSignatureNft_.connect(contracts_.signers[4]).setEthDepositAcceptanceModeCode(1n));
+			await waitForTransactionReceipt(contracts_.signers[4].sendTransaction({to: contracts_.cosmicSignatureGameProxyAddress, value: 10n ** 18n,}));
+			const durationUntilMainPrize_ = await cosmicSignatureGameProxy_.getDurationUntilMainPrizeRaw();
+			await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_),]);
+			// await hre.ethers.provider.send("evm_mine");
 
-		// Any `StakingWalletCosmicSignatureNft.deposit` non-panic reversal will not be handled.
-		// Comment-202410161 relates.
-		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[4]).claimMainPrize()).revertedWith("I am not accepting deposits.");
+			await waitForTransactionReceipt(brokenStakingWalletCosmicSignatureNft_.connect(contracts_.signers[4]).setEthDepositAcceptanceModeCode(2n));
 
-		await waitForTransactionReceipt(brokenStakingWalletCosmicSignatureNft_.connect(contracts_.signers[4]).setEthDepositAcceptanceModeCode(0n));
+			// Any `StakingWalletCosmicSignatureNft.deposit` panic except the division by zero will not be handled.
+			// Comment-202410161 relates.
+			await expect(cosmicSignatureGameProxy_.connect(contracts_.signers[4]).claimMainPrize()).revertedWithPanic(0x01n);
+
+			await waitForTransactionReceipt(brokenStakingWalletCosmicSignatureNft_.connect(contracts_.signers[4]).setEthDepositAcceptanceModeCode(1n));
+
+			// Any `StakingWalletCosmicSignatureNft.deposit` non-panic reversal will not be handled.
+			// Comment-202410161 relates.
+			await expect(cosmicSignatureGameProxy_.connect(contracts_.signers[4]).claimMainPrize()).revertedWith("I am not accepting deposits.");
+
+			await waitForTransactionReceipt(brokenStakingWalletCosmicSignatureNft_.connect(contracts_.signers[4]).setEthDepositAcceptanceModeCode(0n));
+
+			// `StakingWalletCosmicSignatureNft.deposit` panic due to division by zero will be handled.
+			// Comment-202410161 relates.
+			await expect(cosmicSignatureGameProxy_.connect(contracts_.signers[4]).claimMainPrize())
+				.emit(cosmicSignatureGameProxy_, "MainPrizeClaimed")
+				.and.emit(contracts_.cosmicSignatureNft, "NftMinted")
+				.and.not.emit(newStakingWalletCosmicSignatureNft_, "EthDepositReceived");
+
+				// // Testing. This assert has proven to fail.
+				// .and.not.emit(contracts_.prizesWallet, "EthReceived");
+
+			if ( ! (contractVersionNumber_ < 2) ) {
+				break;
+			}
+
+			const cosmicSignatureGameV2Factory_ =
+				await hre.ethers.getContractFactory("CosmicSignatureGameV2", contracts_.ownerSigner);
+			cosmicSignatureGameProxy_ =
+				await hre.upgrades.upgradeProxy(
+					contracts_.cosmicSignatureGameProxy,
+					cosmicSignatureGameV2Factory_,
+					{
+						kind: "uups",
+						call: "initializeV2",
+					}
+				);
+			// await cosmicSignatureGameProxy_.waitForDeployment();
+		}
+
 		expect(await newStakingWalletCosmicSignatureNft_.numStakedNfts()).equal(0n);
-
-		// `StakingWalletCosmicSignatureNft.deposit` panic due to division by zero will be handled.
-		// Comment-202410161 relates.
-		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[4]).claimMainPrize())
-			.emit(contracts_.cosmicSignatureGameProxy, "MainPrizeClaimed")
-			.and.emit(contracts_.cosmicSignatureNft, "NftMinted")
-			.and.not.emit(newStakingWalletCosmicSignatureNft_, "EthDepositReceived");
-
-			// // Testing. This assert has proven to fail.
-			// .and.not.emit(contracts_.prizesWallet, "EthReceived");
-
 		expect(await hre.ethers.provider.getBalance(newStakingWalletCosmicSignatureNftAddress_)).equal(0n);
 	});
 
 	// Comment-202411077 relates and/or applies.
 	it("ETH receive by charity reversal", async function () {
-		const contracts_ = await loadFixtureDeployContractsForTesting(999n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		const brokenEthReceiverFactory_ = await hre.ethers.getContractFactory("BrokenEthReceiver", contracts_.deployerSigner);
 		const brokenEthReceiver_ = await brokenEthReceiverFactory_.deploy();
@@ -417,66 +435,119 @@ describe("MainPrize", function () {
 
 		await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner).setCharityAddress(brokenEthReceiverAddress_));
 
-		for ( let brokenEthReceiverEthDepositAcceptanceModeCode_ = 2n; brokenEthReceiverEthDepositAcceptanceModeCode_ >= 0n; -- brokenEthReceiverEthDepositAcceptanceModeCode_ ) {
-			await waitForTransactionReceipt(brokenEthReceiver_.connect(contracts_.signers[4]).setEthDepositAcceptanceModeCode(brokenEthReceiverEthDepositAcceptanceModeCode_));
-			const durationUntilRoundActivation_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilRoundActivation();
-			await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilRoundActivation_) - 1,]);
-			await hre.ethers.provider.send("evm_mine");
-			const nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPriceAdvanced(1n);
-			await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[4]).bidWithEth(-1n, "", {value: nextEthBidPrice_,}));
-			const durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrizeRaw();
-			await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_),]);
-			// await hre.ethers.provider.send("evm_mine");
-			const charityEthDonationAmount_ = await contracts_.cosmicSignatureGameProxy.getCharityEthDonationAmount();
-			expect(charityEthDonationAmount_).greaterThan(0n);
-			/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
-			const transactionResponsePromise_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[4]).claimMainPrize();
-			if (brokenEthReceiverEthDepositAcceptanceModeCode_ > 0n) {
-				await expect(transactionResponsePromise_)
-					.emit(contracts_.cosmicSignatureGameProxy, "FundTransferFailed")
-					.withArgs("ETH transfer to charity failed.", brokenEthReceiverAddress_, charityEthDonationAmount_);
-			} else {
-				await expect(transactionResponsePromise_)
-					.emit(contracts_.cosmicSignatureGameProxy, "FundsTransferredToCharity")
-					.withArgs(brokenEthReceiverAddress_, charityEthDonationAmount_);
+		let cosmicSignatureGameProxy_ = contracts_.cosmicSignatureGameProxy;
+
+		for ( let contractVersionNumber_ = 1; ; ++ contractVersionNumber_ ) {
+			for ( let brokenEthReceiverEthDepositAcceptanceModeCode_ = 2n; brokenEthReceiverEthDepositAcceptanceModeCode_ >= 0n; -- brokenEthReceiverEthDepositAcceptanceModeCode_ ) {
+				await waitForTransactionReceipt(brokenEthReceiver_.connect(contracts_.signers[4]).setEthDepositAcceptanceModeCode(brokenEthReceiverEthDepositAcceptanceModeCode_));
+				await setRoundActivationTimeIfNeeded(cosmicSignatureGameProxy_.connect(contracts_.ownerSigner), 2n);
+				await waitForTransactionReceipt(contracts_.signers[4].sendTransaction({to: contracts_.cosmicSignatureGameProxyAddress, value: 10n ** 18n,}));
+				const durationUntilMainPrize_ = await cosmicSignatureGameProxy_.getDurationUntilMainPrizeRaw();
+				await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_),]);
+				// await hre.ethers.provider.send("evm_mine");
+				const charityEthDonationAmount_ = await cosmicSignatureGameProxy_.getCharityEthDonationAmount();
+				expect(charityEthDonationAmount_).greaterThan(0n);
+				/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
+				const transactionResponsePromise_ = cosmicSignatureGameProxy_.connect(contracts_.signers[4]).claimMainPrize();
+				const transactionResponsePromiseAssertion_ = expect(transactionResponsePromise_);
+				if (brokenEthReceiverEthDepositAcceptanceModeCode_ > 0n) {
+					await transactionResponsePromiseAssertion_
+						.emit(cosmicSignatureGameProxy_, "FundTransferFailed")
+						.withArgs("ETH transfer to charity failed.", brokenEthReceiverAddress_, charityEthDonationAmount_);
+				} else {
+					await transactionResponsePromiseAssertion_
+						.emit(cosmicSignatureGameProxy_, "FundsTransferredToCharity")
+						.withArgs(brokenEthReceiverAddress_, charityEthDonationAmount_);
+				}
+				const brokenEthReceiverEthBalanceAmount_ = await hre.ethers.provider.getBalance(brokenEthReceiverAddress_);
+				expect(brokenEthReceiverEthBalanceAmount_).equal((brokenEthReceiverEthDepositAcceptanceModeCode_ > 0n) ? 0n : charityEthDonationAmount_);
 			}
-			const brokenEthReceiverEthBalanceAmount_ = await hre.ethers.provider.getBalance(brokenEthReceiverAddress_);
-			expect(brokenEthReceiverEthBalanceAmount_).equal((brokenEthReceiverEthDepositAcceptanceModeCode_ > 0n) ? 0n : charityEthDonationAmount_);
+
+			if ( ! (contractVersionNumber_ < 2) ) {
+				break;
+			}
+
+			await waitForTransactionReceipt(brokenEthReceiver_.connect(contracts_.signers[4]).surrenderMyEth());
+
+			const cosmicSignatureGameV2Factory_ =
+				await hre.ethers.getContractFactory("CosmicSignatureGameV2", contracts_.ownerSigner);
+			cosmicSignatureGameProxy_ =
+				await hre.upgrades.upgradeProxy(
+					contracts_.cosmicSignatureGameProxy,
+					cosmicSignatureGameV2Factory_,
+					{
+						kind: "uups",
+						call: "initializeV2",
+					}
+				);
+			// await cosmicSignatureGameProxy_.waitForDeployment();
 		}
 	});
 
 	it("ETH receive by main prize beneficiary reversal", async function () {
-		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		const bidderContractFactory_ = await hre.ethers.getContractFactory("BidderContract", contracts_.deployerSigner);
 		const bidderContract_ = await bidderContractFactory_.deploy(contracts_.cosmicSignatureGameProxyAddress);
 		await bidderContract_.waitForDeployment();
 		const bidderContractAddress_ = await bidderContract_.getAddress();
 
-		const nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPriceAdvanced(1n);
-		await waitForTransactionReceipt(bidderContract_.connect(contracts_.signers[4]).doBidWithEth({value: nextEthBidPrice_,}));
-		const durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrizeRaw();
-		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) - 1,]);
-		// await hre.ethers.provider.send("evm_mine");
-		const mainEthPrizeAmount_ = await contracts_.cosmicSignatureGameProxy.getMainEthPrizeAmount();
-		await waitForTransactionReceipt(bidderContract_.connect(contracts_.signers[4]).setEthDepositAcceptanceModeCode(2n));
-		await expect(bidderContract_.connect(contracts_.signers[4]).doClaimMainPrize())
-			.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "FundTransferFailed")
-			.withArgs("ETH transfer to bidding round main prize beneficiary failed.", bidderContractAddress_, mainEthPrizeAmount_);
-		await waitForTransactionReceipt(bidderContract_.connect(contracts_.signers[4]).setEthDepositAcceptanceModeCode(1n));
-		await expect(bidderContract_.connect(contracts_.signers[4]).doClaimMainPrize())
-			.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "FundTransferFailed")
-			.withArgs("ETH transfer to bidding round main prize beneficiary failed.", bidderContractAddress_, mainEthPrizeAmount_);
-		await waitForTransactionReceipt(bidderContract_.connect(contracts_.signers[4]).setEthDepositAcceptanceModeCode(0n));
-		await expect(bidderContract_.connect(contracts_.signers[4]).doClaimMainPrize())
-			.emit(contracts_.cosmicSignatureGameProxy, "MainPrizeClaimed")
-			.withArgs(0n, bidderContractAddress_, mainEthPrizeAmount_, anyUint, 0n, anyUint);
+		let cosmicSignatureGameProxy_ = contracts_.cosmicSignatureGameProxy;
+
+		for ( let contractVersionNumber_ = 1; ; ++ contractVersionNumber_ ) {
+			await waitForTransactionReceipt(bidderContract_.connect(contracts_.signers[3]).setContractVersionNumber(BigInt(contractVersionNumber_)));
+			await setRoundActivationTimeIfNeeded(cosmicSignatureGameProxy_.connect(contracts_.ownerSigner), 2n);
+
+			const nextEthBidPrice_ = await cosmicSignatureGameProxy_.getNextEthBidPriceAdvanced(1n);
+			await waitForTransactionReceipt(bidderContract_.connect(contracts_.signers[4]).doBidWithEth({value: nextEthBidPrice_,}));
+			const mainPrizeTime_ = await cosmicSignatureGameProxy_.mainPrizeTime();
+			await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(mainPrizeTime_),]);
+			// await hre.ethers.provider.send("evm_mine");
+			const mainEthPrizeAmount_ = await cosmicSignatureGameProxy_.getMainEthPrizeAmount();
+
+			for ( let bidderContractEthDepositAcceptanceModeCode_ = 2n; bidderContractEthDepositAcceptanceModeCode_ >= 0n; -- bidderContractEthDepositAcceptanceModeCode_ ) {
+				await waitForTransactionReceipt(bidderContract_.connect(contracts_.signers[3]).setEthDepositAcceptanceModeCode(bidderContractEthDepositAcceptanceModeCode_));
+				/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
+				const transactionResponsePromise_ = bidderContract_.connect(contracts_.signers[4]).doClaimMainPrize();
+				const transactionResponsePromiseAssertion_ = expect(transactionResponsePromise_);
+				if (bidderContractEthDepositAcceptanceModeCode_ > 0) {
+					await transactionResponsePromiseAssertion_
+						.revertedWithCustomError(cosmicSignatureGameProxy_, "FundTransferFailed")
+						.withArgs("ETH transfer to bidding round main prize beneficiary failed.", bidderContractAddress_, mainEthPrizeAmount_);
+				} else {
+					await transactionResponsePromiseAssertion_
+						.emit(cosmicSignatureGameProxy_, "MainPrizeClaimed")
+						.withArgs(BigInt(contractVersionNumber_ - 1), bidderContractAddress_, mainEthPrizeAmount_, anyUint, anyUint, anyUint);
+				}
+				const bidderContractEthBalanceAmount_ = await hre.ethers.provider.getBalance(bidderContractAddress_);
+				expect(bidderContractEthBalanceAmount_).equal((bidderContractEthDepositAcceptanceModeCode_ > 0n) ? 0n : mainEthPrizeAmount_);
+			}
+
+			if ( ! (contractVersionNumber_ < 2) ) {
+				break;
+			}
+
+			await waitForTransactionReceipt(bidderContract_.connect(contracts_.signers[3]).surrenderMyEth());
+			
+			const cosmicSignatureGameV2Factory_ =
+				await hre.ethers.getContractFactory("CosmicSignatureGameV2", contracts_.ownerSigner);
+			cosmicSignatureGameProxy_ =
+				await hre.upgrades.upgradeProxy(
+					contracts_.cosmicSignatureGameProxy,
+					cosmicSignatureGameV2Factory_,
+					{
+						kind: "uups",
+						call: "initializeV2",
+					}
+				);
+			// await cosmicSignatureGameProxy_.waitForDeployment();
+		}
 	});
 
 	// Comment-202507055 applies.
 	// Comment-202507059 relates and/or applies.
 	it("Reentry and double-claim attempts", async function () {
-		const contracts_ = await loadFixtureDeployContractsForTesting(999n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		const maliciousBidderFactory_ = await hre.ethers.getContractFactory("MaliciousBidder", contracts_.deployerSigner);
 		const maliciousBidder_ = await maliciousBidderFactory_.deploy(contracts_.cosmicSignatureGameProxyAddress);
@@ -486,14 +557,15 @@ describe("MainPrize", function () {
 		const ethPriceToPayMaxLimit_ = 10n ** 18n;
 
 		for ( let counter_ = 0; counter_ < 3; ++ counter_ ) {
-			const durationUntilRoundActivation_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilRoundActivation();
-			await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilRoundActivation_) - 1,]);
-			// await hre.ethers.provider.send("evm_mine");
+			await setRoundActivationTimeIfNeeded(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner), 2n);
 			for ( let maliciousBidderModeCode_ = 3n; maliciousBidderModeCode_ >= 0n; -- maliciousBidderModeCode_ ) {
 				await waitForTransactionReceipt(maliciousBidder_.connect(contracts_.signers[4]).setModeCode(maliciousBidderModeCode_));
 				const paidEthPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPriceAdvanced(1n);
 				const overpaidEthPrice_ = ethPriceToPayMaxLimit_ - paidEthPrice_;
+
+				// Comment-202606162 applies.
 				expect(overpaidEthPrice_).greaterThan(0n);
+
 				/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 				const transactionResponsePromise_ = maliciousBidder_.connect(contracts_.signers[4]).doBidWithEth(-1, "", {value: ethPriceToPayMaxLimit_,});
 				if (maliciousBidderModeCode_ > 0n) {

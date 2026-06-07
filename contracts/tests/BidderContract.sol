@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.34;
+pragma solidity =0.8.34;
 
 // // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
@@ -8,16 +8,20 @@ import { RandomWalkNFT } from "../production/RandomWalkNFT.sol";
 import { CosmicSignatureNft } from "../production/CosmicSignatureNft.sol";
 import { PrizesWallet } from "../production/PrizesWallet.sol";
 import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
+import { CosmicSignatureGameV2 } from "../production/CosmicSignatureGameV2.sol";
 import { BrokenEthReceiver } from "./BrokenEthReceiver.sol";
 
 /// @title A Testing Contract That Plays The Game.
-/// @notice A real production contract like this should be written better. It probably must be `Ownable`.
 /// @dev
 /// [Comment-202508069]
 /// Issue. This contract does not support ERC-20 token donations.
 /// [/Comment-202508069]
+/// A real production contract like this should be designed better. It probably must be `Ownable`.
 contract BidderContract is BrokenEthReceiver {
 	CosmicSignatureGame public immutable cosmicSignatureGame;
+
+	/// @notice Issue. Our V2+ support is limited.
+	uint256 public contractVersionNumber = 1;
 
 	/// @notice We are going to withdraw ETH that we could have received in these rounds.
 	/// @dev Issue. Comment-202511146 applies.
@@ -34,15 +38,23 @@ contract BidderContract is BrokenEthReceiver {
 		cosmicSignatureGame = cosmicSignatureGame_;
 	}
 
+	function setContractVersionNumber(uint256 newValue_) external {
+		contractVersionNumber = newValue_;
+	}
+
 	function doSetApprovalForAll(IERC721 nft_, address operator_, bool approved_) external {
 		nft_.setApprovalForAll(operator_, approved_);
 	}
 
 	function doBidWithEth() external payable {
-		// // #enable_asserts // #disable_smtchecker uint256 gasUsed_  = gasleft();
-		cosmicSignatureGame.bidWithEth{value: msg.value}(-1, "BidderContract ETH bid");
-		// // #enable_asserts // #disable_smtchecker gasUsed_  -= gasleft();
-		// // #enable_asserts // #disable_smtchecker console.log("BidderContract.doBidWithEth; CosmicSignatureGame.bidWithEth gas used =", gasUsed_);
+		if (contractVersionNumber != 2) {
+			// // #enable_asserts // #disable_smtchecker uint256 gasUsed_  = gasleft();
+			cosmicSignatureGame.bidWithEth{value: msg.value}(-1, "BidderContract ETH bid");
+			// // #enable_asserts // #disable_smtchecker gasUsed_  -= gasleft();
+			// // #enable_asserts // #disable_smtchecker console.log("BidderContract.doBidWithEth; CosmicSignatureGame.bidWithEth gas used =", gasUsed_);
+		} else {
+			CosmicSignatureGameV2(payable(cosmicSignatureGame)).bidWithEth{value: msg.value}(-1, "BidderContract V2 ETH bid", 0);
+		}
 	}
 
 	function doBidWithEthPlusRandomWalkNft(uint256 nftId_) external payable {
@@ -68,10 +80,14 @@ contract BidderContract is BrokenEthReceiver {
 
 	function doClaimMainPrize() external {
 		wonRoundNums.push(cosmicSignatureGame.roundNum());
-		// // #enable_asserts // #disable_smtchecker uint256 gasUsed_  = gasleft();
-		cosmicSignatureGame.claimMainPrize();
-		// // #enable_asserts // #disable_smtchecker gasUsed_  -= gasleft();
-		// // #enable_asserts // #disable_smtchecker console.log("BidderContract.doClaimMainPrize; CosmicSignatureGame.claimMainPrize gas used =", gasUsed_);
+		if (contractVersionNumber != 2) {
+			// // #enable_asserts // #disable_smtchecker uint256 gasUsed_  = gasleft();
+			cosmicSignatureGame.claimMainPrize();
+			// // #enable_asserts // #disable_smtchecker gasUsed_  -= gasleft();
+			// // #enable_asserts // #disable_smtchecker console.log("BidderContract.doClaimMainPrize; CosmicSignatureGame.claimMainPrize gas used =", gasUsed_);
+		} else {
+			CosmicSignatureGameV2(payable(cosmicSignatureGame)).claimMainPrize();
+		}
 
 		// [Comment-202508067]
 		// Not transferring the received ETH to the caller. Is it OK?

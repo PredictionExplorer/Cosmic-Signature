@@ -1,7 +1,7 @@
 // #region
 
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.34;
+pragma solidity =0.8.34;
 
 // #endregion
 // #region
@@ -175,6 +175,8 @@ abstract contract CosmicSignatureGameStorageV2 is ICosmicSignatureGameStorage {
 	/// [Comment-202606053]
 	/// This occupies the same storage slot as `CosmicSignatureGameStorage.bidCstRewardAmount`.
 	/// [/Comment-202606053]
+	/// Issue. Relative to the deployed V1 contract, the rename was from `cstRewardAmountForBidding`.
+	/// todo-0 That's another reason why `unsafeSkipStorageCheck` is neeed. Document and/or comment.
 	/// @custom:oz-renamed-from bidCstRewardAmount
 	uint256 public bidCstRewardAmountMultiplier;
 
@@ -220,6 +222,7 @@ abstract contract CosmicSignatureGameStorageV2 is ICosmicSignatureGameStorage {
 
 	/// @notice Comment-202412152 applies.
 	/// Comment-202501022 applies.
+	/// @dev Comment-202606175 relates.
 	uint256 public mainPrizeTime;
 
 	/// @notice Comment-202412152 relates.

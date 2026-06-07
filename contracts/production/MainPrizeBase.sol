@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.34;
+pragma solidity =0.8.34;
 
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
@@ -59,6 +59,16 @@ abstract contract MainPrizeBase is CosmicSignatureGameStorage, IMainPrizeBase {
 		unchecked
 		// #enable_smtchecker */
 		{
+			// [Comment-202606175]
+			// Issue. This logic ensures that `mainPrizeTime` becomes in the future, even if it's already in the past.
+			// There is also a main prize claim timeout on top of that.
+			// As a result, someone can, at least in theory, make a free or, at least, less expensive than the bidding reward CST bid
+			// before the timeout expires. The timeout is long enough to allow that.
+			// They can keep doing it for as long as they want to.
+			// In V2+, this problem is somewhat mitigated by the increase of CST Dutch auction duration on each CST bid,
+			// but even then it can take like a year until it's no longer possible to place such a bid within the timeout window.
+			// Therefore, V2+ does not ensure that `mainPrizeTime` becomes in the future.
+			// [/Comment-202606175]
 			uint256 mainPrizeTimeIncrement_ = getMainPrizeTimeIncrement();
 			uint256 mainPrizeCorrectedTime_ = Math.max(mainPrizeTime, block.timestamp);
 			mainPrizeTime = mainPrizeCorrectedTime_ + mainPrizeTimeIncrement_;

@@ -106,7 +106,7 @@ Again, a Dutch auction is used for: (1) the first ETH bid price in a nonzero rou
 ### `mainPrizeTime` Update Logic
 
 When someone places the first bid in a round, `mainPrizeTime` gets calculated as `block.timestamp` plus a configurable duration.\
-When another bid is placed, `mainPrizeTime` gets calculated as `max(mainPrizeTime, block.timestamp)` plus a shorter configurable duration.
+When another bid is placed, V1 calculaates `mainPrizeTime` as `max(mainPrizeTime, block.timestamp)` plus a shorter configurable duration, while V2+ simply adds the duration to `mainPrizeTime`. The rationale for the refactoring is described in Comment-202606175.
 
 ### Bidding Rules
 
@@ -160,7 +160,7 @@ Some prize winners are picked randomly. We have done our best to generate high q
 
 ### Exponential Duration Increase
 
-<!-- todo-0 Rewrite this for V2. -->
+<!-- todo-0 Rewrite this for V2+. -->
 At the end of each round, the following configurable durations automatically increase exponentially by a configurable fraction: ETH and CST Dutch auction durations; initial duration until main prize (used to calculate `mainPrizeTime` on the first bid in a round); `mainPrizeTime` increment (by how much `mainPrizeTime` gets extended on each subsequent bid in a round).
 
 ### Cosmic Signature and Random Walk NFT Staking

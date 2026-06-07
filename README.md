@@ -156,7 +156,7 @@ bash scripts/hardhat-node.bash
 * Key parameters:
 
   * `roundActivationTime` – round start time
-  * `mainPrizeTime` – deadline to claim prize
+  * `mainPrizeTime` – deadline to claim main prize
   * Bid pricing fractions, Dutch auction durations
   * Prize distribution percentages (main, chrono, charity, stakers, etc.)
 

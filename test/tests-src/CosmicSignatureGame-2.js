@@ -10,7 +10,7 @@ const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTest
 
 describe("CosmicSignatureGame-2", function () {
 	it("Smoke-test", async function () {
-		const contracts_ = await loadFixtureDeployContractsForTesting(999n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		// [Comment-202606139]
 		// Similar logic exists in multiple places.

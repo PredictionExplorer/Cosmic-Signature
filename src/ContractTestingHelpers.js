@@ -256,23 +256,30 @@ function checkTransactionErrorObject(errorObject) {
 */
 function isExpectedTransactionErrorObject(errorObject) {
 	if ( ! (errorObject instanceof Error) ) {
+		// console.error("%s", "202606189");
 		return false;
 	}
 	const message = errorObject.message;
 	if ( ! message ) {
+		// console.error("%s", "202606191");
 		return false;
 	}
 
+	// // [Comment-202606187]
 	// // Testing.
 	// // Issue. I observed this message: `Transaction reverted and Hardhat couldn't infer the reason.`.
 	// // I posted at https://predictionexplorer.slack.com/archives/D07EAEGJWPJ/p1780519717609329
 	// // todo-0 To be revisited.
+	// // [/Comment-202606187]
 	// if (message.includes("Hardhat could")) {
-	// 	console.warn("Warning: a suspicious transaction error: %s", message);
+	// 	console.warn("Warning. A suspicious transaction error: %s", message);
 	// }
 
 	const errorIsExpected =
 		message.startsWith("VM Exception while processing transaction: reverted ") ||
+
+		// Issue. This message appears to indicate a bad error. It's not supposed to occur.
+		// See Comment-202606187 for details.
 		message.startsWith("Transaction reverted ");
 	if (errorIsExpected) {
 		expect(errorObject.receipt).undefined;

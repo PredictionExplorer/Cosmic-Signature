@@ -15,7 +15,7 @@ const { SKIP_LONG_TESTS, loadFixtureDeployContractsForTesting, tryWaitForTransac
 // #region
 
 describe("PrizesWallet-1", function () {
-	// #region
+	// #region `it`
 
 	it("Workflow", async function () {
 		// #region

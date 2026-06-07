@@ -1,7 +1,7 @@
 // #region
 
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.34;
+pragma solidity =0.8.34;
 
 // #endregion
 // #region
@@ -240,8 +240,7 @@ abstract contract BiddingV2 is
 		// Assuming `div > 0 && var >= div`.
 		// `var` increase formula: `var += var / div`
 		// `var` reduction formula: `var = (var + 1) * div / (div + 1)`
-		// The formulas are lossless, meaning multiple increases followed by the same number of reductions
-		// or the same in the opposite order will produce the original value.
+		// The formulas are lossless, meaning an increases + a reduction or a reduction + an increase will produce the original value.
 		// The reduction formula can reach the minimum of `var == div`. Further reduction attempts will not change `var`.
 		// In other words, the losslessness breaks at that point.
 		// Obviously, the formulas can overflow. The reduction formula is more susceptible to overflow.
