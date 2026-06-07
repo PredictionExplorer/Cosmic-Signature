@@ -153,8 +153,8 @@ function createAccountSigners() {
 // #region `createAccountSigner`
 
 /**
- * @param {[string, bigint,]} accountPrivateKeySeedSaltEntry_
- */
+@param {[string, bigint,]} accountPrivateKeySeedSaltEntry_
+*/
 function createAccountSigner(accountPrivateKeySeedSaltEntry_) {
 	const [accountName_, accountPrivateKeySeedSalt_,] = accountPrivateKeySeedSaltEntry_;
 	// console.info("%s %s", accountName_, accountPrivateKeySeedSalt_);
@@ -228,8 +228,8 @@ async function runDeployCosmicSignatureContractsIfNeeded() {
 // #region `createCosmicSignatureContracts`
 
 /**
- * @param {string} deployCosmicSignatureContractsReportFilePath_
- */
+@param {string} deployCosmicSignatureContractsReportFilePath_
+*/
 async function createCosmicSignatureContracts(deployCosmicSignatureContractsReportFilePath_) {
 	console.info("%s", `Loading "${deployCosmicSignatureContractsReportFilePath_}".`);
 	const deployCosmicSignatureContractsReportJsonString_ = await nodeFsModule.promises.readFile(deployCosmicSignatureContractsReportFilePath_, "utf8");
@@ -251,9 +251,9 @@ async function createCosmicSignatureContracts(deployCosmicSignatureContractsRepo
 // #region `createContract`
 
 /**
- * @param {string} contractName_
- * @param {string} contractVariableName_
- */
+@param {string} contractName_
+@param {string} contractVariableName_
+*/
 async function createContract(contractName_, contractVariableName_) {
 	state.contracts[contractVariableName_] = await hre.ethers.getContractAt(contractName_, state.contracts[contractVariableName_ + "Address"], state.dummySigner);
 }
@@ -317,9 +317,9 @@ async function fundAccountsWithEthIfNeeded() {
 // #region `fundAccountWithEthIfNeeded`
 
 /**
- * @param {string} accountName_ 
- * @param {string} accountAddress_ 
- */
+@param {string} accountName_ 
+@param {string} accountAddress_ 
+*/
 async function fundAccountWithEthIfNeeded(accountName_, accountAddress_) {
 	const accountEthBalanceAmountMinLimitInWei_ = hre.ethers.parseEther(configuration.accountFundingWithEth.accountEthBalanceAmountMinLimitInEth.toFixed(18));
 	const accountEthBalanceAmount_ = await hre.ethers.provider.getBalance(accountAddress_, "pending");

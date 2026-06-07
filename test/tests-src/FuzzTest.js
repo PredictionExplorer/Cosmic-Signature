@@ -89,9 +89,9 @@ const ALL_FUZZ_ACTION_KEYS = [
 ];
 
 /**
- * @param {boolean} skipLongTests_
- * @returns {typeof BASE_FUZZ_CONFIG}
- */
+@param {boolean} skipLongTests_
+@returns {typeof BASE_FUZZ_CONFIG}
+*/
 function buildFuzzConfig(skipLongTests_) {
 	const base = {
 		numRounds: skipLongTests_ ? 12 : 150,
@@ -295,9 +295,9 @@ function buildFuzzConfig(skipLongTests_) {
 // #region Parsing
 
 /**
- * @param {string | undefined} raw_
- * @returns {bigint | undefined} Uint256 seed, or undefined to generate fresh randomness.
- */
+@param {string | undefined} raw_
+@returns {bigint | undefined} Uint256 seed, or undefined to generate fresh randomness.
+*/
 function parseFuzzSeedFromEnvironment(raw_) {
 	if (raw_ === undefined || raw_.length <= 0) {
 		return undefined;
@@ -311,12 +311,12 @@ function parseFuzzSeedFromEnvironment(raw_) {
 
 class Participant {
 	/**
-	 * @param {number} index_
-	 * @param {import("ethers").Signer} signer_
-	 * @param {Awaited<ReturnType<typeof loadFixtureDeployContractsForTesting>>} contracts_
-	 * @param {Record<string, number>} behaviorProfile_
-	 * @param {{ value: bigint }} randomSeedWrapper_
-	 */
+	@param {number} index_
+	@param {import("ethers").Signer} signer_
+	@param {Awaited<ReturnType<typeof loadFixtureDeployContractsForTesting>>} contracts_
+	@param {Record<string, number>} behaviorProfile_
+	@param {{ value: bigint }} randomSeedWrapper_
+	*/
 	constructor(index_, signer_, contracts_, behaviorProfile_, randomSeedWrapper_) {
 		this.index = index_;
 		this.signer = signer_;
@@ -355,8 +355,8 @@ class Participant {
 	}
 
 	/**
-	 * Weighted random choice; total weight is the sum of all profile weights (need not be 100).
-	 */
+	Weighted random choice; total weight is the sum of all profile weights (need not be 100).
+	*/
 	selectAction() {
 		let totalWeight_ = 0;
 		for (const weight_ of Object.values(this.behaviorProfile)) {
@@ -395,10 +395,10 @@ class Participant {
 // #region Invariants
 
 /**
- * Collect every address that might hold CST in this test deployment.
- * @param {Awaited<ReturnType<typeof loadFixtureDeployContractsForTesting>>} contracts_
- * @param {Participant[]} participants_
- */
+Collect every address that might hold CST in this test deployment.
+@param {Awaited<ReturnType<typeof loadFixtureDeployContractsForTesting>>} contracts_
+@param {Participant[]} participants_
+*/
 function collectCstHolderAddresses(contracts_, participants_) {
 	/** @type {string[]} */
 	const addresses_ = [];
@@ -428,10 +428,10 @@ function collectCstHolderAddresses(contracts_, participants_) {
 }
 
 /**
- * Strong accounting check: tracked holder set should explain all issued CST.
- * @param {Awaited<ReturnType<typeof loadFixtureDeployContractsForTesting>>} contracts_
- * @param {Participant[]} participants_
- */
+Strong accounting check: tracked holder set should explain all issued CST.
+@param {Awaited<ReturnType<typeof loadFixtureDeployContractsForTesting>>} contracts_
+@param {Participant[]} participants_
+*/
 async function assertCstSupplyEqualsSumOfBalances(contracts_, participants_) {
 	const token_ = contracts_.cosmicSignatureToken;
 	const totalSupply_ = await token_.totalSupply();
@@ -444,9 +444,9 @@ async function assertCstSupplyEqualsSumOfBalances(contracts_, participants_) {
 }
 
 /**
- * @param {Awaited<ReturnType<typeof loadFixtureDeployContractsForTesting>>} contracts_
- * @param {bigint} previousRoundNum_
- */
+@param {Awaited<ReturnType<typeof loadFixtureDeployContractsForTesting>>} contracts_
+@param {bigint} previousRoundNum_
+*/
 async function assertRoundNumberMonotonic(contracts_, previousRoundNum_) {
 	const roundNow_ = await contracts_.cosmicSignatureGameProxy.roundNum();
 	expect(
@@ -456,9 +456,9 @@ async function assertRoundNumberMonotonic(contracts_, previousRoundNum_) {
 }
 
 /**
- * RW NFTs held by the RW staking wallet should match `numStakedNfts` (each staked token is custodied here).
- * @param {Awaited<ReturnType<typeof loadFixtureDeployContractsForTesting>>} contracts_
- */
+RW NFTs held by the RW staking wallet should match `numStakedNfts` (each staked token is custodied here).
+@param {Awaited<ReturnType<typeof loadFixtureDeployContractsForTesting>>} contracts_
+*/
 async function assertRandomWalkStakingCustodyInvariant(contracts_) {
 	const numStaked_ = await contracts_.stakingWalletRandomWalkNft.numStakedNfts();
 	const balance_ = await contracts_.randomWalkNft.balanceOf(contracts_.stakingWalletRandomWalkNftAddress);
@@ -478,10 +478,10 @@ const INT256_MAX_AS_UINT = (1n << 255n) - 1n;
 const MAX_CS_STAKE_ACTION_SAMPLE = 32;
 
 /**
- * On-chain: `(chronoWarriorAddress == 0) == (int256(chronoWarriorDuration) < 0)` (see `BidStatistics` asserts).
- * Reset path uses zero address + `uint256(int256(-1))`.
- * @param {import("hardhat").ethers.Contract} gameProxy_
- */
+On-chain: `(chronoWarriorAddress == 0) == (int256(chronoWarriorDuration) < 0)` (see `BidStatistics` asserts).
+Reset path uses zero address + `uint256(int256(-1))`.
+@param {import("hardhat").ethers.Contract} gameProxy_
+*/
 async function assertChronoWarriorStorageSentinelInvariant(gameProxy_) {
 	const chronoAddr_ = await gameProxy_.chronoWarriorAddress();
 	const chronoDur_ = await gameProxy_.chronoWarriorDuration();
@@ -499,9 +499,9 @@ async function assertChronoWarriorStorageSentinelInvariant(gameProxy_) {
 }
 
 /**
- * Same sentinel rule on `tryGetCurrentChampions` tuple slots 2–3 (copied from storage then adjusted in-view).
- * @param {readonly [unknown, unknown, unknown, unknown]} tuple_
- */
+Same sentinel rule on `tryGetCurrentChampions` tuple slots 2–3 (copied from storage then adjusted in-view).
+@param {readonly [unknown, unknown, unknown, unknown]} tuple_
+*/
 function assertTryGetCurrentChampionsChronoTupleSentinel(tuple_) {
 	const chronoViewAddr_ = /** @type {string} */ (tuple_[2]);
 	const chronoViewDur_ = /** @type {bigint} */ (tuple_[3]);
@@ -519,9 +519,9 @@ function assertTryGetCurrentChampionsChronoTupleSentinel(tuple_) {
 }
 
 /**
- * `getNextEthBidPrice` / `getNextCstBidPrice` must match `*Advanced(0)` (see `Bidding`).
- * @param {import("hardhat").ethers.Contract} gameProxy_
- */
+`getNextEthBidPrice` / `getNextCstBidPrice` must match `*Advanced(0)` (see `Bidding`).
+@param {import("hardhat").ethers.Contract} gameProxy_
+*/
 async function assertNextBidPricesMatchAdvancedZero(gameProxy_) {
 	try {
 		const ethP_ = await gameProxy_.getNextEthBidPrice();
@@ -540,9 +540,9 @@ async function assertNextBidPricesMatchAdvancedZero(gameProxy_) {
 }
 
 /**
- * CST/ETH Dutch getters stay internally consistent (bounded reads; skips on revert).
- * @param {import("hardhat").ethers.Contract} gameProxy_
- */
+CST/ETH Dutch getters stay internally consistent (bounded reads; skips on revert).
+@param {import("hardhat").ethers.Contract} gameProxy_
+*/
 async function assertDutchAuctionViewsSanity(gameProxy_) {
 	const block_ = await hre.ethers.provider.getBlock("latest");
 	const blockTs_ = BigInt(block_.timestamp);
@@ -594,9 +594,9 @@ async function assertDutchAuctionViewsSanity(gameProxy_) {
 }
 
 /**
- * `numStakedNfts` counts populated `stakeActions` and never exceeds `actionCounter` (see `StakingWalletNftBase`).
- * @param {Awaited<ReturnType<typeof loadFixtureDeployContractsForTesting>>} contracts_
- */
+`numStakedNfts` counts populated `stakeActions` and never exceeds `actionCounter` (see `StakingWalletNftBase`).
+@param {Awaited<ReturnType<typeof loadFixtureDeployContractsForTesting>>} contracts_
+*/
 async function assertStakingWalletNumStakedVsActionCounter(contracts_) {
 	for (const staking_ of [contracts_.stakingWalletRandomWalkNft, contracts_.stakingWalletCosmicSignatureNft]) {
 		const num_ = await staking_.numStakedNfts();
@@ -606,9 +606,9 @@ async function assertStakingWalletNumStakedVsActionCounter(contracts_) {
 }
 
 /**
- * For sampled CS stake actions, `initialRewardAmountPerStakedNft` is a snapshot at stake time and must be <= current cumulative reward.
- * @param {Awaited<ReturnType<typeof loadFixtureDeployContractsForTesting>>} contracts_
- */
+For sampled CS stake actions, `initialRewardAmountPerStakedNft` is a snapshot at stake time and must be <= current cumulative reward.
+@param {Awaited<ReturnType<typeof loadFixtureDeployContractsForTesting>>} contracts_
+*/
 async function assertCosmicSignatureStakeInitialRewardVsCurrent(contracts_) {
 	const staking_ = contracts_.stakingWalletCosmicSignatureNft;
 	const actionCounter_ = await staking_.actionCounter();
@@ -637,9 +637,9 @@ async function assertCosmicSignatureStakeInitialRewardVsCurrent(contracts_) {
 }
 
 /**
- * Structural smoke: endurance champion start time should not exceed that bidder's latest bid time in this round.
- * @param {import("hardhat").ethers.Contract} gameProxy_
- */
+Structural smoke: endurance champion start time should not exceed that bidder's latest bid time in this round.
+@param {import("hardhat").ethers.Contract} gameProxy_
+*/
 async function assertEnduranceChampionStartTimestampVsBidderInfo(gameProxy_) {
 	const last_ = await gameProxy_.lastBidderAddress();
 	if (last_ === hre.ethers.ZeroAddress) {
@@ -671,9 +671,9 @@ async function assertEnduranceChampionStartTimestampVsBidderInfo(gameProxy_) {
 }
 
 /**
- * `Bidding._bidCommon` appends each bidder to `items[numItems-1]` after increment; `lastBidderAddress` is that sender.
- * @param {import("hardhat").ethers.Contract} gameProxy_
- */
+`Bidding._bidCommon` appends each bidder to `items[numItems-1]` after increment; `lastBidderAddress` is that sender.
+@param {import("hardhat").ethers.Contract} gameProxy_
+*/
 async function assertLastBidderMatchesBidLogTail(gameProxy_) {
 	const last_ = await gameProxy_.lastBidderAddress();
 	if (last_ === hre.ethers.ZeroAddress) {
@@ -690,9 +690,9 @@ async function assertLastBidderMatchesBidLogTail(gameProxy_) {
 }
 
 /**
- * Cosmic Signature NFTs in custody at the CS staking wallet must match the staked counter (same idea as RW).
- * @param {Awaited<ReturnType<typeof loadFixtureDeployContractsForTesting>>} contracts_
- */
+Cosmic Signature NFTs in custody at the CS staking wallet must match the staked counter (same idea as RW).
+@param {Awaited<ReturnType<typeof loadFixtureDeployContractsForTesting>>} contracts_
+*/
 async function assertCosmicSignatureStakingCustodyInvariant(contracts_) {
 	const numStaked_ = await contracts_.stakingWalletCosmicSignatureNft.numStakedNfts();
 	const balance_ = await contracts_.cosmicSignatureNft.balanceOf(contracts_.stakingWalletCosmicSignatureNftAddress);
@@ -703,11 +703,11 @@ async function assertCosmicSignatureStakingCustodyInvariant(contracts_) {
 }
 
 /**
- * @param {import("hardhat").ethers.Contract} gameProxy_
- * @param {bigint} roundNum_
- * @param {bigint} numBids_
- * @returns {Promise<Set<string> | null>} `null` if `numBids_` exceeds scan cap (caller should skip subset checks).
- */
+@param {import("hardhat").ethers.Contract} gameProxy_
+@param {bigint} roundNum_
+@param {bigint} numBids_
+@returns {Promise<Set<string> | null>} `null` if `numBids_` exceeds scan cap (caller should skip subset checks).
+*/
 async function buildCurrentRoundBidderAddressSet(gameProxy_, roundNum_, numBids_) {
 	if (numBids_ === 0n) {
 		return new Set();
@@ -725,10 +725,10 @@ async function buildCurrentRoundBidderAddressSet(gameProxy_, roundNum_, numBids_
 }
 
 /**
- * Endurance / Chrono-Warrior addresses assigned in `_updateChampionsIfNeeded` are always participants who bid this round.
- * @param {import("hardhat").ethers.Contract} gameProxy_
- * @param {Set<string> | null} bidderSetLowercase_
- */
+Endurance / Chrono-Warrior addresses assigned in `_updateChampionsIfNeeded` are always participants who bid this round.
+@param {import("hardhat").ethers.Contract} gameProxy_
+@param {Set<string> | null} bidderSetLowercase_
+*/
 async function assertChampionAddressesAmongBidders(gameProxy_, bidderSetLowercase_) {
 	if (bidderSetLowercase_ === null) {
 		return;
@@ -753,10 +753,10 @@ async function assertChampionAddressesAmongBidders(gameProxy_, bidderSetLowercas
 }
 
 /**
- * Game `deposit` only increases cumulative reward per staked NFT (never decreases on-chain).
- * @param {Awaited<ReturnType<typeof loadFixtureDeployContractsForTesting>>} contracts_
- * @param {{ lastValue: bigint | null }} snapshotWrapper_
- */
+Game `deposit` only increases cumulative reward per staked NFT (never decreases on-chain).
+@param {Awaited<ReturnType<typeof loadFixtureDeployContractsForTesting>>} contracts_
+@param {{ lastValue: bigint | null }} snapshotWrapper_
+*/
 async function assertRewardAmountPerStakedNftMonotonic(contracts_, snapshotWrapper_) {
 	const current_ = await contracts_.stakingWalletCosmicSignatureNft.rewardAmountPerStakedNft();
 	if (snapshotWrapper_.lastValue === null) {
@@ -771,12 +771,12 @@ async function assertRewardAmountPerStakedNftMonotonic(contracts_, snapshotWrapp
 }
 
 /**
- * Consistency / structural smoke on `tryGetCurrentChampions` (not a full reimplementation of the view).
- * @param {import("hardhat").ethers.Contract} gameProxy_
- * @param {Set<string> | null} bidderSetLowercase_
- * @param {readonly [unknown, unknown, unknown, unknown]} tuple_
- * @param {string} lastBidderAddress_
- */
+Consistency / structural smoke on `tryGetCurrentChampions` (not a full reimplementation of the view).
+@param {import("hardhat").ethers.Contract} gameProxy_
+@param {Set<string> | null} bidderSetLowercase_
+@param {readonly [unknown, unknown, unknown, unknown]} tuple_
+@param {string} lastBidderAddress_
+*/
 async function assertTryGetCurrentChampionsSmoke(gameProxy_, bidderSetLowercase_, tuple_, lastBidderAddress_) {
 	if (lastBidderAddress_ === hre.ethers.ZeroAddress) {
 		return;
@@ -823,9 +823,9 @@ async function assertTryGetCurrentChampionsSmoke(gameProxy_, bidderSetLowercase_
 }
 
 /**
- * When the round is active and at least one bid exists, ETH Dutch next price should be positive (Comment-202503162).
- * @param {import("hardhat").ethers.Contract} gameProxy_
- */
+When the round is active and at least one bid exists, ETH Dutch next price should be positive (Comment-202503162).
+@param {import("hardhat").ethers.Contract} gameProxy_
+*/
 async function assertNextEthBidPricePositiveWhenBidding(gameProxy_) {
 	const last_ = await gameProxy_.lastBidderAddress();
 	if (last_ === hre.ethers.ZeroAddress) {
@@ -845,9 +845,9 @@ async function assertNextEthBidPricePositiveWhenBidding(gameProxy_) {
 }
 
 /**
- * Latest minted CS NFT id is `totalSupply - 1`; `ownerOf` must succeed when supply is non-zero.
- * @param {Awaited<ReturnType<typeof loadFixtureDeployContractsForTesting>>} contracts_
- */
+Latest minted CS NFT id is `totalSupply - 1`; `ownerOf` must succeed when supply is non-zero.
+@param {Awaited<ReturnType<typeof loadFixtureDeployContractsForTesting>>} contracts_
+*/
 async function assertCosmicSignatureNftLatestTokenExists(contracts_) {
 	const total_ = await contracts_.cosmicSignatureNft.totalSupply();
 	if (total_ === 0n) {
@@ -858,11 +858,11 @@ async function assertCosmicSignatureNftLatestTokenExists(contracts_) {
 }
 
 /**
- * @param {Awaited<ReturnType<typeof loadFixtureDeployContractsForTesting>>} contracts_
- * @param {Participant[]} participants_
- * @param {bigint} baselineRound_
- * @param {{ lastValue: bigint | null }} rewardPerStakedSnapshotWrapper_
- */
+@param {Awaited<ReturnType<typeof loadFixtureDeployContractsForTesting>>} contracts_
+@param {Participant[]} participants_
+@param {bigint} baselineRound_
+@param {{ lastValue: bigint | null }} rewardPerStakedSnapshotWrapper_
+*/
 async function runProtocolInvariants(contracts_, participants_, baselineRound_, rewardPerStakedSnapshotWrapper_) {
 	const game_ = contracts_.cosmicSignatureGameProxy;
 	await assertCstSupplyEqualsSumOfBalances(contracts_, participants_);
@@ -1037,11 +1037,11 @@ describe("FuzzTest", function () {
 		// #region Helpers: time, NFT discovery
 
 		/**
-		 * Advance block timestamp by a pseudorandom delta in `[minSeconds_, maxSeconds_]`.
-		 * All arithmetic uses integers to avoid mixing `number` / `bigint` incorrectly.
-		 * @param {number} minSeconds_
-		 * @param {number} maxSeconds_
-		 */
+		Advance block timestamp by a pseudorandom delta in `[minSeconds_, maxSeconds_]`.
+		All arithmetic uses integers to avoid mixing `number` / `bigint` incorrectly.
+		@param {number} minSeconds_
+		@param {number} maxSeconds_
+		*/
 		const advanceTime_ = async (minSeconds_, maxSeconds_) => {
 			const minB_ = BigInt(minSeconds_);
 			const maxB_ = BigInt(maxSeconds_);
@@ -1056,9 +1056,9 @@ describe("FuzzTest", function () {
 		};
 
 		/**
-		 * `usedNfts` is `uint256` with `0` meaning unused (see `StakingWalletNftBase.sol`).
-		 * @param {bigint} usedValue_
-		 */
+		`usedNfts` is `uint256` with `0` meaning unused (see `StakingWalletNftBase.sol`).
+		@param {bigint} usedValue_
+		*/
 		const isNftSlotUnused_ = (usedValue_) => usedValue_ === 0n;
 
 		const findUnusedRandomWalkNft_ = async (participant_, forStaking_) => {
@@ -1230,9 +1230,9 @@ describe("FuzzTest", function () {
 		};
 
 		/**
-		 * Donation+bid paths transfer the mock ERC-721 away; remint + approve when the participant no longer owns it.
-		 * @param {Participant} participant_
-		 */
+		Donation+bid paths transfer the mock ERC-721 away; remint + approve when the participant no longer owns it.
+		@param {Participant} participant_
+		*/
 		const ensureParticipantOwnsMockDonationNft_ = async (participant_) => {
 			try {
 				const owner_ = await contracts_.fuzzTestMockErc721.ownerOf(participant_.mockDonatedNftTokenId);
@@ -1284,9 +1284,9 @@ describe("FuzzTest", function () {
 		};
 
 		/**
-		 * Intentionally invalid operations; must revert predictably.
-		 * @param {Participant} participant_
-		 */
+		Intentionally invalid operations; must revert predictably.
+		@param {Participant} participant_
+		*/
 		const executeNegativeProbe_ = async (participant_) => {
 			++ globalStats_.negativeProbes;
 			const kind_ = Number(participant_.random() % 5n);
@@ -1379,9 +1379,9 @@ describe("FuzzTest", function () {
 		};
 
 		/**
-		 * @param {Participant} participant_
-		 * @param {string} action_
-		 */
+		@param {Participant} participant_
+		@param {string} action_
+		*/
 		const executeAction_ = async (participant_, action_) => {
 			++ globalStats_.totalActions;
 			if ( ! globalStats_.actionCounts[action_]) {

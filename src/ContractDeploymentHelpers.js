@@ -16,12 +16,12 @@ const { HARDHAT_MODE_CODE, getBlockTimeStampByBlockNumber, waitForTransactionRec
 // #region `deployContracts`
 
 /**
- * @param {import("ethers").Signer} deployerSigner 
- * @param {string} randomWalkNftAddress 
- * @param {string} charityAddress 
- * @param {boolean} transferContractOwnershipToCosmicSignatureDao 
- * @param {bigint} roundActivationTime 
- */
+@param {import("ethers").Signer} deployerSigner 
+@param {string} randomWalkNftAddress 
+@param {string} charityAddress 
+@param {boolean} transferContractOwnershipToCosmicSignatureDao 
+@param {bigint} roundActivationTime 
+*/
 const deployContracts = async function (
 	deployerSigner,
 	randomWalkNftAddress,
@@ -43,13 +43,13 @@ const deployContracts = async function (
 // #region `deployContractsAdvanced`
 
 /**
- * @param {import("ethers").Signer} deployerSigner 
- * @param {string} cosmicSignatureGameContractName 
- * @param {string} randomWalkNftAddress May be empty or zero.
- * @param {string} charityAddress May be empty or zero.
- * @param {boolean} transferContractOwnershipToCosmicSignatureDao 
- * @param {bigint} roundActivationTime See `setRoundActivationTimeIfNeeded`.
- */
+@param {import("ethers").Signer} deployerSigner 
+@param {string} cosmicSignatureGameContractName 
+@param {string} randomWalkNftAddress May be empty or zero.
+@param {string} charityAddress May be empty or zero.
+@param {boolean} transferContractOwnershipToCosmicSignatureDao 
+@param {bigint} roundActivationTime See `setRoundActivationTimeIfNeeded`.
+*/
 const deployContractsAdvanced = async function (
 	deployerSigner,
 	cosmicSignatureGameContractName,
@@ -185,13 +185,13 @@ const deployContractsAdvanced = async function (
 // #region `setRoundActivationTimeIfNeeded`
 
 /**
- * @param {bigint} roundActivationTime 
- * Possible values:
- *    less than or equal negative 1 billion: do nothing (on deployment, the value hardcoded in the contract will stay unchanged).
- *    greater than or equal 1 billion: use the given value as is.
- *    any other value: use the "current" block timestamp plus the given value.
- * Which block is the "current", we choose near Comment-202510206.
- */
+@param {bigint} roundActivationTime 
+Possible values:
+   less than or equal negative 1 billion: do nothing (on deployment, the value hardcoded in the contract will stay unchanged).
+   greater than or equal 1 billion: use the given value as is.
+   any other value: use the "current" block timestamp plus the given value.
+Which block is the "current", we choose near Comment-202510206.
+*/
 async function setRoundActivationTimeIfNeeded(cosmicSignatureGameProxy, roundActivationTime) {
 	// [Comment-202507202]
 	// Similar magic numbers exist in multiple places.

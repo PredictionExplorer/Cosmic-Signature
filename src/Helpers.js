@@ -353,6 +353,7 @@ So keeping it simple for now.
 [/Comment-202510208]
 @param {string} proxyAddress_
 @param {string} oldImplementationAddress_
+@dev Issue. Should this method have the word `wait` in its name?
 */
 async function safeErc1967GetChangedImplementationAddress(proxyAddress_, oldImplementationAddress_) {
 	// Comment-202409255 applies.

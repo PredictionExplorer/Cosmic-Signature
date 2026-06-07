@@ -43,8 +43,8 @@ let preparedHardhatCoverage = false;
 // #region `loadFixtureDeployContractsForTesting`
 
 /**
- * @param {bigint} roundActivationTime 
- */
+@param {bigint} roundActivationTime 
+*/
 async function loadFixtureDeployContractsForTesting(roundActivationTime) {
 	const contracts = await loadFixture(deployContractsForTesting);
 	contracts.signers.forEach((signer) => { signer.reset(); });
@@ -91,9 +91,9 @@ async function loadFixtureDeployContractsForTesting(roundActivationTime) {
 // #region `deployContractsForTesting`
 
 /**
- * This function is to be used for unit tests.
- * It's OK to pass this function to `loadFixture`.
- */
+This function is to be used for unit tests.
+It's OK to pass this function to `loadFixture`.
+*/
 async function deployContractsForTesting() {
 	return deployContractsForTestingAdvanced("CosmicSignatureGame");
 }
@@ -102,9 +102,9 @@ async function deployContractsForTesting() {
 // #region `deployContractsForTestingAdvanced`
 
 /**
- * This function is to be used for unit tests.
- * @param {string} cosmicSignatureGameContractName 
- */
+This function is to be used for unit tests.
+@param {string} cosmicSignatureGameContractName 
+*/
 async function deployContractsForTestingAdvanced(
 	cosmicSignatureGameContractName
 ) {
@@ -199,9 +199,9 @@ async function hackPrepareHardhatCoverageOnceIfNeeded() {
 // #region `storeContractDeployedByteCodeAtAddress`
 
 /**
- * @param {string} contractName 
- * @param {string} address 
- */
+@param {string} contractName 
+@param {string} address 
+*/
 async function storeContractDeployedByteCodeAtAddress(contractName, address) {
 	const artifact = await hre.artifacts.readArtifact(contractName);
 	await hre.ethers.provider.send("hardhat_setCode", [address, artifact.deployedBytecode,]);
@@ -293,9 +293,9 @@ function isExpectedTransactionErrorObject(errorObject) {
 // #region `assertEvent`
 
 /**
- * Asserts a `TransactionReceipt.logs` item.
- * @param {import("hardhat").ethers.Log} event
- */
+Asserts a `TransactionReceipt.logs` item.
+@param {import("hardhat").ethers.Log} event
+*/
 function assertEvent(event, contract, eventName, eventArgs) {
 	const parsedEvent = contract.interface.parseLog(event);
 	expect(parsedEvent.name).equal(eventName);
@@ -306,13 +306,13 @@ function assertEvent(event, contract, eventName, eventArgs) {
 // #region `makeNextBlockTimeDeterministic`
 
 /**
- * This function does what issue 3 in Comment-202501193 recommends.
- * A simple way to use this function is to subtract its return value
- * from the value to be passed to the "evm_increaseTime" JSON RPC method.
- * But it's correct to do so only if the last block was mined within the current, possibly ending second.
- * To (almost) guaranteed that, call this function before mining the last block.
- * @param {number} currentSecondRemainingDurationMinLimitInMilliSeconds
- */
+This function does what issue 3 in Comment-202501193 recommends.
+A simple way to use this function is to subtract its return value
+from the value to be passed to the "evm_increaseTime" JSON RPC method.
+But it's correct to do so only if the last block was mined within the current, possibly ending second.
+To (almost) guaranteed that, call this function before mining the last block.
+@param {number} currentSecondRemainingDurationMinLimitInMilliSeconds
+*/
 async function makeNextBlockTimeDeterministic(currentSecondRemainingDurationMinLimitInMilliSeconds = 300) {
 	const currentDateTimeInMilliSeconds = Date.now();
 	const currentSecondElapsedDurationInMilliSeconds = currentDateTimeInMilliSeconds % 1000;
@@ -337,13 +337,13 @@ async function makeNextBlockTimeDeterministic(currentSecondRemainingDurationMinL
 // #region `generateRandomUInt256Seed`
 
 /**
- * Comment-202504067 applies.
- * This is the test function that Comment-202504071 mentions.
- * Comment-202506282 applies.
- * Comment-202506284 applies.
- * @param {import("hardhat").ethers.Block} prevBlock
- * @param {import("hardhat").ethers.Block} latestBlock
- */
+Comment-202504067 applies.
+This is the test function that Comment-202504071 mentions.
+Comment-202506282 applies.
+Comment-202506284 applies.
+@param {import("hardhat").ethers.Block} prevBlock
+@param {import("hardhat").ethers.Block} latestBlock
+*/
 /*async*/ function generateRandomUInt256Seed(prevBlock, latestBlock/*, blockchainPropertyGetter*/) {
 	let randomNumberSeed = BigInt(prevBlock.hash) >> 1n;
 	{
