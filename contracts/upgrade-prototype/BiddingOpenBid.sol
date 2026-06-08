@@ -46,7 +46,7 @@ abstract contract BiddingOpenBid is
 
 	/// @notice Multiples of bid price that open bid has to be.
 	/// @dev Issue. This really belongs to a new version of `CosmicSignatureGameStorage`.
-	/// Furthermore this violates Comment-202412148.
+	/// Furthermore, this violates Comment-202412148.
 	/// But, given that this is not production code, keeping it simple.
 	uint256 public timesEthBidPrice;
 

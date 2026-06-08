@@ -188,6 +188,7 @@ task("register-cosmic-signature-contracts", "Verifies and registers deployed Cos
 	// });
 
 	// Performing the more likely to fail registration the last.
+	// Issue. But would it be better to perform it first?
 	console.info("%s", `${nodeOsModule.EOL}Registering ${deployConfigObject.cosmicSignatureGameContractName} proxy and implementation.`);
 	try {
 		await hre.run("verify:verify", {
@@ -220,13 +221,6 @@ task("upgrade-cosmic-signature-game", "Upgrades the CosmicSignatureGame contract
 	const upgradeConfigFilePath = args.upgradeconfigfilepath;
 	const upgradeConfigJsonString = await nodeFsModule.promises.readFile(upgradeConfigFilePath, "utf8");
 	const upgradeConfigObject = JSON.parse(upgradeConfigJsonString);
-
-	// Issue. This logic will work correct only when upgrading from the initially deployed version.
-	// To support subsequent upgrades, this logic will need revisiting.
-	if (upgradeConfigObject.newCosmicSignatureGameContractVersionNumber != 2) {
-		throw new Error("We do not support subsequent contract upgrades.");
-	}
-
 	if (nodeFsModule.existsSync(upgradeConfigObject.reportFilePath)) {
 		throw new Error(`"${upgradeConfigObject.reportFilePath}" already exists.`);
 	}
@@ -242,25 +236,35 @@ task("upgrade-cosmic-signature-game", "Upgrades the CosmicSignatureGame contract
 	await hre.run("compile");
 	console.info();
 
-	const cosmicSignatureGameFactory =
-		await hre.ethers.getContractFactory(deployConfigObject.cosmicSignatureGameContractName, deployerSigner);
-	const cosmicSignatureGameProxy = cosmicSignatureGameFactory.attach(deployCosmicSignatureContractsReportObject.cosmicSignatureGameProxyAddress);
 	const newCosmicSignatureGameFactory =
 		await hre.ethers.getContractFactory(upgradeConfigObject.newCosmicSignatureGameContractName, deployerSigner);
-	const upgradeProxyOptions = {kind: "uups",};
+	const upgradeProxyOptions =
+		{
+			kind: "uups",
+			unsafeAllowRenames: upgradeConfigObject.unsafeAllowRenames,
+			unsafeSkipStorageCheck: upgradeConfigObject.unsafeSkipStorageCheck,
+		};
 	if (upgradeConfigObject.newInitializerMethodName.length > 0) {
 		upgradeProxyOptions.call = upgradeConfigObject.newInitializerMethodName;
 	}
-	console.info("%s", `Upgrading ${deployConfigObject.cosmicSignatureGameContractName} to ${upgradeConfigObject.newCosmicSignatureGameContractName}.`);
+
+	// [Comment-202606198]
+	// This will be different from `deployCosmicSignatureContractsReportObject.cosmicSignatureGameImplementationAddress`
+	// if we are upgrading to V3+. It's possible to get this from the previous version deployment or upgrade report,
+	// but keeping it simple.
+	// [/Comment-202606198]
+	const existingCosmicSignatureGameImplementationAddress = await hre.upgrades.erc1967.getImplementationAddress(deployCosmicSignatureContractsReportObject.cosmicSignatureGameProxyAddress);
+
+	console.info("%s", `Upgrading to ${upgradeConfigObject.newCosmicSignatureGameContractName}.`);
 	const newCosmicSignatureGameProxy =
-		await hre.upgrades.upgradeProxy(cosmicSignatureGameProxy, newCosmicSignatureGameFactory, upgradeProxyOptions);
+		await hre.upgrades.upgradeProxy(deployCosmicSignatureContractsReportObject.cosmicSignatureGameProxyAddress, newCosmicSignatureGameFactory, upgradeProxyOptions);
 	// await newCosmicSignatureGameProxy.waitForDeployment();
 
 	// Issue. As per Comment-202510208, the transaction is still being mined.
 	console.info("%s", "Submitted an upgrade transaction.");
 
 	const reportObject = {
-		newCosmicSignatureGameImplementationAddress: await safeErc1967GetChangedImplementationAddress(deployCosmicSignatureContractsReportObject.cosmicSignatureGameProxyAddress, deployCosmicSignatureContractsReportObject.cosmicSignatureGameImplementationAddress),
+		newCosmicSignatureGameImplementationAddress: await safeErc1967GetChangedImplementationAddress(deployCosmicSignatureContractsReportObject.cosmicSignatureGameProxyAddress, existingCosmicSignatureGameImplementationAddress),
 	};
 	console.info();
 	const reportJsonString = JSON.stringify(reportObject, null, 3);

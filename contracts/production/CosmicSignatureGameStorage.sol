@@ -503,6 +503,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [Comment-202412148]
 	/// Although it's probably not needed here that much because this contract is the last in the inheritance list
 	/// among those containing storage variables.
+	/// In fact, `BiddingOpenBid`, does introduce a new variable, but that's just a test contract.
 	/// [/Comment-202412148]
 	// solhint-disable-next-line var-name-mixedcase
 	uint256[1 << 30] private __gap_persistent;

@@ -1,4 +1,4 @@
-### Slither Docs
+### Slither Online Docs
 
 https://github.com/crytic/slither
 
@@ -44,9 +44,9 @@ slither .
 slither path/to/hardhat-project
 ```
 
-- Slither supports a number of command line parameters, some of which the "slither-1.bash" script provides.
+- Slither supports a number of command line parameters, some of which the `slither-1.bash` script provides.
 
 - Don't run Slither from the command line; run the script instead.\
-It will generate a Markdown report file named <!-- Comment-202409112 applies. --> "slither-1-output.md".
+It will generate a Markdown report file named <!-- Comment-202409112 applies. --> `slither-1-output.md`.
 
 - Open the file in VS Code and press Ctrl+Shift+V to open Markdown Preview. In there, you can click links to navigate to relevant locations in Solidity source files.

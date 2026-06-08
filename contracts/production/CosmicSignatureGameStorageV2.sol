@@ -175,8 +175,6 @@ abstract contract CosmicSignatureGameStorageV2 is ICosmicSignatureGameStorage {
 	/// [Comment-202606053]
 	/// This occupies the same storage slot as `CosmicSignatureGameStorage.bidCstRewardAmount`.
 	/// [/Comment-202606053]
-	/// Issue. Relative to the deployed V1 contract, the rename was from `cstRewardAmountForBidding`.
-	/// todo-0 That's another reason why `unsafeSkipStorageCheck` is neeed. Document and/or comment.
 	/// @custom:oz-renamed-from bidCstRewardAmount
 	uint256 public bidCstRewardAmountMultiplier;
 

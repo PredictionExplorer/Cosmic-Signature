@@ -44,7 +44,7 @@ There is a script named "../runners/fund-default-owner-account-with-eth.bash". I
 - Execute "../runners/live-blockchain-tests.bash".\
 It will run for about a minute.
 
-- The test saves deployed contract addresses to the "../output/deploy-cosmic-signature-contracts-report-&lt;network_name&gt;-&lt;cosmic_signature_game_contract_name&gt;.json" file. If something goes wrong you might need to use some of those addresses to get your assets back.
+- The test saves deployed contract addresses to the "../output/deploy-cosmic-signature-contracts-report-<network-name>-&lt;cosmic_signature_game_contract_name&gt;.json" file. If something goes wrong you might need to use some of those addresses to get your assets back.
 
 #### Get Your Assets Back
 
