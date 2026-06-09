@@ -236,6 +236,14 @@ task("upgrade-cosmic-signature-game", "Upgrades the CosmicSignatureGame contract
 	await hre.run("compile");
 	console.info();
 
+	// // Testing.
+	// {
+	// 	const cosmicSignatureGameFactory =
+	// 		await hre.ethers.getContractFactory(deployConfigObject.cosmicSignatureGameContractName, deployerSigner);
+	// 	const cosmicSignatureGameProxy = cosmicSignatureGameFactory.attach(deployCosmicSignatureContractsReportObject.cosmicSignatureGameProxyAddress);
+	// 	await setRoundActivationTimeIfNeeded(cosmicSignatureGameProxy, 10n);
+	// }
+
 	const newCosmicSignatureGameFactory =
 		await hre.ethers.getContractFactory(upgradeConfigObject.newCosmicSignatureGameContractName, deployerSigner);
 	const upgradeProxyOptions =

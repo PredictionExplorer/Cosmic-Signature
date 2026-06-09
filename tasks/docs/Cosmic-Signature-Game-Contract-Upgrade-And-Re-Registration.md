@@ -60,8 +60,8 @@ Make sure `deployerPrivateKey_<network-name>` matches the current contract owner
 OpenZeppelin would actually disallow the upgrade from `CosmicSignatureGameV2` to `CosmicSignatureGameOpenBid`. Storage check would fail. Therefore, in `upgrade-cosmic-signature-game-config-<network-name>-CosmicSignatureGameOpenBid.json` you must temporarily set `unsafeSkipStorageCheck` to `true`.
 
 - I made 2 changes in V1's `CosmicSignatureGameStorage`.\
-(1) I reduced `__gap_persistent` size, because OpenZeppelin's upgradeable contract validator was crashing due to overflow. The change broke nothing,  because the given storage variable is the last.\
-(2) I renamed `cstRewardAmountForBidding` to `bidCstRewardAmount`.\
+(1) I renamed `cstRewardAmountForBidding` to `bidCstRewardAmount` (which I further renamed in V2).\
+(2) I reduced `__gap_persistent` size, because OpenZeppelin's upgradeable contract validator was crashing due to overflow. The change broke nothing, because the given storage variable is the last.\
 The old state of affairs still exist in `.openzeppelin`. Therefore OpenZeppelin's upgradeable contract validator would complain. To silence it, before making the production upgrade, in `../config/upgrade-cosmic-signature-game-config-arbitrumOne-CosmicSignatureGameV2.json`, temporarily set `unsafeAllowRenames` and `unsafeSkipStorageCheck` to `true`.
 
 #### Afterwards
