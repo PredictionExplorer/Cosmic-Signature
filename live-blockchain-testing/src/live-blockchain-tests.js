@@ -172,6 +172,27 @@ function createAccountSigner(accountPrivateKeySeedSaltEntry_) {
 // #region `main`
 
 async function main() {
+	// // Testing.
+	// // const hash = "0x7ace5996a34c3127f09a20d3d33c7cc1f2dca6490b4807e2632f5657b5f55377";
+	// const hash = "0x1dff1f3c73e91bc87a9ed61bfa4712c59877a2faf805c15ba9b1651206d96534";
+	// const tx = await hre.ethers.provider.getTransaction(hash);
+	// const receipt = await hre.ethers.provider.getTransactionReceipt(hash);
+	// console.log({
+	// 	// status: receipt.status,
+	// 	// from: tx.from,
+	// 	// to: tx.to,
+	// 	// data: tx.data,
+	// 	// value: tx.value.toString(),
+	// 	// gasLimit: tx.gasLimit?.toString(),
+	// 	// gasPrice: tx.gasPrice?.toString(),
+	// 	// maxFeePerGas: tx.maxFeePerGas?.toString(),
+	// 	// maxPriorityFeePerGas: tx.maxPriorityFeePerGas?.toString(),
+	// 	tx,
+	// 	receipt,
+	// });
+	// throw new Error("Test.");
+
+
 	await createCosmicSignatureContracts(await runDeployCosmicSignatureContractsIfNeeded());
 	await validateCosmicSignatureContractStatesIfNeeded();
 	await fundAccountsWithEthIfNeeded();
