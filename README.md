@@ -87,7 +87,7 @@ At round end, prizes are distributed as follows:
   - CST bonus
 
 - **Bidders (raffles)**
-  - An instant CST rewards for each bid
+  - An instant CST reward for each bid
   - Randomly awarded ETH raffle prizes
   - Randomly awarded Cosmic Signature NFTs and CST bonuses
 

@@ -40,7 +40,7 @@ Make sure `deployerPrivateKey_<network-name>` matches the current contract owner
 
 - Only if you are dealing with a mainnet or a testnet, make sure the `.openzeppelin` subfolder still exists.
 
-- `CosmicSignatureGameV2` requires that at least 1 round has already completed. So, when testing things, before upgrading, you must place a bid and claim the main prize.
+- `CosmicSignatureGameV2` requires that `CosmicSignatureGame` was deployed first and at least 1 bidding round has already completed. So, when testing things, before upgrading, you must place a bid and claim the main prize.
 
 #### Run Scripts
 
@@ -61,8 +61,8 @@ OpenZeppelin would actually disallow the upgrade from `CosmicSignatureGameV2` to
 
 - I made 2 changes in V1's `CosmicSignatureGameStorage`.\
 (1) I renamed `cstRewardAmountForBidding` to `bidCstRewardAmount` (which I further renamed in V2).\
-(2) I reduced `__gap_persistent` size, because OpenZeppelin's upgradeable contract validator was crashing due to overflow. The change broke nothing, because the given storage variable is the last.\
-The old state of affairs still exist in `.openzeppelin`. Therefore OpenZeppelin's upgradeable contract validator would complain. To silence it, before making the production upgrade, in `../config/upgrade-cosmic-signature-game-config-arbitrumOne-CosmicSignatureGameV2.json`, temporarily set `unsafeAllowRenames` and `unsafeSkipStorageCheck` to `true`.
+(2) I reduced `__gap_persistent` length, because OpenZeppelin's upgradeable contract validation logic executed by `upgradeProxy` was crashing due to an overflow. Storage layout remains compatible because the given storage variable is the last. Testing with `CosmicSignatureGameOpenBid` has not run into this case because it added a storage variable after the gap.\
+The old state of affairs still exists in the tracking info stored in `.openzeppelin`. Therefore, when upgrading to V2 in the production, OpenZeppelin's upgradeable contract validation logic would complain. To silence it, before upgrading, in `../config/upgrade-cosmic-signature-game-config-arbitrumOne-CosmicSignatureGameV2.json`, temporarily set `unsafeAllowRenames` and `unsafeSkipStorageCheck` to `true`.
 
 #### Afterwards
 

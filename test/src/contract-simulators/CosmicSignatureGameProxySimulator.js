@@ -793,7 +793,7 @@ async function createCosmicSignatureGameProxySimulator(
 		// #endregion
 		// #region `_getCstDutchAuctionDuration`
 
-		// todo-0 This has been eliminated in V2.
+		// todo-0 This has been eliminated in V2. But maybe don't refactor this code. Instead, develop a different test.
 		_getCstDutchAuctionDuration: function() {
 			const cstDutchAuctionDuration_ = this.mainPrizeTimeIncrementInMicroSeconds / this.cstDutchAuctionDurationDivisor;
 			return cstDutchAuctionDuration_;

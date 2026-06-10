@@ -586,7 +586,7 @@ abstract contract Bidding is
 			// Comment-202501045 applies.
 
 			// [Comment-202504212]
-			// Issue. If the admin increases `cstDutchAuctionBeginningBidPriceMinLimit` for the next round,
+			// Issue. If the owner increases `cstDutchAuctionBeginningBidPriceMinLimit` for the next round,
 			// it's possible that this value will not respect that setting.
 			// [/Comment-202504212]
 			nextRoundFirstCstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
