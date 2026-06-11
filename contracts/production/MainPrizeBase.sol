@@ -68,6 +68,7 @@ abstract contract MainPrizeBase is CosmicSignatureGameStorage, IMainPrizeBase {
 			// In V2+, this problem is somewhat mitigated by the increase of CST Dutch auction duration on each CST bid,
 			// but even then it can take like a year until it's no longer possible to place such a bid within the timeout window.
 			// Therefore, V2+ does not ensure that `mainPrizeTime` becomes in the future.
+			// Note that the V2+ logic makes it theoretically possible to place a bid and claim main prize within a single transaction.
 			// [/Comment-202606175]
 			uint256 mainPrizeTimeIncrement_ = getMainPrizeTimeIncrement();
 			uint256 mainPrizeCorrectedTime_ = Math.max(mainPrizeTime, block.timestamp);
