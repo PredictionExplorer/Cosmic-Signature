@@ -505,7 +505,7 @@ const hardhatUserConfig = {
 				"https://ethereum-sepolia.publicnode.com",
 
 			// Comment-202509209 applies.
-			gasMultiplier: 1.1,
+			gasMultiplier: 1.4,
 
 			// accounts: ((process.env.SEPOLIA_PRIVATE_KEY ?? "").length > 0) ? [process.env.SEPOLIA_PRIVATE_KEY] : [],
 		},
@@ -514,7 +514,7 @@ const hardhatUserConfig = {
 			url: "https://sepolia-rollup.arbitrum.io/rpc",
 
 			// Comment-202509209 applies.
-			gasMultiplier: 1.1,
+			gasMultiplier: 1.4,
 
 			// accounts: ((process.env.ARBITRUM_SEPOLIA_PRIVATE_KEY ?? "").length > 0) ? [process.env.ARBITRUM_SEPOLIA_PRIVATE_KEY] : [],
 		},
@@ -523,7 +523,7 @@ const hardhatUserConfig = {
 			url: "https://arb1.arbitrum.io/rpc",
 
 			// Comment-202509209 applies.
-			gasMultiplier: 1.1,
+			gasMultiplier: 1.4,
 
 			// accounts: ((process.env.MAINNET_PRIVATE_KEY ?? "").length > 0) ? [process.env.MAINNET_PRIVATE_KEY] : [],
 		},

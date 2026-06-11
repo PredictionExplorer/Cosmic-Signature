@@ -526,6 +526,7 @@ async function createCosmicSignatureGameProxySimulator(
 				// console.info("%s", "202505081");
 			} else if (overpaidEthPrice_ > 0n) {
 				// Comment-202505117 relates.
+				// Comment-202606216 relates.
 				const transactionGasPrice_ = transactionReceipt_.gasPrice;
 				expect(transactionGasPrice_).greaterThan(0n);
 				const ethBidRefundAmountToSwallowMaxLimit_ = this.ethBidRefundAmountInGasToSwallowMaxLimit * transactionGasPrice_;

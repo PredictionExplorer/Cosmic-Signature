@@ -358,8 +358,10 @@ abstract contract BiddingOpenBid is
 		// Comment-202505096 applies.
 		// Issue. To keep it simple, this logic is not necessarily as good as that in `Bidding._bidWithEth`.
 		if (overpaidEthPrice_ > int256(0)) {
-			// #enable_asserts assert(tx.gasprice > 0);
+			// Comment-202606216 applies.
+			// // #enable_asserts assert(tx.gasprice > 0);
 			uint256 ethBidRefundAmountToSwallowMaxLimit_ = ethBidRefundAmountInGasToSwallowMaxLimit * tx.gasprice;
+			
 			if (uint256(overpaidEthPrice_) <= ethBidRefundAmountToSwallowMaxLimit_) {
 				// Doing nothing.
 			} else

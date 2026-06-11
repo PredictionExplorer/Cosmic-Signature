@@ -264,8 +264,10 @@ abstract contract Bidding is
 			// Comment-202502052 relates and/or applies.
 			// [/Comment-202605288]
 			{
-				// #enable_asserts assert(tx.gasprice > 0);
+				// Comment-202606216 applies.
+				// // #enable_asserts assert(tx.gasprice > 0);
 				uint256 ethBidRefundAmountToSwallowMaxLimit_ = ethBidRefundAmountInGasToSwallowMaxLimit * tx.gasprice;
+
 				if (uint256(overpaidEthPrice_) <= ethBidRefundAmountToSwallowMaxLimit_) {
 					overpaidEthPrice_ = int256(0);
 					paidEthPrice_ = msg.value;

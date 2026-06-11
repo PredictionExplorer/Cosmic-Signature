@@ -74,6 +74,10 @@ library CosmicSignatureConstants {
 	/// This is expressed in gas.
 	/// We will multiply this by `tx.gasprice` and if the refund is greater than the result,
 	/// we will transfer the refund back to the bidder. Otherwise, the excess ETH will simply stay in the Game contract balance.
+	/// [Comment-202606216]
+	/// Issue. A problem is that on Arbitrum Sepolia and, likely, on Arbitrum One, at least during a gas estimate call,
+	/// `tx.gasprice` is zero.
+	/// [/Comment-202606216]
 	/// This value equals the amount of gas consumed by the logic in the block near Comment-202506219.
 	/// todo-2 This value might need tweaking after a blockchain upgrade.
 	/// [/Comment-202502052]
