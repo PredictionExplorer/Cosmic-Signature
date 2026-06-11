@@ -4,7 +4,7 @@
 
 This document describes exactly what we will have to do, on Arbitrum One, to upgrade the deployed `CosmicSignatureGame` proxy to `CosmicSignatureGameV2` once bidding round 0 ends. It is based on the `v2` branch sources, the task tooling under `tasks/`, and the live on-chain state.
 
-Companion documents: `v1-refactorings.md` (what changed in the V1 sources), `v2-vs-v1-changes.md` (what V2 changes for users and off-chain code), `tasks/docs/Cosmic-Signature-Game-Contract-Upgrade-And-Re-Registration.md` (the generic upgrade runbook this procedure builds on).
+Companion documents: `v1-refactorings.md` (what changed in the V1 sources), `v2-vs-v1-changes.md` (what V2 changes for users and off-chain code), `v2-upgrade-audit.md` (upgrade safety findings), `v2-upgrade-recommended-tests.md` (additional tests recommended before the upgrade), and `tasks/docs/Cosmic-Signature-Game-Contract-Upgrade-And-Re-Registration.md` (the generic upgrade runbook this procedure builds on).
 
 ## Live Deployment Facts (as of 2026-06-11)
 

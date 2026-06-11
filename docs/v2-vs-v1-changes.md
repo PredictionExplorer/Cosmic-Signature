@@ -11,7 +11,7 @@ V2 is implemented as a parallel inheritance hierarchy. New sources (all under `c
 
 The following V2 sources were verified to be functionally identical to their refactored V1 counterparts (only inheritance bases, comments, and dead code differ): `BidStatisticsV2`, `SecondaryPrizesV2`, `EthDonationsV2`, `NftDonationsV2`, `MainPrizeV2` (the entire `claimMainPrize` prize-distribution flow, validations, revert reasons, and events are unchanged), and most of `BiddingBaseV2` and `SystemManagementV2`. Everything that differs is listed below.
 
-V2 is deployed by **upgrading the existing proxy** (UUPS `upgradeToAndCall`), so "ABI changes" below describe what changes for callers of the proxy `0x6a714Ae7B5b6eA520F6BCA23d2E609C4Fd5863F2` once it is upgraded. See `v2-upgrade-procedure.md` for the procedure.
+V2 is deployed by **upgrading the existing proxy** (UUPS `upgradeToAndCall`), so "ABI changes" below describe what changes for callers of the proxy `0x6a714Ae7B5b6eA520F6BCA23d2E609C4Fd5863F2` once it is upgraded. See `v2-upgrade-procedure.md` for the procedure, `v2-upgrade-audit.md` for the safety audit, and `v2-upgrade-recommended-tests.md` for additional validation work recommended before the mainnet upgrade.
 
 ## ABI Changes
 
