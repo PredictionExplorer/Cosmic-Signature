@@ -96,7 +96,7 @@ contract CosmicSignatureGameV2 is
 
 	function _checkIfPrevVersionWasInitialized() private view {
 		// Comment-202605294 applies.
-		// But after V2 this will not be guaranteed.
+		// But after V2 this will not necessarily be guaranteed.
 		// #enable_asserts bool isSuccess_ = _getInitializedVersion() == uint64(1);
 		// #enable_asserts assert(isSuccess_);
 

@@ -566,6 +566,7 @@ abstract contract Bidding is
 
 			// [Comment-202606074]
 			// Issue. If `paidPrice_` happens to be zero, this would actually mint, rather than burn zero CSTs.
+			// This issue can be fixed by replacing negation with bitwise-notting, but it will not be done.
 			// [/Comment-202606074]
 			mintAndBurnSpecs_[0].value = ( - int256(paidPrice_) );
 

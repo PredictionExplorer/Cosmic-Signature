@@ -117,7 +117,7 @@ bidCstRewardAmount = floor(sqrt(elapsedDuration * bidCstRewardAmountMultiplier /
 
 - With the default `bidCstRewardAmountMultiplier` (`3 * (1 ether)^2 * INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND` = 1.08e46) and the first-round time increment, the reward is approximately: 0 CST after 0 seconds, ~1.73 CST after 1 second, ~13.4 CST after 60 seconds, ~104 CST after 1 hour, ~509 CST after 1 day (slightly smaller in later rounds as `mainPrizeTimeIncrementInMicroSeconds` grows ~1% per round).
 - When the computed reward is zero (e.g., two bids in the same second), V2 skips the mint entirely. Observable consequences: no zero-value CST `Transfer` mint event, and for a CST bid the burn is performed via `token.burn(bidder, paidPrice)` instead of `token.mintAndBurnMany([burn paid, mint reward])`. (Corner case: V1's `mintAndBurnMany` spec with value `-0` would actually be treated as a mint of zero, Comment-202606074; V2's `burn` burns unconditionally.)
-- Economic rationale: rewarding bursts of rapid bids with a fixed 100 CST per bid was free CST inflation; the square-root formula makes the total reward roughly proportional to elapsed time and thus neither inflationary nor deflationary for CST.
+- Economic rationale: rewarding bursts of rapid bids with a fixed 100 CST per bid was free CST inflation; the square-root formula mitigates that.
 
 ### 2. New revert condition, checked first in every bid path
 
@@ -170,7 +170,7 @@ V2 can only run on a proxy where at least one bidding round has completed, and i
 
 These changes live in sources used by both games (or by neither), and the evidence ties them to V2:
 
-- `production/CosmicSignatureGameStorage.sol` (V1 source): `__gap_persistent` shrunk from `uint256[1 << 255]` to `uint256[1 << 30]`. Motivation per `tasks/docs/Cosmic-Signature-Game-Contract-Upgrade-And-Re-Registration.md`: OpenZeppelin's upgrade validation crashed with an overflow on the huge gap, and V2 appends a new variable after the gap region. No V1 ABI/behavior impact.
+- `production/CosmicSignatureGameStorage.sol` (V1 source): `__gap_persistent` shrunk from `uint256[1 << 255]` to `uint256[1 << 30]`. Motivation per `tasks/docs/Cosmic-Signature-Game-Contract-Upgrade-And-Re-Registration.md`: OpenZeppelin's upgrade validation crashed with an overflow on the huge gap. No V1 ABI/behavior impact.
 - `production/libraries/CosmicSignatureErrors.sol`: new error `BidCstRewardAmountMinLimitNotReached` (only thrown by V2 code).
 - `production/libraries/CosmicSignatureConstants.sol`: new constants `INITIAL_CST_DUTCH_AUCTION_DURATION` (12 hours), `DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR` (250), `DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER` (1.08e46), `DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2` (2 days). All are consumed by `CosmicSignatureGameV2.initializeV2` / referenced by V2 docs.
 - `upgrade-prototype/CosmicSignatureGameOpenBid.sol` and `interfaces/ICosmicSignatureGameOpenBid.sol` (test-only): `initialize2()` renamed to `initializeV2()` and reimplemented as `reinitializer(_getInitializedVersion() + 1)` with an explicit `timesEthBidPrice == 0` re-initialization guard (Comment-202606084 documents why that pattern is test-only and why production hardcodes version 2). This aligns the upgrade-rehearsal prototype with the V2 upgrade flow and allows test sequences like V1 → V2 → OpenBid.
