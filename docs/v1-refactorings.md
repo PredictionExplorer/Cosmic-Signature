@@ -13,6 +13,8 @@ It lists every ABI change and every externally visible behavior change made to t
 
 The new `*V2.sol` sources added on the `v2` branch are covered separately in `v2-vs-v1-changes.md`. Refactorings made in shared sources that exist to support V2 (rather than the refactored V1) are also listed there, per the classification rule: when there is no evidence that a refactoring relates to V1, it is attributed to V2.
 
+For the upgrade safety audit and additional pre-upgrade test recommendations, see `v2-upgrade-audit.md` and `v2-upgrade-recommended-tests.md`.
+
 Important context: the refactored V1 sources are not intended to be redeployed. The deployed V1 implementation (`0x7739148013777c485AD9f3d971e1005Eca686661`) was built from `main`, so its on-chain ABI still uses the old names listed below. The renames matter because (a) they are what the `v2` branch's V1 sources now declare, and (b) V2 inherits and extends this naming.
 
 ## ABI Changes
