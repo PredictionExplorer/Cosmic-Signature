@@ -142,7 +142,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [/Comment-202412312]
 	/// @dev
 	/// [Comment-202503106]
-	/// We allow the contract owner to change this even if the current bidding round is active.
+	/// We allow the contract owner to change this even after a bid was placed in the current bidding round.
+	/// Comment-202606235 relates.
 	/// Comment-202411236 relates.
 	/// [/Comment-202503106]
 	/// Comment-202503092 applies.

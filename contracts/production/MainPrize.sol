@@ -686,6 +686,8 @@ abstract contract MainPrize is
 	// #region `_prepareNextRound`
 
 	function _prepareNextRound() private {
+		// Comment-202606235 relates.
+
 		// lastBidType = BidType.ETH;
 		lastBidderAddress = address(0);
 		lastCstBidderAddress = address(0);
@@ -713,6 +715,8 @@ abstract contract MainPrize is
 		// cstDutchAuctionBeginningBidPrice = nextRoundFirstCstDutchAuctionBeginningBidPrice;
 
 		_setMainPrizeTimeIncrementInMicroSeconds(mainPrizeTimeIncrementInMicroSeconds + mainPrizeTimeIncrementInMicroSeconds / mainPrizeTimeIncrementIncreaseDivisor);
+
+		// Comment-202606235 applies.
 		_setRoundActivationTime(block.timestamp + delayDurationBeforeRoundActivation);
 	}
 

@@ -569,29 +569,44 @@ abstract contract MainPrizeV2 is
 	// #region `_prepareNextRound`
 
 	function _prepareNextRound() private {
-		// lastBidType = BidType.ETH;
-		lastBidderAddress = address(0);
-		lastCstBidderAddress = address(0);
-		enduranceChampionAddress = address(0);
+		// Comment-202606235 relates.
+		unchecked {
 
-		// // Comment-202605307 applies.
-		// // Comment-202501308 applies.
-		// enduranceChampionStartTimeStamp = 0;
+			// lastBidType = BidType.ETH;
+			lastBidderAddress = address(0);
+			lastCstBidderAddress = address(0);
+			enduranceChampionAddress = address(0);
 
-		// // Comment-202605307 applies.
-		// // Comment-202501308 applies.
-		// enduranceChampionDuration = 0;
+			// // Comment-202605307 applies.
+			// // Comment-202501308 applies.
+			// enduranceChampionStartTimeStamp = 0;
 
-		prevEnduranceChampionDuration = 0;
-		chronoWarriorAddress = address(0);
-		chronoWarriorDuration = uint256(int256(-1));
-		++ roundNum;
+			// // Comment-202605307 applies.
+			// // Comment-202501308 applies.
+			// enduranceChampionDuration = 0;
 
-		// // Comment-202501307 applies.
-		// cstDutchAuctionBeginningBidPrice = nextRoundFirstCstDutchAuctionBeginningBidPrice;
+			prevEnduranceChampionDuration = 0;
+			chronoWarriorAddress = address(0);
+			chronoWarriorDuration = uint256(int256(-1));
+			++ roundNum;
 
-		_setMainPrizeTimeIncrementInMicroSeconds(mainPrizeTimeIncrementInMicroSeconds + mainPrizeTimeIncrementInMicroSeconds / mainPrizeTimeIncrementIncreaseDivisor);
-		_setRoundActivationTime(block.timestamp + delayDurationBeforeRoundActivation);
+			// // Comment-202501307 applies.
+			// cstDutchAuctionBeginningBidPrice = nextRoundFirstCstDutchAuctionBeginningBidPrice;
+
+			_setMainPrizeTimeIncrementInMicroSeconds(mainPrizeTimeIncrementInMicroSeconds + mainPrizeTimeIncrementInMicroSeconds / mainPrizeTimeIncrementIncreaseDivisor);
+
+			// [Comment-202606235]
+			// In V2+ (but not in V1), all code in the `_prepareNextRound` method is wrapped in an `unchecked` block.
+			// Realistically, nothing can overflow here, except, potentially, the math involving `delayDurationBeforeRoundActivation`.
+			// The problem is with Comment-202503106. At any time, the contract owner
+			// can change `delayDurationBeforeRoundActivation` to a value that will overflow and thereby disable `claimMainPrize`.
+			// Then the owner would need to wait until the main prize claim timeout expires
+			// and then set `delayDurationBeforeRoundActivation` to a value that will not overflow
+			// and immediately call `claimMainPrize`, all in a single transaction.
+			// So the aforementioned `unchecked` block eliminates this vulnerability.
+			// [/Comment-202606235]
+			_setRoundActivationTime(block.timestamp + delayDurationBeforeRoundActivation);
+		}
 	}
 
 	// #endregion
