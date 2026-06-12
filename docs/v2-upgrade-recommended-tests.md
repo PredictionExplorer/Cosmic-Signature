@@ -145,16 +145,14 @@ Suggested file:
 
 Findings covered: T-0, E-1, E-2, E-3, E-4, C-1
 
+Status: IMPLEMENTED. `test/tests-src/FuzzTest.js` is now a single unified, model-based campaign that fuzzes V1, performs the real UUPS upgrade to V2 mid-campaign (with full state-diff assertions), and continues fuzzing V2. The old `FuzzTestV2.js` has been absorbed/retired. The engine lives under `test/src/fuzz/` (`FuzzEngine`, `GameModel`, `ShadowState`, `GameAbiAdapter`, `Invariants`, `UpgradePhase`, and the `actions/` registry). Run it via `test/runners/fuzz-1.bash` (production-like + assert-enabled, optional multi-seed soak via `FUZZ_MULTI`).
+
 Goal: run broad randomized gameplay after upgrading to V2.
 
-Recommended approach:
+Implemented approach:
 
-- Parameterize `test/tests-src/FuzzTest.js` so it can run in either V1 or V2 mode, or create a separate `FuzzTestV2.js` that reuses the current helpers.
-- In V2 mode:
-  1. Deploy V1.
-  2. Complete round 0.
-  3. Upgrade to V2.
-  4. Run the randomized action campaign using V2's 3-argument bid functions.
+- A single phased campaign: deploy V1, fuzz several complete rounds, upgrade to V2 (real `upgradeProxy` + `initializeV2`), then fuzz several more V2 rounds. The `GameAbiAdapter` routes every bid to the V1 or V2 signature automatically.
+- The campaign is model-based: a JS `GameModel` reimplements the deterministic on-chain math exactly (ETH/CST Dutch prices, the V2 sqrt CST reward, the V2 `cstDutchAuctionDuration` shrink/grow formulas, V1-clamp-vs-V2 `mainPrizeTime`, the endurance/chrono champion automaton, and round-advance values), so every action asserts its exact event fields and exact ledger deltas.
 
 Required V2 action updates:
 
@@ -177,15 +175,14 @@ Required V2 invariants:
 - `roundNum` remains monotonic.
 - No successful action sends ETH to an address that is not expected to receive ETH (main prize, prizes wallet, charity, staking wallet, refund recipient).
 
-Acceptance criteria:
+Acceptance criteria (met):
 
-- The V2 fuzz mode runs with `SKIP_LONG_TESTS=true` quickly enough for CI.
-- A long run can be executed manually with a printed seed.
-- Re-running with `FUZZ_SEED` reproduces failures.
+- The campaign runs with `SKIP_LONG_TESTS=true` quickly enough for CI (quick profile).
+- A long soak runs manually with a printed seed; `FUZZ_V1_ROUNDS` / `FUZZ_V2_ROUNDS` / `FUZZ_ACTORS` / `FUZZ_CHAOS` tune it.
+- Re-running with `FUZZ_SEED` reproduces failures (the seed is printed on every failure, and the last ~80 actions are dumped as a trace).
+- End-of-run coverage floors assert that every registered action was exercised and (in the long profile) that core actions each succeeded at least once, so a silently-dead action fails the test.
 
-Suggested file:
-
-- Either update `test/tests-src/FuzzTest.js` with a V2 mode, or add `test/tests-src/FuzzTestV2.js`.
+File: `test/tests-src/FuzzTest.js` (engine under `test/src/fuzz/`).
 
 ## P1: Targeted CST Economic Property Tests
 
