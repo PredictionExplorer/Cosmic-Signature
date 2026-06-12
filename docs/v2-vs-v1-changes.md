@@ -9,7 +9,7 @@ V2 is implemented as a parallel inheritance hierarchy. New sources (all under `c
 - `CosmicSignatureGameV2.sol`, `CosmicSignatureGameStorageV2.sol`, `BiddingBaseV2.sol`, `BiddingV2.sol`, `BidStatisticsV2.sol`, `MainPrizeBaseV2.sol`, `MainPrizeV2.sol`, `SystemManagementV2.sol`, `EthDonationsV2.sol`, `NftDonationsV2.sol`, `SecondaryPrizesV2.sol`
 - Interfaces: `ICosmicSignatureGameV2.sol`, `IBiddingV2.sol`, `IBiddingBaseV2.sol`, `IMainPrizeV2.sol`, `IMainPrizeBaseV2.sol`, `ISystemManagementV2.sol`, `ISystemEventsV2.sol`
 
-The following V2 sources were verified to be functionally identical to their refactored V1 counterparts (only inheritance bases, comments, and dead code differ): `BidStatisticsV2`, `SecondaryPrizesV2`, `EthDonationsV2`, `NftDonationsV2`, `MainPrizeV2` (the entire `claimMainPrize` prize-distribution flow, validations, revert reasons, and events are unchanged), and most of `BiddingBaseV2` and `SystemManagementV2`. Everything that differs is listed below.
+The following V2 sources were verified to be functionally identical to their refactored V1 counterparts (only inheritance bases, comments, and dead code differ): `BidStatisticsV2`, `SecondaryPrizesV2`, `EthDonationsV2`, `NftDonationsV2`, `MainPrizeV2` (the entire `claimMainPrize` prize-distribution flow, validations, revert reasons, and events are unchanged; the one exception is the `_prepareNextRound` overflow hardening described in change 7 below), and most of `BiddingBaseV2` and `SystemManagementV2`. Everything that differs is listed below.
 
 V2 is deployed by **upgrading the existing proxy** (UUPS `upgradeToAndCall`), so "ABI changes" below describe what changes for callers of the proxy `0x6a714Ae7B5b6eA520F6BCA23d2E609C4Fd5863F2` once it is upgraded. See `v2-upgrade-procedure.md` for the procedure, `v2-upgrade-audit.md` for the safety audit, and `v2-upgrade-recommended-tests.md` for additional validation work recommended before the mainnet upgrade.
 
@@ -166,6 +166,31 @@ V2 can only run on a proxy where at least one bidding round has completed, and i
 
 `initializeV2()` sets `timeoutDurationToClaimMainPrize` to `DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2` = **2 days** (V1 initialized it to 1 day, which is the current on-chain value). This is a state/parameter change applied during the upgrade rather than a code-path change: after `mainPrizeTime`, the last bidder now has 2 days of exclusivity before anyone may claim the main prize. The `claimMainPrize` code itself is unchanged.
 
+### 7. `_prepareNextRound` overflow hardening: the owner can no longer brick `claimMainPrize` (Comment-202606235)
+
+`MainPrizeV2._prepareNextRound` wraps its entire body in an `unchecked` block; refactored V1's `MainPrize._prepareNextRound` uses Solidity's default checked arithmetic:
+
+```solidity
+// Refactored V1 (checked): a large enough delay makes this addition overflow and revert with Panic(0x11).
+_setRoundActivationTime(block.timestamp + delayDurationBeforeRoundActivation);
+
+// V2 (inside `unchecked`): the addition wraps modulo 2^256 and never reverts.
+unchecked {
+    ...
+    _setRoundActivationTime(block.timestamp + delayDurationBeforeRoundActivation);
+}
+```
+
+Why this matters: `setDelayDurationBeforeRoundActivation` is callable by the owner at any time, including mid-round after a bid has been placed (Comment-202503106 — the `_onlyRoundIsInactive` guard is deliberately omitted on this setter). Under V1's checked arithmetic, a malicious or compromised owner could set `delayDurationBeforeRoundActivation` close to `type(uint256).max`, making the final addition in `_prepareNextRound` overflow. Because that line runs at the end of `claimMainPrize`, the overflow reverts the whole claim — including the rightful winner's during their exclusive window. The owner could then wait until `timeoutDurationToClaimMainPrize` elapsed (after which anyone may claim) and, in a single transaction, restore a non-overflowing delay and call `claimMainPrize`, stealing the main prize from the last bidder. V2's `unchecked` block makes the addition wrap instead of reverting, so the claim can never be blocked this way and the winner can always claim.
+
+Externally visible consequences (overflow edge case only — normal operation is bit-for-bit identical):
+
+- On V2, `claimMainPrize` succeeds even when `delayDurationBeforeRoundActivation` is large enough to overflow `block.timestamp + delayDurationBeforeRoundActivation`; the next round's `roundActivationTime` is set to the wrapped (mod 2^256) value. On refactored V1 the same call reverts with Panic(0x11).
+- The `unchecked` block does **not** mask the division by `mainPrizeTimeIncrementIncreaseDivisor` in the same method: a zero divisor still reverts with Panic(0x12) on both V1 and V2. That setter keeps its `_onlyRoundIsInactive` guard, so it cannot be toggled mid-round and cannot reproduce the brick-then-steal scenario.
+- This is the only behavioral difference between `MainPrizeV2` and refactored V1; the prize-distribution flow, authorization checks, revert reasons, and events are otherwise unchanged.
+
+The hardening was applied to V2 only. Refactored V1's `MainPrize._prepareNextRound` retains checked arithmetic (it only gained cross-reference comments), so the protection takes effect once the proxy is upgraded to V2.
+
 ## Changes In Shared Sources Attributed To V2
 
 These changes live in sources used by both games (or by neither), and the evidence ties them to V2:
@@ -181,7 +206,7 @@ These changes live in sources used by both games (or by neither), and the eviden
 
 For clarity, the following externally visible behavior is identical between refactored V1 and V2:
 
-- The entire `claimMainPrize` flow: claim authorization checks and revert reasons, prize amount math, raffle winner selection, the order of ETH/CST/NFT distributions, all prize events, and `_prepareNextRound` (including `mainPrizeTimeIncrementInMicroSeconds` growing ~1% per round and `roundActivationTime = block.timestamp + delayDurationBeforeRoundActivation`).
+- The `claimMainPrize` flow apart from the `_prepareNextRound` overflow hardening in change 7 above: claim authorization checks and revert reasons, prize amount math, raffle winner selection, the order of ETH/CST/NFT distributions, all prize events, and the rest of `_prepareNextRound` (including `mainPrizeTimeIncrementInMicroSeconds` growing ~1% per round and, for every non-overflowing delay, `roundActivationTime = block.timestamp + delayDurationBeforeRoundActivation`).
 - ETH bid pricing (Dutch auction formulas, `getNextEthBidPriceAdvanced` for rounds ≥ 1, `getEthPlusRandomWalkNftBidPrice`, the overpayment refund/swallow logic, `halveEthDutchAuctionEndingBidPrice` math).
 - Random Walk NFT bid validations, bid message length validation, the ETH-first-bid rule and its (refactored V1) validation order.
 - ETH/NFT donation methods, bid statistics getters, secondary prize amount getters.

@@ -603,7 +603,11 @@ class GameModel {
 		this.chronoWarriorDuration = -1n;
 		this.roundNum += 1n;
 		this.mainPrizeTimeIncrementInMicroSeconds += this.mainPrizeTimeIncrementInMicroSeconds / this.mainPrizeTimeIncrementIncreaseDivisor;
-		this.roundActivationTime = ts_ + this.delayDurationBeforeRoundActivation;
+		// Comment-202606235: V2's `_prepareNextRound` is wrapped in `unchecked`, so this addition wraps modulo 2^256
+		// instead of reverting on overflow. `u256` keeps the model EVM-exact when the campaign drives an overflowing
+		// `delayDurationBeforeRoundActivation` on V2 (see the `claimMainPrizeWithOverflowingDelay` action); for every
+		// realistic delay it is the identity, so V1/OpenBid (checked arithmetic, never driven to overflow) match too.
+		this.roundActivationTime = u256(ts_ + this.delayDurationBeforeRoundActivation);
 
 		return breakdown_;
 	}
