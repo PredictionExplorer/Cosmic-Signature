@@ -243,9 +243,16 @@ class FuzzEngine {
 	*/
 	async ensureEthFor(signerAddress_, neededWei_, gasPrice_) {
 		const upfront_ = neededWei_ + 30_000_000n * gasPrice_ * 2n;
+		await this.ensureEthAtLeast(signerAddress_, upfront_);
+	}
+
+	/**
+	Ensures `signerAddress_` holds at least `amount_` wei; refills (ledger-recorded) with a buffer if not.
+	*/
+	async ensureEthAtLeast(signerAddress_, amount_) {
 		const expected_ = this.ledger.expectedEth(signerAddress_);
-		if (expected_ < upfront_) {
-			const target_ = upfront_ + 1_000n * 10n ** 18n;
+		if (expected_ < amount_) {
+			const target_ = amount_ + 1_000n * 10n ** 18n;
 			await this.provider.send("hardhat_setBalance", [
 				signerAddress_,
 				"0x" + target_.toString(16),
@@ -342,9 +349,18 @@ class FuzzEngine {
 	async execBurst(ts_, items_) {
 		const plannedTs_ = this.clampTs(ts_);
 		++ this.numBursts;
+		// All burst transactions sit in the mempool simultaneously (automine off) before the single
+		// mined block, so a sender that appears in multiple items must be able to cover the SUM of its
+		// items' upfront costs at once. Aggregate per sender, then fund each once.
+		const needBySender_ = new Map();
 		for (const item_ of items_) {
 			item_.gasPrice = item_.gasPrice ?? this.randomGasPrice();
-			await this.ensureEthFor(item_.signer.address, item_.valueNeeded ?? 0n, item_.gasPrice);
+			const upfront_ = (item_.valueNeeded ?? 0n) + 30_000_000n * item_.gasPrice * 2n;
+			const key_ = item_.signer.address;
+			needBySender_.set(key_, (needBySender_.get(key_) ?? 0n) + upfront_);
+		}
+		for (const [senderAddress_, need_] of needBySender_) {
+			await this.ensureEthAtLeast(senderAddress_, need_);
 		}
 		await this.provider.send("evm_setAutomine", [false]);
 		/** @type {string[]} */

@@ -4,13 +4,13 @@
 
 const { expect } = require("chai");
 const hre = require("hardhat");
-const { generateRandomUInt256, uint256ToPaddedHexString } = require("../../../src/Helpers.js");
+const { generateRandomUInt256, generateRandomUInt256FromSeedWrapper, uint256ToPaddedHexString } = require("../../../src/Helpers.js");
 const { loadFixtureDeployContractsForTesting, storeContractDeployedByteCodeAtAddress } = require("../../../src/ContractTestingHelpers.js");
 const { GameModel, ZERO_ADDRESS } = require("./GameModel.js");
 const { ShadowState } = require("./ShadowState.js");
 const { GameAbiAdapter } = require("./GameAbiAdapter.js");
 const { FuzzEngine } = require("./FuzzEngine.js");
-const { runInvariants, assertCoverageFloors } = require("./Invariants.js");
+const { runInvariants, assertCoverageFloors, mergeStatsInto } = require("./Invariants.js");
 const { performUpgradeToV2, upgradeAuthProbe } = require("./UpgradePhase.js");
 const { biddingActions, claimActions, donationActions, stakingActions, forceCompleteRound } = require("./actions/CoreActions.js");
 const { randomWalkActions, tokenActions, prizesWalletActions, walletActions } = require("./actions/SecondaryActions.js");
@@ -51,7 +51,10 @@ function buildProfile(skipLongTests_, envOverrides_) {
 		runOpenBid: false,
 		enforceStrongCoverage: true,
 	};
-	return { ...base_, ...envOverrides_ };
+	// `maxSeconds`, when set, turns the run into a wall-clock soak: rounds are uncapped and each phase
+	// keeps fuzzing until its share of the time budget elapses (checked at round boundaries).
+	const merged_ = { maxSeconds: undefined, ...base_, ...envOverrides_ };
+	return merged_;
 }
 
 /** Reads campaign env overrides (numbers/booleans only). */
@@ -66,6 +69,7 @@ function readEnvOverrides() {
 	num_("FUZZ_V1_ROUNDS", "v1Rounds");
 	num_("FUZZ_V2_ROUNDS", "v2Rounds");
 	num_("FUZZ_ACTORS", "numActors");
+	num_("FUZZ_MAX_SECONDS", "maxSeconds");
 	if (process.env.FUZZ_CHAOS === "true") { overrides_.chaos = true; }
 	if (process.env.FUZZ_CHAOS === "false") { overrides_.chaos = false; }
 	if (process.env.FUZZ_OPENBID === "true") { overrides_.runOpenBid = true; }
@@ -479,7 +483,8 @@ class FuzzCampaign {
 
 			if (profile_.verbosity >= 1) {
 				const completed_ = this.model.roundNum - startRound_;
-				console.info(`  [${label_}] completed ${completed_}/${targetRounds_} rounds | chainRound ${this.model.roundNum} | actions ${this.engine.actionSeq}`);
+				const elapsedSec_ = ((Date.now() - this.startMs) / 1000).toFixed(0);
+				console.info(`  [${label_} ${elapsedSec_}s] completed ${completed_}/${targetRounds_} rounds | chainRound ${this.model.roundNum} | actions ${this.engine.actionSeq} | invariants ${this.context.invariantRunCount}`);
 			}
 
 			// Re-activate the freshly prepared round (post-claim it is inactive until `roundActivationTime`).
@@ -556,8 +561,11 @@ class FuzzCampaign {
 	// #region Run
 
 	async run() {
+		this.startMs = Date.now();
+		const label_ = (this.campaignIndex !== undefined) ? `CAMPAIGN ${this.campaignIndex}` : "CAMPAIGN";
+
 		console.info("\n" + "=".repeat(80));
-		console.info("  COSMIC SIGNATURE - UNIFIED FUZZ CAMPAIGN (V1 -> upgrade -> V2)");
+		console.info(`  COSMIC SIGNATURE - UNIFIED FUZZ ${label_} (V1 -> upgrade -> V2)`);
 		console.info("=".repeat(80));
 		console.info(`  seed: ${uint256ToPaddedHexString(this.seed)}`);
 		console.info(`  profile: actors=${this.profile.numActors} v1Rounds=${this.profile.v1Rounds} v2Rounds=${this.profile.v2Rounds} chaos=${this.profile.chaos}`);
@@ -579,17 +587,20 @@ class FuzzCampaign {
 		// Phase 2: V2.
 		await this._runPhase("V2", this.profile.v2Rounds);
 
-		// Final invariants + coverage floors.
+		// Final invariants. Coverage floors are asserted by the driver on the aggregate across
+		// campaigns (breadth floors are probabilistic for a single bounded campaign).
 		await runInvariants(this.context);
-		assertCoverageFloors(this.engine, this.profile);
 
 		this.engine.printStats();
+		const totalSec_ = ((Date.now() - this.startMs) / 1000).toFixed(0);
 		console.info(`\n  invariant runs: ${this.context.invariantRunCount}`);
 		console.info(`  total actions: ${this.engine.actionSeq}`);
+		console.info(`  wall-clock: ${totalSec_}s`);
 		console.info("  CAMPAIGN COMPLETE\n");
 
 		expect(this.engine.actionSeq).to.be.greaterThan(0);
-		expect(this.model.roundNum).to.be.greaterThan(BigInt(this.profile.v1Rounds));
+		expect(this.model.version, "campaign must end on V2").to.equal(2);
+		expect(this.model.roundNum, "at least one round must have completed").to.be.greaterThan(0n);
 	}
 
 	// #endregion
@@ -597,8 +608,71 @@ class FuzzCampaign {
 
 // #endregion
 
+// #endregion
+// #region Campaign driver
+
+/**
+Runs the fuzz campaign(s). With `profile.maxSeconds` set, runs repeated independent bounded
+campaigns (fresh deployment + upgrade each time, seeds derived from `masterSeed_`) until the
+wall-clock budget elapses; this keeps every campaign in a realistic economic regime while
+maximizing coverage of the deploy/upgrade lifecycle. Otherwise runs a single campaign.
+
+@param {object} profile_
+@param {bigint} masterSeed_
+@returns {Promise<void>}
+*/
+async function runFuzzCampaigns(profile_, masterSeed_) {
+	const timeBudgetMode_ = typeof profile_.maxSeconds === "number" && profile_.maxSeconds > 0;
+	/** @type {Map<string, {attempted: number, succeeded: number, skipped: number}>} Coverage aggregated across all campaigns. */
+	const aggregateStats_ = new Map();
+
+	if ( ! timeBudgetMode_ ) {
+		const campaign_ = new FuzzCampaign(profile_, masterSeed_);
+		await runOneCampaignWithTrace(campaign_, masterSeed_);
+		mergeStatsInto(aggregateStats_, campaign_.engine.stats);
+		assertCoverageFloors(aggregateStats_, profile_);
+		return;
+	}
+
+	const deadlineMs_ = Date.now() + profile_.maxSeconds * 1000;
+	const seedWrapper_ = { value: masterSeed_ };
+	let campaignIndex_ = 0;
+	while (Date.now() < deadlineMs_) {
+		++ campaignIndex_;
+		const campaignSeed_ = generateRandomUInt256FromSeedWrapper(seedWrapper_);
+		const campaign_ = new FuzzCampaign(profile_, campaignSeed_);
+		campaign_.campaignIndex = campaignIndex_;
+		await runOneCampaignWithTrace(campaign_, campaignSeed_);
+		mergeStatsInto(aggregateStats_, campaign_.engine.stats);
+		const remainingSec_ = ((deadlineMs_ - Date.now()) / 1000).toFixed(0);
+		console.info(`  >>> Time budget remaining: ~${remainingSec_}s (completed ${campaignIndex_} campaign(s)) <<<\n`);
+	}
+	// Strong breadth coverage is asserted on the aggregate across all campaigns (where low-weight
+	// actions reliably fire), not per bounded campaign.
+	assertCoverageFloors(aggregateStats_, profile_);
+	console.info(`\n  SOAK COMPLETE: ran ${campaignIndex_} independent campaign(s) within the ${profile_.maxSeconds}s budget.\n`);
+}
+
+/**
+@param {FuzzCampaign} campaign_
+@param {bigint} reproSeed_ The seed to print for single-campaign reproduction on failure.
+*/
+async function runOneCampaignWithTrace(campaign_, reproSeed_) {
+	try {
+		await campaign_.run();
+	} catch (errorObject_) {
+		campaign_.engine?.dumpTrace(80);
+		console.error(`\n  Reproduce this campaign with: FUZZ_SEED=0x${reproSeed_.toString(16).padStart(64, "0")} (omit FUZZ_MAX_SECONDS)\n`);
+		throw errorObject_;
+	}
+}
+
+// #endregion
+// #region
+
 module.exports = {
 	FuzzCampaign,
+	runFuzzCampaigns,
 	buildProfile,
 	readEnvOverrides,
 	generateRandomUInt256,

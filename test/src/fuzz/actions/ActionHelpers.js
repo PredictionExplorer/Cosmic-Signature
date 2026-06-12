@@ -10,21 +10,39 @@ const { ZERO_ADDRESS } = require("../GameModel.js");
 
 /**
 Chooses a bid timestamp respecting round activation for first bids.
+
+For the FIRST bid of a round, the timestamp is spread across (and sometimes beyond) the ETH Dutch
+auction duration rather than always landing right at activation. This matters: the first bid sets
+`ethDutchAuctionBeginningBidPrice = ethBidPrice * 2`, so if every round's first bid lands at
+activation (no decay), the beginning price ratchets up ~2x per round and explodes exponentially
+over hundreds of rounds — eventually overflowing the contract's `unchecked` ETH-price arithmetic
+(an unrealistic regime). Spreading the first bid lets the Dutch auction decay, so the long-run
+price mean-reverts and stays in a realistic, bug-finding range. It is also closer to real usage.
+
 @returns {bigint | null} `null` if bidding is impossible in a sane time frame (round frozen).
 */
 function planBidTs(ctx_) {
 	const { engine, model } = ctx_;
-	let ts_ = engine.planTs(engine.boundaryCandidates());
-	if (model.lastBidderAddress === ZERO_ADDRESS) {
-		// The first bid of a round must come at/after activation.
-		if (model.roundActivationTime > ts_) {
-			ts_ = model.roundActivationTime + engine.randomBigIntRange(0n, 600n);
-		}
-		ts_ = engine.clampTs(ts_);
-		// A frozen round (activation far in the future) cannot be bid into.
-		if (model.roundActivationTime > ts_) {
-			return null;
-		}
+	if (model.lastBidderAddress !== ZERO_ADDRESS) {
+		return engine.planTs(engine.boundaryCandidates());
+	}
+
+	// First bid of the round: choose an offset after activation, usually within the auction window.
+	const ethAuctionDuration_ = model.getEthDutchAuctionDuration();
+	const span_ = (ethAuctionDuration_ > 0n) ? ethAuctionDuration_ : 600n;
+	let offset_;
+	const roll_ = engine.randomIntRange(0, 99);
+	if (roll_ < 20) {
+		offset_ = engine.randomBigIntRange(0n, 600n); // quick bid (exercises the high-price path)
+	} else if (roll_ < 85) {
+		offset_ = engine.randomBigIntRange(0n, span_); // spread across the auction (decays the price)
+	} else {
+		offset_ = span_ + engine.randomBigIntRange(0n, span_); // past the auction end (price at floor)
+	}
+	let ts_ = engine.clampTs(model.roundActivationTime + offset_);
+	// A frozen round (activation far in the future) cannot be bid into.
+	if (model.roundActivationTime > ts_) {
+		return null;
 	}
 	return ts_;
 }

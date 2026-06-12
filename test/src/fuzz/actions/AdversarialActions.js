@@ -118,7 +118,7 @@ const adversarialActions = [
 				signer: actor_.signer,
 				ts: ts_,
 				gasPrice: gasPrice_,
-				value: value_,
+				valueNeeded: value_,
 				buildTx: (overrides_) => adversaries.maliciousBidder.connect(actor_.signer).doBidWithEth(-1n, "reenter", { ...overrides_, value: value_ }),
 			});
 			// The reentry into a nonReentrant method makes the refund call fail → FundTransferFailed.
@@ -162,7 +162,7 @@ const adversarialActions = [
 				signer: actor_.signer,
 				ts: ts_,
 				gasPrice: gasPrice_,
-				value: value_,
+				valueNeeded: value_,
 				buildTx: (overrides_) =>
 					ctx_.game.connect(actor_.signer).bidWithEthAndDonateToken(
 						-1n, "evil token", 0n, adversaries.maliciousTokenAddress, 1n, { ...overrides_, value: value_ }),

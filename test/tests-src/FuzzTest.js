@@ -35,7 +35,7 @@
 const { describe, it } = require("mocha");
 const { SKIP_LONG_TESTS } = require("../../src/ContractTestingHelpers.js");
 const { parseFuzzSeedFromEnvironment } = require("../src/fuzz/FuzzSeed.js");
-const { FuzzCampaign, buildProfile, readEnvOverrides, generateRandomUInt256 } = require("../src/fuzz/FuzzCampaign.js");
+const { runFuzzCampaigns, buildProfile, readEnvOverrides, generateRandomUInt256 } = require("../src/fuzz/FuzzCampaign.js");
 
 // #endregion
 // #region
@@ -44,14 +44,7 @@ describe("FuzzTest", function () {
 	it("Unified model-based campaign: fuzz V1, upgrade to V2, fuzz V2, with exact invariants and negative probes", async function () {
 		const seed_ = parseFuzzSeedFromEnvironment(process.env.FUZZ_SEED) ?? generateRandomUInt256();
 		const profile_ = buildProfile(SKIP_LONG_TESTS, readEnvOverrides());
-		const campaign_ = new FuzzCampaign(profile_, seed_);
-		try {
-			await campaign_.run();
-		} catch (errorObject_) {
-			campaign_.engine?.dumpTrace(80);
-			console.error(`\n  Reproduce with: FUZZ_SEED=${"0x" + seed_.toString(16).padStart(64, "0")}\n`);
-			throw errorObject_;
-		}
+		await runFuzzCampaigns(profile_, seed_);
 	});
 });
 

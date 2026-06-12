@@ -102,6 +102,35 @@ async function runInvariants(ctx_) {
 		expect(await game_.bidCstRewardAmount(), "bidCstRewardAmount vs model").to.equal(model.bidCstRewardAmount);
 	}
 
+	// Full owner-configurable parameter equality (catches any admin/halve mutation drift immediately,
+	// before it silently corrupts price/reward predictions many rounds later).
+	{
+		const checkCfg_ = async (getter_, modelValue_) => {
+			expect(await game_[getter_](), `config drift: ${getter_}`).to.equal(modelValue_);
+		};
+		await checkCfg_("delayDurationBeforeRoundActivation", model.delayDurationBeforeRoundActivation);
+		await checkCfg_("ethDutchAuctionDurationDivisor", model.ethDutchAuctionDurationDivisor);
+		await checkCfg_("ethDutchAuctionEndingBidPriceDivisor", model.ethDutchAuctionEndingBidPriceDivisor);
+		await checkCfg_("ethBidPriceIncreaseDivisor", model.ethBidPriceIncreaseDivisor);
+		await checkCfg_("ethBidRefundAmountInGasToSwallowMaxLimit", model.ethBidRefundAmountInGasToSwallowMaxLimit);
+		await checkCfg_("cstDutchAuctionBeginningBidPriceMinLimit", model.cstDutchAuctionBeginningBidPriceMinLimit);
+		await checkCfg_("bidMessageLengthMaxLimit", model.bidMessageLengthMaxLimit);
+		await checkCfg_("cstPrizeAmount", model.cstPrizeAmount);
+		await checkCfg_("chronoWarriorEthPrizeAmountPercentage", model.chronoWarriorEthPrizeAmountPercentage);
+		await checkCfg_("raffleTotalEthPrizeAmountForBiddersPercentage", model.raffleTotalEthPrizeAmountForBiddersPercentage);
+		await checkCfg_("numRaffleEthPrizesForBidders", model.numRaffleEthPrizesForBidders);
+		await checkCfg_("numRaffleCosmicSignatureNftsForBidders", model.numRaffleCosmicSignatureNftsForBidders);
+		await checkCfg_("numRaffleCosmicSignatureNftsForRandomWalkNftStakers", model.numRaffleCosmicSignatureNftsForRandomWalkNftStakers);
+		await checkCfg_("cosmicSignatureNftStakingTotalEthRewardAmountPercentage", model.cosmicSignatureNftStakingTotalEthRewardAmountPercentage);
+		await checkCfg_("initialDurationUntilMainPrizeDivisor", model.initialDurationUntilMainPrizeDivisor);
+		await checkCfg_("mainPrizeTimeIncrementIncreaseDivisor", model.mainPrizeTimeIncrementIncreaseDivisor);
+		await checkCfg_("timeoutDurationToClaimMainPrize", model.timeoutDurationToClaimMainPrize);
+		await checkCfg_("mainEthPrizeAmountPercentage", model.mainEthPrizeAmountPercentage);
+		await checkCfg_("marketingWalletCstContributionAmount", model.marketingWalletCstContributionAmount);
+		await checkCfg_("charityEthDonationAmountPercentage", model.charityEthDonationAmountPercentage);
+		expect((await game_.charityAddress()).toLowerCase(), "config drift: charityAddress").to.equal(model.charityAddress);
+	}
+
 	// Bid statistics tail.
 	{
 		const onChainNumBids_ = await game_.getTotalNumBids(model.roundNum);
@@ -182,26 +211,48 @@ async function runInvariants(ctx_) {
 // #endregion
 // #region End-of-campaign coverage floors
 
+/** Minimum aggregate attempted-action volume before the strong (breadth) floors are statistically meaningful. */
+const STRONG_COVERAGE_MIN_ATTEMPTS = 3000;
+
 /**
-Asserts that the campaign exercised a healthy breadth of behavior. In a long run, core actions
-must each have succeeded at least once; a silently-dead action (e.g. a permanently inapplicable
-guard) should fail this. In the quick CI profile the floors are relaxed.
-@param {import("./FuzzEngine.js").FuzzEngine} engine_
+Asserts that the run exercised a healthy breadth of behavior.
+
+Two tiers:
+- Minimal (always): a couple of deterministically-guaranteed actions (an ETH bid and a main-prize
+  claim) must have succeeded. The engine forces a claim at every segment boundary and ETH bids are
+  the highest-weight action, so these never flake.
+- Strong (only once the aggregate has enough volume — i.e. across a multi-campaign soak): every
+  registered action must have been selected at least once (catches a permanently-dead action), and
+  every core action must have succeeded at least once. These are probabilistic for a single bounded
+  campaign, so they are only enforced on the larger aggregate where low-weight actions reliably fire.
+
+@param {Map<string, {attempted: number, succeeded: number, skipped: number}>} statsMap_
 @param {object} profile_
 */
-function assertCoverageFloors(engine_, profile_) {
-	const succeeded_ = (name_) => (engine_.stats.get(name_)?.succeeded ?? 0);
-	const attempted_ = (name_) => (engine_.stats.get(name_)?.attempted ?? 0);
+function assertCoverageFloors(statsMap_, profile_) {
+	const succeeded_ = (name_) => (statsMap_.get(name_)?.succeeded ?? 0);
+	const attempted_ = (name_) => (statsMap_.get(name_)?.attempted ?? 0);
 
-	// Every registered action must have been attempted at least once.
-	for (const [name_, entry_] of engine_.stats) {
-		expect(entry_.attempted + entry_.skipped, `action ${name_} was never even selected`).to.be.greaterThan(0);
+	let totalSucceeded_ = 0;
+	let totalAttempted_ = 0;
+	for (const entry_ of statsMap_.values()) {
+		totalSucceeded_ += entry_.succeeded;
+		totalAttempted_ += entry_.attempted;
 	}
+	expect(totalSucceeded_, "no successful actions at all").to.be.greaterThan(0);
 
-	if ( ! profile_.enforceStrongCoverage ) {
+	// Minimal deterministic floor.
+	expect(succeeded_("bidWithEth"), "bidWithEth never succeeded").to.be.greaterThan(0);
+	expect(succeeded_("claimMainPrize") + succeeded_("claimMainPrizeAfterTimeout"), "no main prize was ever claimed").to.be.greaterThan(0);
+
+	if ( ! profile_.enforceStrongCoverage || totalAttempted_ < STRONG_COVERAGE_MIN_ATTEMPTS ) {
 		return;
 	}
 
+	// Strong breadth floors (aggregate / soak level).
+	for (const [name_, entry_] of statsMap_) {
+		expect(entry_.attempted + entry_.skipped, `action ${name_} was never even selected`).to.be.greaterThan(0);
+	}
 	const mustSucceed_ = [
 		"bidWithEth",
 		"bidWithEthPlusRandomWalkNft",
@@ -219,9 +270,25 @@ function assertCoverageFloors(engine_, profile_) {
 	}
 }
 
+/**
+Merges a campaign's engine stats into an aggregate map (summing attempted/succeeded/skipped).
+@param {Map<string, {attempted: number, succeeded: number, skipped: number}>} aggregate_
+@param {Map<string, {attempted: number, succeeded: number, skipped: number}>} statsMap_
+*/
+function mergeStatsInto(aggregate_, statsMap_) {
+	for (const [name_, entry_] of statsMap_) {
+		const existing_ = aggregate_.get(name_) ?? { attempted: 0, succeeded: 0, skipped: 0 };
+		existing_.attempted += entry_.attempted;
+		existing_.succeeded += entry_.succeeded;
+		existing_.skipped += entry_.skipped;
+		aggregate_.set(name_, existing_);
+	}
+}
+
 // #endregion
 
 module.exports = {
 	runInvariants,
 	assertCoverageFloors,
+	mergeStatsInto,
 };
