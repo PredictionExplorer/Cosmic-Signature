@@ -40,10 +40,19 @@ class ShadowState {
 		this.totalRefilled = 0n;
 		/** Cumulative gas burned by tracked senders (diagnostics). */
 		this.totalGasBurned = 0n;
+		/**
+		Sum of the pre-existing balances captured when addresses were first `trackEth`-ed: the ETH that
+		entered the accounted universe other than via `recordRefill`. Together these uphold the global
+		conservation identity `sum(tracked balances) + totalGasBurned == totalRefilled + conservationOffset`.
+		*/
+		this.conservationOffset = 0n;
 
 		/** @type {Map<string, bigint>} CST balance per lowercase address. */
 		this.cst = new Map();
 		this.cstTotalSupply = 0n;
+		/** Independent running tallies of all CST minted / burned (mint == from zero, burn == to zero). */
+		this.cstTotalMinted = 0n;
+		this.cstTotalBurned = 0n;
 
 		/** @type {Map<string, string>} CS NFT id (decimal string) → lowercase owner. */
 		this.csNftOwners = new Map();
@@ -132,6 +141,9 @@ class ShadowState {
 	async trackEth(address_, label_) {
 		const key_ = address_.toLowerCase();
 		const balance_ = await this.hre.ethers.provider.getBalance(key_);
+		// The pre-existing balance enters the accounted universe here (not via `recordRefill`); record it
+		// in `conservationOffset` so the global conservation identity stays exact.
+		this.conservationOffset += balance_ - (this.eth.get(key_) ?? 0n);
 		this.eth.set(key_, balance_);
 		if (label_ !== undefined) {
 			this.label(key_, label_);
@@ -173,6 +185,10 @@ class ShadowState {
 	async resyncEth(address_) {
 		const key_ = address_.toLowerCase();
 		const actual_ = await this.hre.ethers.provider.getBalance(key_);
+		const previous_ = this.eth.get(key_) ?? 0n;
+		// Absorb the out-of-band change (e.g. the upgrade plugin's untracked owner gas) as a net injection
+		// so the global conservation identity `sum(balances) + totalGasBurned == totalRefilled` is preserved.
+		this.totalRefilled += actual_ - previous_;
 		this.eth.set(key_, actual_);
 		this.dirtyEth.delete(key_);
 	}
@@ -216,6 +232,7 @@ class ShadowState {
 		const toKey_ = to_.toLowerCase();
 		if (fromKey_ === ZERO_ADDRESS) {
 			this.cstTotalSupply += value_;
+			this.cstTotalMinted += value_;
 		} else {
 			const next_ = this.cstBalanceOf(fromKey_) - value_;
 			expect(next_ >= 0n, `CST ledger: negative balance for ${this.labelOf(fromKey_)}`).to.equal(true);
@@ -223,6 +240,7 @@ class ShadowState {
 		}
 		if (toKey_ === ZERO_ADDRESS) {
 			this.cstTotalSupply -= value_;
+			this.cstTotalBurned += value_;
 		} else {
 			this.cst.set(toKey_, this.cstBalanceOf(toKey_) + value_);
 		}

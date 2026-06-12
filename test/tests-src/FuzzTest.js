@@ -21,18 +21,33 @@
 // actions they cannot afford, so values stay in a realistic, non-astronomical range. The model is
 // EVM-exact, including uint256 wraparound in the contracts' `unchecked` price/reward math.
 //
+// The campaign also performs the V1 -> V2 upgrade for ~half of its campaigns and the alternate
+// V1 -> OpenBid upgrade for the other half (the soak alternates by parity; a single campaign chooses
+// by seeded probability or `FUZZ_UPGRADE_TARGET`).
+//
 // Environment (optional):
 //   FUZZ_SEED=0x<hex>       fixed uint256 seed for reproducibility (a fresh random one is printed otherwise).
 //   FUZZ_MAX_SECONDS=<n>    soak wall-clock budget (default 1200 = 20 min); set 0 for a single bounded campaign.
 //   FUZZ_V1_ROUNDS=<n>      V1 rounds per campaign (defaults equal to V2 for a 50/50 split).
-//   FUZZ_V2_ROUNDS=<n>      V2 rounds per campaign.
+//   FUZZ_V2_ROUNDS=<n>      V2 / OpenBid rounds per campaign.
 //   FUZZ_ACTORS=<n>         number of participant actors.
 //   FUZZ_CHAOS=true|false   toggle Arbitrum-precompile chaos.
+//   FUZZ_OPENBID=true       force every campaign to upgrade V1 -> OpenBid (instead of V1 -> V2).
+//   FUZZ_OPENBID_PERCENT=<n> per-campaign probability of the OpenBid upgrade target (single-campaign mode).
+//   FUZZ_UPGRADE_TARGET=v2|openBid  force a specific upgrade target (used by the repro hint).
+//   FUZZ_OVERFLOW=true      drive the ETH price into the high / unchecked-wraparound regime.
+//   FUZZ_PROFILE=medium     a larger single bounded campaign (between SKIP_LONG_TESTS and the full soak).
 //   SKIP_LONG_TESTS=true    short CI profile (single quick bounded campaign).
 //
 // Recommended deep run (with Solidity asserts compiled in):
 //   HARDHAT_MODE_CODE=1 ENABLE_HARDHAT_PREPROCESSOR=true ENABLE_ASSERTS=true \
 //     npx hardhat test test/tests-src/FuzzTest.js
+//
+// Reproducibility caveat: a printed `FUZZ_SEED` reproduces a failure ONLY when the BUILD FLAGS match
+// the original run (HARDHAT_MODE_CODE, ENABLE_HARDHAT_PREPROCESSOR, ENABLE_ASSERTS, ENABLE_SMTCHECKER),
+// because they change the compiled bytecode (e.g. assert-enabled paths) and thus gas, and they may
+// alter revert kinds (panic vs custom error). The active flags and the exact reproduction command
+// (including `FUZZ_UPGRADE_TARGET`) are printed at the start of and on failure of each campaign.
 
 // #endregion
 // #region

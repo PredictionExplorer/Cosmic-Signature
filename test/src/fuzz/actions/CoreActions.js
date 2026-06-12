@@ -10,6 +10,7 @@ const {
 	pickStakeableCosmicSignatureNft,
 	ownedStakeActionIds,
 	executeEthBid,
+	executeOpenBid,
 	executeCstBid,
 	verifyClaimReceipt,
 } = require("./ActionHelpers.js");
@@ -64,6 +65,13 @@ const biddingActions = [
 		weight: 3,
 		isApplicable: (ctx_) => ctx_.model.version === 2,
 		run: (ctx_, actor_) => executeEthBid(ctx_, actor_, { flavor: "plain", valueMode: "exact", minRewardMode: "exact" }),
+	},
+	{
+		// OpenBid (version 3) only: an "open" ETH bid that overpays above `ethBidPrice * timesEthBidPrice`.
+		name: "bidWithEthOpenBid",
+		weight: 8,
+		isApplicable: (ctx_) => ctx_.model.version === 3 && ctx_.model.lastBidderAddress !== ZERO_ADDRESS,
+		run: (ctx_, actor_) => executeOpenBid(ctx_, actor_),
 	},
 	{
 		name: "bidWithCst",
@@ -215,6 +223,54 @@ async function forceCompleteRound(ctx_) {
 	}
 	const ts_ = engine.clampTs(model.mainPrizeTime + model.timeoutDurationToClaimMainPrize + 1n);
 	await executeClaim(ctx_, claimer_, ts_);
+	return true;
+}
+
+/**
+Same-block claim contention: the eligible last bidder and a second actor both submit `claimMainPrize`
+in one block. Only the first (FIFO) succeeds and ends the round; the second must revert (the round has
+already advanced, so it sees no bids). Exercises the main prize's same-block exclusivity.
+@returns {Promise<boolean>} Whether the race ran (and the winning claim was applied).
+*/
+async function runClaimRace(ctx_) {
+	const { engine, model, ledger } = ctx_;
+	if (model.lastBidderAddress === ZERO_ADDRESS) {
+		return false;
+	}
+	const claimer_ = ctx_.actorByAddress(model.lastBidderAddress);
+	if (claimer_ === null) {
+		return false;
+	}
+	const other_ = ctx_.pickActorNot(model.lastBidderAddress);
+	if (other_ === null) {
+		return false;
+	}
+	if ( ! engine.canAfford(claimer_.address, 0n) || ! engine.canAfford(other_.address, 0n) ) {
+		return false;
+	}
+	// At/after `mainPrizeTime` so the last bidder is allowed to claim.
+	const ts_ = engine.clampTs((model.mainPrizeTime > engine.lastTs) ? model.mainPrizeTime : (engine.lastTs + 1n));
+	const rwStakerOwners_ = currentRandomWalkStakerOwners(ledger);
+	const gameEthBalanceBefore_ = ledger.expectedEth(ctx_.game.address);
+	const numStakedCs_ = ledger.csStaking.numStakedNfts;
+	const numStakedRw_ = ledger.rwStaking.numStakedNfts;
+
+	const items_ = [
+		{ signer: claimer_.signer, buildTx: (overrides_) => ctx_.game.connect(claimer_.signer).claimMainPrize(overrides_) },
+		{ signer: other_.signer, buildTx: (overrides_) => ctx_.game.connect(other_.signer).claimMainPrize(overrides_) },
+	];
+	const results_ = await engine.execBurst(ts_, items_);
+	expect(results_[0].status, "claim race: the first (last-bidder) claim must succeed").to.equal(1);
+	expect(results_[1].status, "claim race: the second simultaneous claim must revert").to.equal(0);
+	if (results_[0].receipt.gasUsed > engine.maxClaimGasUsed) {
+		engine.maxClaimGasUsed = results_[0].receipt.gasUsed;
+	}
+
+	const breakdown_ = model.applyClaim(claimer_.address, ts_, gameEthBalanceBefore_, numStakedCs_, numStakedRw_);
+	verifyClaimReceipt(ctx_, { claimerAddress: claimer_.address, receipt: results_[0].receipt, breakdown: breakdown_, rwStakerOwnersBefore: rwStakerOwners_ });
+	await ledger.verifyDirtyEth();
+	engine._statsFor("claimRace").attempted += 1;
+	engine._statsFor("claimRace").succeeded += 1;
 	return true;
 }
 
@@ -507,6 +563,7 @@ module.exports = {
 	donationActions,
 	stakingActions,
 	executeClaim,
+	runClaimRace,
 	forceCompleteRound,
 	ensureCsStakingApproval,
 	ensureRwStakingApproval,

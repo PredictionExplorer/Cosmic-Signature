@@ -310,6 +310,29 @@ const negativeProbes = [
 		},
 	},
 	{
+		// The owner may upgrade only while the round is inactive (`_authorizeUpgrade`'s `_onlyRoundIsInactive`).
+		// An owner-initiated upgrade during an active round must revert `RoundIsActive`.
+		name: "probe.upgradeWhileRoundActive",
+		infra: true,
+		isApplicable: (ctx_) => ! ctx_.isRoundInactiveNow() && ctx_.model.roundActivationTime > 0n,
+		run: (ctx_) => {
+			const owner_ = ctx_.contracts.ownerSigner;
+			const ts_ = ctx_.engine.clampTs(ctx_.engine.lastTs + 1n);
+			if (ts_ < ctx_.model.roundActivationTime) {
+				return "skip"; // Would be inactive.
+			}
+			// The implementation address is irrelevant: `_authorizeUpgrade` reverts on the round-state
+			// check before the new implementation is ever inspected.
+			const impl_ = ctx_.contracts.cosmicSignatureGameImplementationAddress;
+			return runProbe(ctx_, {
+				signer: owner_,
+				ts: ts_,
+				buildTx: (overrides_) => ctx_.game.connect(owner_).contract.upgradeToAndCall(impl_, "0x", overrides_),
+				expected: "RoundIsActive",
+			});
+		},
+	},
+	{
 		name: "probe.payRewardNonTreasurer",
 		isApplicable: () => true,
 		run: (ctx_, actor_) => runProbe(ctx_, {

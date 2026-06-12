@@ -71,6 +71,36 @@ async function upgradeToV2(contracts_, upgradeOptions_ = {}) {
 	return contracts_;
 }
 
+async function upgradeToOpenBid(contracts_, upgradeOptions_ = {}) {
+	// V1 -> OpenBid is plugin-safe (OpenBid keeps the V1 storage layout, only appending `timesEthBidPrice`).
+	// Unlike V2 -> OpenBid (Comment-202606126), this needs no `unsafeSkipStorageCheck`.
+	const cosmicSignatureGameOpenBidFactory_ =
+		await hre.ethers.getContractFactory("CosmicSignatureGameOpenBid", contracts_.ownerSigner);
+	const prevImplementationAddress_ =
+		await hre.upgrades.erc1967.getImplementationAddress(contracts_.cosmicSignatureGameProxyAddress);
+	const cosmicSignatureGameOpenBidProxy_ =
+		await hre.upgrades.upgradeProxy(
+			contracts_.cosmicSignatureGameProxy,
+			cosmicSignatureGameOpenBidFactory_,
+			{
+				kind: "uups",
+				call: "initializeV2",
+				...upgradeOptions_,
+			}
+		);
+	const cosmicSignatureGameOpenBidImplementationAddress_ =
+		await hre.upgrades.erc1967.getImplementationAddress(contracts_.cosmicSignatureGameProxyAddress);
+	expect(cosmicSignatureGameOpenBidImplementationAddress_).not.equal(prevImplementationAddress_);
+	contracts_.cosmicSignatureGameOpenBidFactory = cosmicSignatureGameOpenBidFactory_;
+	contracts_.cosmicSignatureGameOpenBidProxy = cosmicSignatureGameOpenBidProxy_;
+	contracts_.cosmicSignatureGameOpenBidImplementationAddress = cosmicSignatureGameOpenBidImplementationAddress_;
+	return contracts_;
+}
+
+async function assertDefaultOpenBidInitialization(game_) {
+	expect(await game_.timesEthBidPrice()).equal(3n);
+}
+
 // todo-0 I can use my helper for this.
 // todo-0 But it does not always use "latest" block. Is it OK?
 async function activateCurrentRound(game_, ownerSigner_) {
@@ -122,8 +152,10 @@ module.exports = {
 	completeRoundZero,
 	deployV1CompleteRoundZeroAndUpgradeToV2,
 	upgradeToV2,
+	upgradeToOpenBid,
 	activateCurrentRound,
 	assertDefaultV2Initialization,
+	assertDefaultOpenBidInitialization,
 	findParsedEvent,
 	expectUnknownSelector,
 };
