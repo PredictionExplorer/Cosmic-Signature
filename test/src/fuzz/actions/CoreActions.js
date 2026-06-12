@@ -179,6 +179,55 @@ async function claimAfterTimeout(ctx_) {
 	return executeClaim(ctx_, claimer_, ts_);
 }
 
+/**
+Comment-202606235 coverage. A malicious/compromised owner sets `delayDurationBeforeRoundActivation` to
+`type(uint256).max` mid-round (the setter has no round-state guard, Comment-202503106). On V1 this makes
+`block.timestamp + delayDurationBeforeRoundActivation` in `_prepareNextRound` overflow and revert, bricking the
+prize. V2 wraps that body in `unchecked`, so the last bidder's claim still succeeds and `roundActivationTime` merely
+wraps modulo 2^256. This action drives that exact path through the full claim verification, then restores a sane
+delay so subsequent rounds activate normally (no lock-in). V2-only: V1 and OpenBid inherit the checked
+`MainPrize._prepareNextRound`, where this claim would revert.
+*/
+async function claimWithOverflowingDelay(ctx_) {
+	const { engine, model, ledger } = ctx_;
+	if (model.lastBidderAddress === ZERO_ADDRESS) {
+		return "skip";
+	}
+	const claimer_ = ctx_.actorByAddress(model.lastBidderAddress);
+	if (claimer_ === null) {
+		return "skip";
+	}
+	const owner_ = ctx_.contracts.ownerSigner;
+	const ownerGame_ = ctx_.game.connect(owner_).contract;
+	const prevDelay_ = model.delayDurationBeforeRoundActivation;
+	const maxDelay_ = (1n << 256n) - 1n;
+
+	// Overflow the next-round activation math while a bid is already placed (mid active round).
+	const setResult_ = await engine.execTx({
+		signer: owner_,
+		buildTx: (overrides_) => ownerGame_.setDelayDurationBeforeRoundActivation(maxDelay_, overrides_),
+	});
+	engine.expectOk(setResult_, "overflowing setDelayDurationBeforeRoundActivation");
+	model.delayDurationBeforeRoundActivation = maxDelay_;
+
+	// The last bidder still claims successfully; the unchecked addition wraps instead of reverting.
+	let ts_ = model.mainPrizeTime;
+	if (engine.chancePercent(50)) {
+		ts_ = model.mainPrizeTime + engine.randomBigIntRange(0n, 7n * 86_400n);
+	}
+	const outcome_ = await executeClaim(ctx_, claimer_, engine.clampTs(ts_));
+
+	// Restore a sane delay (the setter has no round-state guard) so later rounds activate normally.
+	const restoreResult_ = await engine.execTx({
+		signer: owner_,
+		buildTx: (overrides_) => ownerGame_.setDelayDurationBeforeRoundActivation(prevDelay_, overrides_),
+	});
+	engine.expectOk(restoreResult_, "restore setDelayDurationBeforeRoundActivation");
+	model.delayDurationBeforeRoundActivation = prevDelay_;
+	await ledger.verifyDirtyEth();
+	return outcome_;
+}
+
 /** Actors sorted by current (tracked) ETH balance, richest first. */
 function actorsByWealthDesc(ctx_) {
 	return [...ctx_.actors].sort((a_, b_) => {
@@ -286,6 +335,17 @@ const claimActions = [
 		weight: 2,
 		isApplicable: (ctx_) => ctx_.model.lastBidderAddress !== ZERO_ADDRESS,
 		run: (ctx_) => claimAfterTimeout(ctx_),
+	},
+	{
+		// Comment-202606235: the last bidder claims after the owner overflowed the next-round activation math.
+		// V2-only (V1/OpenBid use checked arithmetic, where this claim would revert).
+		name: "claimMainPrizeWithOverflowingDelay",
+		weight: 1,
+		isApplicable: (ctx_) =>
+			ctx_.model.version === 2 &&
+			ctx_.model.lastBidderAddress !== ZERO_ADDRESS &&
+			ctx_.actorByAddress(ctx_.model.lastBidderAddress) !== null,
+		run: (ctx_) => claimWithOverflowingDelay(ctx_),
 	},
 ];
 
