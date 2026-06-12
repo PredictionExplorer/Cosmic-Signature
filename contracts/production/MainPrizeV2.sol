@@ -569,7 +569,7 @@ abstract contract MainPrizeV2 is
 	// #region `_prepareNextRound`
 
 	function _prepareNextRound() private {
-		// Comment-202606235 relates.
+		// Comment-202606235 relates and/or applies.
 		unchecked {
 
 			// lastBidType = BidType.ETH;
