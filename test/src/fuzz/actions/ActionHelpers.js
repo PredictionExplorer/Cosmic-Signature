@@ -31,13 +31,21 @@ function planBidTs(ctx_) {
 	const ethAuctionDuration_ = model.getEthDutchAuctionDuration();
 	const span_ = (ethAuctionDuration_ > 0n) ? ethAuctionDuration_ : 600n;
 	let offset_;
-	const roll_ = engine.randomIntRange(0, 99);
-	if (roll_ < 20) {
-		offset_ = engine.randomBigIntRange(0n, 600n); // quick bid (exercises the high-price path)
-	} else if (roll_ < 85) {
-		offset_ = engine.randomBigIntRange(0n, span_); // spread across the auction (decays the price)
+	if (engine.profile.overflowMode) {
+		// Overflow-targeting mode: always bid the first bid right at activation (no Dutch decay), so the
+		// beginning price ratchets up ~2x each round and the ETH price climbs into the high / `unchecked`
+		// uint256-wraparound regime that the default spreading deliberately avoids. The model mirrors the
+		// wraparound exactly via `u256(...)`; finite actor budgets bound how far it actually climbs.
+		offset_ = 0n;
 	} else {
-		offset_ = span_ + engine.randomBigIntRange(0n, span_); // past the auction end (price at floor)
+		const roll_ = engine.randomIntRange(0, 99);
+		if (roll_ < 20) {
+			offset_ = engine.randomBigIntRange(0n, 600n); // quick bid (exercises the high-price path)
+		} else if (roll_ < 85) {
+			offset_ = engine.randomBigIntRange(0n, span_); // spread across the auction (decays the price)
+		} else {
+			offset_ = span_ + engine.randomBigIntRange(0n, span_); // past the auction end (price at floor)
+		}
 	}
 	let ts_ = engine.clampTs(model.roundActivationTime + offset_);
 	// A frozen round (activation far in the future) cannot be bid into.
@@ -253,9 +261,11 @@ async function executeEthBid(ctx_, actor_, options_) {
 
 	const expectations_ = model.applyEthBid(actor_.address, ts_, value_, gasPrice_, randomWalkNftId_);
 
-	// Net ETH: actor pays `paidEthPrice` (any refund returns in the same tx); game gains it.
-	ledger.addEth(actor_.address, -expectations_.paidEthPrice);
-	ledger.addEth(ctx_.game.address, expectations_.paidEthPrice);
+	// Net ETH: the actor loses `netEthPaid` (the base price plus any swallowed overpay; a real refund
+	// returns in the same tx), and the game keeps it. On V1/V2 this equals `paidEthPrice`; on OpenBid a
+	// swallowed overpay is kept by the game even though the recorded `paidEthPrice` stays at the base price.
+	ledger.addEth(actor_.address, -expectations_.netEthPaid);
+	ledger.addEth(ctx_.game.address, expectations_.netEthPaid);
 
 	const bidPlaced_ = engine.singleEvent(receipt_, ctx_.game.contract, "BidPlaced", "ETH bid");
 	expect(bidPlaced_.args.roundNum).to.equal(roundNumBefore_);
@@ -288,6 +298,77 @@ async function executeEthBid(ctx_, actor_, options_) {
 		expect(nftDonated_.args.nftId).to.equal(donationNftId_);
 		expect(ledger.mockNftOwners.get(donationNftId_.toString()), "donated NFT should be held by PrizesWallet")
 			.to.equal(contracts.prizesWalletAddress.toLowerCase());
+	}
+
+	await ledger.verifyDirtyEth();
+	return "ok";
+}
+
+// #endregion
+// #region OpenBid open-ETH-bid execution
+
+/**
+Executes and fully verifies an OpenBid (version 3) "open" ETH bid: the caller pays any amount at or
+above `ethBidPrice * timesEthBidPrice`, and that exact amount becomes `paidEthPrice` (no swallow/refund),
+escalating `nextEthBidPrice`. Only valid on version 3 with a bid already placed in the round.
+@returns {Promise<string>} "ok" or "skip".
+*/
+async function executeOpenBid(ctx_, actor_) {
+	const { engine, model, ledger } = ctx_;
+	if (model.version !== 3 || model.lastBidderAddress === ZERO_ADDRESS) {
+		return "skip";
+	}
+	const gasPrice_ = engine.randomGasPrice();
+	const ts_ = planBidTs(ctx_);
+	if (ts_ === null) {
+		return "skip";
+	}
+	const ethBidPrice_ = model.getNextEthBidPrice(ts_);
+	const minLimit_ = BigInt(ethBidPrice_) * BigInt(model.timesEthBidPrice);
+	if (minLimit_ <= 0n) {
+		return "skip";
+	}
+	// Pay exactly the minimum sometimes, otherwise a modest premium above it (bounded so prices stay realistic).
+	const premium_ = engine.chancePercent(40) ? 0n : engine.randomBigIntRange(1n, minLimit_ + 1n);
+	const value_ = minLimit_ + premium_;
+	if ( ! engine.canAfford(actor_.address, value_) ) {
+		return "skip";
+	}
+	const message_ = engine.randomMessage(Math.min(Number(model.bidMessageLengthMaxLimit), 120));
+
+	const cstBefore_ = ledger.cstBalanceOf(actor_.address);
+	const roundNumBefore_ = model.roundNum;
+	const result_ = await engine.execTx({
+		signer: actor_.signer,
+		buildTx: (overrides_) => ctx_.game.connect(actor_.signer).bidWithEthOpenBid(-1n, message_, { ...overrides_, value: value_ }),
+		ts: ts_,
+		gasPrice: gasPrice_,
+		valueNeeded: value_,
+	});
+	const receipt_ = engine.expectOk(result_, "open ETH bid");
+
+	const expectations_ = model.applyEthBid(actor_.address, ts_, value_, gasPrice_, null, /*isOpenBid_=*/ true);
+	expect(expectations_.paidEthPrice, "open bid: paid price must equal msg.value").to.equal(value_);
+
+	// An open bid pays exactly `msg.value` (no swallow/refund); the game gains it all.
+	ledger.addEth(actor_.address, -value_);
+	ledger.addEth(ctx_.game.address, value_);
+
+	const bidPlaced_ = engine.singleEvent(receipt_, ctx_.game.contract, "BidPlaced", "open ETH bid");
+	expect(bidPlaced_.args.roundNum).to.equal(roundNumBefore_);
+	expect(bidPlaced_.args.lastBidderAddress.toLowerCase()).to.equal(actor_.lower);
+	expect(bidPlaced_.args.paidEthPrice).to.equal(value_);
+	expect(bidPlaced_.args.paidCstPrice).to.equal(-1n);
+	expect(bidPlaced_.args.randomWalkNftId).to.equal(-1n);
+	expect(bidPlaced_.args.message).to.equal(message_);
+	expect(bidPlaced_.args.mainPrizeTime).to.equal(model.mainPrizeTime);
+
+	expect(ledger.cstBalanceOf(actor_.address) - cstBefore_, "open bid: CST reward mismatch").to.equal(expectations_.bidCstRewardAmount);
+
+	{
+		const chainLastBidTs_ = (await ctx_.game.contract.biddersInfo(roundNumBefore_, actor_.address)).lastBidTimeStamp;
+		const modelLastBidTs_ = model.getBidderInfo(roundNumBefore_, actor_.address).lastBidTimeStamp;
+		expect(chainLastBidTs_, "open bid: lastBidTimeStamp drift").to.equal(modelLastBidTs_);
 	}
 
 	await ledger.verifyDirtyEth();
@@ -344,12 +425,13 @@ async function executeCstBid(ctx_, actor_, options_) {
 				return ctx_.game.connect(actor_.signer).bidWithCstAndDonateToken(
 					priceMaxLimit_, message_, minReward_, contracts.fuzzTestMockErc20Address, donationTokenAmount_, overrides_);
 			case "donateNft": {
-				const sig_ = (model.version === 1) ?
-					"bidWithCstAndDonateNft(uint256,string,address,uint256)" :
-					"bidWithCstAndDonateNft(uint256,string,uint256,address,uint256)";
-				const args_ = (model.version === 1) ?
-					[priceMaxLimit_, message_, contracts.fuzzTestMockErc721Address, donationNftId_] :
-					[priceMaxLimit_, message_, minReward_, contracts.fuzzTestMockErc721Address, donationNftId_];
+				// OpenBid (version 3) keeps the V1 CST-donate-NFT signature (no `bidCstRewardAmountMinLimit_`).
+				const sig_ = (model.version === 2) ?
+					"bidWithCstAndDonateNft(uint256,string,uint256,address,uint256)" :
+					"bidWithCstAndDonateNft(uint256,string,address,uint256)";
+				const args_ = (model.version === 2) ?
+					[priceMaxLimit_, message_, minReward_, contracts.fuzzTestMockErc721Address, donationNftId_] :
+					[priceMaxLimit_, message_, contracts.fuzzTestMockErc721Address, donationNftId_];
 				return gameContract_.getFunction(sig_)(...args_, overrides_);
 			}
 			default:
@@ -423,6 +505,11 @@ function verifyClaimReceipt(ctx_, { claimerAddress, receipt, breakdown, rwStaker
 	expect(mainClaimed_.args.ethPrizeAmount).to.equal(breakdown.mainEthPrizeAmount);
 	expect(mainClaimed_.args.cstPrizeAmount).to.equal(breakdown.cstPrizeAmount);
 
+	// Independent sanity: no prize is ever paid to the zero address.
+	expect(claimerLower_, "claim: zero-address beneficiary").to.not.equal(ZERO_ADDRESS);
+	expect(breakdown.enduranceChampionAddress, "claim: zero-address endurance champion").to.not.equal(ZERO_ADDRESS);
+	expect(breakdown.chronoWarriorAddress, "claim: zero-address chrono-warrior").to.not.equal(ZERO_ADDRESS);
+
 	// Record the round registration so PrizesWallet claim actions know the beneficiary and timeout.
 	ledger.prizesWallet.mainPrizeBeneficiaries.set(breakdown.roundNum.toString(), claimerLower_);
 	ledger.prizesWallet.roundTimeouts.set(breakdown.roundNum.toString(), mainClaimed_.args.timeoutTimeToWithdrawSecondaryPrizes);
@@ -446,6 +533,7 @@ function verifyClaimReceipt(ctx_, { claimerAddress, receipt, breakdown, rwStaker
 	const raffleEthEvents_ = engine.parsedEvents(receipt, game_, "RaffleWinnerBidderEthPrizeAllocated");
 	expect(BigInt(raffleEthEvents_.length), "claim: raffle ETH event count").to.equal(breakdown.numRaffleEthPrizesForBidders);
 	for (const event_ of raffleEthEvents_) {
+		expect(event_.args.winnerAddress.toLowerCase(), "claim: zero-address raffle ETH winner").to.not.equal(ZERO_ADDRESS);
 		expect(biddersSet_.has(event_.args.winnerAddress.toLowerCase()), "claim: raffle ETH winner not a bidder").to.equal(true);
 		expect(event_.args.ethPrizeAmount).to.equal(breakdown.raffleEthPrizeAmountPerBidder);
 	}
@@ -454,6 +542,7 @@ function verifyClaimReceipt(ctx_, { claimerAddress, receipt, breakdown, rwStaker
 	expect(BigInt(rafflePrizeEvents_.length), "claim: raffle CST/NFT event count")
 		.to.equal(breakdown.numRaffleCosmicSignatureNftsForBidders + breakdown.numLuckyStakers);
 	for (const event_ of rafflePrizeEvents_) {
+		expect(event_.args.winnerAddress.toLowerCase(), "claim: zero-address raffle NFT winner").to.not.equal(ZERO_ADDRESS);
 		if (event_.args.winnerIsRandomWalkNftStaker) {
 			expect(rwStakerOwnersBefore.has(event_.args.winnerAddress.toLowerCase()), "claim: lucky staker not an RW staker").to.equal(true);
 		} else {
@@ -535,6 +624,7 @@ module.exports = {
 	ensureMockNftFor,
 	ensureMockErc20For,
 	executeEthBid,
+	executeOpenBid,
 	executeCstBid,
 	verifyClaimReceipt,
 };

@@ -98,8 +98,12 @@ async function runInvariants(ctx_) {
 		expect(await game_.cstDutchAuctionDurationChangeDivisor(), "cstDutchAuctionDurationChangeDivisor vs model").to.equal(model.cstDutchAuctionDurationChangeDivisor);
 		expect(await game_.bidCstRewardAmountMultiplier(), "bidCstRewardAmountMultiplier vs model").to.equal(model.bidCstRewardAmountMultiplier);
 	} else {
+		// V1 and OpenBid (version 3) both expose these V1-style getters.
 		expect(await game_.cstDutchAuctionDurationDivisor(), "cstDutchAuctionDurationDivisor vs model").to.equal(model.cstDutchAuctionDurationDivisor);
 		expect(await game_.bidCstRewardAmount(), "bidCstRewardAmount vs model").to.equal(model.bidCstRewardAmount);
+	}
+	if (model.version === 3) {
+		expect(await game_.timesEthBidPrice(), "timesEthBidPrice vs model").to.equal(model.timesEthBidPrice);
 	}
 
 	// Full owner-configurable parameter equality (catches any admin/halve mutation drift immediately,
@@ -204,6 +208,43 @@ async function runInvariants(ctx_) {
 	}
 
 	// #endregion
+	// #region Independent (non-mirrored) invariants
+
+	// These deliberately avoid reusing the `GameModel`'s prize/price arithmetic, so a bug mirrored
+	// identically in the model and the contract cannot hide here.
+
+	// 1. The ETH the game pays out per round can never exceed 100% of its balance: the owner-set
+	//    percentages must sum to at most 100 (read straight from the chain, no model involved).
+	{
+		const pctSum_ =
+			(await game_.mainEthPrizeAmountPercentage()) +
+			(await game_.chronoWarriorEthPrizeAmountPercentage()) +
+			(await game_.raffleTotalEthPrizeAmountForBiddersPercentage()) +
+			(await game_.cosmicSignatureNftStakingTotalEthRewardAmountPercentage()) +
+			(await game_.charityEthDonationAmountPercentage());
+		expect(pctSum_ <= 100n, `prize percentage sum exceeds 100% (${pctSum_})`).to.equal(true);
+	}
+
+	// 2. Global ETH conservation across the whole tracked universe: every wei was either injected
+	//    (`totalRefilled`) and is still held somewhere tracked, or was burned as gas to the (untracked)
+	//    coinbase. This is pure ledger bookkeeping; it catches any unpaired `addEth` (ETH minted/destroyed
+	//    in the ledger) regardless of whether per-address chain reads happen to agree.
+	{
+		let trackedSum_ = 0n;
+		for (const balance_ of ledger.eth.values()) {
+			trackedSum_ += balance_;
+		}
+		expect(trackedSum_ + ledger.totalGasBurned, "global ETH conservation (sum + gas == injected + pre-existing)").to.equal(ledger.totalRefilled + ledger.conservationOffset);
+	}
+
+	// 3. CST supply reconciled from independent mint/burn tallies (mint == transfer from zero, burn ==
+	//    transfer to zero), cross-checked against the chain's `totalSupply`.
+	{
+		expect(ledger.cstTotalMinted - ledger.cstTotalBurned, "CST minted - burned == ledger totalSupply").to.equal(ledger.cstTotalSupply);
+		expect(await contracts.cosmicSignatureToken.totalSupply(), "CST minted - burned == chain totalSupply").to.equal(ledger.cstTotalMinted - ledger.cstTotalBurned);
+	}
+
+	// #endregion
 
 	++ ctx_.invariantRunCount;
 }
@@ -261,6 +302,7 @@ function assertCoverageFloors(statsMap_, profile_) {
 	const mustSucceed_ = [
 		"bidWithEth", "bidWithEthExactPrice", "bidWithEthSwallow", "bidWithEthRefund",
 		"bidWithEthPlusRandomWalkNft", "bidWithEthReceive", "bidWithEthAndDonateToken", "bidWithEthAndDonateNft",
+		"bidWithEthOpenBid",
 		"bidWithCst", "bidWithCstExactLimit", "bidWithCstAndDonateToken", "bidWithCstAndDonateNft",
 		"claimMainPrize",
 		"stakeCosmicSignatureNft", "unstakeCosmicSignatureNft", "stakeManyCosmicSignatureNft",

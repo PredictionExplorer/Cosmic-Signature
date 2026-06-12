@@ -2,7 +2,39 @@
 
 // #region Imports
 
+const { expect } = require("chai");
 const { ZERO_ADDRESS } = require("../GameModel.js");
+
+// #endregion
+// #region Broken-staker helpers
+
+/** Returns the `BrokenCosmicSignatureNftStaker`'s active CS stake action id (bigint), or null. */
+function brokenStakerActiveStakeActionId(ctx_) {
+	const address_ = ctx_.adversaries?.brokenCsNftStakerAddress;
+	if (address_ === undefined) {
+		return null;
+	}
+	for (const [actionId_, action_] of ctx_.ledger.csStaking.stakeActions) {
+		if (action_.ownerAddress === address_) {
+			return BigInt(actionId_);
+		}
+	}
+	return null;
+}
+
+/** Finds an actor owning a non-staked Cosmic Signature NFT who can afford gas (to donate it to the broken staker). */
+function findCsNftDonor(ctx_) {
+	for (const actor_ of ctx_.actors) {
+		if ( ! ctx_.engine.canAfford(actor_.address, 0n) ) {
+			continue;
+		}
+		const owned_ = ctx_.ledger.nftIdsOwnedBy("cs", actor_.address).filter((id_) => ! ctx_.ledger.csStaking.usedNfts.has(id_));
+		if (owned_.length > 0) {
+			return { actor: actor_, nftId: BigInt(owned_[0]) };
+		}
+	}
+	return null;
+}
 
 // #endregion
 // #region Charity controller
@@ -180,6 +212,102 @@ const adversarialActions = [
 			engine.expectRevert(result_, "ReentrancyGuardReentrantCall", "adversarialMaliciousTokenDonation");
 			await ledger.verifyDirtyEth();
 			return "revert:ReentrancyGuardReentrantCall";
+		},
+	},
+	{
+		// Give the `BrokenCosmicSignatureNftStaker` a Cosmic Signature NFT and stake it, so a later
+		// unstake can exercise the staking wallet's reward-payment failure path.
+		name: "adversarialBrokenStakerStake",
+		weight: 2,
+		isApplicable: (ctx_) =>
+			ctx_.adversaries !== undefined &&
+			ctx_.adversaries.brokenCsNftStaker !== undefined &&
+			brokenStakerActiveStakeActionId(ctx_) === null &&
+			findCsNftDonor(ctx_) !== null,
+		run: async (ctx_) => {
+			const { engine, ledger, contracts, adversaries } = ctx_;
+			const donor_ = findCsNftDonor(ctx_);
+			if (donor_ === null) {
+				return "skip";
+			}
+			const broken_ = adversaries.brokenCsNftStaker;
+			const brokenAddress_ = adversaries.brokenCsNftStakerAddress;
+
+			// 1. The donor transfers a Cosmic Signature NFT to the broken staker contract.
+			const transferResult_ = await engine.execTx({
+				signer: donor_.actor.signer,
+				buildTx: (overrides_) => contracts.cosmicSignatureNft.connect(donor_.actor.signer).transferFrom(donor_.actor.address, brokenAddress_, donor_.nftId, overrides_),
+			});
+			engine.expectOk(transferResult_, "broken staker NFT donation");
+			expect(ledger.csNftOwners.get(donor_.nftId.toString()), "broken staker should own the donated NFT").to.equal(brokenAddress_);
+
+			// 2. The broken staker approves the staking wallet for its NFTs (once).
+			if ( ! adversaries.brokenCsNftStakerApproved ) {
+				const approveResult_ = await engine.execTx({
+					signer: donor_.actor.signer,
+					buildTx: (overrides_) => broken_.connect(donor_.actor.signer).doSetApprovalForAll(overrides_),
+				});
+				engine.expectOk(approveResult_, "broken staker approval");
+				adversaries.brokenCsNftStakerApproved = true;
+			}
+
+			// 3. The broken staker stakes the NFT (msg.sender to the staking wallet is the broken staker).
+			const stakeResult_ = await engine.execTx({
+				signer: donor_.actor.signer,
+				buildTx: (overrides_) => broken_.connect(donor_.actor.signer).doStake(donor_.nftId, overrides_),
+			});
+			engine.expectOk(stakeResult_, "broken staker stake");
+			expect(ledger.csNftOwners.get(donor_.nftId.toString()), "staked NFT custody")
+				.to.equal(contracts.stakingWalletCosmicSignatureNftAddress.toLowerCase());
+			await ledger.verifyDirtyEth();
+			return "ok";
+		},
+	},
+	{
+		// Unstake the broken staker: first with ETH-reward acceptance disabled (the staking wallet's
+		// reward call reverts, so `unstake` must fail `FundTransferFailed`), then with acceptance enabled
+		// (the unstake succeeds and the reward — possibly zero — flows to the broken staker).
+		name: "adversarialBrokenStakerUnstake",
+		weight: 2,
+		isApplicable: (ctx_) => ctx_.adversaries !== undefined && brokenStakerActiveStakeActionId(ctx_) !== null,
+		run: async (ctx_, actor_) => {
+			const { engine, ledger, contracts, adversaries } = ctx_;
+			const stakeActionId_ = brokenStakerActiveStakeActionId(ctx_);
+			if (stakeActionId_ === null) {
+				return "skip";
+			}
+			const broken_ = adversaries.brokenCsNftStaker;
+			const brokenAddress_ = adversaries.brokenCsNftStakerAddress;
+
+			// 1. Put the broken staker in revert mode and attempt to unstake: the reward `call` reverts.
+			const revertModeResult_ = await engine.execTx({
+				signer: actor_.signer,
+				buildTx: (overrides_) => broken_.connect(actor_.signer).setEthDepositAcceptanceModeCode(1n, overrides_),
+			});
+			engine.expectOk(revertModeResult_, "broken staker set revert mode");
+			const failResult_ = await engine.execTx({
+				signer: actor_.signer,
+				buildTx: (overrides_) => broken_.connect(actor_.signer).doUnstake(stakeActionId_, overrides_),
+			});
+			engine.expectRevert(failResult_, "FundTransferFailed", "adversarialBrokenStakerUnstake (revert mode)");
+
+			// 2. Restore acceptance and unstake for real; the reward (>= 0) flows to the broken staker.
+			const acceptModeResult_ = await engine.execTx({
+				signer: actor_.signer,
+				buildTx: (overrides_) => broken_.connect(actor_.signer).setEthDepositAcceptanceModeCode(0n, overrides_),
+			});
+			engine.expectOk(acceptModeResult_, "broken staker set accept mode");
+			const action_ = ledger.csStaking.stakeActions.get(stakeActionId_.toString());
+			const expectedReward_ = ledger.csStaking.rewardAmountPerStakedNft - action_.initialRewardAmountPerStakedNft;
+			const okResult_ = await engine.execTx({
+				signer: actor_.signer,
+				buildTx: (overrides_) => broken_.connect(actor_.signer).doUnstake(stakeActionId_, overrides_),
+			});
+			engine.expectOk(okResult_, "adversarialBrokenStakerUnstake (accept mode)");
+			ledger.addEth(brokenAddress_, expectedReward_);
+			ledger.addEth(contracts.stakingWalletCosmicSignatureNftAddress, -expectedReward_);
+			await ledger.verifyDirtyEth();
+			return "ok";
 		},
 	},
 ];

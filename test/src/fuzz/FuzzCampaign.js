@@ -11,8 +11,8 @@ const { ShadowState } = require("./ShadowState.js");
 const { GameAbiAdapter } = require("./GameAbiAdapter.js");
 const { FuzzEngine } = require("./FuzzEngine.js");
 const { runInvariants, assertCoverageFloors, printCoverageReport, mergeStatsInto } = require("./Invariants.js");
-const { performUpgradeToV2, upgradeAuthProbe } = require("./UpgradePhase.js");
-const { biddingActions, claimActions, donationActions, stakingActions, forceCompleteRound } = require("./actions/CoreActions.js");
+const { performUpgradeToV2, performUpgradeToOpenBid, upgradeAuthProbe } = require("./UpgradePhase.js");
+const { biddingActions, claimActions, donationActions, stakingActions, forceCompleteRound, runClaimRace } = require("./actions/CoreActions.js");
 const { randomWalkActions, tokenActions, prizesWalletActions, walletActions } = require("./actions/SecondaryActions.js");
 const { adminActions, daoActions } = require("./actions/AdminActions.js");
 const { extraTokenActions, extraPrizesWalletActions } = require("./actions/ExtraActions.js");
@@ -23,41 +23,77 @@ const { CharityController, adversarialActions, applyArbitrumChaos, resetArbitrum
 // #region Profiles
 
 /**
+Selects the campaign profile tier:
+- "quick"  (SKIP_LONG_TESTS): one short bounded campaign for CI smoke runs.
+- "medium" (FUZZ_PROFILE=medium): one larger bounded campaign (a useful middle ground for local runs).
+- "full"   (default): a 20-minute soak of repeated independent bounded campaigns.
 @param {boolean} skipLongTests_
 @param {object} envOverrides_
 */
 function buildProfile(skipLongTests_, envOverrides_) {
-	const base_ = skipLongTests_ ? {
-		numActors: 6,
-		// Equal V1/V2 rounds => ~50/50 split of fuzzing time across the two code versions.
-		v1Rounds: 3,
-		v2Rounds: 3,
-		actionsPerSegment: 22,
-		invariantEveryActions: 18,
-		negativeProbePercent: 14,
-		burstPercent: 6,
-		verbosity: 1,
-		chaos: false,
-		runOpenBid: false,
-		enforceStrongCoverage: false,
-		// Quick CI profile: a single bounded campaign (no wall-clock soak).
-		maxSeconds: undefined,
-	} : {
-		numActors: 9,
-		// Equal V1/V2 rounds per campaign => ~50% of the time on V1 code and ~50% on V2 code.
-		v1Rounds: 10,
-		v2Rounds: 10,
-		actionsPerSegment: 45,
-		invariantEveryActions: 40,
-		negativeProbePercent: 12,
-		burstPercent: 8,
-		verbosity: 1,
-		chaos: true,
-		runOpenBid: false,
-		enforceStrongCoverage: true,
-		// Default to a 20-minute soak (repeated independent bounded campaigns). Override with FUZZ_MAX_SECONDS.
-		maxSeconds: 1200,
-	};
+	const tier_ = skipLongTests_ ? "quick" : ((process.env.FUZZ_PROFILE === "medium") ? "medium" : "full");
+	let base_;
+	if (tier_ === "quick") {
+		base_ = {
+			numActors: 6,
+			// Equal V1/V2 rounds => ~50/50 split of fuzzing time across the two code versions.
+			v1Rounds: 3,
+			v2Rounds: 3,
+			actionsPerSegment: 22,
+			invariantEveryActions: 18,
+			negativeProbePercent: 14,
+			burstPercent: 6,
+			verbosity: 1,
+			chaos: false,
+			runOpenBid: false,
+			// Per-campaign chance (when not forced) of upgrading V1 -> OpenBid instead of V1 -> V2.
+			openBidPercent: 50,
+			// Opt-in: drive the ETH price into the high / `unchecked`-wraparound regime (see `planBidTs`).
+			overflowMode: false,
+			enforceStrongCoverage: false,
+			// Quick CI profile: a single bounded campaign (no wall-clock soak).
+			maxSeconds: undefined,
+		};
+	} else if (tier_ === "medium") {
+		base_ = {
+			numActors: 7,
+			v1Rounds: 5,
+			v2Rounds: 5,
+			actionsPerSegment: 32,
+			invariantEveryActions: 28,
+			negativeProbePercent: 13,
+			burstPercent: 7,
+			verbosity: 1,
+			chaos: true,
+			runOpenBid: false,
+			openBidPercent: 45,
+			overflowMode: false,
+			enforceStrongCoverage: false,
+			// A single, larger bounded campaign (override with FUZZ_MAX_SECONDS to soak).
+			maxSeconds: 0,
+		};
+	} else {
+		base_ = {
+			numActors: 9,
+			// Equal V1/V2 rounds per campaign => ~50% of the time on V1 code and ~50% on V2 code.
+			v1Rounds: 10,
+			v2Rounds: 10,
+			actionsPerSegment: 45,
+			invariantEveryActions: 40,
+			negativeProbePercent: 12,
+			burstPercent: 8,
+			verbosity: 1,
+			chaos: true,
+			runOpenBid: false,
+			// In a soak the driver alternates V2/OpenBid by campaign parity; this is the fallback probability
+			// for single bounded campaigns. Both upgrade targets are thus exercised across a run.
+			openBidPercent: 35,
+			overflowMode: false,
+			enforceStrongCoverage: true,
+			// Default to a 20-minute soak (repeated independent bounded campaigns). Override with FUZZ_MAX_SECONDS.
+			maxSeconds: 1200,
+		};
+	}
 	const merged_ = { ...base_, ...envOverrides_ };
 	return merged_;
 }
@@ -75,9 +111,11 @@ function readEnvOverrides() {
 	num_("FUZZ_V2_ROUNDS", "v2Rounds");
 	num_("FUZZ_ACTORS", "numActors");
 	num_("FUZZ_MAX_SECONDS", "maxSeconds");
+	num_("FUZZ_OPENBID_PERCENT", "openBidPercent");
 	if (process.env.FUZZ_CHAOS === "true") { overrides_.chaos = true; }
 	if (process.env.FUZZ_CHAOS === "false") { overrides_.chaos = false; }
 	if (process.env.FUZZ_OPENBID === "true") { overrides_.runOpenBid = true; }
+	if (process.env.FUZZ_OVERFLOW === "true") { overrides_.overflowMode = true; }
 	return overrides_;
 }
 
@@ -128,6 +166,11 @@ class FuzzCampaign {
 		const brokenEthReceiverFactory_ = await hre.ethers.getContractFactory("BrokenEthReceiver", deployer_);
 		const brokenEthReceiver_ = await brokenEthReceiverFactory_.deploy();
 		await brokenEthReceiver_.waitForDeployment();
+		// A Cosmic Signature NFT staker that can reject its ETH unstake reward (BrokenEthReceiver modes),
+		// used to exercise the CS staking wallet's `_payReward` failure path (`FundTransferFailed`).
+		const brokenCsNftStakerFactory_ = await hre.ethers.getContractFactory("BrokenCosmicSignatureNftStaker", deployer_);
+		const brokenCsNftStaker_ = await brokenCsNftStakerFactory_.deploy(contracts_.stakingWalletCosmicSignatureNftAddress);
+		await brokenCsNftStaker_.waitForDeployment();
 		const fakeArbSys_ = await hre.ethers.getContractAt("FakeArbSys", ARB_SYS_ADDRESS);
 		const fakeArbGasInfo_ = await hre.ethers.getContractAt("FakeArbGasInfo", ARB_GAS_INFO_ADDRESS);
 		this.adversaries = {
@@ -138,6 +181,9 @@ class FuzzCampaign {
 			maliciousTokenVersion: 1,
 			brokenEthReceiver: brokenEthReceiver_,
 			brokenEthReceiverAddress: (await brokenEthReceiver_.getAddress()).toLowerCase(),
+			brokenCsNftStaker: brokenCsNftStaker_,
+			brokenCsNftStakerAddress: (await brokenCsNftStaker_.getAddress()).toLowerCase(),
+			brokenCsNftStakerApproved: false,
 			fakeArbSys: fakeArbSys_,
 			fakeArbGasInfo: fakeArbGasInfo_,
 		};
@@ -200,6 +246,8 @@ class FuzzCampaign {
 
 		const v2GameFactory_ = await hre.ethers.getContractFactory("CosmicSignatureGameV2", c_.ownerSigner);
 		this.v2GameFactory = v2GameFactory_;
+		const openBidGameFactory_ = await hre.ethers.getContractFactory("CosmicSignatureGameOpenBid", c_.ownerSigner);
+		this.openBidGameFactory = openBidGameFactory_;
 		this.ledger.registerContracts(
 			{
 				game: c_.cosmicSignatureGameProxyAddress.toLowerCase(),
@@ -215,6 +263,7 @@ class FuzzCampaign {
 		this.engine.revertInterfaces = [
 			c_.cosmicSignatureGameProxy.interface,
 			v2GameFactory_.interface,
+			openBidGameFactory_.interface,
 			c_.cosmicSignatureToken.interface,
 			c_.cosmicSignatureNft.interface,
 			c_.randomWalkNft.interface,
@@ -242,6 +291,7 @@ class FuzzCampaign {
 		await this.ledger.trackEth(this.adversaries.maliciousBidderAddress, "maliciousBidder");
 		await this.ledger.trackEth(this.adversaries.maliciousTokenAddress, "maliciousToken");
 		await this.ledger.trackEth(this.adversaries.brokenEthReceiverAddress, "brokenEthReceiver");
+		await this.ledger.trackEth(this.adversaries.brokenCsNftStakerAddress, "brokenCsNftStaker");
 		for (const actor_ of this.actors) {
 			await this.ledger.trackEth(actor_.address, actor_.label);
 		}
@@ -526,8 +576,17 @@ class FuzzCampaign {
 		}
 	}
 
-	/** Runs a same-block burst of 2-3 ETH bids (exercises identical-timestamp ordering). */
+	/** Runs a same-block contention burst: usually 2-3 ETH bids; sometimes a two-claimer race. */
 	async _runBurst() {
+		// Occasionally race two simultaneous `claimMainPrize` calls when a round is claimable.
+		if (this.model.lastBidderAddress !== ZERO_ADDRESS && this.engine.chancePercent(35)) {
+			const raced_ = await runClaimRace(this.context);
+			if (raced_) {
+				// The race ended the round; re-activate so the rest of the segment can keep bidding.
+				await this._reactivateIfInactive();
+				return;
+			}
+		}
 		if (this.model.lastBidderAddress === ZERO_ADDRESS) {
 			// A first bid in a burst is tricky to model (champions need an existing last bidder); skip to a normal bid.
 			const actor_ = this.engine.pick(this.actors);
@@ -571,8 +630,8 @@ class FuzzCampaign {
 			expect(results_[index_].status, "burst bid must succeed").to.equal(1);
 			const plan_ = plans_[index_];
 			const expectations_ = this.model.applyEthBid(plan_.actor.address, ts_, plan_.value, plan_.gasPrice, null);
-			this.ledger.addEth(plan_.actor.address, -expectations_.paidEthPrice);
-			this.ledger.addEth(this.game.address, expectations_.paidEthPrice);
+			this.ledger.addEth(plan_.actor.address, -expectations_.netEthPaid);
+			this.ledger.addEth(this.game.address, expectations_.netEthPaid);
 			expectedRewardByActor_.set(plan_.actor.lower, expectedRewardByActor_.get(plan_.actor.lower) + expectations_.bidCstRewardAmount);
 		}
 		for (const [actorLower_, before_] of cstBefore_) {
@@ -591,6 +650,25 @@ class FuzzCampaign {
 		await this.engine.mineAt(this.model.roundActivationTime);
 	}
 
+	/**
+	Decides this campaign's mid-campaign upgrade target: "v2" (the production V2) or "openBid"
+	(the alternate V1 -> OpenBid prototype upgrade).
+
+	One seeded RNG draw is ALWAYS consumed (even when the target is forced or overridden) so the RNG
+	stream — and thus single-campaign reproduction via `FUZZ_SEED` — is identical across modes.
+	Precedence: `FUZZ_UPGRADE_TARGET` env > `runOpenBid` flag (force OpenBid) > driver parity override
+	(soak) > seeded probability (`openBidPercent`).
+	@returns {"v2" | "openBid"}
+	*/
+	_chooseUpgradeTarget() {
+		const rolledOpenBid_ = this.engine.chancePercent(this.profile.openBidPercent ?? 0);
+		if (process.env.FUZZ_UPGRADE_TARGET === "openBid") { return "openBid"; }
+		if (process.env.FUZZ_UPGRADE_TARGET === "v2") { return "v2"; }
+		if (this.profile.runOpenBid) { return "openBid"; }
+		if (this.upgradeTargetOverride !== undefined) { return this.upgradeTargetOverride; }
+		return rolledOpenBid_ ? "openBid" : "v2";
+	}
+
 	// #endregion
 	// #region Run
 
@@ -598,28 +676,48 @@ class FuzzCampaign {
 		this.startMs = Date.now();
 		const label_ = (this.campaignIndex !== undefined) ? `CAMPAIGN ${this.campaignIndex}` : "CAMPAIGN";
 
+		// Build flags change the compiled bytecode (and thus gas / revert kinds), so a `FUZZ_SEED` only
+		// reproduces a failure when they match. Surface them up front for reproducibility.
+		const buildFlags_ =
+			`HARDHAT_MODE_CODE=${process.env.HARDHAT_MODE_CODE ?? "(unset)"} ` +
+			`ENABLE_HARDHAT_PREPROCESSOR=${process.env.ENABLE_HARDHAT_PREPROCESSOR ?? "(unset)"} ` +
+			`ENABLE_ASSERTS=${process.env.ENABLE_ASSERTS ?? "(unset)"} ` +
+			`ENABLE_SMTCHECKER=${process.env.ENABLE_SMTCHECKER ?? "(unset)"}`;
+
 		console.info("\n" + "=".repeat(80));
-		console.info(`  COSMIC SIGNATURE - UNIFIED FUZZ ${label_} (V1 -> upgrade -> V2)`);
+		console.info(`  COSMIC SIGNATURE - UNIFIED FUZZ ${label_} (V1 -> upgrade -> V2 / OpenBid)`);
 		console.info("=".repeat(80));
 		console.info(`  seed: ${uint256ToPaddedHexString(this.seed)}`);
-		console.info(`  profile: actors=${this.profile.numActors} v1Rounds=${this.profile.v1Rounds} v2Rounds=${this.profile.v2Rounds} chaos=${this.profile.chaos}`);
+		console.info(`  profile: actors=${this.profile.numActors} v1Rounds=${this.profile.v1Rounds} v2Rounds=${this.profile.v2Rounds} chaos=${this.profile.chaos} overflowMode=${this.profile.overflowMode === true}`);
+		console.info(`  build flags: ${buildFlags_}`);
 		console.info("=".repeat(80) + "\n");
 
 		await this.setup();
+
+		// Decide the upgrade target up front (consumes one seeded RNG draw) so it is known for the
+		// failure-reproduction message even if the V1 phase fails first.
+		this.upgradeTarget = this._chooseUpgradeTarget();
+		const phase2Label_ = (this.upgradeTarget === "openBid") ? "OpenBid" : "V2";
+		console.info(`  upgrade target: ${this.upgradeTarget}\n`);
+
 		await runInvariants(this.context);
 
 		// Phase 1: V1.
 		await this._runPhase("V1", this.profile.v1Rounds);
 
 		// Mid-campaign upgrade (we are in a fresh post-claim, round-inactive state).
-		console.info("\n  >>> Performing V1 -> V2 upgrade <<<\n");
-		await performUpgradeToV2(this.context);
+		console.info(`\n  >>> Performing V1 -> ${phase2Label_} upgrade <<<\n`);
+		if (this.upgradeTarget === "openBid") {
+			await performUpgradeToOpenBid(this.context);
+		} else {
+			await performUpgradeToV2(this.context);
+		}
 		await this._activateRound();
 		await runInvariants(this.context);
-		console.info("  >>> Upgrade complete; continuing on V2 <<<\n");
+		console.info(`  >>> Upgrade complete; continuing on ${phase2Label_} <<<\n`);
 
-		// Phase 2: V2.
-		await this._runPhase("V2", this.profile.v2Rounds);
+		// Phase 2: V2 or OpenBid.
+		await this._runPhase(phase2Label_, this.profile.v2Rounds);
 
 		// Final invariants. Coverage floors are asserted by the driver on the aggregate across
 		// campaigns (breadth floors are probabilistic for a single bounded campaign).
@@ -633,7 +731,7 @@ class FuzzCampaign {
 		console.info("  CAMPAIGN COMPLETE\n");
 
 		expect(this.engine.actionSeq).to.be.greaterThan(0);
-		expect(this.model.version, "campaign must end on V2").to.equal(2);
+		expect([2, 3].includes(this.model.version), "campaign must end on an upgraded version (V2 or OpenBid)").to.equal(true);
 		expect(this.model.roundNum, "at least one round must have completed").to.be.greaterThan(0n);
 	}
 
@@ -677,6 +775,9 @@ async function runFuzzCampaigns(profile_, masterSeed_) {
 		const campaignSeed_ = generateRandomUInt256FromSeedWrapper(seedWrapper_);
 		const campaign_ = new FuzzCampaign(profile_, campaignSeed_);
 		campaign_.campaignIndex = campaignIndex_;
+		// Alternate the upgrade target by campaign parity so every soak exercises BOTH V1 -> V2 and
+		// V1 -> OpenBid (forcing via FUZZ_OPENBID / FUZZ_UPGRADE_TARGET still takes precedence).
+		campaign_.upgradeTargetOverride = (campaignIndex_ % 2 === 1) ? "openBid" : "v2";
 		await runOneCampaignWithTrace(campaign_, campaignSeed_);
 		mergeStatsInto(aggregateStats_, campaign_.engine.stats);
 		const remainingSec_ = ((deadlineMs_ - Date.now()) / 1000).toFixed(0);
@@ -698,7 +799,11 @@ async function runOneCampaignWithTrace(campaign_, reproSeed_) {
 		await campaign_.run();
 	} catch (errorObject_) {
 		campaign_.engine?.dumpTrace(80);
-		console.error(`\n  Reproduce this campaign with: FUZZ_SEED=0x${reproSeed_.toString(16).padStart(64, "0")} (omit FUZZ_MAX_SECONDS)\n`);
+		const target_ = campaign_.upgradeTarget ?? campaign_.upgradeTargetOverride ?? "v2";
+		console.error(
+			`\n  Reproduce this campaign with: FUZZ_SEED=0x${reproSeed_.toString(16).padStart(64, "0")} ` +
+			`FUZZ_UPGRADE_TARGET=${target_} (omit FUZZ_MAX_SECONDS)\n`
+		);
 		throw errorObject_;
 	}
 }

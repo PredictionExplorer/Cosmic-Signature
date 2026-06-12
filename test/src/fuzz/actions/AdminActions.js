@@ -97,6 +97,34 @@ const adminActions = [
 			return "ok";
 		},
 	},
+	{
+		// A no-op self re-upgrade to the CURRENT implementation must succeed and change nothing.
+		// Restricted to phase 2 (post real upgrade) so it can never interfere with the one-time
+		// OpenZeppelin-plugin upgrade performed at the phase boundary.
+		name: "noOpSelfReUpgrade",
+		weight: 1,
+		infra: true,
+		isApplicable: (ctx_) => ctx_.isRoundInactiveNow() && ctx_.model.version !== 1,
+		run: async (ctx_) => {
+			const { engine, contracts, ledger } = ctx_;
+			const ts_ = engine.nextTs();
+			if (ctx_.model.roundActivationTime <= ts_) {
+				return "skip"; // Would be active; `_authorizeUpgrade` requires an inactive round.
+			}
+			const owner_ = contracts.ownerSigner;
+			const implBefore_ = await ctx_.hre.upgrades.erc1967.getImplementationAddress(contracts.cosmicSignatureGameProxyAddress);
+			const result_ = await engine.execTx({
+				signer: owner_,
+				ts: ts_,
+				buildTx: (overrides_) => ctx_.game.connect(owner_).contract.upgradeToAndCall(implBefore_, "0x", overrides_),
+			});
+			engine.expectOk(result_, "noOpSelfReUpgrade");
+			const implAfter_ = await ctx_.hre.upgrades.erc1967.getImplementationAddress(contracts.cosmicSignatureGameProxyAddress);
+			expect(implAfter_, "no-op re-upgrade must not change the implementation").to.equal(implBefore_);
+			await ledger.verifyDirtyEth();
+			return "ok";
+		},
+	},
 ];
 
 /**
@@ -133,8 +161,13 @@ function buildSafeMutations(ctx_) {
 		add_("setCstDutchAuctionDurationChangeDivisor", BigInt(engine.randomIntRange(50, 1000)), (m_, v_) => { m_.cstDutchAuctionDurationChangeDivisor = v_; });
 		add_("setBidCstRewardAmountMultiplier", model.bidCstRewardAmountMultiplier * BigInt(engine.randomIntRange(50, 200)) / 100n, (m_, v_) => { m_.bidCstRewardAmountMultiplier = v_; });
 	} else {
+		// V1 and OpenBid (version 3) share these V1-style setters.
 		add_("setCstDutchAuctionDurationDivisor", BigInt(engine.randomIntRange(2, 100)), (m_, v_) => { m_.cstDutchAuctionDurationDivisor = v_; });
 		add_("setBidCstRewardAmount", BigInt(engine.randomIntRange(0, 500)) * 10n ** 18n, (m_, v_) => { m_.bidCstRewardAmount = v_; });
+	}
+	if (model.version === 3) {
+		// OpenBid-only knob governing the minimum open-bid price multiple.
+		add_("setTimesEthBidPrice", BigInt(engine.randomIntRange(1, 10)), (m_, v_) => { m_.timesEthBidPrice = v_; });
 	}
 	return mutations_;
 }
@@ -142,23 +175,63 @@ function buildSafeMutations(ctx_) {
 // #endregion
 // #region DAO governance cycle
 
+/**
+Signs an EIP-712 `Ballot(uint256 proposalId,uint8 support,address voter,uint256 nonce)` with the
+voter's underlying wallet, for an off-chain `castVoteBySig` vote.
+*/
+async function signDaoBallot(ctx_, voterSigner_, proposalId_, support_) {
+	const dao_ = ctx_.contracts.cosmicSignatureDao;
+	const [, name_, version_, chainId_, verifyingContract_] = await dao_.eip712Domain();
+	const domain_ = { name: name_, version: version_, chainId: chainId_, verifyingContract: verifyingContract_ };
+	const types_ = {
+		Ballot: [
+			{ name: "proposalId", type: "uint256" },
+			{ name: "support", type: "uint8" },
+			{ name: "voter", type: "address" },
+			{ name: "nonce", type: "uint256" },
+		],
+	};
+	const nonce_ = await dao_.nonces(voterSigner_.address);
+	const underlying_ = voterSigner_.signer ?? voterSigner_;
+	return underlying_.signTypedData(domain_, types_, { proposalId: proposalId_, support: support_, voter: voterSigner_.address, nonce: nonce_ });
+}
+
 const daoActions = [
 	{
+		// A full governance cycle over a self-governed GovernorSettings parameter, exercising several
+		// scenarios: a passing proposal (with a second voter that sometimes votes via off-chain
+		// `castVoteBySig`), a defeated proposal (whose `execute` must revert), and a proposal cancelled
+		// while still pending. The DAO governs only itself (it is not the game owner), so the targets
+		// are `setVotingDelay` / `setVotingPeriod` / `setProposalThreshold` (all safe; the threshold is
+		// only ever lowered so governance can never lock itself out).
 		name: "daoGovernanceCycle",
-		weight: 1,
+		weight: 2,
 		infra: true,
 		isApplicable: (ctx_) => ctx_.daoVotersReady === true,
 		run: async (ctx_) => {
 			const { engine, contracts, ledger } = ctx_;
 			const proposer_ = contracts.signers[0];
-			const daoConn_ = contracts.cosmicSignatureDao.connect(proposer_);
+			const secondVoter_ = contracts.signers[1];
+			const dao_ = contracts.cosmicSignatureDao;
+			const daoConn_ = dao_.connect(proposer_);
 			const daoAddress_ = contracts.cosmicSignatureDaoAddress;
-			const votingDelay_ = await contracts.cosmicSignatureDao.votingDelay();
-			const votingPeriod_ = await contracts.cosmicSignatureDao.votingPeriod();
-			const newDelay_ = votingDelay_ + 1n;
-			const callData_ = contracts.cosmicSignatureDao.interface.encodeFunctionData("setVotingDelay", [newDelay_]);
-			const description_ = `FuzzTest setVotingDelay ${engine.actionSeq}`;
+			const votingDelay_ = await dao_.votingDelay();
+			const votingPeriod_ = await dao_.votingPeriod();
+
+			const choice_ = engine.randomIntRange(0, 2);
+			let setting_;
+			if (choice_ === 0) {
+				setting_ = { method: "setVotingDelay", value: votingDelay_ + 1n, getter: "votingDelay" };
+			} else if (choice_ === 1) {
+				setting_ = { method: "setVotingPeriod", value: votingPeriod_ + 1n, getter: "votingPeriod" };
+			} else {
+				// Only ever lower the threshold to a small, safe value (never lock governance out).
+				setting_ = { method: "setProposalThreshold", value: 10n ** 18n, getter: "proposalThreshold" };
+			}
+			const callData_ = dao_.interface.encodeFunctionData(setting_.method, [setting_.value]);
+			const description_ = `FuzzTest ${setting_.method} ${engine.actionSeq}`;
 			const descriptionHash_ = ctx_.hre.ethers.id(description_);
+			const scenario_ = engine.pick(["succeed", "succeed", "defeated", "canceled"]);
 
 			const proposeResult_ = await engine.execTx({
 				signer: proposer_,
@@ -167,7 +240,107 @@ const daoActions = [
 			if ( ! proposeResult_.ok ) {
 				return "skip";
 			}
-			const proposalCreated_ = engine.singleEvent(proposeResult_.receipt, contracts.cosmicSignatureDao, "ProposalCreated", "DAO propose");
+			const proposalCreated_ = engine.singleEvent(proposeResult_.receipt, dao_, "ProposalCreated", "DAO propose");
+			const proposalId_ = proposalCreated_.args.proposalId;
+
+			if (scenario_ === "canceled") {
+				// Cancel while still Pending (voting has not begun); only the proposer may.
+				const cancelResult_ = await engine.execTx({
+					signer: proposer_,
+					buildTx: (overrides_) => daoConn_.cancel([daoAddress_], [0n], [callData_], descriptionHash_, overrides_),
+				});
+				if ( ! cancelResult_.ok ) {
+					return "skip";
+				}
+				engine.singleEvent(cancelResult_.receipt, dao_, "ProposalCanceled", "DAO cancel");
+				await ledger.verifyDirtyEth();
+				return "ok";
+			}
+
+			await engine.mineAt(engine.lastTs + votingDelay_ + 2n);
+
+			if (scenario_ === "defeated") {
+				// Proposer votes Against; with no For/Abstain votes the proposal fails quorum and is Defeated,
+				// so the subsequent `execute` must revert.
+				const voteResult_ = await engine.execTx({ signer: proposer_, buildTx: (overrides_) => daoConn_.castVote(proposalId_, 0, overrides_) });
+				if ( ! voteResult_.ok ) {
+					return "skip";
+				}
+				await engine.mineAt(engine.lastTs + votingPeriod_ + 2n);
+				const executeResult_ = await engine.execTx({
+					signer: proposer_,
+					buildTx: (overrides_) => daoConn_.execute([daoAddress_], [0n], [callData_], descriptionHash_, overrides_),
+				});
+				expect(executeResult_.ok, "a defeated proposal must not execute").to.equal(false);
+				await ledger.verifyDirtyEth();
+				return `revert:${executeResult_.revert.name}`;
+			}
+
+			// scenario_ === "succeed".
+			const voteResult_ = await engine.execTx({ signer: proposer_, buildTx: (overrides_) => daoConn_.castVote(proposalId_, 1, overrides_) });
+			if ( ! voteResult_.ok ) {
+				return "skip";
+			}
+			// Add a second voter (For or Abstain), sometimes via an off-chain EIP-712 `castVoteBySig`.
+			if (secondVoter_.address.toLowerCase() !== proposer_.address.toLowerCase()) {
+				const secondActor_ = ctx_.actorByAddress(secondVoter_.address);
+				if (secondActor_ !== null && secondActor_.delegated) {
+					const support2_ = engine.pick([1, 2]);
+					if (engine.chancePercent(50)) {
+						const signature_ = await signDaoBallot(ctx_, secondVoter_, proposalId_, support2_);
+						// Best-effort: the proposer relays the signed ballot (ignore a benign already-voted revert).
+						await engine.execTx({
+							signer: proposer_,
+							buildTx: (overrides_) => daoConn_.castVoteBySig(proposalId_, support2_, secondVoter_.address, signature_, overrides_),
+						});
+					} else {
+						await engine.execTx({ signer: secondVoter_, buildTx: (overrides_) => dao_.connect(secondVoter_).castVote(proposalId_, support2_, overrides_) });
+					}
+				}
+			}
+			await engine.mineAt(engine.lastTs + votingPeriod_ + 2n);
+			const executeResult_ = await engine.execTx({
+				signer: proposer_,
+				buildTx: (overrides_) => daoConn_.execute([daoAddress_], [0n], [callData_], descriptionHash_, overrides_),
+			});
+			if ( ! executeResult_.ok ) {
+				return "skip";
+			}
+			expect(await dao_[setting_.getter](), `DAO ${setting_.method} must be applied`).to.equal(setting_.value);
+			await ledger.verifyDirtyEth();
+			return "ok";
+		},
+	},
+	{
+		// Governance-driven upgrade attempt: the DAO proposes, passes, and tries to EXECUTE an
+		// `upgradeToAndCall` on the game. Because the DAO is not the game owner, `_authorizeUpgrade`'s
+		// `onlyOwner` rejects the relayed call, so the `execute` transaction must revert. This proves
+		// upgrades cannot be sneaked through governance without first transferring ownership to the DAO.
+		name: "daoUpgradeRejected",
+		weight: 1,
+		infra: true,
+		isApplicable: (ctx_) => ctx_.daoVotersReady === true,
+		run: async (ctx_) => {
+			const { engine, contracts, ledger } = ctx_;
+			const proposer_ = contracts.signers[0];
+			const daoConn_ = contracts.cosmicSignatureDao.connect(proposer_);
+			const gameAddress_ = contracts.cosmicSignatureGameProxyAddress;
+			// Any implementation address works; `_authorizeUpgrade`'s `onlyOwner` reverts before it is inspected.
+			const impl_ = contracts.cosmicSignatureGameImplementationAddress;
+			const votingDelay_ = await contracts.cosmicSignatureDao.votingDelay();
+			const votingPeriod_ = await contracts.cosmicSignatureDao.votingPeriod();
+			const callData_ = contracts.cosmicSignatureGameProxy.interface.encodeFunctionData("upgradeToAndCall", [impl_, "0x"]);
+			const description_ = `FuzzTest rejected DAO upgrade ${engine.actionSeq}`;
+			const descriptionHash_ = ctx_.hre.ethers.id(description_);
+
+			const proposeResult_ = await engine.execTx({
+				signer: proposer_,
+				buildTx: (overrides_) => daoConn_.propose([gameAddress_], [0n], [callData_], description_, overrides_),
+			});
+			if ( ! proposeResult_.ok ) {
+				return "skip";
+			}
+			const proposalCreated_ = engine.singleEvent(proposeResult_.receipt, contracts.cosmicSignatureDao, "ProposalCreated", "DAO upgrade propose");
 			const proposalId_ = proposalCreated_.args.proposalId;
 
 			await engine.mineAt(engine.lastTs + votingDelay_ + 2n);
@@ -181,14 +354,11 @@ const daoActions = [
 			await engine.mineAt(engine.lastTs + votingPeriod_ + 2n);
 			const executeResult_ = await engine.execTx({
 				signer: proposer_,
-				buildTx: (overrides_) => daoConn_.execute([daoAddress_], [0n], [callData_], descriptionHash_, overrides_),
+				buildTx: (overrides_) => daoConn_.execute([gameAddress_], [0n], [callData_], descriptionHash_, overrides_),
 			});
-			if ( ! executeResult_.ok ) {
-				return "skip";
-			}
-			expect(await contracts.cosmicSignatureDao.votingDelay()).to.equal(newDelay_);
+			expect(executeResult_.ok, "DAO-driven game upgrade must not succeed (the DAO is not the game owner)").to.equal(false);
 			await ledger.verifyDirtyEth();
-			return "ok";
+			return `revert:${executeResult_.revert.name}`;
 		},
 	},
 ];

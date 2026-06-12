@@ -356,7 +356,9 @@ const prizesWalletActions = [
 		name: "withdrawEverythingBatch",
 		weight: 2,
 		isApplicable: (ctx_, actor_) =>
-			ctx_.ledger.prizesWalletRoundsWithEthFor(actor_.address).length > 0 || ctx_._claimableDonatedNftIndexesFor(actor_.address).length > 0,
+			ctx_.ledger.prizesWalletRoundsWithEthFor(actor_.address).length > 0 ||
+			ctx_._claimableDonatedTokenRoundsFor(actor_.address).length > 0 ||
+			ctx_._claimableDonatedNftIndexesFor(actor_.address).length > 0,
 		run: async (ctx_, actor_) => {
 			const { engine, ledger, contracts } = ctx_;
 			const ethRounds_ = ledger.prizesWalletRoundsWithEthFor(actor_.address).slice(0, 3);
@@ -364,18 +366,30 @@ const prizesWalletActions = [
 			for (const round_ of ethRounds_) {
 				ethAmount_ += ledger.prizesWalletEthOf(round_, actor_.address);
 			}
+			// Donated-ERC-20 leg: claim the full balance (amount 0) for each claimable round. The mock
+			// ERC-20 movement is tracked automatically from the `DonatedTokenClaimed` / `Transfer` events.
+			const tokenRounds_ = ctx_._claimableDonatedTokenRoundsFor(actor_.address).slice(0, 3);
+			const tokenSpecs_ = tokenRounds_.map((round_) => ({
+				roundNum: round_,
+				tokenAddress: contracts.fuzzTestMockErc20Address,
+				amount: 0n,
+			}));
 			const nftIndexes_ = ctx_._claimableDonatedNftIndexesFor(actor_.address).slice(0, 3);
-			if (ethRounds_.length === 0 && nftIndexes_.length === 0) {
+			if (ethRounds_.length === 0 && tokenSpecs_.length === 0 && nftIndexes_.length === 0) {
 				return "skip";
 			}
+			const mockErc20Before_ = ledger.mockErc20BalanceOf(actor_.address);
 			const result_ = await engine.execTx({
 				signer: actor_.signer,
-				buildTx: (overrides_) => contracts.prizesWallet.connect(actor_.signer).withdrawEverything(ethRounds_, [], nftIndexes_, overrides_),
+				buildTx: (overrides_) => contracts.prizesWallet.connect(actor_.signer).withdrawEverything(ethRounds_, tokenSpecs_, nftIndexes_, overrides_),
 			});
 			engine.expectOk(result_, "withdrawEverythingBatch");
 			if (ethAmount_ > 0n) {
 				ledger.addEth(actor_.address, ethAmount_);
 				ledger.addEth(contracts.prizesWalletAddress, -ethAmount_);
+			}
+			if (tokenSpecs_.length > 0) {
+				expect(ledger.mockErc20BalanceOf(actor_.address) >= mockErc20Before_, "withdrawEverything: donated tokens not received").to.equal(true);
 			}
 			await ledger.verifyDirtyEth();
 			return "ok";
