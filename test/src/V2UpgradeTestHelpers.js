@@ -13,13 +13,13 @@ const TIMESTAMP_9000_01_01 = 221845392000n;
 
 async function mineAt(timestamp_) {
 	const latest_ = await getLatestBlockTimestamp();
-	// todo-0 If timestamp_ is not in the future maybe don't mine. Rename the whole method to "as needed"?
+	// todo-0 If `timestamp_` is not in the future maybe do nothing. Rename the whole function to "if needed"?
 	const adjustedTimestamp_ = timestamp_ > latest_ ? timestamp_ : (latest_ + 1n);
 	await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(adjustedTimestamp_)]);
 	await hre.ethers.provider.send("evm_mine");
 }
 
-// todo-0 Dddo I have a similar method?
+// todo-0 There is already a similar function, named `getBlockTimeStampByBlockNumber`.
 async function getLatestBlockTimestamp() {
 	const block_ = await hre.ethers.provider.getBlock("latest");
 	return BigInt(block_.timestamp);
@@ -31,6 +31,7 @@ async function completeRoundZero(contracts_, bidderIndex_ = 1) {
 		contracts_.cosmicSignatureGameProxy.connect(bidder_).bidWithEth(-1n, "", { value: 10n ** 18n })
 	);
 	const mainPrizeTime_ = await contracts_.cosmicSignatureGameProxy.mainPrizeTime();
+	// todo-0 In cases like this, it's unnecessary to mine. It's sufficient to only execute `evm_setNextBlockTimestamp`.
 	await mineAt(mainPrizeTime_);
 	const receipt_ = await waitForTransactionReceipt(
 		contracts_.cosmicSignatureGameProxy.connect(bidder_).claimMainPrize()
@@ -94,6 +95,7 @@ async function upgradeToOpenBid(contracts_, upgradeOptions_ = {}) {
 	contracts_.cosmicSignatureGameOpenBidFactory = cosmicSignatureGameOpenBidFactory_;
 	contracts_.cosmicSignatureGameOpenBidProxy = cosmicSignatureGameOpenBidProxy_;
 	contracts_.cosmicSignatureGameOpenBidImplementationAddress = cosmicSignatureGameOpenBidImplementationAddress_;
+	// todo-0 Unnecessary to return this?
 	return contracts_;
 }
 
@@ -101,12 +103,13 @@ async function assertDefaultOpenBidInitialization(game_) {
 	expect(await game_.timesEthBidPrice()).equal(3n);
 }
 
-// todo-0 I can use my helper for this.
-// todo-0 But it does not always use "latest" block. Is it OK?
+// todo-0 Do we really need this function. Can we use the existing `setRoundActivationTimeIfNeeded` instead?
 async function activateCurrentRound(game_, ownerSigner_) {
 	const now_ = await getLatestBlockTimestamp();
 	const activationTime_ = now_ + 2n;
 	await waitForTransactionReceipt(game_.connect(ownerSigner_).setRoundActivationTime(activationTime_));
+	// todo-0 This mine is unnecessary. It also makes it impossible to mine the next transaction exactly at `roundActivationTime`.
+	// todo-0 It will be mined at `roundActivationTime + 1`.
 	await mineAt(activationTime_);
 }
 
