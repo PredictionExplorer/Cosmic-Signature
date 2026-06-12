@@ -37,6 +37,7 @@ const adversarialActions = [
 		// Rotate the game's charity recipient to a reverting `BrokenEthReceiver` (and back), between rounds.
 		name: "adversarialRotateCharity",
 		weight: 2,
+		infra: true,
 		isApplicable: (ctx_) => ctx_.isRoundInactiveNow() && ctx_.adversaries !== undefined,
 		run: async (ctx_) => {
 			const { engine, model, ledger, contracts, adversaries, charity } = ctx_;
@@ -105,6 +106,9 @@ const adversarialActions = [
 			const price_ = model.getNextEthBidPrice(ts_);
 			const swallowLimit_ = model.ethBidRefundAmountInGasToSwallowMaxLimit * gasPrice_;
 			const value_ = price_ + swallowLimit_ + 10n ** 18n; // Guarantees a refund (and thus a reentry attempt).
+			if ( ! engine.canAfford(actor_.address, value_) ) {
+				return "skip";
+			}
 			const mode_ = engine.pick([1, 2, 3]);
 
 			// Fund the malicious contract through the caller, then set its mode.
@@ -141,6 +145,9 @@ const adversarialActions = [
 			const gasPrice_ = engine.randomGasPrice();
 			const price_ = model.getNextEthBidPrice(ts_);
 			const value_ = price_; // Exact; the donation step reverts regardless.
+			if ( ! engine.canAfford(actor_.address, value_) ) {
+				return "skip";
+			}
 			const mode_ = engine.pick([1, 2, 6]);
 			// Keep the malicious token's reentry ABI in sync with the current game version so the
 			// reentrancy attempt is genuine (and blocked by the guard) rather than just an unknown selector.

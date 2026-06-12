@@ -17,6 +17,9 @@ const randomWalkActions = [
 			const mintPrice_ = ledger.randomWalkNft.price * c.RANDOMWALK_NFT_PRICE_INCREASE_NUMERATOR / c.RANDOMWALK_NFT_PRICE_INCREASE_DENOMINATOR;
 			// Sometimes overpay to exercise the (reentrancy-prone) refund branch; net cost is always `mintPrice`.
 			const value_ = engine.chancePercent(30) ? mintPrice_ + engine.randomBigIntRange(1n, 10n ** 15n) : mintPrice_;
+			if ( ! engine.canAfford(actor_.address, value_) ) {
+				return "skip";
+			}
 			const result_ = await engine.execTx({
 				signer: actor_.signer,
 				buildTx: (overrides_) => contracts.randomWalkNft.connect(actor_.signer).mint({ ...overrides_, value: value_ }),
@@ -497,6 +500,7 @@ const walletActions = [
 	{
 		name: "marketingWalletPayReward",
 		weight: 1,
+		infra: true,
 		isApplicable: (ctx_) => ctx_.ledger.cstBalanceOf(ctx_.contracts.marketingWalletAddress) > 10n ** 18n,
 		run: async (ctx_) => {
 			const { engine, ledger, contracts } = ctx_;

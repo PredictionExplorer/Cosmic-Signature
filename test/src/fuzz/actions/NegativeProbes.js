@@ -13,6 +13,11 @@ The transaction reverts, so neither the model nor the ledger change (gas is acco
 @returns {Promise<string>} `revert:<name>` on success, "skip" if not set up.
 */
 async function runProbe(ctx_, { signer, buildTx, expected, ts, value }) {
+	// A probe that would send more ETH than the (finite-budget) sender holds is simply skipped,
+	// like a human who cannot afford it; the engine never auto-refills.
+	if ((value ?? 0n) > 0n && ! ctx_.engine.canAfford(signer.address, value)) {
+		return "skip";
+	}
 	const result_ = await ctx_.engine.execTx({ signer, buildTx, ts, valueNeeded: value ?? 0n });
 	const expectedList_ = Array.isArray(expected) ? expected : [expected];
 	if (result_.ok) {

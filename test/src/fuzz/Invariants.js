@@ -249,24 +249,53 @@ function assertCoverageFloors(statsMap_, profile_) {
 		return;
 	}
 
-	// Strong breadth floors (aggregate / soak level).
+	// Strong breadth floors (aggregate / soak level): every registered action must have been selected
+	// at least once (proving it is reachable and wired), ...
 	for (const [name_, entry_] of statsMap_) {
 		expect(entry_.attempted + entry_.skipped, `action ${name_} was never even selected`).to.be.greaterThan(0);
 	}
+	// ... and every meaningful user action the protocol supports must have actually SUCCEEDED at least
+	// once across the soak — covering bids (ETH / Random Walk NFT / CST), staking and unstaking, ETH and
+	// donation flows, prize and donated-asset withdrawals (the winner receiving donated NFTs/ERC-20s),
+	// CST/NFT transfers and signatures, RW mint/withdraw, and the V1->V2 upgrade auth probe.
 	const mustSucceed_ = [
-		"bidWithEth",
-		"bidWithEthPlusRandomWalkNft",
-		"bidWithCst",
+		"bidWithEth", "bidWithEthExactPrice", "bidWithEthSwallow", "bidWithEthRefund",
+		"bidWithEthPlusRandomWalkNft", "bidWithEthReceive", "bidWithEthAndDonateToken", "bidWithEthAndDonateNft",
+		"bidWithCst", "bidWithCstExactLimit", "bidWithCstAndDonateToken", "bidWithCstAndDonateNft",
 		"claimMainPrize",
-		"stakeCosmicSignatureNft",
-		"unstakeCosmicSignatureNft",
-		"stakeRandomWalkNft",
-		"withdrawEthPrize",
+		"stakeCosmicSignatureNft", "unstakeCosmicSignatureNft", "stakeManyCosmicSignatureNft",
+		"stakeRandomWalkNft", "unstakeRandomWalkNft",
+		"withdrawEthPrize", "withdrawEthPrizeMany", "withdrawEverythingBatch",
+		"claimDonatedToken", "claimDonatedNft",
+		"donateEth", "donateEthWithInfo",
 		"mintRandomWalkNft",
-		"donateEth",
+		"transferCst", "cstBurn", "cstDelegateSelf", "cstPermit", "cstDelegateBySig", "cstBurnFrom",
+		"transferCosmicSignatureNft", "safeTransferCosmicSignatureNft", "transferRandomWalkNft",
+		"setCosmicSignatureNftName", "setRandomWalkTokenName",
+		"charityWalletSendAll", "marketingWalletPayReward",
+		"adminMutateParameters", "daoGovernanceCycle",
+		"adversarialReentrancyOnBidRefund", "adversarialMaliciousTokenDonation",
+		"upgradeAuthProbe",
 	];
-	for (const name_ of mustSucceed_) {
-		expect(succeeded_(name_), `core action ${name_} never succeeded (att=${attempted_(name_)})`).to.be.greaterThan(0);
+	const neverSucceeded_ = mustSucceed_.filter((name_) => succeeded_(name_) <= 0);
+	expect(
+		neverSucceeded_.length,
+		`these required actions never succeeded across the soak: ${neverSucceeded_.map((n_) => `${n_}(att=${attempted_(n_)})`).join(", ")}`
+	).to.equal(0);
+}
+
+/**
+Prints a coverage report: how many of the registered actions succeeded at least once, and any that
+did not. Action-level coverage; for Solidity line/branch coverage run `npx hardhat coverage`.
+@param {Map<string, {attempted: number, succeeded: number, skipped: number}>} statsMap_
+*/
+function printCoverageReport(statsMap_) {
+	const all_ = [...statsMap_.keys()].sort();
+	const succeeded_ = all_.filter((name_) => (statsMap_.get(name_)?.succeeded ?? 0) > 0);
+	const neverOk_ = all_.filter((name_) => (statsMap_.get(name_)?.succeeded ?? 0) <= 0);
+	console.info(`\n  ACTION COVERAGE: ${succeeded_.length}/${all_.length} distinct actions succeeded at least once.`);
+	if (neverOk_.length > 0) {
+		console.info(`  Actions that never succeeded (selected but always skipped/reverted): ${neverOk_.join(", ")}`);
 	}
 }
 
@@ -290,5 +319,6 @@ function mergeStatsInto(aggregate_, statsMap_) {
 module.exports = {
 	runInvariants,
 	assertCoverageFloors,
+	printCoverageReport,
 	mergeStatsInto,
 };

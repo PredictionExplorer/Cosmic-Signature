@@ -171,24 +171,49 @@ async function claimAfterTimeout(ctx_) {
 	return executeClaim(ctx_, claimer_, ts_);
 }
 
+/** Actors sorted by current (tracked) ETH balance, richest first. */
+function actorsByWealthDesc(ctx_) {
+	return [...ctx_.actors].sort((a_, b_) => {
+		const ba_ = ctx_.ledger.expectedEth(a_.address);
+		const bb_ = ctx_.ledger.expectedEth(b_.address);
+		return (bb_ > ba_) ? 1 : (bb_ < ba_) ? -1 : 0;
+	});
+}
+
 /**
 Forces the current round to complete (used at phase boundaries to reach a clean post-claim state).
-If no bid has been placed yet, places one guaranteed ETH bid first.
+With finite human budgets, seeds an empty round using the richest actor that can afford the bid, and
+claims via an actor that can afford the gas. Returns false if no one can make progress (the caller
+then stops the phase) — a graceful, realistic outcome rather than an infinite stall.
 @returns {Promise<boolean>} Whether a claim was performed.
 */
 async function forceCompleteRound(ctx_) {
 	const { engine, model } = ctx_;
 	if (model.lastBidderAddress === ZERO_ADDRESS) {
-		const bidOutcome_ = await executeEthBid(ctx_, ctx_.pickActor(), { flavor: "plain", valueMode: "exact" });
-		if (bidOutcome_ === "skip" || model.lastBidderAddress === ZERO_ADDRESS) {
+		let seeded_ = false;
+		for (const actor_ of actorsByWealthDesc(ctx_)) {
+			const bidOutcome_ = await executeEthBid(ctx_, actor_, { flavor: "plain", valueMode: "exact" });
+			if (bidOutcome_ === "ok") {
+				seeded_ = true;
+				break;
+			}
+		}
+		if ( ! seeded_ || model.lastBidderAddress === ZERO_ADDRESS) {
 			return false;
 		}
 	}
-	const claimer_ = ctx_.actorByAddress(model.lastBidderAddress);
-	if (claimer_ === null) {
+	// Prefer the last bidder claiming exactly at `mainPrizeTime`.
+	const lastBidder_ = ctx_.actorByAddress(model.lastBidderAddress);
+	if (lastBidder_ !== null && engine.canAfford(lastBidder_.address, 0n)) {
+		await executeClaim(ctx_, lastBidder_, engine.clampTs(model.mainPrizeTime));
+		return true;
+	}
+	// Fallback: the richest gas-affordable actor claims after the timeout (the "anyone after timeout" path).
+	const claimer_ = actorsByWealthDesc(ctx_).find((actor_) => engine.canAfford(actor_.address, 0n));
+	if (claimer_ === undefined) {
 		return false;
 	}
-	const ts_ = engine.clampTs(model.mainPrizeTime);
+	const ts_ = engine.clampTs(model.mainPrizeTime + model.timeoutDurationToClaimMainPrize + 1n);
 	await executeClaim(ctx_, claimer_, ts_);
 	return true;
 }
@@ -218,6 +243,9 @@ const donationActions = [
 		run: async (ctx_, actor_) => {
 			const { engine, model, ledger } = ctx_;
 			const amount_ = engine.randomBigIntRange(1n, 10n ** 17n);
+			if ( ! engine.canAfford(actor_.address, amount_) ) {
+				return "skip";
+			}
 			const result_ = await engine.execTx({
 				signer: actor_.signer,
 				buildTx: (overrides_) => ctx_.game.connect(actor_.signer).donateEth({ ...overrides_, value: amount_ }),
@@ -239,6 +267,9 @@ const donationActions = [
 		run: async (ctx_, actor_) => {
 			const { engine, model, ledger } = ctx_;
 			const amount_ = engine.randomBigIntRange(1n, 10n ** 17n);
+			if ( ! engine.canAfford(actor_.address, amount_) ) {
+				return "skip";
+			}
 			const message_ = engine.randomMessage(64);
 			const result_ = await engine.execTx({
 				signer: actor_.signer,

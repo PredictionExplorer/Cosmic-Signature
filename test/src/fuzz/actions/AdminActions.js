@@ -16,6 +16,7 @@ const adminActions = [
 	{
 		name: "adminMutateParameters",
 		weight: 6,
+		infra: true,
 		// Owner setters require `_onlyRoundIsInactive`; only between rounds (no bids placed yet, round not active).
 		isApplicable: (ctx_) => ctx_.isRoundInactiveNow(),
 		run: async (ctx_) => {
@@ -57,6 +58,7 @@ const adminActions = [
 	{
 		name: "adminHalveEthDutchAuctionEndingBidPrice",
 		weight: 1,
+		infra: true,
 		isApplicable: (ctx_) =>
 			ctx_.isRoundInactiveNow() &&
 			ctx_.model.roundNum > 0n &&
@@ -144,6 +146,7 @@ const daoActions = [
 	{
 		name: "daoGovernanceCycle",
 		weight: 1,
+		infra: true,
 		isApplicable: (ctx_) => ctx_.daoVotersReady === true,
 		run: async (ctx_) => {
 			const { engine, contracts, ledger } = ctx_;

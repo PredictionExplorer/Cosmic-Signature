@@ -10,11 +10,12 @@ const { GameModel, ZERO_ADDRESS } = require("./GameModel.js");
 const { ShadowState } = require("./ShadowState.js");
 const { GameAbiAdapter } = require("./GameAbiAdapter.js");
 const { FuzzEngine } = require("./FuzzEngine.js");
-const { runInvariants, assertCoverageFloors, mergeStatsInto } = require("./Invariants.js");
+const { runInvariants, assertCoverageFloors, printCoverageReport, mergeStatsInto } = require("./Invariants.js");
 const { performUpgradeToV2, upgradeAuthProbe } = require("./UpgradePhase.js");
 const { biddingActions, claimActions, donationActions, stakingActions, forceCompleteRound } = require("./actions/CoreActions.js");
 const { randomWalkActions, tokenActions, prizesWalletActions, walletActions } = require("./actions/SecondaryActions.js");
 const { adminActions, daoActions } = require("./actions/AdminActions.js");
+const { extraTokenActions, extraPrizesWalletActions } = require("./actions/ExtraActions.js");
 const { negativeProbes } = require("./actions/NegativeProbes.js");
 const { CharityController, adversarialActions, applyArbitrumChaos, resetArbitrumChaos, ARB_SYS_ADDRESS, ARB_GAS_INFO_ADDRESS } = require("./actions/AdversarialActions.js");
 
@@ -28,6 +29,7 @@ const { CharityController, adversarialActions, applyArbitrumChaos, resetArbitrum
 function buildProfile(skipLongTests_, envOverrides_) {
 	const base_ = skipLongTests_ ? {
 		numActors: 6,
+		// Equal V1/V2 rounds => ~50/50 split of fuzzing time across the two code versions.
 		v1Rounds: 3,
 		v2Rounds: 3,
 		actionsPerSegment: 22,
@@ -38,10 +40,13 @@ function buildProfile(skipLongTests_, envOverrides_) {
 		chaos: false,
 		runOpenBid: false,
 		enforceStrongCoverage: false,
+		// Quick CI profile: a single bounded campaign (no wall-clock soak).
+		maxSeconds: undefined,
 	} : {
 		numActors: 9,
+		// Equal V1/V2 rounds per campaign => ~50% of the time on V1 code and ~50% on V2 code.
 		v1Rounds: 10,
-		v2Rounds: 12,
+		v2Rounds: 10,
 		actionsPerSegment: 45,
 		invariantEveryActions: 40,
 		negativeProbePercent: 12,
@@ -50,10 +55,10 @@ function buildProfile(skipLongTests_, envOverrides_) {
 		chaos: true,
 		runOpenBid: false,
 		enforceStrongCoverage: true,
+		// Default to a 20-minute soak (repeated independent bounded campaigns). Override with FUZZ_MAX_SECONDS.
+		maxSeconds: 1200,
 	};
-	// `maxSeconds`, when set, turns the run into a wall-clock soak: rounds are uncapped and each phase
-	// keeps fuzzing until its share of the time budget elapses (checked at round boundaries).
-	const merged_ = { maxSeconds: undefined, ...base_, ...envOverrides_ };
+	const merged_ = { ...base_, ...envOverrides_ };
 	return merged_;
 }
 
@@ -243,15 +248,37 @@ class FuzzCampaign {
 	}
 
 	async _fundActors() {
-		// Give each actor a generous starting balance (recorded so conservation still holds).
-		const target_ = 5_000n * 10n ** 18n;
-		for (const actor_ of this.actors) {
-			await hre.ethers.provider.send("hardhat_setBalance", [actor_.address, "0x" + target_.toString(16)]);
-			this.ledger.recordRefill(actor_.address, target_);
+		// Human-like finite budgets: each player gets a fixed, varied starting balance (log-distributed
+		// for whale/minnow diversity) and is NEVER auto-refilled. Players spend on bids/gas and replenish
+		// only by winning prizes — exactly like real users with limited funds. This (with the bid-time
+		// spread that bounds Dutch-auction prices) keeps every value in a realistic, non-astronomical range.
+		// The first two actors are guaranteed whales: they back the DAO and reliably seed each round.
+		for (let index_ = 0; index_ < this.actors.length; ++ index_) {
+			const actor_ = this.actors[index_];
+			let budget_;
+			if (index_ < 2) {
+				budget_ = (4_000n + this.engine.randomBelow(4_001n)) * 10n ** 18n; // 4000-8000 ETH whale
+			} else {
+				// 2^[2..12] ETH (4..4096), scaled by a 1x-2x jitter: a realistic spread of wealth.
+				const magnitude_ = 10n ** 18n * (1n << BigInt(this.engine.randomIntRange(2, 12)));
+				budget_ = magnitude_ + this.engine.randomBelow(magnitude_ + 1n);
+			}
+			await hre.ethers.provider.send("hardhat_setBalance", [actor_.address, "0x" + budget_.toString(16)]);
+			this.ledger.recordRefill(actor_.address, budget_);
+			actor_.initialBudget = budget_;
 		}
-		// Fund the malicious bidder/token so their reentry attempts reach the reentrancy guard
-		// (with `value`) instead of failing earlier on an insufficient balance. Their balance never
-		// changes afterward (every reentry reverts), so conservation stays exact.
+		// Infrastructure signers (owner / treasurer / deployer / charity) only ever pay gas, never bid,
+		// so give them a large fixed allowance (the protocol operator's ops fund). Also fund the
+		// malicious bidder/token contracts so their reentry attempts reach the reentrancy guard.
+		const infraFunding_ = 100_000n * 10n ** 18n;
+		for (const address_ of [
+			this.contracts.ownerSigner.address,
+			this.contracts.treasurerSigner.address,
+			this.contracts.deployerSigner.address,
+		]) {
+			await hre.ethers.provider.send("hardhat_setBalance", [address_, "0x" + infraFunding_.toString(16)]);
+			this.ledger.recordRefill(address_, infraFunding_);
+		}
 		const adversaryFunding_ = 10n ** 18n;
 		for (const address_ of [this.adversaries.maliciousBidderAddress, this.adversaries.maliciousTokenAddress]) {
 			await hre.ethers.provider.send("hardhat_setBalance", [address_, "0x" + adversaryFunding_.toString(16)]);
@@ -426,6 +453,8 @@ class FuzzCampaign {
 			...tokenActions,
 			...prizesWalletActions,
 			...walletActions,
+			...extraTokenActions,
+			...extraPrizesWalletActions,
 			...adminActions,
 			...daoActions,
 			...adversarialActions,
@@ -477,9 +506,14 @@ class FuzzCampaign {
 
 			// Drive the round to completion to guarantee forward progress and a clean state.
 			await applyArbitrumChaos(this.context);
-			await forceCompleteRound(this.context);
+			const progressed_ = await forceCompleteRound(this.context);
 			await resetArbitrumChaos(this.context);
 			await runInvariants(this.context);
+			if ( ! progressed_ ) {
+				// No actor can afford to seed/claim a round (everyone is broke) — stop the phase gracefully.
+				console.info(`  [${label_}] no affordable actor to complete a round; ending phase early.`);
+				break;
+			}
 
 			if (profile_.verbosity >= 1) {
 				const completed_ = this.model.roundNum - startRound_;
@@ -630,6 +664,7 @@ async function runFuzzCampaigns(profile_, masterSeed_) {
 		const campaign_ = new FuzzCampaign(profile_, masterSeed_);
 		await runOneCampaignWithTrace(campaign_, masterSeed_);
 		mergeStatsInto(aggregateStats_, campaign_.engine.stats);
+		printCoverageReport(aggregateStats_);
 		assertCoverageFloors(aggregateStats_, profile_);
 		return;
 	}
@@ -649,6 +684,7 @@ async function runFuzzCampaigns(profile_, masterSeed_) {
 	}
 	// Strong breadth coverage is asserted on the aggregate across all campaigns (where low-weight
 	// actions reliably fire), not per bounded campaign.
+	printCoverageReport(aggregateStats_);
 	assertCoverageFloors(aggregateStats_, profile_);
 	console.info(`\n  SOAK COMPLETE: ran ${campaignIndex_} independent campaign(s) within the ${profile_.maxSeconds}s budget.\n`);
 }

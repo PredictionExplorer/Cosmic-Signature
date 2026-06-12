@@ -217,6 +217,10 @@ async function executeEthBid(ctx_, actor_, options_) {
 
 	const basePlan_ = model.planEthBid(ts_, 0n, gasPrice_, randomWalkNftId_);
 	const { value: value_ } = chooseEthBidValue(ctx_, basePlan_.paidEthPrice, gasPrice_, options_.valueMode ?? "random");
+	// Like a real human with limited funds: only bid if affordable, otherwise skip.
+	if ( ! engine.canAfford(actor_.address, value_) ) {
+		return "skip";
+	}
 	const message_ = (options_.flavor === "receive") ? "" : engine.randomMessage(Math.min(Number(model.bidMessageLengthMaxLimit), 120));
 	const planForReward_ = model.getBidCstRewardAmount(ts_);
 	const minReward_ = (model.version === 2 && options_.minRewardMode === "exact") ? planForReward_ : 0n;

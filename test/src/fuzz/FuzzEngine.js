@@ -96,6 +96,13 @@ class FuzzEngine {
 		this.stats = new Map();
 		this.maxClaimGasUsed = 0n;
 		this.numBursts = 0;
+		/**
+		ETH a player must retain on top of any value sent, so a single transaction's gas
+		(worst case ~5M-gas `claimMainPrize` at the capped gas price) never hits "insufficient funds".
+		Players are funded once with finite, human-like budgets and are NEVER auto-refilled, so actions
+		must check `canAfford` and skip when they cannot pay (mirroring a human with limited funds).
+		*/
+		this.gasReserve = 5n * 10n ** 17n; // 0.5 ETH
 	}
 
 	async init() {
@@ -147,9 +154,19 @@ class FuzzEngine {
 		return this.randomIntRange(0, 99) < percent_;
 	}
 
-	/** Random legacy gas price in [1, 20] gwei (always above the decayed base fee). */
+	/** Random legacy gas price in [1, 5] gwei (above the decayed base fee; kept modest so gas stays cheap). */
 	randomGasPrice() {
-		return BigInt(this.randomIntRange(1, 20)) * 10n ** 9n;
+		return BigInt(this.randomIntRange(1, 5)) * 10n ** 9n;
+	}
+
+	/**
+	Whether `address_` can afford to send `valueWei_` plus a one-transaction gas reserve, given its
+	tracked balance. Used by actions to skip (like a real human who is short on funds) rather than refill.
+	@param {string} address_
+	@param {bigint} valueWei_
+	*/
+	canAfford(address_, valueWei_ = 0n) {
+		return this.ledger.expectedEth(address_) >= valueWei_ + this.gasReserve;
 	}
 
 	/** Random printable message of length `[0, maxLength_]`. */
@@ -238,26 +255,20 @@ class FuzzEngine {
 	// #region Funding
 
 	/**
-	Ensures `signer_` can afford `neededWei_` plus worst-case gas; refills via
-	`hardhat_setBalance` with the delta recorded in the ledger (conservation-preserving).
+	Defensive affordability assertion used right before sending a transaction. Players are funded once
+	and never auto-refilled, so every action is expected to have already checked `canAfford` and skipped
+	if short. A failure here means an action forgot that check (a harness bug), surfaced loudly.
+	@param {string} signerAddress_
+	@param {bigint} valueWei_ ETH the transaction will send.
 	*/
-	async ensureEthFor(signerAddress_, neededWei_, gasPrice_) {
-		const upfront_ = neededWei_ + 30_000_000n * gasPrice_ * 2n;
-		await this.ensureEthAtLeast(signerAddress_, upfront_);
-	}
-
-	/**
-	Ensures `signerAddress_` holds at least `amount_` wei; refills (ledger-recorded) with a buffer if not.
-	*/
-	async ensureEthAtLeast(signerAddress_, amount_) {
+	assertCanAfford(signerAddress_, valueWei_) {
 		const expected_ = this.ledger.expectedEth(signerAddress_);
-		if (expected_ < amount_) {
-			const target_ = amount_ + 1_000n * 10n ** 18n;
-			await this.provider.send("hardhat_setBalance", [
-				signerAddress_,
-				"0x" + target_.toString(16),
-			]);
-			this.ledger.recordRefill(signerAddress_, target_);
+		const need_ = valueWei_ + this.gasReserve;
+		if (expected_ < need_) {
+			throw new Error(
+				`harness affordability: ${this.ledger.labelOf(signerAddress_)} has ${expected_} wei but needs ${need_} ` +
+				`(value ${valueWei_} + gas reserve ${this.gasReserve}); the action should have checked canAfford and skipped`
+			);
 		}
 	}
 
@@ -279,7 +290,7 @@ class FuzzEngine {
 	async execTx({ signer, buildTx, ts, gasPrice, valueNeeded }) {
 		const plannedTs_ = this.clampTs(ts ?? this.nextTs());
 		const gasPrice_ = gasPrice ?? this.randomGasPrice();
-		await this.ensureEthFor(signer.address, valueNeeded ?? 0n, gasPrice_);
+		this.assertCanAfford(signer.address, valueNeeded ?? 0n);
 		await this.provider.send("evm_setNextBlockTimestamp", [Number(plannedTs_)]);
 		try {
 			const txResponse_ = await buildTx({ gasPrice: gasPrice_ });
@@ -351,16 +362,17 @@ class FuzzEngine {
 		++ this.numBursts;
 		// All burst transactions sit in the mempool simultaneously (automine off) before the single
 		// mined block, so a sender that appears in multiple items must be able to cover the SUM of its
-		// items' upfront costs at once. Aggregate per sender, then fund each once.
+		// items' upfront costs at once. The caller pre-checks affordability per sender; assert it here.
 		const needBySender_ = new Map();
 		for (const item_ of items_) {
 			item_.gasPrice = item_.gasPrice ?? this.randomGasPrice();
-			const upfront_ = (item_.valueNeeded ?? 0n) + 30_000_000n * item_.gasPrice * 2n;
 			const key_ = item_.signer.address;
-			needBySender_.set(key_, (needBySender_.get(key_) ?? 0n) + upfront_);
+			needBySender_.set(key_, (needBySender_.get(key_) ?? 0n) + (item_.valueNeeded ?? 0n) + this.gasReserve);
 		}
 		for (const [senderAddress_, need_] of needBySender_) {
-			await this.ensureEthAtLeast(senderAddress_, need_);
+			if (this.ledger.expectedEth(senderAddress_) < need_) {
+				throw new Error(`harness affordability (burst): ${this.ledger.labelOf(senderAddress_)} cannot cover its ${need_} wei of burst items`);
+			}
 		}
 		await this.provider.send("evm_setAutomine", [false]);
 		/** @type {string[]} */
@@ -494,6 +506,13 @@ class FuzzEngine {
 	async runAction(action_, ctx_, actor_) {
 		++ this.actionSeq;
 		const entry_ = this._statsFor(action_.name);
+		// Player actions are sent by `actor_`; if that human is too broke to even pay gas, they skip
+		// (no auto-refill). Infra actions (sent by the owner/treasurer/proposer) are exempt.
+		if ( ! action_.infra && actor_ !== undefined && actor_ !== null && ! this.canAfford(actor_.address, 0n) ) {
+			++ entry_.skipped;
+			this.recordTrace({ action: action_.name, actor: actor_.label ?? null, lastTs: this.lastTs, outcome: "skip(broke)" });
+			return "skip";
+		}
 		++ entry_.attempted;
 		const traceRecord_ = { action: action_.name, actor: actor_?.label ?? null, lastTs: this.lastTs };
 		let outcome_;

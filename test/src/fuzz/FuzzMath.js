@@ -60,10 +60,19 @@ function int256ToUint256(value_) {
 	return BigInt.asUintN(256, value_);
 }
 
+/**
+Wraps a value to uint256, mirroring Solidity arithmetic inside an `unchecked` block (mod 2^256).
+@param {bigint} value_
+*/
+function u256(value_) {
+	return BigInt.asUintN(256, value_);
+}
+
 module.exports = {
 	sqrtFloor,
 	maxBigInt,
 	minBigInt,
 	uint256ToInt256,
 	int256ToUint256,
+	u256,
 };

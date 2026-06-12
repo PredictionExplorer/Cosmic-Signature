@@ -4,10 +4,12 @@
 # in several configurations. See the header of that file for the env knobs.
 #
 # Usage:
-#   ./fuzz-1.bash               # one production-like run + one assert-enabled run (default seeds)
+#   ./fuzz-1.bash               # one production-like run + one assert-enabled run
+#                               # (each is the default 20-minute soak of repeated V1->V2 campaigns)
 #   FUZZ_SEED=0x... ./fuzz-1.bash
-#   FUZZ_MULTI=8 ./fuzz-1.bash  # additional N production-like runs with random seeds (long soak)
-#   SKIP_LONG_TESTS=true ./fuzz-1.bash   # quick CI profile
+#   FUZZ_MAX_SECONDS=300 ./fuzz-1.bash   # shorter soak
+#   FUZZ_MULTI=8 ./fuzz-1.bash  # additional N soak runs with random seeds
+#   SKIP_LONG_TESTS=true ./fuzz-1.bash   # quick CI profile (single bounded campaign)
 
 '/usr/bin/clear' 2>/dev/null || true
 

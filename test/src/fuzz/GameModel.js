@@ -3,7 +3,7 @@
 // #region Imports
 
 const { expect } = require("chai");
-const { sqrtFloor, maxBigInt } = require("./FuzzMath.js");
+const { sqrtFloor, maxBigInt, u256 } = require("./FuzzMath.js");
 const c = require("./FuzzConstants.js");
 
 // #endregion
@@ -219,7 +219,11 @@ class GameModel {
 		return this.mainPrizeTimeIncrementInMicroSeconds / this.ethDutchAuctionDurationDivisor;
 	}
 
-	/** Mirrors `getNextEthBidPriceAdvanced(0)` evaluated at block timestamp `ts_`. */
+	/**
+	Mirrors `getNextEthBidPriceAdvanced(0)` evaluated at block timestamp `ts_`.
+	The contract body is `unchecked`, so every arithmetic op wraps mod 2^256; `u256(...)` reproduces
+	that exactly (relevant only at astronomical prices, which realistic play avoids).
+	*/
 	getNextEthBidPrice(ts_) {
 		if (this.lastBidderAddress !== ZERO_ADDRESS) {
 			return this.nextEthBidPrice;
@@ -233,18 +237,18 @@ class GameModel {
 		if (elapsed_ <= 0n) {
 			return price_;
 		}
-		const endingPrice_ = price_ / this.ethDutchAuctionEndingBidPriceDivisor + 1n;
+		const endingPrice_ = u256(price_ / this.ethDutchAuctionEndingBidPriceDivisor + 1n);
 		const duration_ = this.getEthDutchAuctionDuration();
 		if (elapsed_ < duration_) {
-			const diff_ = price_ - endingPrice_;
-			return price_ - diff_ * elapsed_ / duration_;
+			const diff_ = u256(price_ - endingPrice_);
+			return u256(price_ - u256(diff_ * elapsed_) / duration_);
 		}
 		return endingPrice_;
 	}
 
-	/** Mirrors `getEthPlusRandomWalkNftBidPrice`. */
+	/** Mirrors `getEthPlusRandomWalkNftBidPrice` (contract body is `unchecked`). */
 	getEthPlusRandomWalkNftBidPrice(ethBidPrice_) {
-		return (ethBidPrice_ + (c.RANDOMWALK_NFT_BID_PRICE_DIVISOR - 1n)) / c.RANDOMWALK_NFT_BID_PRICE_DIVISOR;
+		return u256(ethBidPrice_ + (c.RANDOMWALK_NFT_BID_PRICE_DIVISOR - 1n)) / c.RANDOMWALK_NFT_BID_PRICE_DIVISOR;
 	}
 
 	/** CST Dutch auction total duration (V1: derived; V2: stored). */
@@ -266,7 +270,8 @@ class GameModel {
 			(this.lastCstBidderAddress === ZERO_ADDRESS) ?
 			this.nextRoundFirstCstDutchAuctionBeginningBidPrice :
 			this.cstDutchAuctionBeginningBidPrice;
-		return beginningPrice_ * remaining_ / duration_;
+		// Contract body is `unchecked`: the product wraps mod 2^256 before the division.
+		return u256(beginningPrice_ * remaining_) / duration_;
 	}
 
 	/** Mirrors V2 `getBidCstRewardAmountAdvanced(0)` evaluated at block timestamp `ts_`. */
@@ -282,7 +287,8 @@ class GameModel {
 		if (elapsed_ <= 0n) {
 			return 0n;
 		}
-		const radicand_ = elapsed_ * this.bidCstRewardAmountMultiplier / this.mainPrizeTimeIncrementInMicroSeconds;
+		// Contract body is `unchecked`: the product wraps mod 2^256 before the division.
+		const radicand_ = u256(elapsed_ * this.bidCstRewardAmountMultiplier) / this.mainPrizeTimeIncrementInMicroSeconds;
 		return sqrtFloor(radicand_);
 	}
 

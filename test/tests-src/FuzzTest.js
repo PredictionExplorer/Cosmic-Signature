@@ -15,13 +15,20 @@
 // custom errors. Adversarial actors (reentrancy, broken charity receiver, malicious token donations)
 // and Arbitrum-precompile chaos are mixed in. See `test/src/fuzz/` for the engine.
 //
+// By default (no SKIP_LONG_TESTS) this runs a 20-minute wall-clock soak: repeated independent bounded
+// campaigns (fresh deploy -> V1 fuzz -> real V2 upgrade -> V2 fuzz), with each campaign split ~50/50
+// between V1 and V2 rounds. Actors have finite, human-like budgets (no infinite refills) and skip
+// actions they cannot afford, so values stay in a realistic, non-astronomical range. The model is
+// EVM-exact, including uint256 wraparound in the contracts' `unchecked` price/reward math.
+//
 // Environment (optional):
 //   FUZZ_SEED=0x<hex>       fixed uint256 seed for reproducibility (a fresh random one is printed otherwise).
-//   FUZZ_V1_ROUNDS=<n>      number of V1 rounds before the upgrade.
-//   FUZZ_V2_ROUNDS=<n>      number of V2 rounds after the upgrade.
+//   FUZZ_MAX_SECONDS=<n>    soak wall-clock budget (default 1200 = 20 min); set 0 for a single bounded campaign.
+//   FUZZ_V1_ROUNDS=<n>      V1 rounds per campaign (defaults equal to V2 for a 50/50 split).
+//   FUZZ_V2_ROUNDS=<n>      V2 rounds per campaign.
 //   FUZZ_ACTORS=<n>         number of participant actors.
 //   FUZZ_CHAOS=true|false   toggle Arbitrum-precompile chaos.
-//   SKIP_LONG_TESTS=true    short CI profile.
+//   SKIP_LONG_TESTS=true    short CI profile (single quick bounded campaign).
 //
 // Recommended deep run (with Solidity asserts compiled in):
 //   HARDHAT_MODE_CODE=1 ENABLE_HARDHAT_PREPROCESSOR=true ENABLE_ASSERTS=true \
