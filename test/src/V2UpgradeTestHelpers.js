@@ -13,11 +13,13 @@ const TIMESTAMP_9000_01_01 = 221845392000n;
 
 async function mineAt(timestamp_) {
 	const latest_ = await getLatestBlockTimestamp();
+	// todo-0 If timestamp_ is not in the future maybe don't mine. Rename the whole method to "as needed"?
 	const adjustedTimestamp_ = timestamp_ > latest_ ? timestamp_ : (latest_ + 1n);
 	await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(adjustedTimestamp_)]);
 	await hre.ethers.provider.send("evm_mine");
 }
 
+// todo-0 Dddo I have a similar method?
 async function getLatestBlockTimestamp() {
 	const block_ = await hre.ethers.provider.getBlock("latest");
 	return BigInt(block_.timestamp);
@@ -65,9 +67,12 @@ async function upgradeToV2(contracts_, upgradeOptions_ = {}) {
 	contracts_.cosmicSignatureGameV2Factory = cosmicSignatureGameV2Factory_;
 	contracts_.cosmicSignatureGameV2Proxy = cosmicSignatureGameV2Proxy_;
 	contracts_.cosmicSignatureGameV2ImplementationAddress = cosmicSignatureGameV2ImplementationAddress_;
+	// todo-0 Unnecessary to return this?
 	return contracts_;
 }
 
+// todo-0 I can use my helper for this.
+// todo-0 But it does not always use "latest" block. Is it OK?
 async function activateCurrentRound(game_, ownerSigner_) {
 	const now_ = await getLatestBlockTimestamp();
 	const activationTime_ = now_ + 2n;
@@ -96,6 +101,7 @@ function findParsedEvent(receipt_, contract_, eventName_) {
 	return undefined;
 }
 
+// todo-0 Will this work correct if the given method exists, but has some params?
 async function expectUnknownSelector(contract_, selector_) {
 	await expect(
 		hre.ethers.provider.call({

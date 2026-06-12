@@ -11,6 +11,8 @@ const {
 } = require("../src/V2UpgradeTestHelpers.js");
 
 describe("CosmicSignatureGameV1-Regression", function () {
+	// todo-0 Issue, This title appears incorrect or at least poorly phrased.
+	// todo-0 `delayDurationBeforeRoundActivation` will actually affect all future rounds until contract owner changes it to a different value.
 	it("setDelayDurationBeforeRoundActivation(48 hours) only affects the next round activation", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 		const game_ = contracts_.cosmicSignatureGameProxy;
@@ -35,6 +37,7 @@ describe("CosmicSignatureGameV1-Regression", function () {
 		expect(await game_.roundActivationTime()).equal(beforeClaimBlockTime_ + newDelay_ + 1n);
 	});
 
+	// todo-0 Issue. Don't we already have a test like this?
 	it("keeps V1 upgrade authorization blocked during an active round after a bid", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 		const game_ = contracts_.cosmicSignatureGameProxy;
@@ -53,6 +56,7 @@ describe("CosmicSignatureGameV1-Regression", function () {
 		).revertedWithCustomError(game_, "RoundIsActive");
 	});
 
+	// todo-0 This belongs to the big fuzz test. I don't want to deal with a zillion of little tests.
 	it("keeps V1 main prize claimable by last bidder and by anyone after timeout", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 		const game_ = contracts_.cosmicSignatureGameProxy;
