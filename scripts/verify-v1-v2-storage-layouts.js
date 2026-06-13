@@ -84,9 +84,9 @@ function indexLayout(storageLayout) {
 	return { byPosition, byLabel };
 }
 
-// todo-0 All variables and constants should be at the beginning of the file. Otherwise it's difficult to spot them among functions.
-// todo-0 Alternatively, sructure the code into classes or namespaces, or, at least, into regions.
-// todo-0 Or break it down into multiple JavaScript files.
+// todo-ai-1 All variables and constants should be at the beginning of the file. Otherwise it's difficult to spot them among functions.
+// todo-ai-1 Alternatively, sructure the code into classes or namespaces, or, at least, into regions.
+// todo-ai-1 Or break it down into multiple JavaScript files.
 const GAP_LABEL = "__gap_persistent";
 
 // The only intentional, documented storage changes between deployed V1 and V2.
@@ -166,8 +166,8 @@ function main() {
 
 	// 2b. If we have the deployed layout, also compare it directly against V2 (the upgrade that actually happens).
 	if (deployedV1) {
-		// todo-0 You defined `V2_RENAMES` outside functions, while you did `deployedToV2Renames` inside the function.
-		// todo-0 It's kinda inconsistent.
+		// todo-ai-1 You defined `V2_RENAMES` outside functions, while you did `deployedToV2Renames` inside the function.
+		// todo-ai-1 It's kinda inconsistent.
 		const deployedToV2Renames = new Map([
 			["cstDutchAuctionDurationDivisor", "cstDutchAuctionDuration"],
 			["cstRewardAmountForBidding", "bidCstRewardAmountMultiplier"],
@@ -191,7 +191,7 @@ function main() {
 
 	// 4. The V2 gap must move down exactly one slot relative to the V1 gap (it absorbed the new variable).
 	const v2GapSlot = gapSlot(v2);
-	// todo-0 Here and in some other places, aren't we supposed to report an error if a condition like this is `false`.
+	// todo-ai-1 Here and in some other places, aren't we supposed to report an error if a condition like this is `false`.
 	if (oldGapSlot !== undefined && v2GapSlot !== undefined) {
 		if (v2GapSlot !== oldGapSlot + 1n) {
 			fail(`V2 gap starts at slot ${v2GapSlot}, expected ${oldGapSlot + 1n} (old gap + 1).`);

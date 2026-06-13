@@ -108,15 +108,6 @@ library CosmicSignatureConstants {
 	uint256 internal constant DEFAULT_BID_CST_REWARD_AMOUNT = 100 ether;
 
 	/// @notice Default `CosmicSignatureGameStorageV2.bidCstRewardAmountMultiplier`.
-	/// todo-0 Test the following for both ETH and CST bids, all 4 combinations of previous and next bids.
-	/// todo-0 Keep in mind that on the 2nd round these will be a bit smaller due to main prize time increment being bigger by 1%.
-	/// todo-0 | Elapsed since previous bid | Reward |
-	/// todo-0 | --- | ---: |
-	/// todo-0 | 0 seconds | 0 CST |
-	/// todo-0 | 1 second | ~1.732 CST |
-	/// todo-0 | 60 seconds | ~13.416 CST |
-	/// todo-0 | 1 hour | ~103.923 CST |
-	/// todo-0 | 1 day | ~509.117 CST |
 	uint256 internal constant DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER = 3 * (1 ether) ** 2 * INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND;
 
 	// #endregion

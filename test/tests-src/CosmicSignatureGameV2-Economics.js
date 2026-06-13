@@ -37,9 +37,9 @@ describe("CosmicSignatureGameV2-Economics", function () {
 		const receipt_ = await waitForTransactionReceipt(
 			game_.connect(bidder_).bidWithCst(hre.ethers.MaxUint256, "free cst bid", 0n)
 		);
-		// todo-0 Isn't it known at which index within `receipt_.logs` the sought event is located?
-		// todo-0 So it's possible to just parse and assert that single event and eliminate this convoluted logic.
-		// todo-0 Besides, even if this convoluted logic is needed, it could be possible to replace it with a call to the `findParsedEvent` function.
+		// todo-ai-1 Isn't it known at which index within `receipt_.logs` the sought event is located?
+		// todo-ai-1 So it's possible to just parse and assert that single event and eliminate this convoluted logic.
+		// todo-ai-1 Besides, even if this convoluted logic is needed, it could be possible to replace it with a call to the `findParsedEvent` function.
 		const parsed_ = receipt_.logs
 			.map((log_) => {
 				try { return game_.interface.parseLog(log_); } catch { return null; }
@@ -79,23 +79,23 @@ describe("CosmicSignatureGameV2-Economics", function () {
 		const game_ = contracts_.cosmicSignatureGameV2Proxy;
 		await activateCurrentRound(game_, contracts_.ownerSigner);
 
-		// todo-0 Increase the number of iterations of each loop to 50.
-		// todo-0 Assert that the formulas changing CST Dutch auction duration are lossless.
-		// todo-0 That means that both loops will change CST Dutch auction duration to the same values,
-		// todo-0 only in the opposite order. Then at the end CST Dutch auction duration will become the same value
-		// todo-0 as it initially was.
+		// todo-ai-1 Increase the number of iterations of each loop to 50.
+		// todo-ai-1 Assert that the formulas changing CST Dutch auction duration are lossless.
+		// todo-ai-1 That means that both loops will change CST Dutch auction duration to the same values,
+		// todo-ai-1 only in the opposite order. Then at the end CST Dutch auction duration will become the same value
+		// todo-ai-1 as it initially was.
 
 		let prevDuration_ = await game_.cstDutchAuctionDuration();
 		for (let counter_ = 0; counter_ < 5; ++ counter_) {
 			await mineAt((await getLatestBlockTimestamp()) + 60n);
 			await placeEthBid(game_, contracts_.signers[2 + counter_]);
 			const newDuration_ = await game_.cstDutchAuctionDuration();
-			// todo-0 This is really supposed to be less-than, unless `prevDuration_` is very small, which is not the case at this point.
+			// todo-ai-1 This is really supposed to be less-than, unless `prevDuration_` is too small, which is not the case at this point.
 			expect(newDuration_).lte(prevDuration_);
 			prevDuration_ = newDuration_;
 		}
 
-		// todo-0 You call `mineAt` twice in a row. Make sense to not make one of the calls?
+		// todo-ai-1 You call `mineAt` twice in a row. Make sense to not make one of the calls?
 		await mineAt((await getLatestBlockTimestamp()) + prevDuration_ + 1n);
 		for (let counter_ = 0; counter_ < 5; ++ counter_) {
 			await mineAt((await getLatestBlockTimestamp()) + prevDuration_ + 1n);
@@ -106,10 +106,10 @@ describe("CosmicSignatureGameV2-Economics", function () {
 				game_.connect(contracts_.signers[2]).bidWithCst(hre.ethers.MaxUint256, "duration up", 0n)
 			);
 			const newDuration_ = await game_.cstDutchAuctionDuration();
-			// todo-0 This is really supposed to be geater-than, except in a marginal case, which is not the case at this point.
+			// todo-ai-1 This is really supposed to be greater-than, except in a marginal case, which is not the case at this point.
 			expect(newDuration_).gte(prevDuration_);
 			prevDuration_ = newDuration_;
-			// todo-0 You will call `mineAt` again after this. Do not make `mineAt` calls one after another.
+			// todo-ai-1 You are going to call `mineAt` again after this. Do not make `mineAt` calls one after another.
 			await mineAt((await getLatestBlockTimestamp()) + 60n);
 		}
 	});
