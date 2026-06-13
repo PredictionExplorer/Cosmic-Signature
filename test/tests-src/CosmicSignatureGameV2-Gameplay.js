@@ -59,6 +59,9 @@ describe("CosmicSignatureGameV2-Gameplay", function () {
 		await mineAt((await getLatestBlockTimestamp()) + 60n);
 		let bidder_ = contracts_.signers[2];
 		let ethPrice_ = await game_.getNextEthBidPrice();
+		// todo-0 Here and in similar cases, call `game_.getBidCstRewardAmountAdvanced(1n)` instead,
+		// todo-0 then in `assertV2BidPlaced`, assert that the actual CST reward equals `expectedBidCstRewardAmount_`.
+		// todo-0 Strictly speaking, that assert will have a chance to fail, especially if the system is under stress, but it's OK.
 		let expectedReward_ = await game_.getBidCstRewardAmount();
 		let receipt_ = await waitForTransactionReceipt(
 			game_.connect(bidder_).bidWithEth(-1n, "v2 eth", 0n, { value: ethPrice_ })
@@ -116,6 +119,7 @@ describe("CosmicSignatureGameV2-Gameplay", function () {
 		bidder_ = contracts_.signers[2];
 		let cstPrice_ = await game_.getNextCstBidPrice();
 		expectedReward_ = await game_.getBidCstRewardAmount();
+		// console.info("%s", `202606251 ${hre.ethers.formatEther(expectedReward_)}`);
 		receipt_ = await waitForTransactionReceipt(
 			game_.connect(bidder_).bidWithCst(hre.ethers.MaxUint256, "v2 cst", 0n)
 		);
@@ -153,6 +157,8 @@ describe("CosmicSignatureGameV2-Gameplay", function () {
 		);
 		await assertV2BidPlaced(receipt_, game_, bidder_, -1n, BigInt(cstPrice_), -1n, expectedReward_);
 
+		// todo-0 Before the bid transaction, query `expectedReward_` by calling `game_.getBidCstRewardAmountAdvanced(1n)`
+		// todo-0 and here assert that it equals both of these values.
 		expect(await game_.getBidCstRewardAmount()).equal(await game_.getBidCstRewardAmountAdvanced(0n));
 
 		const mainPrizeTime_ = await game_.mainPrizeTime();

@@ -11,7 +11,7 @@
 #   FUZZ_MULTI=8 ./fuzz-1.bash  # additional N soak runs with random seeds
 #   SKIP_LONG_TESTS=true ./fuzz-1.bash   # quick CI profile (single bounded campaign)
 
-'/usr/bin/clear' 2>/dev/null || true
+'/usr/bin/clear'
 
 (
 	OutcomeCode=0

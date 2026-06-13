@@ -597,7 +597,8 @@ abstract contract MainPrizeV2 is
 
 			// [Comment-202606235]
 			// In V2+ (but not in V1), all code in the `_prepareNextRound` method is wrapped in an `unchecked` block.
-			// Realistically, nothing can overflow here, except, potentially, the math involving `delayDurationBeforeRoundActivation`.
+			// Realistically, nothing can overflow around here, except, potentially,
+			// the math involving `delayDurationBeforeRoundActivation`.
 			// The problem is with Comment-202503106. At any time, the contract owner
 			// can change `delayDurationBeforeRoundActivation` to a value that will overflow and thereby disable `claimMainPrize`.
 			// Then the owner would need to wait until the main prize claim timeout expires

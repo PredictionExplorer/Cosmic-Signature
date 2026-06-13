@@ -90,6 +90,7 @@ describe("CosmicSignatureGameV2-StorageLayout", function () {
 		await hre.upgrades.validateUpgrade(
 			contracts_.cosmicSignatureGameProxy,
 			cosmicSignatureGameV2Factory_,
+			// todo-0 Should the `call` param be added to this object? If not, explain in a comment.
 			{ kind: "uups" }
 		);
 

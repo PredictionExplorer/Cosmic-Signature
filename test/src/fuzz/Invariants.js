@@ -284,6 +284,9 @@ function assertCoverageFloors(statsMap_, profile_) {
 
 	// Minimal deterministic floor.
 	expect(succeeded_("bidWithEth"), "bidWithEth never succeeded").to.be.greaterThan(0);
+	// todo-0 The "no main prize was ever claimed" error has occurred. It's more likely to occur in the `SKIP_LONG_TESTS` mode, right?
+	// todo-0 If it's time to end the test, but this or similar conditions are not met yet, instead of declaring that the test has failed,
+	// todo-0 keep making more iterations until all the conditions are met.
 	expect(succeeded_("claimMainPrize") + succeeded_("claimMainPrizeAfterTimeout"), "no main prize was ever claimed").to.be.greaterThan(0);
 
 	if ( ! profile_.enforceStrongCoverage || totalAttempted_ < STRONG_COVERAGE_MIN_ATTEMPTS ) {

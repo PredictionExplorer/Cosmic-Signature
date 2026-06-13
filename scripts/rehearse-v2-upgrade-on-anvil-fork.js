@@ -1,3 +1,6 @@
+// todo-0 We use Hardhat, not Anvil.
+// todo-0 Get rid of any mentiongs of Anvil and remove it from this file name.
+
 "use strict";
 
 const hre = require("hardhat");
@@ -21,6 +24,7 @@ async function readSlot(address_, slot_) {
 	return BigInt(raw_);
 }
 
+// todo-0 This function exists in another JavaScript file. Why can't you simply import it from there? Do not duplicate existing code.
 async function waitForTransactionReceipt(transactionResponsePromise_) {
 	const transactionResponse_ = await transactionResponsePromise_;
 	return await transactionResponse_.wait();
@@ -69,6 +73,7 @@ async function main() {
 	console.info("owner", ownerAddress_);
 	console.info("round before", (await gameV1_.roundNum()).toString());
 	const implementationSlot_ = "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc";
+	// todo-0 Call `hre.upgrades.erc1967.getImplementationAddress` instead. It will make this call internally.
 	const implementationBefore_ = await hre.ethers.provider.getStorage(GAME_PROXY_ADDRESS, implementationSlot_);
 	console.info("implementation before", "0x" + implementationBefore_.slice(26));
 

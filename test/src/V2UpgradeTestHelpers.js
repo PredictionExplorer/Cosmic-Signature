@@ -13,7 +13,9 @@ const TIMESTAMP_9000_01_01 = 221845392000n;
 
 async function mineAt(timestamp_) {
 	const latest_ = await getLatestBlockTimestamp();
-	// todo-0 If `timestamp_` is not in the future maybe do nothing. Rename the whole function to "if needed"?
+	// todo-0 If `timestamp_` is not in the future maybe do nothing.
+	// todo-0 Then rename `mineAt` to `mineAtIfNeeded` or `setNextBlockTimeToAtLeast`.
+	// todo-0 Alternatively, assert that `timestamp_` is in the future, and otherwise throw.
 	const adjustedTimestamp_ = timestamp_ > latest_ ? timestamp_ : (latest_ + 1n);
 	await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(adjustedTimestamp_)]);
 	await hre.ethers.provider.send("evm_mine");
@@ -72,6 +74,14 @@ async function upgradeToV2(contracts_, upgradeOptions_ = {}) {
 	return contracts_;
 }
 
+// todo-0 FuzzTest does not need to test `CosmicSignatureGameOpenBid`!
+// todo-0 `CosmicSignatureGameOpenBid` is an old contract that serves solely to prototype and test
+// todo-0 game contract upgrades like `CosmicSignatureGame` to `CosmicSignatureGameOpenBid` and
+// todo-0 `CosmicSignatureGameV2` to `CosmicSignatureGameOpenBid`.
+// todo-0 Relevant tests live in `CosmicSignatureGame-3.js`. No more tests like that are needed.
+// todo-0 `CosmicSignatureGameV2` functionality beyond the upgradeability is incorrect and incomplete;
+// todo-0 it's not intended to be used even for testing.
+// todo-0 Remove all code related to `CosmicSignatureGameOpenBid` from FuzzTest.
 async function upgradeToOpenBid(contracts_, upgradeOptions_ = {}) {
 	// V1 -> OpenBid is plugin-safe (OpenBid keeps the V1 storage layout, only appending `timesEthBidPrice`).
 	// Unlike V2 -> OpenBid (Comment-202606126), this needs no `unsafeSkipStorageCheck`.
@@ -108,8 +118,11 @@ async function activateCurrentRound(game_, ownerSigner_) {
 	const now_ = await getLatestBlockTimestamp();
 	const activationTime_ = now_ + 2n;
 	await waitForTransactionReceipt(game_.connect(ownerSigner_).setRoundActivationTime(activationTime_));
-	// todo-0 This mine is unnecessary. It also makes it impossible to mine the next transaction exactly at `roundActivationTime`.
+	// todo-0 `evm_mine` is often unnecessary.
+	// todo-0 This makes it impossible to mine the next transaction exactly at `roundActivationTime`.
 	// todo-0 It will be mined at `roundActivationTime + 1`.
+	// todo-0 So maybe pass `activationTime_ - 1` to `mineAt`.
+	// todo-0 The same consideration applies in multiple places in the codebase.
 	await mineAt(activationTime_);
 }
 
@@ -134,7 +147,7 @@ function findParsedEvent(receipt_, contract_, eventName_) {
 	return undefined;
 }
 
-// todo-0 Will this work correct if the given method exists, but has some params?
+// todo-0 Will this work correct if a method with the given selector exists, but has some params?
 async function expectUnknownSelector(contract_, selector_) {
 	await expect(
 		hre.ethers.provider.call({

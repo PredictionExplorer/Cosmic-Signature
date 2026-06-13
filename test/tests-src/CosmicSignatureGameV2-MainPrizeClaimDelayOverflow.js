@@ -19,8 +19,12 @@ const {
 	mineAt,
 } = require("../src/V2UpgradeTestHelpers.js");
 
+// todo-0 I've seen constants like this in other files and in some places hardcoded.
+// todo-0 Define it in one file and import where it's needed.
 const MAX_UINT256 = (1n << 256n) - 1n;
 
+// todo-0 Consider moving this function to a source file containing helper functions.
+// todo-0 No helper function like this exists elsewhere, right?
 async function blockTimeStampOf(receipt_) {
 	const block_ = await hre.ethers.provider.getBlock(receipt_.blockNumber);
 	return BigInt(block_.timestamp);
@@ -60,6 +64,10 @@ describe("CosmicSignatureGameV2-MainPrizeClaimDelayOverflow", function () {
 		// `block.timestamp + delayDurationBeforeRoundActivation` wrapped modulo 2^256 instead of reverting.
 		expect(await game_.roundActivationTime()).equal(BigInt.asUintN(256, claimTs_ + MAX_UINT256));
 		// For the specific value type(uint256).max the wrap equals claimTs - 1.
+		// todo-0 It's unnecessary to make another call to `game_.roundActivationTime()`.
+		// todo-0 Instead assert: `BigInt.asUintN(256, claimTs_ + MAX_UINT256) == claimTs_ - 1n`.
+		// todo-0 The assert is really guaranteed to succeed because it's pure JavaScript, it does not depend on a smart contract, right?
+		// todo-0 Similar questionable code patterns exist in other places as well.
 		expect(await game_.roundActivationTime()).equal(claimTs_ - 1n);
 	});
 
