@@ -16,14 +16,17 @@ const { HardhatContext } = require("hardhat/internal/context");
 // #endregion
 // #region
 
-// [Comment-202510221]
-// Supported values:
-//    @ 1 to run tests under the "${workspaceFolder}/test" subfolder deterministically and at the maximum speed.
-//      This is the value to set in most cases, especially if no blockchain calls will be made.
-//    @ 2 to simulate a live blockchain, which is designed for tests
-//      under the "${workspaceFolder}/live-blockchain-testing" subfolder.
-// [/Comment-202510221]
-let HARDHAT_MODE_CODE = parseIntegerEnvironmentVariable("HARDHAT_MODE_CODE", Number.NEGATIVE_INFINITY);
+/**
+[Comment-202510221]
+Supported values:
+   @ 1 to run tests under the "${workspaceFolder}/test" subfolder deterministically and at the maximum speed.
+     This is the value to set in most cases, especially if no blockchain calls will be made.
+   @ 2 to simulate a live blockchain, which is designed for tests
+     under the "${workspaceFolder}/live-blockchain-testing" subfolder.
+[/Comment-202510221]
+@type {number}
+*/
+let HARDHAT_MODE_CODE = parseIntegerEnvironmentVariable("HARDHAT_MODE_CODE", undefined);
 
 switch (HARDHAT_MODE_CODE) {
 	case 1:
@@ -31,7 +34,7 @@ switch (HARDHAT_MODE_CODE) {
 		console.info("%s", `HARDHAT_MODE_CODE = ${HARDHAT_MODE_CODE}`);
 		break;
 	}
-	case Number.NEGATIVE_INFINITY: {
+	case undefined: {
 		console.warn("%s", "Warning. The HARDHAT_MODE_CODE environment variable is not set. Assuming it equals 1.");
 		HARDHAT_MODE_CODE = 1;
 		break;
@@ -55,6 +58,18 @@ const ENABLE_HARDHAT_PREPROCESSOR = parseBooleanEnvironmentVariable("ENABLE_HARD
 // [/Comment-202408155]
 // Comment-202408156 relates and/or applies.
 const ENABLE_ASSERTS = ENABLE_HARDHAT_PREPROCESSOR && parseBooleanEnvironmentVariable("ENABLE_ASSERTS", false);
+
+// Allowed values:
+//    0 = disabled.
+//    1 = only preprocess the code for SMTChecker.
+//    2 = fully enabled, meaning also run SMTChecker.
+// [Comment-202410099]
+// This environment variable is ignored and assumed to be zero when `! ENABLE_HARDHAT_PREPROCESSOR`.
+// [/Comment-202410099]
+// [Comment-202408156]
+// When enabling SMTChecker, you typically need to enable asserts as well.
+// [/Comment-202408156]
+const ENABLE_SMTCHECKER = ENABLE_HARDHAT_PREPROCESSOR ? parseIntegerEnvironmentVariable("ENABLE_SMTCHECKER", 0) : 0;
 
 // #endregion
 // #region `shuffleArray`
@@ -164,14 +179,13 @@ function generateAccountPrivateKeyFromSeed(seed_) {
 // #region `parseBooleanEnvironmentVariable`
 
 /**
-@param {string?} environmentVariableName_
-@param {boolean} defaultValue_
-@returns {boolean}
+@template DefaultValue_
+@param {string} environmentVariableName_
+@param {DefaultValue_} defaultValue_
 @throws {Error}
 */
 function parseBooleanEnvironmentVariable(environmentVariableName_, defaultValue_) {
 	const rawValue_ = process.env[environmentVariableName_];
-
 	switch (rawValue_) {
 		case undefined:
 		case "":
@@ -189,24 +203,20 @@ function parseBooleanEnvironmentVariable(environmentVariableName_, defaultValue_
 // #region `parseIntegerEnvironmentVariable`
 
 /**
-@param {string?} environmentVariableName_
-@param {number} defaultValue_
-@returns {number}
+@template DefaultValue_
+@param {string} environmentVariableName_
+@param {DefaultValue_} defaultValue_
 @throws {Error}
 */
 function parseIntegerEnvironmentVariable(environmentVariableName_, defaultValue_) {
 	const rawValue_ = process.env[environmentVariableName_];
-
 	if (rawValue_ === undefined || rawValue_.length <= 0) {
 		return defaultValue_;
 	}
-
 	const value_ = parseInt(rawValue_);
-
 	if (isNaN(value_)) {
 		throw new Error(`Invalid value for environment variable ${environmentVariableName_}: "${rawValue_}". Expected an integer.`);
 	}
-	
 	return value_;
 }
 
@@ -378,6 +388,7 @@ module.exports = {
 	HARDHAT_MODE_CODE,
 	ENABLE_HARDHAT_PREPROCESSOR,
 	ENABLE_ASSERTS,
+	ENABLE_SMTCHECKER,
 	shuffleArray,
 	generateRandomUInt32,
 	generateRandomUInt256,

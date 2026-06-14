@@ -17,7 +17,12 @@ contract FakeArbGasInfo is FakeArbBase {
 				return (0, 0)
 			}
 		}
-		unchecked { return uint64(block.number * 211); }
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			return uint64(block.number * 211);
+		}
 	}
 
 	function getL1PricingUnitsSinceUpdate() external view returns (uint64) {
@@ -29,6 +34,11 @@ contract FakeArbGasInfo is FakeArbBase {
 				return (0, 0)
 			}
 		}
-		unchecked { return uint64(block.number * 307); }
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			return uint64(block.number * 307);
+		}
 	}
 }

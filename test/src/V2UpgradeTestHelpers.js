@@ -75,11 +75,12 @@ async function upgradeToV2(contracts_, upgradeOptions_ = {}) {
 }
 
 // todo-ai-0 FuzzTest does not need to test `CosmicSignatureGameOpenBid`!
-// todo-ai-0 `CosmicSignatureGameOpenBid` is an old contract that serves solely to prototype and test
-// todo-ai-0 game contract upgrades like `CosmicSignatureGame` to `CosmicSignatureGameOpenBid` and
+// todo-ai-0 `CosmicSignatureGameOpenBid` is an old contract that predates `CosmicSignatureGameV2`.
+// todo-ai-0 It serves solely to prototype and test game contract upgrades,
+// todo-ai-0 like `CosmicSignatureGame` to `CosmicSignatureGameOpenBid` and
 // todo-ai-0 `CosmicSignatureGameV2` to `CosmicSignatureGameOpenBid`.
 // todo-ai-0 Relevant tests live in `CosmicSignatureGame-3.js`. No more tests like that are needed.
-// todo-ai-0 `CosmicSignatureGameV2` functionality beyond the upgradeability is incorrect and incomplete;
+// todo-ai-0 `CosmicSignatureGameOpenBid` functionality beyond the upgradeability is incorrect and incomplete;
 // todo-ai-0 it's not intended to be used even for testing.
 // todo-ai-0 Remove all code related to `CosmicSignatureGameOpenBid` from FuzzTest.
 async function upgradeToOpenBid(contracts_, upgradeOptions_ = {}) {

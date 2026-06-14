@@ -37,6 +37,7 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 	/// This should be pretty long -- to increase the chance that people will have enough time, even if an asteroid hits the Earth.
 	/// [/Comment-202506139]
 	/// See also: `CosmicSignatureGameStorage.timeoutDurationToClaimMainPrize`.
+	/// @dev Comment-202606264 relates.
 	uint256 public timeoutDurationToWithdrawPrizes = CosmicSignatureConstants.DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES;
 
 	/// @notice For each bidding round number, contains a timeout time
@@ -123,15 +124,48 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 	// #region `_registerRoundEnd`
 
 	function _registerRoundEnd(uint256 roundNum_, address mainPrizeBeneficiaryAddress_) private returns (uint256) {
-		// #enable_asserts assert(mainPrizeBeneficiaryAddresses[roundNum_] == address(0));
-		// #enable_asserts assert(roundNum_ == 0 || mainPrizeBeneficiaryAddresses[roundNum_ - 1] != address(0));
-		// #enable_asserts assert(roundTimeoutTimesToWithdrawPrizes[roundNum_] == 0);
-		// #enable_asserts assert(roundNum_ == 0 || roundTimeoutTimesToWithdrawPrizes[roundNum_ - 1] != 0);
-		// #enable_asserts assert(mainPrizeBeneficiaryAddress_ != address(0));
-		mainPrizeBeneficiaryAddresses[roundNum_] = mainPrizeBeneficiaryAddress_;
-		uint256 roundTimeoutTimeToWithdrawPrizes_ = block.timestamp + timeoutDurationToWithdrawPrizes;
-		roundTimeoutTimesToWithdrawPrizes[roundNum_] = roundTimeoutTimeToWithdrawPrizes_;
-		return roundTimeoutTimeToWithdrawPrizes_;
+		// Comment-202606264 relates and/or applies.
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+
+		{
+			// #enable_asserts assert(mainPrizeBeneficiaryAddresses[roundNum_] == address(0));
+			// #enable_asserts assert(roundNum_ == 0 || mainPrizeBeneficiaryAddresses[roundNum_ - 1] != address(0));
+			// #enable_asserts assert(roundTimeoutTimesToWithdrawPrizes[roundNum_] == 0);
+			// #enable_asserts assert(roundNum_ == 0 || roundTimeoutTimesToWithdrawPrizes[roundNum_ - 1] != 0);
+			// #enable_asserts assert(mainPrizeBeneficiaryAddress_ != address(0));
+			mainPrizeBeneficiaryAddresses[roundNum_] = mainPrizeBeneficiaryAddress_;
+
+			// [Comment-202606264]
+			// We got another issue here that Comment-202606235 is talking about.
+			// Therefore this must be within an `unchecked` block,
+			// so I have wrapped all code in the `_prepareNextRound` method in an `unchecked` block.
+			// todo-ai-1 I didn't create a V2 of the `PrizesWallet` contract.
+			// todo-ai-1 The old behavior can still be reproduced in the mode in which SMTChecker is enabled.
+			// todo-ai-1 Add this refactoring to V2 docs and tests.
+			// todo-ai-1 Start with analyzing the logic and making sure that it's going to be safe
+			// todo-ai-1 to deploy the fixed `PrizesWallet` together with `CosmicSignatureGameV2`
+			// todo-ai-1 after at least one round has completed. It's even possible that they will be deployed separately,
+			// todo-ai-1 after different rounds.
+			// todo-ai-1 I see that some asserts are going to fail
+			// todo-ai-1 if `_registerRoundEnd` is called for the first time with `roundNum_ > 0`.
+			// todo-ai-1 But with asserts and SMTChexcker disabled, the behavior will be correct, right?
+			// todo-ai-1 It makes no sense to refactor FuzzTest to deploy the fixed `PrizesWallet`,
+			// todo-ai-1 because assert failures would break things, right?
+			// todo-ai-1 Instead, it makes more sense
+			// todo-ai-1 to add separate 1 or more tests to test all modes in which `test-1.bash` executes tests, right?
+			// todo-ai-1 After deploying `PrizesWallet`, a test needs to call `setPrizesWallet` on the game contract.
+			// todo-ai-1 Think if there are still ways a malicious/compromized owner can break things mid-round.
+			// todo-ai-1 An obvious way is to set `timeoutDurationToWithdrawPrizes` to zero, and once a round completes,
+			// todo-ai-1 quickly steal prizes from `PrizesWallet`. We will probably not fix that because it would require to, for example,
+			// todo-ai-1 enforce a minimum and maximum `timeoutDurationToWithdrawPrizes`, which is the idea we kinda dislike.
+			// [/Comment-202606264]
+			uint256 roundTimeoutTimeToWithdrawPrizes_ = block.timestamp + timeoutDurationToWithdrawPrizes;
+
+			roundTimeoutTimesToWithdrawPrizes[roundNum_] = roundTimeoutTimeToWithdrawPrizes_;
+			return roundTimeoutTimeToWithdrawPrizes_;
+		}
 	}
 
 	// #endregion

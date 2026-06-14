@@ -13,21 +13,6 @@ const helpersModule = require("./src/Helpers.js");
 // #endregion
 // #region
 
-// Allowed values:
-//    0 = disabled.
-//    1 = only preprocess the code for SMTChecker.
-//    2 = fully enabled, meaning also run SMTChecker.
-// [Comment-202410099]
-// This environment variable is ignored and assumed to be zero when `! helpersModule.ENABLE_HARDHAT_PREPROCESSOR`.
-// [/Comment-202410099]
-// [Comment-202408156]
-// When enabling SMTChecker, you typically need to enable asserts as well.
-// [/Comment-202408156]
-const ENABLE_SMTCHECKER = helpersModule.ENABLE_HARDHAT_PREPROCESSOR ? helpersModule.parseIntegerEnvironmentVariable("ENABLE_SMTCHECKER", 0) : 0;
-
-// #endregion
-// #region
-
 // [Comment-202503272]
 // The use of different folders prevents a recompile of some Solidity sources
 // when using a different combination of environment variables.
@@ -35,7 +20,7 @@ const ENABLE_SMTCHECKER = helpersModule.ENABLE_HARDHAT_PREPROCESSOR ? helpersMod
 // [Comment-202503302]
 // A similar folder name exists in multiple places.
 // [/Comment-202503302]
-const solidityCompilationCacheSubFolderName = helpersModule.ENABLE_HARDHAT_PREPROCESSOR ? ("debug-" + helpersModule.ENABLE_ASSERTS.toString() + "-" + (ENABLE_SMTCHECKER > 0).toString()) : "production";
+const solidityCompilationCacheSubFolderName = helpersModule.ENABLE_HARDHAT_PREPROCESSOR ? ("debug-" + helpersModule.ENABLE_ASSERTS.toString() + "-" + (helpersModule.ENABLE_SMTCHECKER > 0).toString()) : "production";
 
 // #endregion
 // #region
@@ -99,7 +84,7 @@ const solidityCompilerLongVersion = solidityVersion + "+commit.80d5c536";
 // Comment-202411136 relates.
 let solidityCompilerPath;
 const solidityCompilerPathGlobal = "/usr/bin/solc";
-// if (ENABLE_SMTCHECKER < 2) {
+// if (helpersModule.ENABLE_SMTCHECKER < 2) {
 	solidityCompilerPath = `${process.env.HOME}/.solc-select/artifacts/solc-${solidityVersion}/solc-${solidityVersion}`;
 	if ( ! nodeFsModule.statSync(solidityCompilerPath, {throwIfNoEntry: false,})?.isFile() ) {
 		solidityCompilerPath = `${process.env.HOME}/.local/bin/solc`;
@@ -116,14 +101,14 @@ const solidityCompilerPathGlobal = "/usr/bin/solc";
 
 if (helpersModule.ENABLE_HARDHAT_PREPROCESSOR) {
 	console.warn("%s", "Warning. Hardhat Preprocessor is enabled. Assuming it's intentional.");
-	if (ENABLE_SMTCHECKER <= 0 && ( ! helpersModule.ENABLE_ASSERTS )) {
+	if (helpersModule.ENABLE_SMTCHECKER <= 0 && ( ! helpersModule.ENABLE_ASSERTS )) {
 		// [Comment-202409025/]
 		console.warn("%s", "Warning. Neither the preprocessing for SMTChecker nor asserts are enabled. Assuming it's intentional.");
 	}
-	if (ENABLE_SMTCHECKER > 0 && ( ! helpersModule.ENABLE_ASSERTS )) {
+	if (helpersModule.ENABLE_SMTCHECKER > 0 && ( ! helpersModule.ENABLE_ASSERTS )) {
 		console.warn("%s", "Warning. The preprocessing for SMTChecker is enabled, but asserts are disabled. Is it intentional?");
 	}
-	if (ENABLE_SMTCHECKER >= 2) {
+	if (helpersModule.ENABLE_SMTCHECKER >= 2) {
 		console.info("%s", "SMTChecker execution is enabled.");
 	}
 } else {
@@ -240,7 +225,7 @@ function createSolidityLinePreProcessingRegExp() {
 	const regExpPatternPart1 =
 		(helpersModule.ENABLE_ASSERTS ? "enable_asserts" : "disable_asserts") +
 		"|" +
-		((ENABLE_SMTCHECKER > 0) ? "enable_smtchecker" : "disable_smtchecker");
+		((helpersModule.ENABLE_SMTCHECKER > 0) ? "enable_smtchecker" : "disable_smtchecker");
 	const regExpPatternPart2 = `\\/\\/[ \\t]*\\#(?:${regExpPatternPart1})(?: |\\b)`;
 	const regExpPattern = `^([ \\t]*)${regExpPatternPart2}(?:[ \\t]*${regExpPatternPart2})*`;
 	const regExp = new RegExp(regExpPattern, "s");
@@ -356,7 +341,7 @@ const hardhatUserConfig = {
 						// //    2. We use a different `solidityCompilationCacheSubFolderName` for each combination of these variables.
 						// //       Comment-202503272 relates.
 						// enableAsserts: helpersModule.ENABLE_ASSERTS,
-						// enableSmtChecker: ENABLE_SMTCHECKER > 0,
+						// enableSmtChecker: helpersModule.ENABLE_SMTCHECKER > 0,
 					},
 
 					// // This undocumented parameter appears to make it possible to specify what files to preprocess.
@@ -565,7 +550,7 @@ const hardhatUserConfig = {
 // #endregion
 // #region
 
-if (ENABLE_SMTCHECKER >= 2) {
+if (helpersModule.ENABLE_SMTCHECKER >= 2) {
 	// See https://docs.soliditylang.org/en/latest/using-the-compiler.html#compiler-input-and-output-json-description
 	// On that page, find: modelChecker
 	hardhatUserConfig.solidity.settings.modelChecker = {

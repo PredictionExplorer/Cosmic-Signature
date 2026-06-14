@@ -1,5 +1,16 @@
 // #region Header
 
+// todo-ai-1 Add type annotations for each variable, parameter, function return value, etc.
+// todo-ai-1 An annotation is unnecessary if the type can anyway be inferred.
+// todo-ai-1 For example, in this eample the `@returns` annotation is unnecessary.
+// todo-ai-1 /**
+// todo-ai-1 @param {number} a
+// todo-ai-1 @param {number} b
+// todo-ai-1 */
+// todo-ai-1 function add(a, b) {
+// todo-ai-1   return a + b;
+// todo-ai-1 }
+
 // Cosmic Signature - world-class unified protocol fuzz campaign (Hardhat + Mocha + Chai).
 //
 // A single phased campaign:
@@ -20,6 +31,15 @@
 // between V1 and V2 rounds. Actors have finite, human-like budgets (no infinite refills) and skip
 // actions they cannot afford, so values stay in a realistic, non-astronomical range. The model is
 // EVM-exact, including uint256 wraparound in the contracts' `unchecked` price/reward math.
+// todo-ai-1 In almost all cases, if a wrap-around occurs within an `unchecked` block, it would indicate an error or a bug
+// todo-ai-1 and therefoire should trigger a test failure.
+// todo-ai-1 One exception is a random number seed increment.
+// todo-ai-1 Another exception: a wrap-around near Comment-202606235 is theoretically possible and intentional behavior.
+// todo-ai-1 It can be caused only by an adversarial action done by the contract owner.
+>>>// todo-ai-1 It's also possible to cause overflows and other incorrect behaviors by setting contract params to specific values.
+//
+// todo-ai-1 In the production, the V1 -> V2 upgrade is to happen after round zero completes. That exact case needs testing too.
+// todo-ai-1 So maybe with a 50% chance upgrade after one V1 round completes.
 //
 // The campaign also performs the V1 -> V2 upgrade for ~half of its campaigns and the alternate
 // V1 -> OpenBid upgrade for the other half (the soak alternates by parity; a single campaign chooses
@@ -32,10 +52,18 @@
 //   FUZZ_V2_ROUNDS=<n>      V2 / OpenBid rounds per campaign.
 //   FUZZ_ACTORS=<n>         number of participant actors.
 //   FUZZ_CHAOS=true|false   toggle Arbitrum-precompile chaos.
+// todo-ai-1 Arbitrum-precompile chaos tests are disabled by default, right?
+// todo-ai-1 I would enable them by default. The Arbitrum precompile calls should fail occasionally, based on a random number.
+// todo-ai-1 Maybe it's better to simplify the logic by eliminating the evaluation of the `FUZZ_CHAOS` environment variable.
 //   FUZZ_OPENBID=true       force every campaign to upgrade V1 -> OpenBid (instead of V1 -> V2).
 //   FUZZ_OPENBID_PERCENT=<n> per-campaign probability of the OpenBid upgrade target (single-campaign mode).
 //   FUZZ_UPGRADE_TARGET=v2|openBid  force a specific upgrade target (used by the repro hint).
 //   FUZZ_OVERFLOW=true      drive the ETH price into the high / unchecked-wraparound regime.
+// todo-ai-1 The logic depending on `FUZZ_OVERFLOW` should run occasionally, based on a random number.
+// todo-ai-1 The `FUZZ_OVERFLOW` environment variable is not needed.
+// todo-ai-1 When the user runs the test, all modes should get a chance to get executed.
+// todo-ai-1 In other words, code coverage for the test code should have a high chance to be 100%
+// todo-ai-1 if the user supplies no environment variables.
 //   FUZZ_PROFILE=medium     a larger single bounded campaign (between SKIP_LONG_TESTS and the full soak).
 //   SKIP_LONG_TESTS=true    short CI profile (single quick bounded campaign).
 //
@@ -57,7 +85,7 @@
 const { describe, it } = require("mocha");
 const { SKIP_LONG_TESTS } = require("../../src/ContractTestingHelpers.js");
 const { parseFuzzSeedFromEnvironment } = require("../src/fuzz/FuzzSeed.js");
-const { runFuzzCampaigns, buildProfile, readEnvOverrides, generateRandomUInt256 } = require("../src/fuzz/FuzzCampaign.js");
+const { generateRandomUInt256, readEnvOverrides, buildProfile, runFuzzCampaigns } = require("../src/fuzz/FuzzCampaign.js");
 
 // #endregion
 // #region

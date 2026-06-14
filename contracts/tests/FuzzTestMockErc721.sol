@@ -14,7 +14,10 @@ contract FuzzTestMockErc721 is ERC721 {
 	/// @notice Mints the next token id to `to_` (test-only).
 	function mint(address to_) external returns (uint256 nftId_) {
 		nftId_ = nextTokenId;
-		unchecked {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
 			nextTokenId = nftId_ + 1;
 		}
 		_mint(to_, nftId_);

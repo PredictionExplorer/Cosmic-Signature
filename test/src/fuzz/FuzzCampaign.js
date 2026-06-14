@@ -102,6 +102,7 @@ function buildProfile(skipLongTests_, envOverrides_) {
 function readEnvOverrides() {
 	const overrides_ = {};
 	const num_ = (name_, key_) => {
+		// todo-ai-1 Would it be better to call `parseIntegerEnvironmentVariable` here?
 		const raw_ = process.env[name_];
 		if (raw_ !== undefined && raw_.length > 0) {
 			overrides_[key_] = parseInt(raw_, 10);
@@ -112,6 +113,8 @@ function readEnvOverrides() {
 	num_("FUZZ_ACTORS", "numActors");
 	num_("FUZZ_MAX_SECONDS", "maxSeconds");
 	num_("FUZZ_OPENBID_PERCENT", "openBidPercent");
+	// todo-ai-1 Would it be more robust to call `parseBooleanEnvironmentVariable` to parse these?
+	// todo-ai-1 You can pass `defaultValue_ = undefined` to it and then check if it returned `undefined`.
 	if (process.env.FUZZ_CHAOS === "true") { overrides_.chaos = true; }
 	if (process.env.FUZZ_CHAOS === "false") { overrides_.chaos = false; }
 	if (process.env.FUZZ_OPENBID === "true") { overrides_.runOpenBid = true; }
@@ -679,6 +682,7 @@ class FuzzCampaign {
 		// Build flags change the compiled bytecode (and thus gas / revert kinds), so a `FUZZ_SEED` only
 		// reproduces a failure when they match. Surface them up front for reproducibility.
 		const buildFlags_ =
+			// todo-ai-1 These environment vaiables are parsed and exported by `Helpers.js`. Would it make sense to import them from there?
 			`HARDHAT_MODE_CODE=${process.env.HARDHAT_MODE_CODE ?? "(unset)"} ` +
 			`ENABLE_HARDHAT_PREPROCESSOR=${process.env.ENABLE_HARDHAT_PREPROCESSOR ?? "(unset)"} ` +
 			`ENABLE_ASSERTS=${process.env.ENABLE_ASSERTS ?? "(unset)"} ` +
@@ -760,6 +764,10 @@ async function runFuzzCampaigns(profile_, masterSeed_) {
 
 	if ( ! timeBudgetMode_ ) {
 		const campaign_ = new FuzzCampaign(profile_, masterSeed_);
+		// todo-ai-1 The logic related to random number seed looks convoluted.
+		// todo-ai-1 Make sure it's impossible that the same random number seed is used in multiple places.
+		// todo-ai-1 Would it be better to create a random number seed wrapper at a higher level in the call stack or object hierarchy
+		// todo-ai-1 and pass its object reference to all inetersted components who need to generate random numbers?
 		await runOneCampaignWithTrace(campaign_, masterSeed_);
 		mergeStatsInto(aggregateStats_, campaign_.engine.stats);
 		printCoverageReport(aggregateStats_);
@@ -774,6 +782,7 @@ async function runFuzzCampaigns(profile_, masterSeed_) {
 		++ campaignIndex_;
 		const campaignSeed_ = generateRandomUInt256FromSeedWrapper(seedWrapper_);
 		const campaign_ = new FuzzCampaign(profile_, campaignSeed_);
+		// todo-ai-1 The linter complains that this property does not exist.
 		campaign_.campaignIndex = campaignIndex_;
 		// Alternate the upgrade target by campaign parity so every soak exercises BOTH V1 -> V2 and
 		// V1 -> OpenBid (forcing via FUZZ_OPENBID / FUZZ_UPGRADE_TARGET still takes precedence).
@@ -809,6 +818,11 @@ async function runOneCampaignWithTrace(campaign_, reproSeed_) {
 }
 
 // #endregion
+// todo-ai-1 This region has no matching `#endregion`.
+// todo-ai-1 Some other regions seem to be similarly broken in this JS file.
+// todo-ai-1 Also, if you organize the code at a particular nesting level into regions,
+// todo-ai-1 all peer code and comments at that level should be inside regions.
+// todo-ai-1 For example, "use strict" and `FuzzCampaign` constructor also should be inside their own regions.
 // #region
 
 module.exports = {

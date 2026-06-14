@@ -570,8 +570,11 @@ abstract contract MainPrizeV2 is
 
 	function _prepareNextRound() private {
 		// Comment-202606235 relates and/or applies.
-		unchecked {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
 
+		{
 			// lastBidType = BidType.ETH;
 			lastBidderAddress = address(0);
 			lastCstBidderAddress = address(0);
@@ -605,6 +608,7 @@ abstract contract MainPrizeV2 is
 			// and then set `delayDurationBeforeRoundActivation` to a value that will not overflow
 			// and immediately call `claimMainPrize`, all in a single transaction.
 			// So the aforementioned `unchecked` block eliminates this vulnerability.
+			// Comment-202606264 relates.
 			// [/Comment-202606235]
 			_setRoundActivationTime(block.timestamp + delayDurationBeforeRoundActivation);
 		}

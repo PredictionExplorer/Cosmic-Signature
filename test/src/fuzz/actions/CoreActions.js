@@ -339,6 +339,11 @@ const claimActions = [
 	{
 		// Comment-202606235: the last bidder claims after the owner overflowed the next-round activation math.
 		// V2-only (V1/OpenBid use checked arithmetic, where this claim would revert).
+		// todo-ai-1 FuzzTest has failed due to `claimMainPrize` reverting due to overflow.
+		// todo-ai-1 It logged this: Reproduce this campaign with: FUZZ_SEED=0x9783919d10b0ac2807c122d503faff982a01a6eb702e6b5b9999a139761d0b1e FUZZ_UPGRADE_TARGET=v2 (omit FUZZ_MAX_SECONDS)
+		// todo-ai-1 It likely failed because I have refactored the V2 contract to disable the `unchecked` mode when SMTChecker is enabled.
+		// todo-ai-1 (SMTChecker is supposed to flag the possible overflow issue.)
+		// todo-ai-1 Refactor the test to be prepared for this case.
 		name: "claimMainPrizeWithOverflowingDelay",
 		weight: 1,
 		isApplicable: (ctx_) =>
