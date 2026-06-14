@@ -34,9 +34,12 @@
 // todo-ai-1 In almost all cases, if a wrap-around occurs within an `unchecked` block, it would indicate an error or a bug
 // todo-ai-1 and therefoire should trigger a test failure.
 // todo-ai-1 One exception is a random number seed increment.
-// todo-ai-1 Another exception: a wrap-around near Comment-202606235 is theoretically possible and intentional behavior.
-// todo-ai-1 It can be caused only by an adversarial action done by the contract owner.
->>>// todo-ai-1 It's also possible to cause overflows and other incorrect behaviors by setting contract params to specific values.
+// todo-ai-1 Another exception: wrap-arounds near Comment-202606235 and Comment-202606264 are theoretically possible and intentional behavior.
+// todo-ai-1 They can be caused only by an adversarial action done by the contract owner.
+// todo-ai-1 It's also possible to cause overflows and other incorrect behaviors by setting params of contracts to specific values,
+// todo-ai-1 and we are OK with that if it's impossible to do it after a bid has been placed in the curent round.
+// todo-ai-1 One known issue is that it's possible to set `PrizesWallet.timeoutDurationToWithdrawPrizes` to a bad value,
+// todo-ai-1 not necessarily one that will overflow, after a bid has been placed in the curent round.
 //
 // todo-ai-1 In the production, the V1 -> V2 upgrade is to happen after round zero completes. That exact case needs testing too.
 // todo-ai-1 So maybe with a 50% chance upgrade after one V1 round completes.

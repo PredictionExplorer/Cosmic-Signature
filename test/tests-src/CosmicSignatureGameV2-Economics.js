@@ -83,7 +83,7 @@ describe("CosmicSignatureGameV2-Economics", function () {
 		// todo-ai-1 Assert that the formulas changing CST Dutch auction duration are lossless.
 		// todo-ai-1 That means that both loops will change CST Dutch auction duration to the same values,
 		// todo-ai-1 only in the opposite order. Then at the end CST Dutch auction duration will become the same value
-		// todo-ai-1 as it initially was.
+		// todo-ai-1 as what it initially was.
 
 		let prevDuration_ = await game_.cstDutchAuctionDuration();
 		for (let counter_ = 0; counter_ < 5; ++ counter_) {

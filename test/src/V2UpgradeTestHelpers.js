@@ -15,7 +15,7 @@ async function mineAt(timestamp_) {
 	const latest_ = await getLatestBlockTimestamp();
 	// todo-ai-1 If `timestamp_` is not in the future maybe do nothing.
 	// todo-ai-1 Then rename `mineAt` to `mineAtIfNeeded` or `setNextBlockTimeToAtLeast`.
-	// todo-ai-1 Alternatively, assert that `timestamp_` is in the future, and otherwise throw.
+	// todo-ai-1 Alternatively, throw if `timestamp_` is not in the future.
 	const adjustedTimestamp_ = timestamp_ > latest_ ? timestamp_ : (latest_ + 1n);
 	await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(adjustedTimestamp_)]);
 	await hre.ethers.provider.send("evm_mine");

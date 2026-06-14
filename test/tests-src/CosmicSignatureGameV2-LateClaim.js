@@ -10,9 +10,6 @@ const {
 	mineAt,
 } = require("../src/V2UpgradeTestHelpers.js");
 
-// todo-ai-1 These and some other cases should be tested by `FuzzTest.js`.
-// todo-ai-1 Leave only 1 test for each case that needs testing. Delete any other tests that test the same case.
-
 describe("CosmicSignatureGameV2-LateClaim", function () {
 	it("allows a late bidder to bid and immediately claim when mainPrizeTime remains in the past", async function () {
 		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2(2n);

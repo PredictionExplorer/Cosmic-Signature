@@ -138,6 +138,7 @@ class FuzzCampaign {
 		const profile_ = this.profile;
 
 		// Deploy Arbitrum precompile fakes (so `RandomNumberHelpers` works on Hardhat).
+		// todo-ai-1 Doesn't `loadFixtureDeployContractsForTesting` store the fake Arb contracts at the given addresses? It's unnecessary to do this here.
 		await storeContractDeployedByteCodeAtAddress("FakeArbSys", ARB_SYS_ADDRESS);
 		await storeContractDeployedByteCodeAtAddress("FakeArbGasInfo", ARB_GAS_INFO_ADDRESS);
 
@@ -213,6 +214,10 @@ class FuzzCampaign {
 				index: index_,
 				signer: signer_,
 				address: signer_.address,
+				// todo-ai-1 Are you sure you really need lower-case addresses? That adds more clutter.
+				// todo-ai-1 If the same helper function is always used to convert an address to string it's safe to compare addresses case sensitively.
+				// todo-ai-1 Another issue is that namings are lousy in your code.
+				// todo-ai-1 A code reviewer would never guess that this `lower` variable actually holds an addres converted to lower case.
 				lower: signer_.address.toLowerCase(),
 				label: `actor${index_}`,
 				csStakingApproved: false,

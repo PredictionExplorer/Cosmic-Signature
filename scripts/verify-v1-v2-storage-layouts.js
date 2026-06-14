@@ -84,7 +84,8 @@ function indexLayout(storageLayout) {
 	return { byPosition, byLabel };
 }
 
-// todo-ai-1 All variables and constants should be at the beginning of the file. Otherwise it's difficult to spot them among functions.
+// todo-ai-1 All variables and constants should be located at the beginning of the JS file.
+// todo-ai-1 Otherwise it's difficult to spot them among functions.
 // todo-ai-1 Alternatively, sructure the code into classes or namespaces, or, at least, into regions.
 // todo-ai-1 Or break it down into multiple JavaScript files.
 const GAP_LABEL = "__gap_persistent";

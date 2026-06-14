@@ -61,7 +61,8 @@ describe("CosmicSignatureGameV2-Gameplay", function () {
 		let ethPrice_ = await game_.getNextEthBidPrice();
 		// todo-ai-1 Here and in similar cases, call `game_.getBidCstRewardAmountAdvanced(1n)` instead,
 		// todo-ai-1 then in `assertV2BidPlaced`, assert that the actual CST reward equals `expectedBidCstRewardAmount_`.
-		// todo-ai-1 Strictly speaking, it appears that that assert will have a chance to fail, especially if the system is under stress, but it's OK.
+		// todo-ai-1 Strictly speaking, it appears that that assert will have a chance to fail, especially if the system is under stress, right?
+		// todo-ai-1 But it's OK. You might want to write a comment that it can fail.
 		let expectedReward_ = await game_.getBidCstRewardAmount();
 		let receipt_ = await waitForTransactionReceipt(
 			game_.connect(bidder_).bidWithEth(-1n, "v2 eth", 0n, { value: ethPrice_ })

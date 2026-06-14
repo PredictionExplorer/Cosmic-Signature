@@ -35,7 +35,7 @@ describe("CosmicSignatureGameV1-Regression", function () {
 		expect(await game_.roundActivationTime()).equal(beforeClaimBlockTime_ + newDelay_ + 1n);
 	});
 
-	// todo-ai-1 Issue. Don't we already have a test like this in `CosmicSignatureGame-3.js`?
+	// todo-ai-1 Don't we already have a test like this in `CosmicSignatureGame-3.js`?
 	it("keeps V1 upgrade authorization blocked during an active round after a bid", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 		const game_ = contracts_.cosmicSignatureGameProxy;
@@ -54,8 +54,7 @@ describe("CosmicSignatureGameV1-Regression", function () {
 		).revertedWithCustomError(game_, "RoundIsActive");
 	});
 
-	// todo-ai-1 This case should not be tested here. It should be tested by `FuzzTest.js`.
-	// todo-ai-1 Besides, this tests game V1. An existing test in `MainPrize.js` tests this case.
+	// todo-ai-1 An existing test in `MainPrize.js` tests this case. So maybe this test is not needed.
 	it("keeps V1 main prize claimable by last bidder and by anyone after timeout", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 		const game_ = contracts_.cosmicSignatureGameProxy;

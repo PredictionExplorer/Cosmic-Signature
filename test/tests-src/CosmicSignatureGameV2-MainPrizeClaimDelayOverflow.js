@@ -24,8 +24,9 @@ const {
 const MAX_UINT256 = (1n << 256n) - 1n;
 
 // todo-ai-1 Consider moving this function to a source file containing helper functions.
-// todo-ai-1 No helper function like this exists elsewhere, right?
+// todo-ai-1 `getBlockTimeStampByBlockNumber` is a similar helper function. But it can't be used instead, right?
 async function blockTimeStampOf(receipt_) {
+	// todo-ai-1 Is it better to use block hash instead of block number in cases like this?
 	const block_ = await hre.ethers.provider.getBlock(receipt_.blockNumber);
 	return BigInt(block_.timestamp);
 }
