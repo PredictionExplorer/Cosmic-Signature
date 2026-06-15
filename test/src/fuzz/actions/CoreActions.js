@@ -10,7 +10,6 @@ const {
 	pickStakeableCosmicSignatureNft,
 	ownedStakeActionIds,
 	executeEthBid,
-	executeOpenBid,
 	executeCstBid,
 	verifyClaimReceipt,
 } = require("./ActionHelpers.js");
@@ -65,13 +64,6 @@ const biddingActions = [
 		weight: 3,
 		isApplicable: (ctx_) => ctx_.model.version === 2,
 		run: (ctx_, actor_) => executeEthBid(ctx_, actor_, { flavor: "plain", valueMode: "exact", minRewardMode: "exact" }),
-	},
-	{
-		// OpenBid (version 3) only: an "open" ETH bid that overpays above `ethBidPrice * timesEthBidPrice`.
-		name: "bidWithEthOpenBid",
-		weight: 8,
-		isApplicable: (ctx_) => ctx_.model.version === 3 && ctx_.model.lastBidderAddress !== ZERO_ADDRESS,
-		run: (ctx_, actor_) => executeOpenBid(ctx_, actor_),
 	},
 	{
 		name: "bidWithCst",
@@ -185,8 +177,8 @@ Comment-202606235 coverage. A malicious/compromised owner sets `delayDurationBef
 `block.timestamp + delayDurationBeforeRoundActivation` in `_prepareNextRound` overflow and revert, bricking the
 prize. V2 wraps that body in `unchecked`, so the last bidder's claim still succeeds and `roundActivationTime` merely
 wraps modulo 2^256. This action drives that exact path through the full claim verification, then restores a sane
-delay so subsequent rounds activate normally (no lock-in). V2-only: V1 and OpenBid inherit the checked
-`MainPrize._prepareNextRound`, where this claim would revert.
+	delay so subsequent rounds activate normally (no lock-in). V2-only: V1 inherits the checked
+	`MainPrize._prepareNextRound`, where this claim would revert.
 */
 async function claimWithOverflowingDelay(ctx_) {
 	const { engine, model, ledger } = ctx_;
@@ -338,9 +330,9 @@ const claimActions = [
 	},
 	{
 		// Comment-202606235: the last bidder claims after the owner overflowed the next-round activation math.
-		// V2-only (V1/OpenBid use checked arithmetic, where this claim would revert).
+		// V2-only (V1 uses checked arithmetic, where this claim would revert).
 		// todo-ai-1 FuzzTest has failed due to `claimMainPrize` reverting due to overflow.
-		// todo-ai-1 It logged this: Reproduce this campaign with: FUZZ_SEED=0x9783919d10b0ac2807c122d503faff982a01a6eb702e6b5b9999a139761d0b1e FUZZ_UPGRADE_TARGET=v2 (omit FUZZ_MAX_SECONDS)
+		// todo-ai-1 It logged this: Reproduce this campaign with: FUZZ_SEED=0x9783919d10b0ac2807c122d503faff982a01a6eb702e6b5b9999a139761d0b1e (omit FUZZ_MAX_SECONDS)
 		// todo-ai-1 It likely failed because I have refactored the V2 contract to disable the `unchecked` mode when SMTChecker is enabled.
 		// todo-ai-1 (SMTChecker is supposed to flag the possible overflow issue.)
 		// todo-ai-1 Refactor the test to be prepared for this case.

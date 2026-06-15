@@ -74,45 +74,6 @@ async function upgradeToV2(contracts_, upgradeOptions_ = {}) {
 	return contracts_;
 }
 
-// todo-ai-0 FuzzTest does not need to test `CosmicSignatureGameOpenBid`!
-// todo-ai-0 `CosmicSignatureGameOpenBid` is an old contract that predates `CosmicSignatureGameV2`.
-// todo-ai-0 It serves solely to prototype and test game contract upgrades,
-// todo-ai-0 like `CosmicSignatureGame` to `CosmicSignatureGameOpenBid` and
-// todo-ai-0 `CosmicSignatureGameV2` to `CosmicSignatureGameOpenBid`.
-// todo-ai-0 Relevant tests live in `CosmicSignatureGame-3.js`. No more tests like that are needed.
-// todo-ai-0 `CosmicSignatureGameOpenBid` functionality beyond the upgradeability is incorrect and incomplete;
-// todo-ai-0 it's not intended to be used even for testing.
-// todo-ai-0 Remove all code related to `CosmicSignatureGameOpenBid` from FuzzTest.
-async function upgradeToOpenBid(contracts_, upgradeOptions_ = {}) {
-	// V1 -> OpenBid is plugin-safe (OpenBid keeps the V1 storage layout, only appending `timesEthBidPrice`).
-	// Unlike V2 -> OpenBid (Comment-202606126), this needs no `unsafeSkipStorageCheck`.
-	const cosmicSignatureGameOpenBidFactory_ =
-		await hre.ethers.getContractFactory("CosmicSignatureGameOpenBid", contracts_.ownerSigner);
-	const prevImplementationAddress_ =
-		await hre.upgrades.erc1967.getImplementationAddress(contracts_.cosmicSignatureGameProxyAddress);
-	const cosmicSignatureGameOpenBidProxy_ =
-		await hre.upgrades.upgradeProxy(
-			contracts_.cosmicSignatureGameProxy,
-			cosmicSignatureGameOpenBidFactory_,
-			{
-				kind: "uups",
-				call: "initializeV2",
-				...upgradeOptions_,
-			}
-		);
-	const cosmicSignatureGameOpenBidImplementationAddress_ =
-		await hre.upgrades.erc1967.getImplementationAddress(contracts_.cosmicSignatureGameProxyAddress);
-	expect(cosmicSignatureGameOpenBidImplementationAddress_).not.equal(prevImplementationAddress_);
-	contracts_.cosmicSignatureGameOpenBidFactory = cosmicSignatureGameOpenBidFactory_;
-	contracts_.cosmicSignatureGameOpenBidProxy = cosmicSignatureGameOpenBidProxy_;
-	contracts_.cosmicSignatureGameOpenBidImplementationAddress = cosmicSignatureGameOpenBidImplementationAddress_;
-	return contracts_;
-}
-
-async function assertDefaultOpenBidInitialization(game_) {
-	expect(await game_.timesEthBidPrice()).equal(3n);
-}
-
 // todo-ai-1 Do we really need this function. Can we use the existing `setRoundActivationTimeIfNeeded` instead?
 async function activateCurrentRound(game_, ownerSigner_) {
 	const now_ = await getLatestBlockTimestamp();
@@ -168,10 +129,8 @@ module.exports = {
 	completeRoundZero,
 	deployV1CompleteRoundZeroAndUpgradeToV2,
 	upgradeToV2,
-	upgradeToOpenBid,
 	activateCurrentRound,
 	assertDefaultV2Initialization,
-	assertDefaultOpenBidInitialization,
 	findParsedEvent,
 	expectUnknownSelector,
 };

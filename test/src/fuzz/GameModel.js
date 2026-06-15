@@ -28,9 +28,8 @@ class GameModel {
 
 	constructor() {
 		/**
-		Game code version: 1 = V1, 2 = V2, 3 = OpenBid (an alternate upgrade from V1 that keeps V1
-		mechanics and adds the `timesEthBidPrice` open-bid capability).
-		@type {1 | 2 | 3}
+		Game code version: 1 = V1, 2 = V2.
+		@type {1 | 2}
 		*/
 		this.version = 1;
 
@@ -45,9 +44,8 @@ class GameModel {
 		this.cstDutchAuctionDurationChangeDivisor = 0n; // V2 only
 		this.cstDutchAuctionBeginningBidPriceMinLimit = 0n;
 		this.bidMessageLengthMaxLimit = 0n;
-		this.bidCstRewardAmount = 0n; // V1 / OpenBid only
+		this.bidCstRewardAmount = 0n; // V1 only
 		this.bidCstRewardAmountMultiplier = 0n; // V2 only
-		this.timesEthBidPrice = 0n; // OpenBid (version 3) only
 		this.cstPrizeAmount = 0n;
 		this.chronoWarriorEthPrizeAmountPercentage = 0n;
 		this.raffleTotalEthPrizeAmountForBiddersPercentage = 0n;
@@ -211,10 +209,10 @@ class GameModel {
 
 	/**
 	Whether the active code uses V1 mechanics (fixed CST reward, divisor-based CST Dutch auction,
-	`mainPrizeTime` clamped to `block.timestamp`). Both V1 (version 1) and OpenBid (version 3) do.
+	`mainPrizeTime` clamped to `block.timestamp`).
 	*/
 	isV1Like() {
-		return this.version !== 2;
+		return this.version === 1;
 	}
 
 	/** Mirrors `getMainPrizeTimeIncrement`. */
@@ -264,7 +262,7 @@ class GameModel {
 		return u256(ethBidPrice_ + (c.RANDOMWALK_NFT_BID_PRICE_DIVISOR - 1n)) / c.RANDOMWALK_NFT_BID_PRICE_DIVISOR;
 	}
 
-	/** CST Dutch auction total duration (V1 / OpenBid: derived; V2: stored). */
+	/** CST Dutch auction total duration (V1: derived; V2: stored). */
 	getCstDutchAuctionDuration() {
 		return this.isV1Like() ?
 			this.mainPrizeTimeIncrementInMicroSeconds / this.cstDutchAuctionDurationDivisor :
@@ -290,7 +288,6 @@ class GameModel {
 	/** Mirrors V2 `getBidCstRewardAmountAdvanced(0)` evaluated at block timestamp `ts_`. */
 	getBidCstRewardAmount(ts_) {
 		if (this.isV1Like()) {
-			// V1 and OpenBid both mint a fixed `bidCstRewardAmount` per bid.
 			return this.bidCstRewardAmount;
 		}
 		const lastBidTimeStamp_ =
@@ -395,7 +392,7 @@ class GameModel {
 	// #endregion
 	// #region Bid application
 
-	/** Mirrors `_extendMainPrizeTime` (V1 / OpenBid clamp to `block.timestamp`; V2 does not). */
+	/** Mirrors `_extendMainPrizeTime` (V1 clamps to `block.timestamp`; V2 does not). */
 	_extendMainPrizeTime(ts_) {
 		const increment_ = this.getMainPrizeTimeIncrement();
 		if (this.isV1Like()) {
@@ -428,18 +425,11 @@ class GameModel {
 	@param {bigint} msgValue_
 	@param {bigint} gasPrice_ Exact tx gas price (the engine sends bids with an explicit legacy gas price).
 	@param {bigint | null} randomWalkNftId_ `null` for a plain ETH bid.
-	@param {boolean} [isOpenBid_] OpenBid (version 3) open bid: `paidEthPrice == msg.value`, no refund/swallow.
 	@returns Expected outcome (does not validate revert conditions; callers pre-check applicability).
 	*/
-	planEthBid(ts_, msgValue_, gasPrice_, randomWalkNftId_, isOpenBid_ = false) {
+	planEthBid(ts_, msgValue_, gasPrice_, randomWalkNftId_) {
 		const ethBidPrice_ = this.getNextEthBidPrice(ts_);
 		const reward_ = this.getBidCstRewardAmount(ts_);
-		if (isOpenBid_) {
-			// Mirrors `BiddingOpenBid._bidWithEth` open-bid branch (only for `randomWalkNftId_ < 0`).
-			expect(randomWalkNftId_ === null, "model: open bid cannot use a Random Walk NFT").to.equal(true);
-			const minLimit_ = u256(ethBidPrice_ * this.timesEthBidPrice);
-			return { ethBidPrice: ethBidPrice_, paidEthPrice: msgValue_, netEthPaid: msgValue_, refundAmount: 0n, swallowed: false, insufficient: msgValue_ < minLimit_, bidCstRewardAmount: reward_, isOpenBid: true };
-		}
 		const basePaidPrice_ = (randomWalkNftId_ === null) ? ethBidPrice_ : this.getEthPlusRandomWalkNftBidPrice(ethBidPrice_);
 		// `paidEthPrice_` is the value the contract records (BidPlaced event + `totalSpentEthAmount`);
 		// `netEthPaid_` is the ETH the bidder actually loses (== what the game keeps).
@@ -454,35 +444,29 @@ class GameModel {
 				swallowed_ = true;
 				// The swallowed overpay is kept by the game (never refunded), so the bidder loses `msg.value`.
 				netEthPaid_ = msgValue_;
-				// V1/V2 record `paidEthPrice == msg.value` on a swallow; OpenBid (Comment-202505096) keeps the
-				// recorded `paidEthPrice` at the base price and just leaves the overpay in the contract.
-				paidEthPrice_ = (this.version === 3) ? basePaidPrice_ : msgValue_;
+				paidEthPrice_ = msgValue_;
 			} else {
 				refundAmount_ = overpaid_;
 			}
 		}
-		return { ethBidPrice: ethBidPrice_, paidEthPrice: paidEthPrice_, netEthPaid: netEthPaid_, refundAmount: refundAmount_, swallowed: swallowed_, insufficient: overpaid_ < 0n, bidCstRewardAmount: reward_, isOpenBid: false };
+		return { ethBidPrice: ethBidPrice_, paidEthPrice: paidEthPrice_, netEthPaid: netEthPaid_, refundAmount: refundAmount_, swallowed: swallowed_, insufficient: overpaid_ < 0n, bidCstRewardAmount: reward_ };
 	}
 
 	/**
 	Applies a successful ETH bid (mirrors `_bidWithEth`).
-	@param {boolean} [isOpenBid_] OpenBid (version 3) open bid.
 	@returns Same expectations as `planEthBid` plus V2 `newCstDutchAuctionDuration`.
 	*/
-	applyEthBid(bidderAddress_, ts_, msgValue_, gasPrice_, randomWalkNftId_, isOpenBid_ = false) {
-		const plan_ = this.planEthBid(ts_, msgValue_, gasPrice_, randomWalkNftId_, isOpenBid_);
+	applyEthBid(bidderAddress_, ts_, msgValue_, gasPrice_, randomWalkNftId_) {
+		const plan_ = this.planEthBid(ts_, msgValue_, gasPrice_, randomWalkNftId_);
 		expect(plan_.insufficient, "model: applying an insufficient ETH bid").to.equal(false);
 		if (randomWalkNftId_ !== null) {
 			this.usedRandomWalkNfts.add(randomWalkNftId_.toString());
 		}
 		this._bidderInfoForUpdate(bidderAddress_).totalSpentEthAmount += plan_.paidEthPrice;
-		// For an open bid the next price and (first-bid) beginning price are derived from `paidEthPrice`
-		// (= msg.value); for a normal ETH or Random Walk NFT bid they are derived from `ethBidPrice`.
-		const priceBasis_ = isOpenBid_ ? plan_.paidEthPrice : plan_.ethBidPrice;
 		if (this.lastBidderAddress === ZERO_ADDRESS) {
-			this.ethDutchAuctionBeginningBidPrice = priceBasis_ * c.ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
+			this.ethDutchAuctionBeginningBidPrice = plan_.ethBidPrice * c.ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
 		}
-		this.nextEthBidPrice = priceBasis_ + priceBasis_ / this.ethBidPriceIncreaseDivisor + 1n;
+		this.nextEthBidPrice = plan_.ethBidPrice + plan_.ethBidPrice / this.ethBidPriceIncreaseDivisor + 1n;
 		let newCstDutchAuctionDuration_ = null;
 		if (this.version === 2) {
 			newCstDutchAuctionDuration_ =
@@ -606,7 +590,7 @@ class GameModel {
 		// Comment-202606235: V2's `_prepareNextRound` is wrapped in `unchecked`, so this addition wraps modulo 2^256
 		// instead of reverting on overflow. `u256` keeps the model EVM-exact when the campaign drives an overflowing
 		// `delayDurationBeforeRoundActivation` on V2 (see the `claimMainPrizeWithOverflowingDelay` action); for every
-		// realistic delay it is the identity, so V1/OpenBid (checked arithmetic, never driven to overflow) match too.
+		// realistic delay it is the identity, so V1 (checked arithmetic, never driven to overflow) matches too.
 		this.roundActivationTime = u256(ts_ + this.delayDurationBeforeRoundActivation);
 
 		return breakdown_;
@@ -644,16 +628,6 @@ class GameModel {
 		this.timeoutDurationToClaimMainPrize = c.DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2;
 		this.cstDutchAuctionDurationDivisor = 0n;
 		this.bidCstRewardAmount = 0n;
-	}
-
-	/**
-	Applies the OpenBid `initializeV2` state changes. OpenBid keeps the V1 storage layout, so every
-	V1 field (`cstDutchAuctionDurationDivisor`, `bidCstRewardAmount`, the `mainPrizeTime` clamping, etc.)
-	carries over unchanged; the only new state is `timesEthBidPrice` (set to 3 on init).
-	*/
-	applyUpgradeToOpenBid() {
-		this.version = 3;
-		this.timesEthBidPrice = c.OPEN_BID_DEFAULT_TIMES_ETH_BID_PRICE;
 	}
 
 	// #endregion

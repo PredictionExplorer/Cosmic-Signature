@@ -11,7 +11,7 @@ const { ShadowState } = require("./ShadowState.js");
 const { GameAbiAdapter } = require("./GameAbiAdapter.js");
 const { FuzzEngine } = require("./FuzzEngine.js");
 const { runInvariants, assertCoverageFloors, printCoverageReport, mergeStatsInto } = require("./Invariants.js");
-const { performUpgradeToV2, performUpgradeToOpenBid, upgradeAuthProbe } = require("./UpgradePhase.js");
+const { performUpgradeToV2, upgradeAuthProbe } = require("./UpgradePhase.js");
 const { biddingActions, claimActions, donationActions, stakingActions, forceCompleteRound, runClaimRace } = require("./actions/CoreActions.js");
 const { randomWalkActions, tokenActions, prizesWalletActions, walletActions } = require("./actions/SecondaryActions.js");
 const { adminActions, daoActions } = require("./actions/AdminActions.js");
@@ -45,9 +45,6 @@ function buildProfile(skipLongTests_, envOverrides_) {
 			burstPercent: 6,
 			verbosity: 1,
 			chaos: false,
-			runOpenBid: false,
-			// Per-campaign chance (when not forced) of upgrading V1 -> OpenBid instead of V1 -> V2.
-			openBidPercent: 50,
 			// Opt-in: drive the ETH price into the high / `unchecked`-wraparound regime (see `planBidTs`).
 			overflowMode: false,
 			enforceStrongCoverage: false,
@@ -65,8 +62,6 @@ function buildProfile(skipLongTests_, envOverrides_) {
 			burstPercent: 7,
 			verbosity: 1,
 			chaos: true,
-			runOpenBid: false,
-			openBidPercent: 45,
 			overflowMode: false,
 			enforceStrongCoverage: false,
 			// A single, larger bounded campaign (override with FUZZ_MAX_SECONDS to soak).
@@ -84,10 +79,6 @@ function buildProfile(skipLongTests_, envOverrides_) {
 			burstPercent: 8,
 			verbosity: 1,
 			chaos: true,
-			runOpenBid: false,
-			// In a soak the driver alternates V2/OpenBid by campaign parity; this is the fallback probability
-			// for single bounded campaigns. Both upgrade targets are thus exercised across a run.
-			openBidPercent: 35,
 			overflowMode: false,
 			enforceStrongCoverage: true,
 			// Default to a 20-minute soak (repeated independent bounded campaigns). Override with FUZZ_MAX_SECONDS.
@@ -112,12 +103,10 @@ function readEnvOverrides() {
 	num_("FUZZ_V2_ROUNDS", "v2Rounds");
 	num_("FUZZ_ACTORS", "numActors");
 	num_("FUZZ_MAX_SECONDS", "maxSeconds");
-	num_("FUZZ_OPENBID_PERCENT", "openBidPercent");
 	// todo-ai-1 Would it be more robust to call `parseBooleanEnvironmentVariable` to parse these?
 	// todo-ai-1 You can pass `defaultValue_ = undefined` to it and then check if it returned `undefined`.
 	if (process.env.FUZZ_CHAOS === "true") { overrides_.chaos = true; }
 	if (process.env.FUZZ_CHAOS === "false") { overrides_.chaos = false; }
-	if (process.env.FUZZ_OPENBID === "true") { overrides_.runOpenBid = true; }
 	if (process.env.FUZZ_OVERFLOW === "true") { overrides_.overflowMode = true; }
 	return overrides_;
 }
@@ -254,8 +243,6 @@ class FuzzCampaign {
 
 		const v2GameFactory_ = await hre.ethers.getContractFactory("CosmicSignatureGameV2", c_.ownerSigner);
 		this.v2GameFactory = v2GameFactory_;
-		const openBidGameFactory_ = await hre.ethers.getContractFactory("CosmicSignatureGameOpenBid", c_.ownerSigner);
-		this.openBidGameFactory = openBidGameFactory_;
 		this.ledger.registerContracts(
 			{
 				game: c_.cosmicSignatureGameProxyAddress.toLowerCase(),
@@ -271,7 +258,6 @@ class FuzzCampaign {
 		this.engine.revertInterfaces = [
 			c_.cosmicSignatureGameProxy.interface,
 			v2GameFactory_.interface,
-			openBidGameFactory_.interface,
 			c_.cosmicSignatureToken.interface,
 			c_.cosmicSignatureNft.interface,
 			c_.randomWalkNft.interface,
@@ -658,25 +644,6 @@ class FuzzCampaign {
 		await this.engine.mineAt(this.model.roundActivationTime);
 	}
 
-	/**
-	Decides this campaign's mid-campaign upgrade target: "v2" (the production V2) or "openBid"
-	(the alternate V1 -> OpenBid prototype upgrade).
-
-	One seeded RNG draw is ALWAYS consumed (even when the target is forced or overridden) so the RNG
-	stream — and thus single-campaign reproduction via `FUZZ_SEED` — is identical across modes.
-	Precedence: `FUZZ_UPGRADE_TARGET` env > `runOpenBid` flag (force OpenBid) > driver parity override
-	(soak) > seeded probability (`openBidPercent`).
-	@returns {"v2" | "openBid"}
-	*/
-	_chooseUpgradeTarget() {
-		const rolledOpenBid_ = this.engine.chancePercent(this.profile.openBidPercent ?? 0);
-		if (process.env.FUZZ_UPGRADE_TARGET === "openBid") { return "openBid"; }
-		if (process.env.FUZZ_UPGRADE_TARGET === "v2") { return "v2"; }
-		if (this.profile.runOpenBid) { return "openBid"; }
-		if (this.upgradeTargetOverride !== undefined) { return this.upgradeTargetOverride; }
-		return rolledOpenBid_ ? "openBid" : "v2";
-	}
-
 	// #endregion
 	// #region Run
 
@@ -694,7 +661,7 @@ class FuzzCampaign {
 			`ENABLE_SMTCHECKER=${process.env.ENABLE_SMTCHECKER ?? "(unset)"}`;
 
 		console.info("\n" + "=".repeat(80));
-		console.info(`  COSMIC SIGNATURE - UNIFIED FUZZ ${label_} (V1 -> upgrade -> V2 / OpenBid)`);
+		console.info(`  COSMIC SIGNATURE - UNIFIED FUZZ ${label_} (V1 -> upgrade -> V2)`);
 		console.info("=".repeat(80));
 		console.info(`  seed: ${uint256ToPaddedHexString(this.seed)}`);
 		console.info(`  profile: actors=${this.profile.numActors} v1Rounds=${this.profile.v1Rounds} v2Rounds=${this.profile.v2Rounds} chaos=${this.profile.chaos} overflowMode=${this.profile.overflowMode === true}`);
@@ -703,30 +670,20 @@ class FuzzCampaign {
 
 		await this.setup();
 
-		// Decide the upgrade target up front (consumes one seeded RNG draw) so it is known for the
-		// failure-reproduction message even if the V1 phase fails first.
-		this.upgradeTarget = this._chooseUpgradeTarget();
-		const phase2Label_ = (this.upgradeTarget === "openBid") ? "OpenBid" : "V2";
-		console.info(`  upgrade target: ${this.upgradeTarget}\n`);
-
 		await runInvariants(this.context);
 
 		// Phase 1: V1.
 		await this._runPhase("V1", this.profile.v1Rounds);
 
 		// Mid-campaign upgrade (we are in a fresh post-claim, round-inactive state).
-		console.info(`\n  >>> Performing V1 -> ${phase2Label_} upgrade <<<\n`);
-		if (this.upgradeTarget === "openBid") {
-			await performUpgradeToOpenBid(this.context);
-		} else {
-			await performUpgradeToV2(this.context);
-		}
+		console.info("\n  >>> Performing V1 -> V2 upgrade <<<\n");
+		await performUpgradeToV2(this.context);
 		await this._activateRound();
 		await runInvariants(this.context);
-		console.info(`  >>> Upgrade complete; continuing on ${phase2Label_} <<<\n`);
+		console.info("  >>> Upgrade complete; continuing on V2 <<<\n");
 
-		// Phase 2: V2 or OpenBid.
-		await this._runPhase(phase2Label_, this.profile.v2Rounds);
+		// Phase 2: V2.
+		await this._runPhase("V2", this.profile.v2Rounds);
 
 		// Final invariants. Coverage floors are asserted by the driver on the aggregate across
 		// campaigns (breadth floors are probabilistic for a single bounded campaign).
@@ -740,7 +697,7 @@ class FuzzCampaign {
 		console.info("  CAMPAIGN COMPLETE\n");
 
 		expect(this.engine.actionSeq).to.be.greaterThan(0);
-		expect([2, 3].includes(this.model.version), "campaign must end on an upgraded version (V2 or OpenBid)").to.equal(true);
+		expect(this.model.version, "campaign must end on V2").to.equal(2);
 		expect(this.model.roundNum, "at least one round must have completed").to.be.greaterThan(0n);
 	}
 
@@ -789,9 +746,6 @@ async function runFuzzCampaigns(profile_, masterSeed_) {
 		const campaign_ = new FuzzCampaign(profile_, campaignSeed_);
 		// todo-ai-1 The linter complains that this property does not exist.
 		campaign_.campaignIndex = campaignIndex_;
-		// Alternate the upgrade target by campaign parity so every soak exercises BOTH V1 -> V2 and
-		// V1 -> OpenBid (forcing via FUZZ_OPENBID / FUZZ_UPGRADE_TARGET still takes precedence).
-		campaign_.upgradeTargetOverride = (campaignIndex_ % 2 === 1) ? "openBid" : "v2";
 		await runOneCampaignWithTrace(campaign_, campaignSeed_);
 		mergeStatsInto(aggregateStats_, campaign_.engine.stats);
 		const remainingSec_ = ((deadlineMs_ - Date.now()) / 1000).toFixed(0);
@@ -813,10 +767,8 @@ async function runOneCampaignWithTrace(campaign_, reproSeed_) {
 		await campaign_.run();
 	} catch (errorObject_) {
 		campaign_.engine?.dumpTrace(80);
-		const target_ = campaign_.upgradeTarget ?? campaign_.upgradeTargetOverride ?? "v2";
 		console.error(
-			`\n  Reproduce this campaign with: FUZZ_SEED=0x${reproSeed_.toString(16).padStart(64, "0")} ` +
-			`FUZZ_UPGRADE_TARGET=${target_} (omit FUZZ_MAX_SECONDS)\n`
+			`\n  Reproduce this campaign with: FUZZ_SEED=0x${reproSeed_.toString(16).padStart(64, "0")} (omit FUZZ_MAX_SECONDS)\n`
 		);
 		throw errorObject_;
 	}

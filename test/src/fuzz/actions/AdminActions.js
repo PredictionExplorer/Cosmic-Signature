@@ -161,13 +161,8 @@ function buildSafeMutations(ctx_) {
 		add_("setCstDutchAuctionDurationChangeDivisor", BigInt(engine.randomIntRange(50, 1000)), (m_, v_) => { m_.cstDutchAuctionDurationChangeDivisor = v_; });
 		add_("setBidCstRewardAmountMultiplier", model.bidCstRewardAmountMultiplier * BigInt(engine.randomIntRange(50, 200)) / 100n, (m_, v_) => { m_.bidCstRewardAmountMultiplier = v_; });
 	} else {
-		// V1 and OpenBid (version 3) share these V1-style setters.
 		add_("setCstDutchAuctionDurationDivisor", BigInt(engine.randomIntRange(2, 100)), (m_, v_) => { m_.cstDutchAuctionDurationDivisor = v_; });
 		add_("setBidCstRewardAmount", BigInt(engine.randomIntRange(0, 500)) * 10n ** 18n, (m_, v_) => { m_.bidCstRewardAmount = v_; });
-	}
-	if (model.version === 3) {
-		// OpenBid-only knob governing the minimum open-bid price multiple.
-		add_("setTimesEthBidPrice", BigInt(engine.randomIntRange(1, 10)), (m_, v_) => { m_.timesEthBidPrice = v_; });
 	}
 	return mutations_;
 }

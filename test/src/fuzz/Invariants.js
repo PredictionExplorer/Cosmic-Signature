@@ -98,12 +98,8 @@ async function runInvariants(ctx_) {
 		expect(await game_.cstDutchAuctionDurationChangeDivisor(), "cstDutchAuctionDurationChangeDivisor vs model").to.equal(model.cstDutchAuctionDurationChangeDivisor);
 		expect(await game_.bidCstRewardAmountMultiplier(), "bidCstRewardAmountMultiplier vs model").to.equal(model.bidCstRewardAmountMultiplier);
 	} else {
-		// V1 and OpenBid (version 3) both expose these V1-style getters.
 		expect(await game_.cstDutchAuctionDurationDivisor(), "cstDutchAuctionDurationDivisor vs model").to.equal(model.cstDutchAuctionDurationDivisor);
 		expect(await game_.bidCstRewardAmount(), "bidCstRewardAmount vs model").to.equal(model.bidCstRewardAmount);
-	}
-	if (model.version === 3) {
-		expect(await game_.timesEthBidPrice(), "timesEthBidPrice vs model").to.equal(model.timesEthBidPrice);
 	}
 
 	// Full owner-configurable parameter equality (catches any admin/halve mutation drift immediately,
@@ -289,7 +285,13 @@ function assertCoverageFloors(statsMap_, profile_) {
 	// todo-ai-1 keep making more iterations until all the conditions are met.
 	// todo-ai-1 At the same time, it could make sense to put a hard limit on the max number of iterations
 	// todo-ai-1 to ensure that the loop cannot become infinite.
-	expect(succeeded_("claimMainPrize") + succeeded_("claimMainPrizeAfterTimeout"), "no main prize was ever claimed").to.be.greaterThan(0);
+	expect(
+		succeeded_("claimMainPrize") +
+		succeeded_("claimMainPrizeAfterTimeout") +
+		succeeded_("claimMainPrizeWithOverflowingDelay") +
+		succeeded_("claimRace"),
+		"no main prize was ever claimed"
+	).to.be.greaterThan(0);
 
 	if ( ! profile_.enforceStrongCoverage || totalAttempted_ < STRONG_COVERAGE_MIN_ATTEMPTS ) {
 		return;
@@ -307,7 +309,6 @@ function assertCoverageFloors(statsMap_, profile_) {
 	const mustSucceed_ = [
 		"bidWithEth", "bidWithEthExactPrice", "bidWithEthSwallow", "bidWithEthRefund",
 		"bidWithEthPlusRandomWalkNft", "bidWithEthReceive", "bidWithEthAndDonateToken", "bidWithEthAndDonateNft",
-		"bidWithEthOpenBid",
 		"bidWithCst", "bidWithCstExactLimit", "bidWithCstAndDonateToken", "bidWithCstAndDonateNft",
 		"claimMainPrize",
 		"stakeCosmicSignatureNft", "unstakeCosmicSignatureNft", "stakeManyCosmicSignatureNft",

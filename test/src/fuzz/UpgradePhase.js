@@ -6,9 +6,7 @@ const { expect } = require("chai");
 const hre = require("hardhat");
 const {
 	upgradeToV2,
-	upgradeToOpenBid,
 	assertDefaultV2Initialization,
-	assertDefaultOpenBidInitialization,
 	expectUnknownSelector,
 } = require("../V2UpgradeTestHelpers.js");
 
@@ -155,87 +153,6 @@ async function performUpgradeToV2(ctx_) {
 }
 
 // #endregion
-// #region OpenBid upgrade execution
-
-/**
-Performs the real V1 -> OpenBid UUPS upgrade (the alternate upgrade target) with full state-diff
-assertions, then re-binds all campaign state to the OpenBid ABI and re-syncs the model.
-
-OpenBid keeps the V1 storage layout (only appending `timesEthBidPrice`), so every carried-over getter
-must be bit-for-bit identical, exactly as for V2, and the V1-only getters (`cstDutchAuctionDurationDivisor`,
-`bidCstRewardAmount`) survive unchanged.
-
-The caller must have driven the campaign to a round-inactive state with no bid placed yet.
-
-@returns {Promise<void>}
-*/
-async function performUpgradeToOpenBid(ctx_) {
-	const { engine, model, ledger, contracts } = ctx_;
-	const v1Game_ = ctx_.game.contract;
-	const prevImplementation_ = await hre.upgrades.erc1967.getImplementationAddress(contracts.cosmicSignatureGameProxyAddress);
-
-	// 1. Freeze the round far in the future so `_authorizeUpgrade`'s `_onlyRoundIsInactive` holds.
-	const freezeActivation_ = engine.lastTs + 10n * 365n * 86_400n;
-	const freezeResult_ = await engine.execTx({
-		signer: contracts.ownerSigner,
-		buildTx: (overrides_) => v1Game_.connect(contracts.ownerSigner).setRoundActivationTime(freezeActivation_, overrides_),
-	});
-	engine.expectOk(freezeResult_, "freeze round before OpenBid upgrade");
-	model.roundActivationTime = freezeActivation_;
-
-	// 2. Snapshot the carried-over state (after the freeze; the upgrade itself must change nothing here).
-	const before_ = await snapshotCarriedOverState(v1Game_);
-	const gameEthBefore_ = await engine.provider.getBalance(contracts.cosmicSignatureGameProxyAddress);
-
-	// 3. Upgrade negative probes (must fail) before the real upgrade.
-	await runV1UpgradeNegativeProbes(ctx_);
-
-	// 4. The real upgrade (UUPS `upgradeToAndCall` + `initializeV2`), via the project helper.
-	await upgradeToOpenBid(contracts);
-	const openBidProxy_ = contracts.cosmicSignatureGameOpenBidProxy;
-
-	// The upgrade plugin mined its own blocks outside the engine. Re-sync the clock and the owner's gas.
-	await engine.resyncTime();
-	await ledger.resyncEth(contracts.ownerSigner.address);
-
-	const newImplementation_ = await hre.upgrades.erc1967.getImplementationAddress(contracts.cosmicSignatureGameProxyAddress);
-	expect(newImplementation_, "implementation address must change after OpenBid upgrade").to.not.equal(prevImplementation_);
-
-	// 5. Carried-over state must be unchanged.
-	const after_ = await snapshotCarriedOverState(openBidProxy_);
-	for (const getter_ of CARRIED_OVER_GETTERS) {
-		expect(after_[getter_], `carried-over state '${getter_}' changed across OpenBid upgrade`).to.equal(before_[getter_]);
-	}
-	expect(await engine.provider.getBalance(contracts.cosmicSignatureGameProxyAddress), "game ETH balance changed across OpenBid upgrade").to.equal(gameEthBefore_);
-
-	// 6. OpenBid initialization value.
-	await assertDefaultOpenBidInitialization(openBidProxy_);
-
-	// 7. V2-only selectors must revert as unknown on OpenBid (which keeps V1 storage but is not V2).
-	//    Note: OpenBid intentionally KEEPS `bidWithEth(int256,string)`, `cstDutchAuctionDurationDivisor()`,
-	//    and `bidCstRewardAmount()` (as live V1 members / reverting stubs), so those are NOT dead here.
-	await expectUnknownSelector(openBidProxy_, hre.ethers.id("initialize(address)").slice(0, 10));
-	await expectUnknownSelector(openBidProxy_, hre.ethers.id("bidWithEth(int256,string,uint256)").slice(0, 10));
-	await expectUnknownSelector(openBidProxy_, hre.ethers.id("setCstDutchAuctionDuration(uint256)").slice(0, 10));
-	await expectUnknownSelector(openBidProxy_, hre.ethers.id("getBidCstRewardAmount()").slice(0, 10));
-
-	// 8. Double `initializeV2` must revert (OpenBid's body reverts `InvalidInitialization` once `timesEthBidPrice != 0`).
-	const doubleInitResult_ = await engine.execTx({
-		signer: contracts.ownerSigner,
-		buildTx: (overrides_) => openBidProxy_.connect(contracts.ownerSigner).initializeV2(overrides_),
-	});
-	expect(doubleInitResult_.ok, "re-initializeV2 (OpenBid) must revert").to.equal(false);
-	expect(
-		doubleInitResult_.revert.name === "InvalidInitialization" || doubleInitResult_.revert.kind === "panic",
-		`re-initializeV2 (OpenBid) reverted with unexpected error: ${doubleInitResult_.revert.name}`
-	).to.equal(true);
-
-	// 9. Re-bind campaign state to the OpenBid ABI and re-sync the model.
-	ctx_.rebindGame(openBidProxy_, 3);
-	model.applyUpgradeToOpenBid();
-}
-
-// #endregion
 // #region Upgrade negative probes
 
 /** Probes that must revert while still on V1 (run just before the real upgrade). */
@@ -282,6 +199,5 @@ module.exports = {
 	CARRIED_OVER_GETTERS,
 	snapshotCarriedOverState,
 	performUpgradeToV2,
-	performUpgradeToOpenBid,
 	upgradeAuthProbe,
 };

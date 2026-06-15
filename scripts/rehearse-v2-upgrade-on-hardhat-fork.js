@@ -1,6 +1,3 @@
-// todo-ai-0 We use Hardhat, not Anvil.
-// todo-ai-0 Get rid of any mentiongs of Anvil and remove it from this file name.
-
 "use strict";
 
 const hre = require("hardhat");
@@ -31,36 +28,22 @@ async function waitForTransactionReceipt(transactionResponsePromise_) {
 }
 
 async function impersonateAccount(address_) {
-	try {
-		await hre.network.provider.request({
-			method: "anvil_impersonateAccount",
-			params: [address_],
-		});
-	} catch {
-		await hre.network.provider.request({
-			method: "hardhat_impersonateAccount",
-			params: [address_],
-		});
-	}
+	await hre.network.provider.request({
+		method: "hardhat_impersonateAccount",
+		params: [address_],
+	});
 }
 
 async function setForkBalance(address_) {
-	try {
-		await hre.network.provider.request({
-			method: "anvil_setBalance",
-			params: [address_, BIG_BALANCE],
-		});
-	} catch {
-		await hre.network.provider.request({
-			method: "hardhat_setBalance",
-			params: [address_, BIG_BALANCE],
-		});
-	}
+	await hre.network.provider.request({
+		method: "hardhat_setBalance",
+		params: [address_, BIG_BALANCE],
+	});
 }
 
 async function main() {
 	if (hre.network.name != "hardhat_on_localhost") {
-		throw new Error("Run this against an Anvil fork with: npx hardhat --network hardhat_on_localhost run scripts/rehearse-v2-upgrade-on-anvil-fork.js");
+		throw new Error("Run this against a Hardhat fork with: npx hardhat --network hardhat_on_localhost run scripts/rehearse-v2-upgrade-on-hardhat-fork.js");
 	}
 
 	const [funder_] = await hre.ethers.getSigners();
@@ -230,10 +213,10 @@ async function main() {
 	console.info("round after V2 claim", roundAfterClaim2_.toString());
 	if (roundAfterClaim2_ != 2n) throw new Error("V2 round did not complete (roundNum should be 2).");
 
-	console.info("ANVIL_FORK_REHEARSAL_OK");
+	console.info("HARDHAT_FORK_REHEARSAL_OK");
 }
 
 main().catch((errorObject_) => {
-	console.error("ANVIL_FORK_REHEARSAL_FAIL", errorObject_);
+	console.error("HARDHAT_FORK_REHEARSAL_FAIL", errorObject_);
 	process.exitCode = 1;
 });

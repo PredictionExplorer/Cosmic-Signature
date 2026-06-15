@@ -44,23 +44,16 @@
 // todo-ai-1 In the production, the V1 -> V2 upgrade is to happen after round zero completes. That exact case needs testing too.
 // todo-ai-1 So maybe with a 50% chance upgrade after one V1 round completes.
 //
-// The campaign also performs the V1 -> V2 upgrade for ~half of its campaigns and the alternate
-// V1 -> OpenBid upgrade for the other half (the soak alternates by parity; a single campaign chooses
-// by seeded probability or `FUZZ_UPGRADE_TARGET`).
-//
 // Environment (optional):
 //   FUZZ_SEED=0x<hex>       fixed uint256 seed for reproducibility (a fresh random one is printed otherwise).
 //   FUZZ_MAX_SECONDS=<n>    soak wall-clock budget (default 1200 = 20 min); set 0 for a single bounded campaign.
 //   FUZZ_V1_ROUNDS=<n>      V1 rounds per campaign (defaults equal to V2 for a 50/50 split).
-//   FUZZ_V2_ROUNDS=<n>      V2 / OpenBid rounds per campaign.
+//   FUZZ_V2_ROUNDS=<n>      V2 rounds per campaign.
 //   FUZZ_ACTORS=<n>         number of participant actors.
 //   FUZZ_CHAOS=true|false   toggle Arbitrum-precompile chaos.
 // todo-ai-1 Arbitrum-precompile chaos tests are disabled by default, right?
 // todo-ai-1 I would enable them by default. The Arbitrum precompile calls should fail occasionally, based on a random number.
 // todo-ai-1 Maybe it's better to simplify the logic by eliminating the evaluation of the `FUZZ_CHAOS` environment variable.
-//   FUZZ_OPENBID=true       force every campaign to upgrade V1 -> OpenBid (instead of V1 -> V2).
-//   FUZZ_OPENBID_PERCENT=<n> per-campaign probability of the OpenBid upgrade target (single-campaign mode).
-//   FUZZ_UPGRADE_TARGET=v2|openBid  force a specific upgrade target (used by the repro hint).
 //   FUZZ_OVERFLOW=true      drive the ETH price into the high / unchecked-wraparound regime.
 // todo-ai-1 The logic depending on `FUZZ_OVERFLOW` should run occasionally, based on a random number.
 // todo-ai-1 The `FUZZ_OVERFLOW` environment variable is not needed.
@@ -78,7 +71,7 @@
 // the original run (HARDHAT_MODE_CODE, ENABLE_HARDHAT_PREPROCESSOR, ENABLE_ASSERTS, ENABLE_SMTCHECKER),
 // because they change the compiled bytecode (e.g. assert-enabled paths) and thus gas, and they may
 // alter revert kinds (panic vs custom error). The active flags and the exact reproduction command
-// (including `FUZZ_UPGRADE_TARGET`) are printed at the start of and on failure of each campaign.
+// are printed at the start of and on failure of each campaign.
 
 // #endregion
 // #region
