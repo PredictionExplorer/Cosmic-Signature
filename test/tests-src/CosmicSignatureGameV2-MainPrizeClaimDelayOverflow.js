@@ -11,7 +11,7 @@
 const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
-const { waitForTransactionReceipt } = require("../../src/Helpers.js");
+const { ENABLE_SMTCHECKER, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
 const {
 	MAX_UINT256,
@@ -34,8 +34,18 @@ async function setUpActiveV2RoundWithOneBid() {
 	return { contracts_, game_, winner_ };
 }
 
+async function claimMainPrizeWithOverflowingDelay(game_, winner_) {
+	const claimPromise_ = game_.connect(winner_).claimMainPrize();
+	if (ENABLE_SMTCHECKER > 0) {
+		// SMTChecker builds comment out the `unchecked` marker so the overflow remains visible to the checker.
+		await expect(claimPromise_).revertedWithPanic(0x11);
+		return undefined;
+	}
+	return waitForTransactionReceipt(claimPromise_);
+}
+
 describe("CosmicSignatureGameV2-MainPrizeClaimDelayOverflow", function () {
-	it("lets the last bidder claim when delayDurationBeforeRoundActivation is type(uint256).max (overflow wraps, no revert)", async function () {
+	it("covers a last-bidder claim with type(uint256).max delay (wraps outside SMTChecker builds)", async function () {
 		const { game_, winner_, contracts_ } = await setUpActiveV2RoundWithOneBid();
 
 		// The owner overflows the next-round activation math while a bid is already placed (Comment-202503106 allows this).
@@ -45,7 +55,10 @@ describe("CosmicSignatureGameV2-MainPrizeClaimDelayOverflow", function () {
 		expect(await game_.delayDurationBeforeRoundActivation()).equal(MAX_UINT256);
 
 		await mineAt(await game_.mainPrizeTime());
-		const receipt_ = await waitForTransactionReceipt(game_.connect(winner_).claimMainPrize());
+		const receipt_ = await claimMainPrizeWithOverflowingDelay(game_, winner_);
+		if (ENABLE_SMTCHECKER > 0) {
+			return;
+		}
 		const claimTs_ = await blockTimestampOfReceipt(receipt_);
 
 		// The claim succeeds: the round advanced and the last bidder was cleared.
@@ -74,8 +87,11 @@ describe("CosmicSignatureGameV2-MainPrizeClaimDelayOverflow", function () {
 		await expect(game_.connect(nonWinner_).claimMainPrize())
 			.revertedWithCustomError(game_, "MainPrizeClaimDenied");
 
-		// The crucial property: the overflow no longer bricks the winner's own claim. It succeeds.
-		await waitForTransactionReceipt(game_.connect(winner_).claimMainPrize());
+		// The crucial production property: the overflow no longer bricks the winner's own claim.
+		await claimMainPrizeWithOverflowingDelay(game_, winner_);
+		if (ENABLE_SMTCHECKER > 0) {
+			return;
+		}
 		expect(await game_.roundNum()).equal(2n);
 	});
 
@@ -88,7 +104,10 @@ describe("CosmicSignatureGameV2-MainPrizeClaimDelayOverflow", function () {
 		);
 
 		await mineAt(await game_.mainPrizeTime());
-		const receipt_ = await waitForTransactionReceipt(game_.connect(winner_).claimMainPrize());
+		const receipt_ = await claimMainPrizeWithOverflowingDelay(game_, winner_);
+		if (ENABLE_SMTCHECKER > 0) {
+			return;
+		}
 		const claimTs_ = await blockTimestampOfReceipt(receipt_);
 
 		expect(await game_.roundNum()).equal(2n);
