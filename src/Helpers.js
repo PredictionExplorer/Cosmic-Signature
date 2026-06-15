@@ -16,6 +16,25 @@ const { HardhatContext } = require("hardhat/internal/context");
 // #endregion
 // #region
 
+// I am not sure what the implications of this might be, so considering this an opt-in hack.
+{
+	const hackSupportBigIntToJson_ = parseBooleanEnvironmentVariable("HACK_SUPPORT_BIGINT_TOJSON", false);
+	if (hackSupportBigIntToJson_) {
+		if (BigInt.prototype.toJSON === undefined) {
+			BigInt.prototype.toJSON =
+				function() {
+					return this.toString() + "n";
+				};
+			console.warn("Warning. Assigned to `BigInt.prototype.toJSON`.");
+		} else {
+			console.error("%s", "Error 202606172.");
+		}
+	}
+}
+
+// #endregion
+// #region
+
 /**
 [Comment-202510221]
 Supported values:

@@ -727,16 +727,6 @@ describe("Bidding", function () {
 	// [/Comment-202507055]
 	// [Comment-202507057/]
 	it("Reentries by donated ERC-20 and ERC-721 token contracts", async function () {
-		// // Testing.
-		// if (BigInt.prototype.toJSON === undefined) {
-		// 	BigInt.prototype.toJSON =
-		// 		function() {
-		// 			return this.toString() + "n";
-		// 		};
-		// } else {
-		// 	console.error("%s", "Error 202606172.");
-		// }
-
 		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		const maliciousTokenFactory_ = await hre.ethers.getContractFactory("MaliciousToken", contracts_.deployerSigner);

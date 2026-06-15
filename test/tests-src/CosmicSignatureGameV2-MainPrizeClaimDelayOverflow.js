@@ -94,6 +94,7 @@ describe("CosmicSignatureGameV2-MainPrizeClaimDelayOverflow", function () {
 		expect(await game_.roundNum()).equal(2n);
 		expect(await game_.roundActivationTime()).equal(BigInt.asUintN(256, claimTs_ + delay_));
 		// claimTs + (2^256 - 1001) wraps to claimTs - 1001.
+		// todo-ai-1 Make sense to replace this call to `await game_.roundActivationTime()` with `BigInt.asUintN(256, claimTs_ + delay_)`?
 		expect(await game_.roundActivationTime()).equal(claimTs_ - 1001n);
 	});
 

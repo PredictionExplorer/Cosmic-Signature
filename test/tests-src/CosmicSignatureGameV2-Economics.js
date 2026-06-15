@@ -78,6 +78,7 @@ describe("CosmicSignatureGameV2-Economics", function () {
 
 		const initialDuration_ = await game_.cstDutchAuctionDuration();
 		const durationStack_ = [initialDuration_];
+		// todo-ai-1 You have just called this method. I's unnecessary to do it again.
 		let prevDuration_ = await game_.cstDutchAuctionDuration();
 		for (let counter_ = 0; counter_ < DURATION_DRIFT_ITERATIONS; ++ counter_) {
 			await mineAt((await getLatestBlockTimestamp()) + 60n);
@@ -102,6 +103,7 @@ describe("CosmicSignatureGameV2-Economics", function () {
 			expect(newDuration_).equal(durationStack_[durationStack_.length - 1]);
 			prevDuration_ = newDuration_;
 		}
+		// todo-ai-1 Haven't we already asserted this on the last iteration of the previous loop?
 		expect(await game_.cstDutchAuctionDuration()).equal(initialDuration_);
 	});
 });

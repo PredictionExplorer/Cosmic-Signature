@@ -9,13 +9,13 @@
 	if [ $? -ne 0 ]; then
 		read '-r' '-n' '1' '-s' '-p' 'Error 202505288. Press any key to finish.'
 	else
-		# export SKIP_LONG_TESTS='true'
-
 		# # Hardhat docs recommends setting this environment variable.
 		# # Although it doesn't necessarily make a difference for our setup, so let's not set it until something starts failing.
 		# export SOLIDITY_COVERAGE='true'
 
+		# export HACK_SUPPORT_BIGINT_TOJSON='true'
 		export HARDHAT_MODE_CODE='1'
+		# export SKIP_LONG_TESTS='true'
 
 		# export ENABLE_HARDHAT_PREPROCESSOR='???'
 		# export ENABLE_ASSERTS='???'

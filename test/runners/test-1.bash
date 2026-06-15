@@ -38,9 +38,9 @@
 		fi
 	fi
 
-	# export SKIP_LONG_TESTS='true'
-
+	# export HACK_SUPPORT_BIGINT_TOJSON='true'
 	export HARDHAT_MODE_CODE='1'
+	# export SKIP_LONG_TESTS='true'
 
 	# Preprocessor, asserts, no SMTChecker.
 	# Running in this mode first because we enable Hardhat console in this mode.

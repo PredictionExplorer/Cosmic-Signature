@@ -26,6 +26,7 @@
 			export ENABLE_HARDHAT_PREPROCESSOR="${1}"
 			export ENABLE_ASSERTS="${2}"
 			export ENABLE_SMTCHECKER='0'
+			# export HACK_SUPPORT_BIGINT_TOJSON='true'
 			export HARDHAT_MODE_CODE='1'
 			'npx' 'hardhat' 'test' 'test/tests-src/FuzzTest.js'
 			if [ $? -ne 0 ]; then
@@ -55,6 +56,7 @@
 		export ENABLE_HARDHAT_PREPROCESSOR='false'
 		export ENABLE_ASSERTS='false'
 		export ENABLE_SMTCHECKER='0'
+		# export HACK_SUPPORT_BIGINT_TOJSON='true'
 		export HARDHAT_MODE_CODE='1'
 		unset FUZZ_SEED
 		Index=0
