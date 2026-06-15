@@ -302,6 +302,7 @@ class FuzzEngine {
 			this.ledger.applyReceipt(receipt_);
 			return { ok: true, receipt: receipt_, ts: plannedTs_, gasPrice: gasPrice_ };
 		} catch (errorObject_) {
+			// todo-ai-1 It appears that you can call `checkTransactionErrorObject` here instead.
 			if ( ! isExpectedTransactionErrorObject(errorObject_) ) {
 				throw errorObject_;
 			}
