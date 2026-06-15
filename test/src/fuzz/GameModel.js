@@ -232,8 +232,8 @@ class GameModel {
 
 	/**
 	Mirrors `getNextEthBidPriceAdvanced(0)` evaluated at block timestamp `ts_`.
-	The contract body is `unchecked`, so every arithmetic op wraps mod 2^256; `u256(...)` reproduces
-	that exactly (relevant only at astronomical prices, which realistic play avoids).
+	The contract body is `unchecked`; the fuzz model treats any wrap in this pricing path as a bug unless
+	a caller explicitly marks the operation as an accepted owner-adversarial scenario.
 	*/
 	getNextEthBidPrice(ts_) {
 		if (this.lastBidderAddress !== ZERO_ADDRESS) {
@@ -587,11 +587,12 @@ class GameModel {
 		this.chronoWarriorDuration = -1n;
 		this.roundNum += 1n;
 		this.mainPrizeTimeIncrementInMicroSeconds += this.mainPrizeTimeIncrementInMicroSeconds / this.mainPrizeTimeIncrementIncreaseDivisor;
-		// Comment-202606235: V2's `_prepareNextRound` is wrapped in `unchecked`, so this addition wraps modulo 2^256
-		// instead of reverting on overflow. `u256` keeps the model EVM-exact when the campaign drives an overflowing
-		// `delayDurationBeforeRoundActivation` on V2 (see the `claimMainPrizeWithOverflowingDelay` action); for every
-		// realistic delay it is the identity, so V1 (checked arithmetic, never driven to overflow) matches too.
-		this.roundActivationTime = u256(ts_ + this.delayDurationBeforeRoundActivation);
+		// Comment-202606235: V2 intentionally accepts this owner-adversarial wrap so a bad delay cannot brick claims.
+		this.roundActivationTime = u256(
+			ts_ + this.delayDurationBeforeRoundActivation,
+			"roundActivationTime owner-delay update",
+			this.version === 2
+		);
 
 		return breakdown_;
 	}

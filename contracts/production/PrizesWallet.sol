@@ -141,25 +141,14 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 			// We got another issue here that Comment-202606235 is talking about.
 			// Therefore this must be within an `unchecked` block,
 			// so I have wrapped all code in the `_prepareNextRound` method in an `unchecked` block.
-			// todo-ai-1 I didn't create a V2 of the `PrizesWallet` contract.
-			// todo-ai-1 The old behavior can still be reproduced in the mode in which SMTChecker is enabled.
-			// todo-ai-1 Add this refactoring to V2 docs and tests.
-			// todo-ai-1 Start with analyzing the logic and making sure that it's going to be safe
-			// todo-ai-1 to deploy the fixed `PrizesWallet` together with `CosmicSignatureGameV2`
-			// todo-ai-1 after at least one round has completed. It's even possible that they will be deployed separately,
-			// todo-ai-1 after different rounds.
-			// todo-ai-1 I see that some asserts are going to fail
-			// todo-ai-1 if `_registerRoundEnd` is called for the first time with `roundNum_ > 0`.
-			// todo-ai-1 But with asserts and SMTChexcker disabled, the behavior will be correct, right?
-			// todo-ai-1 It makes no sense to refactor FuzzTest to deploy the fixed `PrizesWallet`,
-			// todo-ai-1 because assert failures would break things, right?
-			// todo-ai-1 Instead, it makes more sense
-			// todo-ai-1 to add separate 1 or more tests to test all modes in which `test-1.bash` executes tests, right?
-			// todo-ai-1 After deploying `PrizesWallet`, a test needs to call `setPrizesWallet` on the game contract.
-			// todo-ai-1 Think if there are still ways a malicious/compromized owner can break things mid-round.
-			// todo-ai-1 An obvious way is to set `timeoutDurationToWithdrawPrizes` to zero, and once a round completes,
-			// todo-ai-1 quickly steal prizes from `PrizesWallet`. We will probably not fix that because it would require to, for example,
-			// todo-ai-1 enforce a minimum and maximum `timeoutDurationToWithdrawPrizes`, which is the idea we kinda dislike.
+			// There is no separate PrizesWalletV2. A freshly deployed PrizesWallet can be wired into
+			// CosmicSignatureGameV2 with `setPrizesWallet` while the current round is inactive. In production-like
+			// builds this is safe even if the first round registered in the new wallet is greater than zero: the
+			// wallet records that round's beneficiary and timeout from scratch. Assert-enabled builds deliberately
+			// panic in that situation because the historical-continuity assertions below expect previous rounds to
+			// have been registered in the same wallet; `PrizesWallet-2` documents both modes. A malicious or
+			// compromised owner can still set `timeoutDurationToWithdrawPrizes` to a bad value before a round ends
+			// and shorten winner exclusivity. That is an accepted benevolent-owner risk rather than a min/max clamp.
 			// [/Comment-202606264]
 			uint256 roundTimeoutTimeToWithdrawPrizes_ = block.timestamp + timeoutDurationToWithdrawPrizes;
 

@@ -7,7 +7,7 @@ const {
 	activateCurrentRound,
 	deployV1CompleteRoundZeroAndUpgradeToV2,
 	getLatestBlockTimestamp,
-	mineAt,
+	mineAtOrAfter,
 } = require("../src/V2UpgradeTestHelpers.js");
 
 describe("CosmicSignatureGameV2-LateClaim", function () {
@@ -22,7 +22,7 @@ describe("CosmicSignatureGameV2-LateClaim", function () {
 
 		const mainPrizeTime_ = await game_.mainPrizeTime();
 		const increment_ = await game_.getMainPrizeTimeIncrement();
-		await mineAt(mainPrizeTime_ + increment_ + 100n);
+		await mineAtOrAfter(mainPrizeTime_ + increment_ + 100n);
 
 		const lateBidder_ = contracts_.signers[3];
 		price_ = await game_.getNextEthBidPrice();
@@ -47,11 +47,11 @@ describe("CosmicSignatureGameV2-LateClaim", function () {
 		const price_ = await game_.getNextEthBidPrice();
 		await waitForTransactionReceipt(game_.connect(bidder_).bidWithEth(-1n, "first", 0n, { value: price_ }));
 
-		await mineAt(await game_.mainPrizeTime());
+		await mineAtOrAfter(await game_.mainPrizeTime());
 		await expect(game_.connect(other_).claimMainPrize())
 			.revertedWithCustomError(game_, "MainPrizeClaimDenied");
 
-		await mineAt((await game_.mainPrizeTime()) + (await game_.timeoutDurationToClaimMainPrize()) + 1n);
+		await mineAtOrAfter((await game_.mainPrizeTime()) + (await game_.timeoutDurationToClaimMainPrize()) + 1n);
 		await waitForTransactionReceipt(game_.connect(other_).claimMainPrize());
 		expect(await game_.roundNum()).equal(2n);
 	});

@@ -10,7 +10,7 @@ const {
 	deployV1CompleteRoundZeroAndUpgradeToV2,
 	findParsedEvent,
 	getLatestBlockTimestamp,
-	mineAt,
+	mineAtOrAfter,
 } = require("../src/V2UpgradeTestHelpers.js");
 
 async function deployDonationMocks(contracts_) {
@@ -33,7 +33,10 @@ async function assertV2BidPlaced(receipt_, game_, bidder_, expectedEthPrice_, ex
 	expect(parsed_.args.paidEthPrice).equal(expectedEthPrice_);
 	expect(parsed_.args.paidCstPrice).equal(expectedCstPrice_);
 	expect(parsed_.args.randomWalkNftId).equal(expectedRandomWalkNftId_);
-	expect(parsed_.args.bidCstRewardAmount).gte(expectedBidCstRewardAmount_);
+	expect(
+		parsed_.args.bidCstRewardAmount,
+		"expected CST reward assumes the bid transaction mines one second after the pre-bid view"
+	).equal(expectedBidCstRewardAmount_);
 	expect(parsed_.args.cstDutchAuctionDuration).equal(await game_.cstDutchAuctionDuration());
 	expect(parsed_.args.mainPrizeTime).equal(await game_.mainPrizeTime());
 }
@@ -56,33 +59,29 @@ describe("CosmicSignatureGameV2-Gameplay", function () {
 			);
 		}
 
-		await mineAt((await getLatestBlockTimestamp()) + 60n);
+		await mineAtOrAfter((await getLatestBlockTimestamp()) + 60n);
 		let bidder_ = contracts_.signers[2];
 		// The first ETH bid price decays with block time; coverage instrumentation can make the tx mine one second later.
 		let ethPrice_ = await game_.getNextEthBidPriceAdvanced(1n);
-		// todo-ai-1 Here and in similar cases, call `game_.getBidCstRewardAmountAdvanced(1n)` instead,
-		// todo-ai-1 then in `assertV2BidPlaced`, assert that the actual CST reward equals `expectedBidCstRewardAmount_`.
-		// todo-ai-1 Strictly speaking, it appears that that assert will have a chance to fail, especially if the system is under stress, right?
-		// todo-ai-1 But it's OK. You might want to write a comment that it can fail.
-		let expectedReward_ = await game_.getBidCstRewardAmount();
+		let expectedReward_ = await game_.getBidCstRewardAmountAdvanced(1n);
 		let receipt_ = await waitForTransactionReceipt(
 			game_.connect(bidder_).bidWithEth(-1n, "v2 eth", 0n, { value: ethPrice_ })
 		);
 		await assertV2BidPlaced(receipt_, game_, bidder_, BigInt(ethPrice_), -1n, -1n, expectedReward_);
 
-		await mineAt((await getLatestBlockTimestamp()) + 60n);
+		await mineAtOrAfter((await getLatestBlockTimestamp()) + 60n);
 		bidder_ = contracts_.signers[3];
 		ethPrice_ = await game_.getNextEthBidPrice();
-		expectedReward_ = await game_.getBidCstRewardAmount();
+		expectedReward_ = await game_.getBidCstRewardAmountAdvanced(1n);
 		receipt_ = await waitForTransactionReceipt(
 			bidder_.sendTransaction({ to: contracts_.cosmicSignatureGameProxyAddress, value: ethPrice_ })
 		);
 		await assertV2BidPlaced(receipt_, game_, bidder_, BigInt(ethPrice_), -1n, -1n, expectedReward_);
 
-		await mineAt((await getLatestBlockTimestamp()) + 60n);
+		await mineAtOrAfter((await getLatestBlockTimestamp()) + 60n);
 		bidder_ = contracts_.signers[4];
 		ethPrice_ = await game_.getNextEthBidPrice();
-		expectedReward_ = await game_.getBidCstRewardAmount();
+		expectedReward_ = await game_.getBidCstRewardAmountAdvanced(1n);
 		receipt_ = await waitForTransactionReceipt(
 			game_.connect(bidder_).bidWithEthAndDonateToken(
 				-1n,
@@ -95,12 +94,12 @@ describe("CosmicSignatureGameV2-Gameplay", function () {
 		);
 		await assertV2BidPlaced(receipt_, game_, bidder_, BigInt(ethPrice_), -1n, -1n, expectedReward_);
 
-		await mineAt((await getLatestBlockTimestamp()) + 60n);
+		await mineAtOrAfter((await getLatestBlockTimestamp()) + 60n);
 		bidder_ = contracts_.signers[5];
 		const donatedNft1_ = await mocks_.erc721_.mint.staticCall(bidder_.address);
 		await waitForTransactionReceipt(mocks_.erc721_.mint(bidder_.address));
 		ethPrice_ = await game_.getNextEthBidPrice();
-		expectedReward_ = await game_.getBidCstRewardAmount();
+		expectedReward_ = await game_.getBidCstRewardAmountAdvanced(1n);
 		receipt_ = await waitForTransactionReceipt(
 			game_.connect(bidder_).bidWithEthAndDonateNft(
 				-1n,
@@ -117,20 +116,20 @@ describe("CosmicSignatureGameV2-Gameplay", function () {
 			game_.connect(contracts_.signers[6]).bidWithEth(-1n, "min too high", hre.ethers.MaxUint256, { value: 0n })
 		).revertedWithCustomError(game_, "BidCstRewardAmountMinLimitNotReached");
 
-		await mineAt((await getLatestBlockTimestamp()) + 24n * 60n * 60n);
+		await mineAtOrAfter((await getLatestBlockTimestamp()) + 24n * 60n * 60n);
 		bidder_ = contracts_.signers[2];
 		let cstPrice_ = await game_.getNextCstBidPrice();
-		expectedReward_ = await game_.getBidCstRewardAmount();
+		expectedReward_ = await game_.getBidCstRewardAmountAdvanced(1n);
 		// console.info("%s", `202606251 ${hre.ethers.formatEther(expectedReward_)}`);
 		receipt_ = await waitForTransactionReceipt(
 			game_.connect(bidder_).bidWithCst(hre.ethers.MaxUint256, "v2 cst", 0n)
 		);
 		await assertV2BidPlaced(receipt_, game_, bidder_, -1n, BigInt(cstPrice_), -1n, expectedReward_);
 
-		await mineAt((await getLatestBlockTimestamp()) + (await game_.cstDutchAuctionDuration()) + 1n);
+		await mineAtOrAfter((await getLatestBlockTimestamp()) + (await game_.cstDutchAuctionDuration()) + 1n);
 		bidder_ = contracts_.signers[2];
 		cstPrice_ = await game_.getNextCstBidPrice();
-		expectedReward_ = await game_.getBidCstRewardAmount();
+		expectedReward_ = await game_.getBidCstRewardAmountAdvanced(1n);
 		receipt_ = await waitForTransactionReceipt(
 			game_.connect(bidder_).bidWithCstAndDonateToken(
 				hre.ethers.MaxUint256,
@@ -142,12 +141,12 @@ describe("CosmicSignatureGameV2-Gameplay", function () {
 		);
 		await assertV2BidPlaced(receipt_, game_, bidder_, -1n, BigInt(cstPrice_), -1n, expectedReward_);
 
-		await mineAt((await getLatestBlockTimestamp()) + (await game_.cstDutchAuctionDuration()) + 1n);
+		await mineAtOrAfter((await getLatestBlockTimestamp()) + (await game_.cstDutchAuctionDuration()) + 1n);
 		bidder_ = contracts_.signers[2];
 		const donatedNft2_ = await mocks_.erc721_.mint.staticCall(bidder_.address);
 		await waitForTransactionReceipt(mocks_.erc721_.mint(bidder_.address));
 		cstPrice_ = await game_.getNextCstBidPrice();
-		expectedReward_ = await game_.getBidCstRewardAmount();
+		expectedReward_ = await game_.getBidCstRewardAmountAdvanced(1n);
 		receipt_ = await waitForTransactionReceipt(
 			game_.connect(bidder_).bidWithCstAndDonateNft(
 				hre.ethers.MaxUint256,
@@ -159,12 +158,10 @@ describe("CosmicSignatureGameV2-Gameplay", function () {
 		);
 		await assertV2BidPlaced(receipt_, game_, bidder_, -1n, BigInt(cstPrice_), -1n, expectedReward_);
 
-		// todo-ai-1 Before the bid transaction, query `expectedReward_` by calling `game_.getBidCstRewardAmountAdvanced(1n)`
-		// todo-ai-1 and here assert that it equals both of these values.
 		expect(await game_.getBidCstRewardAmount()).equal(await game_.getBidCstRewardAmountAdvanced(0n));
 
 		const mainPrizeTime_ = await game_.mainPrizeTime();
-		await mineAt(mainPrizeTime_);
+		await mineAtOrAfter(mainPrizeTime_);
 		receipt_ = await waitForTransactionReceipt(game_.connect(bidder_).claimMainPrize());
 		expect(findParsedEvent(receipt_, game_, "MainPrizeClaimed"), "MainPrizeClaimed must be emitted").not.undefined;
 		expect(await game_.roundNum()).equal(2n);

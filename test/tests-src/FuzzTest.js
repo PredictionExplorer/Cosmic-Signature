@@ -1,15 +1,8 @@
 // #region Header
 
-// todo-ai-1 Add type annotations for each variable, parameter, function return value, etc.
-// todo-ai-1 An annotation is unnecessary if the type can anyway be inferred.
-// todo-ai-1 For example, in this eample the `@returns` annotation is unnecessary.
-// todo-ai-1 /**
-// todo-ai-1 @param {number} a
-// todo-ai-1 @param {number} b
-// todo-ai-1 */
-// todo-ai-1 function add(a, b) {
-// todo-ai-1   return a + b;
-// todo-ai-1 }
+// The fuzz support modules use targeted JSDoc where it helps document cross-module contracts
+// (profiles, receipts, ledgers, model objects, and transaction outcomes). Trivial local values are
+// left unannotated so the test remains readable.
 
 // Cosmic Signature - world-class unified protocol fuzz campaign (Hardhat + Mocha + Chai).
 //
@@ -27,22 +20,17 @@
 // and Arbitrum-precompile chaos are mixed in. See `test/src/fuzz/` for the engine.
 //
 // By default (no SKIP_LONG_TESTS) this runs a 20-minute wall-clock soak: repeated independent bounded
-// campaigns (fresh deploy -> V1 fuzz -> real V2 upgrade -> V2 fuzz), with each campaign split ~50/50
-// between V1 and V2 rounds. Actors have finite, human-like budgets (no infinite refills) and skip
-// actions they cannot afford, so values stay in a realistic, non-astronomical range. The model is
-// EVM-exact, including uint256 wraparound in the contracts' `unchecked` price/reward math.
-// todo-ai-1 In almost all cases, if a wrap-around occurs within an `unchecked` block, it would indicate an error or a bug
-// todo-ai-1 and therefoire should trigger a test failure.
-// todo-ai-1 One exception is a random number seed increment.
-// todo-ai-1 Another exception: wrap-arounds near Comment-202606235 and Comment-202606264 are theoretically possible and intentional behavior.
-// todo-ai-1 They can be caused only by an adversarial action done by the contract owner.
-// todo-ai-1 It's also possible to cause overflows and other incorrect behaviors by setting params of contracts to specific values,
-// todo-ai-1 and we are OK with that if it's impossible to do it after a bid has been placed in the curent round.
-// todo-ai-1 One known issue is that it's possible to set `PrizesWallet.timeoutDurationToWithdrawPrizes` to a bad value,
-// todo-ai-1 not necessarily one that will overflow, after a bid has been placed in the curent round.
+// campaigns (fresh deploy -> V1 fuzz -> real V2 upgrade -> V2 fuzz), with each campaign usually split
+// ~50/50 between V1 and V2 rounds. About half of campaigns upgrade immediately after round zero
+// completes, matching the intended production upgrade timing. Actors have finite, human-like budgets
+// (no infinite refills) and skip actions they cannot afford, so values stay in a realistic,
+// non-astronomical range.
 //
-// todo-ai-1 In the production, the V1 -> V2 upgrade is to happen after round zero completes. That exact case needs testing too.
-// todo-ai-1 So maybe with a 50% chance upgrade after one V1 round completes.
+// The model treats unexpected uint256 wraparound inside unchecked arithmetic as a harness failure.
+// Explicit exceptions are the random seed helper and documented owner-adversarial paths such as
+// Comment-202606235 and Comment-202606264. Owner parameter choices that are only possible before a bid
+// in the current round are modeled as accepted misconfiguration boundaries; a malicious owner can still
+// shorten `PrizesWallet.timeoutDurationToWithdrawPrizes`, which remains an accepted benevolent-owner risk.
 //
 // Environment (optional):
 //   FUZZ_SEED=0x<hex>       fixed uint256 seed for reproducibility (a fresh random one is printed otherwise).
@@ -50,18 +38,12 @@
 //   FUZZ_V1_ROUNDS=<n>      V1 rounds per campaign (defaults equal to V2 for a 50/50 split).
 //   FUZZ_V2_ROUNDS=<n>      V2 rounds per campaign.
 //   FUZZ_ACTORS=<n>         number of participant actors.
-//   FUZZ_CHAOS=true|false   toggle Arbitrum-precompile chaos.
-// todo-ai-1 Arbitrum-precompile chaos tests are disabled by default, right?
-// todo-ai-1 I would enable them by default. The Arbitrum precompile calls should fail occasionally, based on a random number.
-// todo-ai-1 Maybe it's better to simplify the logic by eliminating the evaluation of the `FUZZ_CHAOS` environment variable.
-//   FUZZ_OVERFLOW=true      drive the ETH price into the high / unchecked-wraparound regime.
-// todo-ai-1 The logic depending on `FUZZ_OVERFLOW` should run occasionally, based on a random number.
-// todo-ai-1 The `FUZZ_OVERFLOW` environment variable is not needed.
-// todo-ai-1 When the user runs the test, all modes should get a chance to get executed.
-// todo-ai-1 In other words, code coverage for the test code should have a high chance to be 100%
-// todo-ai-1 if the user supplies no environment variables.
 //   FUZZ_PROFILE=medium     a larger single bounded campaign (between SKIP_LONG_TESTS and the full soak).
 //   SKIP_LONG_TESTS=true    short CI profile (single quick bounded campaign).
+//
+// Chaos and overflow-targeting modes are derived from the campaign seed with profile-specific
+// probabilities. A default multi-campaign run therefore has a high chance to exercise those paths
+// without additional environment variables.
 //
 // Recommended deep run (with Solidity asserts compiled in):
 //   HARDHAT_MODE_CODE=1 ENABLE_HARDHAT_PREPROCESSOR=true ENABLE_ASSERTS=true \

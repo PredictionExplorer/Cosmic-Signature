@@ -179,7 +179,7 @@ Required V2 invariants:
 Acceptance criteria (met):
 
 - The campaign runs with `SKIP_LONG_TESTS=true` quickly enough for CI (quick profile).
-- A long soak runs manually with a printed seed; `FUZZ_V1_ROUNDS` / `FUZZ_V2_ROUNDS` / `FUZZ_ACTORS` / `FUZZ_CHAOS` tune it.
+- A long soak runs manually with a printed seed; `FUZZ_V1_ROUNDS` / `FUZZ_V2_ROUNDS` / `FUZZ_ACTORS` tune size, while chaos, overflow-targeting, and post-round-zero upgrade timing are selected deterministically from each campaign seed.
 - Re-running with `FUZZ_SEED` reproduces failures (the seed is printed on every failure, and the last ~80 actions are dumped as a trace).
 - End-of-run coverage floors assert that every registered action was exercised and (in the long profile) that core actions each succeeded at least once, so a silently-dead action fails the test.
 
@@ -286,6 +286,11 @@ Tests to add:
    - `getNextCstBidPriceAdvanced(negativeOffset)` can revert with division by zero under zero duration.
    - `setCstDutchAuctionDurationChangeDivisor(0)` makes the next ETH bid revert.
    - Setting `cstDutchAuctionDurationChangeDivisor > cstDutchAuctionDuration` produces dangerous duration collapse behavior.
+4. Fresh `PrizesWallet` swap after a completed round:
+   - Deploy a new `PrizesWallet` whose `game` is the V2 proxy.
+   - Call `setPrizesWallet` while the round is inactive.
+   - In production-like builds, complete the next round and assert the new wallet records the round beneficiary and timeout.
+   - In assert-enabled builds, assert the expected panic from the wallet's historical-continuity assertions when the first registered round is greater than zero.
 
 Acceptance criteria:
 
@@ -295,6 +300,7 @@ Acceptance criteria:
 Suggested file:
 
 - New `test/tests-src/CosmicSignatureGameV2-GuardsAndMisconfig.js`
+- Existing `test/tests-src/PrizesWallet-2.js` for the fresh-wallet swap behavior.
 
 ## P2: CI Tooling And Static Analysis
 

@@ -18,7 +18,7 @@ const {
 	activateCurrentRound,
 	blockTimestampOfReceipt,
 	deployV1CompleteRoundZeroAndUpgradeToV2,
-	mineAt,
+	mineAtOrAfter,
 } = require("../src/V2UpgradeTestHelpers.js");
 
 // Deploys V1, completes round 0, upgrades to V2, activates round 1, and places one ETH bid so the bidder is the
@@ -54,7 +54,7 @@ describe("CosmicSignatureGameV2-MainPrizeClaimDelayOverflow", function () {
 		);
 		expect(await game_.delayDurationBeforeRoundActivation()).equal(MAX_UINT256);
 
-		await mineAt(await game_.mainPrizeTime());
+		await mineAtOrAfter(await game_.mainPrizeTime());
 		const receipt_ = await claimMainPrizeWithOverflowingDelay(game_, winner_);
 		if (ENABLE_SMTCHECKER > 0) {
 			return;
@@ -81,7 +81,7 @@ describe("CosmicSignatureGameV2-MainPrizeClaimDelayOverflow", function () {
 			game_.connect(contracts_.ownerSigner).setDelayDurationBeforeRoundActivation(MAX_UINT256)
 		);
 
-		await mineAt(await game_.mainPrizeTime());
+		await mineAtOrAfter(await game_.mainPrizeTime());
 
 		// During the winner's exclusive window nobody else may claim, so there is nothing for the owner to steal yet.
 		await expect(game_.connect(nonWinner_).claimMainPrize())
@@ -103,7 +103,7 @@ describe("CosmicSignatureGameV2-MainPrizeClaimDelayOverflow", function () {
 			game_.connect(contracts_.ownerSigner).setDelayDurationBeforeRoundActivation(delay_)
 		);
 
-		await mineAt(await game_.mainPrizeTime());
+		await mineAtOrAfter(await game_.mainPrizeTime());
 		const receipt_ = await claimMainPrizeWithOverflowingDelay(game_, winner_);
 		if (ENABLE_SMTCHECKER > 0) {
 			return;
@@ -111,10 +111,10 @@ describe("CosmicSignatureGameV2-MainPrizeClaimDelayOverflow", function () {
 		const claimTs_ = await blockTimestampOfReceipt(receipt_);
 
 		expect(await game_.roundNum()).equal(2n);
-		expect(await game_.roundActivationTime()).equal(BigInt.asUintN(256, claimTs_ + delay_));
+		const expectedRoundActivationTime_ = BigInt.asUintN(256, claimTs_ + delay_);
+		expect(await game_.roundActivationTime()).equal(expectedRoundActivationTime_);
 		// claimTs + (2^256 - 1001) wraps to claimTs - 1001.
-		// todo-ai-1 Make sense to replace this call to `await game_.roundActivationTime()` with `BigInt.asUintN(256, claimTs_ + delay_)`?
-		expect(await game_.roundActivationTime()).equal(claimTs_ - 1001n);
+		expect(expectedRoundActivationTime_).equal(claimTs_ - 1001n);
 	});
 
 	it("still reverts the claim with a division-by-zero panic when mainPrizeTimeIncrementIncreaseDivisor is zero (unchecked does not mask 0x12)", async function () {
@@ -132,7 +132,7 @@ describe("CosmicSignatureGameV2-MainPrizeClaimDelayOverflow", function () {
 		const price_ = await game_.getNextEthBidPrice();
 		await waitForTransactionReceipt(game_.connect(bidder_).bidWithEth(-1n, "", 0n, { value: price_ }));
 
-		await mineAt(await game_.mainPrizeTime());
+		await mineAtOrAfter(await game_.mainPrizeTime());
 		// `_prepareNextRound` divides by `mainPrizeTimeIncrementIncreaseDivisor`; `unchecked` does NOT suppress a
 		// division-by-zero, so the claim reverts with Panic(0x12). This lever is gated by round inactivity, so it
 		// cannot be toggled mid-round and therefore cannot reproduce the brick-then-steal of Comment-202606235.
@@ -161,7 +161,7 @@ describe("CosmicSignatureGameV1-MainPrizeClaimDelayOverflow (pre-fix behavior)",
 		const game_ = contracts_.cosmicSignatureGameProxy;
 		const bidder_ = contracts_.signers[2];
 
-		await mineAt(await game_.roundActivationTime());
+		await mineAtOrAfter(await game_.roundActivationTime());
 		const price_ = await game_.getNextEthBidPrice();
 		await waitForTransactionReceipt(game_.connect(bidder_).bidWithEth(-1n, "", { value: price_ }));
 
@@ -169,7 +169,7 @@ describe("CosmicSignatureGameV1-MainPrizeClaimDelayOverflow (pre-fix behavior)",
 			game_.connect(contracts_.ownerSigner).setDelayDurationBeforeRoundActivation(MAX_UINT256)
 		);
 
-		await mineAt(await game_.mainPrizeTime());
+		await mineAtOrAfter(await game_.mainPrizeTime());
 		// V1's `_prepareNextRound` uses checked arithmetic, so `block.timestamp + delayDurationBeforeRoundActivation`
 		// overflows and reverts with Panic(0x11), bricking the prize. This is the exact behavior Comment-202606235
 		// eliminates in V2.

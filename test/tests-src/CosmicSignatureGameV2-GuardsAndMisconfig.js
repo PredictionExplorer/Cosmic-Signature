@@ -9,7 +9,7 @@ const {
 	activateCurrentRound,
 	deployV1CompleteRoundZeroAndUpgradeToV2,
 	getLatestBlockTimestamp,
-	mineAt,
+	mineAtOrAfter,
 	upgradeToV2,
 } = require("../src/V2UpgradeTestHelpers.js");
 
@@ -51,7 +51,7 @@ describe("CosmicSignatureGameV2-GuardsAndMisconfig", function () {
 		await activateCurrentRound(game_, contracts_.ownerSigner);
 
 		const bidder_ = contracts_.signers[2];
-		await mineAt((await getLatestBlockTimestamp()) + 60n);
+		await mineAtOrAfter((await getLatestBlockTimestamp()) + 60n);
 		const ethPrice_ = await game_.getNextEthBidPrice();
 		await waitForTransactionReceipt(game_.connect(bidder_).bidWithEth(-1n, "duration to zero", 0n, { value: ethPrice_ }));
 		expect(await game_.cstDutchAuctionDuration()).equal(0n);

@@ -61,11 +61,18 @@ function int256ToUint256(value_) {
 }
 
 /**
-Wraps a value to uint256, mirroring Solidity arithmetic inside an `unchecked` block (mod 2^256).
+Converts a value to uint256, failing if the conversion would wrap unless the caller explicitly
+documents that wraparound as an accepted path.
 @param {bigint} value_
+@param {string} [label_]
+@param {boolean} [allowWrap_]
 */
-function u256(value_) {
-	return BigInt.asUintN(256, value_);
+function u256(value_, label_ = "uint256 arithmetic", allowWrap_ = false) {
+	const wrapped_ = BigInt.asUintN(256, value_);
+	if ( ! allowWrap_ && wrapped_ !== value_ ) {
+		throw new Error(`${label_} unexpectedly wrapped uint256 arithmetic: ${value_}`);
+	}
+	return wrapped_;
 }
 
 module.exports = {

@@ -9,7 +9,7 @@ const {
 	deployV1CompleteRoundZeroAndUpgradeToV2,
 	findParsedEvent,
 	getLatestBlockTimestamp,
-	mineAt,
+	mineAtOrAfter,
 } = require("../src/V2UpgradeTestHelpers.js");
 
 const DURATION_DRIFT_ITERATIONS = 50;
@@ -27,11 +27,11 @@ describe("CosmicSignatureGameV2-Economics", function () {
 		await activateCurrentRound(game_, contracts_.ownerSigner);
 
 		const bidder_ = contracts_.signers[2];
-		await mineAt((await getLatestBlockTimestamp()) + 60n);
+		await mineAtOrAfter((await getLatestBlockTimestamp()) + 60n);
 		await placeEthBid(game_, bidder_);
 
 		const duration_ = await game_.cstDutchAuctionDuration();
-		await mineAt((await getLatestBlockTimestamp()) + duration_ + 1n);
+		await mineAtOrAfter((await getLatestBlockTimestamp()) + duration_ + 1n);
 		expect(await game_.getNextCstBidPrice()).equal(0n);
 
 		const reward_ = await game_.getBidCstRewardAmountAdvanced(1n);
@@ -55,11 +55,11 @@ describe("CosmicSignatureGameV2-Economics", function () {
 
 		const bidder1_ = contracts_.signers[2];
 		const bidder2_ = contracts_.signers[3];
-		await mineAt((await getLatestBlockTimestamp()) + 60n);
+		await mineAtOrAfter((await getLatestBlockTimestamp()) + 60n);
 		await placeEthBid(game_, bidder1_);
 
 		const duration_ = await game_.cstDutchAuctionDuration();
-		await mineAt((await getLatestBlockTimestamp()) + duration_ - 60n);
+		await mineAtOrAfter((await getLatestBlockTimestamp()) + duration_ - 60n);
 		const priceBefore_ = await game_.getNextCstBidPrice();
 		expect(priceBefore_).greaterThan(0n);
 		const priceBeforeAhead_ = await game_.getNextCstBidPriceAdvanced(30n);
@@ -78,10 +78,9 @@ describe("CosmicSignatureGameV2-Economics", function () {
 
 		const initialDuration_ = await game_.cstDutchAuctionDuration();
 		const durationStack_ = [initialDuration_];
-		// todo-ai-1 You have just called this method. I's unnecessary to do it again.
-		let prevDuration_ = await game_.cstDutchAuctionDuration();
+		let prevDuration_ = initialDuration_;
 		for (let counter_ = 0; counter_ < DURATION_DRIFT_ITERATIONS; ++ counter_) {
-			await mineAt((await getLatestBlockTimestamp()) + 60n);
+			await mineAtOrAfter((await getLatestBlockTimestamp()) + 60n);
 			await placeEthBid(game_, contracts_.signers[2 + counter_ % (contracts_.signers.length - 2)]);
 			const newDuration_ = await game_.cstDutchAuctionDuration();
 			expect(newDuration_).lessThan(prevDuration_);
@@ -90,7 +89,7 @@ describe("CosmicSignatureGameV2-Economics", function () {
 		}
 
 		for (let counter_ = 0; counter_ < DURATION_DRIFT_ITERATIONS; ++ counter_) {
-			await mineAt((await getLatestBlockTimestamp()) + prevDuration_ + 1n);
+			await mineAtOrAfter((await getLatestBlockTimestamp()) + prevDuration_ + 1n);
 			const price_ = await game_.getNextCstBidPrice();
 			const balance_ = await contracts_.cosmicSignatureToken.balanceOf(contracts_.signers[2].address);
 			expect(balance_).gte(price_);
@@ -103,7 +102,5 @@ describe("CosmicSignatureGameV2-Economics", function () {
 			expect(newDuration_).equal(durationStack_[durationStack_.length - 1]);
 			prevDuration_ = newDuration_;
 		}
-		// todo-ai-1 Haven't we already asserted this on the last iteration of the previous loop?
-		expect(await game_.cstDutchAuctionDuration()).equal(initialDuration_);
 	});
 });

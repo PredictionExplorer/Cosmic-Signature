@@ -12,13 +12,15 @@ const DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER = 1080000000000000000000000000000
 const DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2 = 2n * 24n * 60n * 60n;
 const TIMESTAMP_9000_01_01 = 221845392000n;
 
-async function mineAt(timestamp_) {
+async function setNextBlockTimeToAtLeast(timestamp_) {
 	const latest_ = await getLatestBlockTimestamp();
-	// todo-ai-1 If `timestamp_` is not in the future maybe do nothing.
-	// todo-ai-1 Then rename `mineAt` to `mineAtIfNeeded` or `setNextBlockTimeToAtLeast`.
-	// todo-ai-1 Alternatively, throw if `timestamp_` is not in the future.
 	const adjustedTimestamp_ = timestamp_ > latest_ ? timestamp_ : (latest_ + 1n);
 	await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(adjustedTimestamp_)]);
+	return adjustedTimestamp_;
+}
+
+async function mineAtOrAfter(timestamp_) {
+	await setNextBlockTimeToAtLeast(timestamp_);
 	await hre.ethers.provider.send("evm_mine");
 }
 
@@ -37,8 +39,7 @@ async function completeRoundZero(contracts_, bidderIndex_ = 1) {
 		contracts_.cosmicSignatureGameProxy.connect(bidder_).bidWithEth(-1n, "", { value: 10n ** 18n })
 	);
 	const mainPrizeTime_ = await contracts_.cosmicSignatureGameProxy.mainPrizeTime();
-	// todo-ai-1 In cases like this, it's unnecessary to mine. It's sufficient to only execute `evm_setNextBlockTimestamp`.
-	await mineAt(mainPrizeTime_);
+	await setNextBlockTimeToAtLeast(mainPrizeTime_);
 	const receipt_ = await waitForTransactionReceipt(
 		contracts_.cosmicSignatureGameProxy.connect(bidder_).claimMainPrize()
 	);
@@ -77,17 +78,12 @@ async function upgradeToV2(contracts_, upgradeOptions_ = {}) {
 	contracts_.cosmicSignatureGameV2ImplementationAddress = cosmicSignatureGameV2ImplementationAddress_;
 }
 
-// todo-ai-1 Do we really need this function. Can we use the existing `setRoundActivationTimeIfNeeded` instead?
 async function activateCurrentRound(game_, ownerSigner_) {
 	const now_ = await getLatestBlockTimestamp();
 	const activationTime_ = now_ + 2n;
 	await waitForTransactionReceipt(game_.connect(ownerSigner_).setRoundActivationTime(activationTime_));
-	// todo-ai-1 `evm_mine` is often unnecessary.
-	// todo-ai-1 This makes it impossible to mine the next transaction exactly at `roundActivationTime`.
-	// todo-ai-1 It will be mined at `roundActivationTime + 1`.
-	// todo-ai-1 So maybe pass `activationTime_ - 1` to `mineAt`.
-	// todo-ai-1 The same consideration applies in multiple places in the codebase.
-	await mineAt(activationTime_);
+	// These tests immediately query latest-block views after activation, so mine the activation block here.
+	await mineAtOrAfter(activationTime_);
 }
 
 async function assertDefaultV2Initialization(game_) {
@@ -129,7 +125,8 @@ module.exports = {
 	DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER,
 	DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2,
 	TIMESTAMP_9000_01_01,
-	mineAt,
+	setNextBlockTimeToAtLeast,
+	mineAtOrAfter,
 	getLatestBlockTimestamp,
 	blockTimestampOfReceipt,
 	completeRoundZero,

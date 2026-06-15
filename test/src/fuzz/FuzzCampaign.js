@@ -13,7 +13,6 @@ const {
 	ENABLE_SMTCHECKER,
 	HARDHAT_MODE_CODE,
 	generateRandomUInt256FromSeedWrapper,
-	parseBooleanEnvironmentVariable,
 	parseIntegerEnvironmentVariable,
 	uint256ToPaddedHexString,
 } = require("../../../src/Helpers.js");
@@ -56,9 +55,9 @@ function buildProfile(skipLongTests_, envOverrides_) {
 			negativeProbePercent: 14,
 			burstPercent: 6,
 			verbosity: 1,
-			chaos: false,
-			// Opt-in: drive the ETH price into the high / `unchecked`-wraparound regime (see `planBidTs`).
-			overflowMode: false,
+			chaosPercent: 35,
+			overflowModePercent: 10,
+			upgradeAfterRoundZeroPercent: 50,
 			enforceStrongCoverage: false,
 			// Quick CI profile: a single bounded campaign (no wall-clock soak).
 			maxSeconds: undefined,
@@ -73,8 +72,9 @@ function buildProfile(skipLongTests_, envOverrides_) {
 			negativeProbePercent: 13,
 			burstPercent: 7,
 			verbosity: 1,
-			chaos: true,
-			overflowMode: false,
+			chaosPercent: 60,
+			overflowModePercent: 15,
+			upgradeAfterRoundZeroPercent: 50,
 			enforceStrongCoverage: false,
 			// A single, larger bounded campaign (override with FUZZ_MAX_SECONDS to soak).
 			maxSeconds: 0,
@@ -90,8 +90,9 @@ function buildProfile(skipLongTests_, envOverrides_) {
 			negativeProbePercent: 12,
 			burstPercent: 8,
 			verbosity: 1,
-			chaos: true,
-			overflowMode: false,
+			chaosPercent: 70,
+			overflowModePercent: 20,
+			upgradeAfterRoundZeroPercent: 50,
 			enforceStrongCoverage: true,
 			// Default to a 20-minute soak (repeated independent bounded campaigns). Override with FUZZ_MAX_SECONDS.
 			maxSeconds: 1200,
@@ -101,7 +102,7 @@ function buildProfile(skipLongTests_, envOverrides_) {
 	return merged_;
 }
 
-/** Reads campaign env overrides (numbers/booleans only). */
+/** Reads numeric campaign environment overrides. */
 function readEnvOverrides() {
 	const overrides_ = {};
 	const num_ = (name_, key_) => {
@@ -114,11 +115,33 @@ function readEnvOverrides() {
 	num_("FUZZ_V2_ROUNDS", "v2Rounds");
 	num_("FUZZ_ACTORS", "numActors");
 	num_("FUZZ_MAX_SECONDS", "maxSeconds");
-	const chaos_ = parseBooleanEnvironmentVariable("FUZZ_CHAOS", undefined);
-	if (chaos_ !== undefined) { overrides_.chaos = chaos_; }
-	const overflowMode_ = parseBooleanEnvironmentVariable("FUZZ_OVERFLOW", undefined);
-	if (overflowMode_ !== undefined) { overrides_.overflowMode = overflowMode_; }
 	return overrides_;
+}
+
+function chanceFromSeed(seedWrapper_, percent_) {
+	if (percent_ <= 0) {
+		return false;
+	}
+	if (percent_ >= 100) {
+		return true;
+	}
+	return Number(generateRandomUInt256FromSeedWrapper(seedWrapper_) % 100n) < percent_;
+}
+
+/**
+Derives per-campaign fuzz modes from the campaign seed so ordinary runs probabilistically cover
+chaos, overflow-targeting, and production-style round-zero upgrade timing without extra env toggles.
+@param {object} profile_
+@param {bigint} seed_
+*/
+function deriveCampaignProfile(profile_, seed_) {
+	const seedWrapper_ = { value: seed_ };
+	return {
+		...profile_,
+		chaos: chanceFromSeed(seedWrapper_, profile_.chaosPercent ?? 0),
+		overflowMode: chanceFromSeed(seedWrapper_, profile_.overflowModePercent ?? 0),
+		upgradeAfterRoundZero: chanceFromSeed(seedWrapper_, profile_.upgradeAfterRoundZeroPercent ?? 0),
+	};
 }
 
 // #endregion
@@ -126,7 +149,7 @@ function readEnvOverrides() {
 
 class FuzzCampaign {
 	constructor(profile_, seed_) {
-		this.profile = profile_;
+		this.profile = deriveCampaignProfile(profile_, seed_);
 		this.seed = seed_;
 		this.randomSeedWrapper = { value: seed_ };
 		this.campaignIndex = undefined;
@@ -665,7 +688,12 @@ class FuzzCampaign {
 		console.info(`  COSMIC SIGNATURE - UNIFIED FUZZ ${label_} (V1 -> upgrade -> V2)`);
 		console.info("=".repeat(80));
 		console.info(`  seed: ${uint256ToPaddedHexString(this.seed)}`);
-		console.info(`  profile: actors=${this.profile.numActors} v1Rounds=${this.profile.v1Rounds} v2Rounds=${this.profile.v2Rounds} chaos=${this.profile.chaos} overflowMode=${this.profile.overflowMode === true}`);
+		console.info(
+			`  profile: actors=${this.profile.numActors} v1Rounds=${this.profile.v1Rounds} ` +
+			`v2Rounds=${this.profile.v2Rounds} chaos=${this.profile.chaos} ` +
+			`overflowMode=${this.profile.overflowMode === true} ` +
+			`upgradeAfterRoundZero=${this.profile.upgradeAfterRoundZero === true}`
+		);
 		console.info(`  build flags: ${buildFlags_}`);
 		console.info("=".repeat(80) + "\n");
 
@@ -673,8 +701,9 @@ class FuzzCampaign {
 
 		await runInvariants(this.context);
 
-		// Phase 1: V1.
-		await this._runPhase("V1", this.profile.v1Rounds);
+		// Phase 1: V1. Some campaigns upgrade immediately after round zero, matching the production path.
+		const v1RoundsBeforeUpgrade_ = this.profile.upgradeAfterRoundZero ? 1 : this.profile.v1Rounds;
+		await this._runPhase("V1", v1RoundsBeforeUpgrade_);
 
 		// Mid-campaign upgrade (we are in a fresh post-claim, round-inactive state).
 		console.info("\n  >>> Performing V1 -> V2 upgrade <<<\n");

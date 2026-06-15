@@ -6,7 +6,7 @@ const { waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
 const {
 	getLatestBlockTimestamp,
-	mineAt,
+	mineAtOrAfter,
 } = require("../src/V2UpgradeTestHelpers.js");
 
 describe("CosmicSignatureGameV1-Regression", function () {
@@ -16,7 +16,7 @@ describe("CosmicSignatureGameV1-Regression", function () {
 		const bidder_ = contracts_.signers[2];
 
 		const oldRoundActivationTime_ = await game_.roundActivationTime();
-		await mineAt(oldRoundActivationTime_);
+		await mineAtOrAfter(oldRoundActivationTime_);
 		const ethPrice_ = await game_.getNextEthBidPrice();
 		await waitForTransactionReceipt(game_.connect(bidder_).bidWithEth(-1n, "", { value: ethPrice_ }));
 		const mainPrizeTime_ = await game_.mainPrizeTime();
@@ -27,7 +27,7 @@ describe("CosmicSignatureGameV1-Regression", function () {
 		expect(await game_.roundActivationTime()).equal(oldRoundActivationTime_);
 		expect(await game_.mainPrizeTime()).equal(mainPrizeTime_);
 
-		await mineAt(mainPrizeTime_);
+		await mineAtOrAfter(mainPrizeTime_);
 		const beforeClaimBlockTime_ = await getLatestBlockTimestamp();
 		await waitForTransactionReceipt(game_.connect(bidder_).claimMainPrize());
 		expect(await game_.roundNum()).equal(1n);

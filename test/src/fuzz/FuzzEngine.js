@@ -4,7 +4,7 @@
 
 const { expect } = require("chai");
 const { generateRandomUInt256FromSeedWrapper } = require("../../../src/Helpers.js");
-const { isExpectedTransactionErrorObject } = require("../../../src/ContractTestingHelpers.js");
+const { checkTransactionErrorObject } = require("../../../src/ContractTestingHelpers.js");
 
 // #endregion
 // #region Revert decoding
@@ -302,10 +302,7 @@ class FuzzEngine {
 			this.ledger.applyReceipt(receipt_);
 			return { ok: true, receipt: receipt_, ts: plannedTs_, gasPrice: gasPrice_ };
 		} catch (errorObject_) {
-			// todo-ai-1 It appears that you can call `checkTransactionErrorObject` here instead.
-			if ( ! isExpectedTransactionErrorObject(errorObject_) ) {
-				throw errorObject_;
-			}
+			checkTransactionErrorObject(errorObject_);
 			// Hardhat mines reverted transactions (gas is consumed, nonce advances); account for it exactly.
 			const minedTs_ = await this._accountFailedTransactionGas(signer.address);
 			signer.reset();
