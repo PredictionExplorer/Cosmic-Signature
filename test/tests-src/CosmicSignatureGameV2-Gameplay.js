@@ -58,7 +58,8 @@ describe("CosmicSignatureGameV2-Gameplay", function () {
 
 		await mineAt((await getLatestBlockTimestamp()) + 60n);
 		let bidder_ = contracts_.signers[2];
-		let ethPrice_ = await game_.getNextEthBidPrice();
+		// The first ETH bid price decays with block time; coverage instrumentation can make the tx mine one second later.
+		let ethPrice_ = await game_.getNextEthBidPriceAdvanced(1n);
 		// todo-ai-1 Here and in similar cases, call `game_.getBidCstRewardAmountAdvanced(1n)` instead,
 		// todo-ai-1 then in `assertV2BidPlaced`, assert that the actual CST reward equals `expectedBidCstRewardAmount_`.
 		// todo-ai-1 Strictly speaking, it appears that that assert will have a chance to fail, especially if the system is under stress, right?
