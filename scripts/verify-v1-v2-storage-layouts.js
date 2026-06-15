@@ -30,6 +30,27 @@ const REPO_ROOT = nodePathModule.resolve(__dirname, "..");
 const SOLC_PATH = process.env.SOLC_PATH || nodePathModule.join(nodeOsModule.homedir(), ".solc-select/artifacts/solc-0.8.34/solc-0.8.34");
 const MAIN_WORKTREE = process.env.MAIN_WORKTREE || "/tmp/csig-main-worktree";
 const NODE_MODULES = nodePathModule.join(REPO_ROOT, "node_modules");
+const GAP_LABEL = "__gap_persistent";
+const V2_NEW_VARIABLE = "cstDutchAuctionDurationChangeDivisor";
+
+// The only intentional, documented storage changes between refactored V1 and V2.
+const V2_RENAMES = new Map([
+	["cstDutchAuctionDurationDivisor", "cstDutchAuctionDuration"],
+	["bidCstRewardAmount", "bidCstRewardAmountMultiplier"],
+]);
+
+// The deployed mainnet V1 used the older CST reward variable name.
+const DEPLOYED_TO_V2_RENAMES = new Map([
+	["cstDutchAuctionDurationDivisor", "cstDutchAuctionDuration"],
+	["cstRewardAmountForBidding", "bidCstRewardAmountMultiplier"],
+]);
+
+const DEPLOYED_TO_REFACTORED_V1_RENAMES = new Map([
+	["cstRewardAmountForBidding", "bidCstRewardAmount"],
+]);
+
+const problems = [];
+const notes = [];
 
 /**
 Runs solc in standard-JSON mode and returns the storage layout of one contract.
@@ -83,22 +104,6 @@ function indexLayout(storageLayout) {
 	}
 	return { byPosition, byLabel };
 }
-
-// todo-ai-1 All variables and constants should be located at the beginning of the JS file.
-// todo-ai-1 Otherwise it's difficult to spot them among functions.
-// todo-ai-1 Alternatively, sructure the code into classes or namespaces, or, at least, into regions.
-// todo-ai-1 Or break it down into multiple JavaScript files.
-const GAP_LABEL = "__gap_persistent";
-
-// The only intentional, documented storage changes between deployed V1 and V2.
-const V2_RENAMES = new Map([
-	["cstDutchAuctionDurationDivisor", "cstDutchAuctionDuration"],
-	["bidCstRewardAmount", "bidCstRewardAmountMultiplier"],
-]);
-const V2_NEW_VARIABLE = "cstDutchAuctionDurationChangeDivisor";
-
-const problems = [];
-const notes = [];
 
 function fail(message_) {
 	problems.push(message_);
@@ -159,7 +164,7 @@ function main() {
 
 	// 1. Deployed V1 (live proxy layout) vs refactored V1: must be identical except the one rename.
 	if (deployedV1) {
-		compareLayouts("deployedV1", deployedV1, "refactoredV1", refactoredV1, new Map([["cstRewardAmountForBidding", "bidCstRewardAmount"]]));
+		compareLayouts("deployedV1", deployedV1, "refactoredV1", refactoredV1, DEPLOYED_TO_REFACTORED_V1_RENAMES);
 	}
 
 	// 2. Refactored V1 vs V2: every real variable preserved; documented repurposing only.
@@ -167,13 +172,7 @@ function main() {
 
 	// 2b. If we have the deployed layout, also compare it directly against V2 (the upgrade that actually happens).
 	if (deployedV1) {
-		// todo-ai-1 You defined `V2_RENAMES` outside functions, while you did `deployedToV2Renames` inside the function.
-		// todo-ai-1 It's kinda inconsistent.
-		const deployedToV2Renames = new Map([
-			["cstDutchAuctionDurationDivisor", "cstDutchAuctionDuration"],
-			["cstRewardAmountForBidding", "bidCstRewardAmountMultiplier"],
-		]);
-		compareLayouts("deployedV1", deployedV1, "V2", v2, deployedToV2Renames);
+		compareLayouts("deployedV1", deployedV1, "V2", v2, DEPLOYED_TO_V2_RENAMES);
 	}
 
 	// 3. The new V2 variable must land on the first slot of the old persistent gap.
@@ -192,8 +191,11 @@ function main() {
 
 	// 4. The V2 gap must move down exactly one slot relative to the V1 gap (it absorbed the new variable).
 	const v2GapSlot = gapSlot(v2);
-	// todo-ai-1 Here and in some other places, aren't we supposed to report an error if a condition like this is `false`.
-	if (oldGapSlot !== undefined && v2GapSlot !== undefined) {
+	if (oldGapSlot === undefined) {
+		fail("Could not verify the V2 gap shift because the V1 persistent gap is missing.");
+	} else if (v2GapSlot === undefined) {
+		fail("Could not locate the persistent gap slot in the V2 layout.");
+	} else {
 		if (v2GapSlot !== oldGapSlot + 1n) {
 			fail(`V2 gap starts at slot ${v2GapSlot}, expected ${oldGapSlot + 1n} (old gap + 1).`);
 		} else {

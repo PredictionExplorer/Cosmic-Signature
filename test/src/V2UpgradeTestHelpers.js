@@ -2,9 +2,10 @@
 
 const { expect } = require("chai");
 const hre = require("hardhat");
-const { waitForTransactionReceipt } = require("../../src/Helpers.js");
+const { getBlockTimeStampByBlockNumber, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
 
+const MAX_UINT256 = (1n << 256n) - 1n;
 const INITIAL_CST_DUTCH_AUCTION_DURATION = 12n * 60n * 60n;
 const DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR = 250n;
 const DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER = 10800000000000000000000000000000000000000000000n;
@@ -21,9 +22,12 @@ async function mineAt(timestamp_) {
 	await hre.ethers.provider.send("evm_mine");
 }
 
-// todo-ai-1 There is already a similar function, named `getBlockTimeStampByBlockNumber`. You can import and use it.
 async function getLatestBlockTimestamp() {
-	const block_ = await hre.ethers.provider.getBlock("latest");
+	return await getBlockTimeStampByBlockNumber("latest");
+}
+
+async function blockTimestampOfReceipt(receipt_) {
+	const block_ = await receipt_.getBlock();
 	return BigInt(block_.timestamp);
 }
 
@@ -46,7 +50,8 @@ async function completeRoundZero(contracts_, bidderIndex_ = 1) {
 async function deployV1CompleteRoundZeroAndUpgradeToV2(roundActivationTime_ = 2n) {
 	const contracts_ = await loadFixtureDeployContractsForTesting(roundActivationTime_);
 	await completeRoundZero(contracts_);
-	return await upgradeToV2(contracts_);
+	await upgradeToV2(contracts_);
+	return contracts_;
 }
 
 async function upgradeToV2(contracts_, upgradeOptions_ = {}) {
@@ -70,8 +75,6 @@ async function upgradeToV2(contracts_, upgradeOptions_ = {}) {
 	contracts_.cosmicSignatureGameV2Factory = cosmicSignatureGameV2Factory_;
 	contracts_.cosmicSignatureGameV2Proxy = cosmicSignatureGameV2Proxy_;
 	contracts_.cosmicSignatureGameV2ImplementationAddress = cosmicSignatureGameV2ImplementationAddress_;
-	// todo-ai-1 Unnecessary to return this?
-	return contracts_;
 }
 
 // todo-ai-1 Do we really need this function. Can we use the existing `setRoundActivationTimeIfNeeded` instead?
@@ -108,7 +111,8 @@ function findParsedEvent(receipt_, contract_, eventName_) {
 	return undefined;
 }
 
-// todo-ai-1 Will this work correct if a method with the given selector exists, but has some params?
+// This probes a selector-only call. If a removed selector collides with a payable or no-argument
+// function in the new implementation, this would no longer be a valid unknown-selector assertion.
 async function expectUnknownSelector(contract_, selector_) {
 	await expect(
 		hre.ethers.provider.call({
@@ -119,6 +123,7 @@ async function expectUnknownSelector(contract_, selector_) {
 }
 
 module.exports = {
+	MAX_UINT256,
 	INITIAL_CST_DUTCH_AUCTION_DURATION,
 	DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR,
 	DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER,
@@ -126,6 +131,7 @@ module.exports = {
 	TIMESTAMP_9000_01_01,
 	mineAt,
 	getLatestBlockTimestamp,
+	blockTimestampOfReceipt,
 	completeRoundZero,
 	deployV1CompleteRoundZeroAndUpgradeToV2,
 	upgradeToV2,

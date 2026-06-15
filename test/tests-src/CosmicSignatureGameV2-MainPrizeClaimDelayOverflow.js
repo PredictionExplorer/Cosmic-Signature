@@ -14,22 +14,12 @@ const hre = require("hardhat");
 const { waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
 const {
+	MAX_UINT256,
 	activateCurrentRound,
+	blockTimestampOfReceipt,
 	deployV1CompleteRoundZeroAndUpgradeToV2,
 	mineAt,
 } = require("../src/V2UpgradeTestHelpers.js");
-
-// todo-ai-1 I've seen constants like this in other files and in some places hardcoded.
-// todo-ai-1 Define it in one file and import where it's needed.
-const MAX_UINT256 = (1n << 256n) - 1n;
-
-// todo-ai-1 Consider moving this function to a source file containing helper functions.
-// todo-ai-1 `getBlockTimeStampByBlockNumber` is a similar helper function. But it can't be used instead, right?
-async function blockTimeStampOf(receipt_) {
-	// todo-ai-1 Is it better to use block hash instead of block number in cases like this?
-	const block_ = await hre.ethers.provider.getBlock(receipt_.blockNumber);
-	return BigInt(block_.timestamp);
-}
 
 // Deploys V1, completes round 0, upgrades to V2, activates round 1, and places one ETH bid so the bidder is the
 // last bidder (the round's prospective main prize winner). Returns the V2 proxy and the relevant signers.
@@ -56,20 +46,17 @@ describe("CosmicSignatureGameV2-MainPrizeClaimDelayOverflow", function () {
 
 		await mineAt(await game_.mainPrizeTime());
 		const receipt_ = await waitForTransactionReceipt(game_.connect(winner_).claimMainPrize());
-		const claimTs_ = await blockTimeStampOf(receipt_);
+		const claimTs_ = await blockTimestampOfReceipt(receipt_);
 
 		// The claim succeeds: the round advanced and the last bidder was cleared.
 		expect(await game_.roundNum()).equal(2n);
 		expect(await game_.lastBidderAddress()).equal(hre.ethers.ZeroAddress);
 
 		// `block.timestamp + delayDurationBeforeRoundActivation` wrapped modulo 2^256 instead of reverting.
-		expect(await game_.roundActivationTime()).equal(BigInt.asUintN(256, claimTs_ + MAX_UINT256));
+		const expectedRoundActivationTime_ = BigInt.asUintN(256, claimTs_ + MAX_UINT256);
+		expect(await game_.roundActivationTime()).equal(expectedRoundActivationTime_);
 		// For the specific value type(uint256).max the wrap equals claimTs - 1.
-		// todo-ai-1 It's unnecessary to make another call to `game_.roundActivationTime()`.
-		// todo-ai-1 Instead assert: `BigInt.asUintN(256, claimTs_ + MAX_UINT256) == claimTs_ - 1n`.
-		// todo-ai-1 That assert is really guaranteed to succeed because it's pure JavaScript, it does not depend on a smart contract, right?
-		// todo-ai-1 Similar questionable code patterns exist in other places as well.
-		expect(await game_.roundActivationTime()).equal(claimTs_ - 1n);
+		expect(expectedRoundActivationTime_).equal(claimTs_ - 1n);
 	});
 
 	it("defuses the brick-then-steal scenario: the owner cannot block the winner's claim by overflowing the activation time", async function () {
@@ -102,7 +89,7 @@ describe("CosmicSignatureGameV2-MainPrizeClaimDelayOverflow", function () {
 
 		await mineAt(await game_.mainPrizeTime());
 		const receipt_ = await waitForTransactionReceipt(game_.connect(winner_).claimMainPrize());
-		const claimTs_ = await blockTimeStampOf(receipt_);
+		const claimTs_ = await blockTimestampOfReceipt(receipt_);
 
 		expect(await game_.roundNum()).equal(2n);
 		expect(await game_.roundActivationTime()).equal(BigInt.asUintN(256, claimTs_ + delay_));

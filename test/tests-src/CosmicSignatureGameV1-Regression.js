@@ -2,7 +2,6 @@
 
 const { describe, it } = require("mocha");
 const { expect } = require("chai");
-const hre = require("hardhat");
 const { waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
 const {
@@ -33,43 +32,5 @@ describe("CosmicSignatureGameV1-Regression", function () {
 		await waitForTransactionReceipt(game_.connect(bidder_).claimMainPrize());
 		expect(await game_.roundNum()).equal(1n);
 		expect(await game_.roundActivationTime()).equal(beforeClaimBlockTime_ + newDelay_ + 1n);
-	});
-
-	// todo-ai-1 Don't we already have a test like this in `CosmicSignatureGame-3.js`?
-	it("keeps V1 upgrade authorization blocked during an active round after a bid", async function () {
-		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
-		const game_ = contracts_.cosmicSignatureGameProxy;
-		await mineAt(await game_.roundActivationTime());
-		const ethPrice_ = await game_.getNextEthBidPrice();
-		await waitForTransactionReceipt(game_.connect(contracts_.signers[2]).bidWithEth(-1n, "", { value: ethPrice_ }));
-
-		const cosmicSignatureGameV2Factory_ =
-			await hre.ethers.getContractFactory("CosmicSignatureGameV2", contracts_.ownerSigner);
-		await expect(
-			hre.upgrades.upgradeProxy(
-				game_,
-				cosmicSignatureGameV2Factory_,
-				{ kind: "uups", call: "initializeV2" }
-			)
-		).revertedWithCustomError(game_, "RoundIsActive");
-	});
-
-	// todo-ai-1 An existing test in `MainPrize.js` tests this case. So maybe this test is not needed.
-	it("keeps V1 main prize claimable by last bidder and by anyone after timeout", async function () {
-		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
-		const game_ = contracts_.cosmicSignatureGameProxy;
-		await mineAt(await game_.roundActivationTime());
-		let ethPrice_ = await game_.getNextEthBidPrice();
-		await waitForTransactionReceipt(game_.connect(contracts_.signers[2]).bidWithEth(-1n, "", { value: ethPrice_ }));
-		await mineAt(await game_.mainPrizeTime());
-		await waitForTransactionReceipt(game_.connect(contracts_.signers[2]).claimMainPrize());
-		expect(await game_.roundNum()).equal(1n);
-
-		await mineAt(await game_.roundActivationTime());
-		ethPrice_ = await game_.getNextEthBidPrice();
-		await waitForTransactionReceipt(game_.connect(contracts_.signers[3]).bidWithEth(-1n, "", { value: ethPrice_ }));
-		await mineAt((await game_.mainPrizeTime()) + (await game_.timeoutDurationToClaimMainPrize()) + 1n);
-		await waitForTransactionReceipt(game_.connect(contracts_.signers[4]).claimMainPrize());
-		expect(await game_.roundNum()).equal(2n);
 	});
 });

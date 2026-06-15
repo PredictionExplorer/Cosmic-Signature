@@ -3,6 +3,7 @@
 // #region Imports
 
 const { expect } = require("chai");
+const { ENABLE_SMTCHECKER } = require("../../../../src/Helpers.js");
 const { ZERO_ADDRESS } = require("../GameModel.js");
 const {
 	pickBiddableRandomWalkNft,
@@ -207,7 +208,20 @@ async function claimWithOverflowingDelay(ctx_) {
 	if (engine.chancePercent(50)) {
 		ts_ = model.mainPrizeTime + engine.randomBigIntRange(0n, 7n * 86_400n);
 	}
-	const outcome_ = await executeClaim(ctx_, claimer_, engine.clampTs(ts_));
+	const claimTs_ = engine.clampTs(ts_);
+	let outcome_;
+	if (ENABLE_SMTCHECKER > 0) {
+		const claimResult_ = await engine.execTx({
+			signer: claimer_.signer,
+			buildTx: (overrides_) => ctx_.game.connect(claimer_.signer).claimMainPrize(overrides_),
+			ts: claimTs_,
+		});
+		expect(claimResult_.ok, "SMTChecker build keeps overflow checked, so this claim must revert").to.equal(false);
+		expect(claimResult_.revert.name, "overflowing V2 claim wrong SMTChecker-mode revert").to.equal("Panic(0x11)");
+		outcome_ = `revert:${claimResult_.revert.name}`;
+	} else {
+		outcome_ = await executeClaim(ctx_, claimer_, claimTs_);
+	}
 
 	// Restore a sane delay (the setter has no round-state guard) so later rounds activate normally.
 	const restoreResult_ = await engine.execTx({
@@ -331,11 +345,8 @@ const claimActions = [
 	{
 		// Comment-202606235: the last bidder claims after the owner overflowed the next-round activation math.
 		// V2-only (V1 uses checked arithmetic, where this claim would revert).
-		// todo-ai-1 FuzzTest has failed due to `claimMainPrize` reverting due to overflow.
-		// todo-ai-1 It logged this: Reproduce this campaign with: FUZZ_SEED=0x9783919d10b0ac2807c122d503faff982a01a6eb702e6b5b9999a139761d0b1e (omit FUZZ_MAX_SECONDS)
-		// todo-ai-1 It likely failed because I have refactored the V2 contract to disable the `unchecked` mode when SMTChecker is enabled.
-		// todo-ai-1 (SMTChecker is supposed to flag the possible overflow issue.)
-		// todo-ai-1 Refactor the test to be prepared for this case.
+		// SMTChecker preprocessing deliberately disables the unchecked block, so that build expects
+		// and records Panic(0x11) instead of treating it as an unexpected fuzz failure.
 		name: "claimMainPrizeWithOverflowingDelay",
 		weight: 1,
 		isApplicable: (ctx_) =>

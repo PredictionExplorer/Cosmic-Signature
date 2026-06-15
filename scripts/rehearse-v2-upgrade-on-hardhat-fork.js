@@ -1,6 +1,7 @@
 "use strict";
 
 const hre = require("hardhat");
+const { waitForTransactionReceipt } = require("../src/Helpers.js");
 
 const GAME_PROXY_ADDRESS = "0x6a714Ae7B5b6eA520F6BCA23d2E609C4Fd5863F2";
 const TIMESTAMP_9000_01_01 = 221845392000n;
@@ -19,12 +20,6 @@ const SLOT_CHARITY_ADDRESS = 305n;
 async function readSlot(address_, slot_) {
 	const raw_ = await hre.ethers.provider.getStorage(address_, slot_);
 	return BigInt(raw_);
-}
-
-// todo-ai-1 This function exists in another JavaScript file. Why can't you simply import it from there? Do not duplicate existing code.
-async function waitForTransactionReceipt(transactionResponsePromise_) {
-	const transactionResponse_ = await transactionResponsePromise_;
-	return await transactionResponse_.wait();
 }
 
 async function impersonateAccount(address_) {
@@ -55,10 +50,8 @@ async function main() {
 	const ownerAddress_ = await gameV1_.owner();
 	console.info("owner", ownerAddress_);
 	console.info("round before", (await gameV1_.roundNum()).toString());
-	const implementationSlot_ = "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc";
-	// todo-ai-1 Call `hre.upgrades.erc1967.getImplementationAddress` instead. It will make this call internally.
-	const implementationBefore_ = await hre.ethers.provider.getStorage(GAME_PROXY_ADDRESS, implementationSlot_);
-	console.info("implementation before", "0x" + implementationBefore_.slice(26));
+	const implementationBefore_ = await hre.upgrades.erc1967.getImplementationAddress(GAME_PROXY_ADDRESS);
+	console.info("implementation before", implementationBefore_);
 
 	const tokenAddressBefore_ = await gameV1_.token();
 	const nftAddressBefore_ = await gameV1_.nft();
@@ -143,8 +136,8 @@ async function main() {
 	if (slotCharityAfter_ != slotCharityBefore_) throw new Error("charityAddress slot changed during the upgrade.");
 
 	const gameV2_ = cosmicSignatureGameV2Factory_.attach(GAME_PROXY_ADDRESS);
-	const implementationAfter_ = await hre.ethers.provider.getStorage(GAME_PROXY_ADDRESS, implementationSlot_);
-	if (("0x" + implementationAfter_.slice(26)).toLowerCase() != gameV2ImplementationAddress_.toLowerCase()) {
+	const implementationAfter_ = await hre.upgrades.erc1967.getImplementationAddress(GAME_PROXY_ADDRESS);
+	if (implementationAfter_.toLowerCase() != gameV2ImplementationAddress_.toLowerCase()) {
 		throw new Error("Implementation slot does not point to the deployed V2 implementation.");
 	}
 	if ((await gameV2_.owner()).toLowerCase() != ownerAddress_.toLowerCase()) throw new Error("Owner changed.");

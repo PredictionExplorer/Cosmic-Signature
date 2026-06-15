@@ -408,7 +408,7 @@ function firstUsedRwNftOwnedBy(ctx_, actor_) {
 function foreignBiddableRwNft(ctx_, actor_) {
 	// A Random Walk NFT owned by a different actor and not yet used for bidding.
 	for (const other_ of ctx_.actors) {
-		if (other_.lower === actor_.lower) {
+		if (other_.addressLower === actor_.addressLower) {
 			continue;
 		}
 		const owned_ = ctx_.ledger.nftIdsOwnedBy("rw", other_.address);
@@ -427,7 +427,7 @@ function foreignStakeActionId(ctx_, actor_) {
 		["rw", ctx_.ledger.rwStaking, ctx_.contracts.stakingWalletRandomWalkNft],
 	]) {
 		for (const [actionId_, action_] of stakingLedger_.stakeActions) {
-			if (action_.ownerAddress !== actor_.lower) {
+			if (action_.ownerAddress !== actor_.addressLower) {
 				return { actionId: BigInt(actionId_), staking: stakingContract_, kind: stakingName_ };
 			}
 		}

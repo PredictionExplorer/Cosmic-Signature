@@ -108,7 +108,7 @@ function pickStakeableCosmicSignatureNft(ctx_, actor_) {
 function ownedStakeActionIds(stakingLedger_, actor_) {
 	const out_ = [];
 	for (const [actionId_, action_] of stakingLedger_.stakeActions) {
-		if (action_.ownerAddress === actor_.lower) {
+		if (action_.ownerAddress === actor_.addressLower) {
 			out_.push(BigInt(actionId_));
 		}
 	}
@@ -268,7 +268,7 @@ async function executeEthBid(ctx_, actor_, options_) {
 
 	const bidPlaced_ = engine.singleEvent(receipt_, ctx_.game.contract, "BidPlaced", "ETH bid");
 	expect(bidPlaced_.args.roundNum).to.equal(roundNumBefore_);
-	expect(bidPlaced_.args.lastBidderAddress.toLowerCase()).to.equal(actor_.lower);
+	expect(bidPlaced_.args.lastBidderAddress.toLowerCase()).to.equal(actor_.addressLower);
 	expect(bidPlaced_.args.paidEthPrice).to.equal(expectations_.paidEthPrice);
 	expect(bidPlaced_.args.paidCstPrice).to.equal(-1n);
 	expect(bidPlaced_.args.randomWalkNftId).to.equal(randomWalkNftId_ ?? -1n);
@@ -378,7 +378,7 @@ async function executeCstBid(ctx_, actor_, options_) {
 
 	const bidPlaced_ = engine.singleEvent(receipt_, ctx_.game.contract, "BidPlaced", "CST bid");
 	expect(bidPlaced_.args.roundNum).to.equal(roundNumBefore_);
-	expect(bidPlaced_.args.lastBidderAddress.toLowerCase()).to.equal(actor_.lower);
+	expect(bidPlaced_.args.lastBidderAddress.toLowerCase()).to.equal(actor_.addressLower);
 	expect(bidPlaced_.args.paidEthPrice).to.equal(-1n);
 	expect(bidPlaced_.args.paidCstPrice).to.equal(price_);
 	expect(bidPlaced_.args.randomWalkNftId).to.equal(-1n);

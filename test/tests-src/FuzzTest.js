@@ -79,9 +79,10 @@
 "use strict";
 
 const { describe, it } = require("mocha");
+const { generateRandomUInt256 } = require("../../src/Helpers.js");
 const { SKIP_LONG_TESTS } = require("../../src/ContractTestingHelpers.js");
 const { parseFuzzSeedFromEnvironment } = require("../src/fuzz/FuzzSeed.js");
-const { generateRandomUInt256, readEnvOverrides, buildProfile, runFuzzCampaigns } = require("../src/fuzz/FuzzCampaign.js");
+const { readEnvOverrides, buildProfile, runFuzzCampaigns } = require("../src/fuzz/FuzzCampaign.js");
 
 // #endregion
 // #region

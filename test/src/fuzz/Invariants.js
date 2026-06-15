@@ -39,7 +39,7 @@ async function runInvariants(ctx_) {
 	// Mock ERC-20 ledger == chain for tracked holders, and PrizesWallet holds the unclaimed donations.
 	{
 		const trackedHolders_ = new Set([
-			...ctx_.actors.map((a_) => a_.lower),
+			...ctx_.actors.map((a_) => a_.addressLower),
 			contracts.prizesWalletAddress.toLowerCase(),
 		]);
 		for (const holder_ of trackedHolders_) {
@@ -251,6 +251,19 @@ async function runInvariants(ctx_) {
 /** Minimum aggregate attempted-action volume before the strong (breadth) floors are statistically meaningful. */
 const STRONG_COVERAGE_MIN_ATTEMPTS = 3000;
 
+function hasMinimalCoverageFloors(statsMap_) {
+	const succeeded_ = (name_) => (statsMap_.get(name_)?.succeeded ?? 0);
+	return (
+		succeeded_("bidWithEth") > 0 &&
+		(
+			succeeded_("claimMainPrize") +
+			succeeded_("claimMainPrizeAfterTimeout") +
+			succeeded_("claimMainPrizeWithOverflowingDelay") +
+			succeeded_("claimRace")
+		) > 0
+	);
+}
+
 /**
 Asserts that the run exercised a healthy breadth of behavior.
 
@@ -280,18 +293,7 @@ function assertCoverageFloors(statsMap_, profile_) {
 
 	// Minimal deterministic floor.
 	expect(succeeded_("bidWithEth"), "bidWithEth never succeeded").to.be.greaterThan(0);
-	// todo-ai-1 The "no main prize was ever claimed" error has occurred. It's more likely to occur in the `SKIP_LONG_TESTS` mode, right?
-	// todo-ai-1 If it's time to end the test, but this or similar conditions are not met yet, instead of declaring that the test has failed,
-	// todo-ai-1 keep making more iterations until all the conditions are met.
-	// todo-ai-1 At the same time, it could make sense to put a hard limit on the max number of iterations
-	// todo-ai-1 to ensure that the loop cannot become infinite.
-	expect(
-		succeeded_("claimMainPrize") +
-		succeeded_("claimMainPrizeAfterTimeout") +
-		succeeded_("claimMainPrizeWithOverflowingDelay") +
-		succeeded_("claimRace"),
-		"no main prize was ever claimed"
-	).to.be.greaterThan(0);
+	expect(hasMinimalCoverageFloors(statsMap_), "no main prize was ever claimed").to.equal(true);
 
 	if ( ! profile_.enforceStrongCoverage || totalAttempted_ < STRONG_COVERAGE_MIN_ATTEMPTS ) {
 		return;
@@ -367,6 +369,7 @@ function mergeStatsInto(aggregate_, statsMap_) {
 module.exports = {
 	runInvariants,
 	assertCoverageFloors,
+	hasMinimalCoverageFloors,
 	printCoverageReport,
 	mergeStatsInto,
 };

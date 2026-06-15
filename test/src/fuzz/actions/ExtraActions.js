@@ -94,7 +94,7 @@ const extraTokenActions = [
 					contracts.cosmicSignatureToken.connect(submitter_.signer).delegateBySig(delegatee_.address, nonce_, expiry_, sig_.v, sig_.r, sig_.s, overrides_),
 			});
 			engine.expectOk(result_, "cstDelegateBySig");
-			expect((await contracts.cosmicSignatureToken.delegates(actor_.address)).toLowerCase(), "delegateBySig delegatee").to.equal(delegatee_.lower);
+			expect((await contracts.cosmicSignatureToken.delegates(actor_.address)).toLowerCase(), "delegateBySig delegatee").to.equal(delegatee_.addressLower);
 			await ledger.verifyDirtyEth();
 			return "ok";
 		},
@@ -146,7 +146,7 @@ const extraTokenActions = [
 						actor_.address, other_.address, nftId_, overrides_),
 			});
 			engine.expectOk(result_, "safeTransferCosmicSignatureNft");
-			expect(ledger.csNftOwners.get(nftId_.toString())).to.equal(other_.lower);
+			expect(ledger.csNftOwners.get(nftId_.toString())).to.equal(other_.addressLower);
 			await ledger.verifyDirtyEth();
 			return "ok";
 		},
@@ -175,7 +175,7 @@ const extraPrizesWalletActions = [
 			});
 			engine.expectOk(result_, "claimManyDonatedNfts");
 			for (const record_ of records_) {
-				expect(ledger.mockNftOwners.get(record_.nftId.toString()), "claimed donated NFT goes to claimer").to.equal(actor_.lower);
+				expect(ledger.mockNftOwners.get(record_.nftId.toString()), "claimed donated NFT goes to claimer").to.equal(actor_.addressLower);
 			}
 			await ledger.verifyDirtyEth();
 			return "ok";

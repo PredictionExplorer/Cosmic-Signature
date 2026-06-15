@@ -29,7 +29,7 @@ const randomWalkActions = [
 			const mintEvent_ = engine.singleEvent(receipt_, contracts.randomWalkNft, "MintEvent", "mintRandomWalkNft");
 			expect(mintEvent_.args.price).to.equal(mintPrice_);
 			ledger.randomWalkNft.price = mintPrice_;
-			ledger.randomWalkNft.lastMinter = actor_.lower;
+			ledger.randomWalkNft.lastMinter = actor_.addressLower;
 			ledger.randomWalkNft.lastMintTime = result_.ts;
 			ledger.randomWalkNft.nextTokenId += 1n;
 			ledger.addEth(actor_.address, -mintPrice_);
@@ -41,10 +41,10 @@ const randomWalkActions = [
 	{
 		name: "randomWalkWithdraw",
 		weight: 1,
-		isApplicable: (ctx_, actor_) => ctx_.ledger.randomWalkNft.lastMinter === actor_.lower,
+		isApplicable: (ctx_, actor_) => ctx_.ledger.randomWalkNft.lastMinter === actor_.addressLower,
 		run: async (ctx_, actor_) => {
 			const { engine, ledger, contracts } = ctx_;
-			if (ledger.randomWalkNft.lastMinter !== actor_.lower) {
+			if (ledger.randomWalkNft.lastMinter !== actor_.addressLower) {
 				return "skip";
 			}
 			const withdrawalTime_ = ledger.randomWalkNft.lastMintTime + c.RANDOMWALK_NFT_WITHDRAWAL_WAIT_SECONDS;
@@ -103,7 +103,7 @@ const tokenActions = [
 		isApplicable: (ctx_, actor_) => ctx_.ledger.cstBalanceOf(actor_.address) > 10n ** 19n,
 		run: async (ctx_, actor_) => {
 			const { engine, ledger, contracts } = ctx_;
-			const others_ = ctx_.actors.filter((a_) => a_.lower !== actor_.lower).slice(0, 3);
+			const others_ = ctx_.actors.filter((a_) => a_.addressLower !== actor_.addressLower).slice(0, 3);
 			if (others_.length === 0) {
 				return "skip";
 			}
@@ -203,7 +203,7 @@ const tokenActions = [
 					contracts.cosmicSignatureNft.connect(actor_.signer).transferFrom(actor_.address, other_.address, nftId_, overrides_),
 			});
 			engine.expectOk(result_, "transferCosmicSignatureNft");
-			expect(ledger.csNftOwners.get(nftId_.toString())).to.equal(other_.lower);
+			expect(ledger.csNftOwners.get(nftId_.toString())).to.equal(other_.addressLower);
 			await ledger.verifyDirtyEth();
 			return "ok";
 		},
@@ -225,7 +225,7 @@ const tokenActions = [
 				buildTx: (overrides_) => contracts.randomWalkNft.connect(actor_.signer).transferFrom(actor_.address, other_.address, nftId_, overrides_),
 			});
 			engine.expectOk(result_, "transferRandomWalkNft");
-			expect(ledger.rwNftOwners.get(nftId_.toString())).to.equal(other_.lower);
+			expect(ledger.rwNftOwners.get(nftId_.toString())).to.equal(other_.addressLower);
 			await ledger.verifyDirtyEth();
 			return "ok";
 		},
@@ -457,7 +457,7 @@ const prizesWalletActions = [
 			});
 			engine.expectOk(result_, "claimDonatedNft");
 			// The donated NFT (mock ERC-721) goes to the claimer.
-			expect(ledger.mockNftOwners.get(record_.nftId.toString())).to.equal(actor_.lower);
+			expect(ledger.mockNftOwners.get(record_.nftId.toString())).to.equal(actor_.addressLower);
 			await ledger.verifyDirtyEth();
 			return "ok";
 		},

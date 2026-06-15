@@ -7,9 +7,12 @@ const { waitForTransactionReceipt } = require("../../src/Helpers.js");
 const {
 	activateCurrentRound,
 	deployV1CompleteRoundZeroAndUpgradeToV2,
+	findParsedEvent,
 	getLatestBlockTimestamp,
 	mineAt,
 } = require("../src/V2UpgradeTestHelpers.js");
+
+const DURATION_DRIFT_ITERATIONS = 50;
 
 async function placeEthBid(game_, bidder_) {
 	const price_ = await game_.getNextEthBidPrice();
@@ -37,14 +40,8 @@ describe("CosmicSignatureGameV2-Economics", function () {
 		const receipt_ = await waitForTransactionReceipt(
 			game_.connect(bidder_).bidWithCst(hre.ethers.MaxUint256, "free cst bid", 0n)
 		);
-		// todo-ai-1 Isn't it known at which index within `receipt_.logs` the sought event is located?
-		// todo-ai-1 So it's possible to just parse and assert that single event and eliminate this convoluted logic.
-		// todo-ai-1 Besides, even if this convoluted logic is needed, it could be possible to replace it with a call to the `findParsedEvent` function.
-		const parsed_ = receipt_.logs
-			.map((log_) => {
-				try { return game_.interface.parseLog(log_); } catch { return null; }
-			})
-			.find((event_) => event_?.name === "BidPlaced");
+		const parsed_ = findParsedEvent(receipt_, game_, "BidPlaced");
+		expect(parsed_).not.equal(undefined);
 		expect(parsed_.args.paidCstPrice).equal(0n);
 		expect(parsed_.args.bidCstRewardAmount).equal(reward_);
 		expect(await contracts_.cosmicSignatureToken.balanceOf(bidder_.address)).equal(balanceBefore_ + reward_);
@@ -79,25 +76,19 @@ describe("CosmicSignatureGameV2-Economics", function () {
 		const game_ = contracts_.cosmicSignatureGameV2Proxy;
 		await activateCurrentRound(game_, contracts_.ownerSigner);
 
-		// todo-ai-1 Increase the number of iterations of each loop to 50.
-		// todo-ai-1 Assert that the formulas changing CST Dutch auction duration are lossless.
-		// todo-ai-1 That means that both loops will change CST Dutch auction duration to the same values,
-		// todo-ai-1 only in the opposite order. Then at the end CST Dutch auction duration will become the same value
-		// todo-ai-1 as what it initially was.
-
+		const initialDuration_ = await game_.cstDutchAuctionDuration();
+		const durationStack_ = [initialDuration_];
 		let prevDuration_ = await game_.cstDutchAuctionDuration();
-		for (let counter_ = 0; counter_ < 5; ++ counter_) {
+		for (let counter_ = 0; counter_ < DURATION_DRIFT_ITERATIONS; ++ counter_) {
 			await mineAt((await getLatestBlockTimestamp()) + 60n);
-			await placeEthBid(game_, contracts_.signers[2 + counter_]);
+			await placeEthBid(game_, contracts_.signers[2 + counter_ % (contracts_.signers.length - 2)]);
 			const newDuration_ = await game_.cstDutchAuctionDuration();
-			// todo-ai-1 This is really supposed to be less-than, unless `prevDuration_` is too small, which is not the case at this point.
-			expect(newDuration_).lte(prevDuration_);
+			expect(newDuration_).lessThan(prevDuration_);
+			durationStack_.push(newDuration_);
 			prevDuration_ = newDuration_;
 		}
 
-		// todo-ai-1 You call `mineAt` twice in a row. Make sense to not make one of the calls?
-		await mineAt((await getLatestBlockTimestamp()) + prevDuration_ + 1n);
-		for (let counter_ = 0; counter_ < 5; ++ counter_) {
+		for (let counter_ = 0; counter_ < DURATION_DRIFT_ITERATIONS; ++ counter_) {
 			await mineAt((await getLatestBlockTimestamp()) + prevDuration_ + 1n);
 			const price_ = await game_.getNextCstBidPrice();
 			const balance_ = await contracts_.cosmicSignatureToken.balanceOf(contracts_.signers[2].address);
@@ -106,11 +97,11 @@ describe("CosmicSignatureGameV2-Economics", function () {
 				game_.connect(contracts_.signers[2]).bidWithCst(hre.ethers.MaxUint256, "duration up", 0n)
 			);
 			const newDuration_ = await game_.cstDutchAuctionDuration();
-			// todo-ai-1 This is really supposed to be greater-than, except in a marginal case, which is not the case at this point.
-			expect(newDuration_).gte(prevDuration_);
+			expect(newDuration_).greaterThan(prevDuration_);
+			durationStack_.pop();
+			expect(newDuration_).equal(durationStack_[durationStack_.length - 1]);
 			prevDuration_ = newDuration_;
-			// todo-ai-1 You are going to call `mineAt` again after this. Do not make `mineAt` calls one after another.
-			await mineAt((await getLatestBlockTimestamp()) + 60n);
 		}
+		expect(await game_.cstDutchAuctionDuration()).equal(initialDuration_);
 	});
 });

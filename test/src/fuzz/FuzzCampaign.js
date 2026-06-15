@@ -4,13 +4,22 @@
 
 const { expect } = require("chai");
 const hre = require("hardhat");
-const { generateRandomUInt256, generateRandomUInt256FromSeedWrapper, uint256ToPaddedHexString } = require("../../../src/Helpers.js");
-const { loadFixtureDeployContractsForTesting, storeContractDeployedByteCodeAtAddress } = require("../../../src/ContractTestingHelpers.js");
+const {
+	ENABLE_ASSERTS,
+	ENABLE_HARDHAT_PREPROCESSOR,
+	ENABLE_SMTCHECKER,
+	HARDHAT_MODE_CODE,
+	generateRandomUInt256FromSeedWrapper,
+	parseBooleanEnvironmentVariable,
+	parseIntegerEnvironmentVariable,
+	uint256ToPaddedHexString,
+} = require("../../../src/Helpers.js");
+const { loadFixtureDeployContractsForTesting } = require("../../../src/ContractTestingHelpers.js");
 const { GameModel, ZERO_ADDRESS } = require("./GameModel.js");
 const { ShadowState } = require("./ShadowState.js");
 const { GameAbiAdapter } = require("./GameAbiAdapter.js");
 const { FuzzEngine } = require("./FuzzEngine.js");
-const { runInvariants, assertCoverageFloors, printCoverageReport, mergeStatsInto } = require("./Invariants.js");
+const { runInvariants, assertCoverageFloors, hasMinimalCoverageFloors, printCoverageReport, mergeStatsInto } = require("./Invariants.js");
 const { performUpgradeToV2, upgradeAuthProbe } = require("./UpgradePhase.js");
 const { biddingActions, claimActions, donationActions, stakingActions, forceCompleteRound, runClaimRace } = require("./actions/CoreActions.js");
 const { randomWalkActions, tokenActions, prizesWalletActions, walletActions } = require("./actions/SecondaryActions.js");
@@ -93,21 +102,19 @@ function buildProfile(skipLongTests_, envOverrides_) {
 function readEnvOverrides() {
 	const overrides_ = {};
 	const num_ = (name_, key_) => {
-		// todo-ai-1 Would it be better to call `parseIntegerEnvironmentVariable` here?
-		const raw_ = process.env[name_];
-		if (raw_ !== undefined && raw_.length > 0) {
-			overrides_[key_] = parseInt(raw_, 10);
+		const value_ = parseIntegerEnvironmentVariable(name_, undefined);
+		if (value_ !== undefined) {
+			overrides_[key_] = value_;
 		}
 	};
 	num_("FUZZ_V1_ROUNDS", "v1Rounds");
 	num_("FUZZ_V2_ROUNDS", "v2Rounds");
 	num_("FUZZ_ACTORS", "numActors");
 	num_("FUZZ_MAX_SECONDS", "maxSeconds");
-	// todo-ai-1 Would it be more robust to call `parseBooleanEnvironmentVariable` to parse these?
-	// todo-ai-1 You can pass `defaultValue_ = undefined` to it and then check if it returned `undefined`.
-	if (process.env.FUZZ_CHAOS === "true") { overrides_.chaos = true; }
-	if (process.env.FUZZ_CHAOS === "false") { overrides_.chaos = false; }
-	if (process.env.FUZZ_OVERFLOW === "true") { overrides_.overflowMode = true; }
+	const chaos_ = parseBooleanEnvironmentVariable("FUZZ_CHAOS", undefined);
+	if (chaos_ !== undefined) { overrides_.chaos = chaos_; }
+	const overflowMode_ = parseBooleanEnvironmentVariable("FUZZ_OVERFLOW", undefined);
+	if (overflowMode_ !== undefined) { overrides_.overflowMode = overflowMode_; }
 	return overrides_;
 }
 
@@ -119,17 +126,13 @@ class FuzzCampaign {
 		this.profile = profile_;
 		this.seed = seed_;
 		this.randomSeedWrapper = { value: seed_ };
+		this.campaignIndex = undefined;
 	}
 
 	// #region Setup
 
 	async setup() {
 		const profile_ = this.profile;
-
-		// Deploy Arbitrum precompile fakes (so `RandomNumberHelpers` works on Hardhat).
-		// todo-ai-1 Doesn't `loadFixtureDeployContractsForTesting` store the fake Arb contracts at the given addresses? It's unnecessary to do this here.
-		await storeContractDeployedByteCodeAtAddress("FakeArbSys", ARB_SYS_ADDRESS);
-		await storeContractDeployedByteCodeAtAddress("FakeArbGasInfo", ARB_GAS_INFO_ADDRESS);
 
 		// Deploy V1 protocol via the standard fixture.
 		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
@@ -203,18 +206,14 @@ class FuzzCampaign {
 				index: index_,
 				signer: signer_,
 				address: signer_.address,
-				// todo-ai-1 Are you sure you really need lower-case addresses? That adds more clutter.
-				// todo-ai-1 If the same helper function is always used to convert an address to string it's safe to compare addresses case sensitively.
-				// todo-ai-1 Another issue is that namings are lousy in your code.
-				// todo-ai-1 A code reviewer would never guess that this `lower` variable actually holds an addres converted to lower case.
-				lower: signer_.address.toLowerCase(),
+				addressLower: signer_.address.toLowerCase(),
 				label: `actor${index_}`,
 				csStakingApproved: false,
 				rwStakingApproved: false,
 				delegated: false,
 			});
 		}
-		this.actorByLower = new Map(this.actors.map((a_) => [a_.lower, a_]));
+		this.actorByAddressLower = new Map(this.actors.map((a_) => [a_.addressLower, a_]));
 
 		await this._registerLedgerTracking();
 		this._buildContext();
@@ -378,14 +377,14 @@ class FuzzCampaign {
 			invariantRunCount: 0,
 
 			actorByAddress(address_) {
-				return self_.actorByLower.get(address_.toLowerCase()) ?? null;
+				return self_.actorByAddressLower.get(address_.toLowerCase()) ?? null;
 			},
 			pickActor() {
 				return self_.engine.pick(self_.actors);
 			},
 			pickActorNot(address_) {
-				const lower_ = address_.toLowerCase();
-				const candidates_ = self_.actors.filter((a_) => a_.lower !== lower_);
+				const addressLower_ = address_.toLowerCase();
+				const candidates_ = self_.actors.filter((a_) => a_.addressLower !== addressLower_);
 				return (candidates_.length === 0) ? null : self_.engine.pick(candidates_);
 			},
 			isRoundInactiveNow() {
@@ -613,9 +612,9 @@ class FuzzCampaign {
 		const cstBefore_ = new Map();
 		const expectedRewardByActor_ = new Map();
 		for (const plan_ of plans_) {
-			if ( ! cstBefore_.has(plan_.actor.lower) ) {
-				cstBefore_.set(plan_.actor.lower, this.ledger.cstBalanceOf(plan_.actor.address));
-				expectedRewardByActor_.set(plan_.actor.lower, 0n);
+			if ( ! cstBefore_.has(plan_.actor.addressLower) ) {
+				cstBefore_.set(plan_.actor.addressLower, this.ledger.cstBalanceOf(plan_.actor.address));
+				expectedRewardByActor_.set(plan_.actor.addressLower, 0n);
 			}
 		}
 		const results_ = await this.engine.execBurst(ts_, items_);
@@ -626,7 +625,7 @@ class FuzzCampaign {
 			const expectations_ = this.model.applyEthBid(plan_.actor.address, ts_, plan_.value, plan_.gasPrice, null);
 			this.ledger.addEth(plan_.actor.address, -expectations_.netEthPaid);
 			this.ledger.addEth(this.game.address, expectations_.netEthPaid);
-			expectedRewardByActor_.set(plan_.actor.lower, expectedRewardByActor_.get(plan_.actor.lower) + expectations_.bidCstRewardAmount);
+			expectedRewardByActor_.set(plan_.actor.addressLower, expectedRewardByActor_.get(plan_.actor.addressLower) + expectations_.bidCstRewardAmount);
 		}
 		for (const [actorLower_, before_] of cstBefore_) {
 			expect(this.ledger.cstBalanceOf(actorLower_) - before_, "burst bid CST reward sum").to.equal(expectedRewardByActor_.get(actorLower_));
@@ -654,11 +653,10 @@ class FuzzCampaign {
 		// Build flags change the compiled bytecode (and thus gas / revert kinds), so a `FUZZ_SEED` only
 		// reproduces a failure when they match. Surface them up front for reproducibility.
 		const buildFlags_ =
-			// todo-ai-1 These environment vaiables are parsed and exported by `Helpers.js`. Would it make sense to import them from there?
-			`HARDHAT_MODE_CODE=${process.env.HARDHAT_MODE_CODE ?? "(unset)"} ` +
-			`ENABLE_HARDHAT_PREPROCESSOR=${process.env.ENABLE_HARDHAT_PREPROCESSOR ?? "(unset)"} ` +
-			`ENABLE_ASSERTS=${process.env.ENABLE_ASSERTS ?? "(unset)"} ` +
-			`ENABLE_SMTCHECKER=${process.env.ENABLE_SMTCHECKER ?? "(unset)"}`;
+			`HARDHAT_MODE_CODE=${HARDHAT_MODE_CODE} ` +
+			`ENABLE_HARDHAT_PREPROCESSOR=${ENABLE_HARDHAT_PREPROCESSOR} ` +
+			`ENABLE_ASSERTS=${ENABLE_ASSERTS} ` +
+			`ENABLE_SMTCHECKER=${ENABLE_SMTCHECKER}`;
 
 		console.info("\n" + "=".repeat(80));
 		console.info(`  COSMIC SIGNATURE - UNIFIED FUZZ ${label_} (V1 -> upgrade -> V2)`);
@@ -705,9 +703,9 @@ class FuzzCampaign {
 }
 
 // #endregion
-
-// #endregion
 // #region Campaign driver
+
+const MINIMAL_COVERAGE_EXTRA_CAMPAIGN_CAP = 3;
 
 /**
 Runs the fuzz campaign(s). With `profile.maxSeconds` set, runs repeated independent bounded
@@ -723,33 +721,48 @@ async function runFuzzCampaigns(profile_, masterSeed_) {
 	const timeBudgetMode_ = typeof profile_.maxSeconds === "number" && profile_.maxSeconds > 0;
 	/** @type {Map<string, {attempted: number, succeeded: number, skipped: number}>} Coverage aggregated across all campaigns. */
 	const aggregateStats_ = new Map();
+	const seedWrapper_ = { value: masterSeed_ };
+	let campaignIndex_ = 0;
 
 	if ( ! timeBudgetMode_ ) {
 		const campaign_ = new FuzzCampaign(profile_, masterSeed_);
-		// todo-ai-1 The logic related to random number seed looks convoluted.
-		// todo-ai-1 Make sure it's impossible that the same random number seed is used in multiple places.
-		// todo-ai-1 Would it be better to create a random number seed wrapper at a higher level in the call stack or object hierarchy
-		// todo-ai-1 and pass its object reference to all inetersted components who need to generate random numbers?
 		await runOneCampaignWithTrace(campaign_, masterSeed_);
 		mergeStatsInto(aggregateStats_, campaign_.engine.stats);
+		while ( ! hasMinimalCoverageFloors(aggregateStats_) && campaignIndex_ < MINIMAL_COVERAGE_EXTRA_CAMPAIGN_CAP ) {
+			++ campaignIndex_;
+			const campaignSeed_ = generateRandomUInt256FromSeedWrapper(seedWrapper_);
+			console.info(`  >>> Minimal coverage not reached; running extra campaign ${campaignIndex_}/${MINIMAL_COVERAGE_EXTRA_CAMPAIGN_CAP} <<<\n`);
+			const extraCampaign_ = new FuzzCampaign(profile_, campaignSeed_);
+			extraCampaign_.campaignIndex = campaignIndex_;
+			await runOneCampaignWithTrace(extraCampaign_, campaignSeed_);
+			mergeStatsInto(aggregateStats_, extraCampaign_.engine.stats);
+		}
 		printCoverageReport(aggregateStats_);
 		assertCoverageFloors(aggregateStats_, profile_);
 		return;
 	}
 
 	const deadlineMs_ = Date.now() + profile_.maxSeconds * 1000;
-	const seedWrapper_ = { value: masterSeed_ };
-	let campaignIndex_ = 0;
 	while (Date.now() < deadlineMs_) {
 		++ campaignIndex_;
 		const campaignSeed_ = generateRandomUInt256FromSeedWrapper(seedWrapper_);
 		const campaign_ = new FuzzCampaign(profile_, campaignSeed_);
-		// todo-ai-1 The linter complains that this property does not exist.
 		campaign_.campaignIndex = campaignIndex_;
 		await runOneCampaignWithTrace(campaign_, campaignSeed_);
 		mergeStatsInto(aggregateStats_, campaign_.engine.stats);
 		const remainingSec_ = ((deadlineMs_ - Date.now()) / 1000).toFixed(0);
 		console.info(`  >>> Time budget remaining: ~${remainingSec_}s (completed ${campaignIndex_} campaign(s)) <<<\n`);
+	}
+	let extraCampaignCount_ = 0;
+	while ( ! hasMinimalCoverageFloors(aggregateStats_) && extraCampaignCount_ < MINIMAL_COVERAGE_EXTRA_CAMPAIGN_CAP ) {
+		++ extraCampaignCount_;
+		++ campaignIndex_;
+		const campaignSeed_ = generateRandomUInt256FromSeedWrapper(seedWrapper_);
+		console.info(`  >>> Minimal coverage not reached after time budget; running extra campaign ${extraCampaignCount_}/${MINIMAL_COVERAGE_EXTRA_CAMPAIGN_CAP} <<<\n`);
+		const campaign_ = new FuzzCampaign(profile_, campaignSeed_);
+		campaign_.campaignIndex = campaignIndex_;
+		await runOneCampaignWithTrace(campaign_, campaignSeed_);
+		mergeStatsInto(aggregateStats_, campaign_.engine.stats);
 	}
 	// Strong breadth coverage is asserted on the aggregate across all campaigns (where low-weight
 	// actions reliably fire), not per bounded campaign.
@@ -775,18 +788,13 @@ async function runOneCampaignWithTrace(campaign_, reproSeed_) {
 }
 
 // #endregion
-// todo-ai-1 This region has no matching `#endregion`.
-// todo-ai-1 Some other regions seem to be similarly broken in this JS file.
-// todo-ai-1 Also, if you organize the code at a particular nesting level into regions,
-// todo-ai-1 all peer code and comments at that level should be inside regions.
-// todo-ai-1 For example, "use strict" and `FuzzCampaign` constructor also should be inside their own regions.
-// #region
+// #region Exports
 
 module.exports = {
 	FuzzCampaign,
 	runFuzzCampaigns,
 	buildProfile,
 	readEnvOverrides,
-	// todo-ai-1 Exporting an imported symbol. How convoluted!
-	generateRandomUInt256,
 };
+
+// #endregion

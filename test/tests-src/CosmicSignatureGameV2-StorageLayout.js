@@ -90,7 +90,7 @@ describe("CosmicSignatureGameV2-StorageLayout", function () {
 		await hre.upgrades.validateUpgrade(
 			contracts_.cosmicSignatureGameProxy,
 			cosmicSignatureGameV2Factory_,
-			// todo-ai-1 Should the `call` param be added to this object? If not, explain in a comment.
+			// `validateUpgrade` accepts validation options only; the initializer call is exercised by `upgradeToV2` below.
 			{ kind: "uups" }
 		);
 
