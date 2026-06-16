@@ -14,7 +14,7 @@ const TIMESTAMP_9000_01_01 = 221845392000n;
 
 async function setNextBlockTimeToAtLeast(timestamp_) {
 	const latest_ = await getLatestBlockTimestamp();
-	const adjustedTimestamp_ = timestamp_ > latest_ ? timestamp_ : (latest_ + 1n);
+	const adjustedTimestamp_ = (timestamp_ > latest_) ? timestamp_ : (latest_ + 1n);
 	await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(adjustedTimestamp_)]);
 	return adjustedTimestamp_;
 }

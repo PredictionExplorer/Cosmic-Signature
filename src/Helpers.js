@@ -64,6 +64,9 @@ switch (HARDHAT_MODE_CODE) {
 	}
 }
 
+// #endregion
+// #region
+
 // Disable Hardhat Preprocessor by not setting or setting to "false" this environment variable
 // when running any Hardhat task against a mainnet.
 // It's to eliminate the risk of Hardhat Preprocessor bugs breaking things.

@@ -141,14 +141,12 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 			// We got another issue here that Comment-202606235 is talking about.
 			// Therefore this must be within an `unchecked` block,
 			// so I have wrapped all code in the `_prepareNextRound` method in an `unchecked` block.
-			// There is no separate PrizesWalletV2. A freshly deployed PrizesWallet can be wired into
-			// CosmicSignatureGameV2 with `setPrizesWallet` while the current round is inactive. In production-like
-			// builds this is safe even if the first round registered in the new wallet is greater than zero: the
-			// wallet records that round's beneficiary and timeout from scratch. Assert-enabled builds deliberately
-			// panic in that situation because the historical-continuity assertions below expect previous rounds to
-			// have been registered in the same wallet; `PrizesWallet-2` documents both modes. A malicious or
-			// compromised owner can still set `timeoutDurationToWithdrawPrizes` to a bad value before a round ends
-			// and shorten winner exclusivity. That is an accepted benevolent-owner risk rather than a min/max clamp.
+			// The contract owner can still set `timeoutDurationToWithdrawPrizes` to a small value or zero before a round ends
+			// to shorten winner exclusivity timeout. That is an accepted benevolent-owner risk rather than a min/max clamp.
+			// Note that if `PrizesWallet` (with or without this fix) is deployed and registered with the Game
+			// after at least 1 bidding round completes, `_registerRoundEnd` will later be called for the first time
+			// with`roundNum_ > 0`, which will cause some asserts to fail, which is OK.
+			// `PrizesWallet` has already been deployed, but it's unnecessary to add a new `PrizesWalletV2` with this fix.
 			// [/Comment-202606264]
 			uint256 roundTimeoutTimeToWithdrawPrizes_ = block.timestamp + timeoutDurationToWithdrawPrizes;
 
