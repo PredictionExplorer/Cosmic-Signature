@@ -762,12 +762,28 @@ maximizing coverage of the deploy/upgrade lifecycle. Otherwise runs a single cam
 @returns {Promise<void>}
 */
 async function runFuzzCampaigns(profile_, masterSeed_) {
+	// todo-ai-1 There is a lot of repeated code in this function.
+	// todo-ai-1 Can you merge some parts of it?
+	// todo-ai-1 Can you replace all the loops with a single loop?
+
 	const timeBudgetMode_ = typeof profile_.maxSeconds === "number" && profile_.maxSeconds > 0;
 	/** @type {Map<string, {attempted: number, succeeded: number, skipped: number}>} Coverage aggregated across all campaigns. */
 	const aggregateStats_ = new Map();
 	const seedWrapper_ = { value: masterSeed_ };
 	let campaignIndex_ = 0;
 
+	// todo-ai-1 Here and possibly in other parts of the codebase, you pass the same random number seed to multiple functions
+	// todo-ai-1 that internally create random number seed wrapper objects.
+	// todo-ai-1 It appears to be possible that the same random number seed will be used to generate multiple random numbers.
+	// todo-ai-1 If so it's incorrect.
+	// todo-ai-1 Use `masterSeed_` only to create `seedWrapper_`. Remove `campaignSeed_` variables.
+	// todo-ai-1 Refactor `FuzzCampaign` constructor and `runOneCampaignWithTrace` to accept a random number seed wrapper object reference
+	// todo-ai-1 instead of a random number seed. In those functions generate random numbers from the wrapper and increment the value in the wrapper.
+	// todo-ai-1 `FuzzCampaign` constructor should not create a new random number seed wrapper object.
+	// todo-ai-1 Pass `seedWrapper_` to `FuzzCampaign` constructor and `runOneCampaignWithTrace`.
+	// todo-ai-1 `runOneCampaignWithTrace` logs the initial seed that was before calling `FuzzCampaign` constructor.
+	// todo-ai-1 The seed is saved into the `FuzzCampaign.seed` property. That's the property `runOneCampaignWithTrace` should log.
+	// todo-ai-1 Remove the `reproSeed_` param from `runOneCampaignWithTrace`.
 	if ( ! timeBudgetMode_ ) {
 		const campaign_ = new FuzzCampaign(profile_, masterSeed_);
 		await runOneCampaignWithTrace(campaign_, masterSeed_);

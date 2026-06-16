@@ -3,6 +3,7 @@
 const { expect } = require("chai");
 const hre = require("hardhat");
 const { getBlockTimeStampByBlockNumber, waitForTransactionReceipt } = require("../../src/Helpers.js");
+const { setRoundActivationTimeIfNeeded } = require("../../src/ContractDeploymentHelpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
 
 const MAX_UINT256 = (1n << 256n) - 1n;
@@ -79,11 +80,14 @@ async function upgradeToV2(contracts_, upgradeOptions_ = {}) {
 }
 
 async function activateCurrentRound(game_, ownerSigner_) {
-	const now_ = await getLatestBlockTimestamp();
-	const activationTime_ = now_ + 2n;
-	await waitForTransactionReceipt(game_.connect(ownerSigner_).setRoundActivationTime(activationTime_));
-	// These tests immediately query latest-block views after activation, so mine the activation block here.
-	await mineAtOrAfter(activationTime_);
+	// const now_ = await getLatestBlockTimestamp();
+	// const activationTime_ = now_ + 2n;
+	// await waitForTransactionReceipt(game_.connect(ownerSigner_).setRoundActivationTime(activationTime_));
+	// 
+	// // These tests immediately query latest-block views after activation, so mine the activation block here.
+	// await mineAtOrAfter(activationTime_);
+
+	await setRoundActivationTimeIfNeeded(game_.connect(ownerSigner_), 2n);
 }
 
 async function assertDefaultV2Initialization(game_) {

@@ -195,7 +195,7 @@ The hardening was applied to V2 only. Refactored V1's `MainPrize._prepareNextRou
 
 There is no separate `PrizesWalletV2`. The existing `PrizesWallet` source contains the same unchecked timeout hardening pattern for `block.timestamp + timeoutDurationToWithdrawPrizes` as the V2 game uses for next-round activation. A freshly deployed `PrizesWallet` can be assigned to `CosmicSignatureGameV2` with `setPrizesWallet` while the current round is inactive, including after one or more rounds have already completed.
 
-The first round registered in that fresh wallet may be greater than zero. In production-like builds this is safe: the wallet starts recording beneficiaries and withdrawal timeouts from that round onward. In assert-enabled builds, the historical-continuity assertions in `PrizesWallet._registerRoundEnd` deliberately panic because previous rounds were registered in the old wallet; `PrizesWallet-2` covers both build modes.
+The first round registered in that fresh wallet may be greater than zero. In production-like builds this is safe: the wallet starts recording beneficiaries and withdrawal timeouts from that round onward. In assert-enabled builds, the historical-continuity assertions in `PrizesWallet._registerRoundEnd` deliberately panic because previous rounds were registered in the old wallet; `PrizesWallet-2.js` covers both build modes.
 
 This does not remove the benevolent-owner assumption. If the owner sets `timeoutDurationToWithdrawPrizes` to a very small value before a round ends, winner exclusivity for prizes in that round can be shortened. The current design accepts that risk rather than enforcing protocol-level min/max bounds on the timeout.
 

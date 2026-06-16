@@ -56,6 +56,8 @@ describe("CosmicSignatureGameV2-MainPrizeClaimDelayOverflow", function () {
 
 		await mineAtOrAfter(await game_.mainPrizeTime());
 		const receipt_ = await claimMainPrizeWithOverflowingDelay(game_, winner_);
+		// todo-ai-1 Here and possibly other places, how about changing this condition to check
+		// todo-ai-1 that `claimMainPrizeWithOverflowingDelay` returned `undefined`?
 		if (ENABLE_SMTCHECKER > 0) {
 			return;
 		}

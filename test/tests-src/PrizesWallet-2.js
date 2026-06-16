@@ -34,7 +34,7 @@ describe("PrizesWallet-2", function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		{
-			const newValue_ = 999_999n + generateRandomUInt256() % 3n;
+			const newValue_ = generateRandomUInt256();
 			await expect(contracts_.prizesWallet.connect(contracts_.signers[1]).setTimeoutDurationToWithdrawPrizes(newValue_))
 				.revertedWithCustomError(contracts_.prizesWallet, "OwnableUnauthorizedAccount");
 			await expect(contracts_.prizesWallet.connect(contracts_.ownerSigner).setTimeoutDurationToWithdrawPrizes(newValue_))
@@ -48,7 +48,7 @@ describe("PrizesWallet-2", function () {
 	// #region `it`
 
 	// Comment-202606264 relates.
-	it("Documents swapping to a fresh PrizesWallet after the V2 upgrade", async function () {
+	it("Swapping to a fresh PrizesWallet after the V2 upgrade", async function () {
 		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2(2n);
 		const game_ = contracts_.cosmicSignatureGameV2Proxy;
 		expect(await game_.roundNum()).equal(1n);
