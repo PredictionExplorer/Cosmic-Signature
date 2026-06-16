@@ -72,6 +72,9 @@ describe("CosmicSignatureToken", function () {
 				.revertedWithCustomError(newCosmicSignatureTokenForSigner0_, "ERC20InsufficientBalance");
 			[mintAndBurnSpecs_[1], mintAndBurnSpecs_[3]] = [mintAndBurnSpecs_[3], mintAndBurnSpecs_[1]];
 			await waitForTransactionReceipt(newCosmicSignatureTokenForSigner0_.mintAndBurnMany(mintAndBurnSpecs_));
+			await expect(newCosmicSignatureTokenForSigner0_.mintAndBurnMany([[contracts_.signers[1].address, 0n]]))
+				.emit(newCosmicSignatureToken_, "Transfer")
+				.withArgs(contracts_.signers[1].address, hre.ethers.ZeroAddress, 0n);
 			const tos_ = [
 				contracts_.signers[6].address,
 				contracts_.signers[5].address,

@@ -177,8 +177,11 @@ abstract contract BiddingV2 is
 			// Comment-202605288 applies.
 			{
 				// Comment-202606216 applies.
-				// // #enable_asserts assert(tx.gasprice > 0);
-				uint256 ethBidRefundAmountToSwallowMaxLimit_ = ethBidRefundAmountInGasToSwallowMaxLimit * tx.gasprice;
+				uint256 txGasPrice_ = tx.gasprice;
+				uint256 ethBidRefundAmountToSwallowMaxLimit_ =
+					(txGasPrice_ > 0) ?
+					ethBidRefundAmountInGasToSwallowMaxLimit * txGasPrice_ :
+					type(uint256).max;
 				
 				if (uint256(overpaidEthPrice_) <= ethBidRefundAmountToSwallowMaxLimit_) {
 					overpaidEthPrice_ = int256(0);
@@ -484,8 +487,6 @@ abstract contract BiddingV2 is
 
 		if (lastCstBidderAddress == address(0)) {
 			// Comment-202501045 applies.
-
-			// Comment-202504212 applies.
 			nextRoundFirstCstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
 		}
 		lastCstBidderAddress = _msgSender();

@@ -56,9 +56,8 @@ describe("CosmicSignatureGameV2-MainPrizeClaimDelayOverflow", function () {
 
 		await mineAtOrAfter(await game_.mainPrizeTime());
 		const receipt_ = await claimMainPrizeWithOverflowingDelay(game_, winner_);
-		// todo-ai-1 Here and possibly other places, how about changing this condition to check
-		// todo-ai-1 that `claimMainPrizeWithOverflowingDelay` returned `undefined`?
-		if (ENABLE_SMTCHECKER > 0) {
+		if (receipt_ === undefined) {
+			expect(ENABLE_SMTCHECKER).greaterThan(0);
 			return;
 		}
 		const claimTs_ = await blockTimestampOfReceipt(receipt_);
@@ -90,8 +89,9 @@ describe("CosmicSignatureGameV2-MainPrizeClaimDelayOverflow", function () {
 			.revertedWithCustomError(game_, "MainPrizeClaimDenied");
 
 		// The crucial production property: the overflow no longer bricks the winner's own claim.
-		await claimMainPrizeWithOverflowingDelay(game_, winner_);
-		if (ENABLE_SMTCHECKER > 0) {
+		const receipt_ = await claimMainPrizeWithOverflowingDelay(game_, winner_);
+		if (receipt_ === undefined) {
+			expect(ENABLE_SMTCHECKER).greaterThan(0);
 			return;
 		}
 		expect(await game_.roundNum()).equal(2n);
@@ -107,7 +107,8 @@ describe("CosmicSignatureGameV2-MainPrizeClaimDelayOverflow", function () {
 
 		await mineAtOrAfter(await game_.mainPrizeTime());
 		const receipt_ = await claimMainPrizeWithOverflowingDelay(game_, winner_);
-		if (ENABLE_SMTCHECKER > 0) {
+		if (receipt_ === undefined) {
+			expect(ENABLE_SMTCHECKER).greaterThan(0);
 			return;
 		}
 		const claimTs_ = await blockTimestampOfReceipt(receipt_);

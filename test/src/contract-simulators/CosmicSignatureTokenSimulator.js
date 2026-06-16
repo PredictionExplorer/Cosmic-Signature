@@ -28,7 +28,7 @@ const { assertEvent } = require("../../../src/ContractTestingHelpers.js");
 
 		balanceOf: function(account_) {
 			// assertAddressIsValid(account_);
-			expect(account_).properAddress;
+			expect(hre.ethers.isAddress(account_)).equal(true);
 			return this.accountBalanceAmounts[account_] ?? 0n;
 		},
 
@@ -112,9 +112,7 @@ const { assertEvent } = require("../../../src/ContractTestingHelpers.js");
 				transactionReceipt_.logs[eventIndexWrapper_.value],
 				contracts_.cosmicSignatureToken,
 				"Transfer",
-
-				// Issue. This logic accommodates Comment-202606074.
-				(value_ > 0n) ? [account_, hre.ethers.ZeroAddress, value_,] : [hre.ethers.ZeroAddress, account_, value_,]
+				[account_, hre.ethers.ZeroAddress, value_,]
 			);
 			++ eventIndexWrapper_.value;
 		},

@@ -131,7 +131,7 @@ contract CosmicSignatureToken is
 			for ( uint256 index_ = 0; index_ < specs_.length; ++ index_ ) {
 				MintOrBurnSpec calldata specReference_ = specs_[index_];
 				int256 value_ = specReference_.value;
-				if (value_ >= int256(0)) {
+				if (value_ > int256(0)) {
 					_mint(specReference_.account, uint256(value_));
 				} else {
 					_burn(specReference_.account, uint256( - value_ ));

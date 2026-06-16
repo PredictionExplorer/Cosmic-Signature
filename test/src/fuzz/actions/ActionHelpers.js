@@ -6,6 +6,11 @@ const { expect } = require("chai");
 const { ZERO_ADDRESS } = require("../GameModel.js");
 
 // #endregion
+// #region
+
+const MAX_UINT256 = (1n << 256n) - 1n;
+
+// #endregion
 // #region Bid planning helpers
 
 /**
@@ -62,7 +67,10 @@ Picks the ETH value to send for a planned ETH bid.
 */
 function chooseEthBidValue(ctx_, paidEthPrice_, gasPrice_, mode_) {
 	const { engine, model } = ctx_;
-	const swallowLimit_ = model.ethBidRefundAmountInGasToSwallowMaxLimit * gasPrice_;
+	const swallowLimit_ =
+		(gasPrice_ > 0n) ?
+		model.ethBidRefundAmountInGasToSwallowMaxLimit * gasPrice_ :
+		MAX_UINT256;
 	let effectiveMode_ = mode_;
 	if (effectiveMode_ === "random") {
 		effectiveMode_ = engine.pick(["exact", "exact", "swallow", "refund"]);

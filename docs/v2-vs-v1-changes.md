@@ -116,7 +116,7 @@ bidCstRewardAmount = floor(sqrt(elapsedDuration * bidCstRewardAmountMultiplier /
 ```
 
 - With the default `bidCstRewardAmountMultiplier` (`3 * (1 ether)^2 * INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND` = 1.08e46) and the first-round time increment, the reward is approximately: 0 CST after 0 seconds, ~1.73 CST after 1 second, ~13.4 CST after 60 seconds, ~104 CST after 1 hour, ~509 CST after 1 day (slightly smaller in later rounds as `mainPrizeTimeIncrementInMicroSeconds` grows ~1% per round).
-- When the computed reward is zero (e.g., two bids in the same second), V2 skips the mint entirely. Observable consequences: no zero-value CST `Transfer` mint event, and for a CST bid the burn is performed via `token.burn(bidder, paidPrice)` instead of `token.mintAndBurnMany([burn paid, mint reward])`. (Corner case: V1's `mintAndBurnMany` spec with value `-0` would actually be treated as a mint of zero, Comment-202606074; V2's `burn` burns unconditionally.)
+- When the computed reward is zero (e.g., two bids in the same second), V2 skips the mint entirely. Observable consequences: no zero-value CST `Transfer` mint event, and for a CST bid the burn is performed via `token.burn(bidder, paidPrice)` instead of `token.mintAndBurnMany([burn paid, mint reward])`. `mintAndBurnMany` treats a zero signed delta as a zero burn, matching Comment-202606074's intended semantics.
 - Economic rationale: rewarding bursts of rapid bids with a fixed 100 CST per bid was free CST inflation; the square-root formula mitigates that.
 
 ### 2. New revert condition, checked first in every bid path

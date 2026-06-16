@@ -23,12 +23,12 @@
 // non-astronomical range.
 //
 // The model treats unexpected uint256 wraparound inside unchecked arithmetic as a harness failure.
-// Explicit exceptions are the random seed helper and documented owner-adversarial paths such as
-// Comment-202606235 and Comment-202606264. Owner parameter choices that are only possible before a bid
-// in the current round are modeled as accepted misconfiguration boundaries; a malicious owner can still
-// shorten `PrizesWallet.timeoutDurationToWithdrawPrizes`, which remains an accepted benevolent-owner risk.
-// todo-ai-1 So wrap-arounds near Comment-202606235 and Comment-202606264 and when incrementing a random number seed
-// todo-ai-1 are to be ignored by the test. There are no other wrap-arounds that should be ignored, right?
+// The only fuzz-owned wraparound exceptions are the random seed helper and the documented V2
+// owner-adversarial round-activation path at Comment-202606235. Related PrizesWallet concern
+// Comment-202606264 is covered by targeted tests/docs rather than an additional model allowlist.
+// Owner parameter choices that are only possible before a bid in the current round are modeled as
+// accepted misconfiguration boundaries; a malicious owner can still shorten
+// `PrizesWallet.timeoutDurationToWithdrawPrizes`, which remains an accepted benevolent-owner risk.
 //
 // Environment (optional):
 //   FUZZ_SEED=0x<hex>       fixed uint256 seed for reproducibility (a fresh random one is printed otherwise).

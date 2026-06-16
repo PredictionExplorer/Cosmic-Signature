@@ -128,10 +128,9 @@ function chanceFromSeed(seedWrapper_, percent_) {
 Derives per-campaign fuzz modes from the campaign seed so ordinary runs probabilistically cover
 chaos, overflow-targeting, and production-style round-zero upgrade timing without extra env toggles.
 @param {object} profile_
-@param {bigint} seed_
+@param {{ value: bigint }} seedWrapper_
 */
-function deriveCampaignProfile(profile_, seed_) {
-	const seedWrapper_ = { value: seed_ };
+function deriveCampaignProfile(profile_, seedWrapper_) {
 	return {
 		...profile_,
 		chaos: chanceFromSeed(seedWrapper_, profile_.chaosPercent ?? 0),
@@ -144,10 +143,10 @@ function deriveCampaignProfile(profile_, seed_) {
 // #region Campaign
 
 class FuzzCampaign {
-	constructor(profile_, seed_) {
-		this.profile = deriveCampaignProfile(profile_, seed_);
-		this.seed = seed_;
-		this.randomSeedWrapper = { value: seed_ };
+	constructor(profile_, seedWrapper_) {
+		this.seed = seedWrapper_.value;
+		this.randomSeedWrapper = seedWrapper_;
+		this.profile = deriveCampaignProfile(profile_, this.randomSeedWrapper);
 		this.campaignIndex = undefined;
 	}
 
@@ -758,40 +757,25 @@ maximizing coverage of the deploy/upgrade lifecycle. Otherwise runs a single cam
 @returns {Promise<void>}
 */
 async function runFuzzCampaigns(profile_, masterSeed_) {
-	// todo-ai-1 There is a lot of repeated code in this function.
-	// todo-ai-1 Can you merge some parts of it?
-	// todo-ai-1 Can you replace all the loops with a single loop?
-
 	const timeBudgetMode_ = typeof profile_.maxSeconds === "number" && profile_.maxSeconds > 0;
 	/** @type {Map<string, {attempted: number, succeeded: number, skipped: number}>} Coverage aggregated across all campaigns. */
 	const aggregateStats_ = new Map();
 	const seedWrapper_ = { value: masterSeed_ };
 	let campaignIndex_ = 0;
 
-	// todo-ai-1 Here and possibly in other parts of the codebase, you pass the same random number seed to multiple functions
-	// todo-ai-1 that internally create random number seed wrapper objects.
-	// todo-ai-1 It appears to be possible that the same random number seed will be used to generate multiple random numbers.
-	// todo-ai-1 If so it's incorrect.
-	// todo-ai-1 Use `masterSeed_` only to create `seedWrapper_`. Remove `campaignSeed_` variables.
-	// todo-ai-1 Refactor `FuzzCampaign` constructor and `runOneCampaignWithTrace` to accept a random number seed wrapper object reference
-	// todo-ai-1 instead of a random number seed. In those functions generate random numbers from the wrapper and increment the value in the wrapper.
-	// todo-ai-1 `FuzzCampaign` constructor should not create a new random number seed wrapper object.
-	// todo-ai-1 Pass `seedWrapper_` to `FuzzCampaign` constructor and `runOneCampaignWithTrace`.
-	// todo-ai-1 `runOneCampaignWithTrace` logs the initial seed that was before calling `FuzzCampaign` constructor.
-	// todo-ai-1 The seed is saved into the `FuzzCampaign.seed` property. That's the property `runOneCampaignWithTrace` should log.
-	// todo-ai-1 Remove the `reproSeed_` param from `runOneCampaignWithTrace`.
-	if ( ! timeBudgetMode_ ) {
-		const campaign_ = new FuzzCampaign(profile_, masterSeed_);
-		await runOneCampaignWithTrace(campaign_, masterSeed_);
+	const runCampaign_ = async (campaignIndexOrUndefined_) => {
+		const campaign_ = new FuzzCampaign(profile_, seedWrapper_);
+		campaign_.campaignIndex = campaignIndexOrUndefined_;
+		await runOneCampaignWithTrace(campaign_);
 		mergeStatsInto(aggregateStats_, campaign_.engine.stats);
+	};
+
+	if ( ! timeBudgetMode_ ) {
+		await runCampaign_(undefined);
 		while ( ! hasMinimalCoverageFloors(aggregateStats_) && campaignIndex_ < MINIMAL_COVERAGE_EXTRA_CAMPAIGN_CAP ) {
 			++ campaignIndex_;
-			const campaignSeed_ = generateRandomUInt256FromSeedWrapper(seedWrapper_);
 			console.info(`  >>> Minimal coverage not reached; running extra campaign ${campaignIndex_}/${MINIMAL_COVERAGE_EXTRA_CAMPAIGN_CAP} <<<\n`);
-			const extraCampaign_ = new FuzzCampaign(profile_, campaignSeed_);
-			extraCampaign_.campaignIndex = campaignIndex_;
-			await runOneCampaignWithTrace(extraCampaign_, campaignSeed_);
-			mergeStatsInto(aggregateStats_, extraCampaign_.engine.stats);
+			await runCampaign_(campaignIndex_);
 		}
 		printCoverageReport(aggregateStats_);
 		assertCoverageFloors(aggregateStats_, profile_);
@@ -801,11 +785,7 @@ async function runFuzzCampaigns(profile_, masterSeed_) {
 	const deadlineMs_ = Date.now() + profile_.maxSeconds * 1000;
 	while (Date.now() < deadlineMs_) {
 		++ campaignIndex_;
-		const campaignSeed_ = generateRandomUInt256FromSeedWrapper(seedWrapper_);
-		const campaign_ = new FuzzCampaign(profile_, campaignSeed_);
-		campaign_.campaignIndex = campaignIndex_;
-		await runOneCampaignWithTrace(campaign_, campaignSeed_);
-		mergeStatsInto(aggregateStats_, campaign_.engine.stats);
+		await runCampaign_(campaignIndex_);
 		const remainingSec_ = ((deadlineMs_ - Date.now()) / 1000).toFixed(0);
 		console.info(`  >>> Time budget remaining: ~${remainingSec_}s (completed ${campaignIndex_} campaign(s)) <<<\n`);
 	}
@@ -813,12 +793,8 @@ async function runFuzzCampaigns(profile_, masterSeed_) {
 	while ( ! hasMinimalCoverageFloors(aggregateStats_) && extraCampaignCount_ < MINIMAL_COVERAGE_EXTRA_CAMPAIGN_CAP ) {
 		++ extraCampaignCount_;
 		++ campaignIndex_;
-		const campaignSeed_ = generateRandomUInt256FromSeedWrapper(seedWrapper_);
 		console.info(`  >>> Minimal coverage not reached after time budget; running extra campaign ${extraCampaignCount_}/${MINIMAL_COVERAGE_EXTRA_CAMPAIGN_CAP} <<<\n`);
-		const campaign_ = new FuzzCampaign(profile_, campaignSeed_);
-		campaign_.campaignIndex = campaignIndex_;
-		await runOneCampaignWithTrace(campaign_, campaignSeed_);
-		mergeStatsInto(aggregateStats_, campaign_.engine.stats);
+		await runCampaign_(campaignIndex_);
 	}
 	// Strong breadth coverage is asserted on the aggregate across all campaigns (where low-weight
 	// actions reliably fire), not per bounded campaign.
@@ -829,15 +805,14 @@ async function runFuzzCampaigns(profile_, masterSeed_) {
 
 /**
 @param {FuzzCampaign} campaign_
-@param {bigint} reproSeed_ The seed to print for single-campaign reproduction on failure.
 */
-async function runOneCampaignWithTrace(campaign_, reproSeed_) {
+async function runOneCampaignWithTrace(campaign_) {
 	try {
 		await campaign_.run();
 	} catch (errorObject_) {
 		campaign_.engine?.dumpTrace(80);
 		console.error(
-			`\n  Reproduce this campaign with: FUZZ_SEED=0x${reproSeed_.toString(16).padStart(64, "0")} (omit FUZZ_MAX_SECONDS)\n`
+			`\n  Reproduce this campaign with: FUZZ_SEED=0x${campaign_.seed.toString(16).padStart(64, "0")} (omit FUZZ_MAX_SECONDS)\n`
 		);
 		throw errorObject_;
 	}

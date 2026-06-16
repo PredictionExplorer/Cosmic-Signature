@@ -55,6 +55,9 @@ abstract contract SystemManagement is
 
 	function setCstDutchAuctionBeginningBidPriceMinLimit(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
 		cstDutchAuctionBeginningBidPriceMinLimit = newValue_;
+		if (nextRoundFirstCstDutchAuctionBeginningBidPrice < newValue_) {
+			nextRoundFirstCstDutchAuctionBeginningBidPrice = newValue_;
+		}
 		emit CstDutchAuctionBeginningBidPriceMinLimitChanged(newValue_);
 	}
 

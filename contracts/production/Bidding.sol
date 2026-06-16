@@ -265,8 +265,11 @@ abstract contract Bidding is
 			// [/Comment-202605288]
 			{
 				// Comment-202606216 applies.
-				// // #enable_asserts assert(tx.gasprice > 0);
-				uint256 ethBidRefundAmountToSwallowMaxLimit_ = ethBidRefundAmountInGasToSwallowMaxLimit * tx.gasprice;
+				uint256 txGasPrice_ = tx.gasprice;
+				uint256 ethBidRefundAmountToSwallowMaxLimit_ =
+					(txGasPrice_ > 0) ?
+					ethBidRefundAmountInGasToSwallowMaxLimit * txGasPrice_ :
+					type(uint256).max;
 
 				if (uint256(overpaidEthPrice_) <= ethBidRefundAmountToSwallowMaxLimit_) {
 					overpaidEthPrice_ = int256(0);
@@ -565,8 +568,7 @@ abstract contract Bidding is
 			mintAndBurnSpecs_[0].account = _msgSender();
 
 			// [Comment-202606074]
-			// Issue. If `paidPrice_` happens to be zero, this would actually mint, rather than burn zero CSTs.
-			// This issue can be fixed by replacing negation with bitwise-notting, but it will not be done.
+			// If `paidPrice_` is zero, `mintAndBurnMany` treats the zero delta as a zero burn.
 			// [/Comment-202606074]
 			mintAndBurnSpecs_[0].value = ( - int256(paidPrice_) );
 
@@ -587,11 +589,6 @@ abstract contract Bidding is
 
 		if (lastCstBidderAddress == address(0)) {
 			// Comment-202501045 applies.
-
-			// [Comment-202504212]
-			// Issue. If the owner increases `cstDutchAuctionBeginningBidPriceMinLimit` for the next round,
-			// it's possible that this value will not respect that setting.
-			// [/Comment-202504212]
 			nextRoundFirstCstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
 		}
 		lastCstBidderAddress = _msgSender();

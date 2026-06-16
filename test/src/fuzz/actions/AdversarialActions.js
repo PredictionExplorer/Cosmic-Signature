@@ -6,6 +6,11 @@ const { expect } = require("chai");
 const { ZERO_ADDRESS } = require("../GameModel.js");
 
 // #endregion
+// #region
+
+const MAX_UINT256 = (1n << 256n) - 1n;
+
+// #endregion
 // #region Broken-staker helpers
 
 /** Returns the `BrokenCosmicSignatureNftStaker`'s active CS stake action id (bigint), or null. */
@@ -136,7 +141,10 @@ const adversarialActions = [
 			}
 			const gasPrice_ = engine.randomGasPrice();
 			const price_ = model.getNextEthBidPrice(ts_);
-			const swallowLimit_ = model.ethBidRefundAmountInGasToSwallowMaxLimit * gasPrice_;
+			const swallowLimit_ =
+				(gasPrice_ > 0n) ?
+				model.ethBidRefundAmountInGasToSwallowMaxLimit * gasPrice_ :
+				MAX_UINT256;
 			const value_ = price_ + swallowLimit_ + 10n ** 18n; // Guarantees a refund (and thus a reentry attempt).
 			if ( ! engine.canAfford(actor_.address, value_) ) {
 				return "skip";

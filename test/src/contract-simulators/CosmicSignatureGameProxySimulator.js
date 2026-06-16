@@ -528,8 +528,10 @@ async function createCosmicSignatureGameProxySimulator(
 				// Comment-202505117 relates.
 				// Comment-202606216 relates.
 				const transactionGasPrice_ = transactionReceipt_.gasPrice;
-				expect(transactionGasPrice_).greaterThan(0n);
-				const ethBidRefundAmountToSwallowMaxLimit_ = this.ethBidRefundAmountInGasToSwallowMaxLimit * transactionGasPrice_;
+				const ethBidRefundAmountToSwallowMaxLimit_ =
+					(transactionGasPrice_ > 0n) ?
+					this.ethBidRefundAmountInGasToSwallowMaxLimit * transactionGasPrice_ :
+					(1n << 256n) - 1n;
 
 				if (overpaidEthPrice_ <= ethBidRefundAmountToSwallowMaxLimit_) {
 					// console.info(/*"%s",*/ "202505145", hre.ethers.formatEther(overpaidEthPrice_), hre.ethers.formatEther(ethBidRefundAmountToSwallowMaxLimit_));
@@ -539,7 +541,7 @@ async function createCosmicSignatureGameProxySimulator(
 					// console.info(/*"%s",*/ "202505087", hre.ethers.formatEther(overpaidEthPrice_), hre.ethers.formatEther(ethBidRefundAmountToSwallowMaxLimit_));
 				}
 			} else {
-				expect(false).true;
+				expect(false).equal(true);
 			}
 			if (randomWalkNftId_ < 0n) {
 				// console.info("%s", "202505088");
@@ -1022,7 +1024,7 @@ async function createCosmicSignatureGameProxySimulator(
 			{
 				this.ethBalanceAmount -= mainEthPrizeAmount_;
 				// expect(this.ethBalanceAmount).greaterThanOrEqual(0n);
-				const transactionFeeInEth_ = transactionReceipt_.fee;
+				const transactionFeeInEth_ = BigInt(transactionReceipt_.fee);
 				expect(transactionFeeInEth_).greaterThan(0n);
 				const bidderEthBalanceAmountAfterTransaction_ = await hre.ethers.provider.getBalance(callerAddress_);
 				expect(bidderEthBalanceAmountAfterTransaction_).equal(bidderEthBalanceAmountBeforeTransaction_ - transactionFeeInEth_ + mainEthPrizeAmount_);
