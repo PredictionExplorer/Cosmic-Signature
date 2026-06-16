@@ -179,14 +179,14 @@ contract CosmicSignatureToken is
 	// #endregion
 	// #region // `safeApprove`
 
-	// /// @dev todo-9 Idea. But maybe we don't need this.
+	// /// @dev Archived idea. We currently do not need this helper.
 	// /// `oldAllowance_` is the allowance the caller has seen before they sent a transaction request to call this method.
 	// /// Event if the allowance decreases before the transaction gets executed this method will do the right thing.
 	// /// This method offers no benefit if either `oldAllowance_` or `newAllowance_` is zero.
 	// /// It's incorrect to call this method if `newAllowance_` is the maximum possible value.
-	// /// todo-9 ??? Maybe rename `oldAllowance_` and `newAllowance_` to `oldValue_` and `newValue_`.
+	// /// If revived, prefer parameter names `oldValue_` and `newValue_`.
 	// function safeApprove(address spender_, uint256 oldAllowance_, uint256 newAllowance_) external /*override*/ {
-	// 	// todo-9 Is it really necessary to validate this? Better `require` this?
+	// 	// If revived, decide whether this validation should be a `require`.
 	// 	// #enable_asserts assert(newAllowance_ < type(uint256).max);
 	//
 	// 	uint256 allowance_ = allowance(_msgSender(), spender_);

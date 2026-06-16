@@ -6,7 +6,7 @@ import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/O
 /// @dev
 /// A contract with reserved storage gaps.
 /// Comment-202412142 relates and/or applies.
-/// Issue. A problem is that this is not helpful because OpenZeppelin upgradeable contracts,
+/// Design note. This is not very helpful because OpenZeppelin upgradeable contracts,
 /// at least those I have reviewed, including `ReentrancyGuardTransientUpgradeable`, `OwnableUpgradeable`,
 /// `UUPSUpgradeable`, use storage slots at hardcoded positions.
 /// Therefore we do not need contracts like this.
@@ -16,7 +16,7 @@ abstract contract OwnableUpgradeableWithReservedStorageGaps is OwnableUpgradeabl
 	// solhint-disable-next-line var-name-mixedcase
 	uint256[256] private __gap_persistent;
 
-	// todo-1 Transient storage is not yet supported for reference types.
+	// Solidity currently does not support transient storage for reference types.
 	/// @dev Comment-202412142 applies.
 	// uint256[256] private transient __gap_transient;
 	// solhint-disable-next-line var-name-mixedcase

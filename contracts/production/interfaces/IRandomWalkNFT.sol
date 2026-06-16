@@ -1,5 +1,5 @@
-// todo-1 +++ Make sure license is the same in all files, except in "*RandomWalkNFT.sol".
-// todo-1 +++ SPDX-License-Identifier(?!: CC0-1\.0$)
+// RandomWalk NFT sources intentionally keep their original MIT license; most Cosmic Signature production sources use CC0-1.0.
+// SPDX audit helper: SPDX-License-Identifier(?!: CC0-1\.0$)
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 

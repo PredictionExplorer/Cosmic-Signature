@@ -10,7 +10,7 @@
 // 	// if (privKey === undefined || privKey.length <= 0) {
 // 	// 	console.error(
 // 	// 		"%s",
-// 	// 		// todo-9 "scripts/deploy.js" no longer exists.
+// 	// 		// Legacy note: "scripts/deploy.js" no longer exists.
 // 	// 		"Error. Please provide private key on the command line as ENVIRONMENT variable 'PRIVKEY', example : PRIVKEY=\"0x21982349...\" npx hardhat run scripts/deploy.js",
 // 	// 	);
 // 	// 	process.exit(1);

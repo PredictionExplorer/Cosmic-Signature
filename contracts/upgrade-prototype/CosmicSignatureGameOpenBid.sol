@@ -27,7 +27,7 @@ import { ICosmicSignatureGameOpenBid } from "./interfaces/ICosmicSignatureGameOp
 // #endregion
 // #region
 
-/// todo-1 +++ Compare both open-bid source files to their non-open-bid counterparts.
+/// @dev Prototype note: compare these open-bid sources to their production counterparts before reviving this upgrade path.
 /// @custom:oz-upgrades-unsafe-allow missing-initializer
 contract CosmicSignatureGameOpenBid is
 	ReentrancyGuardTransientUpgradeable,

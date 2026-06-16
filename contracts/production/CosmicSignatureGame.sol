@@ -73,7 +73,6 @@ contract CosmicSignatureGame is
 		__UUPSUpgradeable_init();
 
 		// ethDonationWithInfoRecords =
-		// // lastBidType = todo-9 Should we assert that this equals `ETH`?
 		// lastBidderAddress =
 		// lastCstBidderAddress =
 		// bidderAddresses =

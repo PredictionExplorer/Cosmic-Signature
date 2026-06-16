@@ -1,6 +1,6 @@
 // // Comment-202509229 applies.
 
-// // todo-9 This is now broken because I have moved NFT donations to `PrizesWallet`.
+// // Legacy note: this is now broken because NFT donations moved to `PrizesWallet`.
 
 // // Helps building transaction to get back donated Random Walk NFTs used in bid+donate calls
 // // Two run modes:
@@ -21,12 +21,12 @@
 // 		let record_orig = await cosmicSignatureGame.donatedNfts(BigInt(i), {blockTag: "pending",});
 // 		let record = Object.assign({}, record_orig);
 // 		Object.defineProperty(record, "index", {value: i, writable: true,});
-// 		// todo-9 The `claimed` variable no longer exists.
+// 		// Legacy note: the `claimed` variable no longer exists.
 // 		if (record.claimed) {
 // 			continue;
 // 		}
 // 		let prizeArr = prizeData[record.roundNum];
-// 		// todo-9 Why would it be `undefined`?
+// 		// Legacy note: why would it be `undefined`?
 // 		if (prizeArr === undefined) {
 // 			prizeArr = new Array();
 // 		}
@@ -96,7 +96,7 @@
 // 	}
 // 	let roundToClaim = parseInt(roundNumStr, 10);
 // 	let paramList = build_parameter_list(nfts[roundToClaim]);
-// 	// todo-9 `cosmicSignatureGame.winners` no longer exists. A similar variable exists in `PrizesWallet`.
+// 	// Legacy note: `cosmicSignatureGame.winners` no longer exists. A similar variable exists in `PrizesWallet`.
 // 	let mainPrizeBeneficiaryAddress = await cosmicSignatureGame.winners(roundToClaim, {blockTag: "pending",});
 // 	if (mainPrizeBeneficiaryAddress.toString() != testingAcct.address.toString()) {
 // 		console.error("%s", `Error. You aren't the beneficiary of main prize ${roundToClaim}, beneficiary is ${mainPrizeBeneficiaryAddress}`);
@@ -106,7 +106,7 @@
 // 	if (privKey.length > 0) {
 // 		if (paramList.length > 0) {
 // 			console.info("%s", "Sending claimMany transaction");
-// 			// todo-9 It appears that we need to call `waitForTransactionReceipt` here.
+// 			// Legacy note: call `waitForTransactionReceipt` if this script is revived.
 // 			await cosmicSignatureGame.connect(testingAcct).claimManyDonatedNfts(paramList);
 // 		}
 // 	}

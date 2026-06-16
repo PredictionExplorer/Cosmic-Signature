@@ -48,7 +48,7 @@ const solidityCompilationCacheSubFolderName = helpersModule.ENABLE_HARDHAT_PREPR
 // Installing the z3 package fixed that:
 //    sudo apt install z3
 // Now even solc installed with solc-select works. So it's actually unnecessary to install solc globally.
-// todo-3 Test if solc-js works too.
+// solc-js can be revisited if SMTChecker support in the JavaScript compiler becomes reliable for this project.
 //
 // Note that Hardhat will not necessarily validate solc of what version it's executing,
 // so it's your responsibility to correctly configure all the relevant parameters that reference this comment.
@@ -57,10 +57,10 @@ const solidityCompilationCacheSubFolderName = helpersModule.ENABLE_HARDHAT_PREPR
 // [/Comment-202409011]
 
 // Comment-202409011 applies.
-// todo-1 Periodically check out known Solidity compiler bugs at https://www.soliditylang.org/blog/category/security-alerts/ .
-// [ToDo-202409098-2]
+// Before changing `solidityVersion`, review known Solidity compiler bugs at https://www.soliditylang.org/blog/category/security-alerts/ .
+// [Comment-202409098]
 // When changing this, remember to revisit the configuration near Comment-202411136, Comment-202408026, Comment-202408025.
-// [/ToDo-202409098-2]
+// [/Comment-202409098]
 const solidityVersion = "0.8.34";
 
 // Comment-202409011 applies.
@@ -195,7 +195,7 @@ function populateNetworkIsMainNetOnce(hre) {
 
 subtask(
 	TASK_COMPILE_SOLIDITY_GET_SOLC_BUILD,
-	async (args, _hre, _runSuper) => {
+	(args) => {
 		if (args.solcVersion == solidityVersion) {
 			return {
 				compilerPath: solidityCompilerPath,
@@ -386,7 +386,7 @@ const hardhatUserConfig = {
 	// #endregion
 	// #region
 
-	// todo-2 When making changes to the networks, remember to refactor the logic near Comment-202408313.
+	// When changing network definitions, also review the related logic near Comment-202408313.
 	networks: {
 		hardhat: {
 			chainId: 31337,

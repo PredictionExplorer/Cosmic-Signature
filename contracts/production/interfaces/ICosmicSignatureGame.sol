@@ -22,7 +22,7 @@ import { IMainPrize } from "./IMainPrize.sol";
 /// [/Comment-202606014]
 /// @dev
 /// [Comment-202606017]
-/// Issue. It could make sense for this upgradeable contract to support a self-destruction of the implementation contract
+/// Design note. It could make sense for this upgradeable contract to support a self-destruction of the implementation contract
 /// after a successful upgrade.
 /// Note that `SelfDestructibleCosmicSignatureGame`, which is to be used only for testing, used to support a `selfdestruct`,
 /// but, according to Comment-202509241, I have now eliminated that feature.

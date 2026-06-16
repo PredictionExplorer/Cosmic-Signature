@@ -55,7 +55,7 @@ contract CosmicSignatureDao is
 		)
 
 		// [Comment-202502249]
-		// Issue. Surprisingly, this doesn't validate that the provided address is a nonzero.
+		// Implementation note. Surprisingly, this doesn't validate that the provided address is a nonzero.
 		// So we have to do it.
 		// [/Comment-202502249]
 		GovernorVotes(tokenAddress_)

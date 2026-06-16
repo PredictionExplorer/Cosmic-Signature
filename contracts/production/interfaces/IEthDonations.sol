@@ -25,7 +25,7 @@ interface IEthDonations is ICosmicSignatureGameStorage {
 	/// @param ethDonationWithInfoRecordIndex The newly created `ethDonationWithInfoRecords` item index.
 	/// @dev
 	/// [Comment-202503111]
-	/// Issue. One might want to eliminate all the parameters except `ethDonationWithInfoRecordIndex`,
+	/// Design note. One might want to eliminate all the parameters except `ethDonationWithInfoRecordIndex`,
 	/// given that everything is anyway saved into an `ethDonationWithInfoRecords` item.
 	/// Alternatively, one might want to add the `data` parameter
 	/// and eliminate `ethDonationWithInfoRecords` and `EthDonationWithInfoRecord`.

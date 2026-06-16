@@ -196,7 +196,7 @@ library CosmicSignatureErrors {
 	// #endregion
 	// #region NFT Staking
 
-	// todo-1 +++ Keep this commented. Don't delete.
+	// Reserved for a possible future explicit no-stakers error; keep this commented.
 	// /// @notice Thrown when there are no staked NFTs.
 	// /// @param errStr Description of the error.
 	// error NoStakedNfts(string errStr);
@@ -211,7 +211,7 @@ library CosmicSignatureErrors {
 	/// @param nftId NFT ID.
 	error NftHasAlreadyBeenStaked(string errStr, uint256 nftId);
 
-	// todo-1 +++ Keep this commented. Don't delete.
+	// Reserved for a possible future explicit already-unstaked error; keep this commented.
 	// /// @notice Thrown when attempting to unstake an already unstaked NFT.
 	// /// @param errStr Description of the error.
 	// /// @param stakeActionId NFT stake action ID.
@@ -262,7 +262,7 @@ library CosmicSignatureErrors {
 
 	// /// @notice Thrown when a nonzero balance amount is required, but zero is observed.
 	// /// @param errStr Description of the error.
-	// /// todo-9 Rename this to `ZeroBalanceAmount`.
+	// /// Legacy naming note: if this is revived, prefer `ZeroBalanceAmount`.
 	// error ZeroBalance(string errStr);
 
 	// #endregion

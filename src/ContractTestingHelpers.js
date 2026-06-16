@@ -184,7 +184,7 @@ async function deployContractsForTestingAdvanced(
 Issue. The Hardhat Coverage task ignores parts of Hardhat configuration.
 This method fixes the issue.
 The `blockGasLimit` parameter is also ignored, but we are happy with its default value.
-todo-3 Is the above behavior going to change in a future version of Hardhat 2.x? Unlikely.
+Hardhat 2.x is unlikely to change this behavior, so keep this compatibility shim while the project stays on Hardhat 2.
 Comment-202505294 relates.
 Comment-202509185 relates.
 [/Comment-202508265]
@@ -232,7 +232,7 @@ async function storeContractDeployedByteCodeAtAddress(contractName, address) {
 */
 function assertAddressIsValid(address) {
 	expect(address).not.equal(hre.ethers.ZeroAddress);
-	expect(address).properAddress;
+	expect(hre.ethers.isAddress(address)).equal(true);
 }
 
 // #endregion
@@ -286,7 +286,7 @@ function isExpectedTransactionErrorObject(errorObject) {
 	// // Testing.
 	// // Issue. I observed this message: `Transaction reverted and Hardhat couldn't infer the reason.`.
 	// // I posted at https://predictionexplorer.slack.com/archives/D07EAEGJWPJ/p1780519717609329
-	// // todo-3 To be revisited.
+	// // Revisit this diagnostic if Hardhat starts emitting this message again.
 	// // [/Comment-202606187]
 	// if (message.includes("Hardhat could")) {
 	// 	console.warn("Warning. A suspicious transaction error: %s", message);
@@ -299,7 +299,7 @@ function isExpectedTransactionErrorObject(errorObject) {
 		// See Comment-202606187 for details.
 		message.startsWith("Transaction reverted ");
 	if (errorIsExpected) {
-		expect(errorObject.receipt).undefined;
+		expect(errorObject.receipt).equal(undefined);
 	} else {
 		// console.error("<%s>", message);
 	}

@@ -40,16 +40,13 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #endregion
 	// #region Bid Statistics
 
-	// /// todo-9 Rename to `lastBidTypeCode`.
-	// BidType public lastBidType;
-
 	/// @notice
 	/// [Comment-202605182]
 	/// The address of the account that placed the last bid.
 	/// [/Comment-202605182]
 	/// @dev
 	/// [Comment-202502044]
-	/// Issue. This is the same as the last `bidderAddresses` item. So it could make sense to eliminate this variable.
+	/// Design note. This is the same as the last `bidderAddresses` item. So it could make sense to eliminate this variable.
 	/// But let's leave it alone.
 	/// [/Comment-202502044]
 	address public lastBidderAddress;
@@ -63,7 +60,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	/// @dev
 	/// [Comment-202411098]
-	/// Issue. One might want to not save info about past bidding rounds.
+	/// Design note. One might want to not save info about past bidding rounds.
 	/// But the project founders consider using this info for other purposes.
 	/// Comment-202502045 relates.
 	/// [/Comment-202411098]
@@ -509,7 +506,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// solhint-disable-next-line var-name-mixedcase
 	uint256[1 << 30] private __gap_persistent;
 
-	// todo-1 Transient storage is not yet supported for reference types.
+	// Solidity currently does not support transient storage for reference types.
 	/// @dev Comment-202412142 applies.
 	/// Comment-202412148 applies.
 	// uint256[1 << 30] private transient __gap_transient;
