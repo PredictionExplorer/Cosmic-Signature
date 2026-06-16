@@ -621,10 +621,19 @@ class FuzzCampaign {
 		let price_ = this.model.getNextEthBidPrice(ts_);
 		const items_ = [];
 		const plans_ = [];
+		const needByActorAddress_ = new Map();
 		for (let index_ = 0; index_ < count_; ++ index_) {
-			const actor_ = this.engine.pick(this.actors);
 			const gasPrice_ = this.engine.randomGasPrice();
 			const value_ = price_;
+			const candidates_ = this.actors.filter((actor_) => {
+				const previousNeed_ = needByActorAddress_.get(actor_.address) ?? 0n;
+				return this.ledger.expectedEth(actor_.address) >= previousNeed_ + value_ + this.engine.gasReserve;
+			});
+			if (candidates_.length === 0) {
+				break;
+			}
+			const actor_ = this.engine.pick(candidates_);
+			needByActorAddress_.set(actor_.address, (needByActorAddress_.get(actor_.address) ?? 0n) + value_ + this.engine.gasReserve);
 			plans_.push({ actor: actor_, gasPrice: gasPrice_, value: value_ });
 			items_.push({
 				signer: actor_.signer,
@@ -633,6 +642,9 @@ class FuzzCampaign {
 				buildTx: (overrides_) => this.game.connect(actor_.signer).bidWithEth(-1n, "burst", 0n, { ...overrides_, value: value_ }),
 			});
 			price_ = price_ + price_ / div_ + 1n;
+		}
+		if (items_.length < 2) {
+			return;
 		}
 		// Snapshot per-actor CST before the burst (the engine applies receipts to the ledger inside `execBurst`).
 		const cstBefore_ = new Map();
