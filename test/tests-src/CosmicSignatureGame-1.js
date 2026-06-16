@@ -11,7 +11,7 @@ const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { generateRandomUInt256, generateRandomUInt256FromSeedWrapper, uint256ToPaddedHexString, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { createFairRandomNumberGenerator } = require("../../src/FairRandomNumberGenerator.js");
-const { SKIP_LONG_TESTS, loadFixtureDeployContractsForTesting, tryWaitForTransactionReceipt } = require("../../src/ContractTestingHelpers.js");
+const { LONG_TEST_MODE_CODE, loadFixtureDeployContractsForTesting, tryWaitForTransactionReceipt } = require("../../src/ContractTestingHelpers.js");
 const { createCosmicSignatureTokenSimulator, assertCosmicSignatureTokenSimulator } = require("../src/contract-simulators/CosmicSignatureTokenSimulator.js");
 const { createRandomWalkNftSimulator, assertRandomWalkNftSimulator } = require("../src/contract-simulators/RandomWalkNftSimulator.js");
 const { createCosmicSignatureNftSimulator, assertCosmicSignatureNftSimulator } = require("../src/contract-simulators/CosmicSignatureNftSimulator.js");
@@ -40,19 +40,11 @@ describe("CosmicSignatureGame-1", function () {
 	it("Integration test over multiple bidding rounds", async function () {
 		// #region
 
-		if (SKIP_LONG_TESTS) {
-			console.warn("%s", "Warning 202505015. Skipping a long test.");
-			// return;
-		}
-
-		// #endregion
-		// #region
-
 		// Comment-202506082 applies.
 		// The bigger this value the higher is the chance that the logic near Comment-202505117 will reduce ETH bid price to 1 Wei.
-		const numRoundsToRunMinLimit_ = ( ! SKIP_LONG_TESTS ) ? 25 : 1;
+		const numRoundsToRunMinLimit_ = (LONG_TEST_MODE_CODE >= 3) ? 25 : 1;
 
-		const bidAverageCountPerRoundMinLimit_ = ( ! SKIP_LONG_TESTS ) ? 10.0 : 2.0;
+		const bidAverageCountPerRoundMinLimit_ = (LONG_TEST_MODE_CODE >= 3) ? 10.0 : 2.0;
 
 		// #endregion
 		// #region

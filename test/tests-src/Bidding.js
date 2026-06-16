@@ -6,7 +6,7 @@ const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { generateRandomUInt32, generateRandomUInt256, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { setRoundActivationTimeIfNeeded } = require("../../src/ContractDeploymentHelpers.js");
-const { SKIP_LONG_TESTS, loadFixtureDeployContractsForTesting, makeNextBlockTimeDeterministic } = require("../../src/ContractTestingHelpers.js");
+const { LONG_TEST_MODE_CODE, loadFixtureDeployContractsForTesting, makeNextBlockTimeDeterministic } = require("../../src/ContractTestingHelpers.js");
 
 // let latestTimeStamp = 0;
 // let latestBlock = undefined;
@@ -68,14 +68,6 @@ describe("Bidding", function () {
 	});
 
 	it("The halveEthDutchAuctionEndingBidPrice method", async function () {
-		// #region
-
-		if (SKIP_LONG_TESTS) {
-			console.warn("%s", "Warning 202508151. Skipping a long test.");
-			// return;
-		}
-
-		// #endregion
 		// #region
 
 		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
@@ -347,10 +339,13 @@ describe("Bidding", function () {
 						     // [/Comment-202508144]
 						     ethDutchAuctionDurationDivisor2_ <= 1n ||
 
-						     // [Comment-202508155]
-						     // Similar magic numbers exist in multiple places.
-						     // [/Comment-202508155]
-						     (SKIP_LONG_TESTS && iteration1Counter_ >= 2)
+						     ( LONG_TEST_MODE_CODE < 3 &&
+
+						       // [Comment-202508155]
+						       // Similar magic numbers exist in multiple places.
+						       // [/Comment-202508155]
+						       iteration1Counter_ >= 2
+						     )
 						) {
 							// console.info("%s", "202508173");
 							break;
@@ -394,8 +389,11 @@ describe("Bidding", function () {
 			if ( // Comment-202508144 applies.
 			     ethDutchAuctionDurationDivisor2_ <= 1n ||
 
-			     // Comment-202508155 applies.
-			     (SKIP_LONG_TESTS && iteration1Counter_ >= 2)
+			     ( LONG_TEST_MODE_CODE < 3 &&
+
+			       // Comment-202508155 applies.
+			       iteration1Counter_ >= 2
+			     )
 			) {
 				// console.info("%s", "202508149");
 
@@ -414,7 +412,7 @@ describe("Bidding", function () {
 		// #region
 
 		// console.info("%s", `202508150 ${totalIteration1Counter_} ${totalIteration2Counter_}`);
-		if ( ! SKIP_LONG_TESTS ) {
+		if (LONG_TEST_MODE_CODE >= 3) {
 			// console.info("%s", "202508177");
 			expect(totalIteration1Counter_).greaterThanOrEqual(10);
 

@@ -15,7 +15,7 @@
 
 		# export HACK_SUPPORT_BIGINT_TOJSON='true'
 		export HARDHAT_MODE_CODE='1'
-		# export SKIP_LONG_TESTS='true'
+		# export LONG_TEST_MODE_CODE='1'
 
 		# export ENABLE_HARDHAT_PREPROCESSOR='???'
 		# export ENABLE_ASSERTS='???'

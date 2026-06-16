@@ -8,7 +8,7 @@
 const { assert: chaiAssert, expect } = require("chai");
 const hre = require("hardhat");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
-const { parseBooleanEnvironmentVariable, sleepForMilliSeconds, waitForTransactionReceipt } = require("./Helpers.js");
+const { parseIntegerEnvironmentVariable, sleepForMilliSeconds, waitForTransactionReceipt } = require("./Helpers.js");
 const { MyNonceManager } = require("./MyNonceManager.js");
 const { mochaHooks } = require("./MochaHooks.js");
 const { deployContractsAdvanced, setRoundActivationTimeIfNeeded } = require("./ContractDeploymentHelpers.js");
@@ -16,7 +16,24 @@ const { deployContractsAdvanced, setRoundActivationTimeIfNeeded } = require("./C
 // #endregion
 // #region
 
-const SKIP_LONG_TESTS = parseBooleanEnvironmentVariable("SKIP_LONG_TESTS", false);
+/**
+[Comment-202606305]
+Supported values: 1 for quick; 2 for medium; 3 for full (default).
+[/Comment-202606305]
+*/
+const LONG_TEST_MODE_CODE = parseIntegerEnvironmentVariable("LONG_TEST_MODE_CODE", 3);
+
+switch (LONG_TEST_MODE_CODE) {
+	case 1:
+	case 2:
+	case 3: {
+		break;
+	}
+	default: {
+		throw new Error(`Invalid LONG_TEST_MODE_CODE: ${LONG_TEST_MODE_CODE}.`);
+		// break;
+	}
+}
 
 let preparedHardhatCoverage = false;
 
@@ -379,7 +396,7 @@ Comment-202506284 applies.
 // #region
 
 module.exports = {
-	SKIP_LONG_TESTS,
+	LONG_TEST_MODE_CODE,
 	// TransactionRevertedExpectedlyError,
 	loadFixtureDeployContractsForTesting,
 	deployContractsForTesting,

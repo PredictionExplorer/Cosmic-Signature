@@ -151,7 +151,7 @@ Goal: run broad randomized gameplay after upgrading to V2.
 
 Implemented approach:
 
-- By default a 20-minute wall-clock soak of repeated independent bounded campaigns. Each campaign deploys V1, fuzzes several complete rounds, performs the real `upgradeProxy` + `initializeV2`, then fuzzes several more V2 rounds, with rounds split ~50/50 between V1 and V2. `GameAbiAdapter` routes every bid to the V1 or V2 signature automatically. (`SKIP_LONG_TESTS=true` runs a single quick bounded campaign for CI; `FUZZ_MAX_SECONDS` tunes the budget.)
+- By default a 20-minute wall-clock soak of repeated independent bounded campaigns. Each campaign deploys V1, fuzzes several complete rounds, performs the real `upgradeProxy` + `initializeV2`, then fuzzes several more V2 rounds, with rounds split ~50/50 between V1 and V2. `GameAbiAdapter` routes every bid to the V1 or V2 signature automatically. (`LONG_TEST_MODE_CODE=1` runs a single quick bounded campaign for CI; `FUZZ_MAX_SECONDS` tunes the budget.)
 - Realistic human behavior: each actor is funded once with a finite, varied (whale/minnow) budget and is never auto-refilled. Actors skip actions they cannot afford and replenish only by winning prizes, so ETH/CST/price values stay in a realistic, non-astronomical range (reinforced by spreading first bids across the ETH Dutch-auction decay so the per-round beginning price mean-reverts instead of compounding).
 - The campaign is model-based and EVM-exact: a JS `GameModel` reimplements the deterministic on-chain math exactly (ETH/CST Dutch prices, the V2 sqrt CST reward, the V2 `cstDutchAuctionDuration` shrink/grow formulas, V1-clamp-vs-V2 `mainPrizeTime`, the endurance/chrono champion automaton, and round-advance values), including `uint256` wraparound inside the contracts' `unchecked` price/reward arithmetic. Every action asserts its exact event fields and exact ledger deltas; an end-of-soak coverage report requires every supported user action (bids with ETH/Random Walk NFT/CST, staking/unstaking, ETH and NFT/ERC-20 donations with the winner claiming them, prize withdrawals, token/NFT transfers and EIP-712 signatures, RW mint/withdraw, DAO governance, and the upgrade path) to have succeeded at least once. For Solidity line/branch coverage, run `npx hardhat coverage`.
 
@@ -178,7 +178,7 @@ Required V2 invariants:
 
 Acceptance criteria (met):
 
-- The campaign runs with `SKIP_LONG_TESTS=true` quickly enough for CI (quick profile).
+- The campaign runs with `LONG_TEST_MODE_CODE=1` quickly enough for CI (quick profile).
 - A long soak runs manually with a printed seed; `FUZZ_V1_ROUNDS` / `FUZZ_V2_ROUNDS` / `FUZZ_ACTORS` tune size, while chaos, overflow-targeting, and post-round-zero upgrade timing are selected deterministically from each campaign seed.
 - Re-running with `FUZZ_SEED` reproduces failures (the seed is printed on every failure, and the last ~80 actions are dumped as a trace).
 - End-of-run coverage floors assert that every registered action was exercised and (in the long profile) that core actions each succeeded at least once, so a silently-dead action fails the test.

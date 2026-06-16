@@ -9,7 +9,7 @@ const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
 const { generateRandomUInt256, generateRandomUInt256FromSeedWrapper, waitForTransactionReceipt } = require("../../src/Helpers.js");
-const { SKIP_LONG_TESTS, loadFixtureDeployContractsForTesting, tryWaitForTransactionReceipt } = require("../../src/ContractTestingHelpers.js");
+const { LONG_TEST_MODE_CODE, loadFixtureDeployContractsForTesting, tryWaitForTransactionReceipt } = require("../../src/ContractTestingHelpers.js");
 
 // #endregion
 // #region
@@ -18,16 +18,6 @@ describe("PrizesWallet-1", function () {
 	// #region `it`
 
 	it("Workflow", async function () {
-		// #region
-
-		if (SKIP_LONG_TESTS) {
-			// todo-1 +++ Review all calls to `console` to make sure we specify a correct error severity.
-			// todo-1 +++ Also remember that it treats sequences like "%s" in a special way.
-			console.warn("%s", "Warning 202506083. Skipping a long test.");
-			// return;
-		}
-
-		// #endregion
 		// #region
 
 		// // Comment-202506169 applies.
@@ -62,7 +52,7 @@ describe("PrizesWallet-1", function () {
 		// [Comment-202506082]
 		// The bigger is this value the higher is the chance that that Solidity coverage will be 100%.
 		// [/Comment-202506082]
-		const numIterations_ = ( ! SKIP_LONG_TESTS ) ? 3000 : 200;
+		const numIterations_ = (LONG_TEST_MODE_CODE >= 3) ? 3000 : 200;
 
 		// #endregion
 		// #region

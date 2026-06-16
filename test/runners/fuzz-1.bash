@@ -9,7 +9,7 @@
 #   FUZZ_SEED=0x... ./fuzz-1.bash
 #   FUZZ_MAX_SECONDS=300 ./fuzz-1.bash   # shorter soak
 #   FUZZ_MULTI=8 ./fuzz-1.bash  # additional N soak runs with random seeds
-#   SKIP_LONG_TESTS=true ./fuzz-1.bash   # quick CI profile (single bounded campaign)
+#   LONG_TEST_MODE_CODE=1 ./fuzz-1.bash   # quick CI profile (single bounded campaign)
 
 '/usr/bin/clear'
 

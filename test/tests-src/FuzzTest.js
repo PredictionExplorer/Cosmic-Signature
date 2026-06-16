@@ -15,7 +15,7 @@
 // custom errors. Adversarial actors (reentrancy, broken charity receiver, malicious token donations)
 // and Arbitrum-precompile chaos are mixed in. See `test/src/fuzz/` for the engine.
 //
-// By default (no SKIP_LONG_TESTS) this runs a 20-minute wall-clock soak: repeated independent bounded
+// By default (LONG_TEST_MODE_CODE is 3) this runs a 20-minute wall-clock soak: repeated independent bounded
 // campaigns (fresh deploy -> V1 fuzz -> real V2 upgrade -> V2 fuzz), with each campaign usually split
 // ~50/50 between V1 and V2 rounds. About half of campaigns upgrade immediately after round zero
 // completes, matching the intended production upgrade timing. Actors have finite, human-like budgets
@@ -36,8 +36,10 @@
 //   FUZZ_V1_ROUNDS=<n>      V1 rounds per campaign (defaults equal to V2 for a 50/50 split).
 //   FUZZ_V2_ROUNDS=<n>      V2 rounds per campaign.
 //   FUZZ_ACTORS=<n>         number of participant actors.
-//   FUZZ_PROFILE=medium     a larger single bounded campaign (between SKIP_LONG_TESTS and the full soak).
-//   SKIP_LONG_TESTS=true    short CI profile (single quick bounded campaign).
+//   LONG_TEST_MODE_CODE    Comment-202606305 applies.
+//   - Quick mode: short CI profile (single quick bounded campaign).
+//   - Medium mode: a larger single bounded campaign (between the quick and full soak).
+//   - Full soak mode.
 //
 // Chaos and overflow-targeting modes are derived from the campaign seed with profile-specific
 // probabilities. A default multi-campaign run therefore has a high chance to exercise those paths
@@ -60,7 +62,7 @@
 
 const { describe, it } = require("mocha");
 const { generateRandomUInt256 } = require("../../src/Helpers.js");
-const { SKIP_LONG_TESTS } = require("../../src/ContractTestingHelpers.js");
+const { LONG_TEST_MODE_CODE } = require("../../src/ContractTestingHelpers.js");
 const { parseFuzzSeedFromEnvironment } = require("../src/fuzz/FuzzSeed.js");
 const { readEnvOverrides, buildProfile, runFuzzCampaigns } = require("../src/fuzz/FuzzCampaign.js");
 
@@ -70,7 +72,7 @@ const { readEnvOverrides, buildProfile, runFuzzCampaigns } = require("../src/fuz
 describe("FuzzTest", function () {
 	it("Unified model-based campaign: fuzz V1, upgrade to V2, fuzz V2, with exact invariants and negative probes", async function () {
 		const seed_ = parseFuzzSeedFromEnvironment(process.env.FUZZ_SEED) ?? generateRandomUInt256();
-		const profile_ = buildProfile(SKIP_LONG_TESTS, readEnvOverrides());
+		const profile_ = buildProfile(LONG_TEST_MODE_CODE, readEnvOverrides());
 		await runFuzzCampaigns(profile_, seed_);
 	});
 });

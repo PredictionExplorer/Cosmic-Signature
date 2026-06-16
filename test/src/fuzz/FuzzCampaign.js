@@ -34,17 +34,13 @@ const { CharityController, adversarialActions, applyArbitrumChaos, resetArbitrum
 // #region Profiles
 
 /**
-Selects the campaign profile tier:
-- "quick"  (SKIP_LONG_TESTS): one short bounded campaign for CI smoke runs.
-- "medium" (FUZZ_PROFILE=medium): one larger bounded campaign (a useful middle ground for local runs).
-- "full"   (default): a 20-minute soak of repeated independent bounded campaigns.
-@param {boolean} skipLongTests_
+Selects the campaign profile tier.
+@param {number} longTestModeCode_ Comment-202606305 applies.
 @param {object} envOverrides_
 */
-function buildProfile(skipLongTests_, envOverrides_) {
-	const tier_ = skipLongTests_ ? "quick" : ((process.env.FUZZ_PROFILE === "medium") ? "medium" : "full");
+function buildProfile(longTestModeCode_, envOverrides_) {
 	let base_;
-	if (tier_ === "quick") {
+	if (longTestModeCode_ < 2) {
 		base_ = {
 			numActors: 6,
 			// Equal V1/V2 rounds => ~50/50 split of fuzzing time across the two code versions.
@@ -62,7 +58,7 @@ function buildProfile(skipLongTests_, envOverrides_) {
 			// Quick CI profile: a single bounded campaign (no wall-clock soak).
 			maxSeconds: undefined,
 		};
-	} else if (tier_ === "medium") {
+	} else if (longTestModeCode_ < 3) {
 		base_ = {
 			numActors: 7,
 			v1Rounds: 5,
