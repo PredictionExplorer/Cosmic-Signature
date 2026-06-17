@@ -1,5 +1,8 @@
+// #region
+
 "use strict";
 
+// #endregion
 // #region Imports
 
 const { expect } = require("chai");
@@ -8,7 +11,10 @@ const { ZERO_ADDRESS } = require("../GameModel.js");
 // #endregion
 // #region
 
-const MAX_UINT256 = (1n << 256n) - 1n;
+// todo-ai-0 The AI defined this constant in multiple places and hardcoded the magic number in a few others.
+// todo-ai-0 It wold be nice to define it in one file and import from the others.
+// todo-ai-0 But I have commented it out here.
+// const MAX_UINT256 = (1n << 256n) - 1n;
 
 // #endregion
 // #region Bid planning helpers
@@ -67,10 +73,14 @@ Picks the ETH value to send for a planned ETH bid.
 */
 function chooseEthBidValue(ctx_, paidEthPrice_, gasPrice_, mode_) {
 	const { engine, model } = ctx_;
-	const swallowLimit_ =
-		(gasPrice_ > 0n) ?
-		model.ethBidRefundAmountInGasToSwallowMaxLimit * gasPrice_ :
-		MAX_UINT256;
+
+	// // Comment-202607014 applies.
+	// const swallowLimit_ =
+	// 	(gasPrice_ > 0n) ?
+	// 	(model.ethBidRefundAmountInGasToSwallowMaxLimit * gasPrice_) :
+	// 	MAX_UINT256;
+	
+	const swallowLimit_ = model.ethBidRefundAmountInGasToSwallowMaxLimit * gasPrice_;
 	let effectiveMode_ = mode_;
 	if (effectiveMode_ === "random") {
 		effectiveMode_ = engine.pick(["exact", "exact", "swallow", "refund"]);
@@ -548,6 +558,7 @@ function verifyClaimReceipt(ctx_, { claimerAddress, receipt, breakdown, rwStaker
 }
 
 // #endregion
+// #region
 
 module.exports = {
 	planBidTs,
@@ -562,3 +573,5 @@ module.exports = {
 	executeCstBid,
 	verifyClaimReceipt,
 };
+
+// #endregion

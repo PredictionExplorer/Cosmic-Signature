@@ -142,9 +142,11 @@ function buildSafeMutations(ctx_) {
 	add_("setEthBidRefundAmountInGasToSwallowMaxLimit", BigInt(engine.randomIntRange(0, 20000)), (m_, v_) => { m_.ethBidRefundAmountInGasToSwallowMaxLimit = v_; });
 	add_("setCstDutchAuctionBeginningBidPriceMinLimit", BigInt(engine.randomIntRange(1, 500)) * 10n ** 18n, (m_, v_) => {
 		m_.cstDutchAuctionBeginningBidPriceMinLimit = v_;
-		if (m_.nextRoundFirstCstDutchAuctionBeginningBidPrice < v_) {
-			m_.nextRoundFirstCstDutchAuctionBeginningBidPrice = v_;
-		}
+
+		// // Comment-202607016 applies.
+		// if (v_ > m_.nextRoundFirstCstDutchAuctionBeginningBidPrice) {
+		// 	m_.nextRoundFirstCstDutchAuctionBeginningBidPrice = v_;
+		// }
 	});
 	add_("setBidMessageLengthMaxLimit", BigInt(engine.randomIntRange(64, 400)), (m_, v_) => { m_.bidMessageLengthMaxLimit = v_; });
 	add_("setCstPrizeAmount", BigInt(engine.randomIntRange(1, 2000)) * 10n ** 18n, (m_, v_) => { m_.cstPrizeAmount = v_; });

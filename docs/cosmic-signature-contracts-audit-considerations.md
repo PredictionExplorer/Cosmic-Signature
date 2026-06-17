@@ -20,9 +20,7 @@ Test and Solidity coverage scripts are located in the `${workspaceFolder}/test/r
 
 Some tests test exact timings of actions. They can fail, more likely if the system is under stress.
 
-We have achieved 100% Solidity coverage, except the `BiddingBase._onlyRoundIsActive` and `BiddingBaseV2._onlyRoundIsActive` modifiers, because production entry points currently leave those modifiers commented out and perform the effective round-state checks in shared bid/claim flow. `RandomWalkNFT` is not 100% covered either because it's essentially a third party contract from another project.
-
-V1 and V2 fuzz behavior is covered by the unified `${workspaceFolder}/test/tests-src/FuzzTest.js` campaign. It starts on V1, performs the real V1-to-V2 upgrade, validates upgrade state preservation, and continues fuzzing V2 behavior in the same model. A separate `FuzzTestV2.js` would add drift without improving coverage unless V2 gains a standalone deployment path.
+We have achieved 100% Solidity coverage, except the `BiddingBase._onlyRoundIsActive` and `BiddingBaseV2._onlyRoundIsActive` modifiers, because they are not called. `RandomWalkNFT` is not 100% covered either because it's essentially a third party contract from another project.
 
 Because some tests are driven by random numbers, occasionally you can observe some code locations not covered or a signer running out of gas.
 

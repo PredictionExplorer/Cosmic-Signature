@@ -360,8 +360,15 @@ abstract contract BiddingOpenBid is
 		if (overpaidEthPrice_ > int256(0)) {
 			// Comment-202606216 applies.
 			// // #enable_asserts assert(tx.gasprice > 0);
+
+			// // Comment-202607014 applies.
+			// uint256 txGasPrice_ = tx.gasprice;
+			// uint256 ethBidRefundAmountToSwallowMaxLimit_ =
+			// 	(txGasPrice_ > 0) ?
+			// 	(ethBidRefundAmountInGasToSwallowMaxLimit * txGasPrice_) :
+			// 	type(uint256).max;
+
 			uint256 ethBidRefundAmountToSwallowMaxLimit_ = ethBidRefundAmountInGasToSwallowMaxLimit * tx.gasprice;
-			
 			if (uint256(overpaidEthPrice_) <= ethBidRefundAmountToSwallowMaxLimit_) {
 				// Doing nothing.
 			} else
@@ -542,7 +549,7 @@ abstract contract BiddingOpenBid is
 			ICosmicSignatureToken.MintOrBurnSpec[] memory mintAndBurnSpecs_ = new ICosmicSignatureToken.MintOrBurnSpec[](2);
 			mintAndBurnSpecs_[0].account = _msgSender();
 
-			// Comment-202606074 applies.
+			// Comment-202606074 relates and/or applies.
 			mintAndBurnSpecs_[0].value = ( - int256(paidPrice_) );
 
 			mintAndBurnSpecs_[1].account = _msgSender();

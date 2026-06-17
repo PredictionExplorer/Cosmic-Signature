@@ -4,7 +4,7 @@
 # in several configurations. See the header of that file for the env knobs.
 #
 # Usage:
-#   ./fuzz-1.bash               # one production-like run + one assert-enabled run
+#   ./fuzz-1.bash               # one production-like run + two assert-enabled runs
 #                               # (each is the default 20-minute soak of repeated V1->V2 campaigns)
 #   FUZZ_SEED=0x... ./fuzz-1.bash
 #   FUZZ_MAX_SECONDS=300 ./fuzz-1.bash   # shorter soak
@@ -17,20 +17,18 @@
 	OutcomeCode=0
 
 	RunFuzz() {
-		# $1 = ENABLE_HARDHAT_PREPROCESSOR, $2 = ENABLE_ASSERTS, $3 = label
+		# $1 = ENABLE_HARDHAT_PREPROCESSOR, $2 = ENABLE_ASSERTS, $3 = ENABLE_SMTCHECKER, $4 = label
 		if [ ${OutcomeCode} -lt 2 ]; then
 			echo ""
 			echo "=================================================================="
-			echo "  FUZZ RUN: ${3}"
+			echo "  FUZZ RUN: ${4}"
 			echo "=================================================================="
 			export ENABLE_HARDHAT_PREPROCESSOR="${1}"
 			export ENABLE_ASSERTS="${2}"
-			export ENABLE_SMTCHECKER='0'
-			# export HACK_SUPPORT_BIGINT_TOJSON='true'
-			export HARDHAT_MODE_CODE='1'
+			export ENABLE_SMTCHECKER="${3}"
 			'npx' 'hardhat' 'test' 'test/tests-src/FuzzTest.js'
 			if [ $? -ne 0 ]; then
-				echo "Error. Fuzz run '${3}' failed."
+				echo "Error. Fuzz run '${4}' failed."
 				OutcomeCode=2
 			fi
 		fi
@@ -44,20 +42,25 @@
 		fi
 	fi
 
+	if [ ${OutcomeCode} -lt 2 ]; then
+		# export HACK_SUPPORT_BIGINT_TOJSON='true'
+		export HARDHAT_MODE_CODE='1'
+	fi
+
 	# Production-like build (no preprocessor, no asserts) - closest to mainnet bytecode.
-	RunFuzz 'false' 'false' 'production-like'
+	RunFuzz 'false' 'false' '0' 'production-like'
 
 	# Assert-enabled build - compiles in the Solidity `assert`-only internal consistency checks
 	# and the `initializeV2` round-0 / prev-version guards.
-	RunFuzz 'true' 'true' 'asserts-enabled'
+	RunFuzz 'true' 'true' '0' 'asserts-enabled'
+
+	RunFuzz 'true' 'true' '1' 'asserts-and-preprocessing-for-SMTChecker-enabled'
 
 	# Optional multi-seed soak (production-like) for deeper coverage.
 	if [ ${OutcomeCode} -lt 2 ] && [ -n "${FUZZ_MULTI}" ]; then
 		export ENABLE_HARDHAT_PREPROCESSOR='false'
 		export ENABLE_ASSERTS='false'
 		export ENABLE_SMTCHECKER='0'
-		# export HACK_SUPPORT_BIGINT_TOJSON='true'
-		export HARDHAT_MODE_CODE='1'
 		unset FUZZ_SEED
 		Index=0
 		while [ ${Index} -lt ${FUZZ_MULTI} ] && [ ${OutcomeCode} -lt 2 ]; do

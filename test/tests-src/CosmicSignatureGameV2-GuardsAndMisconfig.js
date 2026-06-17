@@ -44,20 +44,21 @@ describe("CosmicSignatureGameV2-GuardsAndMisconfig", function () {
 		await expect(game_.getNextCstBidPriceAdvanced( - (await getLatestBlockTimestamp()) - 1n )).revertedWithPanic(0x12);
 	});
 
-	it("raises the V2 next-round first CST price when the owner raises the CST minimum", async function () {
-		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2(2n);
-		const game_ = contracts_.cosmicSignatureGameV2Proxy;
-		const newMinLimit_ = 300n * 10n ** 18n;
-		await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setCstDutchAuctionBeginningBidPriceMinLimit(newMinLimit_));
-		expect(await game_.cstDutchAuctionBeginningBidPriceMinLimit()).equal(newMinLimit_);
-		expect(await game_.nextRoundFirstCstDutchAuctionBeginningBidPrice()).equal(newMinLimit_);
-
-		await activateCurrentRound(game_, contracts_.ownerSigner);
-		const bidder_ = contracts_.signers[2];
-		const ethPrice_ = await game_.getNextEthBidPrice();
-		await waitForTransactionReceipt(game_.connect(bidder_).bidWithEth(-1n, "raised cst min", 0n, { value: ethPrice_ }));
-		expect(await game_.getNextCstBidPrice()).equal(newMinLimit_);
-	});
+	// // This tests Comment-202607016.
+	// it("raises the V2 next-round first CST price when the owner raises the CST minimum", async function () {
+	// 	const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2(2n);
+	// 	const game_ = contracts_.cosmicSignatureGameV2Proxy;
+	// 	const newMinLimit_ = 300n * 10n ** 18n;
+	// 	await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setCstDutchAuctionBeginningBidPriceMinLimit(newMinLimit_));
+	// 	expect(await game_.cstDutchAuctionBeginningBidPriceMinLimit()).equal(newMinLimit_);
+	// 	expect(await game_.nextRoundFirstCstDutchAuctionBeginningBidPrice()).equal(newMinLimit_);
+	// 	
+	// 	await activateCurrentRound(game_, contracts_.ownerSigner);
+	// 	const bidder_ = contracts_.signers[2];
+	// 	const ethPrice_ = await game_.getNextEthBidPrice();
+	// 	await waitForTransactionReceipt(game_.connect(bidder_).bidWithEth(-1n, "raised cst min", 0n, {value: ethPrice_,}));
+	// 	expect(await game_.getNextCstBidPrice()).equal(newMinLimit_);
+	// });
 
 	it("documents zero CST duration change divisor owner misconfiguration", async function () {
 		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2(2n);

@@ -17,11 +17,6 @@ import { ICosmicSignatureGameStorage } from "./interfaces/ICosmicSignatureGameSt
 // #endregion
 // #region
 
-/// @dev Avoid combining big arrays with `mapping`s or dynamic arrays in the same contract.
-/// In this storage contract, mapping writes use the internal, monotonically increasing `roundNum`.
-/// User-provided historical round numbers are used by read-only statistics methods.
-/// Future write paths accepting an arbitrary `roundNum_` must validate that the index is within
-/// the intended fixed-array domain before writing storage.
 abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #region System Management
 

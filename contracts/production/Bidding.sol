@@ -265,12 +265,24 @@ abstract contract Bidding is
 			// [/Comment-202605288]
 			{
 				// Comment-202606216 applies.
-				uint256 txGasPrice_ = tx.gasprice;
-				uint256 ethBidRefundAmountToSwallowMaxLimit_ =
-					(txGasPrice_ > 0) ?
-					ethBidRefundAmountInGasToSwallowMaxLimit * txGasPrice_ :
-					type(uint256).max;
+				// // #enable_asserts assert(tx.gasprice > 0);
 
+				// // [Comment-202607014]
+				// // This is how the AI suggests to deal with the Comment-202606216 issue.
+				// // It says that this logic avoids refund-transfer side effects that would make gas estimation less reliable.
+				// // But this idea kinda smells. It appears to be an unnecessary complication.
+				// // One issue with it is that it does not include the refund sending into the gas estimation,
+				// // so the transaction has a higher chance to run out of gas.
+				// // In any case, the caller must provide more gas that estimated.
+				// // So keeping it simple.
+				// // [/Comment-202607014]
+				// uint256 txGasPrice_ = tx.gasprice;
+				// uint256 ethBidRefundAmountToSwallowMaxLimit_ =
+				// 	(txGasPrice_ > 0) ?
+				// 	(ethBidRefundAmountInGasToSwallowMaxLimit * txGasPrice_) :
+				// 	type(uint256).max;
+
+				uint256 ethBidRefundAmountToSwallowMaxLimit_ = ethBidRefundAmountInGasToSwallowMaxLimit * tx.gasprice;
 				if (uint256(overpaidEthPrice_) <= ethBidRefundAmountToSwallowMaxLimit_) {
 					overpaidEthPrice_ = int256(0);
 					paidEthPrice_ = msg.value;
@@ -567,9 +579,7 @@ abstract contract Bidding is
 			ICosmicSignatureToken.MintOrBurnSpec[] memory mintAndBurnSpecs_ = new ICosmicSignatureToken.MintOrBurnSpec[](2);
 			mintAndBurnSpecs_[0].account = _msgSender();
 
-			// [Comment-202606074]
-			// If `paidPrice_` is zero, `mintAndBurnMany` treats the zero delta as a zero burn.
-			// [/Comment-202606074]
+			// Comment-202606074 relates and/or applies.
 			mintAndBurnSpecs_[0].value = ( - int256(paidPrice_) );
 
 			mintAndBurnSpecs_[1].account = _msgSender();
@@ -589,6 +599,12 @@ abstract contract Bidding is
 
 		if (lastCstBidderAddress == address(0)) {
 			// Comment-202501045 applies.
+
+			// [Comment-202504212]
+			// Issue. If the owner increases `cstDutchAuctionBeginningBidPriceMinLimit` for the next round,
+			// it's possible that this value will not respect that setting.
+			// Comment-202607016 relates.
+			// [/Comment-202504212]
 			nextRoundFirstCstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
 		}
 		lastCstBidderAddress = _msgSender();

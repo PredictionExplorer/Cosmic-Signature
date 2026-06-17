@@ -1,5 +1,8 @@
+// #region
+
 "use strict";
 
+// #endregion
 // #region Imports
 
 const { expect } = require("chai");
@@ -8,7 +11,7 @@ const { ZERO_ADDRESS } = require("../GameModel.js");
 // #endregion
 // #region
 
-const MAX_UINT256 = (1n << 256n) - 1n;
+// const MAX_UINT256 = (1n << 256n) - 1n;
 
 // #endregion
 // #region Broken-staker helpers
@@ -141,10 +144,15 @@ const adversarialActions = [
 			}
 			const gasPrice_ = engine.randomGasPrice();
 			const price_ = model.getNextEthBidPrice(ts_);
-			const swallowLimit_ =
-				(gasPrice_ > 0n) ?
-				model.ethBidRefundAmountInGasToSwallowMaxLimit * gasPrice_ :
-				MAX_UINT256;
+
+			// // Comment-202607014 applies.
+			// // Issue. Is `gasPrice_` guaranteed to be positive?
+			// const swallowLimit_ =
+			// 	(gasPrice_ > 0n) ?
+			// 	(model.ethBidRefundAmountInGasToSwallowMaxLimit * gasPrice_) :
+			// 	MAX_UINT256;
+
+			const swallowLimit_ = model.ethBidRefundAmountInGasToSwallowMaxLimit * gasPrice_;
 			const value_ = price_ + swallowLimit_ + 10n ** 18n; // Guarantees a refund (and thus a reentry attempt).
 			if ( ! engine.canAfford(actor_.address, value_) ) {
 				return "skip";
@@ -365,6 +373,7 @@ async function resetArbitrumChaos(ctx_) {
 }
 
 // #endregion
+// #region
 
 module.exports = {
 	CharityController,
@@ -374,3 +383,5 @@ module.exports = {
 	ARB_SYS_ADDRESS,
 	ARB_GAS_INFO_ADDRESS,
 };
+
+// #endregion

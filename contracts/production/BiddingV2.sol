@@ -177,12 +177,16 @@ abstract contract BiddingV2 is
 			// Comment-202605288 applies.
 			{
 				// Comment-202606216 applies.
-				uint256 txGasPrice_ = tx.gasprice;
-				uint256 ethBidRefundAmountToSwallowMaxLimit_ =
-					(txGasPrice_ > 0) ?
-					ethBidRefundAmountInGasToSwallowMaxLimit * txGasPrice_ :
-					type(uint256).max;
-				
+				// // #enable_asserts assert(tx.gasprice > 0);
+
+				// // Comment-202607014 applies.
+				// uint256 txGasPrice_ = tx.gasprice;
+				// uint256 ethBidRefundAmountToSwallowMaxLimit_ =
+				// 	(txGasPrice_ > 0) ?
+				// 	(ethBidRefundAmountInGasToSwallowMaxLimit * txGasPrice_) :
+				// 	type(uint256).max;
+
+				uint256 ethBidRefundAmountToSwallowMaxLimit_ = ethBidRefundAmountInGasToSwallowMaxLimit * tx.gasprice;
 				if (uint256(overpaidEthPrice_) <= ethBidRefundAmountToSwallowMaxLimit_) {
 					overpaidEthPrice_ = int256(0);
 					paidEthPrice_ = msg.value;
@@ -466,14 +470,14 @@ abstract contract BiddingV2 is
 			ICosmicSignatureToken.MintOrBurnSpec[] memory mintAndBurnSpecs_ = new ICosmicSignatureToken.MintOrBurnSpec[](2);
 			mintAndBurnSpecs_[0].account = _msgSender();
 
-			// Comment-202606074 applies.
+			// Comment-202606074 relates and/or applies.
 			mintAndBurnSpecs_[0].value = ( - int256(paidPrice_) );
 
 			mintAndBurnSpecs_[1].account = _msgSender();
 			mintAndBurnSpecs_[1].value = int256(bidCstRewardAmount_);
 			token.mintAndBurnMany(mintAndBurnSpecs_);
 		} else {
-			// Unlike near Comment-202606074, this is an unconditional burning.
+			// This does not have the Comment-202606074 issue.
 			token.burn(_msgSender(), paidPrice_);
 		}
 
@@ -487,6 +491,8 @@ abstract contract BiddingV2 is
 
 		if (lastCstBidderAddress == address(0)) {
 			// Comment-202501045 applies.
+
+			// Comment-202504212 applies.
 			nextRoundFirstCstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
 		}
 		lastCstBidderAddress = _msgSender();

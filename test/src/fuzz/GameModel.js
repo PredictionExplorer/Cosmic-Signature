@@ -1,5 +1,8 @@
+// #region
+
 "use strict";
 
+// #endregion
 // #region Imports
 
 const { expect } = require("chai");
@@ -9,7 +12,7 @@ const c = require("./FuzzConstants.js");
 // #endregion
 // #region
 
-const MAX_UINT256 = (1n << 256n) - 1n;
+// const MAX_UINT256 = (1n << 256n) - 1n;
 
 // #endregion
 // #region `GameModel`
@@ -444,10 +447,13 @@ class GameModel {
 		let swallowed_ = false;
 		const overpaid_ = msgValue_ - basePaidPrice_;
 		if (overpaid_ > 0n) {
-			const swallowLimit_ =
-				(gasPrice_ > 0n) ?
-				this.ethBidRefundAmountInGasToSwallowMaxLimit * gasPrice_ :
-				MAX_UINT256;
+			// // Comment-202607014 applies.
+			// const swallowLimit_ =
+			// 	(gasPrice_ > 0n) ?
+			// 	(this.ethBidRefundAmountInGasToSwallowMaxLimit * gasPrice_) :
+			// 	MAX_UINT256;
+
+			const swallowLimit_ = this.ethBidRefundAmountInGasToSwallowMaxLimit * gasPrice_;
 			if (overpaid_ <= swallowLimit_) {
 				swallowed_ = true;
 				// The swallowed overpay is kept by the game (never refunded), so the bidder loses `msg.value`.
@@ -645,6 +651,7 @@ class GameModel {
 // #endregion
 // #region
 
+// todo-ai-0 Can we use `hre.ethers.ZeroAddress` instead of this?
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
 module.exports = {

@@ -55,9 +55,18 @@ abstract contract SystemManagement is
 
 	function setCstDutchAuctionBeginningBidPriceMinLimit(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
 		cstDutchAuctionBeginningBidPriceMinLimit = newValue_;
-		if (nextRoundFirstCstDutchAuctionBeginningBidPrice < newValue_) {
-			nextRoundFirstCstDutchAuctionBeginningBidPrice = newValue_;
-		}
+
+		// // [Comment-202607016]
+		// // This would be a way to fix the Comment-202504212 issue.
+		// // But the existing imperfect logic is really good enough as is,
+		// // because we have no plans to change `cstDutchAuctionBeginningBidPriceMinLimit`, and even if we do change it,
+		// // it's not too bad if `nextRoundFirstCstDutchAuctionBeginningBidPrice` stays less than the new value.
+		// // So keeping it simple.
+		// // [/Comment-202607016]
+		// if (newValue_ > nextRoundFirstCstDutchAuctionBeginningBidPrice) {
+		// 	nextRoundFirstCstDutchAuctionBeginningBidPrice = newValue_;
+		// }
+
 		emit CstDutchAuctionBeginningBidPriceMinLimitChanged(newValue_);
 	}
 

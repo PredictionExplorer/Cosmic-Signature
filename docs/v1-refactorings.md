@@ -83,7 +83,7 @@ These were reviewed and intentionally not reported as changes; listed for comple
 - **Function signature reformatting** (one parameter per line) for `bidWithEthAndDonateToken`, `bidWithEthAndDonateNft`, `bidWithCstAndDonateToken`, `bidWithCstAndDonateNft`, and multi-line `emit BidPlaced(...)` statements. No ABI change.
 - **`CosmicSignatureDao`**: only the renamed constant reference (`DEFAULT_BID_CST_REWARD_AMOUNT`); `proposalThreshold()` value is unchanged (100 CST).
 - **`CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_DURATION_DIVISOR`** was rewritten in terms of the new `INITIAL_CST_DUTCH_AUCTION_DURATION` constant. The computed value is identical (83333, matching the value currently on chain).
-- **Zero gas-price refund threshold**: `Bidding._bidWithEth` treats `tx.gasprice == 0` as an unbounded refund-swallow threshold because Arbitrum gas estimation can report zero gas price (Comment-202606216). This avoids refund-transfer side effects during estimation.
+- **Debug-only assertion disabled**: `// #enable_asserts assert(tx.gasprice > 0);` was commented out in `Bidding._bidWithEth` and `BiddingOpenBid` because `tx.gasprice` can be zero on Arbitrum, at least during gas estimation (Comment-202606216). Affects only `#enable_asserts` test builds; production behavior is unchanged.
 - **Comment work throughout**: comment renumbering (`[Comment-NNNN]` brackets), typo fixes, and `console.log` text changes inside commented-out debug lines.
 
 ## Refactorings In Non-Production Sources Attributed To The V1 Refactoring

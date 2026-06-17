@@ -7,7 +7,7 @@ const hre = require("hardhat");
 const { generateRandomUInt32, generateRandomUInt256, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { setRoundActivationTimeIfNeeded } = require("../../src/ContractDeploymentHelpers.js");
 const { LONG_TEST_MODE_CODE, loadFixtureDeployContractsForTesting, makeNextBlockTimeDeterministic } = require("../../src/ContractTestingHelpers.js");
-const { activateCurrentRound, deployV1CompleteRoundZeroAndUpgradeToV2 } = require("../src/V2UpgradeTestHelpers.js");
+// const { activateCurrentRound, deployV1CompleteRoundZeroAndUpgradeToV2 } = require("../src/V2UpgradeTestHelpers.js");
 
 // let latestTimeStamp = 0;
 // let latestBlock = undefined;
@@ -50,24 +50,6 @@ describe("Bidding", function () {
 		expect(ethDutchAuctionElapsedDuration_).equal(-1n);
 		const [cstDutchAuctionDuration_, /*cstDutchAuctionElapsedDuration_,*/] = await contracts_.cosmicSignatureGameProxy.getCstDutchAuctionDurations();
 		expect(cstDutchAuctionDuration_).equal(1n * 24n * 60n * 60n / 2n);
-	});
-
-	it("Raising the CST beginning bid price minimum raises the next-round first CST price in V1", async function () {
-		const contracts_ = await loadFixtureDeployContractsForTesting(60n);
-		const newMinLimit_ = 300n * 10n ** 18n;
-		await waitForTransactionReceipt(
-			contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner).setCstDutchAuctionBeginningBidPriceMinLimit(newMinLimit_)
-		);
-		expect(await contracts_.cosmicSignatureGameProxy.cstDutchAuctionBeginningBidPriceMinLimit()).equal(newMinLimit_);
-		expect(await contracts_.cosmicSignatureGameProxy.nextRoundFirstCstDutchAuctionBeginningBidPrice()).equal(newMinLimit_);
-
-		await setRoundActivationTimeIfNeeded(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner), 2n);
-		await makeNextBlockTimeDeterministic();
-		const nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPrice();
-		await waitForTransactionReceipt(
-			contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[2]).bidWithEth(-1n, "", { value: nextEthBidPrice_ })
-		);
-		expect(await contracts_.cosmicSignatureGameProxy.getNextCstBidPrice()).equal(newMinLimit_);
 	});
 
 	it("The getDurationUntilRoundActivation and getDurationElapsedSinceRoundActivation methods", async function () {
@@ -563,36 +545,37 @@ describe("Bidding", function () {
 		expect(bidderContractBalanceAmountAfter_).equal(bidderContractExpectedBalanceAmountAfter_);
 	});
 
-	it("Zero gas price swallows an ETH bid refund instead of calling a rejecting receiver", async function () {
-		const assertZeroGasPriceRefundIsSwallowed_ = async (contracts_, game_, contractVersionNumber_) => {
-			const bidderContractFactory_ = await hre.ethers.getContractFactory("BidderContract", contracts_.deployerSigner);
-			const bidderContract_ = await bidderContractFactory_.deploy(await game_.getAddress());
-			await bidderContract_.waitForDeployment();
-			const bidderContractAddress_ = await bidderContract_.getAddress();
-			await waitForTransactionReceipt(bidderContract_.connect(contracts_.signers[3]).setContractVersionNumber(contractVersionNumber_));
-			await waitForTransactionReceipt(bidderContract_.connect(contracts_.signers[3]).setEthDepositAcceptanceModeCode(1n));
-
-			const requiredEthBidAmount_ = await game_.getNextEthBidPrice();
-			const ethAmountSent_ = requiredEthBidAmount_ + 10n ** 15n;
-			await hre.ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
-			await waitForTransactionReceipt(
-				bidderContract_.connect(contracts_.signers[4]).doBidWithEth({ value: ethAmountSent_, gasPrice: 0n })
-			);
-			expect(await hre.ethers.provider.getBalance(bidderContractAddress_)).equal(0n);
-		};
-
-		{
-			const contracts_ = await loadFixtureDeployContractsForTesting(2n);
-			await assertZeroGasPriceRefundIsSwallowed_(contracts_, contracts_.cosmicSignatureGameProxy, 1n);
-		}
-
-		{
-			const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2(2n);
-			const game_ = contracts_.cosmicSignatureGameV2Proxy;
-			await activateCurrentRound(game_, contracts_.ownerSigner);
-			await assertZeroGasPriceRefundIsSwallowed_(contracts_, game_, 2n);
-		}
-	});
+	// // This tests Comment-202607014.
+	// it("Zero gas price swallows an ETH bid refund", async function () {
+	// 	const assertZeroGasPriceRefundIsSwallowed_ = async (contracts_, game_, contractVersionNumber_) => {
+	// 		const bidderContractFactory_ = await hre.ethers.getContractFactory("BidderContract", contracts_.deployerSigner);
+	// 		const bidderContract_ = await bidderContractFactory_.deploy(await game_.getAddress());
+	// 		await bidderContract_.waitForDeployment();
+	// 		const bidderContractAddress_ = await bidderContract_.getAddress();
+	// 		await waitForTransactionReceipt(bidderContract_.connect(contracts_.signers[3]).setContractVersionNumber(contractVersionNumber_));
+	// 		await waitForTransactionReceipt(bidderContract_.connect(contracts_.signers[3]).setEthDepositAcceptanceModeCode(1n));
+	// 		
+	// 		const requiredEthBidAmount_ = await game_.getNextEthBidPriceAdvanced(1n);
+	// 		const ethAmountSent_ = requiredEthBidAmount_ + 10n ** 15n;
+	// 		await hre.ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
+	// 		await waitForTransactionReceipt(
+	// 			bidderContract_.connect(contracts_.signers[4]).doBidWithEth({value: ethAmountSent_, gasPrice: 0n,})
+	// 		);
+	// 		expect(await hre.ethers.provider.getBalance(bidderContractAddress_)).equal(0n);
+	// 	};
+	// 	
+	// 	{
+	// 		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
+	// 		await assertZeroGasPriceRefundIsSwallowed_(contracts_, contracts_.cosmicSignatureGameProxy, 1n);
+	// 	}
+	// 	
+	// 	{
+	// 		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2(2n);
+	// 		const game_ = contracts_.cosmicSignatureGameV2Proxy;
+	// 		await activateCurrentRound(game_, contracts_.ownerSigner);
+	// 		await assertZeroGasPriceRefundIsSwallowed_(contracts_, game_, 2n);
+	// 	}
+	// });
 
 	it("ETH refund receive by bidder reversal", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
@@ -736,6 +719,26 @@ describe("Bidding", function () {
 		cstDutchAuctionBeginningBidPrice_ = await contracts_.cosmicSignatureGameProxy.cstDutchAuctionBeginningBidPrice();
 		expect(cstDutchAuctionBeginningBidPrice_).equal(nextCstBidExpectedPrice_ * 2n);
 	});
+
+	// // This tests Comment-202607016.
+	// it("Raising the CST beginning bid price minimum raises the next-round first CST price in V1", async function () {
+	// 	const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
+	// 	
+	// 	const newMinLimit_ = 300n * 10n ** 18n;
+	// 	await waitForTransactionReceipt(
+	// 		contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner).setCstDutchAuctionBeginningBidPriceMinLimit(newMinLimit_)
+	// 	);
+	// 	expect(await contracts_.cosmicSignatureGameProxy.cstDutchAuctionBeginningBidPriceMinLimit()).equal(newMinLimit_);
+	// 	expect(await contracts_.cosmicSignatureGameProxy.nextRoundFirstCstDutchAuctionBeginningBidPrice()).equal(newMinLimit_);
+	// 	
+	// 	await setRoundActivationTimeIfNeeded(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner), 2n);
+	// 	// await makeNextBlockTimeDeterministic();
+	// 	const nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPriceAdvanced(1n);
+	// 	await waitForTransactionReceipt(
+	// 		contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[2]).bidWithEth(-1n, "", {value: nextEthBidPrice_,})
+	// 	);
+	// 	expect(await contracts_.cosmicSignatureGameProxy.getNextCstBidPrice()).equal(newMinLimit_);
+	// });
 
 	it("Cosmic Signature Token first mint reversal", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
