@@ -232,7 +232,7 @@ async function storeContractDeployedByteCodeAtAddress(contractName, address) {
 */
 function assertAddressIsValid(address) {
 	expect(address).not.equal(hre.ethers.ZeroAddress);
-	expect(address).properAddress;
+	expect(hre.ethers.isAddress(address)).equal(true);
 }
 
 // #endregion
@@ -299,7 +299,7 @@ function isExpectedTransactionErrorObject(errorObject) {
 		// See Comment-202606187 for details.
 		message.startsWith("Transaction reverted ");
 	if (errorIsExpected) {
-		expect(errorObject.receipt).undefined;
+		expect(errorObject.receipt).equal(undefined);
 	} else {
 		// console.error("<%s>", message);
 	}

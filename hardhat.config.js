@@ -195,7 +195,7 @@ function populateNetworkIsMainNetOnce(hre) {
 
 subtask(
 	TASK_COMPILE_SOLIDITY_GET_SOLC_BUILD,
-	async (args, _hre, _runSuper) => {
+	(args) => {
 		if (args.solcVersion == solidityVersion) {
 			return {
 				compilerPath: solidityCompilerPath,
