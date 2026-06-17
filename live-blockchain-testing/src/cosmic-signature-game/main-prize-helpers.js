@@ -47,7 +47,7 @@ async function claimMainPrize(cosmicSignatureGameProxy_, prizesWallet_, bidderSi
 // /** Comment-202509229 applies. */
 // async function forward_time_to_main_prize_time() {
 // 	const cosmicSignatureGame = await getCosmicSignatureGameContract();
-// 	let durationUntilMainPrize = await cosmicSignatureGame.getDurationUntilMainPrizeRaw(/* legacy note: maybe use {blockTag: "pending"} */);
+// 	let durationUntilMainPrize = await cosmicSignatureGame.getDurationUntilMainPrizeRaw(/*todo-9 {blockTag: "pending",}*/);
 // 	console.info("%s", `Duration until main prize before: ${durationUntilMainPrize}`);
 // 	if (durationUntilMainPrize > 0n) {
 // 		if (durationUntilMainPrize > 1n) {
@@ -57,7 +57,7 @@ async function claimMainPrize(cosmicSignatureGameProxy_, prizesWallet_, bidderSi
 //
 // 		// This is supposed to be zero.
 // 		// But this can also be negative.
-// 		durationUntilMainPrize = await cosmicSignatureGame.getDurationUntilMainPrizeRaw(/* legacy note: maybe use {blockTag: "pending"} */);
+// 		durationUntilMainPrize = await cosmicSignatureGame.getDurationUntilMainPrizeRaw(/*todo-9 {blockTag: "pending",}*/);
 //
 // 		console.info("%s", `Duration until main prize after: ${durationUntilMainPrize}`);
 // 	}
@@ -111,8 +111,8 @@ async function claimMainPrize(cosmicSignatureGameProxy_, prizesWallet_, bidderSi
 
 // /**
 // Comment-202509229 applies.
-// Legacy note: Chrono-Warrior now also gets ETH.
-// Legacy note: this function name maybe should not include "raffle".
+// todo-9 Now Chrono-Warrior also gets ETH.
+// todo-9 So maybe this function name should not include "raffle".
 // */
 // async function claim_raffle_eth(testingAcct, prizesWallet, event_logs) {
 // 	const unique_winners = {};
@@ -120,7 +120,7 @@ async function claimMainPrize(cosmicSignatureGameProxy_, prizesWallet_, bidderSi
 // 		let wlog = prizesWallet.interface.parseLog(event_logs[i]);
 // 		let prizeWinnerAddress = wlog.args.prizeWinnerAddress;
 // 		if (prizeWinnerAddress == testingAcct.address) {
-// 			// Legacy note: if revived, check whether this combination of `prizeWinnerAddress` and `wlog.args.roundNum` was already seen.
+// 			// todo-9 Do we now need to check that we haven't yet seen this combination of `prizeWinnerAddress` and `wlog.args.roundNum`?
 // 			if (unique_winners[prizeWinnerAddress] === undefined) {
 // 				await waitForTransactionReceipt(prizesWallet.connect(testingAcct).withdrawEth(wlog.args.roundNum));
 // 				unique_winners[prizeWinnerAddress] = 1;

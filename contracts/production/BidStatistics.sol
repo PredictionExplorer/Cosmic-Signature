@@ -125,7 +125,7 @@ abstract contract BidStatistics is CosmicSignatureGameStorage, IBidStatistics {
 			// #region
 
 			// [Comment-202605244]
-			// Optimization note. It's inefficient to load all these storage slots. We will not necessarily use some of these values.
+			// Issue. It's inefficient to load all these storage slots. We will not necessarily use some of these values.
 			// But it's not too bad, given Comment-202412135.
 			// [/Comment-202605244]
 			enduranceChampionAddress_ = enduranceChampionAddress;

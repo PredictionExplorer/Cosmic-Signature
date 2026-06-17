@@ -54,16 +54,15 @@ abstract contract BiddingOpenBid is
 	// #region Events
 
 	/// @dev
-	/// [Comment-202412164]
+	/// [ToDo-202412164-3]
 	/// This should be declared in an inherited interface.
-	/// This file is a prototype, so the interface cleanup is deferred until the prototype is revived.
-	/// [/Comment-202412164]
+	/// [/ToDo-202412164-3]
 	event TimesEthBidPriceChanged(uint256 newValue);
 
 	// #endregion
 	// #region `setTimesEthBidPrice`
 
-	/// @dev Comment-202412164 applies.
+	/// @dev ToDo-202412164-3 applies.
 	function setTimesEthBidPrice(uint256 newValue_) external onlyOwner {
 		timesEthBidPrice = newValue_;
 		emit TimesEthBidPriceChanged(newValue_);
@@ -171,7 +170,7 @@ abstract contract BiddingOpenBid is
 	// #endregion
 	// #region `bidWithEthAndDonateToken`
 
-	/// @dev Comment-202412164 applies.
+	/// @dev ToDo-202412164-3 applies.
 	function bidWithEthAndDonateToken(
 		int256 randomWalkNftId_,
 		bool isOpenBid_,
@@ -198,7 +197,7 @@ abstract contract BiddingOpenBid is
 	// #endregion
 	// #region `bidWithEthAndDonateNft`
 
-	/// @dev Comment-202412164 applies.
+	/// @dev ToDo-202412164-3 applies.
 	function bidWithEthAndDonateNft(
 		int256 randomWalkNftId_,
 		bool isOpenBid_,
@@ -220,7 +219,7 @@ abstract contract BiddingOpenBid is
 	// #endregion
 	// #region `bidWithEth`
 
-	/// @dev Comment-202412164 applies.
+	/// @dev ToDo-202412164-3 applies.
 	function bidWithEth(/*bytes memory data_*/ int256 randomWalkNftId_, bool isOpenBid_, string memory message_) external payable /*override*/ nonReentrant /*_onlyRoundIsActive*/ {
 		_bidWithEth(/*data_*/ randomWalkNftId_, isOpenBid_, message_);
 	}

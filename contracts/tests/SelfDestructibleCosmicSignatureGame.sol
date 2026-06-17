@@ -28,21 +28,21 @@ contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
 		// [/Comment-202606032]
 
 		// // Cosmic Signature NFTs.
-		// // Legacy note: this logic doesn't appear to make sense because we mint CS NFTs for bidders, not for the game itself, right?
+		// // todo-9 This logic doesn't appear to make sense because we mint CS NFTs for bidders, not for the game itself, right?
 		// for (uint256 nftId_ = nft.totalSupply(); nftId_ > 0; ) {
 		// 	-- nftId_;
 		// 	address nftOwnerAddress_ = nft.ownerOf(nftId_);
 		// 	if (nftOwnerAddress_ == address(this)) {
-		// 		// Legacy note: what if this reverts?
+		// 		// todo-9 What if this reverts?
 		// 		// Comment-202501145 applies.
 		// 		nft.transferFrom(address(this), _msgSender(), nftId_);
 		// 	}
 		// }
 
-		// Legacy note: we don't need to return any Random Walk NFTs, right?
-		// Legacy note: this contract can't own them, right?
+		// todo-9 We don't need to return any Random Walk NFTs, right?
+		// todo-9 This contract can't own them, right?
 
-		// // Legacy note: this logic doesn't appear to make sense because we mint CSTs for bidders, not for the game itself, right?
+		// // todo-9 This logic doesn't appear to make sense because we mint CSTs for bidders, not for the game itself, right?
 		// {
 		// 	uint256 myCstBalanceAmount_ = token.balanceOf(address(this));
 		// 	if (myCstBalanceAmount_ > 0) {
@@ -50,8 +50,8 @@ contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
 		// 	}
 		// }
 
-		// // Legacy note: Donated NFTs now live in `PrizesWallet`.
-		// // Legacy note: the owner or maybe a bidder account controlled by the owner can get them from there.
+		// // todo-9 Donated NFTs now live in `PrizesWallet`.
+		// // todo-9 So the owner or maybe a bidder account controlled by the owner can get them from there.
 		// for (uint256 donatedNftIndex_ = nextDonatedNftIndex; donatedNftIndex_ > 0; ) {
 		// 	-- donatedNftIndex_;
 		// 	CosmicSignatureConstants.DonatedNft storage donatedNft_ = donatedNfts[donatedNftIndex_];

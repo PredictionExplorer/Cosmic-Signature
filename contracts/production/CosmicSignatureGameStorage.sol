@@ -17,11 +17,11 @@ import { ICosmicSignatureGameStorage } from "./interfaces/ICosmicSignatureGameSt
 // #endregion
 // #region
 
-/// @dev Avoid combining big arrays with `mapping`s or dynamic arrays in the same contract.
-/// In this storage contract, mapping writes use the internal, monotonically increasing `roundNum`.
-/// User-provided historical round numbers are used by read-only statistics methods.
-/// Future write paths accepting an arbitrary `roundNum_` must validate that the index is within
-/// the intended fixed-array domain before writing storage.
+/// todo-1 +++ Avoid combining big arrays with `mapping`s or dynamic arrays in the same contract.
+/// todo-1 +++ But where we do so, consider validating that a big array item index passed to a method,
+/// todo-1 +++ such as `roundNum_`,  is not too big.
+/// todo-1 +++ Otherwise a collision can create a vulnerability.
+/// todo-1 +++ Really, `mapping`s and dynamic arrays (including strings) are evil. Avoid them!
 abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #region System Management
 
@@ -40,13 +40,16 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #endregion
 	// #region Bid Statistics
 
+	// /// todo-9 Rename to `lastBidTypeCode`.
+	// BidType public lastBidType;
+
 	/// @notice
 	/// [Comment-202605182]
 	/// The address of the account that placed the last bid.
 	/// [/Comment-202605182]
 	/// @dev
 	/// [Comment-202502044]
-	/// Design note. This is the same as the last `bidderAddresses` item. So it could make sense to eliminate this variable.
+	/// Issue. This is the same as the last `bidderAddresses` item. So it could make sense to eliminate this variable.
 	/// But let's leave it alone.
 	/// [/Comment-202502044]
 	address public lastBidderAddress;
@@ -60,7 +63,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	/// @dev
 	/// [Comment-202411098]
-	/// Design note. One might want to not save info about past bidding rounds.
+	/// Issue. One might want to not save info about past bidding rounds.
 	/// But the project founders consider using this info for other purposes.
 	/// Comment-202502045 relates.
 	/// [/Comment-202411098]
@@ -506,7 +509,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// solhint-disable-next-line var-name-mixedcase
 	uint256[1 << 30] private __gap_persistent;
 
-	// Solidity currently does not support transient storage for reference types.
+	// todo-1 Transient storage is not yet supported for reference types.
 	/// @dev Comment-202412142 applies.
 	/// Comment-202412148 applies.
 	// uint256[1 << 30] private transient __gap_transient;

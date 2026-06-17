@@ -14,7 +14,7 @@ const { assertAddressIsValid, assertEvent, generateRandomUInt256Seed } = require
 // #endregion
 // #region `createCosmicSignatureGameProxySimulator`
 
-/** A future simulator stress test could populate this with random values; current tests use deterministic defaults. */
+/** todo-3 Another test would be to populate this with some random values. But I have no immediate plans to develop it. */
 async function createCosmicSignatureGameProxySimulator(
 	contracts_,
 	cosmicSignatureTokenSimulator_,

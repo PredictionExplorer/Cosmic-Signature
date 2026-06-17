@@ -80,7 +80,7 @@ library CosmicSignatureConstants {
 	/// avoiding refund-transfer side effects that would make estimation less reliable.
 	/// [/Comment-202606216]
 	/// This value equals the amount of gas consumed by the logic in the block near Comment-202506219.
-	/// Re-measure this value after chain upgrades that materially change ETH transfer gas costs.
+	/// todo-2 This value might need tweaking after a blockchain upgrade.
 	/// [/Comment-202502052]
 	uint256 internal constant DEFAULT_ETH_BID_REFUND_AMOUNT_IN_GAS_TO_SWALLOW_MAX_LIMIT = 6843;
 

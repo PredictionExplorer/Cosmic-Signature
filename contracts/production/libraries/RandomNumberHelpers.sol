@@ -46,7 +46,7 @@ library RandomNumberHelpers {
 		uint256 randomNumberSeed_ = uint256(blockhash(block.number - 1)) >> 1;
 
 		// // [Comment-202505294]
-		// // Hardhat note. On Hardhat Network, under certain conditions this assertion fails.
+		// // Issue. On Hardhat Network, under certain conditions this assertion fails.
 		// // Comment-202508265 relates.
 		// // [/Comment-202505294]
 		// // #enable_asserts assert(block.basefee > 0);

@@ -20,7 +20,7 @@
 // 	if (privKey === undefined || privKey.length <= 0) {
 // 		console.error(
 // 			"%s",
-// 			// Legacy note: "scripts/deploy.js" no longer exists.
+// 			// todo-9 "scripts/deploy.js" no longer exists.
 // 			"Error. Please provide private key on the command line as ENVIRONMENT variable 'PRIVKEY', example : PRIVKEY=\"0x21982349...\" npx hardhat run scripts/deploy.js",
 // 		);
 // 		process.exit(1);
@@ -33,8 +33,8 @@
 // 	// let params = hre.ethers.AbiCoder.defaultAbiCoder().encode([bidParamsEncoding], [bidParams]);
 // 	let nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice({blockTag: "pending",});
 // 	console.info("%s", `nextEthBidPrice before: ${nextEthBidPrice}`);
-// 	// Legacy note: avoid providing `gasLimit` explicitly if this script is revived.
-// 	// Legacy note: call `waitForTransactionReceipt` if this script is revived.
+// 	// todo-9 Revisit this `gasLimit` thing. Avoid providing it explicitly.
+// 	// todo-9 It appears that we need to call `waitForTransactionReceipt` here.
 // 	await cosmicSignatureGame.connect(testingAcct).bidWithEth(/*params*/ -1n, true, "open bid test", {value: nextEthBidPrice * multiplier, gasLimit: 30_000_000,});
 // 	nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice({blockTag: "pending",});
 // 	console.info("%s", `nextEthBidPrice after: ${nextEthBidPrice}`);

@@ -15,19 +15,19 @@ import { IRandomWalkNFT } from "./interfaces/IRandomWalkNFT.sol";
 /// Comment-202502063 relates.
 /// [/Comment-202409149]
 ///
-/// Legacy note. There is a little vulnerability here, described in Comment-202503253.
+/// Issue. There is a little vulnerability here, described in Comment-202503253.
 contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 	// #region State
 
 	/// @notice November 11 2021 19:00 New York Time
-	/// @dev Legacy note. This could have been a `constant`.
+	/// @dev Issue. Should this be a `constant`?
 	uint256 public saleTime = 1_636_675_200;
 
 	/// @notice Price starts at 0.001 ETH
 	uint256 public price = 0.001 ether;
 
 	/// @notice How long to wait until the last minter can withdraw
-	/// @dev Legacy note. This could have been a `constant`.
+	/// @dev Issue. Should this be a `constant`?
 	uint256 public withdrawalWaitSeconds = 30 days;
 
 	/// @notice Seeds
@@ -40,22 +40,22 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 	mapping(uint256 => uint256) public withdrawalAmounts;
 
 	/// @notice Entropy
-	/// @dev Legacy note. Random number generation could have been implemented better here.
+	/// @dev Issue. Random number generation could have been implemented better here.
 	/// But keep in mind that the assumption described in Comment-202503254 is not valid here.
 	bytes32 public entropy;
 
 	address public lastMinter = address(0);
 
-	/// @dev Legacy note. Slither: RandomWalkNFT.lastMintTime is set pre-construction with a non-constant function or state variable: saleTime.
+	/// @dev Issue. Slither: RandomWalkNFT.lastMintTime is set pre-construction with a non-constant function or state variable: saleTime
 	uint256 public lastMintTime = saleTime;
 
-	/// @dev Legacy note. We don't need this variable. We can use `totalSupply` instead.
+	/// @dev Issue. We don't need this variable. We can use `totalSupply` instead.
 	uint256 public nextTokenId = 0;
 
 	string private _baseTokenURI;
 
 	/// @notice IPFS link to the Python script that generates images and videos for each NFT based on seed.
-	/// @dev Legacy note. This could have been a `constant`.
+	/// @dev Issue. Should this be a `constant`?
 	string public tokenGenerationScript = "ipfs://QmP7Z8VbQLpytzXnceeAAc4D5tX39XVzoEeUZwEK8aPk8W";
 
 	// #endregion
@@ -66,7 +66,7 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 	/// Comment-202409149 relates and/or applies.
 	/// [/Comment-202503251]
 	constructor() ERC721("RandomWalkNFT", "RWLK") Ownable(_msgSender()) {
-		// Legacy note. It would be more efficient and not any less random to initialize this with a hardcoded number.
+		// Issue. It would be more efficient and not any less random to initialize this with a hardcoded number.
 		entropy = keccak256(
 			abi.encode(
 				"A two-dimensional random walk will return to the point where it started, but a three-dimensional one may not.",
@@ -84,7 +84,7 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 
 	function setTokenName(uint256 tokenId, string memory name) public override {
 		// [Comment-202502063]
-		// OpenZeppelin 5 note. `_isApprovedOrOwner` has been replaced with `_isAuthorized`.
+		// Issue. In OpenZeppelin 5, `_isApprovedOrOwner` has been replaced with `_isAuthorized`.
 		// Comment-202409149 relates and/or applies.
 		// [/Comment-202502063]
 		// require(_isApprovedOrOwner(_msgSender(), tokenId), "setTokenName caller is not owner nor approved");
@@ -95,7 +95,7 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 		emit TokenNameEvent(tokenId, name);
 	}
 
-	/// @dev Legacy note. `virtual` is not needed here.
+	/// @dev Issue. `virtual` is not needd here.
 	function _baseURI() internal view virtual override returns (string memory) {
 		return _baseTokenURI;
 	}
@@ -143,7 +143,7 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 		(bool success, ) = destination.call{ value: amount }("");
 		require(success, "Transfer failed.");
 		
-		// Legacy note. This is in part similar to Comment-202503253.
+		// Issue. This is in part similar to Comment-202503253.
 		emit WithdrawalEvent(tokenId, destination, amount);
 	}
 
@@ -160,7 +160,7 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 		nextTokenId += 1;
 
 		// [Comment-202412103]
-		// Legacy note. `blockhash(block.number)` is always zero.
+		// Issue. `blockhash(block.number)` is always zero.
 		// [/Comment-202412103]
 		entropy = keccak256(abi.encode(entropy, block.timestamp, blockhash(block.number), tokenId, lastMinter));
 
@@ -174,7 +174,7 @@ contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {
 		}
 
 		// [Comment-202503253]
-		// Legacy note. Reentrancy vulnerability. During the call to `lastMinter.call`, `lastMinter`, `entropy`, and `price` could have changed.
+		// Issue. Reentrancy vulnerability. During the call to `lastMinter.call`, `lastMinter`, `entropy`, and `price` could have changed.
 		// Also, the order of events can be messed up.
 		// But given Comment-202409149, it's too late to fix this.
 		// [/Comment-202503253]

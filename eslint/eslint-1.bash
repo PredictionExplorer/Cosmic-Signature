@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 
 # Comment-202506016 relates.
-# Run this script before committing JavaScript changes.
+# todo-1 Remember to run this script.
 
 # '/usr/bin/clear'
 

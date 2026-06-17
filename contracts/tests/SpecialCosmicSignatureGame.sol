@@ -32,7 +32,7 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 	function mintCosmicSignatureNft(address nftOwnerAddress_) external {
 		_prepareEntropyOnce();
 		unchecked { ++ _entropy.value; }
-		// Using a low-level call preserves the return-data bubbling behavior described near Comment-202502043.
+		// todo-3 Should we make a high level call here? Comment-202502043 relates.
 		(bool isSuccess_, ) = address(nft).call(abi.encodeWithSelector(ICosmicSignatureNft.mint.selector, roundNum, nftOwnerAddress_, _entropy.value));
 		if ( ! isSuccess_ ) {
 			assembly {

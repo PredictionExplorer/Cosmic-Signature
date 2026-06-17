@@ -298,7 +298,7 @@ async function getBlockTimeStampByBlockNumber(blockNumber_) {
 Sometimes (always?) Hardhat forgets to apply the configured `gasMultiplier`.
 This hack fixes that.
 This issue is said to have been fixed in Hardhat 3.
-Hardhat 2.x is unlikely to receive the same fix, so keep this compatibility shim while the project stays on Hardhat 2.
+todo-3 Are they going to fix the issue in Hardhat 2.x? Unlikely.
 Comment-202508265 relates.
 [/Comment-202509185]
 */

@@ -24,9 +24,9 @@ for example:
 
     arbitrumSepolia: {
         url: `http://[ip_address]:[port]/`,
-        <!-- Legacy note: this environment variable is no longer used. -->
+        <!-- todo-9 I have now commented out the use of this environment variable. -->
         accounts: ((process.env.ARBITRUM_SEPOLIA_PRIVATE_KEY ?? "").length > 0) ? [process.env.ARBITRUM_SEPOLIA_PRIVATE_KEY] : [],
-        <!-- Legacy note: a smaller value like 1.5 could be enough. -->
+        <!-- todo-9 A smaller value like 1.5 could be enough. -->
         gasMultiplier: 2,
     }
 
@@ -37,7 +37,7 @@ because eth_estimateGas function produces very low gasLimit values and because A
     Example config file is located at tasks/default-config (you should copy it and change values)
 	Note: the deployment must be executed with `switchToRuntimeMode` flag set to 'false' (because
 	(we will set time intervals for bidding and claiming prize to lower values)
-    <!-- Legacy note: runtime and maintenance modes no longer exist; `roundActivationTime` now plays that role. -->
+    <!-- todo-9 There is no such thing as runtime and maintenance modes any more. Now `roundActivationTime` plays that role. -->
 
 ##### for local testnet:
 
@@ -57,7 +57,7 @@ Note: the main difference between localnet and Arbitrum Sepolia deployment is th
 
 ##### Enable game-mode
 
-    <!-- Legacy note: runtime and maintenance modes no longer exist; `roundActivationTime` now plays that role. -->
+    <!-- todo-9 There is no such thing as runtime and maintenance modes any more. Now `roundActivationTime` plays that role. -->
     PRIVKEY=[private_key] COSMIC_SIGNATURE_GAME_ADDRESS=[addr] npx hardhat run ./scripts/set-runtime-mode.js --network [network-name])
 
 Copy the CosmicSignatureGameProxy contract address and run test scripts:

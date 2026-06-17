@@ -7,7 +7,7 @@
 // Issue. This is a legacy function that I stopped short of deleting for now.
 // Consider deleting it.
 // [/Comment-202509229]
-// Legacy note: if revived, this should return `{cosmicSignatureGameAddress, cosmicSignatureGame}`.
+// todo-9 This should return an object: `{cosmicSignatureGameAddress, cosmicSignatureGame,}`.
 // */
 // async function getCosmicSignatureGameContract(cosmicSignatureGameContractName = "CosmicSignatureGame") {
 // 	const cosmicSignatureGameAddress = process.env.COSMIC_SIGNATURE_GAME_ADDRESS;
@@ -18,10 +18,10 @@
 //
 // 	// [Comment-202502096]
 // 	// Issue. This uses default signer. Is it a problem?
-// 	// Legacy note: everywhere we call `getContractAt`, think about the above.
-// 	// Legacy note: everywhere we call `getContractAt`, consider calling `attach` on the contract factory. See `deployContractsAdvanced`.
-// 	// Legacy note: maybe add a param: `defaultSigner`, similar to `deployerSigner` in some other functions.
-// 	// Legacy note: some scripts use the `PRIVKEY` environment variable. So the caller can pass that wallet to us.
+// 	// todo-9 Everywhere we call `getContractAt`, think about the above.
+// 	// todo-9 Everywhere we call `getContractAt`, consider calling `attach` on the contract factory. See `deployContractsAdvanced`.
+// 	// todo-9 Mybe add a param: `defaultSigner`, similar to `deployerSigner` in some other functions.
+// 	// todo-9 Some scripts use the `PRIVKEY` environment variable. So the caller can pass that wallet to us.
 // 	// [/Comment-202502096]
 // 	const cosmicSignatureGame = await hre.ethers.getContractAt(cosmicSignatureGameContractName, cosmicSignatureGameAddress);
 //
@@ -30,7 +30,7 @@
 
 // /**
 // Comment-202509229 applies.
-// Legacy note: if revived, this should return `{bidderContractAddress, bidderContract}`.
+// todo-9 This should return an object: `{bidderContractAddress, bidderContract,}`.
 // */
 // async function getBidderContract() {
 // 	const bidderContractAddress = process.env.BIDDER_CONTRACT_ADDRESS;

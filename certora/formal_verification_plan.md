@@ -28,13 +28,13 @@
 
 | Domain / Contract set | Spec file(s) | Rules | Pass % | Quality (★ 1-5) | Notes |
 | --------------------- | ------------ | ----- | ------ | --------------- | ----- |
-| Game core | `GameCore.spec` | 67 | **100 %** | ★★★★☆ | ETH & NFT conservation pending |
+| Game core | `GameCore.spec` | 67 | **100 %** | ★★★★☆ | ETH & NFT conservation TODO |
 | Game ownership | `GameOwnership.spec` | 4 | **100 %** | ★★★☆☆ | Merge into `AccessControl.spec` (Week 1) |
 | Wallets (ETH) | `WalletsAndETH.spec`, `PrizesWalletSafety_simple.spec` | 17 | **100 %** | ★★★☆☆ | Forced-ETH reception rule missing |
 | Charity wallet | `CharityWallet.spec` | 15 | **100 %** | ★★★★☆ | `send()` arithmetic check future invariant |
 | Marketing wallet | `MarketingWallet.spec` | 12 | **100 %** | ★★★☆☆ | ERC20 rounding invariant pending |
 | Tokens & NFTs | `TokensAndNFTs.spec` | 28 | **100 %** | ★★★★☆ | Total-supply invariant missing |
-| Staking wallets | `StakingWallets.spec` | 42 | **100 %** | ★★★☆☆ | Randomness selection edge cases pending |
+| Staking wallets | `StakingWallets.spec` | 42 | **100 %** | ★★★☆☆ | Randomness selection edge cases TODO |
 | System config | `SystemConfig.spec` | 8 | **100 %** | ★★★☆☆ | Percentage-sum invariant pending |
 | Global invariants | `EthConservation.spec` (draft) | 1 | 0 % | ☆☆☆☆☆ | Skeleton only |
 

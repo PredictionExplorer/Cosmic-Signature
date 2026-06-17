@@ -11,7 +11,7 @@ import { IAddressValidator } from "./IAddressValidator.sol";
 /// [Comment-202511039]
 /// A contract like this can be generated at https://wizard.openzeppelin.com/ .
 /// [/Comment-202511039]
-/// Design note. It could make sense to derive this contract from `ERC721Permit`,
+/// Issue. It could make sense to derive this contract from `ERC721Permit`,
 /// but OpenZeppelin doesn't include such a contract.
 interface ICosmicSignatureNft is IERC721Enumerable, IAddressValidator {
 	/// @notice Details about a Cosmic Signature NFT.
@@ -31,7 +31,7 @@ interface ICosmicSignatureNft is IERC721Enumerable, IAddressValidator {
 	/// @dev
 	/// [Comment-202501144]
 	/// This is similar to `ICosmicSignatureToken.MintSpec` and `ICosmicSignatureToken.MintOrBurnSpec`.
-	/// Design note. This is not used.
+	/// Issue. This is not used.
 	/// Something like this can be used to implement the transfer of multiple NFTs in a single transaction.
 	/// A method offering such a functionality could be named `transferFromMany`.
 	/// But, I feel, such a feature is not a high priority, so I have no plans to implement it.

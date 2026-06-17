@@ -60,7 +60,7 @@ abstract contract MainPrizeBase is CosmicSignatureGameStorage, IMainPrizeBase {
 		// #enable_smtchecker */
 		{
 			// [Comment-202606175]
-			// Legacy V1 behavior. This logic ensures that `mainPrizeTime` becomes in the future, even if it's already in the past.
+			// Issue. This logic ensures that `mainPrizeTime` becomes in the future, even if it's already in the past.
 			// There is also a main prize claim timeout on top of that.
 			// As a result, someone can, at least in theory, make a free or, at least, less expensive than the bidding reward CST bid
 			// before the timeout expires. The timeout is long enough to allow that.

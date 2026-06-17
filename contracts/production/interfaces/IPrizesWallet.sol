@@ -94,7 +94,7 @@ interface IPrizesWallet is IAddressValidator {
 	/// @param prizeWinnerAddress Prize winner address.
 	/// @param amount ETH amount.
 	/// It can potentially be zero.
-	/// @dev Design note. This event is kinda redundant, given that `CosmicSignatureGame` already emits
+	/// @dev Issue. This event is kinda redundant, given that `CosmicSignatureGame` already emits
 	/// a more specific event for each ETH deposit. But Nick is saying that he does need it.
 	event EthReceived(
 		uint256 indexed roundNum,
@@ -210,7 +210,7 @@ interface IPrizesWallet is IAddressValidator {
 	/// @return The ended bidding round's timeout time to withdraw prizes.
 	/// @dev
 	/// [Comment-202502076]
-	/// API completeness note. `registerRoundEnd` and `depositEth` are never called. They exist only for completeness.
+	/// Issue. `registerRoundEnd` and `depositEth` are never called. They exist only for completeness.
 	/// `registerRoundEndAndDepositEthMany` is called instead.
 	/// [/Comment-202502076]
 	function registerRoundEnd(uint256 roundNum_, address mainPrizeBeneficiaryAddress_) external returns (uint256);

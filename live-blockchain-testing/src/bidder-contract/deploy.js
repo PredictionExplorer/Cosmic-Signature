@@ -10,7 +10,7 @@
 // 	const cosmicSignatureGame = await getCosmicSignatureGameContract();
 // 	const cosmicSignatureGameAddress = await cosmicSignatureGame.getAddress();
 //
-// 	// Legacy note: take `deployerSigner` from the `PRIVKEY` environment variable if this script is revived.
+// 	// todo-9 Take `deployerSigner` from the `PRIVKEY` environment variable.
 // 	const [deployerSigner,] = await hre.ethers.getSigners();
 // 	const bidderContractFactory = await hre.ethers.getContractFactory("BidderContract", deployerSigner);
 // 	const bidderContract = await bidderContractFactory.deploy(cosmicSignatureGameAddress);

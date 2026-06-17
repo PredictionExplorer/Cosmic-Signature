@@ -184,7 +184,7 @@ async function deployContractsForTestingAdvanced(
 Issue. The Hardhat Coverage task ignores parts of Hardhat configuration.
 This method fixes the issue.
 The `blockGasLimit` parameter is also ignored, but we are happy with its default value.
-Hardhat 2.x is unlikely to change this behavior, so keep this compatibility shim while the project stays on Hardhat 2.
+todo-3 Is the above behavior going to change in a future version of Hardhat 2.x? Unlikely.
 Comment-202505294 relates.
 Comment-202509185 relates.
 [/Comment-202508265]
@@ -286,7 +286,7 @@ function isExpectedTransactionErrorObject(errorObject) {
 	// // Testing.
 	// // Issue. I observed this message: `Transaction reverted and Hardhat couldn't infer the reason.`.
 	// // I posted at https://predictionexplorer.slack.com/archives/D07EAEGJWPJ/p1780519717609329
-	// // Revisit this diagnostic if Hardhat starts emitting this message again.
+	// // todo-3 To be revisited.
 	// // [/Comment-202606187]
 	// if (message.includes("Hardhat could")) {
 	// 	console.warn("Warning. A suspicious transaction error: %s", message);

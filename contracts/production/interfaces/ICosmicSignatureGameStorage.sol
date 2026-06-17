@@ -18,6 +18,22 @@ interface ICosmicSignatureGameStorage {
 		string data;
 	}
 
+	// /// @notice Types of bids that can be made in the Game.
+	// /// todo-9 Rename to `BidTypeCode`.
+	// enum BidType {
+	// 	/// @notice Bid using Ether.
+	// 	/// todo-9 Rename to `Eth`.
+	// 	ETH,
+	//
+	// 	/// @notice Bid using Ether + a Random Walk NFT.
+	// 	/// todo-9 Rename to `EthPlusRandomWalkNft`.
+	// 	RandomWalk,
+	//
+	// 	/// @notice Bid using Cosmic Signature Tokens.
+	// 	/// todo-9 Rename to `Cst`.
+	// 	CST
+	// }
+
 	/// @notice Contains each bid's bidder address.
 	struct BidderAddresses {
 		uint256 numItems;
@@ -28,7 +44,7 @@ interface ICosmicSignatureGameStorage {
 	struct BidderInfo {
 		/// @dev Comment-202503162 relates and/or applies.
 		/// [Comment-202502045]
-		/// Design note. One might want to eliminate this variable.
+		/// Issue. One might want to eliminate this variable.
 		/// But the project founders consider using this info for other purposes.
 		/// Comment-202411098 relates.
 		/// [/Comment-202502045]

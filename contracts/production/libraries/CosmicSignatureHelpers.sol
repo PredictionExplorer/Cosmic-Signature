@@ -9,7 +9,7 @@ pragma solidity =0.8.34;
 library CosmicSignatureHelpers {
 	// #region `transferEthTo`
 
-	/// @dev Design note. In some places where we transfer ETH by calling `address.call`,
+	/// @dev Issue. In some places where we transfer ETH by calling `address.call`,
 	/// it could make sense to call this method instead.
 	/// But I have no immediate plans to refactor anything.
 	function transferEthTo(address payable toAddress_, uint256 amount_) internal {

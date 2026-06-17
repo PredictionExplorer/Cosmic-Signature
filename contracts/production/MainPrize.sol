@@ -149,7 +149,7 @@ abstract contract MainPrize is
 		// #region
 
 		// [Comment-202605311]
-		// Optimization note. The idea described in Comment-202502077 would be difficult to implement here.
+		// Issue. It appears that the optimization idea described in Comment-202502077 would be difficult to implement here.
 		// [/Comment-202605311]
 		RandomNumberHelpers.RandomNumberSeedWrapper memory randomNumberSeedWrapper_;
 

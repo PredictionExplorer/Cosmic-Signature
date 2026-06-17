@@ -32,6 +32,9 @@ abstract contract CosmicSignatureGameStorageV2 is ICosmicSignatureGameStorage {
 	// #endregion
 	// #region Bid Statistics
 
+	// /// todo-9 Rename to `lastBidTypeCode`.
+	// BidType public lastBidType;
+
 	/// @notice Comment-202605182 applies.
 	/// @dev Comment-202502044 applies.
 	address public lastBidderAddress;
@@ -321,7 +324,7 @@ abstract contract CosmicSignatureGameStorageV2 is ICosmicSignatureGameStorage {
 	// solhint-disable-next-line var-name-mixedcase
 	uint256[(1 << 30) - 1] private __gap_persistent;
 
-	// Solidity currently does not support transient storage for reference types.
+	// todo-1 Transient storage is not yet supported for reference types.
 	/// @dev Comment-202412142 applies.
 	/// Comment-202412148 applies.
 	// uint256[1 << 30] private transient __gap_transient;
