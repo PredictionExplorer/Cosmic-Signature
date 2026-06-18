@@ -5,14 +5,10 @@
 // #endregion
 // #region Imports
 
+const hre = require("hardhat");
 const { expect } = require("chai");
 const { sqrtFloor, maxBigInt, u256 } = require("./FuzzMath.js");
 const c = require("./FuzzConstants.js");
-
-// #endregion
-// #region
-
-// const MAX_UINT256 = (1n << 256n) - 1n;
 
 // #endregion
 // #region `GameModel`
@@ -651,8 +647,7 @@ class GameModel {
 // #endregion
 // #region
 
-// todo-ai-0 Can we use `hre.ethers.ZeroAddress` instead of this?
-const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+const ZERO_ADDRESS = hre.ethers.ZeroAddress;
 
 module.exports = {
 	GameModel,

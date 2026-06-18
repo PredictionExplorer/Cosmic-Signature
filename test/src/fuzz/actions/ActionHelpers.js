@@ -7,14 +7,7 @@
 
 const { expect } = require("chai");
 const { ZERO_ADDRESS } = require("../GameModel.js");
-
-// #endregion
-// #region
-
-// todo-ai-0 The AI defined this constant in multiple places and hardcoded the magic number in a few others.
-// todo-ai-0 It wold be nice to define it in one file and import from the others.
-// todo-ai-0 But I have commented it out here.
-// const MAX_UINT256 = (1n << 256n) - 1n;
+const { MAX_UINT256 } = require("../FuzzMath.js");
 
 // #endregion
 // #region Bid planning helpers
@@ -183,7 +176,7 @@ async function ensureMockErc20For(ctx_, actor_, amount_) {
 		const approveResult_ = await engine.execTx({
 			signer: actor_.signer,
 			buildTx: (overrides_) =>
-				contracts.fuzzTestMockErc20.connect(actor_.signer).approve(contracts.prizesWalletAddress, (1n << 256n) - 1n, overrides_),
+				contracts.fuzzTestMockErc20.connect(actor_.signer).approve(contracts.prizesWalletAddress, MAX_UINT256, overrides_),
 		});
 		engine.expectOk(approveResult_, "mock ERC-20 approval for PrizesWallet");
 		actor_.mockErc20Approved = true;
@@ -354,7 +347,7 @@ async function executeCstBid(ctx_, actor_, options_) {
 	}
 	let priceMaxLimit_;
 	switch (options_.maxLimitMode ?? "padded") {
-		case "max": priceMaxLimit_ = (1n << 256n) - 1n; break;
+		case "max": priceMaxLimit_ = MAX_UINT256; break;
 		case "exact": priceMaxLimit_ = price_; break;
 		default: priceMaxLimit_ = price_ + engine.randomBigIntRange(0n, price_ + 1n); break;
 	}

@@ -9,11 +9,6 @@ const { expect } = require("chai");
 const { ZERO_ADDRESS } = require("../GameModel.js");
 
 // #endregion
-// #region
-
-// const MAX_UINT256 = (1n << 256n) - 1n;
-
-// #endregion
 // #region Broken-staker helpers
 
 /** Returns the `BrokenCosmicSignatureNftStaker`'s active CS stake action id (bigint), or null. */

@@ -5,6 +5,7 @@
 const { expect } = require("chai");
 const { ENABLE_SMTCHECKER } = require("../../../../src/Helpers.js");
 const { ZERO_ADDRESS } = require("../GameModel.js");
+const { MAX_UINT256 } = require("../FuzzMath.js");
 const {
 	pickBiddableRandomWalkNft,
 	pickStakeableRandomWalkNft,
@@ -193,7 +194,7 @@ async function claimWithOverflowingDelay(ctx_) {
 	const owner_ = ctx_.contracts.ownerSigner;
 	const ownerGame_ = ctx_.game.connect(owner_).contract;
 	const prevDelay_ = model.delayDurationBeforeRoundActivation;
-	const maxDelay_ = (1n << 256n) - 1n;
+	const maxDelay_ = MAX_UINT256;
 
 	// Overflow the next-round activation math while a bid is already placed (mid active round).
 	const setResult_ = await engine.execTx({

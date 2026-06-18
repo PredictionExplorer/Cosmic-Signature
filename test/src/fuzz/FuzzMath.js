@@ -5,6 +5,9 @@ Pure bigint math helpers mirroring on-chain arithmetic exactly.
 All division is truncating (like Solidity `uint256` division for non-negative operands).
 */
 
+/** Maximum `uint256` value (`2 ** 256 - 1`). */
+const MAX_UINT256 = (1n << 256n) - 1n;
+
 /**
 Floor integer square root, matching OpenZeppelin `Math.sqrt` exactly.
 @param {bigint} value_
@@ -76,6 +79,7 @@ function u256(value_, label_ = "uint256 arithmetic", allowWrap_ = false) {
 }
 
 module.exports = {
+	MAX_UINT256,
 	sqrtFloor,
 	maxBigInt,
 	minBigInt,

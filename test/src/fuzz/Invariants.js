@@ -4,6 +4,7 @@
 
 const { expect } = require("chai");
 const { ZERO_ADDRESS } = require("./GameModel.js");
+const { MAX_UINT256 } = require("./FuzzMath.js");
 
 // #endregion
 // #region Invariant suite
@@ -174,7 +175,7 @@ async function runInvariants(ctx_) {
 	{
 		const chronoAddr_ = await game_.chronoWarriorAddress();
 		const chronoDur_ = await game_.chronoWarriorDuration();
-		const sentinel_ = (1n << 256n) - 1n;
+		const sentinel_ = MAX_UINT256;
 		if (chronoAddr_ === ZERO_ADDRESS) {
 			expect(chronoDur_, "zero chrono addr => sentinel duration").to.equal(sentinel_);
 		} else {
