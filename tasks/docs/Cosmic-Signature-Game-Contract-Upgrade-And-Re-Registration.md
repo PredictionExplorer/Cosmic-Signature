@@ -66,6 +66,6 @@ The old state of affairs still exists in the tracking info stored in `.openzeppe
 
 #### Afterwards
 
-- See respective section in `Cosmic-Signature-Contracts-Deployment-And-Registration.md`.
-
 - Revert any temporary edits you made in config files.
+
+- See respective section in `Cosmic-Signature-Contracts-Deployment-And-Registration.md`.
