@@ -4,7 +4,7 @@
 
 const { expect } = require("chai");
 const { ZERO_ADDRESS } = require("./GameModel.js");
-const { MAX_UINT256 } = require("./FuzzMath.js");
+const { MAX_UINT256 } = require("../../../src/BigIntMathHelpers.js");
 
 // #endregion
 // #region Invariant suite

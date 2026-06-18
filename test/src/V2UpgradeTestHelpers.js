@@ -6,7 +6,6 @@ const { getBlockTimeStampByBlockNumber, waitForTransactionReceipt } = require(".
 const { setRoundActivationTimeIfNeeded } = require("../../src/ContractDeploymentHelpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
 
-const MAX_UINT256 = (1n << 256n) - 1n;
 const INITIAL_CST_DUTCH_AUCTION_DURATION = 12n * 60n * 60n;
 const DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR = 250n;
 const DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER = 10800000000000000000000000000000000000000000000n;
@@ -123,7 +122,6 @@ async function expectUnknownSelector(contract_, selector_) {
 }
 
 module.exports = {
-	MAX_UINT256,
 	INITIAL_CST_DUTCH_AUCTION_DURATION,
 	DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR,
 	DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER,

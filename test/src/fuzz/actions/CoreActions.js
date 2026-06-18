@@ -5,7 +5,7 @@
 const { expect } = require("chai");
 const { ENABLE_SMTCHECKER } = require("../../../../src/Helpers.js");
 const { ZERO_ADDRESS } = require("../GameModel.js");
-const { MAX_UINT256 } = require("../FuzzMath.js");
+const { MAX_UINT256 } = require("../../../../src/BigIntMathHelpers.js");
 const {
 	pickBiddableRandomWalkNft,
 	pickStakeableRandomWalkNft,

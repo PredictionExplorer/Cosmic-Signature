@@ -28,7 +28,7 @@
 			export ENABLE_SMTCHECKER="${3}"
 			'npx' 'hardhat' 'test' 'test/tests-src/FuzzTest.js'
 			if [ $? -ne 0 ]; then
-				echo "Error. Fuzz run '${4}' failed."
+				read '-r' '-n' '1' '-s' '-p' "Error. Fuzz run \"${4}\" failed. Press any key to finish."
 				OutcomeCode=2
 			fi
 		fi
@@ -37,7 +37,7 @@
 	if [ ${OutcomeCode} -lt 2 ]; then
 		cd '--' '../..'
 		if [ $? -ne 0 ]; then
-			echo 'Error. Could not cd to the project root.'
+			read '-r' '-n' '1' '-s' '-p' 'Error. Could not cd to the project root. Press any key to finish.'
 			OutcomeCode=2
 		fi
 	fi
@@ -71,7 +71,7 @@
 			echo "=================================================================="
 			'npx' 'hardhat' 'test' 'test/tests-src/FuzzTest.js'
 			if [ $? -ne 0 ]; then
-				echo "Error. Fuzz soak run ${Index} failed (see the printed FUZZ_SEED to reproduce)."
+				read '-r' '-n' '1' '-s' '-p' "Error. Fuzz soak run ${Index} failed (see the printed FUZZ_SEED to reproduce). Press any key to finish."
 				OutcomeCode=2
 			fi
 		done

@@ -8,6 +8,7 @@
 const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
+const { MAX_UINT256 } = require("../../src/BigIntMathHelpers.js");
 const { generateRandomUInt256, generateRandomUInt256FromSeedWrapper, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { LONG_TEST_MODE_CODE, loadFixtureDeployContractsForTesting, tryWaitForTransactionReceipt } = require("../../src/ContractTestingHelpers.js");
 
@@ -96,7 +97,7 @@ describe("PrizesWallet-1", function () {
 
 		for (let bidderIndex_ = numBidders_; ( -- bidderIndex_ ) >= 0; ) {
 			for (const token_ of tokens_) {
-				await waitForTransactionReceipt(token_.connect(contracts_.signers[bidderIndex_]).approve(newPrizesWalletAddress_, (1n << 256n) - 1n));
+				await waitForTransactionReceipt(token_.connect(contracts_.signers[bidderIndex_]).approve(newPrizesWalletAddress_, MAX_UINT256));
 			}
 			for (const nftContract_ of nftContracts_) {
 				await waitForTransactionReceipt(nftContract_.connect(contracts_.signers[bidderIndex_]).setApprovalForAll(newPrizesWalletAddress_, true));
@@ -488,7 +489,7 @@ describe("PrizesWallet-1", function () {
 					allTokenBalanceAmounts_[tokenIndex_][donatedTokenHolderAddress_] += tokenAmount_;
 					await expect(transactionResponsePromise_)
 						.emit(tokens_[tokenIndex_], "Approval")
-						.withArgs(donatedTokenHolderAddress_, newPrizesWalletAddress_, (1n << 256n) - 1n)
+						.withArgs(donatedTokenHolderAddress_, newPrizesWalletAddress_, MAX_UINT256)
 						.and.emit(newPrizesWallet_, "TokenDonated")
 						.withArgs(roundNum_, contracts_.signers[donorIndex_].address, tokensAddress_[tokenIndex_], tokenAmount_)
 						.and.emit(tokens_[tokenIndex_], "Transfer")

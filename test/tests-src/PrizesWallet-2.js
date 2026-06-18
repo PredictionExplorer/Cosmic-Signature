@@ -9,6 +9,7 @@ const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
 const { anyUint } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
+const { MAX_UINT256 } = require("../../src/BigIntMathHelpers.js");
 const { ENABLE_ASSERTS, generateRandomUInt32, generateRandomUInt256, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { setRoundActivationTimeIfNeeded } = require("../../src/ContractDeploymentHelpers.js");
 const { loadFixtureDeployContractsForTesting, assertEvent } = require("../../src/ContractTestingHelpers.js");
@@ -118,7 +119,7 @@ describe("PrizesWallet-2", function () {
 		// #region
 
 		for ( let counter_ = 0; counter_ < 4; ++ counter_ ) {
-			transactionResponsePromise_ = tokens_[counter_].connect(contracts_.signers[counter_]).approve(newPrizesWalletAddress_, (1n << 256n) - 1n);
+			transactionResponsePromise_ = tokens_[counter_].connect(contracts_.signers[counter_]).approve(newPrizesWalletAddress_, MAX_UINT256);
 			await waitForTransactionReceipt(transactionResponsePromise_);
 			transactionResponsePromise_ = tokens_[counter_].connect(contracts_.signers[10]).mint(contracts_.signers[counter_].address, 10n ** (18n + 1n));
 			await waitForTransactionReceipt(transactionResponsePromise_);

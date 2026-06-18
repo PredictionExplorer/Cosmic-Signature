@@ -7,7 +7,7 @@
 
 const hre = require("hardhat");
 const { expect } = require("chai");
-const { sqrtFloor, maxBigInt, u256 } = require("./FuzzMath.js");
+const { sqrtFloor, maxBigInt, u256 } = require("../../../src/BigIntMathHelpers.js");
 const c = require("./FuzzConstants.js");
 
 // #endregion

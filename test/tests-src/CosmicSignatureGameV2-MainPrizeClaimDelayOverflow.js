@@ -11,10 +11,10 @@
 const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
+const { MAX_UINT256 } = require("../../src/BigIntMathHelpers.js");
 const { ENABLE_SMTCHECKER, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
 const {
-	MAX_UINT256,
 	activateCurrentRound,
 	blockTimestampOfReceipt,
 	deployV1CompleteRoundZeroAndUpgradeToV2,
