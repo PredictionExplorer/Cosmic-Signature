@@ -9,7 +9,7 @@ contract FuzzTestMockErc20 is ERC20 {
 		// Doing nothing.
 	}
 
-	/// @notice Mints tokens to any address.
+	/// @notice Mints a token amount to any address.
 	function mint(address to_, uint256 amount_) external {
 		_mint(to_, amount_);
 	}

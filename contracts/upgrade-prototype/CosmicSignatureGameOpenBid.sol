@@ -10,7 +10,6 @@ pragma solidity =0.8.34;
 import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
 import { OwnableUpgradeableWithReservedStorageGaps } from "../production/OwnableUpgradeableWithReservedStorageGaps.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import { CosmicSignatureConstants } from "../production/libraries/CosmicSignatureConstants.sol";
 import { AddressValidator } from "../production/AddressValidator.sol";
 import { CosmicSignatureGameStorage } from "../production/CosmicSignatureGameStorage.sol";
 import { BiddingBase } from "../production/BiddingBase.sol";

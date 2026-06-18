@@ -60,7 +60,7 @@ abstract contract SystemManagement is
 		// // This would be a way to fix the Comment-202504212 issue.
 		// // But the existing imperfect logic is really good enough as is,
 		// // because we have no plans to change `cstDutchAuctionBeginningBidPriceMinLimit`, and even if we do change it,
-		// // it's not too bad if `nextRoundFirstCstDutchAuctionBeginningBidPrice` stays less than the new value.
+		// // it's not too bad and maybe even more correct if `nextRoundFirstCstDutchAuctionBeginningBidPrice` stays unchanged.
 		// // So keeping it simple.
 		// // [/Comment-202607016]
 		// if (newValue_ > nextRoundFirstCstDutchAuctionBeginningBidPrice) {

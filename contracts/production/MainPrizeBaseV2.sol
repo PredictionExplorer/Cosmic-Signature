@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity =0.8.34;
 
-import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureGameStorageV2 } from "./CosmicSignatureGameStorageV2.sol";
 import { IMainPrizeBaseV2 } from "./interfaces/IMainPrizeBaseV2.sol";
