@@ -234,7 +234,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 						break;
 					}
 				}
-				const cosmicSignatureNftStakingTotalEthRewardAmount_ = await contracts_.cosmicSignatureGameProxy.getCosmicSignatureNftStakingTotalEthRewardAmount();
+				const cosmicSignatureNftStakingTotalEthRewardAmount_ = /** @type {bigint} */ await contracts_.cosmicSignatureGameProxy.getCosmicSignatureNftStakingTotalEthRewardAmount();
 				expect(cosmicSignatureNftStakingTotalEthRewardAmount_).greaterThan(0n);
 				const durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrizeRaw();
 				await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_),]);

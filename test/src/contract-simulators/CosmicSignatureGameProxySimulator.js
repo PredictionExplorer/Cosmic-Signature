@@ -913,7 +913,7 @@ async function createCosmicSignatureGameProxySimulator(
 		// #endregion
 		// #region `_distributePrizes`
 
-		_distributePrizes: async function(blockBeforeTransaction_, transactionBlock_, callerAddress_, bidderEthBalanceAmountBeforeTransaction_, contracts_, transactionReceipt_, eventIndexWrapper_ /* , blockchainPropertyGetter_ */) {
+		_distributePrizes: async function(blockBeforeTransaction_, transactionBlock_, callerAddress_, /** @type {bigint} */ bidderEthBalanceAmountBeforeTransaction_, contracts_, transactionReceipt_, eventIndexWrapper_ /* , blockchainPropertyGetter_ */) {
 			// #region
 
 			// assertAddressIsValid(callerAddress_);

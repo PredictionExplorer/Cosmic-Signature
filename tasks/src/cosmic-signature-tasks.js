@@ -264,7 +264,7 @@ task("upgrade-cosmic-signature-game", "Upgrades the CosmicSignatureGame contract
 	const existingCosmicSignatureGameImplementationAddress = await hre.upgrades.erc1967.getImplementationAddress(deployCosmicSignatureContractsReportObject.cosmicSignatureGameProxyAddress);
 
 	console.info("%s", `Upgrading to ${upgradeConfigObject.newCosmicSignatureGameContractName}.`);
-	const newCosmicSignatureGameProxy =
+	// const newCosmicSignatureGameProxy =
 		await hre.upgrades.upgradeProxy(deployCosmicSignatureContractsReportObject.cosmicSignatureGameProxyAddress, newCosmicSignatureGameFactory, upgradeProxyOptions);
 	// await newCosmicSignatureGameProxy.waitForDeployment();
 
