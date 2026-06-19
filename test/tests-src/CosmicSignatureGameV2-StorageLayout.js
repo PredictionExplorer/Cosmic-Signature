@@ -108,4 +108,23 @@ describe("CosmicSignatureGameV2-StorageLayout", function () {
 		await expectUnknownSelector(gameV2_, hre.ethers.id("bidCstRewardAmount()").slice(0, 10));
 		await expectUnknownSelector(gameV2_, hre.ethers.id("cstRewardAmountForBidding()").slice(0, 10));
 	});
+
+	it("upgrades with the same unsafe storage options documented for production", async function () {
+		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
+		await completeRoundZero(contracts_);
+		const gameV1_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner);
+		const carriedState_ = await snapshotCarriedState(gameV1_);
+
+		await upgradeToV2(contracts_, {
+			unsafeAllowRenames: true,
+			unsafeSkipStorageCheck: true,
+		});
+		const gameV2_ = contracts_.cosmicSignatureGameV2Proxy;
+
+		await assertCarriedStateUnchanged(gameV2_, carriedState_);
+		expect(await gameV2_.cstDutchAuctionDuration()).equal(INITIAL_CST_DUTCH_AUCTION_DURATION);
+		expect(await gameV2_.cstDutchAuctionDurationChangeDivisor()).equal(DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR);
+		expect(await gameV2_.bidCstRewardAmountMultiplier()).equal(DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER);
+		expect(await gameV2_.timeoutDurationToClaimMainPrize()).equal(DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2);
+	});
 });

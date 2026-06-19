@@ -61,19 +61,29 @@ Relevant live state read from the proxy (snapshot, 2026-06-11):
    npx hardhat vars set etherScanApiKey_arbitrumOne YOUR_ETHERSCAN_API_KEY
    ```
    Keep `deployerPrivateKey` empty in `tasks/config/deploy-cosmic-signature-contracts-config-arbitrumOne.json` so it is taken from the Hardhat configuration variable. Make sure the owner account holds enough ETH on Arbitrum One for the implementation deployment plus a few small transactions.
-4. **Set the documented unsafe flags** in `tasks/config/upgrade-cosmic-signature-game-config-arbitrumOne-CosmicSignatureGameV2.json`:
+4. **Generate the independent storage-layout proof** before enabling any unsafe upgrade flags:
+   ```bash
+   REQUIRE_DEPLOYED_V1=true \
+   MAIN_WORKTREE=/tmp/csig-main-worktree \
+   STORAGE_LAYOUT_PROOF_FILE_PATH=tasks/output/v1-v2-storage-layout-proof-arbitrumOne-CosmicSignatureGameV2.json \
+   node scripts/verify-v1-v2-storage-layouts.js
+   ```
+   The proof must compare deployed V1, refactored V1, and V2. A proof that skipped deployed V1 is not acceptable for production.
+5. **Set the documented unsafe flags** in `tasks/config/upgrade-cosmic-signature-game-config-arbitrumOne-CosmicSignatureGameV2.json` only after the storage proof exists:
    ```json
    "unsafeAllowRenames": true,
    "unsafeSkipStorageCheck": true,
+   "storageLayoutProofFilePath": "../output/v1-v2-storage-layout-proof-arbitrumOne-CosmicSignatureGameV2.json",
    ```
    These are required (and safe) for this specific upgrade because the `.openzeppelin` manifest recorded the layout of the *deployed* V1 (`cstRewardAmountForBidding`, `__gap_persistent[1 << 255]`), while the `v2`-branch sources renamed that variable (`bidCstRewardAmount` → V2's `bidCstRewardAmountMultiplier`) and shrank the gap. The layouts were manually verified compatible: V2 repurposes the two slots intentionally and appends one variable into the gap region (see `v2-vs-v1-changes.md`, "Public storage getters renamed"). Revert the flags to `false` after the upgrade so future upgrades get full validation. Leave `newInitializerMethodName` as `"initializeV2"`.
-5. **Run the static upgrade-safety check**: from `slither/`, execute `slither-check-upgradeability-CosmicSignatureGameV2.bash` (compares `CosmicSignatureGame` → `CosmicSignatureGameV2`) and review the findings.
-6. **Rehearse the full procedure** at least twice:
+6. **Run the static upgrade-safety check**: from `slither/`, execute `slither-check-upgradeability-CosmicSignatureGameV2.bash` (compares `CosmicSignatureGame` → `CosmicSignatureGameV2`) and review the findings.
+7. **Rehearse the full procedure** at least twice:
    - Locally: deploy V1 on Hardhat (`tasks/runners/run-deploy-cosmic-signature-contracts-hardhat_on_localhost.bash`), place a bid, claim the main prize, then run `run-upgrade-cosmic-signature-game-hardhat_on_localhost-CosmicSignatureGameV2.bash`.
    - On Arbitrum Sepolia with the corresponding `arbitrumSepolia` scripts, including the registration step.
-   - Ideally also on a mainnet fork using the real proxy address, to rehearse with the production manifest and state.
-7. **Prepare the round-1 plan**: decide the intended round 1 activation time to set after the upgrade, and have the `setRoundActivationTime` transaction ready. Optionally pre-build a small bot/script that watches for the round 0 `MainPrizeClaimed` event and immediately submits the "freeze" transaction of Phase 1.
-8. **Coordinate off-chain work** (frontend/backend/indexer) so the new ABI can be shipped immediately after the upgrade — see Phase 4.
+   - On a pinned Arbitrum One fork using the real proxy address and the same hardened upgrade task/config path. The older raw-slot fork script is useful as an additional smoke test, but not a substitute for the production task rehearsal.
+8. **Prepare the round-1 plan**: decide the intended round 1 activation time to set after the upgrade, and have the `setRoundActivationTime` transaction ready. Optionally pre-build a small bot/script that watches for the round 0 `MainPrizeClaimed` event and immediately submits the "freeze" transaction of Phase 1.
+9. **Coordinate off-chain work** (frontend/backend/indexer) so the new ABI can be shipped immediately after the upgrade — see Phase 4.
+10. **Do not bundle unrelated parameter changes** into the upgrade window. In particular, leave `cstDutchAuctionBeginningBidPriceMinLimit`, `PrizesWallet.timeoutDurationToWithdrawPrizes`, wallet addresses, prize percentages, and bid timing parameters unchanged unless each has its own reviewed change plan.
 
 ## Phase 1 — The Moment Round 0 Ends
 
@@ -137,12 +147,16 @@ What this does (task `upgrade-cosmic-signature-game` in `tasks/src/cosmic-signat
    - Frontend/backend/bots: new bid method signatures (extra `bidCstRewardAmountMinLimit_` parameter), new `BidPlaced` topic/layout (two extra fields), renamed getters/setters, the new `CstDutchAuctionDurationChanged` / `CstDutchAuctionDurationChangeDivisorChanged` / `BidCstRewardAmountMultiplierChanged` events, the new `BidCstRewardAmountMinLimitNotReached` error, and the new `getBidCstRewardAmount*` views.
    - Indexers/monitoring keyed on the old `BidPlaced` signature must be migrated, or round 1+ bids will not be indexed.
    - Update the implementation address shown on https://app.cosmicsignature.com/contracts (and any `cg_contracts` database record holding the implementation address).
-3. **Reopen bidding** by scheduling round 1's start:
+3. **Run pre-reopen sanity checks**:
+   - `cstDutchAuctionBeginningBidPriceMinLimit() <= nextRoundFirstCstDutchAuctionBeginningBidPrice()` so the Comment-202504212 / Comment-202607016 accepted edge case has not been introduced accidentally.
+   - `PrizesWallet.timeoutDurationToWithdrawPrizes()` is still the intended long timeout.
+   - Off-chain V2 ABI/indexer/bot readiness has been explicitly signed off outside this repo.
+4. **Reopen bidding** by scheduling round 1's start:
    ```text
    CosmicSignatureGameV2(0x6a714A…63F2).setRoundActivationTime(<intended round 1 start timestamp>)
    ```
    From that moment the round 1 ETH Dutch auction begins (beginning bid price = 2 × the last round 0 ETH bid price, declining over ~2 days toward 1/200 of the beginning price plus 1 Wei, per the unchanged V1 formulas and the current divisor values `ethDutchAuctionDurationDivisor = 20833`, `ethDutchAuctionEndingBidPriceDivisor = 200`).
-4. Afterwards: keep the upgrade report and manifest copies outside the repo, and consider deleting the Hardhat secrets:
+5. Afterwards: keep the upgrade report, storage proof, and manifest copies outside the repo, and consider deleting the Hardhat secrets:
    ```bash
    npx hardhat vars delete deployerPrivateKey_arbitrumOne
    npx hardhat vars delete etherScanApiKey_arbitrumOne

@@ -64,6 +64,10 @@ OpenZeppelin would actually disallow the upgrade from `CosmicSignatureGameV2` to
 (2) I reduced `__gap_persistent` length, because OpenZeppelin's upgradeable contract validation logic executed by `upgradeProxy` was crashing due to an overflow. Storage layout remains compatible because the given storage variable is the last. Testing with `CosmicSignatureGameOpenBid` has not run into this case because it added a storage variable after the gap.\
 The old state of affairs still exists in the tracking info stored in `.openzeppelin`. Therefore, when upgrading to V2 in the production, OpenZeppelin's upgradeable contract validation logic would complain. To silence it, before upgrading, in `../config/upgrade-cosmic-signature-game-config-arbitrumOne-CosmicSignatureGameV2.json`, temporarily set `unsafeAllowRenames` and `unsafeSkipStorageCheck` to `true`.
 
+- For `CosmicSignatureGameV2`, do not enable the unsafe storage flags until you have generated the storage-layout proof with deployed-V1 comparison. The hardened upgrade task requires `storageLayoutProofFilePath` when those flags are enabled, validates the live proxy state before sending `upgradeToAndCall`, and verifies the V2 initialized values after the transaction.
+
+- For `CosmicSignatureGameV2`, do not remove or rename `newInitializerMethodName: "initializeV2"`. The upgrade is intentionally executed as one `upgradeToAndCall` operation so the repurposed storage slots are rewritten before bidding can reopen.
+
 #### Afterwards
 
 - Revert any temporary edits you made in config files.

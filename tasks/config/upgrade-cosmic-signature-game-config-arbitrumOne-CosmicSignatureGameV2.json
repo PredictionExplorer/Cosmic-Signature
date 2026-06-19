@@ -4,5 +4,6 @@
 	"unsafeAllowRenames": false,
 	"unsafeSkipStorageCheck": false,
 	"newInitializerMethodName": "initializeV2",
+	"storageLayoutProofFilePath": "../output/v1-v2-storage-layout-proof-arbitrumOne-CosmicSignatureGameV2.json",
 	"reportFilePath": "../output/upgrade-cosmic-signature-game-report-arbitrumOne-CosmicSignatureGameV2.json"
 }

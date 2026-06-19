@@ -25,6 +25,7 @@ const nodeFsModule = require("node:fs");
 const nodeOsModule = require("node:os");
 const nodePathModule = require("node:path");
 const nodeChildProcessModule = require("node:child_process");
+const nodeCryptoModule = require("node:crypto");
 
 const REPO_ROOT = nodePathModule.resolve(__dirname, "..");
 const SOLC_PATH = process.env.SOLC_PATH || nodePathModule.join(nodeOsModule.homedir(), ".solc-select/artifacts/solc-0.8.34/solc-0.8.34");
@@ -32,6 +33,16 @@ const MAIN_WORKTREE = process.env.MAIN_WORKTREE || "/tmp/csig-main-worktree";
 const NODE_MODULES = nodePathModule.join(REPO_ROOT, "node_modules");
 const GAP_LABEL = "__gap_persistent";
 const V2_NEW_VARIABLE = "cstDutchAuctionDurationChangeDivisor";
+const args = new Map(
+	process.argv
+		.slice(2)
+		.map((arg_) => {
+			const separatorIndex_ = arg_.indexOf("=");
+			return (separatorIndex_ < 0) ? [arg_, "true"] : [arg_.slice(0, separatorIndex_), arg_.slice(separatorIndex_ + 1)];
+		})
+);
+const REQUIRE_DEPLOYED_V1 = process.env.REQUIRE_DEPLOYED_V1 === "true" || args.get("--requireDeployedV1") === "true";
+const PROOF_FILE_PATH = process.env.STORAGE_LAYOUT_PROOF_FILE_PATH || args.get("--proofFilePath") || "";
 
 // The only intentional, documented storage changes between refactored V1 and V2.
 const V2_RENAMES = new Map([
@@ -51,6 +62,29 @@ const DEPLOYED_TO_REFACTORED_V1_RENAMES = new Map([
 
 const problems = [];
 const notes = [];
+
+function hashFile(basePath, sourcePath) {
+	const data = nodeFsModule.readFileSync(nodePathModule.join(basePath, sourcePath));
+	return nodeCryptoModule.createHash("sha256").update(data).digest("hex");
+}
+
+function stringifyBigInts(value_) {
+	return JSON.stringify(
+		value_,
+		(_key_, value__) => (typeof value__ === "bigint") ? value__.toString() : value__,
+		3
+	);
+}
+
+function layoutRecordForProof(record_) {
+	return {
+		label: record_.label,
+		slot: record_.slot.toString(),
+		offset: record_.offset,
+		typeLabel: record_.typeLabel,
+		numberOfBytes: record_.numberOfBytes.toString(),
+	};
+}
 
 /**
 Runs solc in standard-JSON mode and returns the storage layout of one contract.
@@ -159,7 +193,11 @@ function main() {
 		deployedV1 = indexLayout(getStorageLayout(MAIN_WORKTREE, "contracts/production/CosmicSignatureGame.sol", "CosmicSignatureGame"));
 		console.info(`Deployed V1 (origin/main) variables: ${deployedV1.byLabel.size}`);
 	} else {
-		note(`Deployed-V1 comparison skipped: no main worktree at ${MAIN_WORKTREE}.`);
+		if (REQUIRE_DEPLOYED_V1) {
+			fail(`Deployed-V1 comparison required but no main worktree exists at ${MAIN_WORKTREE}.`);
+		} else {
+			note(`Deployed-V1 comparison skipped: no main worktree at ${MAIN_WORKTREE}.`);
+		}
 	}
 
 	// 1. Deployed V1 (live proxy layout) vs refactored V1: must be identical except the one rename.
@@ -227,6 +265,57 @@ function main() {
 		}
 		process.exitCode = 1;
 		return;
+	}
+
+	if (PROOF_FILE_PATH.length > 0) {
+		const proofObject = {
+			format: "cosmic-signature-v1-v2-storage-layout-proof-v1",
+			repoRoot: REPO_ROOT,
+			mainWorktree: MAIN_WORKTREE,
+			requireDeployedV1: REQUIRE_DEPLOYED_V1,
+			deployedV1Compared: deployedV1 !== undefined,
+			solcPath: SOLC_PATH,
+			sources: {
+				refactoredV1Game: {
+					path: "contracts/production/CosmicSignatureGame.sol",
+					sha256: hashFile(REPO_ROOT, "contracts/production/CosmicSignatureGame.sol"),
+				},
+				v2Game: {
+					path: "contracts/production/CosmicSignatureGameV2.sol",
+					sha256: hashFile(REPO_ROOT, "contracts/production/CosmicSignatureGameV2.sol"),
+				},
+				v2Storage: {
+					path: "contracts/production/CosmicSignatureGameStorageV2.sol",
+					sha256: hashFile(REPO_ROOT, "contracts/production/CosmicSignatureGameStorageV2.sol"),
+				},
+				deployedV1Game: deployedV1 ? {
+					path: "contracts/production/CosmicSignatureGame.sol",
+					sha256: hashFile(MAIN_WORKTREE, "contracts/production/CosmicSignatureGame.sol"),
+				} : undefined,
+			},
+			allowedRenames: {
+				refactoredV1ToV2: Object.fromEntries(V2_RENAMES),
+				deployedV1ToV2: Object.fromEntries(DEPLOYED_TO_V2_RENAMES),
+				deployedV1ToRefactoredV1: Object.fromEntries(DEPLOYED_TO_REFACTORED_V1_RENAMES),
+			},
+			repurposedVariables: {
+				cstDutchAuctionDuration: layoutRecordForProof(v2.byLabel.get("cstDutchAuctionDuration")),
+				bidCstRewardAmountMultiplier: layoutRecordForProof(v2.byLabel.get("bidCstRewardAmountMultiplier")),
+			},
+			oldGapSlot: oldGapSlot?.toString(),
+			v2NewVariable: newVar ? layoutRecordForProof(newVar) : undefined,
+			v2GapSlot: v2GapSlot?.toString(),
+			refactoredV1VariableCount: refactoredV1.byLabel.size,
+			v2VariableCount: v2.byLabel.size,
+			deployedV1VariableCount: deployedV1?.byLabel.size,
+			notes,
+			result: "STORAGE_LAYOUT_VERIFICATION_OK",
+			createdAt: new Date().toISOString(),
+		};
+		const proofFilePathAbsolute = nodePathModule.resolve(REPO_ROOT, PROOF_FILE_PATH);
+		nodeFsModule.mkdirSync(nodePathModule.dirname(proofFilePathAbsolute), {recursive: true});
+		nodeFsModule.writeFileSync(proofFilePathAbsolute, stringifyBigInts(proofObject) + nodeOsModule.EOL);
+		console.info(`Storage-layout proof saved to "${proofFilePathAbsolute}".`);
 	}
 	console.info("STORAGE_LAYOUT_VERIFICATION_OK");
 }

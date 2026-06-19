@@ -11,6 +11,7 @@ import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upg
 import { OwnableUpgradeableWithReservedStorageGaps } from "./OwnableUpgradeableWithReservedStorageGaps.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
+import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { AddressValidator } from "./AddressValidator.sol";
 import { CosmicSignatureGameStorageV2 } from "./CosmicSignatureGameStorageV2.sol";
 import { BiddingBaseV2 } from "./BiddingBaseV2.sol";
@@ -64,17 +65,11 @@ contract CosmicSignatureGameV2 is
 	// #endregion
 	// #region `initializeV2`
 
-	/// @dev
-	/// [Comment-202606128]
-	/// `onlyOwner` is unnecessary because the pevious version's `_authorizeUpgrade` has just checked it
-	/// within the same transaction.
-	/// [/Comment-202606128]
-	/// In V2+, near Comment-202605294, `_onlyNonFirstRound` only asserts a condition.
-	/// One might want to fully validate that condition here, but it's really unnecessary,
-	/// because it's guaranteed to be `true` in the production.
-	/// Comment-202606084 relates and/or applies.
-	function initializeV2() external override /*onlyOwner*/ _onlyNonFirstRound() _onlyIfPrevVersionWasInitialized() reinitializer(uint64(2)) {
+	/// @dev Comment-202606084 relates and/or applies.
+	function initializeV2() external override onlyOwner _onlyIfPrevVersionWasInitialized() reinitializer(uint64(2)) {
 		// // #enable_asserts // #disable_smtchecker console.log("CosmicSignatureGameV2.initializeV2");
+
+		_checkV2UpgradePreconditions();
 
 		cstDutchAuctionDuration = CosmicSignatureConstants.INITIAL_CST_DUTCH_AUCTION_DURATION;
 		cstDutchAuctionDurationChangeDivisor = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR;
@@ -97,12 +92,30 @@ contract CosmicSignatureGameV2 is
 	function _checkIfPrevVersionWasInitialized() private view {
 		// Comment-202605294 applies.
 		// But after V2 this will not necessarily be guaranteed.
-		// #enable_asserts bool isSuccess_ = _getInitializedVersion() == uint64(1);
+		bool isSuccess_ = _getInitializedVersion() == uint64(1);
 		// #enable_asserts assert(isSuccess_);
 
-		// if ( ! isSuccess_ ) {
-		// 	revert InvalidInitialization();
-		// }
+		if ( ! isSuccess_ ) {
+			revert InvalidInitialization();
+		}
+	}
+
+	// #endregion
+	// #region `_checkV2UpgradePreconditions`
+
+	function _checkV2UpgradePreconditions() private view {
+		if ( ! (roundNum > 0) ) {
+			revert CosmicSignatureErrors.FirstRound("CosmicSignatureGameV2 can only be initialized after round 0 has completed.");
+		}
+		if ( ! (lastBidderAddress == address(0)) ) {
+			revert CosmicSignatureErrors.BidHasBeenPlacedInCurrentRound("CosmicSignatureGameV2 must be initialized before the first bid of the current round.");
+		}
+		if ( ! (ethDutchAuctionBeginningBidPrice > 0) ) {
+			revert CosmicSignatureErrors.InvalidOperationInCurrentState("ETH Dutch auction beginning bid price must be nonzero before initializing V2.");
+		}
+		if ( ! (cstDutchAuctionDurationChangeDivisor == 0) ) {
+			revert CosmicSignatureErrors.InvalidOperationInCurrentState("V2 storage slot for CST Dutch auction duration change divisor is already initialized.");
+		}
 	}
 
 	// #endregion
