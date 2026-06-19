@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.34;
+pragma solidity =0.8.34;
 
 import { FakeArbBase } from "./FakeArbBase.sol";
 
@@ -20,7 +20,12 @@ contract FakeArbSys is FakeArbBase {
 				return (0, 0)
 			}
 		}
-		unchecked { return block.number * 100; }
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			return block.number * 100;
+		}
 	}
 
 	function arbBlockHash(uint256 arbBlockNum_) external view returns (bytes32) {
@@ -32,6 +37,11 @@ contract FakeArbSys is FakeArbBase {
 				return (0, 0)
 			}
 		}
-		unchecked { return bytes32(arbBlockNum_ * 1_000_003); }
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			return bytes32(arbBlockNum_ * 1_000_003);
+		}
 	}
 }

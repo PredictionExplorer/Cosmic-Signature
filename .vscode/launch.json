@@ -1,7 +1,7 @@
 {
 	"version": "0.2.0",
 	"configurations": [
-		// Issue. This does not set the `HARDHAT_MODE_CODE` environment variable, so a warning will be logged to the console.
+		// Issue. This does not set the `HARDHAT_MODE_CODE` environment variable.
 		{
 			"name": "Debug Hardhat Tests",
 			"type": "node",
@@ -20,7 +20,8 @@
 
 				// Restricting to a grep pattern.
 				"--grep",
-				"^Bidding The halveEthDutchAuctionEndingBidPrice method$",
+				// "^SystemManagement ",
+				"^MainPrize ETH receive by main prize beneficiary reversal$",
 			],
 
 			// // Ignore stepping through internal node_modules.

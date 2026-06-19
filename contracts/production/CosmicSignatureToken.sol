@@ -1,7 +1,7 @@
 // #region
 
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.34;
+pragma solidity =0.8.34;
 
 // #endregion
 // #region
@@ -131,6 +131,13 @@ contract CosmicSignatureToken is
 			for ( uint256 index_ = 0; index_ < specs_.length; ++ index_ ) {
 				MintOrBurnSpec calldata specReference_ = specs_[index_];
 				int256 value_ = specReference_.value;
+
+				// [Comment-202606074]
+				// Issue. The caller has negated the value to burn. Problem is that if it was zero, it remains zero,
+				// so we will mint, rather than burn zero.
+				// This issue can be fixed by replacing negation with bitwise not, but it will not be done
+				// because `CosmicSignatureToken` has already been deployed.
+				// [/Comment-202606074]
 				if (value_ >= int256(0)) {
 					_mint(specReference_.account, uint256(value_));
 				} else {

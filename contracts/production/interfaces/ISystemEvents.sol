@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.34;
+pragma solidity =0.8.34;
 
 import { ICosmicSignatureToken } from "./ICosmicSignatureToken.sol";
 import { IRandomWalkNFT } from "./IRandomWalkNFT.sol";
@@ -10,9 +10,12 @@ import { IStakingWalletCosmicSignatureNft } from "./IStakingWalletCosmicSignatur
 
 /// @title Cosmic Signature Game Configuration Events.
 /// @author The Cosmic Signature Development Team.
-/// @notice For each parameter marked with Comment-202411064, provides an event to be emitted when the parameter changes.
+/// @notice
+/// [Comment-202605235]
+/// For each parameter marked with Comment-202411064, provides an event to be emitted when the parameter changes.
 /// The logic also changes some of those variables. They are marked with Comment-202411172. And on that kind of change
 /// the respective event will not necessarily be emitted.
+/// [/Comment-202605235]
 interface ISystemEvents {
 	/// @notice Emitted when `delayDurationBeforeRoundActivation` is changed.
 	/// @param newValue The new value.
@@ -50,9 +53,9 @@ interface ISystemEvents {
 	/// @param newValue The new value.
 	event BidMessageLengthMaxLimitChanged(uint256 newValue);
 
-	/// @notice Emitted when `cstRewardAmountForBidding` is changed.
+	/// @notice Emitted when `bidCstRewardAmount` is changed.
 	/// @param newValue The new value.
-	event CstRewardAmountForBiddingChanged(uint256 newValue);
+	event BidCstRewardAmountChanged(uint256 newValue);
 
 	/// @notice Emitted when `cstPrizeAmount` is changed.
 	/// @param newValue The new value.

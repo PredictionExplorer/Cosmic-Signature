@@ -11,30 +11,30 @@ const { generateRandomUInt256FromSeedWrapper } = require("./Helpers.js");
 // #region
 
 /**
- * Creates a weighted random number generator for selecting numbers in the range 0 through n - 1.
- * The probability to generate a number that was generated fewer times than the others is higher.
- * That's why this generator is named "Fair".
- *
- * The generator maintains a count of each candidate picks and assigns the candidate a weight according to:
- *
- *    weight(i) = max(counts) - counts[i] + k
- *
- * Because of that, the ratio of weights:
- *
- *    weight(i) / weight(j)
- *
- * between candidates depends only on the difference between their counts.
- * For example, if candidate A is behind candidate B by the same count (say, 1 vs. 3 or 11 vs. 13),
- * candidate A's weight is higher, and the ratio is the same.
- *
- * @param {number} n_ The total number of candidates. Explained above.
- * It's a positive and not too big integer value without a fractional part.
- * @param {number} k_ The constant explained above.
- * It's a positive and not too big integer value without a fractional part.
- * @param {object} randomNumberSeedWrapper_
- * @returns {object} An object with methods:
- *    `getNext`: Generates and returns a "fair" random number.
- */
+Creates a weighted random number generator for selecting numbers in the range 0 through n - 1.
+The probability to generate a number that was generated fewer times than the others is higher.
+That's why this generator is named "Fair".
+
+The generator maintains a count of each candidate picks and assigns the candidate a weight according to:
+
+   weight(i) = max(counts) - counts[i] + k
+
+Because of that, the ratio of weights:
+
+   weight(i) / weight(j)
+
+between candidates depends only on the difference between their counts.
+For example, if candidate A is behind candidate B by the same count (say, 1 vs. 3 or 11 vs. 13),
+candidate A's weight is higher, and the ratio is the same.
+
+@param {number} n_ The total number of candidates. Explained above.
+It's a positive and not too big integer value without a fractional part.
+@param {number} k_ The constant explained above.
+It's a positive and not too big integer value without a fractional part.
+@param {object} randomNumberSeedWrapper_
+@returns {object} An object with methods:
+   `getNext`: Generates and returns a "fair" random number.
+*/
 function createFairRandomNumberGenerator(n_, k_, randomNumberSeedWrapper_) {
 	// #region Data
 

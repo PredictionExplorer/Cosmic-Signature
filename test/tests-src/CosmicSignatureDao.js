@@ -157,8 +157,8 @@ describe("CosmicSignatureDao", function () {
 	it("CosmicSignatureDao changes CharityWallet.charityAddress", async function () {
 		// Signers 0 through 7 participate.
 		// Each of signers 0 through 3 bids once and for that get rewarded with CST, which gives them the right to create proposals.
-		// Note that `CosmicSignatureConstants.DEFAULT_CST_REWARD_AMOUNT_FOR_BIDDING` specifies both
-		// CST reward amount for bidding and proposal threshold.
+		// Note that `CosmicSignatureConstants.DEFAULT_BID_CST_REWARD_AMOUNT` specifies both
+		// CST reward amount for placing a bid and proposal threshold.
 		// The CST balance also specifies signer voting weight.
 		// Signer 2 delegates its votes to signer 1, which makes it impossible for signer 2 to creates a proposal
 		// and makes its voting weight zero. So despite of holding a CST balance,

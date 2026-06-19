@@ -1,7 +1,7 @@
 // #region
 
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.34;
+pragma solidity =0.8.34;
 
 // #endregion
 // #region
@@ -74,14 +74,24 @@ library CosmicSignatureConstants {
 	/// This is expressed in gas.
 	/// We will multiply this by `tx.gasprice` and if the refund is greater than the result,
 	/// we will transfer the refund back to the bidder. Otherwise, the excess ETH will simply stay in the Game contract balance.
+	/// [Comment-202606216]
+	/// Issue. On Arbitrum Sepolia and, likely, on Arbitrum One, at least during a gas estimate call, `tx.gasprice` is zero.
+	/// Comment-202607014 relates.
+	/// [/Comment-202606216]
 	/// This value equals the amount of gas consumed by the logic in the block near Comment-202506219.
 	/// todo-2 This value might need tweaking after a blockchain upgrade.
 	/// [/Comment-202502052]
 	uint256 internal constant DEFAULT_ETH_BID_REFUND_AMOUNT_IN_GAS_TO_SWALLOW_MAX_LIMIT = 6843;
 
-	/// @notice Default `cstDutchAuctionDurationDivisor`.
+	/// @notice Initial `CosmicSignatureGameStorageV2.cstDutchAuctionDuration`.
+	uint256 internal constant INITIAL_CST_DUTCH_AUCTION_DURATION = (1 days) / 2;
+
+	/// @notice Default `CosmicSignatureGameStorage.cstDutchAuctionDurationDivisor`.
 	/// Comment-202508288 relates.
-	uint256 internal constant DEFAULT_CST_DUTCH_AUCTION_DURATION_DIVISOR = (INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND + ((1 days) / 2) / 2) / ((1 days) / 2);
+	uint256 internal constant DEFAULT_CST_DUTCH_AUCTION_DURATION_DIVISOR = (INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND + INITIAL_CST_DUTCH_AUCTION_DURATION / 2) / INITIAL_CST_DUTCH_AUCTION_DURATION;
+
+	/// @notice Default `CosmicSignatureGameStorageV2.cstDutchAuctionDurationChangeDivisor`.
+	uint256 internal constant DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR = 250;
 
 	/// @notice Comment-202411066 relates.
 	uint256 internal constant CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER = 2;
@@ -94,8 +104,11 @@ library CosmicSignatureConstants {
 	/// Comment-202409143 applies.
 	uint256 internal constant DEFAULT_BID_MESSAGE_LENGTH_MAX_LIMIT = 280;
 
-	/// @notice Default `cstRewardAmountForBidding` and `CosmicSignatureDao.proposalThreshold()`.
-	uint256 internal constant DEFAULT_CST_REWARD_AMOUNT_FOR_BIDDING = 100 ether;
+	/// @notice Default `CosmicSignatureGameStorage.bidCstRewardAmount` and `CosmicSignatureDao.proposalThreshold()`.
+	uint256 internal constant DEFAULT_BID_CST_REWARD_AMOUNT = 100 ether;
+
+	/// @notice Default `CosmicSignatureGameStorageV2.bidCstRewardAmountMultiplier`.
+	uint256 internal constant DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER = 3 * (1 ether) ** 2 * INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND;
 
 	// #endregion
 	// #region Secondary Prizes
@@ -134,9 +147,13 @@ library CosmicSignatureConstants {
 	/// @notice Default `mainPrizeTimeIncrementIncreaseDivisor`.
 	uint256 internal constant DEFAULT_MAIN_PRIZE_TIME_INCREMENT_INCREASE_DIVISOR = 100;
 
-	/// @notice Default `timeoutDurationToClaimMainPrize`.
-	/// See also: `DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES`.
+	/// @notice Default `CosmicSignatureGameStorage.timeoutDurationToClaimMainPrize`.
+	/// See also: `DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2`, `DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES`.
 	uint256 internal constant DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE = 1 days;
+
+	/// @notice Default `CosmicSignatureGameStorageV2.timeoutDurationToClaimMainPrize`.
+	/// See also: `DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE`, `DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES`.
+	uint256 internal constant DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2 = 2 days;
 
 	/// @notice Default `mainEthPrizeAmountPercentage`.
 	uint256 internal constant DEFAULT_MAIN_ETH_PRIZE_AMOUNT_PERCENTAGE = 25;
@@ -169,7 +186,7 @@ library CosmicSignatureConstants {
 
 	/// @notice Default `PrizesWallet.timeoutDurationToWithdrawPrizes`.
 	/// Comment-202506139 applies.
-	/// See also: `DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE`.
+	/// See also: `DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE`, `DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2`.
 	uint256 internal constant DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES = 5 weeks;
 
 	// #endregion
@@ -207,7 +224,7 @@ library CosmicSignatureConstants {
 		// 3 minutes;
 		2 weeks;
 
-	// See `DEFAULT_CST_REWARD_AMOUNT_FOR_BIDDING`.
+	// See `DEFAULT_BID_CST_REWARD_AMOUNT`.
 
 	/// @notice Default `CosmicSignatureDao.quorum()`.
 	/// @dev I've reduced this from the recommended 4% -- to increase the chance that there will be a sufficient quorum.
@@ -233,7 +250,7 @@ library CosmicSignatureConstants {
 	uint256 internal constant MILLISECONDS_PER_DAY = MILLISECONDS_PER_SECOND * (1 days);
 
 	/// @notice This is equivalent to the midnight of 9000-01-01.
-	/// @dev JavaScript  code to calculate this.
+	/// @dev JavaScript  code to calculate and test this.
 	///		const n = /*Math.trunc*/((new Date(9000, 1 - 1, 1)).getTime() / 1000);
 	///		console.info(n);
 	///		const d = new Date(n * 1000);

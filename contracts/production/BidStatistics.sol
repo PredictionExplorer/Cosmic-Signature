@@ -1,7 +1,7 @@
 // #region
 
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.34;
+pragma solidity =0.8.34;
 
 // #endregion
 // #region
@@ -40,7 +40,10 @@ abstract contract BidStatistics is CosmicSignatureGameStorage, IBidStatistics {
 	// #endregion
 	// #region `_updateChampionsIfNeeded`
 
-	/// @notice Updates Endurance Champion and Chrono-Warrior info if needed.
+	/// @notice
+	/// [Comment-202605245]
+	/// Updates Endurance Champion and Chrono-Warrior info if needed.
+	/// [/Comment-202605245]
 	function _updateChampionsIfNeeded() internal {
 		// if (lastBidderAddress == address(0)) return;
 		// #enable_asserts assert(lastBidderAddress != address(0));
@@ -69,7 +72,10 @@ abstract contract BidStatistics is CosmicSignatureGameStorage, IBidStatistics {
 	// #endregion
 	// #region `_updateChronoWarriorIfNeeded`
 
-	/// @notice Updates Chrono-Warrior info if needed.
+	/// @notice
+	/// [Comment-202605246]
+	/// Updates Chrono-Warrior info if needed.
+	/// [/Comment-202605246]
 	function _updateChronoWarriorIfNeeded(uint256 chronoEndTimeStamp_) internal {
 		// #enable_asserts assert(enduranceChampionAddress != address(0));
 		// #enable_asserts assert(int256(chronoWarriorDuration) >= -1);
@@ -118,8 +124,10 @@ abstract contract BidStatistics is CosmicSignatureGameStorage, IBidStatistics {
 		if (lastBidderAddress != address(0)) {
 			// #region
 
+			// [Comment-202605244]
 			// Issue. It's inefficient to load all these storage slots. We will not necessarily use some of these values.
 			// But it's not too bad, given Comment-202412135.
+			// [/Comment-202605244]
 			enduranceChampionAddress_ = enduranceChampionAddress;
 			uint256 enduranceChampionStartTimeStamp_ = enduranceChampionStartTimeStamp;
 			enduranceChampionDuration_ = enduranceChampionDuration;

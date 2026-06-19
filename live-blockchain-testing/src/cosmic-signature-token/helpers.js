@@ -1,6 +1,7 @@
 "use strict";
 
 const { expect } = require("chai");
+const { MAX_UINT256 } = require("../../../src/BigIntMathHelpers.js");
 const { waitForTransactionReceipt } = require("../../../src/Helpers.js");
 
 async function validateCosmicSignatureToken(
@@ -13,7 +14,7 @@ async function validateCosmicSignatureToken(
 }
 
 async function configureCosmicSignatureToken(cosmicSignatureToken_, bidder2Signer_, prizesWalletAddress_) {
-	await waitForTransactionReceipt(cosmicSignatureToken_.connect(bidder2Signer_).approve(prizesWalletAddress_, (1n << 256n) - 1n));
+	await waitForTransactionReceipt(cosmicSignatureToken_.connect(bidder2Signer_).approve(prizesWalletAddress_, MAX_UINT256));
 }
 
 module.exports = {

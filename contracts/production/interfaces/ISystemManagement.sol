@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.34;
+pragma solidity =0.8.34;
 
 import { IAddressValidator } from "./IAddressValidator.sol";
 import { ICosmicSignatureToken } from "./ICosmicSignatureToken.sol";
@@ -70,10 +70,10 @@ interface ISystemManagement is
 	/// @param newValue_ The new value.
 	function setBidMessageLengthMaxLimit(uint256 newValue_) external;
 
-	/// @notice Sets `cstRewardAmountForBidding`.
+	/// @notice Sets `bidCstRewardAmount`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
-	function setCstRewardAmountForBidding(uint256 newValue_) external;
+	function setBidCstRewardAmount(uint256 newValue_) external;
 
 	/// @notice Sets `cstPrizeAmount`.
 	/// Only the contract owner is permitted to call this method.

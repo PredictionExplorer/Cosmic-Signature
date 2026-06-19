@@ -16,8 +16,8 @@
 			export ENABLE_ASSERTS="${2}"
 			export ENABLE_SMTCHECKER="${3}"
 
-			# 'npx' 'hardhat' 'test' '--grep' '^PrizesWallet-1 '
-			# 'npx' 'hardhat' 'test' '--grep' '^MainPrize Test 1$'
+			# 'npx' 'hardhat' 'test' '--grep' '^StakingWalletCosmicSignatureNft '
+			# 'npx' 'hardhat' 'test' '--grep' '^PrizesWallet-2 Swapping to a fresh PrizesWallet after the V2 upgrade$'
 			# 'npx' 'hardhat' 'test' '--grep' '(?<!\bLong-term aggressive bidding behaves correctly)$'
 			# 'npx' 'hardhat' 'test' '--grep' '^PrizesWallet-\d |^StakingWalletCosmicSignatureNft |^CharityWallet |^SystemManagement |^BidStatistics |^Bidding |^MainPrize |^CosmicSignatureGame-\d |^BidderContract |^BlockTimeStamps '
 			# 'npx' 'hardhat' 'test' '--grep' '^[^ ]+(?<!-Old) '
@@ -38,9 +38,9 @@
 		fi
 	fi
 
-	# export SKIP_LONG_TESTS='true'
-
+	# export HACK_SUPPORT_BIGINT_TOJSON='true'
 	export HARDHAT_MODE_CODE='1'
+	# export LONG_TEST_MODE_CODE='1'
 
 	# Preprocessor, asserts, no SMTChecker.
 	# Running in this mode first because we enable Hardhat console in this mode.

@@ -10,8 +10,11 @@ const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTest
 
 describe("CosmicSignatureGame-2", function () {
 	it("Smoke-test", async function () {
-		const contracts_ = await loadFixtureDeployContractsForTesting(999n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
+		// [Comment-202606139]
+		// Similar logic exists in multiple places.
+		// [/Comment-202606139]
 		const cosmicSignatureGameImplementationByteCodeSize_ =
 			// cosmicSignatureGameFactory.bytecode.length / 2 - 1;
 			(await hre.ethers.provider.getCode(contracts_.cosmicSignatureGameImplementationAddress)).length / 2 - 1;
@@ -24,8 +27,9 @@ describe("CosmicSignatureGame-2", function () {
 			(24 * 1024 - cosmicSignatureGameImplementationByteCodeSize_).toString() +
 			"."
 		);
+
 		expect(await contracts_.cosmicSignatureGameImplementation.owner()).equal(hre.ethers.ZeroAddress);
-		expect(await contracts_.cosmicSignatureGameProxy.owner()).equal(contracts_.ownerSigner);
+		expect(await contracts_.cosmicSignatureGameProxy.owner()).equal(contracts_.ownerSigner.address);
 		expect(await contracts_.cosmicSignatureGameImplementation.mainPrizeTimeIncrementInMicroSeconds()).equal(0n);
 		expect(await contracts_.cosmicSignatureGameProxy.mainPrizeTimeIncrementInMicroSeconds()).equal(60n * 60n * 10n ** 6n);
 	});

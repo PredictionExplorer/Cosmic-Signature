@@ -19,10 +19,14 @@
 	fi
 
 	if [ ${OutcomeCode} -lt 2 ]; then
+		SlitherFolderPath=~/My-Documents/Computers/Software/Development/202511/Technologies/Blockchains/Ethereum/Tools/Hardhat/Prototyping/Hardhat-3-Ethers-Mocha-Template-Project/.venv/bin/
+		if [ ! -d "${SlitherFolderPath}" ]; then
+			SlitherFolderPath=''
+		fi
 		export HARDHAT_MODE_CODE='1'
 
 		# Comment-202503302 applies.
-		'slither' '--filter-paths' '/contracts/tests/|/node_modules/' '--hardhat-artifacts-directory' 'artifacts/production' '--show-ignored-findings' '--checklist' '..' >> "${SlitherOutputFileName}"
+		"${SlitherFolderPath}slither" '--filter-paths' '/contracts/tests/|/node_modules/' '--hardhat-artifacts-directory' 'artifacts/production' '--show-ignored-findings' '--checklist' '..' >> "${SlitherOutputFileName}"
 		
 		# echo $?
 

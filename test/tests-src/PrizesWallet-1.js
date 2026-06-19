@@ -8,26 +8,17 @@
 const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
+const { MAX_UINT256 } = require("../../src/BigIntMathHelpers.js");
 const { generateRandomUInt256, generateRandomUInt256FromSeedWrapper, waitForTransactionReceipt } = require("../../src/Helpers.js");
-const { SKIP_LONG_TESTS, loadFixtureDeployContractsForTesting, tryWaitForTransactionReceipt } = require("../../src/ContractTestingHelpers.js");
+const { LONG_TEST_MODE_CODE, loadFixtureDeployContractsForTesting, tryWaitForTransactionReceipt } = require("../../src/ContractTestingHelpers.js");
 
 // #endregion
 // #region
 
 describe("PrizesWallet-1", function () {
-	// #region
+	// #region `it`
 
 	it("Workflow", async function () {
-		// #region
-
-		if (SKIP_LONG_TESTS) {
-			// todo-1 +++ Review all calls to `console` to make sure we specify a correct error severity.
-			// todo-1 +++ Also remember that it treats sequences like "%s" in a special way.
-			console.warn("%s", "Warning 202506083. Skipping a long test.");
-			// return;
-		}
-
-		// #endregion
 		// #region
 
 		// // Comment-202506169 applies.
@@ -62,7 +53,7 @@ describe("PrizesWallet-1", function () {
 		// [Comment-202506082]
 		// The bigger is this value the higher is the chance that that Solidity coverage will be 100%.
 		// [/Comment-202506082]
-		const numIterations_ = ( ! SKIP_LONG_TESTS ) ? 3000 : 200;
+		const numIterations_ = (LONG_TEST_MODE_CODE >= 3) ? 3000 : 200;
 
 		// #endregion
 		// #region
@@ -106,7 +97,7 @@ describe("PrizesWallet-1", function () {
 
 		for (let bidderIndex_ = numBidders_; ( -- bidderIndex_ ) >= 0; ) {
 			for (const token_ of tokens_) {
-				await waitForTransactionReceipt(token_.connect(contracts_.signers[bidderIndex_]).approve(newPrizesWalletAddress_, (1n << 256n) - 1n));
+				await waitForTransactionReceipt(token_.connect(contracts_.signers[bidderIndex_]).approve(newPrizesWalletAddress_, MAX_UINT256));
 			}
 			for (const nftContract_ of nftContracts_) {
 				await waitForTransactionReceipt(nftContract_.connect(contracts_.signers[bidderIndex_]).setApprovalForAll(newPrizesWalletAddress_, true));
@@ -394,7 +385,7 @@ describe("PrizesWallet-1", function () {
 
 				if ( ! (transactionBlock_.timestamp >= Number(prizeRoundTimeoutTimeToWithdrawPrizes_) && prizeRoundTimeoutTimeToWithdrawPrizes_ > 0n) ) {
 					// console.info("%s", "202506094");
-					expect(transactionReceipt_ !== undefined).false;
+					expect(transactionReceipt_).undefined;
 					await expect(transactionResponsePromise_)
 						.revertedWithCustomError(newPrizesWallet_, "EthWithdrawalDenied")
 						.withArgs(
@@ -413,7 +404,7 @@ describe("PrizesWallet-1", function () {
 					// 	console.info("%s", `202506174 ${(( ++ testCounter6_ ) / testCounter5_).toPrecision(2)}`);
 					// }
 
-					expect(transactionReceipt_ !== undefined).true;
+					expect(transactionReceipt_).not.undefined;
 					await expect(transactionResponsePromise_)
 						.emit(newPrizesWallet_, "EthWithdrawn")
 						.withArgs(prizeRoundNum_, contracts_.signers[prizeWinnerIndex_].address, contracts_.signers[strangerIndex_].address, ethBalanceAmounts_[prizeWinnerIndex_][Number(prizeRoundNum_)]);
@@ -498,7 +489,7 @@ describe("PrizesWallet-1", function () {
 					allTokenBalanceAmounts_[tokenIndex_][donatedTokenHolderAddress_] += tokenAmount_;
 					await expect(transactionResponsePromise_)
 						.emit(tokens_[tokenIndex_], "Approval")
-						.withArgs(donatedTokenHolderAddress_, newPrizesWalletAddress_, (1n << 256n) - 1n)
+						.withArgs(donatedTokenHolderAddress_, newPrizesWalletAddress_, MAX_UINT256)
 						.and.emit(newPrizesWallet_, "TokenDonated")
 						.withArgs(roundNum_, contracts_.signers[donorIndex_].address, tokensAddress_[tokenIndex_], tokenAmount_)
 						.and.emit(tokens_[tokenIndex_], "Transfer")

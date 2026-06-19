@@ -1,7 +1,7 @@
 // #region
 
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.34;
+pragma solidity =0.8.34;
 
 // #endregion
 // #region
@@ -51,7 +51,7 @@ contract CosmicSignatureDao is
 		GovernorSettings(
 			CosmicSignatureConstants.DAO_DEFAULT_VOTING_DELAY,
 			CosmicSignatureConstants.DAO_DEFAULT_VOTING_PERIOD,
-			CosmicSignatureConstants.DEFAULT_CST_REWARD_AMOUNT_FOR_BIDDING
+			CosmicSignatureConstants.DEFAULT_BID_CST_REWARD_AMOUNT
 		)
 
 		// [Comment-202502249]

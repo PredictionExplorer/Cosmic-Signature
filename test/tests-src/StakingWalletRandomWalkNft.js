@@ -247,6 +247,7 @@ describe("StakingWalletRandomWalkNft", function () {
 		{
 			const luckyStakerAddresses_ = await contracts_.stakingWalletRandomWalkNft.pickRandomStakerAddressesIfPossible(numStakersToPick_, generateRandomUInt256());
 			expect(luckyStakerAddresses_.length).equal(Number(numStakersToPick_));
+			/** @type {number[]} */
 			const numLuckyStakerPicks_ = (new Array(numStakers_)).fill(0);
 			for (const luckyStakerAddress_ of luckyStakerAddresses_) {
 				assertAddressIsValid(luckyStakerAddress_);
@@ -289,6 +290,7 @@ describe("StakingWalletRandomWalkNft", function () {
 
 		let randomNumberSeed_ = generateRandomUInt256();
 		let numStakersToPick_ = 0n;
+		/** @type {number[]} */
 		const numLuckyStakerPicks_ = (new Array(numStakers_)).fill(0);
 		for ( let iterationCounter_ = 1; ; ) {
 			numStakersToPick_ += numStakersToPickIncrement_;

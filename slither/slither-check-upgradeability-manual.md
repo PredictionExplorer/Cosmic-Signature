@@ -1,15 +1,17 @@
-### Docs
+### Online Docs
 
 https://github.com/crytic/slither/wiki/Upgradeability-Checks
 
 ### How to Use
 
 - Make sure Slither works.\
-See is manual in another document.
+See its manual in another document.
 
-- Execute the "slither-check-upgradeability-1.bash" script.
+- Execute the `slither-check-upgradeability-*.bash` scripts.
 
 - Review the script output in the terminal.
 
-- If you later develop another version of the upgradeable contract you will need to edit the script to provide its name in the command line.\
-See the docs for more info.
+- Note that any storage variable renames will be reported as errors. This utility does not support any decorators similar to `@custom:oz-renamed-from`.
+
+- If you later develop another version of the upgradeable contract you will need to add a script for it.\
+See online docs for more info.

@@ -54,7 +54,7 @@ This document goes a little bit beyond purely functional requirements. It's inte
 
 - `roundActivationTime`. The current bidding round activation time. Starting at this point in time, people will be allowed to place bids.
 
-- `mainPrizeTime`. The time when the last bidder will be granted the premission to claim main prize.
+- `mainPrizeTime`. The time when the last bidder will be granted the premission to claim the main prize.
 
 - `charityAddress`. This variable exists in `CharityWallet`, where it contains the address to donate ETH to. The same named variable exists in `CosmicSignatureGameStorage`, where it actually points at our own `CharityWallet`. See Comment-202411078 for details.
 
@@ -101,12 +101,12 @@ Again, a Dutch auction is used for: (1) the first ETH bid price in a nonzero rou
 
 - When placing a CST bid, the current CST bid price gets burned from the bidder's CST balance.
 
-- When someone places a bid of any type, a configurable CST amount is minted for the bidder.
+- When someone places a bid of any type, a configurable CST amount is minted for the bidder. In V1, the amount is fixed; in V2+, the amount is proportional to the square root since the previous bid or, in case there were no bids in the current bidding round yet, the round activation time.
 
 ### `mainPrizeTime` Update Logic
 
 When someone places the first bid in a round, `mainPrizeTime` gets calculated as `block.timestamp` plus a configurable duration.\
-When another bid is placed, `mainPrizeTime` gets calculated as `max(mainPrizeTime, block.timestamp)` plus a shorter configurable duration.
+When another bid is placed, V1 calculaates `mainPrizeTime` as `max(mainPrizeTime, block.timestamp)` plus a shorter configurable duration, while V2+ simply adds the duration to `mainPrizeTime`. The rationale for the refactoring is described in Comment-202606175.
 
 ### Bidding Rules
 
@@ -160,7 +160,7 @@ Some prize winners are picked randomly. We have done our best to generate high q
 
 ### Exponential Duration Increase
 
-At the end of each round, the following configurable durations automatically increase exponentially by a configurable fraction: ETH and CST Dutch auction durations; initial duration until main prize (used to calculate `mainPrizeTime` on the first bid in a round); `mainPrizeTime` increment (by how much `mainPrizeTime` gets extended on each subsequent bid in a round).
+At the end of each round, the following configurable durations automatically increase exponentially by a configurable fraction: ETH Dutch auction duration; initial duration until main prize (used to calculate `mainPrizeTime` on the first bid in a round); `mainPrizeTime` increment (by how much `mainPrizeTime` gets extended on each subsequent bid in a round). In V1, CST Dutch auction duration is increased as well; in V2+, it's reduced on each ETH bid and increase on each CST bid by a separate configurable fraction.
 
 ### Cosmic Signature and Random Walk NFT Staking
 
@@ -226,10 +226,13 @@ A user also can force-send ETH to the Game contract by `selfdestruct`ing a contr
 - Parameters:
 	- Random Walk NFT ID (optional).
 	- Message (optional).
+	- V2+: CST reward min limit.
 
 - If the provided message is too long: revert.
 
 - If the current bidding round is inactive: revert.
+
+- V2+: If the provided CST reward min limit is greater than the current CST reward: revert.
 
 - Calculate the current ETH bid price.
 
@@ -241,11 +244,13 @@ A user also can force-send ETH to the Game contract by `selfdestruct`ing a contr
 
 	- if the NFT already was used for bidding or the caller is not the NFT owner: revert.
 
-- Mint a configurable CST amount for the user.
+- Mint a CST reward for the user.
 
 - If this is not the first bid in the current bidding round: update Endurance Champion and Chrono-Warrior.
 
 - Update `mainPrizeTime`.
+
+- V2+: reduce CST Dutch auction duration.
 
 - If the user sent us more ETH than required: transfer the excess back to them. But don't do it if the refund amount is less than or equal than what it would cost to transfer it.
 
@@ -254,10 +259,13 @@ A user also can force-send ETH to the Game contract by `selfdestruct`ing a contr
 - Parameters:
 	- Max CST price the user is willing to pay.
 	- Message (optional).
+	- V2+: CST reward min limit.
 
 - If the provided message is too long: revert.
 
 - If no bid placed in the current bidding round yet: revert. (An ETH bid shall happen first. So provided it happened, we know that the current bidding round is active, therefore it's unnecessary to check that.)
+
+- V2+: If the provided CST reward min limit is greater than the current CST reward: revert.
 
 - Calculate the current CST bid price.
 
@@ -265,11 +273,13 @@ A user also can force-send ETH to the Game contract by `selfdestruct`ing a contr
 
 - Burn the current CST bid price from the user's CST balance.
 
-- Mint a configurable CST amount for the user.
+- Mint a CST reward for the user.
 
 - Update Endurance Champion and Chrono-Warrior. (We have already checked that this is not the first bid in the current bidding round, so it's unnecessary to check that again.)
 
 - Update `mainPrizeTime`.
+
+- V2+: increase CST Dutch auction duration.
 
 #### A user claims the current bidding round main prize.
 

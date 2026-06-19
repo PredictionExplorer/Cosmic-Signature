@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.34;
+pragma solidity =0.8.34;
 
 import { PrizesWallet } from "../production/PrizesWallet.sol";
 import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
@@ -35,7 +35,10 @@ contract MaliciousToken is MaliciousActorBase {
 	/// [/Comment-202507177]
 	function transferFrom(address /*from_*/, address /*to_*/, uint256 /*value_*/) public /*returns (bool)*/ {
 		_reenterIfNeeded();
-		// unchecked {
+		// // #enable_smtchecker /*
+		// unchecked
+		// // #enable_smtchecker */
+		// {
 		// 	balanceAmounts[from_] -= value_;
 		// 	balanceAmounts[to_] += value_;
 		// }

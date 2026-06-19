@@ -9,15 +9,17 @@ const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
 const { anyUint } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
-const { generateRandomUInt32, generateRandomUInt256, waitForTransactionReceipt } = require("../../src/Helpers.js");
+const { MAX_UINT256 } = require("../../src/BigIntMathHelpers.js");
+const { ENABLE_ASSERTS, generateRandomUInt32, generateRandomUInt256, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { setRoundActivationTimeIfNeeded } = require("../../src/ContractDeploymentHelpers.js");
 const { loadFixtureDeployContractsForTesting, assertEvent } = require("../../src/ContractTestingHelpers.js");
+const { deployV1CompleteRoundZeroAndUpgradeToV2, activateCurrentRound } = require("../src/V2UpgradeTestHelpers.js");
 
 // #endregion
 // #region
 
 describe("PrizesWallet-2", function () {
-	// #region
+	// #region `it`
 
 	it("Deployment", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
@@ -27,13 +29,13 @@ describe("PrizesWallet-2", function () {
 	});
 
 	// #endregion
-	// #region
+	// #region `it`
 
 	it("Contract parameter setters", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		{
-			const newValue_ = 999_999n + generateRandomUInt256() % 3n;
+			const newValue_ = generateRandomUInt256();
 			await expect(contracts_.prizesWallet.connect(contracts_.signers[1]).setTimeoutDurationToWithdrawPrizes(newValue_))
 				.revertedWithCustomError(contracts_.prizesWallet, "OwnableUnauthorizedAccount");
 			await expect(contracts_.prizesWallet.connect(contracts_.ownerSigner).setTimeoutDurationToWithdrawPrizes(newValue_))
@@ -44,7 +46,44 @@ describe("PrizesWallet-2", function () {
 	});
 
 	// #endregion
-	// #region
+	// #region `it`
+
+	// Comment-202606264 relates.
+	it("Swapping to a fresh PrizesWallet after the V2 upgrade", async function () {
+		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2(2n);
+		const game_ = contracts_.cosmicSignatureGameV2Proxy;
+		expect(await game_.roundNum()).equal(1n);
+
+		const newPrizesWallet_ = await contracts_.prizesWalletFactory.deploy(contracts_.cosmicSignatureGameProxyAddress);
+		await newPrizesWallet_.waitForDeployment();
+		const newPrizesWalletAddress_ = await newPrizesWallet_.getAddress();
+		await waitForTransactionReceipt(newPrizesWallet_.transferOwnership(contracts_.ownerSigner.address));
+		await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setPrizesWallet(newPrizesWalletAddress_));
+		expect(await game_.prizesWallet()).equal(newPrizesWalletAddress_);
+
+		await activateCurrentRound(game_, contracts_.ownerSigner);
+		const bidder_ = contracts_.signers[2];
+		const nextEthBidPrice_ = await game_.getNextEthBidPriceAdvanced(1n);
+		await waitForTransactionReceipt(game_.connect(bidder_).bidWithEth(-1n, "fresh prizes wallet", 0n, {value: nextEthBidPrice_,}));
+		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(await game_.mainPrizeTime()),]);
+		// await hre.ethers.provider.send("evm_mine");
+
+		const claimMainPrizeTransactionResponsePromise_ = game_.connect(bidder_).claimMainPrize();
+		if (ENABLE_ASSERTS) {
+			await expect(claimMainPrizeTransactionResponsePromise_).revertedWithPanic(0x1);
+		} else {
+			const claimMainPrizeTransactionReceipt_ = await waitForTransactionReceipt(claimMainPrizeTransactionResponsePromise_);
+			expect(claimMainPrizeTransactionReceipt_.status).equal(1);
+			expect(await game_.roundNum()).equal(2n);
+			expect(await newPrizesWallet_.mainPrizeBeneficiaryAddresses(1n)).equal(bidder_.address);
+			expect(await newPrizesWallet_.roundTimeoutTimesToWithdrawPrizes(1n)).greaterThan(0n);
+		}
+		expect(await newPrizesWallet_.mainPrizeBeneficiaryAddresses(0n)).equal(hre.ethers.ZeroAddress);
+		expect(await newPrizesWallet_.roundTimeoutTimesToWithdrawPrizes(0n)).equal(0n);
+	});
+
+	// #endregion
+	// #region `it`
 
 	it("The registerRoundEndAndDepositEthMany, withdrawEverything, donateToken, claimDonatedToken, donateNft methods", async function () {
 		// #region
@@ -80,7 +119,7 @@ describe("PrizesWallet-2", function () {
 		// #region
 
 		for ( let counter_ = 0; counter_ < 4; ++ counter_ ) {
-			transactionResponsePromise_ = tokens_[counter_].connect(contracts_.signers[counter_]).approve(newPrizesWalletAddress_, (1n << 256n) - 1n);
+			transactionResponsePromise_ = tokens_[counter_].connect(contracts_.signers[counter_]).approve(newPrizesWalletAddress_, MAX_UINT256);
 			await waitForTransactionReceipt(transactionResponsePromise_);
 			transactionResponsePromise_ = tokens_[counter_].connect(contracts_.signers[10]).mint(contracts_.signers[counter_].address, 10n ** (18n + 1n));
 			await waitForTransactionReceipt(transactionResponsePromise_);
@@ -217,7 +256,7 @@ describe("PrizesWallet-2", function () {
 	});
 
 	// #endregion
-	// #region
+	// #region `it`
 
 	it("The withdrawEth and withdrawEthMany methods", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
@@ -286,7 +325,7 @@ describe("PrizesWallet-2", function () {
 	});
 
 	// #endregion
-	// #region
+	// #region `it`
 
 	it("The donateNft method", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
@@ -312,7 +351,7 @@ describe("PrizesWallet-2", function () {
 	});
 
 	// #endregion
-	// #region
+	// #region `it`
 
 	it("The claimManyDonatedNfts method", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
@@ -350,7 +389,7 @@ describe("PrizesWallet-2", function () {
 	});
 
 	// #endregion
-	// #region
+	// #region `it`
 
 	it("Incorrect or forbidden operations", async function () {
 		/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
@@ -388,7 +427,7 @@ describe("PrizesWallet-2", function () {
 	});
 
 	// #endregion
-	// #region
+	// #region `it`
 
 	// Comment-202507055 applies.
 	it("Reentries", async function () {

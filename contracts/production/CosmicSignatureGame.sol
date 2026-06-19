@@ -1,7 +1,7 @@
 // #region
 
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.34;
+pragma solidity =0.8.34;
 
 // #endregion
 // #region
@@ -51,7 +51,7 @@ contract CosmicSignatureGame is
 	/// [/Comment-202503121]
 	/// @custom:oz-upgrades-unsafe-allow constructor
 	constructor() {
-		// // #enable_asserts // #disable_smtchecker console.log("1 constructor");
+		// // #enable_asserts // #disable_smtchecker console.log("CosmicSignatureGame.constructor");
 		_disableInitializers();
 	}
 
@@ -65,21 +65,8 @@ contract CosmicSignatureGame is
 	// #endregion
 	// #region `initialize`
 
-	/// @dev
-	/// [Comment-202503124]
-	/// The `virtual` keyword is not needed for the production, but derived testing contracts need it to `override` this method.
-	/// [/Comment-202503124]
-	function initialize(address ownerAddress_) external override virtual initializer() {
-		// // #enable_asserts // #disable_smtchecker console.log("1 initialize");
-		_initialize(ownerAddress_);
-	}
-
-	// #endregion
-	// #region `_initialize`
-
-	function _initialize(address ownerAddress_) internal {
-		// `initialize` is supposed to not be executed yet.
-		// #enable_asserts assert(owner() == address(0));
+	function initialize(address ownerAddress_) external override initializer() {
+		// // #enable_asserts // #disable_smtchecker console.log("CosmicSignatureGame.initialize");
 
 		__ReentrancyGuardTransient_init();
 		__Ownable_init(ownerAddress_);
@@ -113,7 +100,7 @@ contract CosmicSignatureGame is
 		cstDutchAuctionBeginningBidPriceMinLimit = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT;
 		// usedRandomWalkNfts =
 		bidMessageLengthMaxLimit = CosmicSignatureConstants.DEFAULT_BID_MESSAGE_LENGTH_MAX_LIMIT;
-		cstRewardAmountForBidding = CosmicSignatureConstants.DEFAULT_CST_REWARD_AMOUNT_FOR_BIDDING;
+		bidCstRewardAmount = CosmicSignatureConstants.DEFAULT_BID_CST_REWARD_AMOUNT;
 		cstPrizeAmount = CosmicSignatureConstants.DEFAULT_CST_PRIZE_AMOUNT;
 		chronoWarriorEthPrizeAmountPercentage = CosmicSignatureConstants.DEFAULT_CHRONO_WARRIOR_ETH_PRIZE_AMOUNT_PERCENTAGE;
 		raffleTotalEthPrizeAmountForBiddersPercentage = CosmicSignatureConstants.DEFAULT_RAFFLE_TOTAL_ETH_PRIZE_AMOUNT_FOR_BIDDERS_PERCENTAGE;
@@ -148,18 +135,10 @@ contract CosmicSignatureGame is
 	/// to replace the contract in the middle of a bidding round, just in case a bug results in `claimMainPrize` reverting.
 	/// But such kind of feature would violate the principle of trustlessness.
 	/// [/Comment-202412188]
-	function _authorizeUpgrade(address newImplementationAddress_) internal view override
-		// [Comment-202503119]
-		// `initialize` is supposed to be already executed.
-		// [/Comment-202503119]
-		// [Comment-202510114]
-		// Otherwise `owner()` would be zero and therefore this modifier would revert.
-		// [/Comment-202510114]
-		onlyOwner
-
-		_onlyRoundIsInactive {
+	/// Comment-202606128 relates.
+	function _authorizeUpgrade(address newImplementationAddress_) internal view override onlyOwner _onlyRoundIsInactive {
 		// _providedAddressIsNonZero(newImplementationAddress_) {
-		// // #enable_asserts // #disable_smtchecker console.log("1 _authorizeUpgrade");
+		// // #enable_asserts // #disable_smtchecker console.log("CosmicSignatureGame._authorizeUpgrade");
 	}
 
 	// #endregion

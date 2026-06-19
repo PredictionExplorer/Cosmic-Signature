@@ -5,10 +5,10 @@
 // #endregion
 // #region
 
-const { expect } = require("chai");
+const { assert: chaiAssert, expect } = require("chai");
 const hre = require("hardhat");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
-const { parseBooleanEnvironmentVariable, sleepForMilliSeconds, waitForTransactionReceipt } = require("./Helpers.js");
+const { parseIntegerEnvironmentVariable, sleepForMilliSeconds, waitForTransactionReceipt } = require("./Helpers.js");
 const { MyNonceManager } = require("./MyNonceManager.js");
 const { mochaHooks } = require("./MochaHooks.js");
 const { deployContractsAdvanced, setRoundActivationTimeIfNeeded } = require("./ContractDeploymentHelpers.js");
@@ -16,7 +16,24 @@ const { deployContractsAdvanced, setRoundActivationTimeIfNeeded } = require("./C
 // #endregion
 // #region
 
-const SKIP_LONG_TESTS = parseBooleanEnvironmentVariable("SKIP_LONG_TESTS", false);
+/**
+[Comment-202606305]
+Supported values: 1 for quick; 2 for medium; 3 for full (default).
+[/Comment-202606305]
+*/
+const LONG_TEST_MODE_CODE = parseIntegerEnvironmentVariable("LONG_TEST_MODE_CODE", 3);
+
+switch (LONG_TEST_MODE_CODE) {
+	case 1:
+	case 2:
+	case 3: {
+		break;
+	}
+	default: {
+		throw new Error(`Invalid LONG_TEST_MODE_CODE: ${LONG_TEST_MODE_CODE}.`);
+		// break;
+	}
+}
 
 let preparedHardhatCoverage = false;
 
@@ -43,8 +60,8 @@ let preparedHardhatCoverage = false;
 // #region `loadFixtureDeployContractsForTesting`
 
 /**
- * @param {bigint} roundActivationTime 
- */
+@param {bigint} roundActivationTime 
+*/
 async function loadFixtureDeployContractsForTesting(roundActivationTime) {
 	const contracts = await loadFixture(deployContractsForTesting);
 	contracts.signers.forEach((signer) => { signer.reset(); });
@@ -91,9 +108,9 @@ async function loadFixtureDeployContractsForTesting(roundActivationTime) {
 // #region `deployContractsForTesting`
 
 /**
- * This function is to be used for unit tests.
- * It's OK to pass this function to `loadFixture`.
- */
+This function is to be used for unit tests.
+It's OK to pass this function to `loadFixture`.
+*/
 async function deployContractsForTesting() {
 	return deployContractsForTestingAdvanced("CosmicSignatureGame");
 }
@@ -102,9 +119,9 @@ async function deployContractsForTesting() {
 // #region `deployContractsForTestingAdvanced`
 
 /**
- * This function is to be used for unit tests.
- * @param {string} cosmicSignatureGameContractName 
- */
+This function is to be used for unit tests.
+@param {string} cosmicSignatureGameContractName 
+*/
 async function deployContractsForTestingAdvanced(
 	cosmicSignatureGameContractName
 ) {
@@ -187,7 +204,7 @@ async function hackPrepareHardhatCoverageOnceIfNeeded() {
 	// console.info("%s", "202508263");
 	preparedHardhatCoverage = true;
 
-	expect(typeof hre.network.config.gas).equal("number");
+	chaiAssert.isNumber(hre.network.config.gas);
 	expect(hre.network.config.gas).not.equal(gas);
 	hre.network.config.gas = gas;
 
@@ -199,9 +216,9 @@ async function hackPrepareHardhatCoverageOnceIfNeeded() {
 // #region `storeContractDeployedByteCodeAtAddress`
 
 /**
- * @param {string} contractName 
- * @param {string} address 
- */
+@param {string} contractName 
+@param {string} address 
+*/
 async function storeContractDeployedByteCodeAtAddress(contractName, address) {
 	const artifact = await hre.artifacts.readArtifact(contractName);
 	await hre.ethers.provider.send("hardhat_setCode", [address, artifact.deployedBytecode,]);
@@ -211,8 +228,8 @@ async function storeContractDeployedByteCodeAtAddress(contractName, address) {
 // #region `assertAddressIsValid`
 
 /**
- * @param {string} address 
- */
+@param {string} address 
+*/
 function assertAddressIsValid(address) {
 	expect(address).not.equal(hre.ethers.ZeroAddress);
 	expect(address).properAddress;
@@ -222,13 +239,13 @@ function assertAddressIsValid(address) {
 // #region `tryWaitForTransactionReceipt`
 
 /**
- * @param {Promise<import("hardhat").ethers.TransactionResponse>} transactionResponsePromise
- */
+@param {Promise<import("hardhat").ethers.TransactionResponse>} transactionResponsePromise
+*/
 async function tryWaitForTransactionReceipt(transactionResponsePromise) {
 	try {
 		return await waitForTransactionReceipt(transactionResponsePromise);
-	} catch (transactionErrorObject) {
-		checkTransactionErrorObject(transactionErrorObject);
+	} catch (errorObject) {
+		checkTransactionErrorObject(errorObject);
 	}
 	return undefined;
 }
@@ -236,24 +253,66 @@ async function tryWaitForTransactionReceipt(transactionResponsePromise) {
 // #endregion
 // #region `checkTransactionErrorObject`
 
-/** Comment-202508253 relates. */
-function checkTransactionErrorObject(transactionErrorObject) {
-	{
-		const weExpectThisError = transactionErrorObject.message.startsWith("VM Exception while processing transaction: reverted with ");
-		if ( ! weExpectThisError ) {
-			throw transactionErrorObject;
-		}
+/**
+Comment-202508253 relates.
+@param {unknown} errorObject
+*/
+function checkTransactionErrorObject(errorObject) {
+	const errorIsExpected = isExpectedTransactionErrorObject(errorObject);
+	if ( ! errorIsExpected ) {
+		throw errorObject;
 	}
-	expect(transactionErrorObject.receipt).equal(undefined);
+}
+
+// #endregion
+// #region `isExpectedTransactionErrorObject`
+
+/**
+@returns `true` if `errorObject` is a normal Hardhat VM transaction revert.
+@param {unknown} errorObject
+*/
+function isExpectedTransactionErrorObject(errorObject) {
+	if ( ! (errorObject instanceof Error) ) {
+		// console.error("%s", "202606189");
+		return false;
+	}
+	const message = errorObject.message;
+	if ( ! message ) {
+		// console.error("%s", "202606191");
+		return false;
+	}
+
+	// // [Comment-202606187]
+	// // Testing.
+	// // Issue. I observed this message: `Transaction reverted and Hardhat couldn't infer the reason.`.
+	// // I posted at https://predictionexplorer.slack.com/archives/D07EAEGJWPJ/p1780519717609329
+	// // todo-3 To be revisited.
+	// // [/Comment-202606187]
+	// if (message.includes("Hardhat could")) {
+	// 	console.warn("Warning. A suspicious transaction error: %s", message);
+	// }
+
+	const errorIsExpected =
+		message.startsWith("VM Exception while processing transaction: reverted ") ||
+
+		// Issue. This message appears to indicate a bad error. It's not supposed to occur.
+		// See Comment-202606187 for details.
+		message.startsWith("Transaction reverted ");
+	if (errorIsExpected) {
+		expect(errorObject.receipt).undefined;
+	} else {
+		// console.error("<%s>", message);
+	}
+	return errorIsExpected;
 }
 
 // #endregion
 // #region `assertEvent`
 
 /**
- * Asserts a `TransactionReceipt.logs` item.
- * @param {import("hardhat").ethers.Log} event
- */
+Asserts a `TransactionReceipt.logs` item.
+@param {import("hardhat").ethers.Log} event
+*/
 function assertEvent(event, contract, eventName, eventArgs) {
 	const parsedEvent = contract.interface.parseLog(event);
 	expect(parsedEvent.name).equal(eventName);
@@ -264,16 +323,16 @@ function assertEvent(event, contract, eventName, eventArgs) {
 // #region `makeNextBlockTimeDeterministic`
 
 /**
- * This function does what issue 3 in Comment-202501193 recommends.
- * A simple way to use this function is to subtract its return value
- * from the value to be passed to the "evm_increaseTime" JSON RPC method.
- * But it's correct to do so only if the last block was mined within the current, possibly ending second.
- * To (almost) guaranteed that, call this function before mining the last block.
- * @param {number} currentSecondRemainingDurationMinLimitInMilliSeconds
- */
+This function does what issue 3 in Comment-202501193 recommends.
+A simple way to use this function is to subtract its return value
+from the value to be passed to the "evm_increaseTime" JSON RPC method.
+But it's correct to do so only if the last block was mined within the current, possibly ending second.
+To (almost) guaranteed that, call this function before mining the last block.
+@param {number} currentSecondRemainingDurationMinLimitInMilliSeconds
+*/
 async function makeNextBlockTimeDeterministic(currentSecondRemainingDurationMinLimitInMilliSeconds = 300) {
-	const currentDateTime = Date.now();
-	const currentSecondElapsedDurationInMilliSeconds = currentDateTime % 1000;
+	const currentDateTimeInMilliSeconds = Date.now();
+	const currentSecondElapsedDurationInMilliSeconds = currentDateTimeInMilliSeconds % 1000;
 	const currentSecondRemainingDurationInMilliSeconds = 1000 - currentSecondElapsedDurationInMilliSeconds;
 	let secondBeginningReachCount;
 	if (currentSecondRemainingDurationInMilliSeconds < currentSecondRemainingDurationMinLimitInMilliSeconds) {
@@ -295,13 +354,13 @@ async function makeNextBlockTimeDeterministic(currentSecondRemainingDurationMinL
 // #region `generateRandomUInt256Seed`
 
 /**
- * Comment-202504067 applies.
- * This is the test function that Comment-202504071 mentions.
- * Comment-202506282 applies.
- * Comment-202506284 applies.
- * @param {import("hardhat").ethers.Block} prevBlock
- * @param {import("hardhat").ethers.Block} latestBlock
- */
+Comment-202504067 applies.
+This is the test function that Comment-202504071 mentions.
+Comment-202506282 applies.
+Comment-202506284 applies.
+@param {import("hardhat").ethers.Block} prevBlock
+@param {import("hardhat").ethers.Block} latestBlock
+*/
 /*async*/ function generateRandomUInt256Seed(prevBlock, latestBlock/*, blockchainPropertyGetter*/) {
 	let randomNumberSeed = BigInt(prevBlock.hash) >> 1n;
 	{
@@ -337,7 +396,7 @@ async function makeNextBlockTimeDeterministic(currentSecondRemainingDurationMinL
 // #region
 
 module.exports = {
-	SKIP_LONG_TESTS,
+	LONG_TEST_MODE_CODE,
 	// TransactionRevertedExpectedlyError,
 	loadFixtureDeployContractsForTesting,
 	deployContractsForTesting,
@@ -346,6 +405,7 @@ module.exports = {
 	assertAddressIsValid,
 	tryWaitForTransactionReceipt,
 	checkTransactionErrorObject,
+	isExpectedTransactionErrorObject,
 	assertEvent,
 	makeNextBlockTimeDeterministic,
 	generateRandomUInt256Seed,

@@ -97,7 +97,7 @@ async function createCosmicSignatureGameProxySimulator(
 		usedRandomWalkNfts: {},
 
 		bidMessageLengthMaxLimit: 280n,
-		cstRewardAmountForBidding: 100n * 10n ** 18n,
+		bidCstRewardAmount: 100n * 10n ** 18n,
 		cstPrizeAmount: 1_000n * 10n ** 18n,
 		chronoWarriorEthPrizeAmountPercentage: 8n,
 		raffleTotalEthPrizeAmountForBiddersPercentage: 4n,
@@ -181,8 +181,9 @@ async function createCosmicSignatureGameProxySimulator(
 		// #region `_extendMainPrizeTime`
 
 		_extendMainPrizeTime: function(transactionBlock_) {
-			const mainPrizeCorrectedTime_ = BigInt(Math.max(Number(this.mainPrizeTime), transactionBlock_.timestamp));
+			// Comment-202606175 applies.
 			const mainPrizeTimeIncrement_ = this.getMainPrizeTimeIncrement();
+			const mainPrizeCorrectedTime_ = BigInt(Math.max(Number(this.mainPrizeTime), transactionBlock_.timestamp));
 			this.mainPrizeTime = mainPrizeCorrectedTime_ + mainPrizeTimeIncrement_;
 		},
 
@@ -525,6 +526,7 @@ async function createCosmicSignatureGameProxySimulator(
 				// console.info("%s", "202505081");
 			} else if (overpaidEthPrice_ > 0n) {
 				// Comment-202505117 relates.
+				// Comment-202606216 relates.
 				const transactionGasPrice_ = transactionReceipt_.gasPrice;
 				expect(transactionGasPrice_).greaterThan(0n);
 				const ethBidRefundAmountToSwallowMaxLimit_ = this.ethBidRefundAmountInGasToSwallowMaxLimit * transactionGasPrice_;
@@ -555,7 +557,7 @@ async function createCosmicSignatureGameProxySimulator(
 			this.nextEthBidPrice = ethBidPrice_ + ethBidPrice_ / this.ethBidPriceIncreaseDivisor + 1n;
 
 			// [Comment-202505086/]
-			this.cosmicSignatureTokenSimulator.mint(bidderAddress_, this.cstRewardAmountForBidding, contracts_, transactionReceipt_, eventIndexWrapper_);
+			this.cosmicSignatureTokenSimulator.mint(bidderAddress_, this.bidCstRewardAmount, contracts_, transactionReceipt_, eventIndexWrapper_);
 
 			if (this.lastBidderAddress == hre.ethers.ZeroAddress) {
 				this.cstDutchAuctionBeginningTimeStamp = BigInt(transactionBlock_.timestamp);
@@ -698,14 +700,13 @@ async function createCosmicSignatureGameProxySimulator(
 				return false;
 			}
 			if (this.lastBidderAddress == hre.ethers.ZeroAddress) {
-				// // Our Solidity code now validates this a bit later, but here we no longer need to validate this.
-				// if ( ! (BigInt(transactionBlock_.timestamp) >= this.roundActivationTime) ) {
-				// 	// console.info("%s", "202504169");
-				// 	await expect(transactionResponsePromise_)
-				// 		.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "RoundIsInactive")
-				// 		.withArgs("The current bidding round is not active yet.", this.roundActivationTime, BigInt(transactionBlock_.timestamp));
-				// 	return false;
-				// }
+				if ( ! (BigInt(transactionBlock_.timestamp) >= this.roundActivationTime) ) {
+					// console.info("%s", "202504169");
+					await expect(transactionResponsePromise_)
+						.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "RoundIsInactive")
+						.withArgs("The current bidding round is not active yet.", this.roundActivationTime, BigInt(transactionBlock_.timestamp));
+					return false;
+				}
 
 				// console.info("%s", "202504171");
 				await expect(transactionResponsePromise_)
@@ -731,7 +732,7 @@ async function createCosmicSignatureGameProxySimulator(
 
 			// Comment-202505086 applies.
 			this.cosmicSignatureTokenSimulator.burn(bidderAddress_, paidCstPrice_, contracts_, transactionReceipt_, eventIndexWrapper_);
-			this.cosmicSignatureTokenSimulator.mint(bidderAddress_, this.cstRewardAmountForBidding, contracts_, transactionReceipt_, eventIndexWrapper_);
+			this.cosmicSignatureTokenSimulator.mint(bidderAddress_, this.bidCstRewardAmount, contracts_, transactionReceipt_, eventIndexWrapper_);
 
 			this.biddersInfo[bidderAddress_].totalSpentCstAmount += paidCstPrice_;
 			this.cstDutchAuctionBeginningTimeStamp = BigInt(transactionBlock_.timestamp);
@@ -912,7 +913,7 @@ async function createCosmicSignatureGameProxySimulator(
 		// #endregion
 		// #region `_distributePrizes`
 
-		_distributePrizes: async function(blockBeforeTransaction_, transactionBlock_, callerAddress_, bidderEthBalanceAmountBeforeTransaction_, contracts_, transactionReceipt_, eventIndexWrapper_ /* , blockchainPropertyGetter_ */) {
+		_distributePrizes: async function(blockBeforeTransaction_, transactionBlock_, callerAddress_, /** @type {bigint} */ bidderEthBalanceAmountBeforeTransaction_, contracts_, transactionReceipt_, eventIndexWrapper_ /* , blockchainPropertyGetter_ */) {
 			// #region
 
 			// assertAddressIsValid(callerAddress_);
@@ -1358,7 +1359,7 @@ async function assertCosmicSignatureGameProxySimulator(cosmicSignatureGameProxyS
 	expect(await contracts_.cosmicSignatureGameProxy.cstDutchAuctionBeginningBidPriceMinLimit()).equal(cosmicSignatureGameProxySimulator_.cstDutchAuctionBeginningBidPriceMinLimit);
 	await assertCosmicSignatureGameProxySimulatorRandomRandomWalkNftIfPossible(cosmicSignatureGameProxySimulator_, contracts_, randomNumberSeedWrapper_);
 	expect(await contracts_.cosmicSignatureGameProxy.bidMessageLengthMaxLimit()).equal(cosmicSignatureGameProxySimulator_.bidMessageLengthMaxLimit);
-	expect(await contracts_.cosmicSignatureGameProxy.cstRewardAmountForBidding()).equal(cosmicSignatureGameProxySimulator_.cstRewardAmountForBidding);
+	expect(await contracts_.cosmicSignatureGameProxy.bidCstRewardAmount()).equal(cosmicSignatureGameProxySimulator_.bidCstRewardAmount);
 	expect(await contracts_.cosmicSignatureGameProxy.cstPrizeAmount()).equal(cosmicSignatureGameProxySimulator_.cstPrizeAmount);
 	expect(await contracts_.cosmicSignatureGameProxy.chronoWarriorEthPrizeAmountPercentage()).equal(cosmicSignatureGameProxySimulator_.chronoWarriorEthPrizeAmountPercentage);
 	expect(await contracts_.cosmicSignatureGameProxy.raffleTotalEthPrizeAmountForBiddersPercentage()).equal(cosmicSignatureGameProxySimulator_.raffleTotalEthPrizeAmountForBiddersPercentage);

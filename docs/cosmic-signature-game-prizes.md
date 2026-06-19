@@ -20,7 +20,7 @@ This document lists all prizes awarded by our game.
 
 1. Prizes awarded to the bidder when placing a bid.
 
-2. Prizes awarded to main prize winner and other users at the end of each bidding round. This is done by the `MainPrize._distributePrizes` method. Prizes in this group are broken down into main ETH prize and secondary, a.k.a. special prizes.
+2. Prizes awarded to main prize winner and other bidders at the end of each bidding round. This is done by the `MainPrize._distributePrizes` method. Prizes in this group are broken down into main ETH prize and secondary, a.k.a. special prizes.
 
 3. Additional prizes that do not belong to the above groups.
 
@@ -35,6 +35,8 @@ This document lists all prizes awarded by our game.
 The rest of this document lists prizes from groups 1 and 2.
 
 #### Variables
+
+- `secondsSinceLastBid` -- the number of seconds since the previous bid. If there were no bids in the current bidding round yet, then since `roundActivationTime`. It can be zero.
 
 - `gameEthBalance` -- the `CosmicSignatureGame` contract ETH balance at the end of the bidding round.
 
@@ -60,7 +62,7 @@ The rest of this document lists prizes from groups 1 and 2.
 |  | CST | 1 | `cstPrizeAmount` |  |
 |  | Cosmic Signature NFT | 1 | 1 |  |
 |  |  |  |  |  |
-| Bidders | CST | 1 per bid | `cstRewardAmountForBidding` | On each bid, the bidder gets CST. |
+| Bidders | CST | 1 per bid | V1: `bidCstRewardAmount`<br>V2+: `sqrt(secondsSinceLastBid * bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds)` | On each bid, the bidder gets CST. |
 |  |  |  |  |  |
 | Bidders Picked Via ETH Prize Raffle | ETH | `numRaffleEthPrizesForBidders` | `gameEthBalance * raffleTotalEthPrizeAmountForBiddersPercentage / 100 / numRaffleEthPrizesForBidders` | Bids are picked randomly. |
 |  |  |  |  |  |

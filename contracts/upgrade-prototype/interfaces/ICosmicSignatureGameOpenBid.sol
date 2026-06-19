@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.34;
+pragma solidity =0.8.34;
 
 import { IAddressValidator } from "../../production/interfaces/IAddressValidator.sol";
 import { ICosmicSignatureGameStorage } from "../../production/interfaces/ICosmicSignatureGameStorage.sol";
@@ -30,8 +30,6 @@ interface ICosmicSignatureGameOpenBid is
 	// /// @dev It appears that we don't need this.
 	// fallback() external payable;
 
-	/// @notice Makes additional initializations after an upgrade.
-	/// This method is called on the proxy contract right after deployment of the new implementation contract.
-	/// Comment-202503119 applies.
-	function initialize2() external;
+	/// @notice Comment-202606018 applies.
+	function initializeV2() external;
 }

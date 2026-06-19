@@ -1,7 +1,7 @@
 // #region
 
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.34;
+pragma solidity =0.8.34;
 
 // #endregion
 // #region
@@ -37,6 +37,7 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 	/// This should be pretty long -- to increase the chance that people will have enough time, even if an asteroid hits the Earth.
 	/// [/Comment-202506139]
 	/// See also: `CosmicSignatureGameStorage.timeoutDurationToClaimMainPrize`.
+	/// @dev Comment-202606264 relates.
 	uint256 public timeoutDurationToWithdrawPrizes = CosmicSignatureConstants.DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES;
 
 	/// @notice For each bidding round number, contains a timeout time
@@ -123,15 +124,35 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 	// #region `_registerRoundEnd`
 
 	function _registerRoundEnd(uint256 roundNum_, address mainPrizeBeneficiaryAddress_) private returns (uint256) {
-		// #enable_asserts assert(mainPrizeBeneficiaryAddresses[roundNum_] == address(0));
-		// #enable_asserts assert(roundNum_ == 0 || mainPrizeBeneficiaryAddresses[roundNum_ - 1] != address(0));
-		// #enable_asserts assert(roundTimeoutTimesToWithdrawPrizes[roundNum_] == 0);
-		// #enable_asserts assert(roundNum_ == 0 || roundTimeoutTimesToWithdrawPrizes[roundNum_ - 1] != 0);
-		// #enable_asserts assert(mainPrizeBeneficiaryAddress_ != address(0));
-		mainPrizeBeneficiaryAddresses[roundNum_] = mainPrizeBeneficiaryAddress_;
-		uint256 roundTimeoutTimeToWithdrawPrizes_ = block.timestamp + timeoutDurationToWithdrawPrizes;
-		roundTimeoutTimesToWithdrawPrizes[roundNum_] = roundTimeoutTimeToWithdrawPrizes_;
-		return roundTimeoutTimeToWithdrawPrizes_;
+		// Comment-202606264 relates and/or applies.
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+
+		{
+			// #enable_asserts assert(mainPrizeBeneficiaryAddresses[roundNum_] == address(0));
+			// #enable_asserts assert(roundNum_ == 0 || mainPrizeBeneficiaryAddresses[roundNum_ - 1] != address(0));
+			// #enable_asserts assert(roundTimeoutTimesToWithdrawPrizes[roundNum_] == 0);
+			// #enable_asserts assert(roundNum_ == 0 || roundTimeoutTimesToWithdrawPrizes[roundNum_ - 1] != 0);
+			// #enable_asserts assert(mainPrizeBeneficiaryAddress_ != address(0));
+			mainPrizeBeneficiaryAddresses[roundNum_] = mainPrizeBeneficiaryAddress_;
+
+			// [Comment-202606264]
+			// We got another issue here that Comment-202606235 is talking about.
+			// Therefore this must be within an `unchecked` block,
+			// so I have wrapped all code in the `_prepareNextRound` method in an `unchecked` block.
+			// The contract owner can still set `timeoutDurationToWithdrawPrizes` to a small value or zero before a round ends
+			// to shorten winner exclusivity timeout. That is an accepted benevolent-owner risk rather than a min/max clamp.
+			// Note that if `PrizesWallet` (with or without this fix) is deployed and registered with the Game
+			// after at least 1 bidding round completes, `_registerRoundEnd` will later be called for the first time
+			// with`roundNum_ > 0`, which will cause some asserts to fail, which is OK.
+			// `PrizesWallet` has already been deployed, but it's unnecessary to add a new `PrizesWalletV2` with this fix.
+			// [/Comment-202606264]
+			uint256 roundTimeoutTimeToWithdrawPrizes_ = block.timestamp + timeoutDurationToWithdrawPrizes;
+
+			roundTimeoutTimesToWithdrawPrizes[roundNum_] = roundTimeoutTimeToWithdrawPrizes_;
+			return roundTimeoutTimeToWithdrawPrizes_;
+		}
 	}
 
 	// #endregion

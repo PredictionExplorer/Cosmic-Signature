@@ -1,7 +1,7 @@
 // #region
 
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.34;
+pragma solidity =0.8.34;
 
 // #endregion
 // #region
@@ -38,6 +38,7 @@ abstract contract MainPrize is
 	/// @dev Comment-202411169 relates and/or applies.
 	/// Comment-202411078 relates and/or applies.
 	///
+	/// [Comment-202605308]
 	/// Observable universe entities accessed by `claimMainPrize`, `_distributePrizes`, `_prepareNextRound`.
 	///    `OpenZeppelinPanic`.
 	///    `nonReentrant`.
@@ -93,6 +94,7 @@ abstract contract MainPrize is
 	///    `_prepareNextRound`.
 	///    `getMainEthPrizeAmount`.
 	///    `getCharityEthDonationAmount`.
+	/// [/Comment-202605308]
 	function claimMainPrize() external override nonReentrant /*_onlyRoundIsActive*/ {
 		// #region
 
@@ -127,8 +129,10 @@ abstract contract MainPrize is
 		// #endregion
 		// #region
 
+		// [Comment-202605309]
 		// According to Comment-202411254, `_msgSender()` can be different from `lastBidderAddress`,
 		// but the champion update logic anyway uses the latter.
+		// [/Comment-202605309]
 		_updateChampionsIfNeeded();
 		_updateChronoWarriorIfNeeded(block.timestamp);
 
@@ -144,10 +148,14 @@ abstract contract MainPrize is
 	function _distributePrizes() private {
 		// #region
 
+		// [Comment-202605311]
 		// Issue. It appears that the optimization idea described in Comment-202502077 would be difficult to implement here.
+		// [/Comment-202605311]
 		RandomNumberHelpers.RandomNumberSeedWrapper memory randomNumberSeedWrapper_;
 
+		// [Comment-202605312]
 		// Remember about Comment-202503254!
+		// [/Comment-202605312]
 		randomNumberSeedWrapper_.value = RandomNumberHelpers.generateRandomNumberSeed();
 
 		BidderAddresses storage bidderAddressesReference_ = bidderAddresses[roundNum];
@@ -189,6 +197,7 @@ abstract contract MainPrize is
 
 				uint256 ethDepositIndex_ = numRaffleEthPrizesForBidders;
 
+				// [Comment-202605313]
 				// ETH deposits to make to `prizesWallet`.
 				// This doesn't include `_msgSender()`, that's the main prize beneficiary, with their main ETH prize.
 				// At the same time, this does include any secondary prizes `_msgSender()` has won.
@@ -198,6 +207,7 @@ abstract contract MainPrize is
 				// Items:
 				//    `numRaffleEthPrizesForBidders` items. Bidders.
 				//    1 item. `chronoWarriorAddress`.
+				// [/Comment-202605313]
 				IPrizesWallet.EthDeposit[] memory ethDeposits_ = new IPrizesWallet.EthDeposit[](ethDepositIndex_ + 1);
 
 				// This can potentially be zero.
@@ -250,7 +260,9 @@ abstract contract MainPrize is
 				// #endregion
 				// #region
 
+				// [Comment-202605314]
 				// All calculations marked with Comment-202501161 must be made before this.
+				// [/Comment-202605314]
 				timeoutTimeToWithdrawSecondaryPrizes_ =
 					prizesWallet.registerRoundEndAndDepositEthMany
 						{value: ethDepositsTotalAmount_}
@@ -269,7 +281,7 @@ abstract contract MainPrize is
 				// [/Comment-202511102]
 			} catch Panic(uint256 panicCode_) {
 				// Comment-202410161 relates.
-				if(panicCode_ != OpenZeppelinPanic.DIVISION_BY_ZERO) {
+				if (panicCode_ != OpenZeppelinPanic.DIVISION_BY_ZERO) {
 					OpenZeppelinPanic.panic(panicCode_);
 				}
 			}
@@ -285,8 +297,10 @@ abstract contract MainPrize is
 			// Comment-202411078 relates and/or applies.
 			// [/Comment-202411077]
 			{
+				// [Comment-202605315]
 				// I don't want to spend gas to `require` this.
 				// But if I did, this would be a wrong place for this validation.
+				// [/Comment-202605315]
 				// #enable_asserts assert(charityAddress != address(0));
 
 				// Comment-202502043 applies.
@@ -326,10 +340,12 @@ abstract contract MainPrize is
 		{
 			// #region
 
+			// [Comment-202605317]
 			// This initial value counts main prize beneficiary, last CST bidder (not guaranteed to exist),
 			// endurance champion, chrono-warrior, `MarketingWallet`.
 			// Minus 1.
 			// We are yet to add to this.
+			// [/Comment-202605317]
 			uint256 cosmicSignatureTokenMintSpecIndex_ = (lastCstBidderAddress != address(0)) ? (4 + 1 - 1) : (4 - 1);
 
 			cosmicSignatureTokenMintSpecIndex_ += numRaffleCosmicSignatureNftsForBidders;
@@ -348,13 +364,16 @@ abstract contract MainPrize is
 			// [/Comment-202511104]
 			cosmicSignatureTokenMintSpecIndex_ += luckyStakerAddresses_.length;
 
+			// [Comment-202605319]
 			// Addresses for which to mint CS NFTs.
+			// [/Comment-202605319]
 			// [Comment-202511094]
 			// This contains the same items as `cosmicSignatureTokenMintSpecs_`, except its last item.
 			// Comment-202511104 relates.
 			// [/Comment-202511094]
 			address[] memory cosmicSignatureNftOwnerAddresses_ = new address[](cosmicSignatureTokenMintSpecIndex_);
 
+			// [Comment-202606011]
 			// CST minting specs.
 			// Items:
 			//    1 item. `_msgSender()`, that's main prize beneficiary.
@@ -364,6 +383,7 @@ abstract contract MainPrize is
 			//    `numRaffleCosmicSignatureNftsForBidders` items. Bidders.
 			//    0 or `numRaffleCosmicSignatureNftsForRandomWalkNftStakers` items. RW NFT stakers.
 			//    1 item. `marketingWallet`.
+			// [/Comment-202606011]
 			// Comment-202511094 relates.
 			ICosmicSignatureToken.MintSpec[] memory cosmicSignatureTokenMintSpecs_ = new ICosmicSignatureToken.MintSpec[](cosmicSignatureTokenMintSpecIndex_ + 1);
 
@@ -666,16 +686,20 @@ abstract contract MainPrize is
 	// #region `_prepareNextRound`
 
 	function _prepareNextRound() private {
+		// Comment-202606235 relates and/or applies.
+
 		// lastBidType = BidType.ETH;
 		lastBidderAddress = address(0);
 		lastCstBidderAddress = address(0);
 		enduranceChampionAddress = address(0);
 
+		// // [Comment-202605307]
 		// // It's unnecessary to reset this.
+		// // [/Comment-202605307]
 		// // Comment-202501308 applies.
 		// enduranceChampionStartTimeStamp = 0;
 
-		// // It's unnecessary to reset this.
+		// // Comment-202605307 applies.
 		// // Comment-202501308 applies.
 		// enduranceChampionDuration = 0;
 
@@ -691,6 +715,8 @@ abstract contract MainPrize is
 		// cstDutchAuctionBeginningBidPrice = nextRoundFirstCstDutchAuctionBeginningBidPrice;
 
 		_setMainPrizeTimeIncrementInMicroSeconds(mainPrizeTimeIncrementInMicroSeconds + mainPrizeTimeIncrementInMicroSeconds / mainPrizeTimeIncrementIncreaseDivisor);
+
+		// Comment-202606235 applies.
 		_setRoundActivationTime(block.timestamp + delayDurationBeforeRoundActivation);
 	}
 

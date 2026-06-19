@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.34;
+pragma solidity =0.8.34;
 
 import { CosmicSignatureHelpers } from "../production/libraries/CosmicSignatureHelpers.sol";
 import { CharityWallet } from "../production/CharityWallet.sol";
@@ -25,7 +25,7 @@ contract MaliciousCharity {
 		if (reentryDepth <= 0) {
 			++ reentryDepth;
 			if (modeCode == 1) {
-				CosmicSignatureHelpers.transferEthTo(payable(address(charityWallet)), msg.value);
+				CosmicSignatureHelpers.transferEthTo(payable(charityWallet), msg.value);
 			} else if (modeCode == 2) {
 				charityWallet.send();
 			} else if (modeCode == 3) {

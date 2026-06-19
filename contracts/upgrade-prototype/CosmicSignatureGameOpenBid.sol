@@ -1,7 +1,7 @@
 // #region
 
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.34;
+pragma solidity =0.8.34;
 
 // #endregion
 // #region
@@ -10,7 +10,6 @@ pragma solidity 0.8.34;
 import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
 import { OwnableUpgradeableWithReservedStorageGaps } from "../production/OwnableUpgradeableWithReservedStorageGaps.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import { CosmicSignatureConstants } from "../production/libraries/CosmicSignatureConstants.sol";
 import { AddressValidator } from "../production/AddressValidator.sol";
 import { CosmicSignatureGameStorage } from "../production/CosmicSignatureGameStorage.sol";
 import { BiddingBase } from "../production/BiddingBase.sol";
@@ -51,7 +50,7 @@ contract CosmicSignatureGameOpenBid is
 	/// Comment-202503121 applies.
 	/// @custom:oz-upgrades-unsafe-allow constructor
 	constructor() {
-		// // #enable_asserts // #disable_smtchecker console.log("2 constructor");
+		// // #enable_asserts // #disable_smtchecker console.log("CosmicSignatureGameOpenBid.constructor");
 		_disableInitializers();
 	}
 
@@ -63,16 +62,25 @@ contract CosmicSignatureGameOpenBid is
 	// }
 
 	// #endregion
-	// #region `initialize2`
+	// #region `initializeV2`
 
-	function initialize2() external override /*onlyOwner*/ reinitializer(2) {
-		// // #enable_asserts // #disable_smtchecker console.log("2 initialize2");
+	/// @dev Comment-202606128 applies.
+	/// [Comment-202606084]
+	/// Calling `_getInitializedVersion` like this allows `CosmicSignatureGameOpenBid` to be deployed as V2, V3,
+	/// or any other version.
+	/// Issue. But it's a bad idea to do this in a production contract.
+	/// Instead, hardcode a specific version number after validating the already initialized version number
+	/// with a modifier like `_onlyIfPrevVersionWasInitialized`.
+	/// But if you decide to use this code pattern, it will be up to the contract owner performing the upgrade to not break things.
+	/// Comment-202606126 relates.
+	/// [/Comment-202606084]
+	function initializeV2() external override /*onlyOwner*/ reinitializer(uint64(uint256(_getInitializedVersion()) + 1)) {
+		// // #enable_asserts // #disable_smtchecker console.log("CosmicSignatureGameOpenBid.initializeV2");
 
-		// Comment-202503119 applies.
-		// #enable_asserts assert(owner() != address(0));
-
-		// `initialize2` is supposed to not be executed yet.
-		// #enable_asserts assert(timesEthBidPrice == 0);
+		// Normally, `reinitializer` prevents a redundant initialization, but we disabled that validation near Comment-202606084.
+		if ( ! (timesEthBidPrice == 0) ) {
+			revert InvalidInitialization();
+		}
 
 		timesEthBidPrice = 3;
 	}
@@ -81,17 +89,10 @@ contract CosmicSignatureGameOpenBid is
 	// #region `_authorizeUpgrade`
 
 	/// @dev Comment-202412188 applies.
-	function _authorizeUpgrade(address newImplementationAddress_) internal view override
-		// Comment-202503119 applies.
-		// Comment-202510114 applies.
-		onlyOwner
-
-		_onlyRoundIsInactive {
+	/// Comment-202606128 relates.
+	function _authorizeUpgrade(address newImplementationAddress_) internal view override onlyOwner _onlyRoundIsInactive {
 		// _providedAddressIsNonZero(newImplementationAddress_) {
-		// // #enable_asserts // #disable_smtchecker console.log("2 _authorizeUpgrade");
-
-		// `initialize2` is supposed to be already executed.
-		// #enable_asserts assert(timesEthBidPrice > 0);
+		// // #enable_asserts // #disable_smtchecker console.log("CosmicSignatureGameOpenBid._authorizeUpgrade");
 	}
 
 	// #endregion

@@ -1,7 +1,7 @@
 // #region
 
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.34;
+pragma solidity =0.8.34;
 
 // #endregion
 // #region
@@ -17,11 +17,6 @@ import { ICosmicSignatureGameStorage } from "./interfaces/ICosmicSignatureGameSt
 // #endregion
 // #region
 
-/// todo-1 +++ Avoid combining big arrays with `mapping`s or dynamic arrays in the same contract.
-/// todo-1 +++ But where we do so, consider validating that a big array item index passed to a method,
-/// todo-1 +++ such as `roundNum_`,  is not too big.
-/// todo-1 +++ Otherwise a collision can create a vulnerability.
-/// todo-1 +++ Really, `mapping`s and dynamic arrays (including strings) are evil. Avoid them!
 abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #region System Management
 
@@ -30,7 +25,10 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #endregion
 	// #region ETH Donations
 
-	/// @notice Details about ETH donations with additional info made to the Game.
+	/// @notice
+	/// [Comment-202605181]
+	/// Details about ETH donations with additional info made to the Game.
+	/// [/Comment-202605181]
 	/// @dev Comment-202503111 relates and/or applies.
 	EthDonationWithInfoRecord[] public ethDonationWithInfoRecords;
 
@@ -40,7 +38,10 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// /// todo-9 Rename to `lastBidTypeCode`.
 	// BidType public lastBidType;
 
-	/// @notice The address of the account that placed the last bid.
+	/// @notice
+	/// [Comment-202605182]
+	/// The address of the account that placed the last bid.
+	/// [/Comment-202605182]
 	/// @dev
 	/// [Comment-202502044]
 	/// Issue. This is the same as the last `bidderAddresses` item. So it could make sense to eliminate this variable.
@@ -48,8 +49,11 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [/Comment-202502044]
 	address public lastBidderAddress;
 
-	/// @notice The address of the account that placed the last CST bid.
+	/// @notice
+	/// [Comment-202605183]
+	/// The address of the account that placed the last CST bid.
 	/// This will remain zero if nobody bids with CST.
+	/// [/Comment-202605183]
 	address public lastCstBidderAddress;
 
 	/// @dev
@@ -64,9 +68,12 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// @dev Comment-202411098 applies.
 	mapping(uint256 roundNum => mapping(address bidderAddress => BidderInfo)) public biddersInfo;
 
-	/// @notice Endurance Champion is the participant who remained the last bidder for the longest single continuous duration
+	/// @notice
+	/// [Comment-202605184]
+	/// Endurance Champion is the participant who remained the last bidder for the longest single continuous duration
 	/// during the bidding round.
 	/// It makes no difference if they bid multiple times in a row. The durations do not get added up.
+	/// [/Comment-202605184]
 	/// [Comment-202511053]
 	/// See `${workspaceFolder}/docs/endurance-chrono-README.md` for details and possibly better definitions
 	/// of Endurance Champion and Chrono-Warrior.
@@ -90,8 +97,11 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	uint256 public prevEnduranceChampionDuration;
 
-	/// @notice Chrono-Warrior is the participant who remained Endurance Champion for the longest continuous duration
+	/// @notice
+	/// [Comment-202605185]
+	/// Chrono-Warrior is the participant who remained Endurance Champion for the longest continuous duration
 	/// during the bidding round.
+	/// [/Comment-202605185]
 	/// Comment-202511053 applies.
 	/// Comment-202503074 relates.
 	/// @dev Comment-202411099 applies.
@@ -106,11 +116,18 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #endregion
 	// #region Bidding
 
-	/// @notice Bidding round counter.
+	/// @notice
+	/// [Comment-202605186]
+	/// Bidding round counter.
+	/// It starts with zero.
+	/// [/Comment-202605186]
 	/// @dev Comment-202503092 applies.
 	uint256 public roundNum;
 
-	/// @notice Delay duration from when the main prize gets claimed until the next bidding round activates.
+	/// @notice
+	/// [Comment-202605187]
+	/// Delay duration from when the main prize gets claimed until the next bidding round activates.
+	/// [/Comment-202605187]
 	/// [Comment-202411064]
 	/// This is a configurable parameter.
 	/// [/Comment-202411064]
@@ -120,14 +137,18 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [/Comment-202412312]
 	/// @dev
 	/// [Comment-202503106]
-	/// We allow the contract owner to change this even if the current bidding round is active.
+	/// We allow the contract owner to change this even after a bid was placed in the current bidding round.
+	/// Comment-202606235 relates.
 	/// Comment-202411236 relates.
 	/// [/Comment-202503106]
 	/// Comment-202503092 applies.
 	uint256 public delayDurationBeforeRoundActivation;
 
-	/// @notice The current bidding round activation time.
+	/// @notice
+	/// [Comment-202605188]
+	/// The current bidding round activation time.
 	/// Starting at this point in time, people will be allowed to place bids.
+	/// [/Comment-202605188]
 	/// Comment-202411064 applies.
 	/// [Comment-202411172]
 	/// At the same time, this is a variable that the logic changes.
@@ -157,12 +178,15 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// See also: `halveEthDutchAuctionEndingBidPrice`.
 	uint256 public ethDutchAuctionDurationDivisor;
 
-	/// @notice ETH Dutch auction beginning bid price.
+	/// @notice
 	/// [Comment-202503084]
-	/// We increse this based on `ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER`.
+	/// ETH Dutch auction beginning bid price.
+	/// We calculate this based on `ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER`.
 	/// [/Comment-202503084]
+	/// [Comment-202605192]
 	/// After contract deployment, this variable remains zero until we assign a valid value to it.
 	/// On the first bid of each bidding round (which is required to be ETH), we assign a valid value to this variable.
+	/// [/Comment-202605192]
 	/// Comment-202501063 relates.
 	uint256 public ethDutchAuctionBeginningBidPrice;
 
@@ -176,13 +200,14 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// See also: `halveEthDutchAuctionEndingBidPrice`.
 	uint256 public ethDutchAuctionEndingBidPriceDivisor;
 
-	/// @notice Next ETH bid price.
+	/// @notice
+	/// [Comment-202411065]
+	/// Next ETH bid price.
+	/// We increase this based on `ethBidPriceIncreaseDivisor`.
+	/// [/Comment-202411065]
 	/// [Comment-202501022]
 	/// This value is valid only after the 1st ETH bid has been placed in the current bidding round.
 	/// [/Comment-202501022]
-	/// [Comment-202411065]
-	/// We increase this based on `ethBidPriceIncreaseDivisor`.
-	/// [/Comment-202411065]
 	uint256 public nextEthBidPrice;
 
 	/// @notice Comment-202411065 relates.
@@ -193,7 +218,10 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Comment-202411064 applies.
 	uint256 public ethBidRefundAmountInGasToSwallowMaxLimit;
 
-	/// @notice When the current CST Dutch auction began.
+	/// @notice
+	/// [Comment-202605194]
+	/// When the current CST Dutch auction began.
+	/// [/Comment-202605194]
 	/// Comment-202501022 applies.
 	uint256 public cstDutchAuctionBeginningTimeStamp;
 
@@ -201,20 +229,30 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [Comment-202501025]
 	/// We divide `mainPrizeTimeIncrementInMicroSeconds` by this.
 	/// [/Comment-202501025]
-	/// Comment-202508288 relates.
 	/// Comment-202411064 applies.
+	/// Comment-202508288 relates.
+	/// @dev Comment-202606057 relates.
 	uint256 public cstDutchAuctionDurationDivisor;
 
-	/// @notice CST Dutch auction beginning bid price.
+	/// @notice
 	/// [Comment-202411066]
-	/// We increse this based on `CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER`.
+	/// CST Dutch auction beginning bid price.
+	/// We calculate this based on `CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER`.
 	/// We don't let this fall below `cstDutchAuctionBeginningBidPriceMinLimit`.
 	/// [/Comment-202411066]
+	/// [Comment-202605197]
 	/// This variable becomes valid when someone places a CST bid in the current bidding round.
-	/// @dev This value is based on an actual price someone pays, therefore Comment-202412033 applies.
+	/// [/Comment-202605197]
+	/// @dev
+	/// [Comment-202605199]
+	/// This value is based on an actual price someone pays, therefore Comment-202412033 applies.
+	/// [/Comment-202605199]
 	uint256 public cstDutchAuctionBeginningBidPrice;
 
-	/// @notice Next bidding round first CST Dutch auction beginning bid price.
+	/// @notice
+	/// [Comment-202605201]
+	/// Next bidding round first CST Dutch auction beginning bid price.
+	/// [/Comment-202605201]
 	/// Comment-202504212 applies.
 	uint256 public nextRoundFirstCstDutchAuctionBeginningBidPrice;
 
@@ -223,57 +261,87 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Comment-202504212 relates.
 	uint256 public cstDutchAuctionBeginningBidPriceMinLimit;
 
-	/// @notice Each Random Walk NFT is allowed to be used for bidding only once.
+	/// @notice
+	/// [Comment-202605202]
+	/// Each Random Walk NFT is allowed to be used for bidding only once.
 	/// If an item of this array at a particular index is a nonzero it means the NFT with that ID has already been used for bidding.
+	/// [/Comment-202605202]
 	/// See also: `StakingWalletNftBase.usedNfts`.
 	mapping(uint256 nftId => uint256 nftWasUsed) public usedRandomWalkNfts;
 
-	/// @notice The maximum allowed length of a bid message.
+	/// @notice
+	/// [Comment-202605203]
+	/// The maximum allowed length of a bid message.
+	/// [/Comment-202605203]
 	/// [Comment-202409143]
 	/// This limits the number of bytes, which can be fewer UTF-8 characters.
 	/// [/Comment-202409143]
 	/// Comment-202411064 applies.
-	/// @dev One might want to make this non-configurable.
+	/// @dev
+	/// [Comment-202605204]
+	/// One might want to make this non-configurable.
 	/// But I feel that by keeping this configurable we leave the door open to change message format
 	/// and the logic the Front End and the Back End employ to process the message.
+	/// [/Comment-202605204]
 	uint256 public bidMessageLengthMaxLimit;
 
-	/// @notice We mint this CST amount as a bidder reward for each bid.
-	/// We do it even for a CST bid.
+	/// @notice We mint this CST amount as a bidder reward for placing a bid.
 	/// Comment-202411064 applies.
-	uint256 public cstRewardAmountForBidding;
+	/// @dev Comment-202606053 relates.
+	uint256 public bidCstRewardAmount;
 
 	// #endregion
 	// #region Secondary Prizes
 
-	/// @notice CST prize amount used to award: Main Prize Winner; the Last CST Bidder; Endurance Champion;
+	/// @notice
+	/// [Comment-202605206]
+	/// CST prize amount used to award: Main Prize Winner; the Last CST Bidder; Endurance Champion;
 	/// Chrono-Warrior; a bidder who won CST and Cosmic Signature NFT raffle; a Random Walk NFT staker.
+	/// [/Comment-202605206]
 	/// Comment-202411064 applies.
 	uint256 public cstPrizeAmount;
 
-	/// @notice The percentage of ETH in the Game contract account to be paid to Chrono-Warrior.
+	/// @notice
+	/// [Comment-202605207]
+	/// The percentage of ETH in the Game contract account to be paid to Chrono-Warrior.
+	/// [/Comment-202605207]
 	/// Comment-202411064 applies.
 	uint256 public chronoWarriorEthPrizeAmountPercentage;
 
-	/// @notice The percentage of ETH in the Game contract account to be used for raffle ETH prizes to be distributed to bidders.
+	/// @notice
+	/// [Comment-202605208]
+	/// The percentage of ETH in the Game contract account to be used for raffle ETH prizes to be distributed to bidders.
+	/// [/Comment-202605208]
 	/// Comment-202411064 applies.
 	uint256 public raffleTotalEthPrizeAmountForBiddersPercentage;
 
-	/// @notice The number of raffle ETH prizes to be distributed to bidders.
+	/// @notice
+	/// [Comment-202605209]
+	/// The number of raffle ETH prizes to be distributed to bidders.
+	/// [/Comment-202605209]
 	/// Comment-202411064 applies.
 	uint256 public numRaffleEthPrizesForBidders;
 
-	/// @notice The number of raffle Cosmic Signature NFTs to be minted and distributed to bidders.
+	/// @notice
+	/// [Comment-202605212]
+	/// The number of raffle Cosmic Signature NFTs to be minted and distributed to bidders.
 	/// The same winners will also receive newly minted CST prizes.
+	/// [/Comment-202605212]
 	/// Comment-202411064 applies.
 	uint256 public numRaffleCosmicSignatureNftsForBidders;
 
-	/// @notice The number of raffle Cosmic Signature NFTs to be minted and distributed to random Random Walk NFT stakers.
+	/// @notice
+	/// [Comment-202605213]
+	/// The number of raffle Cosmic Signature NFTs to be minted and distributed to random Random Walk NFT stakers.
 	/// The same winners will also receive newly minted CST prizes.
+	/// [/Comment-202605213]
 	/// Comment-202411064 applies.
 	uint256 public numRaffleCosmicSignatureNftsForRandomWalkNftStakers;
 
-	/// @notice The percentage of ETH in the Game contract account to reward Cosmic Signature NFT stakers.
+	/// @notice
+	/// [Comment-202605214]
+	/// The percentage of ETH in the Game contract account to reward Cosmic Signature NFT stakers.
+	/// [/Comment-202605214]
 	/// Comment-202411064 applies.
 	uint256 public cosmicSignatureNftStakingTotalEthRewardAmountPercentage;
 
@@ -281,15 +349,19 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #region Main Prize
 
 	/// @notice Comment-202501025 applies.
+	/// Comment-202412152 relates.
 	/// Comment-202508288 relates.
 	/// Comment-202411064 applies.
 	uint256 public initialDurationUntilMainPrizeDivisor;
 
-	/// @notice The time when the last bidder will be granted the premission to claim main prize.
-	/// Comment-202501022 applies.
+	/// @notice
 	/// [Comment-202412152]
-	/// On each bid, we increase this based on `mainPrizeTimeIncrementInMicroSeconds`.
+	/// The time when the last bidder will be granted the premission to claim the main prize.
+	/// On the first bid in a round, we set this based on `mainPrizeTimeIncrementInMicroSeconds / initialDurationUntilMainPrizeDivisor`.
+	/// On each subsequent bid, we increase this based on `mainPrizeTimeIncrementInMicroSeconds`.
 	/// [/Comment-202412152]
+	/// Comment-202501022 applies.
+	/// @dev Comment-202606175 relates.
 	uint256 public mainPrizeTime;
 
 	/// @notice Comment-202412152 relates.
@@ -307,34 +379,49 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Comment-202411064 applies.
 	uint256 public mainPrizeTimeIncrementIncreaseDivisor;
 
-	/// @notice If the main prize winner doesn't claim the prize within this timeout, anybody will be welcomed to claim it.
+	/// @notice
+	/// [Comment-202605216]
+	/// If the main prize winner doesn't claim the prize within this timeout, anybody will be welcomed to claim it.
+	/// [/Comment-202605216]
 	/// Comment-202411064 applies.
 	/// Comment-202412312 applies.
 	/// See also: `PrizesWallet.timeoutDurationToWithdrawPrizes`.
 	uint256 public timeoutDurationToClaimMainPrize;
 
-	/// @notice The percentage of ETH in the Game contract account to be paid to the main prize beneficiary.
+	/// @notice
+	/// [Comment-202605217]
+	/// The percentage of ETH in the Game contract account to be paid to the main prize beneficiary.
+	/// [/Comment-202605217]
 	/// Comment-202411064 applies.
 	uint256 public mainEthPrizeAmountPercentage;
 
 	// #endregion
 	// #region Cosmic Signature Token
 
-	/// @notice The `CosmicSignatureToken` contract address.
+	/// @notice
+	/// [Comment-202605218]
+	/// The `CosmicSignatureToken` contract address.
+	/// [/Comment-202605218]
 	/// Comment-202411064 applies.
 	CosmicSignatureToken public token;
 
 	// #endregion
 	// #region Random Walk NFT
 
-	/// @notice The `RandomWalkNFT` contract address.
+	/// @notice
+	/// [Comment-202605219]
+	/// The `RandomWalkNFT` contract address.
+	/// [/Comment-202605219]
 	/// Comment-202411064 applies.
 	RandomWalkNFT public randomWalkNft;
 
 	// #endregion
 	// #region Cosmic Signature NFT
 
-	/// @notice The `CosmicSignatureNft` contract address.
+	/// @notice
+	/// [Comment-202605221]
+	/// The `CosmicSignatureNft` contract address.
+	/// [/Comment-202605221]
 	/// Comment-202411064 applies.
 	CosmicSignatureNft public nft;
 
@@ -356,12 +443,21 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #endregion
 	// #region Marketing
 
-	/// @notice The `MarketingWallet` contract address.
+	/// @notice
+	/// [Comment-202605222]
+	/// The `MarketingWallet` contract address.
+	/// [/Comment-202605222]
 	/// Comment-202411064 applies.
-	/// @dev It's unnecessary to make this variable strongly typed.
+	/// @dev
+	/// [Comment-202605224]
+	/// It's unnecessary to make this variable strongly typed.
+	/// [/Comment-202605224]
 	address public marketingWallet;
 
-	/// @notice At the end of each bidding round, we mint this CST amount for `marketingWallet`.
+	/// @notice
+	/// [Comment-202605225]
+	/// At the end of each bidding round, we mint this CST amount for `marketingWallet`.
+	/// [/Comment-202605225]
 	/// Comment-202411064 applies.
 	uint256 public marketingWalletCstContributionAmount;
 
@@ -380,7 +476,10 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [/Comment-202411078]
 	address public charityAddress;
 
-	/// @notice The percentage of ETH in the Game contract account to be donated to charity.
+	/// @notice
+	/// [Comment-202605226]
+	/// The percentage of ETH in the Game contract account to be donated to charity.
+	/// [/Comment-202605226]
 	/// Comment-202411064 applies.
 	uint256 public charityEthDonationAmountPercentage;
 
@@ -400,14 +499,15 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [Comment-202412148]
 	/// Although it's probably not needed here that much because this contract is the last in the inheritance list
 	/// among those containing storage variables.
+	/// In fact, `BiddingOpenBid`, does introduce a new variable, but that's just a test contract.
 	/// [/Comment-202412148]
 	// solhint-disable-next-line var-name-mixedcase
-	uint256[1 << 255] private __gap_persistent;
+	uint256[1 << 30] private __gap_persistent;
 
 	// todo-1 Transient storage is not yet supported for reference types.
 	/// @dev Comment-202412142 applies.
 	/// Comment-202412148 applies.
-	// uint256[1 << 255] private transient __gap_transient;
+	// uint256[1 << 30] private transient __gap_transient;
 	// solhint-disable-next-line var-name-mixedcase
 	uint256 private transient __gap_transient;
 

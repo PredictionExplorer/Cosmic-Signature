@@ -113,7 +113,7 @@ const { assertEvent } = require("../../../src/ContractTestingHelpers.js");
 				contracts_.cosmicSignatureToken,
 				"Transfer",
 
-				// Issue. If we burned a zero value, this event parameters make it appear that it was a mint, rather than a burn.
+				// Issue. This logic accommodates Comment-202606074.
 				(value_ > 0n) ? [account_, hre.ethers.ZeroAddress, value_,] : [hre.ethers.ZeroAddress, account_, value_,]
 			);
 			++ eventIndexWrapper_.value;

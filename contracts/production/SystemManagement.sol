@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.34;
+pragma solidity =0.8.34;
 
 import { OwnableUpgradeableWithReservedStorageGaps } from "./OwnableUpgradeableWithReservedStorageGaps.sol";
 import { AddressValidator } from "./AddressValidator.sol";
@@ -55,6 +55,18 @@ abstract contract SystemManagement is
 
 	function setCstDutchAuctionBeginningBidPriceMinLimit(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
 		cstDutchAuctionBeginningBidPriceMinLimit = newValue_;
+
+		// // [Comment-202607016]
+		// // This would be a way to fix the Comment-202504212 issue.
+		// // But the existing imperfect logic is really good enough as is,
+		// // because we have no plans to change `cstDutchAuctionBeginningBidPriceMinLimit`, and even if we do change it,
+		// // it's not too bad and maybe even more correct if `nextRoundFirstCstDutchAuctionBeginningBidPrice` stays unchanged.
+		// // So keeping it simple.
+		// // [/Comment-202607016]
+		// if (newValue_ > nextRoundFirstCstDutchAuctionBeginningBidPrice) {
+		// 	nextRoundFirstCstDutchAuctionBeginningBidPrice = newValue_;
+		// }
+
 		emit CstDutchAuctionBeginningBidPriceMinLimitChanged(newValue_);
 	}
 
@@ -63,9 +75,9 @@ abstract contract SystemManagement is
 		emit BidMessageLengthMaxLimitChanged(newValue_);
 	}
 
-	function setCstRewardAmountForBidding(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
-		cstRewardAmountForBidding = newValue_;
-		emit CstRewardAmountForBiddingChanged(newValue_);
+	function setBidCstRewardAmount(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
+		bidCstRewardAmount = newValue_;
+		emit BidCstRewardAmountChanged(newValue_);
 	}
 
 	function setCstPrizeAmount(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {

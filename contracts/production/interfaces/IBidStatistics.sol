@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.34;
+pragma solidity =0.8.34;
 
 import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
 
@@ -13,7 +13,7 @@ interface IBidStatistics is ICosmicSignatureGameStorage {
 	/// If an argument is invalid the return value is indeterminate.
 	function getBidderAddressAt(uint256 roundNum_, uint256 bidIndex_) external view returns (address);
 
-	/// @return A tuple containing the total ETH and CST amounts spent by the given bidder in the given bidding round, in Wei.
+	/// @return A tuple containing the total ETH and CST amounts spent by the given bidder in the given bidding round.
 	/// If the given bidder didn't bid in the given bidding round both return values will be zeros.
 	/// If an argument is invalid the return value is indeterminate.
 	/// @dev Comment-202503162 relates and/or applies.

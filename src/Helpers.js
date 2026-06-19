@@ -16,14 +16,36 @@ const { HardhatContext } = require("hardhat/internal/context");
 // #endregion
 // #region
 
-// [Comment-202510221]
-// Supported values:
-//    @ 1 to run tests under the "${workspaceFolder}/test" subfolder deterministically and at the maximum speed.
-//      This is the value to set in most cases, especially if no blockchain calls will be made.
-//    @ 2 to simulate a live blockchain, which is designed for tests
-//      under the "${workspaceFolder}/live-blockchain-testing" subfolder.
-// [/Comment-202510221]
-let HARDHAT_MODE_CODE = parseIntegerEnvironmentVariable("HARDHAT_MODE_CODE", Number.NEGATIVE_INFINITY);
+// I am not sure what the implications of this might be, so considering this an opt-in hack.
+{
+	const hackSupportBigIntToJson_ = parseBooleanEnvironmentVariable("HACK_SUPPORT_BIGINT_TOJSON", false);
+	if (hackSupportBigIntToJson_) {
+		if (BigInt.prototype.toJSON === undefined) {
+			BigInt.prototype.toJSON =
+				function() {
+					return this.toString() + "n";
+				};
+			console.warn("Warning. Assigned to `BigInt.prototype.toJSON`.");
+		} else {
+			console.error("%s", "Error 202606172.");
+		}
+	}
+}
+
+// #endregion
+// #region
+
+/**
+[Comment-202510221]
+Supported values:
+   @ 1 to run tests under the "${workspaceFolder}/test" subfolder deterministically and at the maximum speed.
+     This is the value to set in most cases, especially if no blockchain calls will be made.
+   @ 2 to simulate a live blockchain, which is designed for tests
+     under the "${workspaceFolder}/live-blockchain-testing" subfolder.
+[/Comment-202510221]
+@type {number}
+*/
+let HARDHAT_MODE_CODE = parseIntegerEnvironmentVariable("HARDHAT_MODE_CODE", undefined);
 
 switch (HARDHAT_MODE_CODE) {
 	case 1:
@@ -31,7 +53,7 @@ switch (HARDHAT_MODE_CODE) {
 		console.info("%s", `HARDHAT_MODE_CODE = ${HARDHAT_MODE_CODE}`);
 		break;
 	}
-	case Number.NEGATIVE_INFINITY: {
+	case undefined: {
 		console.warn("%s", "Warning. The HARDHAT_MODE_CODE environment variable is not set. Assuming it equals 1.");
 		HARDHAT_MODE_CODE = 1;
 		break;
@@ -43,12 +65,41 @@ switch (HARDHAT_MODE_CODE) {
 }
 
 // #endregion
+// #region
+
+// Disable Hardhat Preprocessor by not setting or setting to "false" this environment variable
+// when running any Hardhat task against a mainnet.
+// It's to eliminate the risk of Hardhat Preprocessor bugs breaking things.
+// If you forget to, we will throw an error near Comment-202408261.
+// Comment-202408155 relates.
+// Comment-202410099 relates.
+const ENABLE_HARDHAT_PREPROCESSOR = parseBooleanEnvironmentVariable("ENABLE_HARDHAT_PREPROCESSOR", false);
+
+// [Comment-202408155]
+// This environment variable is ignored and assumed to be `false` when `! ENABLE_HARDHAT_PREPROCESSOR`.
+// [/Comment-202408155]
+// Comment-202408156 relates and/or applies.
+const ENABLE_ASSERTS = ENABLE_HARDHAT_PREPROCESSOR && parseBooleanEnvironmentVariable("ENABLE_ASSERTS", false);
+
+// Allowed values:
+//    0 = disabled.
+//    1 = only preprocess the code for SMTChecker.
+//    2 = fully enabled, meaning also run SMTChecker.
+// [Comment-202410099]
+// This environment variable is ignored and assumed to be zero when `! ENABLE_HARDHAT_PREPROCESSOR`.
+// [/Comment-202410099]
+// [Comment-202408156]
+// When enabling SMTChecker, you typically need to enable asserts as well.
+// [/Comment-202408156]
+const ENABLE_SMTCHECKER = ENABLE_HARDHAT_PREPROCESSOR ? parseIntegerEnvironmentVariable("ENABLE_SMTCHECKER", 0) : 0;
+
+// #endregion
 // #region `shuffleArray`
 
 /**
- * Randomly shuffles the given array using the Fisher-Yates (Knuth) Shuffle algorithm.
- * @param {array} array_
- */
+Randomly shuffles the given array using the Fisher-Yates (Knuth) Shuffle algorithm.
+@param {array} array_
+*/
 function shuffleArray(array_) {
 	for (let index1_ = array_.length; index1_ >= 2; ) {
 		const index2_ = generateRandomUInt32() % index1_;
@@ -111,9 +162,9 @@ function generateRandomUInt256FromSeedWrapper(seedWrapper_) {
 // #region `generateRandomUInt256FromSeed`
 
 /**
- * Comment-202504063 applies.
- * @param {bigint} seed_
- */
+Comment-202504063 applies.
+@param {bigint} seed_
+*/
 function generateRandomUInt256FromSeed(seed_) {
 	return calculateUInt256HashSumOf(seed_);
 }
@@ -122,9 +173,9 @@ function generateRandomUInt256FromSeed(seed_) {
 // #region `calculateUInt256HashSumOf`
 
 /**
- * Comment-202504061 applies.
- * @param {bigint} value_
- */
+Comment-202504061 applies.
+@param {bigint} value_
+*/
 function calculateUInt256HashSumOf(value_) {
 	// Comment-202409255 applies.
 	const hre = HardhatContext.getHardhatContext().environment;
@@ -138,8 +189,8 @@ function calculateUInt256HashSumOf(value_) {
 // #region `generateAccountPrivateKeyFromSeed`
 
 /**
- * @param {bigint} seed_
- */
+@param {bigint} seed_
+*/
 function generateAccountPrivateKeyFromSeed(seed_) {
 	const accountPrivateKeyAsBigInt_ = generateRandomUInt256FromSeed(seed_);
 	const accountPrivateKeyAsString_ = uint256ToPaddedHexString(accountPrivateKeyAsBigInt_);
@@ -150,14 +201,13 @@ function generateAccountPrivateKeyFromSeed(seed_) {
 // #region `parseBooleanEnvironmentVariable`
 
 /**
- * @param {string?} environmentVariableName_
- * @param {boolean} defaultValue_
- * @returns {boolean}
- * @throws {Error}
- */
+@template DefaultValue_
+@param {string} environmentVariableName_
+@param {DefaultValue_} defaultValue_
+@throws {Error}
+*/
 function parseBooleanEnvironmentVariable(environmentVariableName_, defaultValue_) {
 	const rawValue_ = process.env[environmentVariableName_];
-
 	switch (rawValue_) {
 		case undefined:
 		case "":
@@ -175,24 +225,20 @@ function parseBooleanEnvironmentVariable(environmentVariableName_, defaultValue_
 // #region `parseIntegerEnvironmentVariable`
 
 /**
- * @param {string?} environmentVariableName_
- * @param {number} defaultValue_
- * @returns {number}
- * @throws {Error}
- */
+@template DefaultValue_
+@param {string} environmentVariableName_
+@param {DefaultValue_} defaultValue_
+@throws {Error}
+*/
 function parseIntegerEnvironmentVariable(environmentVariableName_, defaultValue_) {
 	const rawValue_ = process.env[environmentVariableName_];
-
 	if (rawValue_ === undefined || rawValue_.length <= 0) {
 		return defaultValue_;
 	}
-
 	const value_ = parseInt(rawValue_);
-
 	if (isNaN(value_)) {
 		throw new Error(`Invalid value for environment variable ${environmentVariableName_}: "${rawValue_}". Expected an integer.`);
 	}
-	
 	return value_;
 }
 
@@ -200,8 +246,8 @@ function parseIntegerEnvironmentVariable(environmentVariableName_, defaultValue_
 // #region `uint32ToPaddedHexString`
 
 /**
- * @param {number} value_
- */
+@param {number} value_
+*/
 function uint32ToPaddedHexString(value_) {
 	return   "0x" + value_.toString(16).padStart(32 / 8 * 2, "0");
 }
@@ -210,8 +256,8 @@ function uint32ToPaddedHexString(value_) {
 // #region `uint256ToPaddedHexString`
 
 /**
- * @param {bigint} value_
- */
+@param {bigint} value_
+*/
 function uint256ToPaddedHexString(value_) {
 	// Issue. Can we use `hre.ethers.toBeHex` here?
 	return   "0x" + value_.toString(16).padStart(256 / 8 * 2, "0");
@@ -221,8 +267,8 @@ function uint256ToPaddedHexString(value_) {
 // #region `sleepForMilliSeconds`
 
 /**
- * @param {number} durationInMilliSeconds_
- */
+@param {number} durationInMilliSeconds_
+*/
 function sleepForMilliSeconds(durationInMilliSeconds_) {
 	// Issue. This is not the best implementation.
 	// It would be better to import "node:timers/promises" and call `await setTimeout(durationInMilliSeconds_)` from there.
@@ -233,8 +279,8 @@ function sleepForMilliSeconds(durationInMilliSeconds_) {
 // #region `getBlockTimeStampByBlockNumber`
 
 /**
- * @param {string} blockNumber_ This may be "pending", "latest", etc.
- */
+@param {string} blockNumber_ This may be "pending", "latest", etc.
+*/
 async function getBlockTimeStampByBlockNumber(blockNumber_) {
 	// Comment-202409255 applies.
 	const hre = HardhatContext.getHardhatContext().environment;
@@ -288,8 +334,8 @@ function hackApplyGasMultiplierIfNeeded() {
 // #region `waitForTransactionReceipt`
 
 /**
- * @param {Promise<import("hardhat").ethers.TransactionResponse>} transactionResponsePromise_
- */
+@param {Promise<import("hardhat").ethers.TransactionResponse>} transactionResponsePromise_
+*/
 async function waitForTransactionReceipt(transactionResponsePromise_) {
 	const transactionResponse_ = await transactionResponsePromise_;
 	const transactionReceipt_ = await transactionResponse_.wait();
@@ -326,20 +372,21 @@ async function waitForTransactionReceipt(transactionResponsePromise_) {
 // #region `safeErc1967GetChangedImplementationAddress`
 
 /**
- * [Comment-202510208]
- * Issue. ChatGPT says that `HardhatRuntimeEnvironment.upgrades.upgradeProxy` doesn't wait
- * for the upgrade transaction to be mined.
- * So we need this ugly function to reliably get the new implementation contract address.
- * A more correct solution would be to find and parse the `IERC1967.Upgraded` event.
- * But we would still have to wait for the transaction and its block to be mined.
- * It would also be helpful to throw an error if we observe that another block has been mined and/or a timeout expired,
- * but the implementation contract address has not changed. But if the upgrade transaction is still pending at that point,
- * it would still likely be mined later.
- * So keeping it simple for now.
- * [/Comment-202510208]
- * @param {string} proxyAddress_
- * @param {string} oldImplementationAddress_
- */
+[Comment-202510208]
+Issue. ChatGPT says that `HardhatRuntimeEnvironment.upgrades.upgradeProxy` doesn't wait
+for the upgrade transaction to be mined.
+So we need this ugly function to reliably get the new implementation contract address.
+A more correct solution would be to find and parse the `IERC1967.Upgraded` event.
+But we would still have to wait for the transaction and its block to be mined.
+It would also be helpful to throw an error if we observe that another block has been mined and/or a timeout expired,
+but the implementation contract address has not changed. But if the upgrade transaction is still pending at that point,
+it would still likely be mined later.
+So keeping it simple for now.
+[/Comment-202510208]
+@param {string} proxyAddress_
+@param {string} oldImplementationAddress_
+@dev Issue. Should this method have the word `wait` in its name?
+*/
 async function safeErc1967GetChangedImplementationAddress(proxyAddress_, oldImplementationAddress_) {
 	// Comment-202409255 applies.
 	const hre = HardhatContext.getHardhatContext().environment;
@@ -361,6 +408,9 @@ async function safeErc1967GetChangedImplementationAddress(proxyAddress_, oldImpl
 
 module.exports = {
 	HARDHAT_MODE_CODE,
+	ENABLE_HARDHAT_PREPROCESSOR,
+	ENABLE_ASSERTS,
+	ENABLE_SMTCHECKER,
 	shuffleArray,
 	generateRandomUInt32,
 	generateRandomUInt256,

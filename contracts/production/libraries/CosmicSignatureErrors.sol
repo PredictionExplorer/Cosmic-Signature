@@ -1,7 +1,7 @@
 // #region
 
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.34;
+pragma solidity =0.8.34;
 
 // #endregion
 // #region
@@ -61,6 +61,11 @@ library CosmicSignatureErrors {
 	/// @param receivedAmount The amount the bidder transferred to us.
 	/// It can potentially be zero.
 	error InsufficientReceivedBidAmount(string errStr, uint256 bidPrice, uint256 receivedAmount);
+
+	/// @notice Thrown when the actual CST reward amount for placing a bid is below the bidder's specified minimum.
+	/// @param bidCstRewardAmount The CST reward amount that would have been minted.
+	/// @param bidCstRewardAmountMinLimit The minimum CST reward amount the bidder required.
+	error BidCstRewardAmountMinLimitNotReached(/* string errStr, */ uint256 bidCstRewardAmount, uint256 bidCstRewardAmountMinLimit);
 
 	/// @notice Thrown when the provided bid message length exceeds the maximum allowed.
 	/// See also: `TooLongNftName`.

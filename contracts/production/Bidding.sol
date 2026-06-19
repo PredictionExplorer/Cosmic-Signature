@@ -1,7 +1,7 @@
 // #region
 
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity 0.8.34;
+pragma solidity =0.8.34;
 
 // #endregion
 // #region
@@ -62,8 +62,10 @@ abstract contract Bidding is
 	///    `getEthDutchAuctionDurations`.
 	/// [/Comment-202508184]
 	function halveEthDutchAuctionEndingBidPrice() external override onlyOwner() _onlyNonFirstRound() /*_onlyRoundIsInactive()*/ _onlyBeforeBidPlacedInRound() {
+		// [Comment-202605285]
 		// Check out comments near this method declaration in `IBidding`.
 		// It's possible to implement this logic in an external script, but it's more robust in a method.
+		// [/Comment-202605285]
 		//
 		// [Comment-202508102]
 		// This method changes `ethDutchAuctionDurationDivisor` and `ethDutchAuctionEndingBidPriceDivisor`.
@@ -165,7 +167,7 @@ abstract contract Bidding is
 		/*
 		{
 			// [Comment-202508135]
-			// This asserion doesn't appear to fail, but is it guaranteed not to?
+			// This assertion doesn't appear to fail, but is it guaranteed not to?
 			// It appears to be OK if somehow it fails.
 			// [Comment-202508139]
 			// Under normal production conditions, this assertion will succeed.
@@ -199,7 +201,12 @@ abstract contract Bidding is
 	// #endregion
 	// #region `bidWithEthAndDonateToken`
 
-	function bidWithEthAndDonateToken(int256 randomWalkNftId_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external payable override nonReentrant /*_onlyRoundIsActive*/ {
+	function bidWithEthAndDonateToken(
+		int256 randomWalkNftId_,
+		string memory message_,
+		IERC20 tokenAddress_,
+		uint256 amount_
+	) external payable override nonReentrant /*_onlyRoundIsActive*/ {
 		_bidWithEth(randomWalkNftId_, message_);
 		prizesWallet.donateToken(roundNum, _msgSender(), tokenAddress_, amount_);
 	}
@@ -207,7 +214,12 @@ abstract contract Bidding is
 	// #endregion
 	// #region `bidWithEthAndDonateNft`
 
-	function bidWithEthAndDonateNft(int256 randomWalkNftId_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external payable override nonReentrant /*_onlyRoundIsActive*/ {
+	function bidWithEthAndDonateNft(
+		int256 randomWalkNftId_,
+		string memory message_,
+		IERC721 nftAddress_,
+		uint256 nftId_
+	) external payable override nonReentrant /*_onlyRoundIsActive*/ {
 		_bidWithEth(randomWalkNftId_, message_);
 		prizesWallet.donateNft(roundNum, _msgSender(), nftAddress_, nftId_);
 	}
@@ -223,9 +235,12 @@ abstract contract Bidding is
 	// #region `_bidWithEth`
 
 	function _bidWithEth(int256 randomWalkNftId_, string memory message_) private /*nonReentrant*/ /*_onlyRoundIsActive*/ {
-		// #region
+		// #region //
 
 		// BidType bidType_;
+
+		// #endregion
+		// #region
 
 		// Comment-202503162 relates and/or applies.
 		uint256 ethBidPrice_ = getNextEthBidPriceAdvanced(int256(0));
@@ -239,13 +254,34 @@ abstract contract Bidding is
 
 		int256 overpaidEthPrice_ = int256(msg.value) - int256(paidEthPrice_);
 		if (overpaidEthPrice_ == int256(0)) {
+			// [Comment-202605286]
 			// This is the most common case. Doing nothing. Not spending any gas.
-		} else if(overpaidEthPrice_ > int256(0)) {
+			// [/Comment-202605286]
+		} else if (overpaidEthPrice_ > int256(0)) {
+			// [Comment-202605288]
 			// If the bidder sent more ETH than required, but we are not going to refund the excess,
 			// treating the whole received amount as what they were supposed to send.
 			// Comment-202502052 relates and/or applies.
+			// [/Comment-202605288]
 			{
-				// #enable_asserts assert(tx.gasprice > 0);
+				// Comment-202606216 applies.
+				// // #enable_asserts assert(tx.gasprice > 0);
+
+				// // [Comment-202607014]
+				// // This is how the AI suggests to deal with the Comment-202606216 issue.
+				// // It says that this logic avoids refund-transfer side effects that would make gas estimation less reliable.
+				// // But this idea kinda smells. It appears to be an unnecessary complication.
+				// // One issue with it is that it does not include the refund sending into the gas estimation,
+				// // so the transaction has a higher chance to run out of gas.
+				// // In any case, the caller must provide more gas that estimated.
+				// // So keeping it simple.
+				// // [/Comment-202607014]
+				// uint256 txGasPrice_ = tx.gasprice;
+				// uint256 ethBidRefundAmountToSwallowMaxLimit_ =
+				// 	(txGasPrice_ > 0) ?
+				// 	(ethBidRefundAmountInGasToSwallowMaxLimit * txGasPrice_) :
+				// 	type(uint256).max;
+
 				uint256 ethBidRefundAmountToSwallowMaxLimit_ = ethBidRefundAmountInGasToSwallowMaxLimit * tx.gasprice;
 				if (uint256(overpaidEthPrice_) <= ethBidRefundAmountToSwallowMaxLimit_) {
 					overpaidEthPrice_ = int256(0);
@@ -263,7 +299,7 @@ abstract contract Bidding is
 		// #region
 
 		if (randomWalkNftId_ < int256(0)) {
-			// #region
+			// #region //
 
 			// // #enable_asserts assert(bidType_ == BidType.ETH);
 
@@ -313,7 +349,7 @@ abstract contract Bidding is
 		nextEthBidPrice = ethBidPrice_ + ethBidPrice_ / ethBidPriceIncreaseDivisor + 1;
 
 		// Comment-202501125 applies.
-		token.mint(_msgSender(), cstRewardAmountForBidding);
+		token.mint(_msgSender(), bidCstRewardAmount);
 
 		_bidCommon(/*bidType_,*/ message_);
 		emit BidPlaced(
@@ -374,15 +410,20 @@ abstract contract Bidding is
 			uint256 nextEthBidPrice_;
 			if (lastBidderAddress == address(0)) {
 				nextEthBidPrice_ = ethDutchAuctionBeginningBidPrice;
+
+				// Comment-202605294 relates.
 				// #enable_asserts assert((nextEthBidPrice_ == 0) == (roundNum == 0));
 				if (nextEthBidPrice_ == 0) {
+
 					nextEthBidPrice_ = CosmicSignatureConstants.FIRST_ROUND_INITIAL_ETH_BID_PRICE;
 				} else {
 					int256 ethDutchAuctionElapsedDuration_ = getDurationElapsedSinceRoundActivation() + currentTimeOffset_;
 					if (ethDutchAuctionElapsedDuration_ <= int256(0)) {
 						// Doing nothing.
 					} else {
+						// [Comment-202605289]
 						// If this assertion fails, further assertions will not necessarily succeed and the behavior will not necessarily be correct.
+						// [/Comment-202605289]
 						// #enable_asserts assert(ethDutchAuctionEndingBidPriceDivisor > 1);
 
 						// [Comment-202501301]
@@ -469,7 +510,12 @@ abstract contract Bidding is
 	// #endregion
 	// #region `bidWithCstAndDonateToken`
 
-	function bidWithCstAndDonateToken(uint256 priceMaxLimit_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external override nonReentrant /*_onlyRoundIsActive*/ {
+	function bidWithCstAndDonateToken(
+		uint256 priceMaxLimit_,
+		string memory message_,
+		IERC20 tokenAddress_,
+		uint256 amount_
+	) external override nonReentrant /*_onlyRoundIsActive*/ {
 		_bidWithCst(priceMaxLimit_, message_);
 		prizesWallet.donateToken(roundNum, _msgSender(), tokenAddress_, amount_);
 	}
@@ -477,7 +523,12 @@ abstract contract Bidding is
 	// #endregion
 	// #region `bidWithCstAndDonateNft`
 
-	function bidWithCstAndDonateNft(uint256 priceMaxLimit_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external override nonReentrant /*_onlyRoundIsActive*/ {
+	function bidWithCstAndDonateNft(
+		uint256 priceMaxLimit_,
+		string memory message_,
+		IERC721 nftAddress_,
+		uint256 nftId_
+	) external override nonReentrant /*_onlyRoundIsActive*/ {
 		_bidWithCst(priceMaxLimit_, message_);
 		prizesWallet.donateNft(roundNum, _msgSender(), nftAddress_, nftId_);
 	}
@@ -493,20 +544,6 @@ abstract contract Bidding is
 	// #region `_bidWithCst`
 
 	function _bidWithCst(uint256 priceMaxLimit_, string memory message_) private /*nonReentrant*/ /*_onlyRoundIsActive*/ {
-		// [Comment-202501045]
-		// Somewhere around here, one might want to validate that the first bid in a bidding round is ETH.
-		// But we are going to validate that near Comment-202501044.
-		// [/Comment-202501045]
-
-		// Comment-202503162 relates and/or applies.
-		uint256 paidPrice_ = getNextCstBidPriceAdvanced(int256(0));
-
-		// Comment-202412045 applies.
-		require(
-			paidPrice_ <= priceMaxLimit_,
-			CosmicSignatureErrors.InsufficientReceivedBidAmount("The current CST bid price is greater than the maximum you allowed.", paidPrice_, priceMaxLimit_)
-		);
-
 		// [Comment-202412251]
 		// This is a common sense requirement.
 		// The marketing wallet isn't supposed to bid with CST.
@@ -516,6 +553,19 @@ abstract contract Bidding is
 		// That said, the marketing wallet is a contract that is not capable of bidding. So this assertion is guaranteed to succeed.
 		// [/Comment-202412251]
 		// #enable_asserts assert(_msgSender() != marketingWallet);
+
+		// [Comment-202501045]
+		// Somewhere around here, one might want to validate that the first bid in a bidding round is ETH.
+		// But we are going to validate that near Comment-202501044.
+		// [/Comment-202501045]
+
+		// Comment-202503162 relates and/or applies.
+		uint256 paidPrice_ = getNextCstBidPriceAdvanced(int256(0));
+
+		// Comment-202412045 applies.
+		if ( ! (paidPrice_ <= priceMaxLimit_) ) {
+			revert CosmicSignatureErrors.InsufficientReceivedBidAmount("The current CST bid price is greater than the maximum you allowed.", paidPrice_, priceMaxLimit_);
+		}
 
 		// [Comment-202409177]
 		// Burning the CST amount used for bidding.
@@ -528,9 +578,12 @@ abstract contract Bidding is
 		{
 			ICosmicSignatureToken.MintOrBurnSpec[] memory mintAndBurnSpecs_ = new ICosmicSignatureToken.MintOrBurnSpec[](2);
 			mintAndBurnSpecs_[0].account = _msgSender();
+
+			// Comment-202606074 relates and/or applies.
 			mintAndBurnSpecs_[0].value = ( - int256(paidPrice_) );
+
 			mintAndBurnSpecs_[1].account = _msgSender();
-			mintAndBurnSpecs_[1].value = int256(cstRewardAmountForBidding);
+			mintAndBurnSpecs_[1].value = int256(bidCstRewardAmount);
 			token.mintAndBurnMany(mintAndBurnSpecs_);
 		}
 
@@ -548,14 +601,23 @@ abstract contract Bidding is
 			// Comment-202501045 applies.
 
 			// [Comment-202504212]
-			// Issue. If the admin increases `cstDutchAuctionBeginningBidPriceMinLimit` for the next round,
+			// Issue. If the owner increases `cstDutchAuctionBeginningBidPriceMinLimit` for the next round,
 			// it's possible that this value will not respect that setting.
+			// Comment-202607016 relates.
 			// [/Comment-202504212]
 			nextRoundFirstCstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
 		}
 		lastCstBidderAddress = _msgSender();
 		_bidCommon(/*BidType.CST,*/ message_);
-		emit BidPlaced(roundNum, _msgSender(), -1, int256(paidPrice_), -1, message_, mainPrizeTime);
+		emit BidPlaced(
+			roundNum,
+			_msgSender(),
+			-1,
+			int256(paidPrice_),
+			-1,
+			message_,
+			mainPrizeTime
+		);
 	}
 
 	// #endregion
@@ -646,8 +708,10 @@ abstract contract Bidding is
 	// #endregion
 	// #region `_bidCommon`
 
-	/// @notice Handles common bid logic.
-	/// --- param bidType_ Bid type code.
+	/// @notice
+	/// [Comment-202605291]
+	/// Handles common bid logic.
+	/// [/Comment-202605291]
 	/// @param message_ Comment-202503155 applies.
 	/// @dev Comment-202411169 relates and/or applies.
 	function _bidCommon(/*BidType bidType_,*/ string memory message_) private /*nonReentrant*/ /*_onlyRoundIsActive*/ {
@@ -656,17 +720,19 @@ abstract contract Bidding is
 			CosmicSignatureErrors.TooLongBidMessage("Message is too long.", bytes(message_).length)
 		);
 
+		// [Comment-202605292]
 		// The first bid of the current bidding round?
+		// [/Comment-202605292]
 		if (lastBidderAddress == address(0)) {
-
-			// [Comment-202501044]
-			// It's probably more efficient to validate this here than to validate `lastBidderAddress` near Comment-202501045.
-			// This logic assumes that ETH bid price is guaranteed to be a nonzero, as specified in Comment-202503162.
-			// [/Comment-202501044]
-			require(msg.value > 0, CosmicSignatureErrors.WrongBidType("The first bid in a bidding round shall be ETH."));
 
 			// Comment-202411169 relates.
 			_checkRoundIsActive();
+
+			// [Comment-202501044]
+			// It appears to be more efficient to validate this here than to validate `lastBidderAddress` near Comment-202501045.
+			// This logic assumes that ETH bid price is guaranteed to be a nonzero, as specified in Comment-202503162.
+			// [/Comment-202501044]
+			require(msg.value > 0, CosmicSignatureErrors.WrongBidType("The first bid in a bidding round shall be ETH."));
 
 			cstDutchAuctionBeginningTimeStamp = block.timestamp;
 			mainPrizeTime = block.timestamp + getInitialDurationUntilMainPrize();

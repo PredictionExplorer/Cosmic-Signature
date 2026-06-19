@@ -13,35 +13,6 @@ const helpersModule = require("./src/Helpers.js");
 // #endregion
 // #region
 
-// Disable Hardhat Preprocessor by not setting or setting to "false" this environment variable
-// when running any Hardhat task against a mainnet.
-// It's to eliminate the risk of Hardhat Preprocessor bugs breaking things.
-// If you forget to, we will throw an error near Comment-202408261.
-// Comment-202408155 relates.
-// Comment-202410099 relates.
-const ENABLE_HARDHAT_PREPROCESSOR = helpersModule.parseBooleanEnvironmentVariable("ENABLE_HARDHAT_PREPROCESSOR", false);
-
-// [Comment-202408155]
-// This environment variable is ignored and assumed to be `false` when `! ENABLE_HARDHAT_PREPROCESSOR`.
-// [/Comment-202408155]
-// Comment-202408156 relates and/or applies.
-const ENABLE_ASSERTS = ENABLE_HARDHAT_PREPROCESSOR && helpersModule.parseBooleanEnvironmentVariable("ENABLE_ASSERTS", false);
-
-// Allowed values:
-//    0 = disabled.
-//    1 = only preprocess the code for SMTChecker.
-//    2 = fully enabled, meaning also run SMTChecker.
-// [Comment-202410099]
-// This environment variable is ignored and assumed to be zero when `! ENABLE_HARDHAT_PREPROCESSOR`.
-// [/Comment-202410099]
-// [Comment-202408156]
-// When enabling SMTChecker, you typically need to enable asserts as well.
-// [/Comment-202408156]
-const ENABLE_SMTCHECKER = ENABLE_HARDHAT_PREPROCESSOR ? helpersModule.parseIntegerEnvironmentVariable("ENABLE_SMTCHECKER", 0) : 0;
-
-// #endregion
-// #region
-
 // [Comment-202503272]
 // The use of different folders prevents a recompile of some Solidity sources
 // when using a different combination of environment variables.
@@ -49,7 +20,7 @@ const ENABLE_SMTCHECKER = ENABLE_HARDHAT_PREPROCESSOR ? helpersModule.parseInteg
 // [Comment-202503302]
 // A similar folder name exists in multiple places.
 // [/Comment-202503302]
-const solidityCompilationCacheSubFolderName = ENABLE_HARDHAT_PREPROCESSOR ? ("debug-" + ENABLE_ASSERTS.toString() + "-" + (ENABLE_SMTCHECKER > 0).toString()) : "production";
+const solidityCompilationCacheSubFolderName = helpersModule.ENABLE_HARDHAT_PREPROCESSOR ? ("debug-" + helpersModule.ENABLE_ASSERTS.toString() + "-" + (helpersModule.ENABLE_SMTCHECKER > 0).toString()) : "production";
 
 // #endregion
 // #region
@@ -113,7 +84,7 @@ const solidityCompilerLongVersion = solidityVersion + "+commit.80d5c536";
 // Comment-202411136 relates.
 let solidityCompilerPath;
 const solidityCompilerPathGlobal = "/usr/bin/solc";
-// if (ENABLE_SMTCHECKER < 2) {
+// if (helpersModule.ENABLE_SMTCHECKER < 2) {
 	solidityCompilerPath = `${process.env.HOME}/.solc-select/artifacts/solc-${solidityVersion}/solc-${solidityVersion}`;
 	if ( ! nodeFsModule.statSync(solidityCompilerPath, {throwIfNoEntry: false,})?.isFile() ) {
 		solidityCompilerPath = `${process.env.HOME}/.local/bin/solc`;
@@ -128,16 +99,16 @@ const solidityCompilerPathGlobal = "/usr/bin/solc";
 // #endregion
 // #region
 
-if (ENABLE_HARDHAT_PREPROCESSOR) {
+if (helpersModule.ENABLE_HARDHAT_PREPROCESSOR) {
 	console.warn("%s", "Warning. Hardhat Preprocessor is enabled. Assuming it's intentional.");
-	if (ENABLE_SMTCHECKER <= 0 && ( ! ENABLE_ASSERTS )) {
+	if (helpersModule.ENABLE_SMTCHECKER <= 0 && ( ! helpersModule.ENABLE_ASSERTS )) {
 		// [Comment-202409025/]
 		console.warn("%s", "Warning. Neither the preprocessing for SMTChecker nor asserts are enabled. Assuming it's intentional.");
 	}
-	if (ENABLE_SMTCHECKER > 0 && ( ! ENABLE_ASSERTS )) {
+	if (helpersModule.ENABLE_SMTCHECKER > 0 && ( ! helpersModule.ENABLE_ASSERTS )) {
 		console.warn("%s", "Warning. The preprocessing for SMTChecker is enabled, but asserts are disabled. Is it intentional?");
 	}
-	if (ENABLE_SMTCHECKER >= 2) {
+	if (helpersModule.ENABLE_SMTCHECKER >= 2) {
 		console.info("%s", "SMTChecker execution is enabled.");
 	}
 } else {
@@ -158,7 +129,7 @@ console.warn("%s", `Warning. Make sure "${solidityCompilerPath}" version is "${s
 require("@nomicfoundation/hardhat-toolbox");
 
 const { subtask } = require("hardhat/config");
-if (ENABLE_HARDHAT_PREPROCESSOR) {
+if (helpersModule.ENABLE_HARDHAT_PREPROCESSOR) {
 	require("hardhat-preprocessor");
 }
 
@@ -248,13 +219,13 @@ subtask(
 // #endregion
 // #region
 
-const solidityLinePreProcessingRegExp = ENABLE_HARDHAT_PREPROCESSOR ? createSolidityLinePreProcessingRegExp() : undefined;
+const solidityLinePreProcessingRegExp = helpersModule.ENABLE_HARDHAT_PREPROCESSOR ? createSolidityLinePreProcessingRegExp() : undefined;
 
 function createSolidityLinePreProcessingRegExp() {
 	const regExpPatternPart1 =
-		(ENABLE_ASSERTS ? "enable_asserts" : "disable_asserts") +
+		(helpersModule.ENABLE_ASSERTS ? "enable_asserts" : "disable_asserts") +
 		"|" +
-		((ENABLE_SMTCHECKER > 0) ? "enable_smtchecker" : "disable_smtchecker");
+		((helpersModule.ENABLE_SMTCHECKER > 0) ? "enable_smtchecker" : "disable_smtchecker");
 	const regExpPatternPart2 = `\\/\\/[ \\t]*\\#(?:${regExpPatternPart1})(?: |\\b)`;
 	const regExpPattern = `^([ \\t]*)${regExpPatternPart2}(?:[ \\t]*${regExpPatternPart2})*`;
 	const regExp = new RegExp(regExpPattern, "s");
@@ -369,8 +340,8 @@ const hardhatUserConfig = {
 						// //    1. We need to recompile only changed preprocessor output.
 						// //    2. We use a different `solidityCompilationCacheSubFolderName` for each combination of these variables.
 						// //       Comment-202503272 relates.
-						// enableAsserts: ENABLE_ASSERTS,
-						// enableSmtChecker: ENABLE_SMTCHECKER > 0,
+						// enableAsserts: helpersModule.ENABLE_ASSERTS,
+						// enableSmtChecker: helpersModule.ENABLE_SMTCHECKER > 0,
 					},
 
 					// // This undocumented parameter appears to make it possible to specify what files to preprocess.
@@ -519,7 +490,7 @@ const hardhatUserConfig = {
 				"https://ethereum-sepolia.publicnode.com",
 
 			// Comment-202509209 applies.
-			gasMultiplier: 1.1,
+			gasMultiplier: 1.4,
 
 			// accounts: ((process.env.SEPOLIA_PRIVATE_KEY ?? "").length > 0) ? [process.env.SEPOLIA_PRIVATE_KEY] : [],
 		},
@@ -528,7 +499,7 @@ const hardhatUserConfig = {
 			url: "https://sepolia-rollup.arbitrum.io/rpc",
 
 			// Comment-202509209 applies.
-			gasMultiplier: 1.1,
+			gasMultiplier: 1.4,
 
 			// accounts: ((process.env.ARBITRUM_SEPOLIA_PRIVATE_KEY ?? "").length > 0) ? [process.env.ARBITRUM_SEPOLIA_PRIVATE_KEY] : [],
 		},
@@ -537,7 +508,7 @@ const hardhatUserConfig = {
 			url: "https://arb1.arbitrum.io/rpc",
 
 			// Comment-202509209 applies.
-			gasMultiplier: 1.1,
+			gasMultiplier: 1.4,
 
 			// accounts: ((process.env.MAINNET_PRIVATE_KEY ?? "").length > 0) ? [process.env.MAINNET_PRIVATE_KEY] : [],
 		},
@@ -567,7 +538,7 @@ const hardhatUserConfig = {
 	mocha: {
 		parallel: true,
 		// jobs: nodeOsModule.availableParallelism(),
-		timeout: 2 * 60 * 60 * 1000,
+		timeout: 12 * 60 * 60 * 1000,
 
 		// Comment-202508265 relates and/or applies.
 		require: ["./src/MochaHooks.js",],
@@ -579,7 +550,7 @@ const hardhatUserConfig = {
 // #endregion
 // #region
 
-if (ENABLE_SMTCHECKER >= 2) {
+if (helpersModule.ENABLE_SMTCHECKER >= 2) {
 	// See https://docs.soliditylang.org/en/latest/using-the-compiler.html#compiler-input-and-output-json-description
 	// On that page, find: modelChecker
 	hardhatUserConfig.solidity.settings.modelChecker = {
