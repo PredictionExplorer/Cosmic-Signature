@@ -91,13 +91,7 @@ describe("CosmicSignatureGame-3", function () {
 		{
 			/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 			const transactionResponsePromise_ = cosmicSignatureGameV2Implementation_.connect(contracts_.ownerSigner).initializeV2();
-			const transactionResponsePromiseAssertion_ = expect(transactionResponsePromise_);
-			if (ENABLE_ASSERTS) {
-				// `_onlyNonFirstRound`.
-				await transactionResponsePromiseAssertion_.revertedWithPanic(0x1);
-			} else {
-				await transactionResponsePromiseAssertion_.revertedWithCustomError(cosmicSignatureGameV2Implementation_, "InvalidInitialization");
-			}
+			await expect(transactionResponsePromise_).revertedWithCustomError(cosmicSignatureGameV2Implementation_, "OwnableUnauthorizedAccount");
 		}
 		expect(await cosmicSignatureGameV2Proxy_.cstDutchAuctionDurationChangeDivisor()).equal(250n);
 		await waitForTransactionReceipt(cosmicSignatureGameV2Proxy_.connect(contracts_.ownerSigner).setCstDutchAuctionDurationChangeDivisor(234n));
