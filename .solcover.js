@@ -31,6 +31,7 @@
 
 module.exports = {
 	skipFiles: ["tests/", "upgrade-prototype/",],
+	modifierWhitelist: ["_onlyNonFirstRound", "_onlyIfPrevVersionWasInitialized",],
 
 	// // It appears that we don't need this unless the compilation fails.
 	// configureYulOptimizer: true,
