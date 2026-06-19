@@ -110,6 +110,8 @@ class ShadowState {
 			numWithdrawals: 0n,
 		};
 
+		this.ethDonationWithInfoRecordCount = 0n;
+
 		/** Per-contract interface registry for receipt application. @type {Map<string, {name: string, iface: import("ethers").Interface}>} */
 		this.contractsByAddress = new Map();
 		this.addresses = {};

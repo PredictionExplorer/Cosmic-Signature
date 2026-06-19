@@ -48,6 +48,34 @@ describe("CosmicSignatureGameV2-Economics", function () {
 		expect(await game_.lastCstBidderAddress()).equal(bidder_.address);
 	});
 
+	it("documents zero-reward CST bids burning only the paid price", async function () {
+		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2(2n);
+		const game_ = contracts_.cosmicSignatureGameV2Proxy;
+
+		await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setBidCstRewardAmountMultiplier(0n));
+		await activateCurrentRound(game_, contracts_.ownerSigner);
+		const bidder_ = contracts_.signers[2];
+		await mineAtOrAfter((await getLatestBlockTimestamp()) + 60n);
+		await placeEthBid(game_, bidder_);
+
+		const duration_ = await game_.cstDutchAuctionDuration();
+		await mineAtOrAfter((await getLatestBlockTimestamp()) + duration_ + 1n);
+		expect(await game_.getBidCstRewardAmount()).equal(0n);
+		expect(await game_.getNextCstBidPrice()).equal(0n);
+		await expect(game_.connect(contracts_.signers[3]).bidWithCst(hre.ethers.MaxUint256, "min", 1n))
+			.revertedWithCustomError(game_, "BidCstRewardAmountMinLimitNotReached");
+
+		const balanceBefore_ = await contracts_.cosmicSignatureToken.balanceOf(contracts_.signers[3].address);
+		const receipt_ = await waitForTransactionReceipt(
+			game_.connect(contracts_.signers[3]).bidWithCst(hre.ethers.MaxUint256, "zero reward", 0n)
+		);
+		const parsed_ = findParsedEvent(receipt_, game_, "BidPlaced");
+		expect(parsed_).not.equal(undefined);
+		expect(parsed_.args.paidCstPrice).equal(0n);
+		expect(parsed_.args.bidCstRewardAmount).equal(0n);
+		expect(await contracts_.cosmicSignatureToken.balanceOf(contracts_.signers[3].address)).equal(balanceBefore_);
+	});
+
 	it("ETH bids can abruptly reduce the current CST bid price to zero near the duration boundary", async function () {
 		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2(2n);
 		const game_ = contracts_.cosmicSignatureGameV2Proxy;

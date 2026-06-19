@@ -6,6 +6,17 @@ const hre = require("hardhat");
 // const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
+const {
+	activateCurrentRound,
+	deployV1CompleteRoundZeroAndUpgradeToV2,
+	getLatestBlockTimestamp,
+	mineAtOrAfter,
+} = require("../src/V2UpgradeTestHelpers.js");
+
+async function bidWithEthAt(game_, bidder_, timestamp_) {
+	await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(timestamp_)]);
+	await waitForTransactionReceipt(game_.connect(bidder_).bidWithEth(-1n, "", 0n, { value: 10n ** 21n }));
+}
 
 describe("BidStatistics", function () {
 	it("Bid duration accounting: 2 bidders place bids of different durations", async function () {
@@ -138,5 +149,34 @@ describe("BidStatistics", function () {
 		expect(enduranceChampionAddress_).equal(contracts_.signers[2].address);
 		expect(enduranceChampionDuration_).equal(await contracts_.cosmicSignatureGameProxy.enduranceChampionDuration());
 		expect(enduranceChampionDuration_).equal(5000);
+	});
+
+	it("V2 current champion projection keeps an existing chrono warrior when a smaller handoff is projected", async function () {
+		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2(2n);
+		const game_ = contracts_.cosmicSignatureGameV2Proxy;
+		await activateCurrentRound(game_, contracts_.ownerSigner);
+		await mineAtOrAfter(await game_.roundActivationTime());
+
+		const baseTimeStamp_ = (await getLatestBlockTimestamp()) + 100n;
+		await bidWithEthAt(game_, contracts_.signers[1], baseTimeStamp_);
+		await bidWithEthAt(game_, contracts_.signers[2], baseTimeStamp_ + 100n);
+		await bidWithEthAt(game_, contracts_.signers[3], baseTimeStamp_ + 10_100n);
+		await bidWithEthAt(game_, contracts_.signers[4], baseTimeStamp_ + 20_200n);
+
+		const roundNum_ = await game_.roundNum();
+		const [signer2EthSpent_, signer2CstSpent_] =
+			await game_.getBidderTotalSpentAmounts(roundNum_, contracts_.signers[2].address);
+		expect(signer2EthSpent_).greaterThan(0n);
+		expect(signer2CstSpent_).equal(0n);
+
+		expect(await game_.chronoWarriorAddress()).equal(contracts_.signers[2].address);
+		expect(await game_.chronoWarriorDuration()).equal(19_900n);
+
+		await mineAtOrAfter(baseTimeStamp_ + 30_301n);
+		const champions_ = await game_.tryGetCurrentChampions();
+		expect(champions_[0]).equal(contracts_.signers[4].address);
+		expect(champions_[1]).equal(10_101n);
+		expect(champions_[2]).equal(contracts_.signers[2].address);
+		expect(champions_[3]).equal(19_900n);
 	});
 });

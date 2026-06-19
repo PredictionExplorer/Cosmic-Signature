@@ -405,6 +405,8 @@ const donationActions = [
 			const donated_ = engine.singleEvent(receipt_, ctx_.game.contract, "EthDonatedWithInfo", "donateEthWithInfo");
 			expect(donated_.args.amount).to.equal(amount_);
 			expect(donated_.args.roundNum).to.equal(model.roundNum);
+			expect(donated_.args[3]).to.equal(ledger.ethDonationWithInfoRecordCount);
+			ledger.ethDonationWithInfoRecordCount += 1n;
 			ledger.addEth(actor_.address, -amount_);
 			ledger.addEth(ctx_.game.address, amount_);
 			await ledger.verifyDirtyEth();
