@@ -22,9 +22,11 @@ Some tests test exact timings of actions. They can fail, more likely if the syst
 
 We have achieved 100% Solidity coverage, except the `BiddingBase._onlyRoundIsActive` and `BiddingBaseV2._onlyRoundIsActive` modifiers, because they are not called. `RandomWalkNFT` is not 100% covered either because it's essentially a third party contract from another project.
 
+`BiddingBaseV2._onlyNonFirstRound` and `CosmicSignatureGameV2._onlyIfPrevVersionWasInitialized` do nothing when asserts are disabled. Despite of them being called and covered, we have observed that for some reason they are flagged as not fully covered.
+
 Because some tests are driven by random numbers, occasionally you can observe some code locations not covered or a signer running out of gas.
 
-If you observe a test failure or some parts of the codebase not covered, execute the coverage script again.
+If you observe a test failure due to one of the above listed reasons or some unexpected parts of the codebase not covered, execute the test/coverage script again.
 
 #### Benevolent Owner
 
