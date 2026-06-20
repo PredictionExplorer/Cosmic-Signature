@@ -143,6 +143,92 @@ const negativeProbes = [
 			});
 		},
 	},
+	{
+		name: "probe.bidWhileRoundInactive",
+		isApplicable: (ctx_) =>
+			ctx_.model.version === 2 &&
+			ctx_.model.lastBidderAddress === ZERO_ADDRESS &&
+			ctx_.engine.lastTs + 1n < ctx_.model.roundActivationTime,
+		run: (ctx_, actor_) => {
+			const ts_ = ctx_.engine.clampTs(ctx_.engine.lastTs + 1n);
+			if (ts_ >= ctx_.model.roundActivationTime) {
+				return "skip";
+			}
+			const price_ = ctx_.model.getNextEthBidPrice(ts_);
+			return runProbe(ctx_, {
+				signer: actor_.signer,
+				ts: ts_,
+				value: price_,
+				buildTx: (overrides_) => ctx_.game.connect(actor_.signer).bidWithEth(-1n, "", 0n, { ...overrides_, value: price_ }),
+				expected: "RoundIsInactive",
+			});
+		},
+	},
+	{
+		name: "probe.cstBidBeforeEthBid",
+		isApplicable: (ctx_) =>
+			ctx_.model.version === 2 &&
+			ctx_.model.lastBidderAddress === ZERO_ADDRESS,
+		run: (ctx_, actor_) => {
+			const ts_ = ctx_.engine.clampTs(ctx_.model.roundActivationTime + ctx_.model.getCstDutchAuctionDuration() + 1n);
+			if (ts_ < ctx_.model.roundActivationTime) {
+				return "skip";
+			}
+			if (ctx_.model.getNextCstBidPrice(ts_) !== 0n) {
+				return "skip";
+			}
+			return runProbe(ctx_, {
+				signer: actor_.signer,
+				ts: ts_,
+				buildTx: (overrides_) => ctx_.game.connect(actor_.signer).bidWithCst((1n << 256n) - 1n, "", 0n, overrides_),
+				expected: "WrongBidType",
+			});
+		},
+	},
+	{
+		name: "probe.cstBidMinRewardTooHigh",
+		isApplicable: (ctx_, actor_) => {
+			if (ctx_.model.version !== 2 || ctx_.model.lastBidderAddress === ZERO_ADDRESS) {
+				return false;
+			}
+			const ts_ = ctx_.engine.clampTs(ctx_.engine.planTs(ctx_.engine.boundaryCandidates()));
+			const price_ = ctx_.model.getNextCstBidPrice(ts_);
+			return ctx_.ledger.cstBalanceOf(actor_.address) >= price_;
+		},
+		run: (ctx_, actor_) => {
+			const ts_ = ctx_.engine.clampTs(ctx_.engine.planTs(ctx_.engine.boundaryCandidates()));
+			const reward_ = ctx_.model.getBidCstRewardAmount(ts_);
+			const price_ = ctx_.model.getNextCstBidPrice(ts_);
+			if (ctx_.ledger.cstBalanceOf(actor_.address) < price_) {
+				return "skip";
+			}
+			return runProbe(ctx_, {
+				signer: actor_.signer,
+				ts: ts_,
+				buildTx: (overrides_) => ctx_.game.connect(actor_.signer).bidWithCst((1n << 256n) - 1n, "", reward_ + 1n, overrides_),
+				expected: "BidCstRewardAmountMinLimitNotReached",
+			});
+		},
+	},
+	{
+		name: "probe.halveEthNonOwner",
+		isApplicable: (ctx_) => ctx_.model.version === 2,
+		run: (ctx_, actor_) => runProbe(ctx_, {
+			signer: actor_.signer,
+			buildTx: (overrides_) => ctx_.game.connect(actor_.signer).contract.halveEthDutchAuctionEndingBidPrice(overrides_),
+			expected: "OwnableUnauthorizedAccount",
+		}),
+	},
+	{
+		name: "probe.halveEthAfterBid",
+		isApplicable: (ctx_) => ctx_.model.version === 2 && ctx_.model.lastBidderAddress !== ZERO_ADDRESS,
+		run: (ctx_) => runProbe(ctx_, {
+			signer: ctx_.contracts.ownerSigner,
+			buildTx: (overrides_) =>
+				ctx_.game.connect(ctx_.contracts.ownerSigner).contract.halveEthDutchAuctionEndingBidPrice(overrides_),
+			expected: "BidHasBeenPlacedInCurrentRound",
+		}),
+	},
 
 	// #endregion
 	// #region Claim probes

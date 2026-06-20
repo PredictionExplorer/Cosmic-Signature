@@ -103,6 +103,28 @@ async function runInvariants(ctx_) {
 		expect(await game_.bidCstRewardAmount(), "bidCstRewardAmount vs model").to.equal(model.bidCstRewardAmount);
 	}
 
+	{
+		const durationElapsedSinceRoundActivation_ = BigInt(ts_) - model.roundActivationTime;
+		expect(await game_.getDurationElapsedSinceRoundActivation(), "getDurationElapsedSinceRoundActivation vs model")
+			.to.equal(durationElapsedSinceRoundActivation_);
+		expect(await game_.getDurationUntilRoundActivation(), "getDurationUntilRoundActivation vs model")
+			.to.equal(-durationElapsedSinceRoundActivation_);
+
+		const durationUntilMainPrizeRaw_ = model.mainPrizeTime - BigInt(ts_);
+		expect(await game_.getDurationUntilMainPrizeRaw(), "getDurationUntilMainPrizeRaw vs model")
+			.to.equal(durationUntilMainPrizeRaw_);
+		expect(await game_.getDurationUntilMainPrize(), "getDurationUntilMainPrize vs model")
+			.to.equal((durationUntilMainPrizeRaw_ > 0n) ? durationUntilMainPrizeRaw_ : 0n);
+
+		const [cstDutchAuctionDuration_, cstDutchAuctionElapsedDuration_] = await game_.getCstDutchAuctionDurations();
+		expect(cstDutchAuctionDuration_, "getCstDutchAuctionDurations duration vs model").to.equal(model.getCstDutchAuctionDuration());
+		expect(cstDutchAuctionElapsedDuration_, "getCstDutchAuctionDurations elapsed vs model")
+			.to.equal(BigInt(ts_) - model.cstDutchAuctionBeginningTimeStamp);
+
+		expect(await game_.numEthDonationWithInfoRecords(), "numEthDonationWithInfoRecords vs ledger")
+			.to.equal(ledger.ethDonationWithInfoRecordCount);
+	}
+
 	// Full owner-configurable parameter equality (catches any admin/halve mutation drift immediately,
 	// before it silently corrupts price/reward predictions many rounds later).
 	{
@@ -139,6 +161,10 @@ async function runInvariants(ctx_) {
 		if (model.lastBidderAddress !== ZERO_ADDRESS && onChainNumBids_ > 0n) {
 			const tail_ = await game_.getBidderAddressAt(model.roundNum, onChainNumBids_ - 1n);
 			expect(tail_.toLowerCase(), "bid log tail == lastBidderAddress").to.equal(model.lastBidderAddress);
+			const bidderInfo_ = model.getBidderInfo(model.roundNum, model.lastBidderAddress);
+			const [ethSpent_, cstSpent_] = await game_.getBidderTotalSpentAmounts(model.roundNum, model.lastBidderAddress);
+			expect(ethSpent_, "getBidderTotalSpentAmounts ETH vs model").to.equal(bidderInfo_.totalSpentEthAmount);
+			expect(cstSpent_, "getBidderTotalSpentAmounts CST vs model").to.equal(bidderInfo_.totalSpentCstAmount);
 		}
 	}
 

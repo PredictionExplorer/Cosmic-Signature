@@ -34,6 +34,34 @@ describe("CosmicSignatureGameV2-GuardsAndMisconfig", function () {
 		}
 	});
 
+	it("covers V2 pre-bid round-state and bidding guard paths", async function () {
+		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2(2n);
+		const game_ = contracts_.cosmicSignatureGameV2Proxy;
+
+		expect(await game_.getDurationUntilRoundActivation()).greaterThan(0n);
+		expect(await game_.getDurationUntilMainPrize()).equal(0n);
+		await expect(game_.connect(contracts_.signers[2]).bidWithEth(-1n, "inactive", 0n, { value: 10n ** 18n }))
+			.revertedWithCustomError(game_, "RoundIsInactive");
+
+		await activateCurrentRound(game_, contracts_.ownerSigner);
+		await mineAtOrAfter(await game_.roundActivationTime());
+		expect(await game_.getDurationUntilRoundActivation()).lessThanOrEqual(0n);
+
+		await expect(game_.connect(contracts_.signers[2]).halveEthDutchAuctionEndingBidPrice())
+			.revertedWithCustomError(game_, "OwnableUnauthorizedAccount");
+		await expect(game_.connect(contracts_.ownerSigner).halveEthDutchAuctionEndingBidPrice())
+			.revertedWithCustomError(game_, "InvalidOperationInCurrentState");
+		await expect(game_.connect(contracts_.signers[2]).bidWithCst(hre.ethers.MaxUint256, "first cst", 0n))
+			.revertedWithCustomError(game_, "WrongBidType");
+
+		const bidder_ = contracts_.signers[2];
+		const ethPrice_ = await game_.getNextEthBidPriceAdvanced(1n);
+		await waitForTransactionReceipt(game_.connect(bidder_).bidWithEth(-1n, "first eth", 0n, { value: ethPrice_ }));
+		await expect(game_.connect(contracts_.ownerSigner).halveEthDutchAuctionEndingBidPrice())
+			.revertedWithCustomError(game_, "BidHasBeenPlacedInCurrentRound");
+		expect(await game_.getDurationUntilMainPrize()).greaterThan(0n);
+	});
+
 	it("documents zero CST duration owner misconfiguration", async function () {
 		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2(2n);
 		const game_ = contracts_.cosmicSignatureGameV2Proxy;

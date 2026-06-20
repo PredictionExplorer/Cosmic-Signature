@@ -46,7 +46,13 @@ describe("CosmicSignatureGameV2-Gameplay", function () {
 		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2(2n);
 		const game_ = contracts_.cosmicSignatureGameV2Proxy;
 		await assertDefaultV2Initialization(game_);
+		expect(await game_.numEthDonationWithInfoRecords()).equal(0n);
+		await waitForTransactionReceipt(game_.connect(contracts_.signers[2]).donateEthWithInfo("v2 info", { value: 123n }));
+		expect(await game_.numEthDonationWithInfoRecords()).equal(1n);
 		await activateCurrentRound(game_, contracts_.ownerSigner);
+		const [initialCstDuration_, initialCstElapsedDuration_] = await game_.getCstDutchAuctionDurations();
+		expect(initialCstDuration_).greaterThan(0n);
+		expect(initialCstElapsedDuration_).greaterThanOrEqual(0n);
 
 		const mocks_ = await deployDonationMocks(contracts_);
 		for (const signer_ of contracts_.signers.slice(2, 8)) {
@@ -68,6 +74,11 @@ describe("CosmicSignatureGameV2-Gameplay", function () {
 			game_.connect(bidder_).bidWithEth(-1n, "v2 eth", 0n, { value: ethPrice_ })
 		);
 		await assertV2BidPlaced(receipt_, game_, bidder_, BigInt(ethPrice_), -1n, -1n, expectedCstReward_);
+		{
+			const spent_ = await game_.getBidderTotalSpentAmounts(await game_.roundNum(), bidder_.address);
+			expect(spent_[0]).greaterThan(0n);
+			expect(spent_[1]).equal(0n);
+		}
 
 		await mineAtOrAfter((await getLatestBlockTimestamp()) + 60n);
 		bidder_ = contracts_.signers[3];
@@ -115,6 +126,28 @@ describe("CosmicSignatureGameV2-Gameplay", function () {
 		await expect(
 			game_.connect(contracts_.signers[6]).bidWithEth(-1n, "min too high", hre.ethers.MaxUint256, { value: 0n })
 		).revertedWithCustomError(game_, "BidCstRewardAmountMinLimitNotReached");
+
+		await mineAtOrAfter((await getLatestBlockTimestamp()) + 60n);
+		bidder_ = contracts_.signers[6];
+		let randomWalkNftMintPrice_ = await contracts_.randomWalkNft.getMintPrice();
+		await waitForTransactionReceipt(contracts_.randomWalkNft.connect(bidder_).mint({ value: randomWalkNftMintPrice_ }));
+		const randomWalkNftId_ = (await contracts_.randomWalkNft.totalSupply()) - 1n;
+		ethPrice_ = await game_.getNextEthBidPrice();
+		const ethPlusRandomWalkNftPrice_ = await game_.getEthPlusRandomWalkNftBidPrice(ethPrice_);
+		expectedCstReward_ = await game_.getBidCstRewardAmountAdvanced(1n);
+		receipt_ = await waitForTransactionReceipt(
+			game_.connect(bidder_).bidWithEth(randomWalkNftId_, "v2 rw", 0n, { value: ethPlusRandomWalkNftPrice_ })
+		);
+		await assertV2BidPlaced(receipt_, game_, bidder_, BigInt(ethPlusRandomWalkNftPrice_), -1n, randomWalkNftId_, expectedCstReward_);
+		ethPrice_ = await game_.getNextEthBidPrice();
+		await expect(
+			game_.connect(bidder_).bidWithEth(
+				randomWalkNftId_,
+				"v2 rw reuse",
+				0n,
+				{ value: await game_.getEthPlusRandomWalkNftBidPrice(ethPrice_) }
+			)
+		).revertedWithCustomError(game_, "UsedRandomWalkNft");
 
 		await mineAtOrAfter((await getLatestBlockTimestamp()) + 24n * 60n * 60n);
 		bidder_ = contracts_.signers[2];
