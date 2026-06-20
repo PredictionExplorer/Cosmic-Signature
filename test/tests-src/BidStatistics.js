@@ -14,8 +14,8 @@ const {
 } = require("../src/V2UpgradeTestHelpers.js");
 
 async function bidWithEthAt(game_, bidder_, timestamp_) {
-	await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(timestamp_)]);
-	await waitForTransactionReceipt(game_.connect(bidder_).bidWithEth(-1n, "", 0n, { value: 10n ** 21n }));
+	await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(timestamp_),]);
+	await waitForTransactionReceipt(game_.connect(bidder_).bidWithEth(-1n, "", 0n, {value: 10n ** 18n,}));
 }
 
 describe("BidStatistics", function () {
@@ -151,7 +151,7 @@ describe("BidStatistics", function () {
 		expect(enduranceChampionDuration_).equal(5000);
 	});
 
-	it("V2 current champion projection keeps an existing chrono warrior when a smaller handoff is projected", async function () {
+	it("V2 current champion projection keeps an existing Chrono-Warrior when a smaller handoff is projected", async function () {
 		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2(2n);
 		const game_ = contracts_.cosmicSignatureGameV2Proxy;
 		await activateCurrentRound(game_, contracts_.ownerSigner);
@@ -164,7 +164,7 @@ describe("BidStatistics", function () {
 		await bidWithEthAt(game_, contracts_.signers[4], baseTimeStamp_ + 20_200n);
 
 		const roundNum_ = await game_.roundNum();
-		const [signer2EthSpent_, signer2CstSpent_] =
+		const [signer2EthSpent_, signer2CstSpent_,] =
 			await game_.getBidderTotalSpentAmounts(roundNum_, contracts_.signers[2].address);
 		expect(signer2EthSpent_).greaterThan(0n);
 		expect(signer2CstSpent_).equal(0n);
