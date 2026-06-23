@@ -278,7 +278,7 @@ certora/
 - Staking mechanisms: 100% ✅
 
 ## Technical Notes
-- Using Solidity 0.8.30 compiler
+- Using Solidity 0.8.34 compiler
 - Certora loop unrolling set to 3
 - Basic sanity checks enabled
 - Test runner enhanced to properly detect all failure types
