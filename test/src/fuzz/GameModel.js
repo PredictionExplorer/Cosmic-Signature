@@ -14,11 +14,11 @@ const c = require("./FuzzConstants.js");
 // #region `GameModel`
 
 /**
-Exact JS shadow model of the `CosmicSignatureGame` (V1 and V2) deterministic state machine.
+Exact JS shadow model of the `CosmicSignatureGame` (V1, V2, and V3) deterministic state machine.
 
 The fuzz engine controls every block timestamp, so all prices, rewards, durations, champion
 transitions, and `mainPrizeTime` values are exactly predictable. This class mirrors:
-- `Bidding.sol` / `BiddingV2.sol` (`_bidWithEth`, `_bidWithCst`, `_bidCommon`, price getters)
+- `Bidding.sol` / `BiddingV2.sol` / `BiddingV3.sol` (`_bidWithEth`, `_bidWithCst`, `_bidCommon`, price getters)
 - `BidStatistics.sol` (`_updateChampionsIfNeeded`, `_updateChronoWarriorIfNeeded`, `tryGetCurrentChampions`)
 - `MainPrizeBase.sol` / `MainPrizeBaseV2.sol` (`_extendMainPrizeTime` clamping difference)
 - `MainPrize.sol` / `MainPrizeV2.sol` (`claimMainPrize` authorization + `_prepareNextRound`)
@@ -32,8 +32,8 @@ class GameModel {
 
 	constructor() {
 		/**
-		Game code version: 1 = V1, 2 = V2.
-		@type {1 | 2}
+		Game code version: 1 = V1, 2 = V2, 3 = V3.
+		@type {1 | 2 | 3}
 		*/
 		this.version = 1;
 
@@ -44,12 +44,12 @@ class GameModel {
 		this.ethBidPriceIncreaseDivisor = 0n;
 		this.ethBidRefundAmountInGasToSwallowMaxLimit = 0n;
 		this.cstDutchAuctionDurationDivisor = 0n; // V1 only
-		this.cstDutchAuctionDuration = 0n; // V2 only (stored duration)
-		this.cstDutchAuctionDurationChangeDivisor = 0n; // V2 only
+		this.cstDutchAuctionDuration = 0n; // V2+ only (stored duration)
+		this.cstDutchAuctionDurationChangeDivisor = 0n; // V2+ only
 		this.cstDutchAuctionBeginningBidPriceMinLimit = 0n;
 		this.bidMessageLengthMaxLimit = 0n;
 		this.bidCstRewardAmount = 0n; // V1 only
-		this.bidCstRewardAmountMultiplier = 0n; // V2 only
+		this.bidCstRewardAmountMultiplier = 0n; // V2+ only
 		this.cstPrizeAmount = 0n;
 		this.chronoWarriorEthPrizeAmountPercentage = 0n;
 		this.raffleTotalEthPrizeAmountForBiddersPercentage = 0n;
@@ -104,8 +104,8 @@ class GameModel {
 
 	/**
 	Reads every getter from the deployed game once, so the model starts exactly in sync.
-	@param {import("ethers").Contract} game_ Game proxy with V1 or V2 ABI matching `version_`.
-	@param {1 | 2} version_
+	@param {import("ethers").Contract} game_ Game proxy with ABI matching `version_`.
+	@param {1 | 2 | 3} version_
 	*/
 	async initFromChain(game_, version_) {
 		this.version = version_;
@@ -235,11 +235,11 @@ class GameModel {
 	}
 
 	/**
-	Mirrors `getNextEthBidPriceAdvanced(0)` evaluated at block timestamp `ts_`.
+	Mirrors the unadjusted V2 ETH price evaluated at block timestamp `ts_`.
 	The contract body is `unchecked`; the fuzz model treats any wrap in this pricing path as a bug unless
 	a caller explicitly marks the operation as an accepted owner-adversarial scenario.
 	*/
-	getNextEthBidPrice(ts_) {
+	getBaseNextEthBidPrice(ts_) {
 		if (this.lastBidderAddress !== ZERO_ADDRESS) {
 			return this.nextEthBidPrice;
 		}
@@ -261,9 +261,20 @@ class GameModel {
 		return endingPrice_;
 	}
 
+	/** Mirrors `getNextEthBidPriceAdvanced(0)` evaluated at block timestamp `ts_`. */
+	getNextEthBidPrice(ts_) {
+		return this._applyLateRoundBidPriceIncrease(this.getBaseNextEthBidPrice(ts_), ts_);
+	}
+
 	/** Mirrors `getEthPlusRandomWalkNftBidPrice` (contract body is `unchecked`). */
 	getEthPlusRandomWalkNftBidPrice(ethBidPrice_) {
 		return u256(ethBidPrice_ + (c.RANDOMWALK_NFT_BID_PRICE_DIVISOR - 1n)) / c.RANDOMWALK_NFT_BID_PRICE_DIVISOR;
+	}
+
+	/** Mirrors V3 `getNextEthPlusRandomWalkNftBidPriceAdvanced(0)`. */
+	getNextEthPlusRandomWalkNftBidPrice(ts_) {
+		const baseEthPrice_ = this.getBaseNextEthBidPrice(ts_);
+		return this._applyLateRoundBidPriceIncrease(this.getEthPlusRandomWalkNftBidPrice(baseEthPrice_), ts_);
 	}
 
 	/** CST Dutch auction total duration (V1: derived; V2: stored). */
@@ -273,8 +284,8 @@ class GameModel {
 			this.cstDutchAuctionDuration;
 	}
 
-	/** Mirrors `getNextCstBidPriceAdvanced(0)` evaluated at block timestamp `ts_`. */
-	getNextCstBidPrice(ts_) {
+	/** Mirrors the unadjusted CST Dutch auction price evaluated at block timestamp `ts_`. */
+	getBaseNextCstBidPrice(ts_) {
 		const duration_ = this.getCstDutchAuctionDuration();
 		const elapsed_ = ts_ - this.cstDutchAuctionBeginningTimeStamp;
 		const remaining_ = duration_ - elapsed_;
@@ -287,6 +298,36 @@ class GameModel {
 			this.cstDutchAuctionBeginningBidPrice;
 		// Contract body is `unchecked`: the product wraps mod 2^256 before the division.
 		return u256(beginningPrice_ * remaining_) / duration_;
+	}
+
+	/** Mirrors `getNextCstBidPriceAdvanced(0)` evaluated at block timestamp `ts_`. */
+	getNextCstBidPrice(ts_) {
+		const basePrice_ = this.getBaseNextCstBidPrice(ts_);
+		return (basePrice_ === 0n) ? 0n : this._applyLateRoundBidPriceIncrease(basePrice_, ts_);
+	}
+
+	_applyLateRoundBidPriceIncrease(price_, ts_) {
+		if (this.version !== 3 || price_ === 0n || this.lastBidderAddress === ZERO_ADDRESS) {
+			return price_;
+		}
+		const durationUntilMainPrize_ = this.mainPrizeTime - ts_;
+		let elapsedInWindow_;
+		if (durationUntilMainPrize_ >= c.LATE_ROUND_BID_PRICE_INCREASE_DURATION) {
+			return price_;
+		} else if (durationUntilMainPrize_ <= 0n) {
+			elapsedInWindow_ = c.LATE_ROUND_BID_PRICE_INCREASE_DURATION;
+		} else {
+			elapsedInWindow_ = c.LATE_ROUND_BID_PRICE_INCREASE_DURATION - durationUntilMainPrize_;
+		}
+		const x2_ = elapsedInWindow_ * elapsedInWindow_;
+		const x4_ = x2_ * x2_;
+		const x8_ = x4_ * x4_;
+		const premium_ =
+			price_ *
+			c.LATE_ROUND_BID_PRICE_INCREASE_PREMIUM_MULTIPLIER *
+			x8_ /
+			c.LATE_ROUND_BID_PRICE_INCREASE_DENOMINATOR;
+		return price_ + premium_;
 	}
 
 	/** Mirrors V2 `getBidCstRewardAmountAdvanced(0)` evaluated at block timestamp `ts_`. */
@@ -432,9 +473,12 @@ class GameModel {
 	@returns Expected outcome (does not validate revert conditions; callers pre-check applicability).
 	*/
 	planEthBid(ts_, msgValue_, gasPrice_, randomWalkNftId_) {
-		const ethBidPrice_ = this.getNextEthBidPrice(ts_);
+		const baseEthBidPrice_ = this.getBaseNextEthBidPrice(ts_);
 		const reward_ = this.getBidCstRewardAmount(ts_);
-		const basePaidPrice_ = (randomWalkNftId_ === null) ? ethBidPrice_ : this.getEthPlusRandomWalkNftBidPrice(ethBidPrice_);
+		const basePaidPrice_ =
+			(randomWalkNftId_ === null) ?
+			this._applyLateRoundBidPriceIncrease(baseEthBidPrice_, ts_) :
+			this._applyLateRoundBidPriceIncrease(this.getEthPlusRandomWalkNftBidPrice(baseEthBidPrice_), ts_);
 		// `paidEthPrice_` is the value the contract records (BidPlaced event + `totalSpentEthAmount`);
 		// `netEthPaid_` is the ETH the bidder actually loses (== what the game keeps).
 		let paidEthPrice_ = basePaidPrice_;
@@ -459,7 +503,7 @@ class GameModel {
 				refundAmount_ = overpaid_;
 			}
 		}
-		return { ethBidPrice: ethBidPrice_, paidEthPrice: paidEthPrice_, netEthPaid: netEthPaid_, refundAmount: refundAmount_, swallowed: swallowed_, insufficient: overpaid_ < 0n, bidCstRewardAmount: reward_ };
+		return { ethBidPrice: baseEthBidPrice_, paidEthPrice: paidEthPrice_, netEthPaid: netEthPaid_, refundAmount: refundAmount_, swallowed: swallowed_, insufficient: overpaid_ < 0n, bidCstRewardAmount: reward_ };
 	}
 
 	/**
@@ -478,7 +522,7 @@ class GameModel {
 		}
 		this.nextEthBidPrice = plan_.ethBidPrice + plan_.ethBidPrice / this.ethBidPriceIncreaseDivisor + 1n;
 		let newCstDutchAuctionDuration_ = null;
-		if (this.version === 2) {
+		if ( ! this.isV1Like() ) {
 			newCstDutchAuctionDuration_ =
 				(this.cstDutchAuctionDuration + 1n) * this.cstDutchAuctionDurationChangeDivisor / (this.cstDutchAuctionDurationChangeDivisor + 1n);
 			this.cstDutchAuctionDuration = newCstDutchAuctionDuration_;
@@ -504,7 +548,7 @@ class GameModel {
 		}
 		this.lastCstBidderAddress = bidderAddress_.toLowerCase();
 		let newCstDutchAuctionDuration_ = null;
-		if (this.version === 2) {
+		if ( ! this.isV1Like() ) {
 			newCstDutchAuctionDuration_ = this.cstDutchAuctionDuration + this.cstDutchAuctionDuration / this.cstDutchAuctionDurationChangeDivisor;
 			this.cstDutchAuctionDuration = newCstDutchAuctionDuration_;
 		}
@@ -601,7 +645,7 @@ class GameModel {
 		this.roundActivationTime = u256(
 			ts_ + this.delayDurationBeforeRoundActivation,
 			"roundActivationTime owner-delay update",
-			this.version === 2
+			! this.isV1Like()
 		);
 
 		return breakdown_;
@@ -639,6 +683,11 @@ class GameModel {
 		this.timeoutDurationToClaimMainPrize = c.DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2;
 		this.cstDutchAuctionDurationDivisor = 0n;
 		this.bidCstRewardAmount = 0n;
+	}
+
+	/** Applies `initializeV3` state changes (none besides the version marker). */
+	applyUpgradeToV3() {
+		this.version = 3;
 	}
 
 	// #endregion

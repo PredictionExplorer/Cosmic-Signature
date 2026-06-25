@@ -61,6 +61,15 @@ library CosmicSignatureConstants {
 	/// @notice Default `ethBidPriceIncreaseDivisor`.
 	uint256 internal constant DEFAULT_ETH_BID_PRICE_INCREASE_DIVISOR = 100;
 
+	/// @notice V3 late-round bid price increase window.
+	uint256 internal constant LATE_ROUND_BID_PRICE_INCREASE_DURATION = 20 minutes;
+
+	/// @notice V3 late-round premium multiplier. The final multiplier is `1 + this value`.
+	uint256 internal constant LATE_ROUND_BID_PRICE_INCREASE_PREMIUM_MULTIPLIER = 9;
+
+	/// @notice V3 late-round bid price increase denominator: `(20 minutes) ** 8`.
+	uint256 internal constant LATE_ROUND_BID_PRICE_INCREASE_DENOMINATOR = 4_299_816_960_000_000_000_000_000;
+
 	/// @notice
 	/// [Comment-202412036]
 	/// An ETH + Random Walk NFT bid gets a 50% discount on the bid price.

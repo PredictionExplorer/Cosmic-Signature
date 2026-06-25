@@ -64,7 +64,7 @@ const biddingActions = [
 	{
 		name: "bidWithEthMinRewardExact",
 		weight: 3,
-		isApplicable: (ctx_) => ctx_.model.version === 2,
+		isApplicable: (ctx_) => ! ctx_.model.isV1Like(),
 		run: (ctx_, actor_) => executeEthBid(ctx_, actor_, { flavor: "plain", valueMode: "exact", minRewardMode: "exact" }),
 	},
 	{
@@ -345,13 +345,13 @@ const claimActions = [
 	},
 	{
 		// Comment-202606235: the last bidder claims after the owner overflowed the next-round activation math.
-		// V2-only (V1 uses checked arithmetic, where this claim would revert).
+		// V2+ only (V1 uses checked arithmetic, where this claim would revert).
 		// SMTChecker preprocessing deliberately disables the unchecked block, so that build expects
 		// and records Panic(0x11) instead of treating it as an unexpected fuzz failure.
 		name: "claimMainPrizeWithOverflowingDelay",
 		weight: 1,
 		isApplicable: (ctx_) =>
-			ctx_.model.version === 2 &&
+			! ctx_.model.isV1Like() &&
 			ctx_.model.lastBidderAddress !== ZERO_ADDRESS &&
 			ctx_.actorByAddress(ctx_.model.lastBidderAddress) !== null,
 		run: (ctx_) => claimWithOverflowingDelay(ctx_),

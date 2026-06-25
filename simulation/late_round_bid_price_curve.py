@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import json
 from dataclasses import dataclass
 from decimal import Decimal, ROUND_DOWN, getcontext
 from pathlib import Path
@@ -115,12 +116,33 @@ def parse_exponents(raw: str) -> List[int]:
     return exponents
 
 
+def parse_sample_seconds(raw: str) -> List[int]:
+    sample_seconds: List[int] = []
+    for item in raw.split(","):
+        item = item.strip()
+        if not item:
+            continue
+        sample_second = int(item)
+        if sample_second < 0:
+            raise argparse.ArgumentTypeError("--sample-seconds entries must be >= 0")
+        if sample_second not in sample_seconds:
+            sample_seconds.append(sample_second)
+    if not sample_seconds:
+        raise argparse.ArgumentTypeError("--sample-seconds must contain at least one second value")
+    return sorted(sample_seconds)
+
+
 def iter_sample_seconds(window_seconds: int, step_seconds: int) -> Iterable[int]:
     elapsed = 0
     while elapsed < window_seconds:
         yield elapsed
         elapsed += step_seconds
     yield window_seconds
+
+
+def normalize_sample_seconds(sample_seconds: Iterable[int], window_seconds: int) -> List[int]:
+    normalized = sorted(set(sample_seconds) | {0, window_seconds})
+    return normalized
 
 
 def price_increase_denominator(window_seconds: int, exponent: int) -> int:
@@ -178,6 +200,7 @@ def build_samples(
     exponent: int,
     normal_eth_price_wei: int,
     normal_cst_price: int,
+    sample_seconds: Sequence[int] | None = None,
 ) -> List[Sample]:
     denominator = price_increase_denominator(window_seconds, exponent)
     normal_eth_plus_random_walk_price_wei = eth_plus_random_walk_nft_bid_price(
@@ -185,32 +208,39 @@ def build_samples(
     )
     samples: List[Sample] = []
 
-    for elapsed_seconds in iter_sample_seconds(window_seconds, sample_every_seconds):
+    elapsed_seconds_iterable = (
+        normalize_sample_seconds(sample_seconds, window_seconds)
+        if sample_seconds is not None
+        else iter_sample_seconds(window_seconds, sample_every_seconds)
+    )
+
+    for elapsed_seconds in elapsed_seconds_iterable:
+        curve_elapsed_seconds = min(elapsed_seconds, window_seconds)
         multiplier = curve_multiplier(
-            elapsed_seconds, premium_multiplier, exponent, denominator
+            curve_elapsed_seconds, premium_multiplier, exponent, denominator
         )
         samples.append(
             Sample(
                 elapsed_seconds=elapsed_seconds,
-                remaining_seconds=window_seconds - elapsed_seconds,
+                remaining_seconds=max(window_seconds - elapsed_seconds, 0),
                 multiplier=multiplier,
                 eth_bid_price_wei=apply_late_round_curve(
                     normal_eth_price_wei,
-                    elapsed_seconds,
+                    curve_elapsed_seconds,
                     premium_multiplier,
                     exponent,
                     denominator,
                 ),
                 eth_plus_random_walk_bid_price_wei=apply_late_round_curve(
                     normal_eth_plus_random_walk_price_wei,
-                    elapsed_seconds,
+                    curve_elapsed_seconds,
                     premium_multiplier,
                     exponent,
                     denominator,
                 ),
                 cst_bid_price=apply_late_round_curve(
                     normal_cst_price,
-                    elapsed_seconds,
+                    curve_elapsed_seconds,
                     premium_multiplier,
                     exponent,
                     denominator,
@@ -406,6 +436,64 @@ def write_csv(
             )
 
 
+def build_json_payload(
+    samples: Sequence[Sample],
+    window_seconds: int,
+    premium_multiplier: int,
+    exponent: int,
+    normal_eth_price_wei: int,
+    normal_cst_price: int,
+) -> dict:
+    denominator = price_increase_denominator(window_seconds, exponent)
+    normal_eth_plus_random_walk_price_wei = eth_plus_random_walk_nft_bid_price(
+        normal_eth_price_wei
+    )
+    return {
+        "window_seconds": window_seconds,
+        "premium_multiplier": premium_multiplier,
+        "exponent": exponent,
+        "price_increase_denominator": str(denominator),
+        "normal_eth_price_wei": str(normal_eth_price_wei),
+        "normal_eth_plus_random_walk_bid_price_wei": str(normal_eth_plus_random_walk_price_wei),
+        "normal_cst_price_base_units": str(normal_cst_price),
+        "samples": [
+            {
+                "elapsed_seconds": sample.elapsed_seconds,
+                "remaining_seconds": sample.remaining_seconds,
+                "multiplier": str(sample.multiplier),
+                "eth_bid_price_wei": str(sample.eth_bid_price_wei),
+                "eth_plus_random_walk_bid_price_wei": str(sample.eth_plus_random_walk_bid_price_wei),
+                "cst_bid_price_base_units": str(sample.cst_bid_price),
+            }
+            for sample in samples
+        ],
+    }
+
+
+def write_json(
+    path: str,
+    samples: Sequence[Sample],
+    window_seconds: int,
+    premium_multiplier: int,
+    exponent: int,
+    normal_eth_price_wei: int,
+    normal_cst_price: int,
+) -> None:
+    payload = build_json_payload(
+        samples=samples,
+        window_seconds=window_seconds,
+        premium_multiplier=premium_multiplier,
+        exponent=exponent,
+        normal_eth_price_wei=normal_eth_price_wei,
+        normal_cst_price=normal_cst_price,
+    )
+    serialized = json.dumps(payload, indent=2, sort_keys=True)
+    if path == "-":
+        print(serialized)
+    else:
+        Path(path).write_text(serialized + "\n")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Experiment with the late-round bid price increase curve."
@@ -450,9 +538,19 @@ def main() -> None:
         help=f"table sampling interval in seconds (default: {DEFAULT_SAMPLE_EVERY_SECONDS})",
     )
     parser.add_argument(
+        "--sample-seconds",
+        type=parse_sample_seconds,
+        help="optional comma-separated exact elapsed-second samples, e.g. 0,1,60,240,1200,1300",
+    )
+    parser.add_argument(
         "--csv",
         type=Path,
         help="optional path to write the selected exponent's samples as CSV",
+    )
+    parser.add_argument(
+        "--json",
+        dest="json_path",
+        help="optional path to write samples as JSON; use '-' for stdout",
     )
     parser.add_argument(
         "--compare-exponents",
@@ -476,7 +574,21 @@ def main() -> None:
         exponent=args.exponent,
         normal_eth_price_wei=normal_eth_price_wei,
         normal_cst_price=normal_cst_price,
+        sample_seconds=args.sample_seconds,
     )
+
+    if args.json_path:
+        write_json(
+            args.json_path,
+            samples=samples,
+            window_seconds=window_seconds,
+            premium_multiplier=args.premium_multiplier,
+            exponent=args.exponent,
+            normal_eth_price_wei=normal_eth_price_wei,
+            normal_cst_price=normal_cst_price,
+        )
+        return
+
     print_price_report(
         samples=samples,
         window_seconds=window_seconds,

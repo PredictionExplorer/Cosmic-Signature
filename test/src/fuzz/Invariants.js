@@ -94,7 +94,7 @@ async function runInvariants(ctx_) {
 	expect(await game_.nextEthBidPrice(), "nextEthBidPrice vs model").to.equal(model.nextEthBidPrice);
 	expect(await game_.ethDutchAuctionBeginningBidPrice(), "ethDutchAuctionBeginningBidPrice vs model").to.equal(model.ethDutchAuctionBeginningBidPrice);
 	expect(await game_.cstDutchAuctionBeginningTimeStamp(), "cstDutchAuctionBeginningTimeStamp vs model").to.equal(model.cstDutchAuctionBeginningTimeStamp);
-	if (model.version === 2) {
+	if ( ! model.isV1Like() ) {
 		expect(await game_.cstDutchAuctionDuration(), "cstDutchAuctionDuration vs model").to.equal(model.cstDutchAuctionDuration);
 		expect(await game_.cstDutchAuctionDurationChangeDivisor(), "cstDutchAuctionDurationChangeDivisor vs model").to.equal(model.cstDutchAuctionDurationChangeDivisor);
 		expect(await game_.bidCstRewardAmountMultiplier(), "bidCstRewardAmountMultiplier vs model").to.equal(model.bidCstRewardAmountMultiplier);
@@ -180,10 +180,15 @@ async function runInvariants(ctx_) {
 		expect(onChainCstPrice_, "getNextCstBidPrice vs model").to.equal(model.getNextCstBidPrice(ts_));
 		expect(await game_.getNextCstBidPriceAdvanced(0n), "getNextCstBidPrice == Advanced(0)").to.equal(onChainCstPrice_);
 
-		if (model.version === 2) {
+		if ( ! model.isV1Like() ) {
 			const onChainReward_ = await game_.getBidCstRewardAmount();
 			expect(onChainReward_, "getBidCstRewardAmount vs model").to.equal(model.getBidCstRewardAmount(ts_));
 			expect(await game_.getBidCstRewardAmountAdvanced(0n), "getBidCstRewardAmount == Advanced(0)").to.equal(onChainReward_);
+		}
+		if (model.version === 3) {
+			const onChainRwPrice_ = await game_.getNextEthPlusRandomWalkNftBidPrice();
+			expect(onChainRwPrice_, "getNextEthPlusRandomWalkNftBidPrice vs model").to.equal(model.getNextEthPlusRandomWalkNftBidPrice(ts_));
+			expect(await game_.getNextEthPlusRandomWalkNftBidPriceAdvanced(0n), "getNextEthPlusRandomWalkNftBidPrice == Advanced(0)").to.equal(onChainRwPrice_);
 		}
 	}
 

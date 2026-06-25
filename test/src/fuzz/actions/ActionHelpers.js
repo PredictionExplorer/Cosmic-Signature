@@ -242,7 +242,7 @@ async function executeEthBid(ctx_, actor_, options_) {
 	}
 	const message_ = (options_.flavor === "receive") ? "" : engine.randomMessage(Math.min(Number(model.bidMessageLengthMaxLimit), 120));
 	const planForReward_ = model.getBidCstRewardAmount(ts_);
-	const minReward_ = (model.version === 2 && options_.minRewardMode === "exact") ? planForReward_ : 0n;
+	const minReward_ = ( ! model.isV1Like() && options_.minRewardMode === "exact") ? planForReward_ : 0n;
 
 	const gameAdapter_ = ctx_.game.connect(actor_.signer);
 	const buildTx_ = (overrides_) => {
@@ -287,7 +287,7 @@ async function executeEthBid(ctx_, actor_, options_) {
 		expect(bidPlaced_.args.message).to.equal(message_);
 	}
 	expect(bidPlaced_.args.mainPrizeTime).to.equal(model.mainPrizeTime);
-	if (model.version === 2) {
+	if ( ! model.isV1Like() ) {
 		expect(bidPlaced_.args.bidCstRewardAmount).to.equal(expectations_.bidCstRewardAmount);
 		expect(bidPlaced_.args.cstDutchAuctionDuration).to.equal(expectations_.newCstDutchAuctionDuration);
 	}
@@ -353,7 +353,7 @@ async function executeCstBid(ctx_, actor_, options_) {
 	}
 	const message_ = engine.randomMessage(Math.min(Number(model.bidMessageLengthMaxLimit), 120));
 	const expectedCstReward_ = model.getBidCstRewardAmount(ts_);
-	const minReward_ = (model.version === 2 && engine.chancePercent(30)) ? expectedCstReward_ : 0n;
+	const minReward_ = ( ! model.isV1Like() && engine.chancePercent(30)) ? expectedCstReward_ : 0n;
 
 	const gameContract_ = ctx_.game.connect(actor_.signer).contract;
 	const buildTx_ = (overrides_) => {
@@ -364,10 +364,10 @@ async function executeCstBid(ctx_, actor_, options_) {
 				return ctx_.game.connect(actor_.signer).bidWithCstAndDonateToken(
 					priceMaxLimit_, message_, minReward_, contracts.fuzzTestMockErc20Address, donationTokenAmount_, overrides_);
 			case "donateNft": {
-				const sig_ = (model.version === 2) ?
+				const sig_ = ( ! model.isV1Like() ) ?
 					"bidWithCstAndDonateNft(uint256,string,uint256,address,uint256)" :
 					"bidWithCstAndDonateNft(uint256,string,address,uint256)";
-				const args_ = (model.version === 2) ?
+				const args_ = ( ! model.isV1Like() ) ?
 					[priceMaxLimit_, message_, minReward_, contracts.fuzzTestMockErc721Address, donationNftId_] :
 					[priceMaxLimit_, message_, contracts.fuzzTestMockErc721Address, donationNftId_];
 				return gameContract_.getFunction(sig_)(...args_, overrides_);
@@ -394,7 +394,7 @@ async function executeCstBid(ctx_, actor_, options_) {
 	expect(bidPlaced_.args.paidCstPrice).to.equal(price_);
 	expect(bidPlaced_.args.randomWalkNftId).to.equal(-1n);
 	expect(bidPlaced_.args.mainPrizeTime).to.equal(model.mainPrizeTime);
-	if (model.version === 2) {
+	if ( ! model.isV1Like() ) {
 		expect(bidPlaced_.args.bidCstRewardAmount).to.equal(expectations_.bidCstRewardAmount);
 		expect(bidPlaced_.args.cstDutchAuctionDuration).to.equal(expectations_.newCstDutchAuctionDuration);
 	}

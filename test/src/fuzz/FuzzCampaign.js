@@ -22,7 +22,7 @@ const { ShadowState } = require("./ShadowState.js");
 const { GameAbiAdapter } = require("./GameAbiAdapter.js");
 const { FuzzEngine } = require("./FuzzEngine.js");
 const { runInvariants, assertCoverageFloors, hasMinimalCoverageFloors, printCoverageReport, mergeStatsInto } = require("./Invariants.js");
-const { performUpgradeToV2, upgradeAuthProbe } = require("./UpgradePhase.js");
+const { performUpgradeToV2, performUpgradeToV3, upgradeAuthProbe } = require("./UpgradePhase.js");
 const { biddingActions, claimActions, donationActions, stakingActions, forceCompleteRound, runClaimRace } = require("./actions/CoreActions.js");
 const { randomWalkActions, tokenActions, prizesWalletActions, walletActions } = require("./actions/SecondaryActions.js");
 const { adminActions, daoActions } = require("./actions/AdminActions.js");
@@ -46,6 +46,7 @@ function buildProfile(longTestModeCode_, envOverrides_) {
 			// Equal V1/V2 rounds => ~50/50 split of fuzzing time across the two code versions.
 			v1Rounds: 3,
 			v2Rounds: 3,
+			v3Rounds: 3,
 			actionsPerSegment: 22,
 			invariantEveryActions: 18,
 			negativeProbePercent: 14,
@@ -63,6 +64,7 @@ function buildProfile(longTestModeCode_, envOverrides_) {
 			numActors: 7,
 			v1Rounds: 5,
 			v2Rounds: 5,
+			v3Rounds: 5,
 			actionsPerSegment: 32,
 			invariantEveryActions: 28,
 			negativeProbePercent: 13,
@@ -78,9 +80,10 @@ function buildProfile(longTestModeCode_, envOverrides_) {
 	} else {
 		base_ = {
 			numActors: 9,
-			// Equal V1/V2 rounds per campaign => ~50% of the time on V1 code and ~50% on V2 code.
+			// Equal version rounds per campaign => broad coverage across V1, V2, and V3 code.
 			v1Rounds: 10,
 			v2Rounds: 10,
+			v3Rounds: 10,
 			actionsPerSegment: 45,
 			invariantEveryActions: 40,
 			negativeProbePercent: 12,
@@ -109,6 +112,7 @@ function readEnvOverrides() {
 	};
 	num_("FUZZ_V1_ROUNDS", "v1Rounds");
 	num_("FUZZ_V2_ROUNDS", "v2Rounds");
+	num_("FUZZ_V3_ROUNDS", "v3Rounds");
 	num_("FUZZ_ACTORS", "numActors");
 	num_("FUZZ_MAX_SECONDS", "maxSeconds");
 	return overrides_;
@@ -262,7 +266,9 @@ class FuzzCampaign {
 		register_(c_.fuzzTestMockErc721Address, "FuzzTestMockErc721", c_.fuzzTestMockErc721);
 
 		const v2GameFactory_ = await hre.ethers.getContractFactory("CosmicSignatureGameV2", c_.ownerSigner);
+		const v3GameFactory_ = await hre.ethers.getContractFactory("CosmicSignatureGameV3", c_.ownerSigner);
 		this.v2GameFactory = v2GameFactory_;
+		this.v3GameFactory = v3GameFactory_;
 		this.ledger.registerContracts(
 			{
 				game: c_.cosmicSignatureGameProxyAddress.toLowerCase(),
@@ -278,6 +284,7 @@ class FuzzCampaign {
 		this.engine.revertInterfaces = [
 			c_.cosmicSignatureGameProxy.interface,
 			v2GameFactory_.interface,
+			v3GameFactory_.interface,
 			c_.cosmicSignatureToken.interface,
 			c_.cosmicSignatureNft.interface,
 			c_.randomWalkNft.interface,
@@ -551,7 +558,7 @@ class FuzzCampaign {
 						await this.engine.runAction(probe_, this.context, actor_);
 						++ actionsSinceInvariant_;
 					}
-				} else if (this.engine.profile.burstPercent > 0 && this.engine.chancePercent(this.engine.profile.burstPercent)) {
+				} else if (this.model.version !== 3 && this.engine.profile.burstPercent > 0 && this.engine.chancePercent(this.engine.profile.burstPercent)) {
 					await this._runBurst();
 					++ actionsSinceInvariant_;
 				} else {
@@ -692,12 +699,12 @@ class FuzzCampaign {
 			`ENABLE_SMTCHECKER=${ENABLE_SMTCHECKER}`;
 
 		console.info("\n" + "=".repeat(80));
-		console.info(`  COSMIC SIGNATURE - UNIFIED FUZZ ${label_} (V1 -> upgrade -> V2)`);
+		console.info(`  COSMIC SIGNATURE - UNIFIED FUZZ ${label_} (V1 -> upgrade -> V2 -> upgrade -> V3)`);
 		console.info("=".repeat(80));
 		console.info(`  seed: ${uint256ToPaddedHexString(this.seed)}`);
 		console.info(
 			`  profile: actors=${this.profile.numActors} v1Rounds=${this.profile.v1Rounds} ` +
-			`v2Rounds=${this.profile.v2Rounds} chaos=${this.profile.chaos} ` +
+			`v2Rounds=${this.profile.v2Rounds} v3Rounds=${this.profile.v3Rounds} chaos=${this.profile.chaos} ` +
 			`overflowMode=${this.profile.overflowMode === true} ` +
 			`upgradeAfterRoundZero=${this.profile.upgradeAfterRoundZero === true}`
 		);
@@ -722,6 +729,16 @@ class FuzzCampaign {
 		// Phase 2: V2.
 		await this._runPhase("V2", this.profile.v2Rounds);
 
+		// Second upgrade (V2 -> V3), again from a post-claim, round-inactive state.
+		console.info("\n  >>> Performing V2 -> V3 upgrade <<<\n");
+		await performUpgradeToV3(this.context);
+		await this._activateRound();
+		await runInvariants(this.context);
+		console.info("  >>> Upgrade complete; continuing on V3 <<<\n");
+
+		// Phase 3: V3.
+		await this._runPhase("V3", this.profile.v3Rounds);
+
 		// Final invariants. Coverage floors are asserted by the driver on the aggregate across
 		// campaigns (breadth floors are probabilistic for a single bounded campaign).
 		await runInvariants(this.context);
@@ -734,7 +751,7 @@ class FuzzCampaign {
 		console.info("  CAMPAIGN COMPLETE\n");
 
 		expect(this.engine.actionSeq).to.be.greaterThan(0);
-		expect(this.model.version, "campaign must end on V2").to.equal(2);
+		expect(this.model.version, "campaign must end on V3").to.equal(3);
 		expect(this.model.roundNum, "at least one round must have completed").to.be.greaterThan(0n);
 	}
 

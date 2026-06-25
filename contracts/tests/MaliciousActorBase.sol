@@ -7,6 +7,7 @@ import { CosmicSignatureHelpers } from "../production/libraries/CosmicSignatureH
 import { IPrizesWallet, PrizesWallet } from "../production/PrizesWallet.sol";
 import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 import { CosmicSignatureGameV2 } from "../production/CosmicSignatureGameV2.sol";
+import { CosmicSignatureGameV3 } from "../production/CosmicSignatureGameV3.sol";
 
 abstract contract MaliciousActorBase {
 	PrizesWallet public immutable prizesWallet;
@@ -40,60 +41,78 @@ abstract contract MaliciousActorBase {
 			// Similar magic numbers exist in multiple places.
 			// [/Comment-202507062]
 			if (modeCode == 1) {
-				if (contractVersionNumber != 2) {
+				if (contractVersionNumber == 1) {
 					game.donateEth{value: 1 wei}();
-				} else {
+				} else if (contractVersionNumber == 2) {
 					CosmicSignatureGameV2(payable(game)).donateEth{value: 1 wei}();
+				} else {
+					CosmicSignatureGameV3(payable(game)).donateEth{value: 1 wei}();
 				}
 			} else if (modeCode == 2) {
-				if (contractVersionNumber != 2) {
+				if (contractVersionNumber == 1) {
 					game.donateEthWithInfo{value: 1 wei}("Reentry");
-				} else {
+				} else if (contractVersionNumber == 2) {
 					CosmicSignatureGameV2(payable(game)).donateEthWithInfo{value: 1 wei}("Reentry");
+				} else {
+					CosmicSignatureGameV3(payable(game)).donateEthWithInfo{value: 1 wei}("Reentry");
 				}
 			} else if (modeCode == 3) {
 				CosmicSignatureHelpers.transferEthTo(payable(game), 0.01 ether);
 			} else if (modeCode == 4) {
-				if (contractVersionNumber != 2) {
+				if (contractVersionNumber == 1) {
 					game.bidWithEthAndDonateToken{value: 0.01 ether}(-1, "", IERC20(address(this)), 1);
-				} else {
+				} else if (contractVersionNumber == 2) {
 					CosmicSignatureGameV2(payable(game)).bidWithEthAndDonateToken{value: 0.01 ether}(-1, "", 0, IERC20(address(this)), 1);
+				} else {
+					CosmicSignatureGameV3(payable(game)).bidWithEthAndDonateToken{value: 0.01 ether}(-1, "", 0, IERC20(address(this)), 1);
 				}
 			} else if (modeCode == 5) {
-				if (contractVersionNumber != 2) {
+				if (contractVersionNumber == 1) {
 					game.bidWithEthAndDonateNft{value: 0.01 ether}(-1, "", IERC721(address(this)), 0);
-				} else {
+				} else if (contractVersionNumber == 2) {
 					CosmicSignatureGameV2(payable(game)).bidWithEthAndDonateNft{value: 0.01 ether}(-1, "", 0, IERC721(address(this)), 0);
+				} else {
+					CosmicSignatureGameV3(payable(game)).bidWithEthAndDonateNft{value: 0.01 ether}(-1, "", 0, IERC721(address(this)), 0);
 				}
 			} else if (modeCode == 6) {
-				if (contractVersionNumber != 2) {
+				if (contractVersionNumber == 1) {
 					game.bidWithEth{value: 0.01 ether}(-1, "");
-				} else {
+				} else if (contractVersionNumber == 2) {
 					CosmicSignatureGameV2(payable(game)).bidWithEth{value: 0.01 ether}(-1, "", 0);
+				} else {
+					CosmicSignatureGameV3(payable(game)).bidWithEth{value: 0.01 ether}(-1, "", 0);
 				}
 			} else if (modeCode == 7) {
-				if (contractVersionNumber != 2) {
+				if (contractVersionNumber == 1) {
 					game.bidWithCstAndDonateToken(10000 ether, "", IERC20(address(this)), 1);
-				} else {
+				} else if (contractVersionNumber == 2) {
 					CosmicSignatureGameV2(payable(game)).bidWithCstAndDonateToken(10000 ether, "", 0, IERC20(address(this)), 1);
+				} else {
+					CosmicSignatureGameV3(payable(game)).bidWithCstAndDonateToken(10000 ether, "", 0, IERC20(address(this)), 1);
 				}
 			} else if (modeCode == 8) {
-				if (contractVersionNumber != 2) {
+				if (contractVersionNumber == 1) {
 					game.bidWithCstAndDonateNft(10000 ether, "", IERC721(address(this)), 0);
-				} else {
+				} else if (contractVersionNumber == 2) {
 					CosmicSignatureGameV2(payable(game)).bidWithCstAndDonateNft(10000 ether, "", 0, IERC721(address(this)), 0);
+				} else {
+					CosmicSignatureGameV3(payable(game)).bidWithCstAndDonateNft(10000 ether, "", 0, IERC721(address(this)), 0);
 				}
 			} else if (modeCode == 9) {
-				if (contractVersionNumber != 2) {
+				if (contractVersionNumber == 1) {
 					game.bidWithCst(10000 ether, "");
-				} else {
+				} else if (contractVersionNumber == 2) {
 					CosmicSignatureGameV2(payable(game)).bidWithCst(10000 ether, "", 0);
+				} else {
+					CosmicSignatureGameV3(payable(game)).bidWithCst(10000 ether, "", 0);
 				}
 			} else if (modeCode == 10) {
-				if (contractVersionNumber != 2) {
+				if (contractVersionNumber == 1) {
 					game.claimMainPrize();
-				} else {
+				} else if (contractVersionNumber == 2) {
 					CosmicSignatureGameV2(payable(game)).claimMainPrize();
+				} else {
+					CosmicSignatureGameV3(payable(game)).claimMainPrize();
 				}
 			} else if (modeCode == 101) {
 				IPrizesWallet.EthDeposit[] memory ethDeposits_;

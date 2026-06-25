@@ -72,8 +72,10 @@ const negativeProbes = [
 				return "skip";
 			}
 			const ts_ = ctx_.engine.clampTs(ctx_.engine.planTs(ctx_.engine.boundaryCandidates()));
-			const ethPrice_ = ctx_.model.getNextEthBidPrice(ts_);
-			const value_ = ctx_.model.getEthPlusRandomWalkNftBidPrice(ethPrice_) + 10n ** 15n;
+			const value_ =
+				(ctx_.model.version === 3) ?
+				ctx_.model.getNextEthPlusRandomWalkNftBidPrice(ts_) + 10n ** 15n :
+				ctx_.model.getEthPlusRandomWalkNftBidPrice(ctx_.model.getNextEthBidPrice(ts_)) + 10n ** 15n;
 			return runProbe(ctx_, {
 				signer: actor_.signer,
 				ts: ts_,
@@ -92,8 +94,10 @@ const negativeProbes = [
 				return "skip";
 			}
 			const ts_ = ctx_.engine.clampTs(ctx_.engine.planTs(ctx_.engine.boundaryCandidates()));
-			const ethPrice_ = ctx_.model.getNextEthBidPrice(ts_);
-			const value_ = ctx_.model.getEthPlusRandomWalkNftBidPrice(ethPrice_) + 10n ** 15n;
+			const value_ =
+				(ctx_.model.version === 3) ?
+				ctx_.model.getNextEthPlusRandomWalkNftBidPrice(ts_) + 10n ** 15n :
+				ctx_.model.getEthPlusRandomWalkNftBidPrice(ctx_.model.getNextEthBidPrice(ts_)) + 10n ** 15n;
 			return runProbe(ctx_, {
 				signer: actor_.signer,
 				ts: ts_,
@@ -128,7 +132,7 @@ const negativeProbes = [
 	},
 	{
 		name: "probe.minRewardTooHigh",
-		isApplicable: (ctx_) => ctx_.model.version === 2 && ctx_.model.lastBidderAddress !== ZERO_ADDRESS,
+		isApplicable: (ctx_) => ! ctx_.model.isV1Like() && ctx_.model.lastBidderAddress !== ZERO_ADDRESS,
 		run: (ctx_, actor_) => {
 			const ts_ = ctx_.engine.clampTs(ctx_.engine.planTs(ctx_.engine.boundaryCandidates()));
 			const reward_ = ctx_.model.getBidCstRewardAmount(ts_);
@@ -146,7 +150,7 @@ const negativeProbes = [
 	{
 		name: "probe.bidWhileRoundInactive",
 		isApplicable: (ctx_) =>
-			ctx_.model.version === 2 &&
+			! ctx_.model.isV1Like() &&
 			ctx_.model.lastBidderAddress === ZERO_ADDRESS &&
 			ctx_.engine.lastTs + 1n < ctx_.model.roundActivationTime,
 		run: (ctx_, actor_) => {
@@ -167,7 +171,7 @@ const negativeProbes = [
 	{
 		name: "probe.cstBidBeforeEthBid",
 		isApplicable: (ctx_) =>
-			ctx_.model.version === 2 &&
+			! ctx_.model.isV1Like() &&
 			ctx_.model.lastBidderAddress === ZERO_ADDRESS,
 		run: (ctx_, actor_) => {
 			const ts_ = ctx_.engine.clampTs(ctx_.model.roundActivationTime + ctx_.model.getCstDutchAuctionDuration() + 1n);
@@ -188,7 +192,7 @@ const negativeProbes = [
 	{
 		name: "probe.cstBidMinRewardTooHigh",
 		isApplicable: (ctx_, actor_) => {
-			if (ctx_.model.version !== 2 || ctx_.model.lastBidderAddress === ZERO_ADDRESS) {
+			if (ctx_.model.isV1Like() || ctx_.model.lastBidderAddress === ZERO_ADDRESS) {
 				return false;
 			}
 			const ts_ = ctx_.engine.clampTs(ctx_.engine.planTs(ctx_.engine.boundaryCandidates()));
@@ -212,7 +216,7 @@ const negativeProbes = [
 	},
 	{
 		name: "probe.halveEthNonOwner",
-		isApplicable: (ctx_) => ctx_.model.version === 2,
+		isApplicable: (ctx_) => ! ctx_.model.isV1Like(),
 		run: (ctx_, actor_) => runProbe(ctx_, {
 			signer: actor_.signer,
 			buildTx: (overrides_) => ctx_.game.connect(actor_.signer).contract.halveEthDutchAuctionEndingBidPrice(overrides_),
@@ -221,7 +225,7 @@ const negativeProbes = [
 	},
 	{
 		name: "probe.halveEthAfterBid",
-		isApplicable: (ctx_) => ctx_.model.version === 2 && ctx_.model.lastBidderAddress !== ZERO_ADDRESS,
+		isApplicable: (ctx_) => ! ctx_.model.isV1Like() && ctx_.model.lastBidderAddress !== ZERO_ADDRESS,
 		run: (ctx_) => runProbe(ctx_, {
 			signer: ctx_.contracts.ownerSigner,
 			buildTx: (overrides_) =>

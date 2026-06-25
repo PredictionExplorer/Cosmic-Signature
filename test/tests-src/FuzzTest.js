@@ -70,7 +70,7 @@ const { readEnvOverrides, buildProfile, runFuzzCampaigns } = require("../src/fuz
 // #region
 
 describe("FuzzTest", function () {
-	it("Unified model-based campaign: fuzz V1, upgrade to V2, fuzz V2, with exact invariants and negative probes", async function () {
+	it("Unified model-based campaign: fuzz V1, upgrade to V2, fuzz V2, upgrade to V3, fuzz V3, with exact invariants and negative probes", async function () {
 		const seed_ = parseFuzzSeedFromEnvironment(process.env.FUZZ_SEED) ?? generateRandomUInt256();
 		const profile_ = buildProfile(LONG_TEST_MODE_CODE, readEnvOverrides());
 		await runFuzzCampaigns(profile_, seed_);

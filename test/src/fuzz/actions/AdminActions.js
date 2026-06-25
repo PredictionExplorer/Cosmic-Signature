@@ -163,7 +163,7 @@ function buildSafeMutations(ctx_) {
 	add_("setDelayDurationBeforeRoundActivation", BigInt(engine.randomIntRange(60, 7200)), (m_, v_) => { m_.delayDurationBeforeRoundActivation = v_; });
 	add_("setMainPrizeTimeIncrementIncreaseDivisor", BigInt(engine.randomIntRange(50, 200)), (m_, v_) => { m_.mainPrizeTimeIncrementIncreaseDivisor = v_; });
 
-	if (model.version === 2) {
+	if ( ! model.isV1Like() ) {
 		add_("setCstDutchAuctionDuration", BigInt(engine.randomIntRange(3600, 2 * 86400)), (m_, v_) => { m_.cstDutchAuctionDuration = v_; });
 		add_("setCstDutchAuctionDurationChangeDivisor", BigInt(engine.randomIntRange(50, 1000)), (m_, v_) => { m_.cstDutchAuctionDurationChangeDivisor = v_; });
 		add_("setBidCstRewardAmountMultiplier", model.bidCstRewardAmountMultiplier * BigInt(engine.randomIntRange(50, 200)) / 100n, (m_, v_) => { m_.bidCstRewardAmountMultiplier = v_; });

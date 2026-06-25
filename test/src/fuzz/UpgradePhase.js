@@ -9,6 +9,9 @@ const {
 	assertDefaultV2Initialization,
 	expectUnknownSelector,
 } = require("../V2UpgradeTestHelpers.js");
+const {
+	upgradeToV3,
+} = require("../V3UpgradeTestHelpers.js");
 
 // #endregion
 // #region Snapshot
@@ -152,6 +155,61 @@ async function performUpgradeToV2(ctx_) {
 	model.applyUpgradeToV2();
 }
 
+/**
+Performs the real V2 -> V3 UUPS upgrade with state-diff assertions, then re-binds all
+campaign state to the V3 ABI and re-syncs the model.
+
+@returns {Promise<void>}
+*/
+async function performUpgradeToV3(ctx_) {
+	const { engine, model, ledger, contracts } = ctx_;
+	const v2Game_ = ctx_.game.contract;
+	const prevImplementation_ = await hre.upgrades.erc1967.getImplementationAddress(contracts.cosmicSignatureGameProxyAddress);
+
+	const freezeActivation_ = engine.lastTs + 10n * 365n * 86_400n;
+	const freezeResult_ = await engine.execTx({
+		signer: contracts.ownerSigner,
+		buildTx: (overrides_) => v2Game_.connect(contracts.ownerSigner).setRoundActivationTime(freezeActivation_, overrides_),
+	});
+	engine.expectOk(freezeResult_, "freeze round before V3 upgrade");
+	model.roundActivationTime = freezeActivation_;
+
+	const before_ = await snapshotCarriedOverState(v2Game_);
+	const timeoutBefore_ = (await v2Game_.timeoutDurationToClaimMainPrize()).toString();
+	const gameEthBefore_ = await engine.provider.getBalance(contracts.cosmicSignatureGameProxyAddress);
+
+	await upgradeToV3(contracts);
+	const v3Proxy_ = contracts.cosmicSignatureGameV3Proxy;
+
+	await engine.resyncTime();
+	await ledger.resyncEth(contracts.ownerSigner.address);
+
+	const newImplementation_ = await hre.upgrades.erc1967.getImplementationAddress(contracts.cosmicSignatureGameProxyAddress);
+	expect(newImplementation_, "implementation address must change after V3 upgrade").to.not.equal(prevImplementation_);
+
+	const after_ = await snapshotCarriedOverState(v3Proxy_);
+	for (const getter_ of CARRIED_OVER_GETTERS) {
+		expect(after_[getter_], `carried-over state '${getter_}' changed across V3 upgrade`).to.equal(before_[getter_]);
+	}
+	expect((await v3Proxy_.timeoutDurationToClaimMainPrize()).toString(), "timeoutDurationToClaimMainPrize changed across V3 upgrade").to.equal(timeoutBefore_);
+	expect(await engine.provider.getBalance(contracts.cosmicSignatureGameProxyAddress), "game ETH balance changed across V3 upgrade").to.equal(gameEthBefore_);
+
+	await expectUnknownSelector(v3Proxy_, hre.ethers.id("initializeV2()").slice(0, 10));
+
+	const doubleInitResult_ = await engine.execTx({
+		signer: contracts.ownerSigner,
+		buildTx: (overrides_) => v3Proxy_.connect(contracts.ownerSigner).initializeV3(overrides_),
+	});
+	expect(doubleInitResult_.ok, "re-initializeV3 must revert").to.equal(false);
+	expect(
+		doubleInitResult_.revert.name === "InvalidInitialization" || doubleInitResult_.revert.kind === "panic",
+		`re-initializeV3 reverted with unexpected error: ${doubleInitResult_.revert.name}`
+	).to.equal(true);
+
+	ctx_.rebindGame(v3Proxy_, 3);
+	model.applyUpgradeToV3();
+}
+
 // #endregion
 // #region Upgrade negative probes
 
@@ -199,5 +257,6 @@ module.exports = {
 	CARRIED_OVER_GETTERS,
 	snapshotCarriedOverState,
 	performUpgradeToV2,
+	performUpgradeToV3,
 	upgradeAuthProbe,
 };
