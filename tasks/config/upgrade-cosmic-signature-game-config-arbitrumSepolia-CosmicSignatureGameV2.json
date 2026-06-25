@@ -3,6 +3,6 @@
 	"newCosmicSignatureGameContractName": "CosmicSignatureGameV2",
 	"unsafeAllowRenames": false,
 	"unsafeSkipStorageCheck": false,
-	"newInitializerMethodName": "initializeV2",
+	"newInitializerMethodName": "reinitialize",
 	"reportFilePath": "../output/upgrade-cosmic-signature-game-report-arbitrumSepolia-CosmicSignatureGameV2.json"
 }

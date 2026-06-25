@@ -9,7 +9,7 @@ import { ICosmicSignatureNft, CosmicSignatureNft } from "./CosmicSignatureNft.so
 import { IPrizesWallet, PrizesWallet } from "./PrizesWallet.sol";
 import { IStakingWalletRandomWalkNft, StakingWalletRandomWalkNft } from "./StakingWalletRandomWalkNft.sol";
 import { IStakingWalletCosmicSignatureNft, StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
-import { CosmicSignatureGameStorageV2 } from "./CosmicSignatureGameStorageV2.sol";
+import { CosmicSignatureGameStorageV2Base } from "./CosmicSignatureGameStorageV2Base.sol";
 import { BiddingBaseV2 } from "./BiddingBaseV2.sol";
 import { MainPrizeBaseV2 } from "./MainPrizeBaseV2.sol";
 import { ISystemManagementV2 } from "./interfaces/ISystemManagementV2.sol";
@@ -17,7 +17,7 @@ import { ISystemManagementV2 } from "./interfaces/ISystemManagementV2.sol";
 abstract contract SystemManagementV2 is
 	OwnableUpgradeableWithReservedStorageGaps,
 	AddressValidator,
-	CosmicSignatureGameStorageV2,
+	CosmicSignatureGameStorageV2Base,
 	BiddingBaseV2,
 	MainPrizeBaseV2,
 	ISystemManagementV2 {

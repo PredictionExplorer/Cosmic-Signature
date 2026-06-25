@@ -74,7 +74,7 @@ Test steps:
    - storage-array lengths and representative mappings
 2. Complete round 0 by calling `claimMainPrize` from the permitted account, or impersonate the required caller in the fork.
 3. Freeze round 1 with `setRoundActivationTime(221845392000)` before any round-1 bid.
-4. Run `upgradeProxy(..., { kind: "uups", call: "initializeV2", unsafeAllowRenames: true, unsafeSkipStorageCheck: true })`.
+4. Run `upgradeProxy(..., { kind: "uups", call: "reinitialize", unsafeAllowRenames: true, unsafeSkipStorageCheck: true })`.
 5. Assert the new implementation address is different and nonzero.
 6. Assert all carried-over state remains unchanged except values intentionally changed by `claimMainPrize`.
 7. Assert V2-initialized values:
@@ -111,7 +111,7 @@ Recommended structure:
 2. Place at least one V1 ETH bid.
 3. Advance to `mainPrizeTime`.
 4. Claim round 0.
-5. Upgrade to V2 via `upgradeProxy` + `initializeV2`.
+5. Upgrade to V2 via `upgradeProxy` + `reinitialize`.
 6. Place V2 bids and complete a V2 round.
 
 Required coverage:
@@ -151,7 +151,7 @@ Goal: run broad randomized gameplay after upgrading to V2.
 
 Implemented approach:
 
-- By default a 20-minute wall-clock soak of repeated independent bounded campaigns. Each campaign deploys V1, fuzzes several complete rounds, performs the real `upgradeProxy` + `initializeV2`, then fuzzes several more V2 rounds, with rounds split ~50/50 between V1 and V2. `GameAbiAdapter` routes every bid to the V1 or V2 signature automatically. (`LONG_TEST_MODE_CODE=1` runs a single quick bounded campaign for CI; `FUZZ_MAX_SECONDS` tunes the budget.)
+- By default a 20-minute wall-clock soak of repeated independent bounded campaigns. Each campaign deploys V1, fuzzes several complete rounds, performs the real `upgradeProxy` + `reinitialize`, then fuzzes several more V2 rounds, with rounds split ~50/50 between V1 and V2. `GameAbiAdapter` routes every bid to the V1 or V2 signature automatically. (`LONG_TEST_MODE_CODE=1` runs a single quick bounded campaign for CI; `FUZZ_MAX_SECONDS` tunes the budget.)
 - Realistic human behavior: each actor is funded once with a finite, varied (whale/minnow) budget and is never auto-refilled. Actors skip actions they cannot afford and replenish only by winning prizes, so ETH/CST/price values stay in a realistic, non-astronomical range (reinforced by spreading first bids across the ETH Dutch-auction decay so the per-round beginning price mean-reverts instead of compounding).
 - The campaign is model-based and EVM-exact: a JS `GameModel` reimplements the deterministic on-chain math exactly (ETH/CST Dutch prices, the V2 sqrt CST reward, the V2 `cstDutchAuctionDuration` shrink/grow formulas, V1-clamp-vs-V2 `mainPrizeTime`, the endurance/chrono champion automaton, and round-advance values), including `uint256` wraparound inside the contracts' `unchecked` price/reward arithmetic. Every action asserts its exact event fields and exact ledger deltas; an end-of-soak coverage report requires every supported user action (bids with ETH/Random Walk NFT/CST, staking/unstaking, ETH and NFT/ERC-20 donations with the winner claiming them, prize withdrawals, token/NFT transfers and EIP-712 signatures, RW mint/withdraw, DAO governance, and the upgrade path) to have succeeded at least once. For Solidity line/branch coverage, run `npx hardhat coverage`.
 
@@ -271,13 +271,13 @@ Goal: document exactly which protections exist in production and which exist onl
 
 Tests to add:
 
-1. `initializeV2` round-0 guard test in production-like build:
+1. `reinitialize` round-0 guard test in production-like build:
    - Run with `ENABLE_HARDHAT_PREPROCESSOR` unset or `ENABLE_ASSERTS=false`.
    - Construct an inactive round-0 state where upgrade authorization can pass.
-   - Assert `initializeV2` does not enforce `roundNum > 0` by itself.
+   - Assert `reinitialize` does not enforce `roundNum > 0` by itself.
    - Mark this as a documentation test / known footgun.
 
-2. `initializeV2` assert test in assert-enabled build:
+2. `reinitialize` assert test in assert-enabled build:
    - Run with `ENABLE_HARDHAT_PREPROCESSOR=true ENABLE_ASSERTS=true`.
    - Assert the disabled production guard triggers as a panic when assertions are compiled in.
 

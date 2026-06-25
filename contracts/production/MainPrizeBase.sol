@@ -4,9 +4,13 @@ pragma solidity =0.8.34;
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
+import { ISystemEvents } from "./interfaces/ISystemEvents.sol";
 import { IMainPrizeBase } from "./interfaces/IMainPrizeBase.sol";
 
-abstract contract MainPrizeBase is CosmicSignatureGameStorage, IMainPrizeBase {
+abstract contract MainPrizeBase is
+	CosmicSignatureGameStorage,
+	ISystemEvents,
+	IMainPrizeBase {
 	function getInitialDurationUntilMainPrize() public view override returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked

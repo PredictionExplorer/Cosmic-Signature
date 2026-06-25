@@ -158,6 +158,9 @@ library CosmicSignatureConstants {
 	/// @notice Default `mainEthPrizeAmountPercentage`.
 	uint256 internal constant DEFAULT_MAIN_ETH_PRIZE_AMOUNT_PERCENTAGE = 25;
 
+	/// @notice Default `mainPrizeNumCosmicSignatureNfts`.
+	uint256 internal constant DEFAULT_MAIN_PRIZE_NUM_COSMIC_SIGNATURE_NFTS = 3;
+
 	// #endregion
 	// #region Cosmic Signature Token
 

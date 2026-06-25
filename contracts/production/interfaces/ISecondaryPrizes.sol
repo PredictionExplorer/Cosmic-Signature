@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity =0.8.34;
 
-import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
-
 /// @title Secondary Prizes.
-interface ISecondaryPrizes is ICosmicSignatureGameStorage {
+interface ISecondaryPrizes {
 	/// @notice Emitted when the last CST bidder receives their prize.
 	/// @param roundNum The current bidding round number.
 	/// @param lastCstBidderAddress The last CST bidder address.

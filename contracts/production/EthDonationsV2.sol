@@ -3,14 +3,14 @@ pragma solidity =0.8.34;
 
 import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
 import { OwnableUpgradeableWithReservedStorageGaps } from "./OwnableUpgradeableWithReservedStorageGaps.sol";
-import { CosmicSignatureGameStorageV2 } from "./CosmicSignatureGameStorageV2.sol";
 import { IEthDonations } from "./interfaces/IEthDonations.sol";
+import { CosmicSignatureGameStorageV2Base } from "./CosmicSignatureGameStorageV2Base.sol";
 
 abstract contract EthDonationsV2 is
 	ReentrancyGuardTransientUpgradeable,
 	OwnableUpgradeableWithReservedStorageGaps,
-	CosmicSignatureGameStorageV2,
-	IEthDonations {
+	IEthDonations,
+	CosmicSignatureGameStorageV2Base {
 	function donateEth() external payable override nonReentrant /*_onlyRoundIsActive*/ {
 		emit EthDonated(roundNum, _msgSender(), msg.value);
 	}

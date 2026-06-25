@@ -118,7 +118,7 @@ describe("Arbitrum", function () {
 					cosmicSignatureGameV2Factory_,
 					{
 						kind: "uups",
-						call: "initializeV2",
+						call: "reinitialize",
 					}
 				);
 			// await cosmicSignatureGameProxy_.waitForDeployment();

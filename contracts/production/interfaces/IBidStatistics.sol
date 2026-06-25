@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity =0.8.34;
 
-import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
-
 /// @notice This contract supports updating and getting game playing statistics, including Endurance Champion and Chrono-Warrior.
-interface IBidStatistics is ICosmicSignatureGameStorage {
+interface IBidStatistics {
 	/// @return The total number of bids in the given bidding round.
 	/// If an argument is invalid the return value is indeterminate.
 	function getTotalNumBids(uint256 roundNum_) external view returns (uint256);

@@ -3,17 +3,13 @@ pragma solidity =0.8.34;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
-import { IBiddingBase } from "./IBiddingBase.sol";
-import { IMainPrizeBase } from "./IMainPrizeBase.sol";
-import { IBidStatistics } from "./IBidStatistics.sol";
 
 /// @notice
 /// [Comment-202605251]
 /// This contract supports bid price formation, processing arriving bids,
 /// as well as donated third party ERC-20 token amounts and ERC-721 NFTs that accompany the bids.
 /// [/Comment-202605251]
-interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase, IBidStatistics {
+interface IBidding {
 	/// @notice
 	/// [Comment-202605275]
 	/// Emitted when the first bid is placed in a bidding round.

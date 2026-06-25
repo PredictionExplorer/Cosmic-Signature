@@ -1,18 +1,6 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity =0.8.34;
 
-import { IAddressValidator } from "./IAddressValidator.sol";
-import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
-import { IBiddingBase } from "./IBiddingBase.sol";
-import { IMainPrizeBase } from "./IMainPrizeBase.sol";
-import { ISystemManagement } from "./ISystemManagement.sol";
-import { IEthDonations } from "./IEthDonations.sol";
-import { INftDonations } from "./INftDonations.sol";
-import { IBidStatistics } from "./IBidStatistics.sol";
-import { IBidding } from "./IBidding.sol";
-import { ISecondaryPrizes } from "./ISecondaryPrizes.sol";
-import { IMainPrize } from "./IMainPrize.sol";
-
 /// @title The Cosmic Signature Game.
 /// @author The Cosmic Signature Development Team.
 /// @notice
@@ -30,18 +18,7 @@ import { IMainPrize } from "./IMainPrize.sol";
 /// at "https://github.com/PredictionExplorer/big-contract-prototype".
 /// But I have no plans to implement the self-destruction feature in the production code.
 /// [/Comment-202606017]
-interface ICosmicSignatureGame is
-	IAddressValidator,
-	ICosmicSignatureGameStorage,
-	IBiddingBase,
-	IMainPrizeBase,
-	ISystemManagement,
-	IEthDonations,
-	INftDonations,
-	IBidStatistics,
-	IBidding,
-	ISecondaryPrizes,
-	IMainPrize {
+interface ICosmicSignatureGame {
 	// /// @notice See also: `IBidding.receive`.
 	// /// @dev It appears that we don't need this.
 	// fallback() external payable;

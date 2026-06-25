@@ -51,7 +51,7 @@
 	RunFuzz 'false' 'false' '0' 'production-like'
 
 	# Assert-enabled build - compiles in the Solidity `assert`-only internal consistency checks
-	# and the `initializeV2` round-0 / prev-version guards.
+	# and the `reinitialize` round-0 / prev-version guards.
 	RunFuzz 'true' 'true' '0' 'asserts-enabled'
 
 	RunFuzz 'true' 'true' '1' 'asserts-and-preprocessing-for-SMTChecker-enabled'

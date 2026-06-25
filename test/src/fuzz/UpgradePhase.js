@@ -104,7 +104,7 @@ async function performUpgradeToV2(ctx_) {
 	// 3. Upgrade negative probes (must fail) before the real upgrade.
 	await runV1UpgradeNegativeProbes(ctx_);
 
-	// 4. The real upgrade (UUPS `upgradeToAndCall` + `initializeV2`), via the project helper.
+	// 4. The real upgrade (UUPS `upgradeToAndCall` + `reinitialize`), via the project helper.
 	await upgradeToV2(contracts);
 	const v2Proxy_ = contracts.cosmicSignatureGameV2Proxy;
 
@@ -134,17 +134,17 @@ async function performUpgradeToV2(ctx_) {
 	await expectUnknownSelector(v2Proxy_, hre.ethers.id("setCstDutchAuctionDurationDivisor(uint256)").slice(0, 10));
 	await expectUnknownSelector(v2Proxy_, hre.ethers.id("setBidCstRewardAmount(uint256)").slice(0, 10));
 
-	// 8. Double `initializeV2` must revert. In a production build the `reinitializer(2)` guard throws
+	// 8. Double `reinitialize` must revert. In a production build the `reinitializer(2)` guard throws
 	// `InvalidInitialization`; in an assert-enabled build the `_onlyIfPrevVersionWasInitialized` assert
 	// (which checks `_getInitializedVersion() == 1`) fires first as a panic. Accept either.
-	const doubleInitResult_ = await engine.execTx({
+	const doubleReinitializeResult_ = await engine.execTx({
 		signer: contracts.ownerSigner,
-		buildTx: (overrides_) => v2Proxy_.connect(contracts.ownerSigner).initializeV2(overrides_),
+		buildTx: (overrides_) => v2Proxy_.connect(contracts.ownerSigner).reinitialize(overrides_),
 	});
-	expect(doubleInitResult_.ok, "re-initializeV2 must revert").to.equal(false);
+	expect(doubleReinitializeResult_.ok, "reinitialize must revert").to.equal(false);
 	expect(
-		doubleInitResult_.revert.name === "InvalidInitialization" || doubleInitResult_.revert.kind === "panic",
-		`re-initializeV2 reverted with unexpected error: ${doubleInitResult_.revert.name}`
+		doubleReinitializeResult_.revert.name === "InvalidInitialization" || doubleReinitializeResult_.revert.kind === "panic",
+		`reinitialize reverted with unexpected error: ${doubleReinitializeResult_.revert.name}`
 	).to.equal(true);
 
 	// 9. Re-bind campaign state to the V2 ABI and re-sync the model.
@@ -172,8 +172,8 @@ async function runV1UpgradeNegativeProbes(ctx_) {
 		expect(["OwnableUnauthorizedAccount"].includes(result_.revert.name), `non-owner upgrade wrong error: ${result_.revert.name}`).to.equal(true);
 	}
 
-	// `initializeV2()` does not exist on V1 yet, so it must revert as an unknown selector (no reason data).
-	await expectUnknownSelector(game_, hre.ethers.id("initializeV2()").slice(0, 10));
+	// `reinitialize()` does not exist on V1 yet, so it must revert as an unknown selector (no reason data).
+	await expectUnknownSelector(game_, hre.ethers.id("reinitialize()").slice(0, 10));
 }
 
 /**

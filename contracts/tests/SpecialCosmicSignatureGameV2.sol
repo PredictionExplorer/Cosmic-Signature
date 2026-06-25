@@ -12,6 +12,7 @@ contract SpecialCosmicSignatureGameV2 is CosmicSignatureGameV2 {
 	/// @dev Comment-202606028 applies.
 	RandomNumberHelpers.RandomNumberSeedWrapper private _entropy;
 
+	/// @dev Comment-202607078 applies.
 	function mintCosmicSignatureNft(address nftOwnerAddress_) external {
 		_prepareEntropyOnce();
 		unchecked { ++ _entropy.value; }

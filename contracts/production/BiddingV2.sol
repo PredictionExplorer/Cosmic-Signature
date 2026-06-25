@@ -15,7 +15,7 @@ import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
-import { CosmicSignatureGameStorageV2 } from "./CosmicSignatureGameStorageV2.sol";
+import { CosmicSignatureGameStorageV2Base } from "./CosmicSignatureGameStorageV2Base.sol";
 import { BiddingBaseV2 } from "./BiddingBaseV2.sol";
 import { MainPrizeBaseV2 } from "./MainPrizeBaseV2.sol";
 import { BidStatisticsV2 } from "./BidStatisticsV2.sol";
@@ -27,7 +27,7 @@ import { IBiddingV2 } from "./interfaces/IBiddingV2.sol";
 abstract contract BiddingV2 is
 	ReentrancyGuardTransientUpgradeable,
 	OwnableUpgradeableWithReservedStorageGaps,
-	CosmicSignatureGameStorageV2,
+	CosmicSignatureGameStorageV2Base,
 	BiddingBaseV2,
 	MainPrizeBaseV2,
 	BidStatisticsV2,

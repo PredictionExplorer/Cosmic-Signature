@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity =0.8.34;
 
-import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
-
 /// @notice Processes ETH donations made to `CosmicSignatureGame`.
 /// ETH donations serve the following purposes:
 ///    1. Allow the project founders to seed the Game with some money.
 ///    2. Allow people to advertise things.
-interface IEthDonations is ICosmicSignatureGameStorage {
+interface IEthDonations {
 	/// @notice Emitted when someone donates ETH.
 	/// @param roundNum The current bidding round number.
 	/// @param donorAddress Donor address.

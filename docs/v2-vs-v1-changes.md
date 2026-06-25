@@ -45,7 +45,7 @@ They return the CST amount that would currently be minted as the bid reward (see
 | `bidCstRewardAmount()` | `bidCstRewardAmountMultiplier()` | Same slot, repurposed (`@custom:oz-renamed-from bidCstRewardAmount`) |
 | — | `cstDutchAuctionDurationChangeDivisor()` | New variable, placed in the first slot of V1's storage gap |
 
-The meaning of the values changes, not just the names: the old divisor slot now stores a duration in seconds, and the old fixed-reward slot now stores a multiplier. `initializeV2()` overwrites both during the upgrade (see the upgrade document). `__gap_persistent` shrank by 1 slot to `uint256[(1 << 30) - 1]` to compensate for the appended variable; all other storage is bit-for-bit compatible with V1.
+The meaning of the values changes, not just the names: the old divisor slot now stores a duration in seconds, and the old fixed-reward slot now stores a multiplier. `reinitialize()` overwrites both during the upgrade (see the upgrade document). `__gap_persistent` shrank by 1 slot to `uint256[(1 << 30) - 1]` to compensate for the appended variable; all other storage is bit-for-bit compatible with V1.
 
 ### 4. Configuration setters renamed / added / removed (`SystemManagementV2`)
 
@@ -97,7 +97,7 @@ event BidPlaced(
 ### 6. Initializers
 
 - `initialize(address ownerAddress_)` does not exist in V2 (calling its selector on the upgraded proxy reverts as an unknown function).
-- New: `initializeV2()`, declared `reinitializer(2)`. It is executed once, as the `upgradeToAndCall` payload during the upgrade, and only sets the four V2 parameters (`cstDutchAuctionDuration`, `cstDutchAuctionDurationChangeDivisor`, `bidCstRewardAmountMultiplier`, `timeoutDurationToClaimMainPrize`). It deliberately omits `onlyOwner` (the V1 `_authorizeUpgrade` has just enforced `onlyOwner` within the same transaction, Comment-202606128).
+- New: `reinitialize()`, declared `reinitializer(2)`. It is executed once, as the `upgradeToAndCall` payload during the upgrade, and only sets the four V2 parameters (`cstDutchAuctionDuration`, `cstDutchAuctionDurationChangeDivisor`, `bidCstRewardAmountMultiplier`, `timeoutDurationToClaimMainPrize`). It deliberately omits `onlyOwner` (the V1 `_authorizeUpgrade` has just enforced `onlyOwner` within the same transaction, Comment-202606128).
 
 ### 7. New custom error
 
@@ -131,7 +131,7 @@ Consequently, a transaction that violates several conditions at once now reverts
 ### 3. CST Dutch auction duration: derived value → stored, bid-driven value
 
 - Refactored V1 derives the duration on the fly: `cstDutchAuctionDuration = mainPrizeTimeIncrementInMicroSeconds / cstDutchAuctionDurationDivisor` (≈ 12 hours initially; automatically grows ~1% per round together with the main prize time increment).
-- V2 stores `cstDutchAuctionDuration` (initialized to 12 hours by `initializeV2`) and changes it on every bid, using the lossless formula pair of Comment-202606059 with `div = cstDutchAuctionDurationChangeDivisor` (default 250):
+- V2 stores `cstDutchAuctionDuration` (initialized to 12 hours by `reinitialize`) and changes it on every bid, using the lossless formula pair of Comment-202606059 with `div = cstDutchAuctionDurationChangeDivisor` (default 250):
   - On each **ETH** bid the duration **shrinks**: `duration = (duration + 1) * div / (div + 1)` (≈ −0.4%).
   - On each **CST** bid the duration **grows**: `duration += duration / div` (≈ +0.4%).
 - Externally visible consequences:
@@ -160,11 +160,11 @@ V2 can only run on a proxy where at least one bidding round has completed, and i
 
 - `BiddingV2.getNextEthBidPriceAdvanced` no longer has the `ethDutchAuctionBeginningBidPrice == 0 → FIRST_ROUND_INITIAL_ETH_BID_PRICE` fallback. (`FIRST_ROUND_INITIAL_ETH_BID_PRICE` is unused by V2.) If V2 were ever active with `ethDutchAuctionBeginningBidPrice == 0`, the ETH bid price would be 0 and bidding would misbehave — this is why upgrading before round 0 completes is forbidden (see `v2-upgrade-procedure.md`).
 - `BiddingBaseV2._checkNonFirstRound` is a production no-op (assert-only, Comment-202605294). In V1, `halveEthDutchAuctionEndingBidPrice` reverts with `CosmicSignatureErrors.FirstRound` during round 0; in V2 that revert can no longer occur (the condition is impossible post-upgrade, so this is a theoretical difference only).
-- `initializeV2` carries the (assert-only) `_onlyNonFirstRound` modifier plus `_onlyIfPrevVersionWasInitialized`, documenting these assumptions.
+- `reinitialize` carries the (assert-only) `_onlyNonFirstRound` modifier plus `_onlyIfPrevVersionWasInitialized`, documenting these assumptions.
 
 ### 6. Main prize claim timeout default doubled
 
-`initializeV2()` sets `timeoutDurationToClaimMainPrize` to `DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2` = **2 days** (V1 initialized it to 1 day, which is the current on-chain value). This is a state/parameter change applied during the upgrade rather than a code-path change: after `mainPrizeTime`, the last bidder now has 2 days of exclusivity before anyone may claim the main prize. The `claimMainPrize` code itself is unchanged.
+`reinitialize()` sets `timeoutDurationToClaimMainPrize` to `DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2` = **2 days** (V1 initialized it to 1 day, which is the current on-chain value). This is a state/parameter change applied during the upgrade rather than a code-path change: after `mainPrizeTime`, the last bidder now has 2 days of exclusivity before anyone may claim the main prize. The `claimMainPrize` code itself is unchanged.
 
 ### 7. `_prepareNextRound` overflow hardening: the owner can no longer brick `claimMainPrize` (Comment-202606235)
 
@@ -205,8 +205,8 @@ These changes live in sources used by both games (or by neither), and the eviden
 
 - `production/CosmicSignatureGameStorage.sol` (V1 source): `__gap_persistent` shrunk from `uint256[1 << 255]` to `uint256[1 << 30]`. Motivation per `tasks/docs/Cosmic-Signature-Game-Contract-Upgrade-And-Re-Registration.md`: OpenZeppelin's upgrade validation crashed with an overflow on the huge gap. No V1 ABI/behavior impact.
 - `production/libraries/CosmicSignatureErrors.sol`: new error `BidCstRewardAmountMinLimitNotReached` (only thrown by V2 code).
-- `production/libraries/CosmicSignatureConstants.sol`: new constants `INITIAL_CST_DUTCH_AUCTION_DURATION` (12 hours), `DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR` (250), `DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER` (1.08e46), `DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2` (2 days). All are consumed by `CosmicSignatureGameV2.initializeV2` / referenced by V2 docs.
-- `upgrade-prototype/CosmicSignatureGameOpenBid.sol` and `interfaces/ICosmicSignatureGameOpenBid.sol` (test-only): `initialize2()` renamed to `initializeV2()` and reimplemented as `reinitializer(_getInitializedVersion() + 1)` with an explicit `timesEthBidPrice == 0` re-initialization guard (Comment-202606084 documents why that pattern is test-only and why production hardcodes version 2). This aligns the upgrade-rehearsal prototype with the V2 upgrade flow and allows test sequences like V1 → V2 → OpenBid.
+- `production/libraries/CosmicSignatureConstants.sol`: new constants `INITIAL_CST_DUTCH_AUCTION_DURATION` (12 hours), `DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR` (250), `DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER` (1.08e46), `DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2` (2 days). All are consumed by `CosmicSignatureGameV2.reinitialize` / referenced by V2 docs.
+- `upgrade-prototype/CosmicSignatureGameOpenBid.sol` and `interfaces/ICosmicSignatureGameOpenBid.sol` (test-only): `initialize2()` renamed to `reinitialize()` and reimplemented as `reinitializer(_getInitializedVersion() + 1)` with an explicit `timesEthBidPrice == 0` re-initialization guard (Comment-202606084 documents why that pattern is test-only and why production hardcodes version 2). This aligns the upgrade-rehearsal prototype with the V2 upgrade flow and allows test sequences like V1 → V2 → OpenBid.
 - `tests/BidderContract.sol`, `tests/MaliciousActorBase.sol` (and the related `tests/MaliciousBidder.sol` comment): gained `contractVersionNumber` / `setContractVersionNumber` and V2 call paths invoking the new V2 bid signatures. Test-only.
 - New test contracts `tests/SelfDestructibleCosmicSignatureGameV2.sol` and `tests/SpecialCosmicSignatureGameV2.sol` (V2 counterparts of the V1 test games, using the `@custom:oz-upgrades-unsafe-allow missing-initializer` annotation).
 

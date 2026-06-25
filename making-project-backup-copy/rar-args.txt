@@ -2,7 +2,6 @@
 -x.git/*
 -xartifacts/*
 -xcache/*
--xcertora/*
 -xeslint/eslint-1-report.bak.txt
 -xeslint/eslint-1-report.txt
 -xnode_modules/*

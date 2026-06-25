@@ -6,18 +6,19 @@ pragma solidity =0.8.34;
 // #endregion
 // #region
 
-import { CosmicSignatureGameStorageV2Base } from "./CosmicSignatureGameStorageV2Base.sol";
+import { CosmicSignatureGameStorageV3Base } from "./CosmicSignatureGameStorageV3Base.sol";
 
 // #endregion
 // #region
 
-abstract contract CosmicSignatureGameStorageV2 is CosmicSignatureGameStorageV2Base {
+abstract contract CosmicSignatureGameStorageV3 is CosmicSignatureGameStorageV3Base {
 	// #region Gap
 
 	/// @dev Comment-202412142 applies.
 	/// Comment-202412148 applies.
 	// solhint-disable-next-line var-name-mixedcase
-	uint256[(1 << 30) - 1] private __gap_persistent;
+	// todo-0 Subtract more from this array length?
+	uint256[(1 << 30) - 1 - 1] private __gap_persistent;
 
 	// todo-1 Transient storage is not yet supported for reference types.
 	/// @dev Comment-202412142 applies.

@@ -3,13 +3,9 @@ pragma solidity =0.8.34;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
-import { IBiddingBaseV2 } from "./IBiddingBaseV2.sol";
-import { IMainPrizeBaseV2 } from "./IMainPrizeBaseV2.sol";
-import { IBidStatistics } from "./IBidStatistics.sol";
 
 /// @notice Comment-202605251 applies.
-interface IBiddingV2 is ICosmicSignatureGameStorage, IBiddingBaseV2, IMainPrizeBaseV2, IBidStatistics {
+interface IBiddingV2 {
 	/// @notice Comment-202605275 applies.
 	/// @param roundNum The current bidding round number.
 	/// @param blockTimeStamp The current block timestamp.

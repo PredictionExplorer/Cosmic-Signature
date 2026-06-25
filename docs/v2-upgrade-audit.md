@@ -49,7 +49,7 @@ With `unsafeSkipStorageCheck`, OpenZeppelin Hardhat Upgrades does not protect th
 - `CosmicSignatureGameStorage.bidCstRewardAmount` is intentionally repurposed as `CosmicSignatureGameStorageV2.bidCstRewardAmountMultiplier`.
 - `CosmicSignatureGameStorageV2.cstDutchAuctionDurationChangeDivisor` is appended in the first slot that used to belong to the private storage gap.
 - The persistent gap shrinks from `uint256[1 << 30]` in the refactored V1 source to `uint256[(1 << 30) - 1]` in V2.
-- `CosmicSignatureGameV2.initializeV2()` overwrites the two repurposed slots immediately during `upgradeToAndCall`.
+- `CosmicSignatureGameV2.reinitialize()` overwrites the two repurposed slots immediately during `upgradeToAndCall`.
 
 But because the tooling check is skipped, a mistake in this reasoning would be silent and could corrupt live state at the moment of upgrade.
 
@@ -62,13 +62,13 @@ Suggested mitigations to document and test:
 - Immediately restore `unsafeAllowRenames` and `unsafeSkipStorageCheck` to `false` after the upgrade.
 - Preserve the updated `.openzeppelin` manifest after the upgrade.
 
-### O-2: `initializeV2` production guard for "round 0 is already complete" is assert-only
+### O-2: `reinitialize` production guard for "round 0 is already complete" is assert-only
 
 Severity: High  
 Category: Upgrade safety / latent footgun  
 Status: Dangerous if reused outside the intended round-boundary upgrade
 
-`CosmicSignatureGameV2.initializeV2()` is documented and annotated as requiring a prior V1 deployment and a completed first round. However, the important checks are production no-ops:
+`CosmicSignatureGameV2.reinitialize()` is documented and annotated as requiring a prior V1 deployment and a completed first round. However, the important checks are production no-ops:
 
 - `CosmicSignatureGameV2._checkIfPrevVersionWasInitialized()` only contains disabled `#enable_asserts` logic.
 - `BiddingBaseV2._checkNonFirstRound()` only contains a disabled `#enable_asserts assert(roundNum > 0)`.
@@ -88,7 +88,7 @@ Impact: broken V2 deployment if the upgrade precondition is violated. This is un
 
 Suggested mitigation:
 
-- Consider changing `initializeV2()` to enforce `roundNum > 0` with a real revert, not only a disabled assertion.
+- Consider changing `reinitialize()` to enforce `roundNum > 0` with a real revert, not only a disabled assertion.
 - Add tests that document the current production behavior and the intended precondition.
 
 ### O-3: V2 relies on `ethDutchAuctionBeginningBidPrice != 0` after round 0
@@ -333,7 +333,7 @@ Status: Must be addressed before considering the upgrade low-risk
 
 - proxy address stability,
 - implementation address changed,
-- `initializeV2` cannot be called twice,
+- `reinitialize` cannot be called twice,
 - `cstDutchAuctionDurationChangeDivisor` initializes to 250 and can be set,
 - implementation storage is uninitialized,
 - unauthorized and active-round upgrades revert.
@@ -366,7 +366,7 @@ The upgrade looks structurally safe if and only if all documented operational pr
 
 1. Do not upgrade before round 0 is claimed.
 2. Freeze round 1 before any round-1 bid.
-3. Execute `upgradeToAndCall` with `initializeV2`.
+3. Execute `upgradeToAndCall` with `reinitialize`.
 4. Verify storage values and carried-over state immediately after upgrade.
 5. Reopen bidding only after the V2 ABI and indexers are deployed.
 

@@ -21,12 +21,12 @@ import { BidStatistics } from "../production/BidStatistics.sol";
 import { BiddingOpenBid } from "./BiddingOpenBid.sol";
 import { SecondaryPrizes } from "../production/SecondaryPrizes.sol";
 import { MainPrize } from "../production/MainPrize.sol";
-import { ICosmicSignatureGameOpenBid } from "./interfaces/ICosmicSignatureGameOpenBid.sol";
+import { ICosmicSignatureGameV2 } from "../production/interfaces/ICosmicSignatureGameV2.sol";
 
 // #endregion
 // #region
 
-/// todo-1 +++ Compare both open-bid source files to their non-open-bid counterparts.
+/// @notice A `CosmicSignatureGame` next version prototype.
 /// @custom:oz-upgrades-unsafe-allow missing-initializer
 contract CosmicSignatureGameOpenBid is
 	ReentrancyGuardTransientUpgradeable,
@@ -43,7 +43,7 @@ contract CosmicSignatureGameOpenBid is
 	BiddingOpenBid,
 	SecondaryPrizes,
 	MainPrize,
-	ICosmicSignatureGameOpenBid {
+	ICosmicSignatureGameV2 {
 	// #region `constructor`
 
 	/// @notice Constructor.
@@ -62,7 +62,7 @@ contract CosmicSignatureGameOpenBid is
 	// }
 
 	// #endregion
-	// #region `initializeV2`
+	// #region `reinitialize`
 
 	/// @dev Comment-202606128 applies.
 	/// [Comment-202606084]
@@ -74,8 +74,8 @@ contract CosmicSignatureGameOpenBid is
 	/// But if you decide to use this code pattern, it will be up to the contract owner performing the upgrade to not break things.
 	/// Comment-202606126 relates.
 	/// [/Comment-202606084]
-	function initializeV2() external override /*onlyOwner*/ reinitializer(uint64(uint256(_getInitializedVersion()) + 1)) {
-		// // #enable_asserts // #disable_smtchecker console.log("CosmicSignatureGameOpenBid.initializeV2");
+	function reinitialize() external override /*virtual*/ /*onlyOwner*/ reinitializer(uint64(uint256(_getInitializedVersion()) + 1)) {
+		// // #enable_asserts // #disable_smtchecker console.log("CosmicSignatureGameOpenBid.reinitialize");
 
 		// Normally, `reinitializer` prevents a redundant initialization, but we disabled that validation near Comment-202606084.
 		if ( ! (timesEthBidPrice == 0) ) {
