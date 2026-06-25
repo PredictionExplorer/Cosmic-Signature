@@ -43,7 +43,7 @@ interface IMainPrize {
 
 	/// @return The current charity ETH donation amount.
 	/// It can potentially be zero.
-	/// @dev This probably doesn't belong to `ISecondaryPrizes`.
+	/// @dev I feel, this doesn't belong to `ISecondaryPrizes`.
 	/// One might want to move this to a yet another separate interface and respective contract, but let's keep it simple.
 	function getCharityEthDonationAmount() external view returns (uint256);
 }
