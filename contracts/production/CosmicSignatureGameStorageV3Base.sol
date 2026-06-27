@@ -21,6 +21,7 @@ abstract contract CosmicSignatureGameStorageV3Base is CosmicSignatureGameStorage
 
 	/// @notice The number of Cosmic Signature NFTs to be minted to the main prize beneficiary.
 	/// Comment-202411064 applies.
+	/// todo-0 When using this and maybe some other new variables, assert that it's positive.
 	uint256 public mainPrizeNumCosmicSignatureNfts;
 
 	// todo-0 Any new variables?

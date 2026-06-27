@@ -185,6 +185,10 @@ abstract contract MainPrizeV3 is
 			// #region
 
 			// Comment-202605317 applies.
+			// todo-0 Factor `mainPrizeNumCosmicSignatureNfts`.
+			// todo-0 Maybe add it after this, like we do `numRaffleCosmicSignatureNftsForBidders`.
+			// todo-0 Revisit Comment-202605317.
+			// todo-0 Actually, this is CST, not CS NFT.
 			uint256 cosmicSignatureTokenMintSpecIndex_ = (lastCstBidderAddress != address(0)) ? (4 + 1 - 1) : (4 - 1);
 
 			cosmicSignatureTokenMintSpecIndex_ += numRaffleCosmicSignatureNftsForBidders;
