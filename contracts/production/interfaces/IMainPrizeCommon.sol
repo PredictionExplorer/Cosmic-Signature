@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity =0.8.34;
 
-interface IMainPrizeBase {
+interface IMainPrizeCommon {
 	function getInitialDurationUntilMainPrize() external view returns (uint256);
 
 	/// @notice This is a "friendly" version of `getDurationUntilMainPrizeRaw` that can't return a negative value.

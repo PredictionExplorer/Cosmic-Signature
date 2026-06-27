@@ -71,7 +71,7 @@ Status: Dangerous if reused outside the intended round-boundary upgrade
 `CosmicSignatureGameV2.reinitialize()` is documented and annotated as requiring a prior V1 deployment and a completed first round. However, the important checks are production no-ops:
 
 - `CosmicSignatureGameV2._checkIfPrevVersionWasInitialized()` only contains disabled `#enable_asserts` logic.
-- `BiddingBaseV2._checkNonFirstRound()` only contains a disabled `#enable_asserts assert(roundNum > 0)`.
+- `BiddingCommonV2._checkNonFirstRound()` only contains a disabled `#enable_asserts assert(roundNum > 0)`.
 
 In production, those checks do not revert. The real protection for the deployed Arbitrum One proxy is V1's `_authorizeUpgrade`, which requires `onlyOwner` and `_onlyRoundIsInactive`. Because round 0 is currently active with bids, the upgrade cannot be executed until `claimMainPrize` completes round 0.
 

@@ -16,8 +16,8 @@ import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 import { IPrizesWallet } from "./interfaces/IPrizesWallet.sol";
 import { IMainPrize } from "./interfaces/IMainPrize.sol";
 import { CosmicSignatureGameStorageV2Base } from "./CosmicSignatureGameStorageV2Base.sol";
-import { BiddingBaseV2 } from "./BiddingBaseV2.sol";
-import { MainPrizeBaseV2 } from "./MainPrizeBaseV2.sol";
+import { BiddingCommonV2 } from "./BiddingCommonV2.sol";
+import { MainPrizeCommonV2 } from "./MainPrizeCommonV2.sol";
 import { BidStatisticsV2 } from "./BidStatisticsV2.sol";
 import { SecondaryPrizesV2 } from "./SecondaryPrizesV2.sol";
 
@@ -29,8 +29,8 @@ abstract contract MainPrizeV2 is
 	OwnableUpgradeableWithReservedStorageGaps,
 	IMainPrize,
 	CosmicSignatureGameStorageV2Base,
-	BiddingBaseV2,
-	MainPrizeBaseV2,
+	BiddingCommonV2,
+	MainPrizeCommonV2,
 	BidStatisticsV2,
 	SecondaryPrizesV2 {
 	// #region `claimMainPrize`

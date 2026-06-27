@@ -125,7 +125,7 @@ The **Cosmic Signature** protocol contains more than 30 on-chain modules coverin
 
 | Area | Contract(s) | What *must* hold | Why it matters |
 |------|-------------|------------------|----------------|
-| **Auctions** | `Bidding.sol`, `BiddingBase.sol`, `BidStatistics.sol` | • Highest bid never decreases  \\ • Bidder ETH/CST balance ≥ committed amount  \\ • Sum(all item highestBids) ≤ `PrizesWallet` balance | Prevents phantom bids & insolvency;
+| **Auctions** | `Bidding.sol`, `BiddingCommon.sol`, `BidStatistics.sol` | • Highest bid never decreases  \\ • Bidder ETH/CST balance ≥ committed amount  \\ • Sum(all item highestBids) ≤ `PrizesWallet` balance | Prevents phantom bids & insolvency;
 market integrity. |
 | **Game State** | `CosmicSignatureGame*.sol`, `SystemManagement.sol` | • `currentRoundId` monotonically increases  \\ • Only *one* main-prize winner per round  \\ • Phase transitions follow enum order | Detect logic bugs that skip rounds or
 award multiple prizes. |

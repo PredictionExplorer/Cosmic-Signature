@@ -16,8 +16,8 @@ import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.s
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
-import { BiddingBase } from "./BiddingBase.sol";
-import { MainPrizeBase } from "./MainPrizeBase.sol";
+import { BiddingCommon } from "./BiddingCommon.sol";
+import { MainPrizeCommon } from "./MainPrizeCommon.sol";
 import { BidStatistics } from "./BidStatistics.sol";
 import { IBidding } from "./interfaces/IBidding.sol";
 
@@ -28,8 +28,8 @@ abstract contract Bidding is
 	ReentrancyGuardTransientUpgradeable,
 	OwnableUpgradeableWithReservedStorageGaps,
 	CosmicSignatureGameStorage,
-	BiddingBase,
-	MainPrizeBase,
+	BiddingCommon,
+	MainPrizeCommon,
 	BidStatistics,
 	IBidding {
 	// #region `receive`

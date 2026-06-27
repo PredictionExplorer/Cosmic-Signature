@@ -6,10 +6,10 @@ This document compares `CosmicSignatureGameV2` (the new contracts on the `v2` br
 
 V2 is implemented as a parallel inheritance hierarchy. New sources (all under `contracts/production/`):
 
-- `CosmicSignatureGameV2.sol`, `CosmicSignatureGameStorageV2.sol`, `BiddingBaseV2.sol`, `BiddingV2.sol`, `BidStatisticsV2.sol`, `MainPrizeBaseV2.sol`, `MainPrizeV2.sol`, `SystemManagementV2.sol`, `EthDonationsV2.sol`, `NftDonationsV2.sol`, `SecondaryPrizesV2.sol`
-- Interfaces: `ICosmicSignatureGameV2.sol`, `IBiddingV2.sol`, `IBiddingBaseV2.sol`, `IMainPrizeV2.sol`, `IMainPrizeBaseV2.sol`, `ISystemManagementV2.sol`, `ISystemEventsV2.sol`
+- `CosmicSignatureGameV2.sol`, `CosmicSignatureGameStorageV2.sol`, `BiddingCommonV2.sol`, `BiddingV2.sol`, `BidStatisticsV2.sol`, `MainPrizeCommonV2.sol`, `MainPrizeV2.sol`, `SystemManagementV2.sol`, `EthDonationsV2.sol`, `NftDonationsV2.sol`, `SecondaryPrizesV2.sol`
+- Interfaces: `ICosmicSignatureGameV2.sol`, `IBiddingV2.sol`, `IBiddingCommonV2.sol`, `IMainPrizeV2.sol`, `IMainPrizeCommonV2.sol`, `ISystemManagementV2.sol`, `ISystemEventsV2.sol`
 
-The following V2 sources were verified to be functionally identical to their refactored V1 counterparts (only inheritance bases, comments, and dead code differ): `BidStatisticsV2`, `SecondaryPrizesV2`, `EthDonationsV2`, `NftDonationsV2`, `MainPrizeV2` (the entire `claimMainPrize` prize-distribution flow, validations, revert reasons, and events are unchanged; the one exception is the `_prepareNextRound` overflow hardening described in change 7 below), and most of `BiddingBaseV2` and `SystemManagementV2`. Everything that differs is listed below.
+The following V2 sources were verified to be functionally identical to their refactored V1 counterparts (only inheritance bases, comments, and dead code differ): `BidStatisticsV2`, `SecondaryPrizesV2`, `EthDonationsV2`, `NftDonationsV2`, `MainPrizeV2` (the entire `claimMainPrize` prize-distribution flow, validations, revert reasons, and events are unchanged; the one exception is the `_prepareNextRound` overflow hardening described in change 7 below), and most of `BiddingCommonV2` and `SystemManagementV2`. Everything that differs is listed below.
 
 V2 is deployed by **upgrading the existing proxy** (UUPS `upgradeToAndCall`), so "ABI changes" below describe what changes for callers of the proxy `0x6a714Ae7B5b6eA520F6BCA23d2E609C4Fd5863F2` once it is upgraded. See `v2-upgrade-procedure.md` for the procedure, `v2-upgrade-audit.md` for the safety audit, and `v2-upgrade-recommended-tests.md` for additional validation work recommended before the mainnet upgrade.
 
@@ -141,7 +141,7 @@ Consequently, a transaction that violates several conditions at once now reverts
 
 ### 4. `mainPrizeTime` extension no longer clamps to `block.timestamp`
 
-`MainPrizeBaseV2._extendMainPrizeTime` (runs on every bid except the first of a round):
+`MainPrizeCommonV2._extendMainPrizeTime` (runs on every bid except the first of a round):
 
 ```solidity
 // Refactored V1:
@@ -159,7 +159,7 @@ In V1, a bid placed after `mainPrizeTime` has already passed pushes the deadline
 V2 can only run on a proxy where at least one bidding round has completed, and its code drops the round-0 special cases:
 
 - `BiddingV2.getNextEthBidPriceAdvanced` no longer has the `ethDutchAuctionBeginningBidPrice == 0 → FIRST_ROUND_INITIAL_ETH_BID_PRICE` fallback. (`FIRST_ROUND_INITIAL_ETH_BID_PRICE` is unused by V2.) If V2 were ever active with `ethDutchAuctionBeginningBidPrice == 0`, the ETH bid price would be 0 and bidding would misbehave — this is why upgrading before round 0 completes is forbidden (see `v2-upgrade-procedure.md`).
-- `BiddingBaseV2._checkNonFirstRound` is a production no-op (assert-only, Comment-202605294). In V1, `halveEthDutchAuctionEndingBidPrice` reverts with `CosmicSignatureErrors.FirstRound` during round 0; in V2 that revert can no longer occur (the condition is impossible post-upgrade, so this is a theoretical difference only).
+- `BiddingCommonV2._checkNonFirstRound` is a production no-op (assert-only, Comment-202605294). In V1, `halveEthDutchAuctionEndingBidPrice` reverts with `CosmicSignatureErrors.FirstRound` during round 0; in V2 that revert can no longer occur (the condition is impossible post-upgrade, so this is a theoretical difference only).
 - `reinitialize` carries the (assert-only) `_onlyNonFirstRound` modifier plus `_onlyIfPrevVersionWasInitialized`, documenting these assumptions.
 
 ### 6. Main prize claim timeout default doubled

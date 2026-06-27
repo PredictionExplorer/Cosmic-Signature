@@ -20,7 +20,7 @@ The fuzz engine controls every block timestamp, so all prices, rewards, duration
 transitions, and `mainPrizeTime` values are exactly predictable. This class mirrors:
 - `Bidding.sol` / `BiddingV2.sol` (`_bidWithEth`, `_bidWithCst`, `_bidCommon`, price getters)
 - `BidStatistics.sol` (`_updateChampionsIfNeeded`, `_updateChronoWarriorIfNeeded`, `tryGetCurrentChampions`)
-- `MainPrizeBase.sol` / `MainPrizeBaseV2.sol` (`_extendMainPrizeTime` clamping difference)
+- `MainPrizeCommon.sol` / `MainPrizeCommonV2.sol` (`_extendMainPrizeTime` clamping difference)
 - `MainPrize.sol` / `MainPrizeV2.sol` (`claimMainPrize` authorization + `_prepareNextRound`)
 - `SystemManagement.sol` / `SystemManagementV2.sol` (setters mutate the model config)
 

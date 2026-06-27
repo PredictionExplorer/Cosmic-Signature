@@ -10,16 +10,16 @@ import { IPrizesWallet, PrizesWallet } from "./PrizesWallet.sol";
 import { IStakingWalletRandomWalkNft, StakingWalletRandomWalkNft } from "./StakingWalletRandomWalkNft.sol";
 import { IStakingWalletCosmicSignatureNft, StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
 import { CosmicSignatureGameStorageV2Base } from "./CosmicSignatureGameStorageV2Base.sol";
-import { BiddingBaseV2 } from "./BiddingBaseV2.sol";
-import { MainPrizeBaseV2 } from "./MainPrizeBaseV2.sol";
+import { BiddingCommonV2 } from "./BiddingCommonV2.sol";
+import { MainPrizeCommonV2 } from "./MainPrizeCommonV2.sol";
 import { ISystemManagementV2 } from "./interfaces/ISystemManagementV2.sol";
 
 abstract contract SystemManagementV2 is
 	OwnableUpgradeableWithReservedStorageGaps,
 	AddressValidator,
 	CosmicSignatureGameStorageV2Base,
-	BiddingBaseV2,
-	MainPrizeBaseV2,
+	BiddingCommonV2,
+	MainPrizeCommonV2,
 	ISystemManagementV2 {
 	function setDelayDurationBeforeRoundActivation(uint256 newValue_) external override onlyOwner /*_onlyRoundIsInactive*/ {
 		delayDurationBeforeRoundActivation = newValue_;
