@@ -6,13 +6,13 @@ pragma solidity =0.8.34;
 // #endregion
 // #region
 
-import { ISecondaryPrizes } from "./interfaces/ISecondaryPrizes.sol";
 import { CosmicSignatureGameStorageV2Base } from "./CosmicSignatureGameStorageV2Base.sol";
+import { ISecondaryPrizes } from "./interfaces/ISecondaryPrizes.sol";
 
 // #endregion
 // #region
 
-abstract contract SecondaryPrizesV2 is ISecondaryPrizes, CosmicSignatureGameStorageV2Base {
+abstract contract SecondaryPrizesV2 is CosmicSignatureGameStorageV2Base, ISecondaryPrizes {
 	// #region `getChronoWarriorEthPrizeAmount`
 
 	function getChronoWarriorEthPrizeAmount() public view override returns (uint256) {

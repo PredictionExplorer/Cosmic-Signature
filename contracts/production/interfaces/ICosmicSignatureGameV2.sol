@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity =0.8.34;
 
-/// @title The Cosmic Signature Game.
+/// @title The Cosmic Signature Game V2+.
 /// @author The Cosmic Signature Development Team.
 /// @notice Comment-202606014 applies.
 /// @dev Comment-202606017 applies.

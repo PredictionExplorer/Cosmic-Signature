@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity =0.8.34;
 
-// // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
 import { CosmicSignatureHelpers } from "../production/libraries/CosmicSignatureHelpers.sol";
 import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 

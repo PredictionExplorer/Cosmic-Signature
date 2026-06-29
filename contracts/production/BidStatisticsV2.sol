@@ -6,13 +6,13 @@ pragma solidity =0.8.34;
 // #endregion
 // #region
 
-import { IBidStatistics } from "./interfaces/IBidStatistics.sol";
 import { CosmicSignatureGameStorageV2Base } from "./CosmicSignatureGameStorageV2Base.sol";
+import { IBidStatistics } from "./interfaces/IBidStatistics.sol";
 
 // #endregion
 // #region
 
-abstract contract BidStatisticsV2 is IBidStatistics, CosmicSignatureGameStorageV2Base {
+abstract contract BidStatisticsV2 is CosmicSignatureGameStorageV2Base, IBidStatistics {
 	// #region `getTotalNumBids`
 
 	function getTotalNumBids(uint256 roundNum_) external view override returns (uint256) {

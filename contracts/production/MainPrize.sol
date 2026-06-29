@@ -77,6 +77,7 @@ abstract contract MainPrize is
 	///    `marketingWallet`.
 	///    `marketingWalletCstContributionAmount`.
 	///    `charityAddress`.
+	///    V3+: `CosmicSignatureGameStorageV3Base.mainPrizeNumCosmicSignatureNfts`.
 	///    `_setRoundActivationTime`.
 	///    `getDurationUntilMainPrizeRaw`.
 	///    `_setMainPrizeTimeIncrementInMicroSeconds`.
@@ -343,9 +344,7 @@ abstract contract MainPrize is
 
 			// [Comment-202605317]
 			// This initial value counts main prize beneficiary, last CST bidder (not guaranteed to exist),
-			// endurance champion, chrono-warrior, `MarketingWallet`.
-			// Minus 1.
-			// We are yet to add to this.
+			// endurance champion, chrono-warrior, `MarketingWallet`. Minus 1.
 			// [/Comment-202605317]
 			uint256 cosmicSignatureTokenMintSpecIndex_ = (lastCstBidderAddress != address(0)) ? (4 + 1 - 1) : (4 - 1);
 
@@ -360,8 +359,9 @@ abstract contract MainPrize is
 				);
 
 			// [Comment-202511104]
-			// Now this becomes the number of CST mints we are going to make minus 1,
-			// which is the same as the number of CS NFT mints.
+			// Now this becomes the number of CST mints to make, minus 1.
+			// Before V3, this equals the number of CS NFTs to mint.
+			// In V3+, the number of CS NFTs to mint is greater by `mainPrizeNumCosmicSignatureNfts - 1`.
 			// [/Comment-202511104]
 			cosmicSignatureTokenMintSpecIndex_ += luckyStakerAddresses_.length;
 
@@ -369,7 +369,8 @@ abstract contract MainPrize is
 			// Addresses for which to mint CS NFTs.
 			// [/Comment-202605319]
 			// [Comment-202511094]
-			// This contains the same items as `cosmicSignatureTokenMintSpecs_`, except its last item.
+			// Before V3, `cosmicSignatureTokenMintSpecs_.length == cosmicSignatureNftOwnerAddresses_.length + 1`.
+			// In V3+, `cosmicSignatureTokenMintSpecs_.length == cosmicSignatureNftOwnerAddresses_.length + 1 - (mainPrizeNumCosmicSignatureNfts - 1)`.
 			// Comment-202511104 relates.
 			// [/Comment-202511094]
 			address[] memory cosmicSignatureNftOwnerAddresses_ = new address[](cosmicSignatureTokenMintSpecIndex_);
@@ -384,8 +385,9 @@ abstract contract MainPrize is
 			//    `numRaffleCosmicSignatureNftsForBidders` items. Bidders.
 			//    0 or `numRaffleCosmicSignatureNftsForRandomWalkNftStakers` items. RW NFT stakers.
 			//    1 item. `marketingWallet`.
+			// In V3+, the order or items is different.
 			// [/Comment-202606011]
-			// Comment-202511094 relates.
+			// Comment-202511094 applies.
 			ICosmicSignatureToken.MintSpec[] memory cosmicSignatureTokenMintSpecs_ = new ICosmicSignatureToken.MintSpec[](cosmicSignatureTokenMintSpecIndex_ + 1);
 
 			// #endregion
@@ -395,6 +397,7 @@ abstract contract MainPrize is
 				// #region CST For `MarketingWallet`
 
 				{
+					// #enable_asserts assert(cosmicSignatureTokenMintSpecIndex_ == cosmicSignatureTokenMintSpecs_.length - 1);
 					ICosmicSignatureToken.MintSpec memory cosmicSignatureTokenMintSpec_ = cosmicSignatureTokenMintSpecs_[cosmicSignatureTokenMintSpecIndex_];
 					cosmicSignatureTokenMintSpec_.account = marketingWallet;
 					cosmicSignatureTokenMintSpec_.value = marketingWalletCstContributionAmount;
@@ -521,6 +524,7 @@ abstract contract MainPrize is
 				// #region CST For `MarketingWallet`
 
 				{
+					// #enable_asserts assert(cosmicSignatureTokenMintSpecIndex_ == cosmicSignatureTokenMintSpecs_.length - 1);
 					// #enable_asserts ICosmicSignatureToken.MintSpec memory cosmicSignatureTokenMintSpec_ = cosmicSignatureTokenMintSpecs_[cosmicSignatureTokenMintSpecIndex_];
 					// #enable_asserts assert(cosmicSignatureTokenMintSpec_.account == marketingWallet);
 					// #enable_asserts assert(cosmicSignatureTokenMintSpec_.value == marketingWalletCstContributionAmount);

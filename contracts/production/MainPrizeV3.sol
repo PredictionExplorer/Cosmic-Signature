@@ -12,18 +12,22 @@ import { CosmicSignatureEvents } from "./libraries/CosmicSignatureEvents.sol";
 import { RandomNumberHelpers } from "./libraries/RandomNumberHelpers.sol";
 import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 import { IPrizesWallet } from "./interfaces/IPrizesWallet.sol";
-import { MainPrizeV2 } from "./MainPrizeV2.sol";
 import { CosmicSignatureGameStorageV3Base } from "./CosmicSignatureGameStorageV3Base.sol";
+import { MainPrizeV2Base } from "./MainPrizeV2Base.sol";
+import { SecondaryPrizesV2 } from "./SecondaryPrizesV2.sol";
+import { IMainPrizeV3 } from "./interfaces/IMainPrizeV3.sol";
 
 // #endregion
 // #region
 
 abstract contract MainPrizeV3 is
-	MainPrizeV2,
-	CosmicSignatureGameStorageV3Base {
+	CosmicSignatureGameStorageV3Base,
+	MainPrizeV2Base,
+	SecondaryPrizesV2,
+	IMainPrizeV3 {
 	// #region `_distributePrizes`
 
-	function _distributePrizes() internal override virtual {
+	function _distributePrizes() internal override /* virtual */ {
 		// #region
 
 		// Comment-202605311 applies.
@@ -185,10 +189,6 @@ abstract contract MainPrizeV3 is
 			// #region
 
 			// Comment-202605317 applies.
-			// todo-0 Factor `mainPrizeNumCosmicSignatureNfts`.
-			// todo-0 Maybe add it after this, like we do `numRaffleCosmicSignatureNftsForBidders`.
-			// todo-0 Revisit Comment-202605317.
-			// todo-0 Actually, this is CST, not CS NFT.
 			uint256 cosmicSignatureTokenMintSpecIndex_ = (lastCstBidderAddress != address(0)) ? (4 + 1 - 1) : (4 - 1);
 
 			cosmicSignatureTokenMintSpecIndex_ += numRaffleCosmicSignatureNftsForBidders;
@@ -206,10 +206,10 @@ abstract contract MainPrizeV3 is
 
 			// Comment-202605319 applies.
 			// Comment-202511094 applies.
-			address[] memory cosmicSignatureNftOwnerAddresses_ = new address[](cosmicSignatureTokenMintSpecIndex_);
+			address[] memory cosmicSignatureNftOwnerAddresses_ = new address[](cosmicSignatureTokenMintSpecIndex_ + (mainPrizeNumCosmicSignatureNfts - 1));
 
 			// Comment-202606011 applies.
-			// Comment-202511094 relates.
+			// Comment-202511094 applies.
 			ICosmicSignatureToken.MintSpec[] memory cosmicSignatureTokenMintSpecs_ = new ICosmicSignatureToken.MintSpec[](cosmicSignatureTokenMintSpecIndex_ + 1);
 
 			// #endregion
@@ -219,11 +219,36 @@ abstract contract MainPrizeV3 is
 				// #region CST For `MarketingWallet`
 
 				{
+					// #enable_asserts assert(cosmicSignatureTokenMintSpecIndex_ == cosmicSignatureTokenMintSpecs_.length - 1);
 					ICosmicSignatureToken.MintSpec memory cosmicSignatureTokenMintSpec_ = cosmicSignatureTokenMintSpecs_[cosmicSignatureTokenMintSpecIndex_];
 					cosmicSignatureTokenMintSpec_.account = marketingWallet;
 					cosmicSignatureTokenMintSpec_.value = marketingWalletCstContributionAmount;
 
 					// Comment-202511102 applies.
+				}
+
+				// #endregion
+				// #region CST, CS NFTs For Main Prize Beneficiary
+
+				{
+					-- cosmicSignatureTokenMintSpecIndex_;
+					// #enable_asserts assert(cosmicSignatureTokenMintSpecIndex_ == cosmicSignatureTokenMintSpecs_.length - 2);
+					ICosmicSignatureToken.MintSpec memory cosmicSignatureTokenMintSpec_ = cosmicSignatureTokenMintSpecs_[cosmicSignatureTokenMintSpecIndex_];
+					cosmicSignatureTokenMintSpec_.account = _msgSender();
+					cosmicSignatureTokenMintSpec_.value = cstPrizeAmount;
+					// #enable_asserts assert(mainPrizeNumCosmicSignatureNfts > 0);
+					// #enable_asserts assert(cosmicSignatureNftOwnerAddresses_.length - cosmicSignatureTokenMintSpecIndex_ == mainPrizeNumCosmicSignatureNfts);
+
+					// This makes `mainPrizeNumCosmicSignatureNfts` iterations.
+					// todo-0 Test the above.
+					for (uint256 cosmicSignatureNftIndex_ = cosmicSignatureNftOwnerAddresses_.length; ; ) {
+						-- cosmicSignatureNftIndex_;
+						cosmicSignatureNftOwnerAddresses_[cosmicSignatureNftIndex_] = _msgSender();
+						if (cosmicSignatureNftIndex_ <= cosmicSignatureTokenMintSpecIndex_) {
+							// #enable_asserts assert(cosmicSignatureNftIndex_ == cosmicSignatureTokenMintSpecIndex_);
+							break;
+						}
+					}
 				}
 
 				// #endregion
@@ -288,29 +313,17 @@ abstract contract MainPrizeV3 is
 				// #endregion
 				// #region CST, CS NFT For The Last CST Bidder
 
-				if (cosmicSignatureTokenMintSpecIndex_ > 1) {
-					// #enable_asserts assert(cosmicSignatureTokenMintSpecIndex_ == 2);
+				if (cosmicSignatureTokenMintSpecIndex_ > 0) {
+					// #enable_asserts assert(cosmicSignatureTokenMintSpecIndex_ == 1);
 					// #enable_asserts assert(lastCstBidderAddress != address(0));
 					// -- cosmicSignatureTokenMintSpecIndex_;
-					ICosmicSignatureToken.MintSpec memory cosmicSignatureTokenMintSpec_ = cosmicSignatureTokenMintSpecs_[1];
+					ICosmicSignatureToken.MintSpec memory cosmicSignatureTokenMintSpec_ = cosmicSignatureTokenMintSpecs_[0];
 					cosmicSignatureTokenMintSpec_.account = lastCstBidderAddress;
 					cosmicSignatureTokenMintSpec_.value = cstPrizeAmount;
-					cosmicSignatureNftOwnerAddresses_[1] = lastCstBidderAddress;
+					cosmicSignatureNftOwnerAddresses_[0] = lastCstBidderAddress;
 				} else {
-					// #enable_asserts assert(cosmicSignatureTokenMintSpecIndex_ == 1);
+					// #enable_asserts assert(cosmicSignatureTokenMintSpecIndex_ == 0);
 					// #enable_asserts assert(lastCstBidderAddress == address(0));
-				}
-
-				// #endregion
-				// #region CST, CS NFT For Main Prize Beneficiary
-
-				{
-					// // #enable_asserts assert(cosmicSignatureTokenMintSpecIndex_ == ???);
-					// -- cosmicSignatureTokenMintSpecIndex_;
-					ICosmicSignatureToken.MintSpec memory cosmicSignatureTokenMintSpec_ = cosmicSignatureTokenMintSpecs_[0];
-					cosmicSignatureTokenMintSpec_.account = _msgSender();
-					cosmicSignatureTokenMintSpec_.value = cstPrizeAmount;
-					cosmicSignatureNftOwnerAddresses_[0] = _msgSender();
 				}
 
 				// #endregion
@@ -338,18 +351,46 @@ abstract contract MainPrizeV3 is
 			{
 				// #region
 
-				cosmicSignatureTokenMintSpecIndex_ = cosmicSignatureNftOwnerAddresses_.length;
-				uint256 cosmicSignatureNftId_ = firstCosmicSignatureNftId_ + cosmicSignatureTokenMintSpecIndex_;
+				cosmicSignatureTokenMintSpecIndex_ = cosmicSignatureTokenMintSpecs_.length;
+				uint256 cosmicSignatureNftId_;
 
 				// #endregion
 				// #region CST For `MarketingWallet`
 
 				{
+					-- cosmicSignatureTokenMintSpecIndex_;
+					// #enable_asserts assert(cosmicSignatureTokenMintSpecIndex_ == cosmicSignatureTokenMintSpecs_.length - 1);
 					// #enable_asserts ICosmicSignatureToken.MintSpec memory cosmicSignatureTokenMintSpec_ = cosmicSignatureTokenMintSpecs_[cosmicSignatureTokenMintSpecIndex_];
 					// #enable_asserts assert(cosmicSignatureTokenMintSpec_.account == marketingWallet);
 					// #enable_asserts assert(cosmicSignatureTokenMintSpec_.value == marketingWalletCstContributionAmount);
 
 					// Comment-202511102 applies.
+				}
+
+				// #endregion
+				// #region ETH, CST, CS NFTs For Main Prize Beneficiary
+
+				{
+					-- cosmicSignatureTokenMintSpecIndex_;
+					// #enable_asserts assert(cosmicSignatureTokenMintSpecIndex_ == cosmicSignatureTokenMintSpecs_.length - 2);
+					ICosmicSignatureToken.MintSpec memory cosmicSignatureTokenMintSpec_ = cosmicSignatureTokenMintSpecs_[cosmicSignatureTokenMintSpecIndex_];
+					// #enable_asserts assert(cosmicSignatureTokenMintSpec_.account == _msgSender());
+					// #enable_asserts assert(cosmicSignatureTokenMintSpec_.value == cstPrizeAmount);
+					// #enable_asserts assert(mainPrizeNumCosmicSignatureNfts > 0);
+					// #enable_asserts assert(cosmicSignatureNftOwnerAddresses_.length - cosmicSignatureTokenMintSpecIndex_ == mainPrizeNumCosmicSignatureNfts);
+					// #enable_asserts uint256 testingRandomNumber_ = RandomNumberHelpers.generateRandomNumber(randomNumberSeedWrapper_.value ^ 0xf31b8a99e26873fa8f00ea66784b5282292f4eb27ac79baa2caf1f7efd2b0e8a);
+					// #enable_asserts assert(cosmicSignatureNftOwnerAddresses_[cosmicSignatureTokenMintSpecIndex_ + testingRandomNumber_ % mainPrizeNumCosmicSignatureNfts] == _msgSender());
+					cosmicSignatureNftId_ = firstCosmicSignatureNftId_ + cosmicSignatureTokenMintSpecIndex_;
+					// todo-0 Tell Nick that this event has been reordered and its signature has changed.
+					emit MainPrizeClaimed(
+						roundNum,
+						_msgSender(),
+						mainEthPrizeAmount_,
+						cosmicSignatureTokenMintSpec_.value,
+						cosmicSignatureNftId_,
+						cosmicSignatureNftOwnerAddresses_.length - cosmicSignatureTokenMintSpecIndex_,
+						timeoutTimeToWithdrawSecondaryPrizes_
+					);
 				}
 
 				// #endregion
@@ -450,53 +491,33 @@ abstract contract MainPrizeV3 is
 				// #endregion
 				// #region CST, CS NFT For The Last CST Bidder
 
-				if (cosmicSignatureTokenMintSpecIndex_ > 1) {
-					// #enable_asserts assert(cosmicSignatureTokenMintSpecIndex_ == 2);
+				if (cosmicSignatureTokenMintSpecIndex_ > 0) {
+					// #enable_asserts assert(cosmicSignatureTokenMintSpecIndex_ == 1);
 					// #enable_asserts assert(lastCstBidderAddress != address(0));
 					// -- cosmicSignatureTokenMintSpecIndex_;
-					ICosmicSignatureToken.MintSpec memory cosmicSignatureTokenMintSpec_ = cosmicSignatureTokenMintSpecs_[1];
+					ICosmicSignatureToken.MintSpec memory cosmicSignatureTokenMintSpec_ = cosmicSignatureTokenMintSpecs_[0];
 					// #enable_asserts assert(cosmicSignatureTokenMintSpec_.account == lastCstBidderAddress);
 					// #enable_asserts assert(cosmicSignatureTokenMintSpec_.value == cstPrizeAmount);
-					// #enable_asserts assert(cosmicSignatureNftOwnerAddresses_[1] == lastCstBidderAddress);
-					-- cosmicSignatureNftId_;
+					// #enable_asserts assert(cosmicSignatureNftOwnerAddresses_[0] == lastCstBidderAddress);
+					// -- cosmicSignatureNftId_;
+					// #enable_asserts assert(cosmicSignatureNftId_ == firstCosmicSignatureNftId_ + 1);
 					emit LastCstBidderPrizePaid(
 						roundNum,
 						cosmicSignatureTokenMintSpec_.account,
 						cosmicSignatureTokenMintSpec_.value,
-						cosmicSignatureNftId_
+						firstCosmicSignatureNftId_
 					);
 				} else {
-					// #enable_asserts assert(cosmicSignatureTokenMintSpecIndex_ == 1);
+					// #enable_asserts assert(cosmicSignatureTokenMintSpecIndex_ == 0);
 					// #enable_asserts assert(lastCstBidderAddress == address(0));
+					// #enable_asserts assert(cosmicSignatureNftId_ == firstCosmicSignatureNftId_);
 				}
 
 				// #endregion
-				// #region ETH, CST, CS NFT For Main Prize Beneficiary
-
-				{
-					// // #enable_asserts assert(cosmicSignatureTokenMintSpecIndex_ == ???);
-					// -- cosmicSignatureTokenMintSpecIndex_;
-					ICosmicSignatureToken.MintSpec memory cosmicSignatureTokenMintSpec_ = cosmicSignatureTokenMintSpecs_[0];
-					// #enable_asserts assert(cosmicSignatureTokenMintSpec_.account == _msgSender());
-					// #enable_asserts assert(cosmicSignatureTokenMintSpec_.value == cstPrizeAmount);
-					// #enable_asserts assert(cosmicSignatureNftOwnerAddresses_[0] == _msgSender());
-					// -- cosmicSignatureNftId_;
-					// #enable_asserts assert(cosmicSignatureNftId_ == firstCosmicSignatureNftId_ + 1);
-					emit MainPrizeClaimed(
-						roundNum,
-						_msgSender(),
-						mainEthPrizeAmount_,
-						cosmicSignatureTokenMintSpec_.value,
-						firstCosmicSignatureNftId_,
-						timeoutTimeToWithdrawSecondaryPrizes_
-					);
-				}
-
-				// #endregion
-				// #region
+				// #region //
 
 				// // #enable_asserts assert(cosmicSignatureTokenMintSpecIndex_ == 0);
-				// #enable_asserts assert(cosmicSignatureNftId_ == firstCosmicSignatureNftId_ + 1);
+				// // #enable_asserts assert(cosmicSignatureNftId_ == firstCosmicSignatureNftId_ + 1);
 
 				// #endregion
 			}

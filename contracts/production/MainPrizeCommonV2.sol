@@ -2,14 +2,14 @@
 pragma solidity =0.8.34;
 
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
-import { IMainPrizeCommon } from "./interfaces/IMainPrizeCommon.sol";
 import { CosmicSignatureGameStorageV2Base } from "./CosmicSignatureGameStorageV2Base.sol";
 import { ISystemEventsV2 } from "./interfaces/ISystemEventsV2.sol";
+import { IMainPrizeCommon } from "./interfaces/IMainPrizeCommon.sol";
 
 abstract contract MainPrizeCommonV2 is
-	IMainPrizeCommon,
 	CosmicSignatureGameStorageV2Base,
-	ISystemEventsV2 {
+	ISystemEventsV2,
+	IMainPrizeCommon {
 	function getInitialDurationUntilMainPrize() public view override returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked

@@ -7,11 +7,21 @@ pragma solidity =0.8.34;
 // #region
 
 // // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
+import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
+// import { OwnableUpgradeableWithReservedStorageGaps } from "./OwnableUpgradeableWithReservedStorageGaps.sol";
+// import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
-import { MainPrizeV2 } from "./MainPrizeV2.sol";
-import { CosmicSignatureGameV2 } from "./CosmicSignatureGameV2.sol";
+import { AddressValidator } from "./AddressValidator.sol";
 import { CosmicSignatureGameStorageV3 } from "./CosmicSignatureGameStorageV3.sol";
+// import { BiddingCommonV2 } from "./BiddingCommonV2.sol";
+import { CosmicSignatureGameV2Base } from "./CosmicSignatureGameV2Base.sol";
+import { MainPrizeCommonV2 } from "./MainPrizeCommonV2.sol";
 import { SystemManagementV3 } from "./SystemManagementV3.sol";
+import { EthDonationsV2 } from "./EthDonationsV2.sol";
+import { NftDonationsV2 } from "./NftDonationsV2.sol";
+import { BidStatisticsV2 } from "./BidStatisticsV2.sol";
+import { BiddingV2 } from "./BiddingV2.sol";
+import { SecondaryPrizesV2 } from "./SecondaryPrizesV2.sol";
 import { MainPrizeV3 } from "./MainPrizeV3.sol";
 
 // #endregion
@@ -19,16 +29,32 @@ import { MainPrizeV3 } from "./MainPrizeV3.sol";
 
 /// @custom:oz-upgrades-unsafe-allow missing-initializer
 contract CosmicSignatureGameV3 is
-	CosmicSignatureGameV2,
+	ReentrancyGuardTransientUpgradeable,
+	// OwnableUpgradeableWithReservedStorageGaps,
+	// UUPSUpgradeable,
+	AddressValidator,
 	CosmicSignatureGameStorageV3,
+	// BiddingCommonV2,
+	CosmicSignatureGameV2Base,
+	MainPrizeCommonV2,
 	SystemManagementV3,
+	EthDonationsV2,
+	NftDonationsV2,
+	BidStatisticsV2,
+	BiddingV2,
+	SecondaryPrizesV2,
 	MainPrizeV3 {
+	// #region Data.
+
+	uint256 private constant _CONTRACT_VERSION_NUMBER = 3;
+
+	// #endregion
 	// #region `reinitialize`
 
 	/// @dev Comment-202606128 applies
 	/// Comment-202607079 applies.
 	/// Comment-202606084 relates and/or applies.
-	function reinitialize() external override virtual /*onlyOwner*/ _onlyNonFirstRound() _onlyIfPrevVersionWasInitialized() reinitializer(uint64(3)) {
+	function reinitialize() external override /*virtual*/ /*onlyOwner*/ _onlyNonFirstRound() _onlyIfPrevVersionWasInitialized() reinitializer(uint64(_CONTRACT_VERSION_NUMBER)) {
 		// // #enable_asserts // #disable_smtchecker console.log("CosmicSignatureGameV3.reinitialize");
 
 		mainPrizeNumCosmicSignatureNfts = CosmicSignatureConstants.DEFAULT_MAIN_PRIZE_NUM_COSMIC_SIGNATURE_NFTS;
@@ -37,21 +63,14 @@ contract CosmicSignatureGameV3 is
 	// #endregion
 	// #region `_checkIfPrevVersionWasInitialized`
 
-	function _checkIfPrevVersionWasInitialized() internal override virtual view {
+	function _checkIfPrevVersionWasInitialized() internal override /*virtual*/ view {
 		// Comment-202605294 applies.
-		// #enable_asserts bool isSuccess_ = _getInitializedVersion() == uint64(2);
+		// #enable_asserts bool isSuccess_ = _getInitializedVersion() == uint64(_CONTRACT_VERSION_NUMBER - 1);
 		// #enable_asserts assert(isSuccess_);
 
 		// if ( ! isSuccess_ ) {
 		// 	revert InvalidInitialization();
 		// }
-	}
-
-	// #endregion
-	// #region Overrides Required By Solidity
-
-	function _distributePrizes() internal override (MainPrizeV2, MainPrizeV3) virtual {
-		super._distributePrizes();
 	}
 
 	// #endregion

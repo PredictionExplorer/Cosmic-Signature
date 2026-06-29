@@ -50,7 +50,7 @@ The rest of this document lists prizes from groups 1 and 2.
 |----------------|-------------|--------------|----------------|--------|
 | Main Prize Winner (Last Bidder) | Main ETH Prize | 1 | `gameEthBalance * mainEthPrizeAmountPercentage / 100` |  |
 |  | CST | 1 | `cstPrizeAmount` |  |
-|  | Cosmic Signature NFT | 1 | 1 |  |
+|  | Cosmic Signature NFT | 1 | `mainPrizeNumCosmicSignatureNfts` |  |
 |  |  |  |  |  |
 | Last CST Bidder | CST | 0 or 1 | `cstPrizeAmount` | If nobody placed a CST bid, nobody would get this prize. |
 |  | Cosmic Signature NFT | 0 or 1 | 1 | If nobody placed a CST bid, nobody would get this prize. |
@@ -96,7 +96,7 @@ The rest of this document lists prizes from groups 1 and 2.
 	- `MarketingWallet`
 
 - CS NFT
-	- Main Prize Winner (Last Bidder)
+	- Main Prize Winner (Last Bidder) (multiple prizes)
 	- Last CST Bidder (not guaranteed to exist)
 	- Endurance Champion
 	- Chrono-Warrior

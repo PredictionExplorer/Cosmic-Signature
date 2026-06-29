@@ -2,14 +2,14 @@
 pragma solidity =0.8.34;
 
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
-import { IBiddingCommon } from "./interfaces/IBiddingCommon.sol";
 import { CosmicSignatureGameStorageV2Base } from "./CosmicSignatureGameStorageV2Base.sol";
 import { ISystemEventsV2 } from "./interfaces/ISystemEventsV2.sol";
+import { IBiddingCommon } from "./interfaces/IBiddingCommon.sol";
 
 abstract contract BiddingCommonV2 is
-	IBiddingCommon,
 	CosmicSignatureGameStorageV2Base,
-	ISystemEventsV2 {
+	ISystemEventsV2,
+	IBiddingCommon {
 	modifier _onlyNonFirstRound() {
 		_checkNonFirstRound();
 		_;
