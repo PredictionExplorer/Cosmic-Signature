@@ -312,7 +312,7 @@ abstract contract BiddingV2 is
 	// #endregion
 	// #region `getNextEthBidPriceAdvanced`
 
-	function getNextEthBidPriceAdvanced(int256 currentTimeOffset_) public view override returns (uint256) {
+	function getNextEthBidPriceAdvanced(int256 currentTimeOffset_) public view override virtual returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -527,7 +527,7 @@ abstract contract BiddingV2 is
 	// #endregion
 	// #region `getNextCstBidPriceAdvanced`
 
-	function getNextCstBidPriceAdvanced(int256 currentTimeOffset_) public view override returns (uint256) {
+	function getNextCstBidPriceAdvanced(int256 currentTimeOffset_) public view override virtual returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */

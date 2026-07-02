@@ -100,6 +100,28 @@ library CosmicSignatureConstants {
 	/// Default `cstDutchAuctionBeginningBidPriceMinLimit`.
 	uint256 internal constant DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT = 200 ether;
 
+	/// @dev
+	/// [Comment-202607117]
+	/// Relevant logic is prototyped and explained near Comment-202607119.
+	/// [/Comment-202607117]
+	uint256 internal constant INITIAL_ROUND_LATE_BID_DURATION = 20 minutes;
+
+	/// @notice Default `roundLateBidDurationDivisor`.
+	/// @dev Comment-202607117 applies.
+	/// todo-0 test that this is 3_000_000
+	uint256 internal constant DEFAULT_ROUND_LATE_BID_DURATION_DIVISOR = (INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND + INITIAL_ROUND_LATE_BID_DURATION / 2) / INITIAL_ROUND_LATE_BID_DURATION;
+
+	/// @notice Default `roundLateBidPricePremiumAmountBaseMultiplier`.
+	/// @dev Comment-202607117 applies.
+	uint256 internal constant DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_BASE_MULTIPLIER = 3567993 << ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_RESOLUTION_EXPONENT;
+
+	/// @dev Comment-202607117 applies.
+	uint256 internal constant ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_RESOLUTION_EXPONENT = 13;
+
+	/// @notice Default `roundLateBidPricePremiumAmountExponent`.
+	/// @dev Comment-202607117 applies.
+	uint256 internal constant DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_EXPONENT = 8;
+
 	/// @notice Default `bidMessageLengthMaxLimit`.
 	/// Comment-202409143 applies.
 	uint256 internal constant DEFAULT_BID_MESSAGE_LENGTH_MAX_LIMIT = 280;

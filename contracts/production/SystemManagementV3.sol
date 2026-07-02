@@ -11,6 +11,21 @@ abstract contract SystemManagementV3 is
 	SystemManagementV2,
 	ISystemEventsV3,
 	ISystemManagementV3 {
+	function setRoundLateBidDurationDivisor(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
+		roundLateBidDurationDivisor = newValue_;
+		emit RoundLateBidDurationDivisorChanged(newValue_);
+	}
+
+	function setRoundLateBidPricePremiumAmountBaseMultiplier(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
+		roundLateBidPricePremiumAmountBaseMultiplier = newValue_;
+		emit RoundLateBidPricePremiumAmountBaseMultiplierChanged(newValue_);
+	}
+
+	function setRoundLateBidPricePremiumAmountExponent(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
+		roundLateBidPricePremiumAmountExponent = newValue_;
+		emit RoundLateBidPricePremiumAmountExponentChanged(newValue_);
+	}
+
 	function setMainPrizeNumCosmicSignatureNfts(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
 		mainPrizeNumCosmicSignatureNfts = newValue_;
 		emit MainPrizeNumCosmicSignatureNftsChanged(newValue_);

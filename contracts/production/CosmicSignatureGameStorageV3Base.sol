@@ -14,7 +14,21 @@ import { CosmicSignatureGameStorageV2Base } from "./CosmicSignatureGameStorageV2
 abstract contract CosmicSignatureGameStorageV3Base is CosmicSignatureGameStorageV2Base {
 	// #region Bidding V3
 
-	// todo-0 Any new variables?
+	/// @notice This controls the duration before `mainPrizeTime` during which a bid price is to be increased.
+	/// The increase/premium accelerates exponentially as the current time approaches `mainPrizeTime`.
+	/// Comment-202501025 applies.
+	/// Comment-202508288 relates.
+	/// Comment-202411064 applies.
+	/// @dev Comment-202607117 applies.
+	uint256 public roundLateBidDurationDivisor;
+
+	/// @notice Comment-202411064 applies.
+	/// @dev Comment-202607117 applies.
+	uint256 public roundLateBidPricePremiumAmountBaseMultiplier;
+
+	/// @notice Comment-202411064 applies.
+	/// @dev Comment-202607117 applies.
+	uint256 public roundLateBidPricePremiumAmountExponent;
 
 	// #endregion
 	// #region Main Prize V3
@@ -24,8 +38,6 @@ abstract contract CosmicSignatureGameStorageV3Base is CosmicSignatureGameStorage
 	/// todo-0 When using this and maybe some other new variables, assert that it's positive.
 	/// todo-ai-0 Test different random values, like 1 through 5.
 	uint256 public mainPrizeNumCosmicSignatureNfts;
-
-	// todo-0 Any new variables?
 
 	// #endregion
 }

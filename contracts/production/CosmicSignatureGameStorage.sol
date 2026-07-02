@@ -229,8 +229,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [Comment-202501025]
 	/// We divide `mainPrizeTimeIncrementInMicroSeconds` by this.
 	/// [/Comment-202501025]
-	/// Comment-202411064 applies.
 	/// Comment-202508288 relates.
+	/// Comment-202411064 applies.
 	/// @dev Comment-202606057 relates.
 	uint256 public cstDutchAuctionDurationDivisor;
 
