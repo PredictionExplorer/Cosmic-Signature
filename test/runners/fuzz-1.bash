@@ -19,10 +19,10 @@
 	RunFuzz() {
 		# $1 = ENABLE_HARDHAT_PREPROCESSOR, $2 = ENABLE_ASSERTS, $3 = ENABLE_SMTCHECKER, $4 = label
 		if [ ${OutcomeCode} -lt 2 ]; then
-			echo ""
-			echo "=================================================================="
+			echo ''
+			echo '=================================================================='
 			echo "  FUZZ RUN: ${4}"
-			echo "=================================================================="
+			echo '=================================================================='
 			export ENABLE_HARDHAT_PREPROCESSOR="${1}"
 			export ENABLE_ASSERTS="${2}"
 			export ENABLE_SMTCHECKER="${3}"
@@ -65,10 +65,10 @@
 		Index=0
 		while [ ${Index} -lt ${FUZZ_MULTI} ] && [ ${OutcomeCode} -lt 2 ]; do
 			Index=$((Index + 1))
-			echo ""
-			echo "=================================================================="
+			echo ''
+			echo '=================================================================='
 			echo "  FUZZ SOAK RUN ${Index}/${FUZZ_MULTI} (random seed)"
-			echo "=================================================================="
+			echo '=================================================================='
 			'npx' 'hardhat' 'test' 'test/tests-src/FuzzTest.js'
 			if [ $? -ne 0 ]; then
 				read '-r' '-n' '1' '-s' '-p' "Error. Fuzz soak run ${Index} failed (see the printed FUZZ_SEED to reproduce). Press any key to finish."
@@ -78,7 +78,7 @@
 	fi
 
 	if [ ${OutcomeCode} -lt 2 ]; then
-		echo ""
-		echo "All fuzz runs passed."
+		echo ''
+		echo 'All fuzz runs passed.'
 	fi
 )

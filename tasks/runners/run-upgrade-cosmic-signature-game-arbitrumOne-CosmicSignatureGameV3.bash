@@ -28,7 +28,7 @@
 	fi
 
 	if [ ${OutcomeCode} -lt 2 ]; then
-		'npx' 'hardhat' 'upgrade-cosmic-signature-game' '--upgradeconfigfilepath' '../config/upgrade-cosmic-signature-game-config-arbitrumOne-CosmicSignatureGameV2.json' '--network' 'arbitrumOne'
+		'npx' 'hardhat' 'upgrade-cosmic-signature-game' '--upgradeconfigfilepath' '../config/upgrade-cosmic-signature-game-config-arbitrumOne-CosmicSignatureGameV3.json' '--network' 'arbitrumOne'
 		if [ $? -ne 0 ]; then
 			read '-r' '-n' '1' '-s' '-p' 'Error. The upgrade-cosmic-signature-game task failed. Press any key to finish.'
 			OutcomeCode=2
@@ -36,3 +36,4 @@
 		echo
 	fi
 )
+	

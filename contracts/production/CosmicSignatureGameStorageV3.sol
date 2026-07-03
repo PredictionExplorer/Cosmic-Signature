@@ -18,7 +18,7 @@ abstract contract CosmicSignatureGameStorageV3 is CosmicSignatureGameStorageV3Ba
 	/// Comment-202412148 applies.
 	// solhint-disable-next-line var-name-mixedcase
 	// todo-0 Subtract more from this array length?
-	uint256[(1 << 30) - 1 - 1] private __gap_persistent;
+	uint256[(1 << 30) - 1 - 4] private __gap_persistent;
 
 	// todo-1 Transient storage is not yet supported for reference types.
 	/// @dev Comment-202412142 applies.

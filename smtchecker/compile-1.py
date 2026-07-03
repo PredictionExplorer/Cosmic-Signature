@@ -27,12 +27,12 @@ def main():
     os.environ['ENABLE_ASSERTS'] = 'true'
     os.environ['ENABLE_SMTCHECKER'] = '2'
 
-    # Run Hardhat clean commands
-    # Comment-202409012 applies.
-    # Slither executes the cleans in this order. We do the same.
-    if not run_command('npx hardhat clean && npx hardhat clean --global'):
-        print('Error 202409015.')
-        return 2
+    # # Run Hardhat clean commands.
+    # # Comment-202409012 applies.
+    # # But this appears to be unnecessary, given that we are going to force-compile them.
+    # if not run_command('npx hardhat clean && npx hardhat clean --global'):
+    #     print('Error 202409015.')
+    #     return 2
 
     # [Comment-202409014]
     # This folder name exists in multiple places.
@@ -46,7 +46,10 @@ def main():
 
     # Run Hardhat compile
     start_time = time.time()
+
+    # Comment-202409012 applies.
     result = run_command(f'npx hardhat compile --force >> "{output_file_name}" 2>&1')
+
     end_time = time.time()
 
     print(f"Compilation took {end_time - start_time:.2f} seconds")

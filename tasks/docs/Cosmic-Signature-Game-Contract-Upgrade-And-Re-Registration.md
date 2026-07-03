@@ -56,13 +56,13 @@ Make sure `deployerPrivateKey_<network-name>` matches the current contract owner
 
 - See respective section in `Cosmic-Signature-Contracts-Deployment-And-Registration.md`.
 
-- You might want to test the initial deployment of all contracts and then upgrading the game contract to `CosmicSignatureGameV2` and then to `CosmicSignatureGameOpenBid`. This is just for a test. It would be incorrect to do it in the production, event if `CosmicSignatureGameOpenBid` was a real useful contract. See Comment-202606084 and Comment-202606126 for details.\
-OpenZeppelin would actually disallow the upgrade from `CosmicSignatureGameV2` to `CosmicSignatureGameOpenBid`. Storage check would fail. Therefore, in `upgrade-cosmic-signature-game-config-<network-name>-CosmicSignatureGameOpenBid.json` you must temporarily set `unsafeSkipStorageCheck` to `true`.
+- You might want to test the initial deployment of all contracts and then upgrading the game contract to `CosmicSignatureGameV2`, `CosmicSignatureGameV3`, ..., and then to `CosmicSignatureGameOpenBid`. This is just for a test. It would be incorrect to do it in the production, even if `CosmicSignatureGameOpenBid` was a real useful contract. See Comment-202606084 and Comment-202606126 for details.\
+OpenZeppelin would actually disallow the upgrade from V2+ to `CosmicSignatureGameOpenBid`. Storage check would fail. Therefore, in `upgrade-cosmic-signature-game-config-<network-name>-CosmicSignatureGameOpenBid.json` you must temporarily set `unsafeSkipStorageCheck` to `true`.
 
 - I made 2 changes in V1's `CosmicSignatureGameStorage`.\
 (1) I renamed `cstRewardAmountForBidding` to `bidCstRewardAmount` (which I further renamed in V2).\
-(2) I reduced `__gap_persistent` length, because OpenZeppelin's upgradeable contract validation logic executed by `upgradeProxy` was crashing due to an overflow. Storage layout remains compatible because the given storage variable is the last. Testing with `CosmicSignatureGameOpenBid` has not run into this case because it added a storage variable after the gap.\
-The old state of affairs still exists in the tracking info stored in `.openzeppelin`. Therefore, when upgrading to V2 in the production, OpenZeppelin's upgradeable contract validation logic would complain. To silence it, before upgrading, in `../config/upgrade-cosmic-signature-game-config-arbitrumOne-CosmicSignatureGameV2.json`, temporarily set `unsafeAllowRenames` and `unsafeSkipStorageCheck` to `true`.
+(2) I reduced `__gap_persistent` length a few orders of magnitude, because OpenZeppelin's upgradeable contract validation logic executed by `upgradeProxy` was crashing due to an overflow. But storage layout remains compatible because the given storage variable is the last. Testing with `CosmicSignatureGameOpenBid` has not run into this case because it added a storage variable after the gap (which is a violation of Comment-202412148).\
+The problem is that the initially deployed `CosmicSignatureGame` ABI still exists in the tracking info stored in `.openzeppelin`. Therefore, when upgrading to V2 in the production, OpenZeppelin's upgradeable contract validation logic will complain. To silence it, before upgrading, in `../config/upgrade-cosmic-signature-game-config-arbitrumOne-CosmicSignatureGameV2.json`, temporarily set `unsafeAllowRenames` and `unsafeSkipStorageCheck` to `true`.
 
 #### Afterwards
 

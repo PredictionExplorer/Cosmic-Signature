@@ -1,4 +1,9 @@
+// #region
+
 "use strict";
+
+// #endregion
+// #region
 
 const { describe, it } = require("mocha");
 const { expect } = require("chai");
@@ -7,19 +12,22 @@ const hre = require("hardhat");
 const { ENABLE_ASSERTS, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
 
+// #endregion
+// #region `describe`
+
 describe("CosmicSignatureGame-3", function () {
 	it("Smoke-test", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		expect(await contracts_.cosmicSignatureGameImplementation.owner()).equal(hre.ethers.ZeroAddress);
-		await expect(contracts_.cosmicSignatureGameImplementation.initialize(contracts_.ownerSigner.address)).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "InvalidInitialization");
-		await expect(contracts_.cosmicSignatureGameImplementation.connect(contracts_.ownerSigner).initialize(contracts_.ownerSigner.address)).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "InvalidInitialization");
+		await expect(contracts_.cosmicSignatureGameImplementation.initialize(contracts_.ownerSigner.address)).revertedWithCustomError(contracts_.cosmicSignatureGameImplementation, "InvalidInitialization");
+		await expect(contracts_.cosmicSignatureGameImplementation.connect(contracts_.ownerSigner).initialize(contracts_.ownerSigner.address)).revertedWithCustomError(contracts_.cosmicSignatureGameImplementation, "InvalidInitialization");
 		expect(await contracts_.cosmicSignatureGameProxy.owner()).equal(contracts_.ownerSigner.address);
 		await expect(contracts_.cosmicSignatureGameProxy.initialize(contracts_.ownerSigner.address)).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "InvalidInitialization");
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner).initialize(contracts_.ownerSigner.address)).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "InvalidInitialization");
 	});
 
-	it("CosmicSignatureGame upgrade to CosmicSignatureGameOpenBid", async function () {
+	it("Upgrading CosmicSignatureGame ==> CosmicSignatureGameOpenBid", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		const cosmicSignatureGameOpenBidFactory_ =
@@ -39,6 +47,7 @@ describe("CosmicSignatureGame-3", function () {
 		expect(cosmicSignatureGameOpenBidImplementationAddress_).not.equal(contracts_.cosmicSignatureGameImplementationAddress);
 		const cosmicSignatureGameOpenBidImplementation_ = cosmicSignatureGameOpenBidFactory_.attach(cosmicSignatureGameOpenBidImplementationAddress_);
 		// await expect(cosmicSignatureGameOpenBidProxy_.connect(contracts_.ownerSigner).initialize(contracts_.ownerSigner.address)).revertedWithCustomError(cosmicSignatureGameOpenBidProxy_, "InvalidInitialization");
+		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner).initialize(contracts_.ownerSigner.address)).revertedWithoutReason();
 		await expect(cosmicSignatureGameOpenBidProxy_.connect(contracts_.ownerSigner).reinitialize()).revertedWithCustomError(cosmicSignatureGameOpenBidProxy_, "InvalidInitialization");
 		// await expect(cosmicSignatureGameOpenBidImplementation_.connect(contracts_.ownerSigner).initialize(contracts_.ownerSigner.address)).revertedWithCustomError(cosmicSignatureGameOpenBidImplementation_, "InvalidInitialization");
 		await expect(cosmicSignatureGameOpenBidImplementation_.connect(contracts_.ownerSigner).reinitialize()).revertedWithCustomError(cosmicSignatureGameOpenBidImplementation_, "InvalidInitialization");
@@ -49,14 +58,24 @@ describe("CosmicSignatureGame-3", function () {
 		expect(await cosmicSignatureGameOpenBidImplementation_.timesEthBidPrice()).equal(0n);
 	});
 
-	it("CosmicSignatureGame upgrade to CosmicSignatureGameV2, and then to CosmicSignatureGameOpenBid", async function () {
+	it("Upgrading CosmicSignatureGame ==> CosmicSignatureGameV2 ==> CosmicSignatureGameV3 ==> CosmicSignatureGameOpenBid", async function () {
+		// #region
+
 		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 
-		await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEth(-1n, "", {value: 10n ** 18n,}));
-		const mainPrizeTime_ = await contracts_.cosmicSignatureGameProxy.mainPrizeTime();
-		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(mainPrizeTime_),]);
-		// await hre.ethers.provider.send("evm_mine");
-		await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).claimMainPrize());
+		// #endregion
+		// #region
+
+		{
+			await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEth(-1n, "", {value: 10n ** 18n,}));
+			const mainPrizeTime_ = await contracts_.cosmicSignatureGameProxy.mainPrizeTime();
+			await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(mainPrizeTime_),]);
+			// await hre.ethers.provider.send("evm_mine");
+			await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).claimMainPrize());
+		}
+
+		// #endregion
+		// #region
 
 		const cosmicSignatureGameV2Factory_ =
 			await hre.ethers.getContractFactory("CosmicSignatureGameV2", contracts_.ownerSigner);
@@ -75,6 +94,7 @@ describe("CosmicSignatureGame-3", function () {
 		expect(cosmicSignatureGameV2ImplementationAddress_).not.equal(contracts_.cosmicSignatureGameImplementationAddress);
 		const cosmicSignatureGameV2Implementation_ = cosmicSignatureGameV2Factory_.attach(cosmicSignatureGameV2ImplementationAddress_);
 		// await expect(cosmicSignatureGameV2Proxy_.connect(contracts_.ownerSigner).initialize(contracts_.ownerSigner.address)).revertedWithCustomError(cosmicSignatureGameV2Proxy_, "InvalidInitialization");
+		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner).initialize(contracts_.ownerSigner.address)).revertedWithoutReason();
 		{
 			/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 			const transactionResponsePromise_ = cosmicSignatureGameV2Proxy_.connect(contracts_.ownerSigner).reinitialize();
@@ -84,7 +104,7 @@ describe("CosmicSignatureGame-3", function () {
 				await transactionResponsePromiseAssertion_.revertedWithPanic(0x1);
 			} else {
 				// `reinitializer`.
-				await transactionResponsePromiseAssertion_.revertedWithCustomError(cosmicSignatureGameV2Implementation_, "InvalidInitialization");
+				await transactionResponsePromiseAssertion_.revertedWithCustomError(cosmicSignatureGameV2Proxy_, "InvalidInitialization");
 			}
 		}
 		// await expect(cosmicSignatureGameV2Implementation_.connect(contracts_.ownerSigner).initialize(contracts_.ownerSigner.address)).revertedWithCustomError(cosmicSignatureGameV2Implementation_, "InvalidInitialization");
@@ -105,11 +125,93 @@ describe("CosmicSignatureGame-3", function () {
 		expect(await cosmicSignatureGameV2Implementation_.owner()).equal(hre.ethers.ZeroAddress);
 		expect(await cosmicSignatureGameV2Implementation_.cstDutchAuctionDurationChangeDivisor()).equal(0n);
 
+		// Comment-202606139 applies.
+		const cosmicSignatureGameV2ImplementationByteCodeSize_ =
+			// cosmicSignatureGameV2Factory.bytecode.length / 2 - 1;
+			(await hre.ethers.provider.getCode(cosmicSignatureGameV2ImplementationAddress_)).length / 2 - 1;
+		expect(cosmicSignatureGameV2ImplementationByteCodeSize_).greaterThanOrEqual(21 * 1024);
+		console.info(
+			"%s",
+			"CosmicSignatureGameV2 implementation bytecode size is " +
+			cosmicSignatureGameV2ImplementationByteCodeSize_.toString() +
+			" bytes, which is less than the maximum allowed by " +
+			(24 * 1024 - cosmicSignatureGameV2ImplementationByteCodeSize_).toString() +
+			"."
+		);
+
+		// #endregion
+		// #region
+
+		const cosmicSignatureGameV3Factory_ =
+			await hre.ethers.getContractFactory("CosmicSignatureGameV3", contracts_.ownerSigner);
+		const cosmicSignatureGameV3Proxy_ =
+			await hre.upgrades.upgradeProxy(
+				contracts_.cosmicSignatureGameProxy,
+				cosmicSignatureGameV3Factory_,
+				{
+					kind: "uups",
+					call: "reinitialize",
+				}
+			);
+		// await cosmicSignatureGameV3Proxy_.waitForDeployment();
+		expect(await cosmicSignatureGameV3Proxy_.getAddress()).equal(contracts_.cosmicSignatureGameProxyAddress);
+		const cosmicSignatureGameV3ImplementationAddress_ = await hre.upgrades.erc1967.getImplementationAddress(contracts_.cosmicSignatureGameProxyAddress);
+		expect(cosmicSignatureGameV3ImplementationAddress_).not.equal(cosmicSignatureGameV2ImplementationAddress_);
+		const cosmicSignatureGameV3Implementation_ = cosmicSignatureGameV3Factory_.attach(cosmicSignatureGameV3ImplementationAddress_);
+		// await expect(cosmicSignatureGameV3Proxy_.connect(contracts_.ownerSigner).initialize(contracts_.ownerSigner.address)).revertedWithCustomError(cosmicSignatureGameV3Proxy_, "InvalidInitialization");
+		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner).initialize(contracts_.ownerSigner.address)).revertedWithoutReason();
+		{
+			/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
+			const transactionResponsePromise_ = cosmicSignatureGameV3Proxy_.connect(contracts_.ownerSigner).reinitialize();
+			const transactionResponsePromiseAssertion_ = expect(transactionResponsePromise_);
+			if (ENABLE_ASSERTS) {
+				// `_onlyIfPrevVersionWasInitialized`.
+				await transactionResponsePromiseAssertion_.revertedWithPanic(0x1);
+			} else {
+				// `reinitializer`.
+				await transactionResponsePromiseAssertion_.revertedWithCustomError(cosmicSignatureGameV3Proxy_, "InvalidInitialization");
+			}
+		}
+		// await expect(cosmicSignatureGameV3Implementation_.connect(contracts_.ownerSigner).initialize(contracts_.ownerSigner.address)).revertedWithCustomError(cosmicSignatureGameV3Implementation_, "InvalidInitialization");
+		{
+			/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
+			const transactionResponsePromise_ = cosmicSignatureGameV3Implementation_.connect(contracts_.ownerSigner).reinitialize();
+			const transactionResponsePromiseAssertion_ = expect(transactionResponsePromise_);
+			if (ENABLE_ASSERTS) {
+				// `_onlyNonFirstRound`.
+				await transactionResponsePromiseAssertion_.revertedWithPanic(0x1);
+			} else {
+				await transactionResponsePromiseAssertion_.revertedWithCustomError(cosmicSignatureGameV3Implementation_, "InvalidInitialization");
+			}
+		}
+		expect(await cosmicSignatureGameV3Proxy_.mainPrizeNumCosmicSignatureNfts()).equal(3n);
+		await waitForTransactionReceipt(cosmicSignatureGameV3Proxy_.connect(contracts_.ownerSigner).setMainPrizeNumCosmicSignatureNfts(5n));
+		expect(await cosmicSignatureGameV3Proxy_.mainPrizeNumCosmicSignatureNfts()).equal(5n);
+		expect(await cosmicSignatureGameV3Implementation_.owner()).equal(hre.ethers.ZeroAddress);
+		expect(await cosmicSignatureGameV3Implementation_.mainPrizeNumCosmicSignatureNfts()).equal(0n);
+
+		// Comment-202606139 applies.
+		const cosmicSignatureGameV3ImplementationByteCodeSize_ =
+			// cosmicSignatureGameV3Factory.bytecode.length / 2 - 1;
+			(await hre.ethers.provider.getCode(cosmicSignatureGameV3ImplementationAddress_)).length / 2 - 1;
+		expect(cosmicSignatureGameV3ImplementationByteCodeSize_).greaterThanOrEqual(21 * 1024);
+		console.info(
+			"%s",
+			"CosmicSignatureGameV3 implementation bytecode size is " +
+			cosmicSignatureGameV3ImplementationByteCodeSize_.toString() +
+			" bytes, which is less than the maximum allowed by " +
+			(24 * 1024 - cosmicSignatureGameV3ImplementationByteCodeSize_).toString() +
+			"."
+		);
+
+		// #endregion
+		// #region
+
 		const cosmicSignatureGameOpenBidFactory_ =
 			await hre.ethers.getContractFactory("CosmicSignatureGameOpenBid", contracts_.ownerSigner);
 
 		// [Comment-202606126]
-		// `CosmicSignatureGameOpenBid` will not work correct after an upgrade from `CosmicSignatureGameV2`.
+		// `CosmicSignatureGameOpenBid` will not work correct after an upgrade from V2+.
 		// And `upgradeProxy` would not allow the upgrade, which is why we need `unsafeSkipStorageCheck`.
 		// It's OK as this is just a test.
 		// Comment-202606084 relates.
@@ -128,23 +230,10 @@ describe("CosmicSignatureGame-3", function () {
 		// await cosmicSignatureGameOpenBidProxy_.waitForDeployment();
 		expect(await cosmicSignatureGameOpenBidProxy_.getAddress()).equal(contracts_.cosmicSignatureGameProxyAddress);
 		const cosmicSignatureGameOpenBidImplementationAddress_ = await hre.upgrades.erc1967.getImplementationAddress(contracts_.cosmicSignatureGameProxyAddress);
-		expect(cosmicSignatureGameOpenBidImplementationAddress_).not.equal(contracts_.cosmicSignatureGameImplementationAddress);
-		expect(cosmicSignatureGameOpenBidImplementationAddress_).not.equal(cosmicSignatureGameV2ImplementationAddress_);
+		expect(cosmicSignatureGameOpenBidImplementationAddress_).not.equal(cosmicSignatureGameV3ImplementationAddress_);
 		expect(await cosmicSignatureGameOpenBidProxy_.timesEthBidPrice()).equal(3n);
 
-		// Comment-202606139 applies.
-		const cosmicSignatureGameV2ImplementationByteCodeSize_ =
-			// cosmicSignatureGameV2Factory.bytecode.length / 2 - 1;
-			(await hre.ethers.provider.getCode(cosmicSignatureGameV2ImplementationAddress_)).length / 2 - 1;
-		expect(cosmicSignatureGameV2ImplementationByteCodeSize_).greaterThanOrEqual(21 * 1024);
-		console.info(
-			"%s",
-			"CosmicSignatureGameV2 implementation bytecode size is " +
-			cosmicSignatureGameV2ImplementationByteCodeSize_.toString() +
-			" bytes, which is less than the maximum allowed by " +
-			(24 * 1024 - cosmicSignatureGameV2ImplementationByteCodeSize_).toString() +
-			"."
-		);
+		// #endregion
 	});
 
 	it("Unauthorized or incorrect CosmicSignatureGame upgrade attempts", async function () {
@@ -247,3 +336,5 @@ describe("CosmicSignatureGame-3", function () {
 		}
 	});
 });
+
+// #endregion
