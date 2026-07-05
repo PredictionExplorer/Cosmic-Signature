@@ -286,6 +286,13 @@ task("upgrade-cosmic-signature-game", "Upgrades the CosmicSignatureGame contract
 		throw errorObject;
 	}
 	console.info("%s", `Done. Report saved to "${upgradeConfigObject.reportFilePath}".${nodeOsModule.EOL}`);
+
+	// todo-ai-0 Add code to deploy the new `PrizesWallet`,
+	// todo-ai-0 log its address to the console,
+	// todo-ai-0 call a designated method on the game proxy contract to update the `prizesWallet` state variable.
+	// todo-ai-0 Log a reminder to the owner to update prizes wallet address in the report generated when deploying all contracts
+	// todo-ai-0 and on the web site.
+	// todo-ai-0 Leave the newly added code commented.
 })
 	.addParam("upgradeconfigfilepath", "Upgrade configuration file (JSON) path");
 
@@ -302,6 +309,10 @@ task("register-upgraded-cosmic-signature-game", "Verifies and registers a newly 
 		address: upgradeCosmicSignatureGameReportObject.newCosmicSignatureGameImplementationAddress,
 		// constructorArguments: [],
 	});
+
+	// todo-ai-0 Add code to register the newly deployed `PrizesWallet`.
+	// todo-ai-0 Hardcode its address. The owner will need to edit the address in the code before running the task.
+	// todo-ai-0 Leave the newly added code commented.
 
 	console.info("%s", `${nodeOsModule.EOL}Done.`);
 })
