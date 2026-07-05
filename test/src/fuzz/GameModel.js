@@ -647,7 +647,7 @@ class GameModel {
 // #endregion
 // #region
 
-// todo-ai-0 We don't need this constant. We should simply use `hre.ethers.ZeroAddress`.
+// todo-ai-0 We don't need this constant. We should simply import and use `hre.ethers.ZeroAddress`.
 const ZERO_ADDRESS = hre.ethers.ZeroAddress;
 
 module.exports = {

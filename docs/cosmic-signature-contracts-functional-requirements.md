@@ -10,7 +10,7 @@ This document goes a little bit beyond purely functional requirements. It's inte
 
 ### Contracts
 
-- `CosmicSignatureGame`. This is our main Game contract. Its main part (not inherited) is responsible for upgrading the contract. It inherits OpenZeppelin's `UUPSUpgradeable`. Besides, it inherits multiple abstract contracts listed below.
+- `CosmicSignatureGame`. This is our main Game contract, V1 of it. Its main part (not inherited) is responsible for initializing and upgrading the contract. It inherits OpenZeppelin's `UUPSUpgradeable`. Besides, it inherits multiple abstract contracts listed below.
 
 - `CosmicSignatureGame is CosmicSignatureGameStorage`. This contract contains all state variables that `CosmicSignatureGame` and the contracts that it inherits access.
 
@@ -30,21 +30,23 @@ This document goes a little bit beyond purely functional requirements. It's inte
 
 - `CosmicSignatureGame is MainPrize`. This contract supports claiming bidding round main prize.
 
+- `CosmicSignatureGameV2`, `CosmicSignatureGameV3`, and other V2 and V3 abstract contracts that the new Game contracts inherit from. These are further versions of the Game contract to upgrade to.
+
 - `CosmicSignatureToken`. The Official ERC-20 Token for the Cosmic Signature Ecosystem. Its symbol is CST. It's used by our DAO for voting power. Only the `CosmicSignatureGame` contract is permitted to mint and burn token amounts (although a token holder also has an option to burn own funds).
 
-- `RandomWalkNFT`. It's an ERC-721 NFT contract that has already been deployed. Its symbol is RWLK. It can be considered a third party contract that is not a part of this project, but it plays an important role. This contract does not need to be audited.
+- `RandomWalkNFT`. It's an ERC-721 NFT contract that was deployed a few years ago. Its symbol is RWLK. It can be considered a third party contract that is not a part of this project, but it plays an important role. This contract does not need to be audited.
 
 - `CosmicSignatureNft`. The Official ERC-721 NFT for the Cosmic Signature Ecosystem. Its symbol is COSMIC. Only the `CosmicSignatureGame` contract is permitted to mint new NFTs.
 
 - `PrizesWallet`. A wallet to hold the Cosmic Signature Game prizes and donations. It supports depositing ETH, donating third party ERC-20 token amounts and ERC-721 NFTs, and allows prize winners (and after a timeout anybody) to withdraw their prizes.
 
-- `DonatedTokenHolder`. This contract acts as an account holding all third party ERC-20 token balances donated during a particular bidding round.
+- `DonatedTokenHolder`. This contract acts as an account holding all third party ERC-20 token amounts donated during a particular bidding round.
 
 - `StakingWalletRandomWalkNft`. Staking Wallet for Random Walk NFTs. Supports random picking of staked NFTs.
 
 - `StakingWalletCosmicSignatureNft`. Staking Wallet for Cosmic Signature NFTs. It holds ETH to be distributed to stakers. It tracks the cumulative amount of ETH rewards earned by each staked NFT and pays it to the staker on NFT unstake.
 
-- `MarketingWallet`. This wallet holds CST funds and facilitates their distribution to fund marketing activities. The `CosmicSignatureGame` contract mints a configurable CST amount for this wallet at the end of each bidding round. Only the appointed by the DAO treasurer is permitted to transfer funds out of this wallet.
+- `MarketingWallet`. This wallet holds CST funds and facilitates their distribution to fund marketing activities, such as rewarding people for marketing the project on social media. The `CosmicSignatureGame` contract mints a configurable CST amount for this wallet at the end of each bidding round. Only the appointed by the DAO treasurer is permitted to transfer funds out of this wallet.
 
 - `CharityWallet`. This contract holds an ETH balance to be donated to charity. The DAO decides which charity to donate the funds to. `CosmicSignatureGame` deposits a configurable percentage of its ETH to this wallet at the end of each bidding round. As noted in Comment-202409273, this contract lets anybody to periodically transfer accumulated donations to the designated charity.
 
@@ -93,6 +95,10 @@ Every **CST bid price** is formed using a Dutch auction. The first CST Dutch auc
 The beginning CST bid price of round zero equals a configurable beginning minimum. Then over a configurable duration it declines lineraly down to zero. As soon as someone places a bid, the new beginning price is calculated as 2x of the paid price, but no lower than the same configurable beginning minimum. After each CST bid the Dutch auction repeats.\
 The beginning CST bid price of the first bid in a nonzero round equals beginning price of the second bid in the previous round.
 
+In V2+, each ETH bid reduces CST Dutch auction duration, while each CST bid increases it.
+
+In V3+, if someone bids within a configurable duration before `mainPrizeTime`, a premium is added to the bid price.
+
 Again, a Dutch auction is used for: (1) the first ETH bid price in a nonzero round; (2) each CST bid price, but with at least a floor beginning price. Round zero first ETH bid price is a constant. Any round non-first ETH bid price increases exponentially.
 
 ### Bid Monetary Effects
@@ -114,9 +120,11 @@ When another bid is placed, V1 calculaates `mainPrizeTime` as `max(mainPrizeTime
 
 - The first bid in a round is required to be ETH.
 
-- Each bid changes `mainPrizeTime`, as described in a separate section.
+- In V2+, each bid changes CST Dutch auction duration, as described in a separate section.
 
-- Each bid changes bid price, as described in a separate section.
+- Each bid changes the next bid price, as described in a separate section. In V2+, an ETH bid also affects the next CST bid price.
+
+- Each bid advances `mainPrizeTime`, as described in a separate section.
 
 - A given Random Walk NFT may be used for bidding only once.
 
@@ -134,9 +142,9 @@ There are designated storage variables to store the current Endurance Champion a
 
 ### Prizes
 
-Most prizes are awarded to multiple winners at the end of each round. Some winners get picked randomly and others deterministically. The way the Game is configured, distributes only a half of its ETH balance to winners.
+Most prizes are awarded to multiple winners at the end of each round. Some winners get picked randomly and others deterministically. The way the Game is configured, distributes only a half of its ETH balance to winners. The rest stays in the Game and will be used in further rounds.
 
-All prizes are listed in "./cosmic-signature-game-prizes.md".
+All prizes are listed in `./cosmic-signature-game-prizes.md`.
 
 ### Prize Transfer Reversals
 
@@ -160,7 +168,7 @@ Some prize winners are picked randomly. We have done our best to generate high q
 
 ### Exponential Duration Increase
 
-At the end of each round, the following configurable durations automatically increase exponentially by a configurable fraction: ETH Dutch auction duration; initial duration until main prize (used to calculate `mainPrizeTime` on the first bid in a round); `mainPrizeTime` increment (by how much `mainPrizeTime` gets extended on each subsequent bid in a round). In V1, CST Dutch auction duration is increased as well; in V2+, it's reduced on each ETH bid and increase on each CST bid by a separate configurable fraction.
+At the end of each round, the following configurable durations automatically increase exponentially by a configurable fraction: ETH Dutch auction duration; initial duration until main prize (used to calculate `mainPrizeTime` on the first bid in a round); `mainPrizeTime` increment (by how much `mainPrizeTime` gets extended on each subsequent bid in a round). In V1, CST Dutch auction duration is increased as well; in V2+, it's reduced on each ETH bid and increased on each CST bid by a separate configurable fraction. In V3+, the duration before `mainPrizeTime` during which a premium is added to the bid price.
 
 ### Cosmic Signature and Random Walk NFT Staking
 

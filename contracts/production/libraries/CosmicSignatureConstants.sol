@@ -108,7 +108,6 @@ library CosmicSignatureConstants {
 
 	/// @notice Default `roundLateBidDurationDivisor`.
 	/// @dev Comment-202607117 applies.
-	/// todo-0 test that this is 3_000_000
 	uint256 internal constant DEFAULT_ROUND_LATE_BID_DURATION_DIVISOR = (INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND + INITIAL_ROUND_LATE_BID_DURATION / 2) / INITIAL_ROUND_LATE_BID_DURATION;
 
 	/// @notice Default `roundLateBidPricePremiumAmountBaseMultiplier`.

@@ -53,7 +53,8 @@ abstract contract BiddingV3 is
 				uint256 roundLateBidDuration_ = getRoundLateBidDuration();
 				int256 durationUntilMainPrize_ = getDurationUntilMainPrizeRaw() - currentTimeOffset_;
 
-				// It could make sense to add 1 to this, but it would make little difference.
+				// It could be more correct to add 1 to this so that we reached bid price max premium 1 second before `mainPrizeTime`,
+				// but it would make little difference.
 				int256 roundLateBidElapsedDuration_ = int256(roundLateBidDuration_) - durationUntilMainPrize_;
 
 				if (roundLateBidElapsedDuration_ > int256(0)) {

@@ -13,7 +13,6 @@ import { CosmicSignatureGameStorageV2Base } from "./CosmicSignatureGameStorageV2
 import { BiddingCommonV2 } from "./BiddingCommonV2.sol";
 import { MainPrizeCommonV2 } from "./MainPrizeCommonV2.sol";
 import { BidStatisticsV2 } from "./BidStatisticsV2.sol";
-// todo-0 ??? import { SecondaryPrizesV2 } from "./SecondaryPrizesV2.sol";
 import { IMainPrize1 } from "./interfaces/IMainPrize1.sol";
 
 // #endregion
@@ -26,7 +25,6 @@ abstract contract MainPrizeV2Base is
 	BiddingCommonV2,
 	MainPrizeCommonV2,
 	BidStatisticsV2,
-	// todo-0 ??? SecondaryPrizesV2,
 	IMainPrize1 {
 	// #region `claimMainPrize`
 

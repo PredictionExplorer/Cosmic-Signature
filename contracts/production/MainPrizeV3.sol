@@ -381,7 +381,6 @@ abstract contract MainPrizeV3 is
 					// #enable_asserts uint256 testingRandomNumber_ = RandomNumberHelpers.generateRandomNumber(randomNumberSeedWrapper_.value ^ 0xf31b8a99e26873fa8f00ea66784b5282292f4eb27ac79baa2caf1f7efd2b0e8a);
 					// #enable_asserts assert(cosmicSignatureNftOwnerAddresses_[cosmicSignatureTokenMintSpecIndex_ + testingRandomNumber_ % mainPrizeNumCosmicSignatureNfts] == _msgSender());
 					cosmicSignatureNftId_ = firstCosmicSignatureNftId_ + cosmicSignatureTokenMintSpecIndex_;
-					// todo-0 Tell Nick that this event has been reordered and its signature has changed.
 					emit MainPrizeClaimed(
 						roundNum,
 						_msgSender(),

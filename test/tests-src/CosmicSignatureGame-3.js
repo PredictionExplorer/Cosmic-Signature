@@ -184,6 +184,7 @@ describe("CosmicSignatureGame-3", function () {
 				await transactionResponsePromiseAssertion_.revertedWithCustomError(cosmicSignatureGameV3Implementation_, "InvalidInitialization");
 			}
 		}
+		expect(await cosmicSignatureGameV3Proxy_.roundLateBidDurationDivisor()).equal(3_000_000n);
 		expect(await cosmicSignatureGameV3Proxy_.mainPrizeNumCosmicSignatureNfts()).equal(3n);
 		await waitForTransactionReceipt(cosmicSignatureGameV3Proxy_.connect(contracts_.ownerSigner).setMainPrizeNumCosmicSignatureNfts(5n));
 		expect(await cosmicSignatureGameV3Proxy_.mainPrizeNumCosmicSignatureNfts()).equal(5n);
