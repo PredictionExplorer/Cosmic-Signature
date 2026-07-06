@@ -401,16 +401,16 @@ describe("MainPrize", function () {
 				// // Testing. This assert has proven to fail.
 				// .and.not.emit(contracts_.prizesWallet, "EthReceived");
 
-			if ( ! (contractVersionNumber_ < 2) ) {
+			if ( ! (contractVersionNumber_ < 3) ) {
 				break;
 			}
 
-			const cosmicSignatureGameV2Factory_ =
-				await hre.ethers.getContractFactory("CosmicSignatureGameV2", contracts_.ownerSigner);
+			const newCosmicSignatureGameFactory_ =
+				await hre.ethers.getContractFactory((contractVersionNumber_ < 2) ? "CosmicSignatureGameV2" : "CosmicSignatureGameV3", contracts_.ownerSigner);
 			cosmicSignatureGameProxy_ =
 				await hre.upgrades.upgradeProxy(
 					contracts_.cosmicSignatureGameProxy,
-					cosmicSignatureGameV2Factory_,
+					newCosmicSignatureGameFactory_,
 					{
 						kind: "uups",
 						call: "reinitialize",
@@ -463,18 +463,18 @@ describe("MainPrize", function () {
 				expect(brokenEthReceiverEthBalanceAmount_).equal((brokenEthReceiverEthDepositAcceptanceModeCode_ > 0n) ? 0n : charityEthDonationAmount_);
 			}
 
-			if ( ! (contractVersionNumber_ < 2) ) {
+			if ( ! (contractVersionNumber_ < 3) ) {
 				break;
 			}
 
 			await waitForTransactionReceipt(brokenEthReceiver_.connect(contracts_.signers[4]).surrenderMyEth());
 
-			const cosmicSignatureGameV2Factory_ =
-				await hre.ethers.getContractFactory("CosmicSignatureGameV2", contracts_.ownerSigner);
+			const newCosmicSignatureGameFactory_ =
+				await hre.ethers.getContractFactory((contractVersionNumber_ < 2) ? "CosmicSignatureGameV2" : "CosmicSignatureGameV3", contracts_.ownerSigner);
 			cosmicSignatureGameProxy_ =
 				await hre.upgrades.upgradeProxy(
 					contracts_.cosmicSignatureGameProxy,
-					cosmicSignatureGameV2Factory_,
+					newCosmicSignatureGameFactory_,
 					{
 						kind: "uups",
 						call: "reinitialize",
@@ -515,26 +515,28 @@ describe("MainPrize", function () {
 						.revertedWithCustomError(cosmicSignatureGameProxy_, "FundTransferFailed")
 						.withArgs("ETH transfer to bidding round main prize beneficiary failed.", bidderContractAddress_, mainEthPrizeAmount_);
 				} else {
+					// The V3 `MainPrizeClaimed` event gained the `prizeNumCosmicSignatureNfts` parameter.
+					const mainPrizeClaimedEventOtherArgs_ = (contractVersionNumber_ < 3) ? [anyUint, anyUint, anyUint] : [anyUint, anyUint, anyUint, anyUint];
 					await transactionResponsePromiseAssertion_
 						.emit(cosmicSignatureGameProxy_, "MainPrizeClaimed")
-						.withArgs(BigInt(contractVersionNumber_ - 1), bidderContractAddress_, mainEthPrizeAmount_, anyUint, anyUint, anyUint);
+						.withArgs(BigInt(contractVersionNumber_ - 1), bidderContractAddress_, mainEthPrizeAmount_, ... mainPrizeClaimedEventOtherArgs_);
 				}
 				const bidderContractEthBalanceAmount_ = await hre.ethers.provider.getBalance(bidderContractAddress_);
 				expect(bidderContractEthBalanceAmount_).equal((bidderContractEthDepositAcceptanceModeCode_ > 0n) ? 0n : mainEthPrizeAmount_);
 			}
 
-			if ( ! (contractVersionNumber_ < 2) ) {
+			if ( ! (contractVersionNumber_ < 3) ) {
 				break;
 			}
 
 			await waitForTransactionReceipt(bidderContract_.connect(contracts_.signers[3]).surrenderMyEth());
 			
-			const cosmicSignatureGameV2Factory_ =
-				await hre.ethers.getContractFactory("CosmicSignatureGameV2", contracts_.ownerSigner);
+			const newCosmicSignatureGameFactory_ =
+				await hre.ethers.getContractFactory((contractVersionNumber_ < 2) ? "CosmicSignatureGameV2" : "CosmicSignatureGameV3", contracts_.ownerSigner);
 			cosmicSignatureGameProxy_ =
 				await hre.upgrades.upgradeProxy(
 					contracts_.cosmicSignatureGameProxy,
-					cosmicSignatureGameV2Factory_,
+					newCosmicSignatureGameFactory_,
 					{
 						kind: "uups",
 						call: "reinitialize",

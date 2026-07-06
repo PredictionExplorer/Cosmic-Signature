@@ -6,7 +6,7 @@
 // #region Imports
 
 const { expect } = require("chai");
-const { ZERO_ADDRESS } = require("../GameModel.js");
+const hre = require("hardhat");
 
 // #endregion
 // #region Broken-staker helpers
@@ -130,11 +130,11 @@ const adversarialActions = [
 		// V1 only (the `MaliciousBidder` helper uses the 2-argument bid signature).
 		name: "adversarialReentrancyOnBidRefund",
 		weight: 2,
-		isApplicable: (ctx_) => ctx_.model.version === 1 && ctx_.adversaries !== undefined && ctx_.model.lastBidderAddress !== ZERO_ADDRESS,
+		isApplicable: (ctx_) => ctx_.model.version === 1 && ctx_.adversaries !== undefined && ctx_.model.lastBidderAddress !== hre.ethers.ZeroAddress,
 		run: async (ctx_, actor_) => {
 			const { engine, model, adversaries, ledger } = ctx_;
 			const ts_ = engine.clampTs(engine.planTs(engine.boundaryCandidates()));
-			if (model.lastBidderAddress === ZERO_ADDRESS) {
+			if (model.lastBidderAddress === hre.ethers.ZeroAddress) {
 				return "skip";
 			}
 			const gasPrice_ = engine.randomGasPrice();
@@ -178,11 +178,11 @@ const adversarialActions = [
 		// Donation of a malicious ERC-20 that reenters on `transferFrom` must revert the whole bid.
 		name: "adversarialMaliciousTokenDonation",
 		weight: 1,
-		isApplicable: (ctx_) => ctx_.adversaries !== undefined && ctx_.model.lastBidderAddress !== ZERO_ADDRESS,
+		isApplicable: (ctx_) => ctx_.adversaries !== undefined && ctx_.model.lastBidderAddress !== hre.ethers.ZeroAddress,
 		run: async (ctx_, actor_) => {
 			const { engine, model, adversaries, ledger } = ctx_;
 			const ts_ = engine.clampTs(engine.planTs(engine.boundaryCandidates()));
-			if (model.lastBidderAddress === ZERO_ADDRESS) {
+			if (model.lastBidderAddress === hre.ethers.ZeroAddress) {
 				return "skip";
 			}
 			const gasPrice_ = engine.randomGasPrice();

@@ -40,13 +40,13 @@ abstract contract MaliciousActorBase {
 			// Similar magic numbers exist in multiple places.
 			// [/Comment-202507062]
 			if (modeCode == 1) {
-				if (contractVersionNumber != 2) {
+				if (contractVersionNumber < 2) {
 					game.donateEth{value: 1 wei}();
 				} else {
 					CosmicSignatureGameV2(payable(game)).donateEth{value: 1 wei}();
 				}
 			} else if (modeCode == 2) {
-				if (contractVersionNumber != 2) {
+				if (contractVersionNumber < 2) {
 					game.donateEthWithInfo{value: 1 wei}("Reentry");
 				} else {
 					CosmicSignatureGameV2(payable(game)).donateEthWithInfo{value: 1 wei}("Reentry");
@@ -54,43 +54,43 @@ abstract contract MaliciousActorBase {
 			} else if (modeCode == 3) {
 				CosmicSignatureHelpers.transferEthTo(payable(game), 0.01 ether);
 			} else if (modeCode == 4) {
-				if (contractVersionNumber != 2) {
+				if (contractVersionNumber < 2) {
 					game.bidWithEthAndDonateToken{value: 0.01 ether}(-1, "", IERC20(address(this)), 1);
 				} else {
 					CosmicSignatureGameV2(payable(game)).bidWithEthAndDonateToken{value: 0.01 ether}(-1, "", 0, IERC20(address(this)), 1);
 				}
 			} else if (modeCode == 5) {
-				if (contractVersionNumber != 2) {
+				if (contractVersionNumber < 2) {
 					game.bidWithEthAndDonateNft{value: 0.01 ether}(-1, "", IERC721(address(this)), 0);
 				} else {
 					CosmicSignatureGameV2(payable(game)).bidWithEthAndDonateNft{value: 0.01 ether}(-1, "", 0, IERC721(address(this)), 0);
 				}
 			} else if (modeCode == 6) {
-				if (contractVersionNumber != 2) {
+				if (contractVersionNumber < 2) {
 					game.bidWithEth{value: 0.01 ether}(-1, "");
 				} else {
 					CosmicSignatureGameV2(payable(game)).bidWithEth{value: 0.01 ether}(-1, "", 0);
 				}
 			} else if (modeCode == 7) {
-				if (contractVersionNumber != 2) {
+				if (contractVersionNumber < 2) {
 					game.bidWithCstAndDonateToken(10000 ether, "", IERC20(address(this)), 1);
 				} else {
 					CosmicSignatureGameV2(payable(game)).bidWithCstAndDonateToken(10000 ether, "", 0, IERC20(address(this)), 1);
 				}
 			} else if (modeCode == 8) {
-				if (contractVersionNumber != 2) {
+				if (contractVersionNumber < 2) {
 					game.bidWithCstAndDonateNft(10000 ether, "", IERC721(address(this)), 0);
 				} else {
 					CosmicSignatureGameV2(payable(game)).bidWithCstAndDonateNft(10000 ether, "", 0, IERC721(address(this)), 0);
 				}
 			} else if (modeCode == 9) {
-				if (contractVersionNumber != 2) {
+				if (contractVersionNumber < 2) {
 					game.bidWithCst(10000 ether, "");
 				} else {
 					CosmicSignatureGameV2(payable(game)).bidWithCst(10000 ether, "", 0);
 				}
 			} else if (modeCode == 10) {
-				if (contractVersionNumber != 2) {
+				if (contractVersionNumber < 2) {
 					game.claimMainPrize();
 				} else {
 					CosmicSignatureGameV2(payable(game)).claimMainPrize();

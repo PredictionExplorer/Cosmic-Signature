@@ -3,7 +3,8 @@
 // #region Imports
 
 const { expect } = require("chai");
-const { ZERO_ADDRESS } = require("./GameModel.js");
+const hre = require("hardhat");
+const { ENABLE_ASSERTS } = require("../../../src/Helpers.js");
 const { MAX_UINT256 } = require("../../../src/BigIntMathHelpers.js");
 
 // #endregion
@@ -94,13 +95,20 @@ async function runInvariants(ctx_) {
 	expect(await game_.nextEthBidPrice(), "nextEthBidPrice vs model").to.equal(model.nextEthBidPrice);
 	expect(await game_.ethDutchAuctionBeginningBidPrice(), "ethDutchAuctionBeginningBidPrice vs model").to.equal(model.ethDutchAuctionBeginningBidPrice);
 	expect(await game_.cstDutchAuctionBeginningTimeStamp(), "cstDutchAuctionBeginningTimeStamp vs model").to.equal(model.cstDutchAuctionBeginningTimeStamp);
-	if (model.version === 2) {
+	if (model.version >= 2) {
 		expect(await game_.cstDutchAuctionDuration(), "cstDutchAuctionDuration vs model").to.equal(model.cstDutchAuctionDuration);
 		expect(await game_.cstDutchAuctionDurationChangeDivisor(), "cstDutchAuctionDurationChangeDivisor vs model").to.equal(model.cstDutchAuctionDurationChangeDivisor);
 		expect(await game_.bidCstRewardAmountMultiplier(), "bidCstRewardAmountMultiplier vs model").to.equal(model.bidCstRewardAmountMultiplier);
 	} else {
 		expect(await game_.cstDutchAuctionDurationDivisor(), "cstDutchAuctionDurationDivisor vs model").to.equal(model.cstDutchAuctionDurationDivisor);
 		expect(await game_.bidCstRewardAmount(), "bidCstRewardAmount vs model").to.equal(model.bidCstRewardAmount);
+	}
+	if (model.version >= 3) {
+		expect(await game_.roundLateBidDurationDivisor(), "roundLateBidDurationDivisor vs model").to.equal(model.roundLateBidDurationDivisor);
+		expect(await game_.roundLateBidPricePremiumAmountBaseMultiplier(), "roundLateBidPricePremiumAmountBaseMultiplier vs model").to.equal(model.roundLateBidPricePremiumAmountBaseMultiplier);
+		expect(await game_.roundLateBidPricePremiumAmountExponent(), "roundLateBidPricePremiumAmountExponent vs model").to.equal(model.roundLateBidPricePremiumAmountExponent);
+		expect(await game_.mainPrizeNumCosmicSignatureNfts(), "mainPrizeNumCosmicSignatureNfts vs model").to.equal(model.mainPrizeNumCosmicSignatureNfts);
+		expect(await game_.getRoundLateBidDuration(), "getRoundLateBidDuration vs model").to.equal(model.getRoundLateBidDuration());
 	}
 
 	{
@@ -152,13 +160,15 @@ async function runInvariants(ctx_) {
 		await checkCfg_("marketingWalletCstContributionAmount", model.marketingWalletCstContributionAmount);
 		await checkCfg_("charityEthDonationAmountPercentage", model.charityEthDonationAmountPercentage);
 		expect((await game_.charityAddress()).toLowerCase(), "config drift: charityAddress").to.equal(model.charityAddress);
+		expect((await game_.prizesWallet()).toLowerCase(), "config drift: prizesWallet").to.equal(model.prizesWalletAddress);
+		expect(model.prizesWalletAddress, "harness drift: contracts.prizesWalletAddress vs model").to.equal(contracts.prizesWalletAddress.toLowerCase());
 	}
 
 	// Bid statistics tail.
 	{
 		const onChainNumBids_ = await game_.getTotalNumBids(model.roundNum);
 		expect(onChainNumBids_, "getTotalNumBids vs model").to.equal(model.getTotalNumBids(model.roundNum));
-		if (model.lastBidderAddress !== ZERO_ADDRESS && onChainNumBids_ > 0n) {
+		if (model.lastBidderAddress !== hre.ethers.ZeroAddress && onChainNumBids_ > 0n) {
 			const tail_ = await game_.getBidderAddressAt(model.roundNum, onChainNumBids_ - 1n);
 			expect(tail_.toLowerCase(), "bid log tail == lastBidderAddress").to.equal(model.lastBidderAddress);
 			const bidderInfo_ = model.getBidderInfo(model.roundNum, model.lastBidderAddress);
@@ -180,7 +190,7 @@ async function runInvariants(ctx_) {
 		expect(onChainCstPrice_, "getNextCstBidPrice vs model").to.equal(model.getNextCstBidPrice(ts_));
 		expect(await game_.getNextCstBidPriceAdvanced(0n), "getNextCstBidPrice == Advanced(0)").to.equal(onChainCstPrice_);
 
-		if (model.version === 2) {
+		if (model.version >= 2) {
 			const onChainReward_ = await game_.getBidCstRewardAmount();
 			expect(onChainReward_, "getBidCstRewardAmount vs model").to.equal(model.getBidCstRewardAmount(ts_));
 			expect(await game_.getBidCstRewardAmountAdvanced(0n), "getBidCstRewardAmount == Advanced(0)").to.equal(onChainReward_);
@@ -202,7 +212,7 @@ async function runInvariants(ctx_) {
 		const chronoAddr_ = await game_.chronoWarriorAddress();
 		const chronoDur_ = await game_.chronoWarriorDuration();
 		const sentinel_ = MAX_UINT256;
-		if (chronoAddr_ === ZERO_ADDRESS) {
+		if (chronoAddr_ === hre.ethers.ZeroAddress) {
 			expect(chronoDur_, "zero chrono addr => sentinel duration").to.equal(sentinel_);
 		} else {
 			expect(chronoDur_ <= (1n << 255n) - 1n, "nonzero chrono addr => non-sentinel duration").to.equal(true);
@@ -334,7 +344,8 @@ function assertCoverageFloors(statsMap_, profile_) {
 	// ... and every meaningful user action the protocol supports must have actually SUCCEEDED at least
 	// once across the soak — covering bids (ETH / Random Walk NFT / CST), staking and unstaking, ETH and
 	// donation flows, prize and donated-asset withdrawals (the winner receiving donated NFTs/ERC-20s),
-	// CST/NFT transfers and signatures, RW mint/withdraw, and the V1->V2 upgrade auth probe.
+	// CST/NFT transfers and signatures, RW mint/withdraw, the V1 -> V2 -> V3 upgrade chain, and (in
+	// production-like builds) the post-V3 PrizesWallet swap.
 	const mustSucceed_ = [
 		"bidWithEth", "bidWithEthExactPrice", "bidWithEthSwallow", "bidWithEthRefund",
 		"bidWithEthPlusRandomWalkNft", "bidWithEthReceive", "bidWithEthAndDonateToken", "bidWithEthAndDonateNft",
@@ -353,7 +364,13 @@ function assertCoverageFloors(statsMap_, profile_) {
 		"adminMutateParameters", "daoGovernanceCycle",
 		"adversarialReentrancyOnBidRefund", "adversarialMaliciousTokenDonation",
 		"upgradeAuthProbe",
+		"upgradeToV2", "upgradeToV3",
 	];
+	if ( ! ENABLE_ASSERTS ) {
+		// The swap is skipped in assert-enabled builds: `PrizesWallet` asserts that the previous round is
+		// registered, which can never hold for a wallet deployed mid-campaign (see `performPrizesWalletSwap`).
+		mustSucceed_.push("prizesWalletSwap");
+	}
 	const neverSucceeded_ = mustSucceed_.filter((name_) => succeeded_(name_) <= 0);
 	expect(
 		neverSucceeded_.length,

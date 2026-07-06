@@ -240,7 +240,6 @@ abstract contract MainPrizeV3 is
 					// #enable_asserts assert(cosmicSignatureNftOwnerAddresses_.length - cosmicSignatureTokenMintSpecIndex_ == mainPrizeNumCosmicSignatureNfts);
 
 					// This makes `mainPrizeNumCosmicSignatureNfts` iterations.
-					// todo-0 Test the above.
 					for (uint256 cosmicSignatureNftIndex_ = cosmicSignatureNftOwnerAddresses_.length; ; ) {
 						-- cosmicSignatureNftIndex_;
 						cosmicSignatureNftOwnerAddresses_[cosmicSignatureNftIndex_] = _msgSender();

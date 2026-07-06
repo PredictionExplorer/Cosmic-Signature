@@ -14,15 +14,15 @@ const c = require("./FuzzConstants.js");
 // #region `GameModel`
 
 /**
-Exact JS shadow model of the `CosmicSignatureGame` (V1 and V2) deterministic state machine.
+Exact JS shadow model of the `CosmicSignatureGame` (V1, V2, and V3) deterministic state machine.
 
 The fuzz engine controls every block timestamp, so all prices, rewards, durations, champion
 transitions, and `mainPrizeTime` values are exactly predictable. This class mirrors:
-- `Bidding.sol` / `BiddingV2.sol` (`_bidWithEth`, `_bidWithCst`, `_bidCommon`, price getters)
+- `Bidding.sol` / `BiddingV2.sol` / `BiddingV3.sol` (`_bidWithEth`, `_bidWithCst`, `_bidCommon`, price getters, the V3 late bid price premium)
 - `BidStatistics.sol` (`_updateChampionsIfNeeded`, `_updateChronoWarriorIfNeeded`, `tryGetCurrentChampions`)
 - `MainPrizeCommon.sol` / `MainPrizeCommonV2.sol` (`_extendMainPrizeTime` clamping difference)
-- `MainPrize.sol` / `MainPrizeV2.sol` (`claimMainPrize` authorization + `_prepareNextRound`)
-- `SystemManagement.sol` / `SystemManagementV2.sol` (setters mutate the model config)
+- `MainPrize.sol` / `MainPrizeV2.sol` / `MainPrizeV3.sol` (`claimMainPrize` authorization + `_prepareNextRound` + the V3 multi-NFT main prize)
+- `SystemManagement.sol` / `SystemManagementV2.sol` / `SystemManagementV3.sol` (setters mutate the model config)
 
 All state is bigint. The chrono-warrior duration sentinel `uint256(int256(-1))` is stored
 as `-1n` internally and converted via `chronoWarriorDurationUint()` for chain comparisons.
@@ -32,8 +32,8 @@ class GameModel {
 
 	constructor() {
 		/**
-		Game code version: 1 = V1, 2 = V2.
-		@type {1 | 2}
+		Game code version: 1 = V1, 2 = V2, 3 = V3.
+		@type {1 | 2 | 3}
 		*/
 		this.version = 1;
 
@@ -63,10 +63,16 @@ class GameModel {
 		this.mainEthPrizeAmountPercentage = 0n;
 		this.marketingWalletCstContributionAmount = 0n;
 		this.charityEthDonationAmountPercentage = 0n;
+		this.roundLateBidDurationDivisor = 0n; // V3 only
+		this.roundLateBidPricePremiumAmountBaseMultiplier = 0n; // V3 only
+		this.roundLateBidPricePremiumAmountExponent = 0n; // V3 only
+		this.mainPrizeNumCosmicSignatureNfts = 0n; // V3 only
 		/** @type {string} */
 		this.charityAddress = "";
 		/** @type {string} */
 		this.marketingWalletAddress = "";
+		/** @type {string} The current `prizesWallet` (owner-mutable in V2+; the fuzz only swaps it after the V3 upgrade). */
+		this.prizesWalletAddress = "";
 
 		// Round / bidding state.
 		this.roundNum = 0n;
@@ -79,16 +85,16 @@ class GameModel {
 		this.cstDutchAuctionBeginningBidPrice = 0n;
 		this.nextRoundFirstCstDutchAuctionBeginningBidPrice = 0n;
 		/** @type {string} */
-		this.lastBidderAddress = ZERO_ADDRESS;
+		this.lastBidderAddress = hre.ethers.ZeroAddress;
 		/** @type {string} */
-		this.lastCstBidderAddress = ZERO_ADDRESS;
+		this.lastCstBidderAddress = hre.ethers.ZeroAddress;
 
 		// Champions.
-		this.enduranceChampionAddress = ZERO_ADDRESS;
+		this.enduranceChampionAddress = hre.ethers.ZeroAddress;
 		this.enduranceChampionStartTimeStamp = 0n;
 		this.enduranceChampionDuration = 0n;
 		this.prevEnduranceChampionDuration = 0n;
-		this.chronoWarriorAddress = ZERO_ADDRESS;
+		this.chronoWarriorAddress = hre.ethers.ZeroAddress;
 		/** Stored as a signed value; `-1n` is the on-chain `uint256(int256(-1))` sentinel. */
 		this.chronoWarriorDuration = -1n;
 
@@ -104,8 +110,8 @@ class GameModel {
 
 	/**
 	Reads every getter from the deployed game once, so the model starts exactly in sync.
-	@param {import("ethers").Contract} game_ Game proxy with V1 or V2 ABI matching `version_`.
-	@param {1 | 2} version_
+	@param {import("ethers").Contract} game_ Game proxy with the ABI matching `version_`.
+	@param {1 | 2 | 3} version_
 	*/
 	async initFromChain(game_, version_) {
 		this.version = version_;
@@ -121,6 +127,12 @@ class GameModel {
 			this.cstDutchAuctionDuration = await game_.cstDutchAuctionDuration();
 			this.cstDutchAuctionDurationChangeDivisor = await game_.cstDutchAuctionDurationChangeDivisor();
 			this.bidCstRewardAmountMultiplier = await game_.bidCstRewardAmountMultiplier();
+		}
+		if (version_ >= 3) {
+			this.roundLateBidDurationDivisor = await game_.roundLateBidDurationDivisor();
+			this.roundLateBidPricePremiumAmountBaseMultiplier = await game_.roundLateBidPricePremiumAmountBaseMultiplier();
+			this.roundLateBidPricePremiumAmountExponent = await game_.roundLateBidPricePremiumAmountExponent();
+			this.mainPrizeNumCosmicSignatureNfts = await game_.mainPrizeNumCosmicSignatureNfts();
 		}
 		this.cstDutchAuctionBeginningBidPriceMinLimit = await game_.cstDutchAuctionBeginningBidPriceMinLimit();
 		this.bidMessageLengthMaxLimit = await game_.bidMessageLengthMaxLimit();
@@ -139,6 +151,7 @@ class GameModel {
 		this.charityEthDonationAmountPercentage = await game_.charityEthDonationAmountPercentage();
 		this.charityAddress = (await game_.charityAddress()).toLowerCase();
 		this.marketingWalletAddress = (await game_.marketingWallet()).toLowerCase();
+		this.prizesWalletAddress = (await game_.prizesWallet()).toLowerCase();
 
 		this.roundNum = await game_.roundNum();
 		this.roundActivationTime = await game_.roundActivationTime();
@@ -235,17 +248,23 @@ class GameModel {
 	}
 
 	/**
-	Mirrors `getNextEthBidPriceAdvanced(0)` evaluated at block timestamp `ts_`.
+	Mirrors `getNextEthBidPriceAdvanced(0)` evaluated at block timestamp `ts_` (V3 wraps the V2 price
+	with the late bid premium).
 	The contract body is `unchecked`; the fuzz model treats any wrap in this pricing path as a bug unless
 	a caller explicitly marks the operation as an accepted owner-adversarial scenario.
 	*/
 	getNextEthBidPrice(ts_) {
-		if (this.lastBidderAddress !== ZERO_ADDRESS) {
+		return this.addLateBidPremiumIfNeeded(this.getNextEthBidPriceBase(ts_), ts_);
+	}
+
+	/** Mirrors V2 `getNextEthBidPriceAdvanced(0)` (the V3 `super` call) evaluated at block timestamp `ts_`. */
+	getNextEthBidPriceBase(ts_) {
+		if (this.lastBidderAddress !== hre.ethers.ZeroAddress) {
 			return this.nextEthBidPrice;
 		}
 		let price_ = this.ethDutchAuctionBeginningBidPrice;
 		if (price_ === 0n) {
-			// First round only; V2 never runs in this state.
+			// First round only; V2+ never runs in this state.
 			return c.FIRST_ROUND_INITIAL_ETH_BID_PRICE;
 		}
 		const elapsed_ = ts_ - this.roundActivationTime;
@@ -261,6 +280,64 @@ class GameModel {
 		return endingPrice_;
 	}
 
+	/** Mirrors V3 `getRoundLateBidDuration`. */
+	getRoundLateBidDuration() {
+		return this.mainPrizeTimeIncrementInMicroSeconds / this.roundLateBidDurationDivisor;
+	}
+
+	/**
+	Mirrors V3 `_addRoundLateBidPricePremiumAmountIfNeeded` evaluated at block timestamp `ts_`.
+	On V1/V2 (or with no bid in the round) returns `bidPrice_` unchanged.
+	@param {bigint} bidPrice_
+	@param {bigint} ts_
+	@param {bigint} [mainPrizeTimeOverride_] Overrides `this.mainPrizeTime` (used by the burst price ladder).
+	*/
+	addLateBidPremiumIfNeeded(bidPrice_, ts_, mainPrizeTimeOverride_) {
+		if (this.version < 3 || this.lastBidderAddress === hre.ethers.ZeroAddress) {
+			return bidPrice_;
+		}
+		const roundLateBidDuration_ = this.getRoundLateBidDuration();
+		const durationUntilMainPrize_ = (mainPrizeTimeOverride_ ?? this.mainPrizeTime) - ts_;
+		let roundLateBidElapsedDuration_ = roundLateBidDuration_ - durationUntilMainPrize_;
+		if (roundLateBidElapsedDuration_ <= 0n) {
+			return bidPrice_;
+		}
+		if (durationUntilMainPrize_ < 0n) {
+			roundLateBidElapsedDuration_ = roundLateBidDuration_;
+		}
+		// The contract body is `unchecked`, but the admin action keeps the premium parameters within
+		// ranges where nothing wraps, so a wrap here is a harness/model failure.
+		const premiumAmount_ = u256(
+			u256(
+				u256(roundLateBidElapsedDuration_ * this.roundLateBidPricePremiumAmountBaseMultiplier / this.mainPrizeTimeIncrementInMicroSeconds) **
+					this.roundLateBidPricePremiumAmountExponent
+			) * bidPrice_
+		) >> (this.roundLateBidPricePremiumAmountExponent * c.ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_RESOLUTION_EXPONENT);
+		return u256(bidPrice_ + premiumAmount_);
+	}
+
+	/**
+	Exact prices for `count_` back-to-back ETH bids in ONE block at timestamp `ts_` (the same-block burst).
+	Mirrors how each bid escalates the next price (`nextEthBidPrice = p + p / div + 1`) and, in V3,
+	how each bid's `_extendMainPrizeTime` moves the premium window before the next bid prices in.
+	Does not mutate the model.
+	@returns {bigint[]}
+	*/
+	planEthBidPriceLadder(ts_, count_) {
+		const prices_ = [];
+		let base_ = this.getNextEthBidPriceBase(ts_);
+		let mainPrizeTime_ = this.mainPrizeTime;
+		const increment_ = this.getMainPrizeTimeIncrement();
+		for (let index_ = 0; index_ < count_; ++ index_) {
+			const price_ = this.addLateBidPremiumIfNeeded(base_, ts_, mainPrizeTime_);
+			prices_.push(price_);
+			base_ = price_ + price_ / this.ethBidPriceIncreaseDivisor + 1n;
+			// All burst bids are non-first bids, so `_extendMainPrizeTime` runs for each of them.
+			mainPrizeTime_ = this.isV1Like() ? (maxBigInt(mainPrizeTime_, ts_) + increment_) : (mainPrizeTime_ + increment_);
+		}
+		return prices_;
+	}
+
 	/** Mirrors `getEthPlusRandomWalkNftBidPrice` (contract body is `unchecked`). */
 	getEthPlusRandomWalkNftBidPrice(ethBidPrice_) {
 		return u256(ethBidPrice_ + (c.RANDOMWALK_NFT_BID_PRICE_DIVISOR - 1n)) / c.RANDOMWALK_NFT_BID_PRICE_DIVISOR;
@@ -273,8 +350,16 @@ class GameModel {
 			this.cstDutchAuctionDuration;
 	}
 
-	/** Mirrors `getNextCstBidPriceAdvanced(0)` evaluated at block timestamp `ts_`. */
+	/**
+	Mirrors `getNextCstBidPriceAdvanced(0)` evaluated at block timestamp `ts_` (V3 wraps the V2 price
+	with the late bid premium).
+	*/
 	getNextCstBidPrice(ts_) {
+		return this.addLateBidPremiumIfNeeded(this.getNextCstBidPriceBase(ts_), ts_);
+	}
+
+	/** Mirrors V2 `getNextCstBidPriceAdvanced(0)` (the V3 `super` call) evaluated at block timestamp `ts_`. */
+	getNextCstBidPriceBase(ts_) {
 		const duration_ = this.getCstDutchAuctionDuration();
 		const elapsed_ = ts_ - this.cstDutchAuctionBeginningTimeStamp;
 		const remaining_ = duration_ - elapsed_;
@@ -282,7 +367,7 @@ class GameModel {
 			return 0n;
 		}
 		const beginningPrice_ =
-			(this.lastCstBidderAddress === ZERO_ADDRESS) ?
+			(this.lastCstBidderAddress === hre.ethers.ZeroAddress) ?
 			this.nextRoundFirstCstDutchAuctionBeginningBidPrice :
 			this.cstDutchAuctionBeginningBidPrice;
 		// Contract body is `unchecked`: the product wraps mod 2^256 before the division.
@@ -295,7 +380,7 @@ class GameModel {
 			return this.bidCstRewardAmount;
 		}
 		const lastBidTimeStamp_ =
-			(this.lastBidderAddress === ZERO_ADDRESS) ?
+			(this.lastBidderAddress === hre.ethers.ZeroAddress) ?
 			this.roundActivationTime :
 			this.getBidderInfo(this.roundNum, this.lastBidderAddress).lastBidTimeStamp;
 		const elapsed_ = ts_ - lastBidTimeStamp_;
@@ -312,11 +397,11 @@ class GameModel {
 	@returns {{enduranceChampionAddress: string, enduranceChampionDuration: bigint, chronoWarriorAddress: string, chronoWarriorDuration: bigint}}
 	*/
 	tryGetCurrentChampions(ts_) {
-		if (this.lastBidderAddress === ZERO_ADDRESS) {
+		if (this.lastBidderAddress === hre.ethers.ZeroAddress) {
 			return {
-				enduranceChampionAddress: ZERO_ADDRESS,
+				enduranceChampionAddress: hre.ethers.ZeroAddress,
 				enduranceChampionDuration: 0n,
-				chronoWarriorAddress: ZERO_ADDRESS,
+				chronoWarriorAddress: hre.ethers.ZeroAddress,
 				chronoWarriorDuration: 0n,
 			};
 		}
@@ -328,7 +413,7 @@ class GameModel {
 		let chronoDuration_ = this.chronoWarriorDuration;
 		const lastBidTs_ = this.getBidderInfo(this.roundNum, this.lastBidderAddress).lastBidTimeStamp;
 		const lastBidDuration_ = ts_ - lastBidTs_;
-		if (endurance_ === ZERO_ADDRESS) {
+		if (endurance_ === hre.ethers.ZeroAddress) {
 			endurance_ = this.lastBidderAddress;
 			enduranceStart_ = lastBidTs_;
 			enduranceDuration_ = lastBidDuration_;
@@ -370,7 +455,7 @@ class GameModel {
 	_updateChampionsIfNeeded(ts_) {
 		const lastBidTs_ = this.getBidderInfo(this.roundNum, this.lastBidderAddress).lastBidTimeStamp;
 		const lastBidDuration_ = ts_ - lastBidTs_;
-		if (this.enduranceChampionAddress === ZERO_ADDRESS) {
+		if (this.enduranceChampionAddress === hre.ethers.ZeroAddress) {
 			this.enduranceChampionAddress = this.lastBidderAddress;
 			this.enduranceChampionStartTimeStamp = lastBidTs_;
 			this.enduranceChampionDuration = lastBidDuration_;
@@ -408,7 +493,7 @@ class GameModel {
 
 	/** Mirrors `_bidCommon` (after bid-type-specific logic). */
 	_bidCommon(bidderAddress_, ts_) {
-		const isFirstBid_ = this.lastBidderAddress === ZERO_ADDRESS;
+		const isFirstBid_ = this.lastBidderAddress === hre.ethers.ZeroAddress;
 		if (isFirstBid_) {
 			this.cstDutchAuctionBeginningTimeStamp = ts_;
 			this.mainPrizeTime = ts_ + this.getInitialDurationUntilMainPrize();
@@ -473,12 +558,12 @@ class GameModel {
 			this.usedRandomWalkNfts.add(randomWalkNftId_.toString());
 		}
 		this._bidderInfoForUpdate(bidderAddress_).totalSpentEthAmount += plan_.paidEthPrice;
-		if (this.lastBidderAddress === ZERO_ADDRESS) {
+		if (this.lastBidderAddress === hre.ethers.ZeroAddress) {
 			this.ethDutchAuctionBeginningBidPrice = plan_.ethBidPrice * c.ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
 		}
 		this.nextEthBidPrice = plan_.ethBidPrice + plan_.ethBidPrice / this.ethBidPriceIncreaseDivisor + 1n;
 		let newCstDutchAuctionDuration_ = null;
-		if (this.version === 2) {
+		if (this.version >= 2) {
 			newCstDutchAuctionDuration_ =
 				(this.cstDutchAuctionDuration + 1n) * this.cstDutchAuctionDurationChangeDivisor / (this.cstDutchAuctionDurationChangeDivisor + 1n);
 			this.cstDutchAuctionDuration = newCstDutchAuctionDuration_;
@@ -499,12 +584,12 @@ class GameModel {
 		const newBeginningBidPrice_ =
 			maxBigInt(paidPrice_ * c.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, this.cstDutchAuctionBeginningBidPriceMinLimit);
 		this.cstDutchAuctionBeginningBidPrice = newBeginningBidPrice_;
-		if (this.lastCstBidderAddress === ZERO_ADDRESS) {
+		if (this.lastCstBidderAddress === hre.ethers.ZeroAddress) {
 			this.nextRoundFirstCstDutchAuctionBeginningBidPrice = newBeginningBidPrice_;
 		}
 		this.lastCstBidderAddress = bidderAddress_.toLowerCase();
 		let newCstDutchAuctionDuration_ = null;
-		if (this.version === 2) {
+		if (this.version >= 2) {
 			newCstDutchAuctionDuration_ = this.cstDutchAuctionDuration + this.cstDutchAuctionDuration / this.cstDutchAuctionDurationChangeDivisor;
 			this.cstDutchAuctionDuration = newCstDutchAuctionDuration_;
 		}
@@ -520,13 +605,13 @@ class GameModel {
 	@returns {{ok: boolean, errorName?: string}}
 	*/
 	checkClaimAuthorization(claimerAddress_, ts_) {
-		if (claimerAddress_.toLowerCase() === this.lastBidderAddress && this.lastBidderAddress !== ZERO_ADDRESS) {
+		if (claimerAddress_.toLowerCase() === this.lastBidderAddress && this.lastBidderAddress !== hre.ethers.ZeroAddress) {
 			if (ts_ < this.mainPrizeTime) {
 				return { ok: false, errorName: "MainPrizeEarlyClaim" };
 			}
 			return { ok: true };
 		}
-		if (this.lastBidderAddress === ZERO_ADDRESS) {
+		if (this.lastBidderAddress === hre.ethers.ZeroAddress) {
 			return { ok: false, errorName: "NoBidsPlacedInCurrentRound" };
 		}
 		const durationUntilPermitted_ = (this.mainPrizeTime - ts_) + this.timeoutDurationToClaimMainPrize;
@@ -561,9 +646,13 @@ class GameModel {
 		const ethDepositsTotalAmount_ = chronoWarriorEthPrizeAmount_ + raffleEthPrizeAmountPerBidder_ * this.numRaffleEthPrizesForBidders;
 		const stakingDepositSucceeds_ = numStakedCosmicSignatureNfts_ > 0n;
 		const numLuckyStakers_ = (numStakedRandomWalkNfts_ > 0n) ? this.numRaffleCosmicSignatureNftsForRandomWalkNftStakers : 0n;
-		const hasLastCstBidder_ = this.lastCstBidderAddress !== ZERO_ADDRESS;
+		const hasLastCstBidder_ = this.lastCstBidderAddress !== hre.ethers.ZeroAddress;
 		// Mirrors Comment-202606011: main, lastCst?, endurance, chrono, raffle bidders, lucky stakers (+ marketing CST-only).
-		const numNftMints_ = 1n + (hasLastCstBidder_ ? 1n : 0n) + 2n + this.numRaffleCosmicSignatureNftsForBidders + numLuckyStakers_;
+		const numCstPrizeMints_ = 1n + (hasLastCstBidder_ ? 1n : 0n) + 2n + this.numRaffleCosmicSignatureNftsForBidders + numLuckyStakers_;
+		// Comment-202511104: before V3, one CS NFT per CST prize mint; in V3+, the main prize beneficiary
+		// receives `mainPrizeNumCosmicSignatureNfts` CS NFTs instead of 1.
+		const mainPrizeNumCosmicSignatureNfts_ = (this.version >= 3) ? this.mainPrizeNumCosmicSignatureNfts : 1n;
+		const numNftMints_ = numCstPrizeMints_ + (mainPrizeNumCosmicSignatureNfts_ - 1n);
 
 		const breakdown_ = {
 			roundNum: this.roundNum,
@@ -580,6 +669,8 @@ class GameModel {
 			lastCstBidderAddress: this.lastCstBidderAddress,
 			enduranceChampionAddress: this.enduranceChampionAddress,
 			chronoWarriorAddress: this.chronoWarriorAddress,
+			numCstPrizeMints: numCstPrizeMints_,
+			mainPrizeNumCosmicSignatureNfts: mainPrizeNumCosmicSignatureNfts_,
 			numNftMints: numNftMints_,
 			cstPrizeAmount: this.cstPrizeAmount,
 			marketingWalletCstContributionAmount: this.marketingWalletCstContributionAmount,
@@ -589,19 +680,19 @@ class GameModel {
 		};
 
 		// `_prepareNextRound`.
-		this.lastBidderAddress = ZERO_ADDRESS;
-		this.lastCstBidderAddress = ZERO_ADDRESS;
-		this.enduranceChampionAddress = ZERO_ADDRESS;
+		this.lastBidderAddress = hre.ethers.ZeroAddress;
+		this.lastCstBidderAddress = hre.ethers.ZeroAddress;
+		this.enduranceChampionAddress = hre.ethers.ZeroAddress;
 		this.prevEnduranceChampionDuration = 0n;
-		this.chronoWarriorAddress = ZERO_ADDRESS;
+		this.chronoWarriorAddress = hre.ethers.ZeroAddress;
 		this.chronoWarriorDuration = -1n;
 		this.roundNum += 1n;
 		this.mainPrizeTimeIncrementInMicroSeconds += this.mainPrizeTimeIncrementInMicroSeconds / this.mainPrizeTimeIncrementIncreaseDivisor;
-		// Comment-202606235: V2 intentionally accepts this owner-adversarial wrap so a bad delay cannot brick claims.
+		// Comment-202606235: V2+ intentionally accepts this owner-adversarial wrap so a bad delay cannot brick claims.
 		this.roundActivationTime = u256(
 			ts_ + this.delayDurationBeforeRoundActivation,
 			"roundActivationTime owner-delay update",
-			this.version === 2
+			this.version >= 2
 		);
 
 		return breakdown_;
@@ -630,7 +721,7 @@ class GameModel {
 		return { newDurationDivisor: newDurationDivisor_, newEndingBidPriceDivisor: newEndingBidPriceDivisor_ };
 	}
 
-	/** Applies `reinitialize` state changes (run as the upgrade call). */
+	/** Applies the V2 `reinitialize` state changes (run as the upgrade call). */
 	applyUpgradeToV2() {
 		this.version = 2;
 		this.cstDutchAuctionDuration = c.INITIAL_CST_DUTCH_AUCTION_DURATION;
@@ -641,18 +732,23 @@ class GameModel {
 		this.bidCstRewardAmount = 0n;
 	}
 
+	/** Applies the V3 `reinitialize` state changes (run as the upgrade call). */
+	applyUpgradeToV3() {
+		this.version = 3;
+		this.roundLateBidDurationDivisor = c.DEFAULT_ROUND_LATE_BID_DURATION_DIVISOR;
+		this.roundLateBidPricePremiumAmountBaseMultiplier = c.DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_BASE_MULTIPLIER;
+		this.roundLateBidPricePremiumAmountExponent = c.DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_EXPONENT;
+		this.mainPrizeNumCosmicSignatureNfts = c.DEFAULT_MAIN_PRIZE_NUM_COSMIC_SIGNATURE_NFTS;
+	}
+
 	// #endregion
 }
 
 // #endregion
 // #region
 
-// todo-ai-0 We don't need this constant. We should simply import and use `hre.ethers.ZeroAddress`.
-const ZERO_ADDRESS = hre.ethers.ZeroAddress;
-
 module.exports = {
 	GameModel,
-	ZERO_ADDRESS,
 };
 
 // #endregion

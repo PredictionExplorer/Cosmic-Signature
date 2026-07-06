@@ -6,7 +6,7 @@
 // #region Imports
 
 const { expect } = require("chai");
-const { ZERO_ADDRESS } = require("../GameModel.js");
+const hre = require("hardhat");
 const { MAX_UINT256 } = require("../../../../src/BigIntMathHelpers.js");
 
 // #endregion
@@ -27,7 +27,7 @@ price mean-reverts and stays in a realistic, bug-finding range. It is also close
 */
 function planBidTs(ctx_) {
 	const { engine, model } = ctx_;
-	if (model.lastBidderAddress !== ZERO_ADDRESS) {
+	if (model.lastBidderAddress !== hre.ethers.ZeroAddress) {
 		return engine.planTs(engine.boundaryCandidates());
 	}
 
@@ -242,7 +242,7 @@ async function executeEthBid(ctx_, actor_, options_) {
 	}
 	const message_ = (options_.flavor === "receive") ? "" : engine.randomMessage(Math.min(Number(model.bidMessageLengthMaxLimit), 120));
 	const planForReward_ = model.getBidCstRewardAmount(ts_);
-	const minReward_ = (model.version === 2 && options_.minRewardMode === "exact") ? planForReward_ : 0n;
+	const minReward_ = (model.version >= 2 && options_.minRewardMode === "exact") ? planForReward_ : 0n;
 
 	const gameAdapter_ = ctx_.game.connect(actor_.signer);
 	const buildTx_ = (overrides_) => {
@@ -287,7 +287,7 @@ async function executeEthBid(ctx_, actor_, options_) {
 		expect(bidPlaced_.args.message).to.equal(message_);
 	}
 	expect(bidPlaced_.args.mainPrizeTime).to.equal(model.mainPrizeTime);
-	if (model.version === 2) {
+	if (model.version >= 2) {
 		expect(bidPlaced_.args.bidCstRewardAmount).to.equal(expectations_.bidCstRewardAmount);
 		expect(bidPlaced_.args.cstDutchAuctionDuration).to.equal(expectations_.newCstDutchAuctionDuration);
 	}
@@ -326,7 +326,7 @@ Executes and fully verifies a CST bid.
 */
 async function executeCstBid(ctx_, actor_, options_) {
 	const { engine, model, ledger, contracts } = ctx_;
-	if (model.lastBidderAddress === ZERO_ADDRESS) {
+	if (model.lastBidderAddress === hre.ethers.ZeroAddress) {
 		return "skip"; // The first bid of a round must be ETH.
 	}
 
@@ -353,7 +353,7 @@ async function executeCstBid(ctx_, actor_, options_) {
 	}
 	const message_ = engine.randomMessage(Math.min(Number(model.bidMessageLengthMaxLimit), 120));
 	const expectedCstReward_ = model.getBidCstRewardAmount(ts_);
-	const minReward_ = (model.version === 2 && engine.chancePercent(30)) ? expectedCstReward_ : 0n;
+	const minReward_ = (model.version >= 2 && engine.chancePercent(30)) ? expectedCstReward_ : 0n;
 
 	const gameContract_ = ctx_.game.connect(actor_.signer).contract;
 	const buildTx_ = (overrides_) => {
@@ -364,10 +364,10 @@ async function executeCstBid(ctx_, actor_, options_) {
 				return ctx_.game.connect(actor_.signer).bidWithCstAndDonateToken(
 					priceMaxLimit_, message_, minReward_, contracts.fuzzTestMockErc20Address, donationTokenAmount_, overrides_);
 			case "donateNft": {
-				const sig_ = (model.version === 2) ?
+				const sig_ = (model.version >= 2) ?
 					"bidWithCstAndDonateNft(uint256,string,uint256,address,uint256)" :
 					"bidWithCstAndDonateNft(uint256,string,address,uint256)";
-				const args_ = (model.version === 2) ?
+				const args_ = (model.version >= 2) ?
 					[priceMaxLimit_, message_, minReward_, contracts.fuzzTestMockErc721Address, donationNftId_] :
 					[priceMaxLimit_, message_, contracts.fuzzTestMockErc721Address, donationNftId_];
 				return gameContract_.getFunction(sig_)(...args_, overrides_);
@@ -394,7 +394,7 @@ async function executeCstBid(ctx_, actor_, options_) {
 	expect(bidPlaced_.args.paidCstPrice).to.equal(price_);
 	expect(bidPlaced_.args.randomWalkNftId).to.equal(-1n);
 	expect(bidPlaced_.args.mainPrizeTime).to.equal(model.mainPrizeTime);
-	if (model.version === 2) {
+	if (model.version >= 2) {
 		expect(bidPlaced_.args.bidCstRewardAmount).to.equal(expectations_.bidCstRewardAmount);
 		expect(bidPlaced_.args.cstDutchAuctionDuration).to.equal(expectations_.newCstDutchAuctionDuration);
 	}
@@ -442,11 +442,17 @@ function verifyClaimReceipt(ctx_, { claimerAddress, receipt, breakdown, rwStaker
 	expect(mainClaimed_.args.beneficiaryAddress.toLowerCase()).to.equal(claimerLower_);
 	expect(mainClaimed_.args.ethPrizeAmount).to.equal(breakdown.mainEthPrizeAmount);
 	expect(mainClaimed_.args.cstPrizeAmount).to.equal(breakdown.cstPrizeAmount);
+	if (model.version >= 3) {
+		// The V3 event reports the beneficiary's NFT count (`prizeNumCosmicSignatureNfts`) and renames
+		// `prizeCosmicSignatureNftId` to `prizeFirstCosmicSignatureNftId`.
+		expect(mainClaimed_.args.prizeNumCosmicSignatureNfts, "claim: prizeNumCosmicSignatureNfts")
+			.to.equal(breakdown.mainPrizeNumCosmicSignatureNfts);
+	}
 
 	// Independent sanity: no prize is ever paid to the zero address.
-	expect(claimerLower_, "claim: zero-address beneficiary").to.not.equal(ZERO_ADDRESS);
-	expect(breakdown.enduranceChampionAddress, "claim: zero-address endurance champion").to.not.equal(ZERO_ADDRESS);
-	expect(breakdown.chronoWarriorAddress, "claim: zero-address chrono-warrior").to.not.equal(ZERO_ADDRESS);
+	expect(claimerLower_, "claim: zero-address beneficiary").to.not.equal(hre.ethers.ZeroAddress);
+	expect(breakdown.enduranceChampionAddress, "claim: zero-address endurance champion").to.not.equal(hre.ethers.ZeroAddress);
+	expect(breakdown.chronoWarriorAddress, "claim: zero-address chrono-warrior").to.not.equal(hre.ethers.ZeroAddress);
 
 	// Record the round registration so PrizesWallet claim actions know the beneficiary and timeout.
 	ledger.prizesWallet.mainPrizeBeneficiaries.set(breakdown.roundNum.toString(), claimerLower_);
@@ -471,7 +477,7 @@ function verifyClaimReceipt(ctx_, { claimerAddress, receipt, breakdown, rwStaker
 	const raffleEthEvents_ = engine.parsedEvents(receipt, game_, "RaffleWinnerBidderEthPrizeAllocated");
 	expect(BigInt(raffleEthEvents_.length), "claim: raffle ETH event count").to.equal(breakdown.numRaffleEthPrizesForBidders);
 	for (const event_ of raffleEthEvents_) {
-		expect(event_.args.winnerAddress.toLowerCase(), "claim: zero-address raffle ETH winner").to.not.equal(ZERO_ADDRESS);
+		expect(event_.args.winnerAddress.toLowerCase(), "claim: zero-address raffle ETH winner").to.not.equal(hre.ethers.ZeroAddress);
 		expect(biddersSet_.has(event_.args.winnerAddress.toLowerCase()), "claim: raffle ETH winner not a bidder").to.equal(true);
 		expect(event_.args.ethPrizeAmount).to.equal(breakdown.raffleEthPrizeAmountPerBidder);
 	}
@@ -480,7 +486,7 @@ function verifyClaimReceipt(ctx_, { claimerAddress, receipt, breakdown, rwStaker
 	expect(BigInt(rafflePrizeEvents_.length), "claim: raffle CST/NFT event count")
 		.to.equal(breakdown.numRaffleCosmicSignatureNftsForBidders + breakdown.numLuckyStakers);
 	for (const event_ of rafflePrizeEvents_) {
-		expect(event_.args.winnerAddress.toLowerCase(), "claim: zero-address raffle NFT winner").to.not.equal(ZERO_ADDRESS);
+		expect(event_.args.winnerAddress.toLowerCase(), "claim: zero-address raffle NFT winner").to.not.equal(hre.ethers.ZeroAddress);
 		if (event_.args.winnerIsRandomWalkNftStaker) {
 			expect(rwStakerOwnersBefore.has(event_.args.winnerAddress.toLowerCase()), "claim: lucky staker not an RW staker").to.equal(true);
 		} else {
@@ -507,10 +513,10 @@ function verifyClaimReceipt(ctx_, { claimerAddress, receipt, breakdown, rwStaker
 		expect(stakingDepositEvents_[0].args.depositAmount).to.equal(breakdown.stakingTotalEthRewardAmount);
 	}
 
-	// CST mints (from == zero address): numNftMints prize mints + 1 marketing mint.
+	// CST mints (from == zero address): numCstPrizeMints prize mints + 1 marketing mint.
 	const cstMints_ = engine.parsedEvents(receipt, contracts.cosmicSignatureToken, "Transfer")
-		.filter((event_) => event_.args[0].toLowerCase() === ZERO_ADDRESS);
-	expect(BigInt(cstMints_.length), "claim: CST mint count").to.equal(breakdown.numNftMints + 1n);
+		.filter((event_) => event_.args[0].toLowerCase() === hre.ethers.ZeroAddress);
+	expect(BigInt(cstMints_.length), "claim: CST mint count").to.equal(breakdown.numCstPrizeMints + 1n);
 	let marketingMints_ = 0;
 	for (const mint_ of cstMints_) {
 		if (mint_.args[1].toLowerCase() === model.marketingWalletAddress) {
@@ -522,9 +528,22 @@ function verifyClaimReceipt(ctx_, { claimerAddress, receipt, breakdown, rwStaker
 	}
 	expect(marketingMints_, "claim: marketing CST mint count").to.equal(1);
 
+	// CS NFT mints: one per CST prize mint, plus `mainPrizeNumCosmicSignatureNfts - 1` extra
+	// beneficiary NFTs in V3+ (a sequential ID block starting at `prizeFirstCosmicSignatureNftId`).
 	const nftMints_ = engine.parsedEvents(receipt, contracts.cosmicSignatureNft, "Transfer")
-		.filter((event_) => event_.args[0].toLowerCase() === ZERO_ADDRESS);
+		.filter((event_) => event_.args[0].toLowerCase() === hre.ethers.ZeroAddress);
 	expect(BigInt(nftMints_.length), "claim: CS NFT mint count").to.equal(breakdown.numNftMints);
+	if (model.version >= 3) {
+		const beneficiaryNftIdsSet_ = new Set(
+			nftMints_
+				.filter((event_) => event_.args[1].toLowerCase() === claimerLower_)
+				.map((event_) => event_.args[2])
+		);
+		const firstPrizeNftId_ = mainClaimed_.args.prizeFirstCosmicSignatureNftId;
+		for (let nftIndex_ = 0n; nftIndex_ < breakdown.mainPrizeNumCosmicSignatureNfts; ++ nftIndex_) {
+			expect(beneficiaryNftIdsSet_.has(firstPrizeNftId_ + nftIndex_), `claim: beneficiary prize NFT ${nftIndex_} not minted to the beneficiary`).to.equal(true);
+		}
+	}
 
 	// Round-transition config events.
 	const activationChanged_ = engine.singleEvent(receipt, game_, "RoundActivationTimeChanged", "claim");

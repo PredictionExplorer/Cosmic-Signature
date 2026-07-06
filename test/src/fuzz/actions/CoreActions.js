@@ -4,7 +4,7 @@
 
 const { expect } = require("chai");
 const { ENABLE_SMTCHECKER } = require("../../../../src/Helpers.js");
-const { ZERO_ADDRESS } = require("../GameModel.js");
+const hre = require("hardhat");
 const { MAX_UINT256 } = require("../../../../src/BigIntMathHelpers.js");
 const {
 	pickBiddableRandomWalkNft,
@@ -64,31 +64,31 @@ const biddingActions = [
 	{
 		name: "bidWithEthMinRewardExact",
 		weight: 3,
-		isApplicable: (ctx_) => ctx_.model.version === 2,
+		isApplicable: (ctx_) => ctx_.model.version >= 2,
 		run: (ctx_, actor_) => executeEthBid(ctx_, actor_, { flavor: "plain", valueMode: "exact", minRewardMode: "exact" }),
 	},
 	{
 		name: "bidWithCst",
 		weight: 10,
-		isApplicable: (ctx_) => ctx_.model.lastBidderAddress !== ZERO_ADDRESS,
+		isApplicable: (ctx_) => ctx_.model.lastBidderAddress !== hre.ethers.ZeroAddress,
 		run: (ctx_, actor_) => executeCstBid(ctx_, actor_, { flavor: "plain", maxLimitMode: "padded" }),
 	},
 	{
 		name: "bidWithCstExactLimit",
 		weight: 4,
-		isApplicable: (ctx_) => ctx_.model.lastBidderAddress !== ZERO_ADDRESS,
+		isApplicable: (ctx_) => ctx_.model.lastBidderAddress !== hre.ethers.ZeroAddress,
 		run: (ctx_, actor_) => executeCstBid(ctx_, actor_, { flavor: "plain", maxLimitMode: "exact" }),
 	},
 	{
 		name: "bidWithCstAndDonateToken",
 		weight: 3,
-		isApplicable: (ctx_) => ctx_.model.lastBidderAddress !== ZERO_ADDRESS,
+		isApplicable: (ctx_) => ctx_.model.lastBidderAddress !== hre.ethers.ZeroAddress,
 		run: (ctx_, actor_) => executeCstBid(ctx_, actor_, { flavor: "donateToken", maxLimitMode: "max" }),
 	},
 	{
 		name: "bidWithCstAndDonateNft",
 		weight: 3,
-		isApplicable: (ctx_) => ctx_.model.lastBidderAddress !== ZERO_ADDRESS,
+		isApplicable: (ctx_) => ctx_.model.lastBidderAddress !== hre.ethers.ZeroAddress,
 		run: (ctx_, actor_) => executeCstBid(ctx_, actor_, { flavor: "donateNft", maxLimitMode: "max" }),
 	},
 ];
@@ -143,7 +143,7 @@ Claims the main prize as the last bidder. Times the claim at/after `mainPrizeTim
 */
 async function claimAsLastBidder(ctx_) {
 	const { engine, model } = ctx_;
-	if (model.lastBidderAddress === ZERO_ADDRESS) {
+	if (model.lastBidderAddress === hre.ethers.ZeroAddress) {
 		return "skip";
 	}
 	const claimer_ = ctx_.actorByAddress(model.lastBidderAddress);
@@ -162,7 +162,7 @@ Claims as a non-last bidder after the claim timeout (mirrors the "anyone after t
 */
 async function claimAfterTimeout(ctx_) {
 	const { engine, model } = ctx_;
-	if (model.lastBidderAddress === ZERO_ADDRESS) {
+	if (model.lastBidderAddress === hre.ethers.ZeroAddress) {
 		return "skip";
 	}
 	const claimer_ = ctx_.pickActorNot(model.lastBidderAddress);
@@ -184,7 +184,7 @@ wraps modulo 2^256. This action drives that exact path through the full claim ve
 */
 async function claimWithOverflowingDelay(ctx_) {
 	const { engine, model, ledger } = ctx_;
-	if (model.lastBidderAddress === ZERO_ADDRESS) {
+	if (model.lastBidderAddress === hre.ethers.ZeroAddress) {
 		return "skip";
 	}
 	const claimer_ = ctx_.actorByAddress(model.lastBidderAddress);
@@ -253,7 +253,7 @@ then stops the phase) — a graceful, realistic outcome rather than an infinite 
 */
 async function forceCompleteRound(ctx_) {
 	const { engine, model } = ctx_;
-	if (model.lastBidderAddress === ZERO_ADDRESS) {
+	if (model.lastBidderAddress === hre.ethers.ZeroAddress) {
 		let seeded_ = false;
 		for (const actor_ of actorsByWealthDesc(ctx_)) {
 			const bidOutcome_ = await executeEthBid(ctx_, actor_, { flavor: "plain", valueMode: "exact" });
@@ -262,7 +262,7 @@ async function forceCompleteRound(ctx_) {
 				break;
 			}
 		}
-		if ( ! seeded_ || model.lastBidderAddress === ZERO_ADDRESS) {
+		if ( ! seeded_ || model.lastBidderAddress === hre.ethers.ZeroAddress) {
 			return false;
 		}
 	}
@@ -290,7 +290,7 @@ already advanced, so it sees no bids). Exercises the main prize's same-block exc
 */
 async function runClaimRace(ctx_) {
 	const { engine, model, ledger } = ctx_;
-	if (model.lastBidderAddress === ZERO_ADDRESS) {
+	if (model.lastBidderAddress === hre.ethers.ZeroAddress) {
 		return false;
 	}
 	const claimer_ = ctx_.actorByAddress(model.lastBidderAddress);
@@ -334,25 +334,25 @@ const claimActions = [
 	{
 		name: "claimMainPrize",
 		weight: 7,
-		isApplicable: (ctx_) => ctx_.model.lastBidderAddress !== ZERO_ADDRESS && ctx_.actorByAddress(ctx_.model.lastBidderAddress) !== null,
+		isApplicable: (ctx_) => ctx_.model.lastBidderAddress !== hre.ethers.ZeroAddress && ctx_.actorByAddress(ctx_.model.lastBidderAddress) !== null,
 		run: (ctx_) => claimAsLastBidder(ctx_),
 	},
 	{
 		name: "claimMainPrizeAfterTimeout",
 		weight: 2,
-		isApplicable: (ctx_) => ctx_.model.lastBidderAddress !== ZERO_ADDRESS,
+		isApplicable: (ctx_) => ctx_.model.lastBidderAddress !== hre.ethers.ZeroAddress,
 		run: (ctx_) => claimAfterTimeout(ctx_),
 	},
 	{
 		// Comment-202606235: the last bidder claims after the owner overflowed the next-round activation math.
-		// V2-only (V1 uses checked arithmetic, where this claim would revert).
+		// V2+-only (V1 uses checked arithmetic, where this claim would revert).
 		// SMTChecker preprocessing deliberately disables the unchecked block, so that build expects
 		// and records Panic(0x11) instead of treating it as an unexpected fuzz failure.
 		name: "claimMainPrizeWithOverflowingDelay",
 		weight: 1,
 		isApplicable: (ctx_) =>
-			ctx_.model.version === 2 &&
-			ctx_.model.lastBidderAddress !== ZERO_ADDRESS &&
+			ctx_.model.version >= 2 &&
+			ctx_.model.lastBidderAddress !== hre.ethers.ZeroAddress &&
 			ctx_.actorByAddress(ctx_.model.lastBidderAddress) !== null,
 		run: (ctx_) => claimWithOverflowingDelay(ctx_),
 	},

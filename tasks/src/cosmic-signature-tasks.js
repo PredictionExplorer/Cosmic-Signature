@@ -287,12 +287,33 @@ task("upgrade-cosmic-signature-game", "Upgrades the CosmicSignatureGame contract
 	}
 	console.info("%s", `Done. Report saved to "${upgradeConfigObject.reportFilePath}".${nodeOsModule.EOL}`);
 
-	// todo-ai-0 Add code to deploy the new `PrizesWallet`,
-	// todo-ai-0 log its address to the console,
-	// todo-ai-0 call a designated method on the game proxy contract to update the `prizesWallet` state variable.
-	// todo-ai-0 Log a reminder to the owner to update prizes wallet address in the report generated when deploying all contracts
-	// todo-ai-0 and on the web site.
-	// todo-ai-0 Leave the newly added code commented.
+	// // [Comment-202607153]
+	// // Optionally, deploy a new `PrizesWallet` and point the game at it.
+	// // Uncomment this if the new game contract version is to be paired with a fresh `PrizesWallet`.
+	// // Remember that the old `PrizesWallet` remains live afterwards: prize winners can still withdraw
+	// // their unclaimed prizes from it, but the game will register new bidding rounds with the new one.
+	// // The round must still be inactive for `setPrizesWallet` to succeed.
+	// // Comment-202607156 relates.
+	// // [/Comment-202607153]
+	// {
+	// 	console.info("%s", "Deploying a new PrizesWallet.");
+	// 	const prizesWalletFactory = await hre.ethers.getContractFactory("PrizesWallet", deployerSigner);
+	// 	const newPrizesWallet = await prizesWalletFactory.deploy(deployCosmicSignatureContractsReportObject.cosmicSignatureGameProxyAddress);
+	// 	await newPrizesWallet.waitForDeployment();
+	// 	const newPrizesWalletAddress = await newPrizesWallet.getAddress();
+	// 	console.info(/*"%s",*/ "New PrizesWallet address:", newPrizesWalletAddress);
+	//
+	// 	console.info("%s", "Pointing the game proxy contract at the new PrizesWallet.");
+	// 	const newCosmicSignatureGameProxy =
+	// 		newCosmicSignatureGameFactory.attach(deployCosmicSignatureContractsReportObject.cosmicSignatureGameProxyAddress);
+	// 	await waitForTransactionReceipt(newCosmicSignatureGameProxy.setPrizesWallet(newPrizesWalletAddress));
+	//
+	// 	console.info(
+	// 		"%s",
+	// 		`${nodeOsModule.EOL}Reminder. Update the PrizesWallet address in "${deployConfigObject.reportFilePath}" ` +
+	// 		"and on the web site."
+	// 	);
+	// }
 })
 	.addParam("upgradeconfigfilepath", "Upgrade configuration file (JSON) path");
 
@@ -310,9 +331,20 @@ task("register-upgraded-cosmic-signature-game", "Verifies and registers a newly 
 		// constructorArguments: [],
 	});
 
-	// todo-ai-0 Add code to register the newly deployed `PrizesWallet`.
-	// todo-ai-0 Hardcode its address. The owner will need to edit the address in the code before running the task.
-	// todo-ai-0 Leave the newly added code commented.
+	// // [Comment-202607156]
+	// // Optionally, register the new `PrizesWallet` deployed near Comment-202607153.
+	// // Before uncommenting and running this, edit the hardcoded address (copy it from the
+	// // upgrade-cosmic-signature-game task console output), as well as the game proxy address.
+	// // [/Comment-202607156]
+	// {
+	// 	const newPrizesWalletAddress = "0x0000000000000000000000000000000000000000";
+	// 	const cosmicSignatureGameProxyAddress = "0x0000000000000000000000000000000000000000";
+	// 	console.info("%s", `${nodeOsModule.EOL}Registering PrizesWallet.`);
+	// 	await hre.run("verify:verify", {
+	// 		address: newPrizesWalletAddress,
+	// 		constructorArguments: [cosmicSignatureGameProxyAddress,],
+	// 	});
+	// }
 
 	console.info("%s", `${nodeOsModule.EOL}Done.`);
 })

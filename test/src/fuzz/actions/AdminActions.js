@@ -163,13 +163,26 @@ function buildSafeMutations(ctx_) {
 	add_("setDelayDurationBeforeRoundActivation", BigInt(engine.randomIntRange(60, 7200)), (m_, v_) => { m_.delayDurationBeforeRoundActivation = v_; });
 	add_("setMainPrizeTimeIncrementIncreaseDivisor", BigInt(engine.randomIntRange(50, 200)), (m_, v_) => { m_.mainPrizeTimeIncrementIncreaseDivisor = v_; });
 
-	if (model.version === 2) {
+	if (model.version >= 2) {
 		add_("setCstDutchAuctionDuration", BigInt(engine.randomIntRange(3600, 2 * 86400)), (m_, v_) => { m_.cstDutchAuctionDuration = v_; });
 		add_("setCstDutchAuctionDurationChangeDivisor", BigInt(engine.randomIntRange(50, 1000)), (m_, v_) => { m_.cstDutchAuctionDurationChangeDivisor = v_; });
 		add_("setBidCstRewardAmountMultiplier", model.bidCstRewardAmountMultiplier * BigInt(engine.randomIntRange(50, 200)) / 100n, (m_, v_) => { m_.bidCstRewardAmountMultiplier = v_; });
 	} else {
 		add_("setCstDutchAuctionDurationDivisor", BigInt(engine.randomIntRange(2, 100)), (m_, v_) => { m_.cstDutchAuctionDurationDivisor = v_; });
 		add_("setBidCstRewardAmount", BigInt(engine.randomIntRange(0, 500)) * 10n ** 18n, (m_, v_) => { m_.bidCstRewardAmount = v_; });
+	}
+	if (model.version >= 3) {
+		// Safe ranges: the late-bid-premium window stays between ~6 minutes and ~1 hour, and the
+		// premium arithmetic stays far from wrapping (the model's `u256` guard would fail otherwise).
+		add_("setRoundLateBidDurationDivisor", BigInt(engine.randomIntRange(1_000_000, 10_000_000)), (m_, v_) => { m_.roundLateBidDurationDivisor = v_; });
+		add_(
+			"setRoundLateBidPricePremiumAmountBaseMultiplier",
+			model.roundLateBidPricePremiumAmountBaseMultiplier * BigInt(engine.randomIntRange(50, 200)) / 100n,
+			(m_, v_) => { m_.roundLateBidPricePremiumAmountBaseMultiplier = v_; }
+		);
+		add_("setRoundLateBidPricePremiumAmountExponent", BigInt(engine.randomIntRange(1, 10)), (m_, v_) => { m_.roundLateBidPricePremiumAmountExponent = v_; });
+		// Comment-202411064: the number of main prize NFTs; exercise 1 through 5.
+		add_("setMainPrizeNumCosmicSignatureNfts", BigInt(engine.randomIntRange(1, 5)), (m_, v_) => { m_.mainPrizeNumCosmicSignatureNfts = v_; });
 	}
 	return mutations_;
 }

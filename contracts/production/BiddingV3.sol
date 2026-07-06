@@ -43,7 +43,7 @@ abstract contract BiddingV3 is
 	// #endregion
 	// #region `_addRoundLateBidPricePremiumAmountIfNeeded`
 
-	function _addRoundLateBidPricePremiumAmountIfNeeded(uint256 bidPrice_, int256 currentTimeOffset_) public view returns (uint256 adjustedBidPrice_) {
+	function _addRoundLateBidPricePremiumAmountIfNeeded(uint256 bidPrice_, int256 currentTimeOffset_) internal view returns (uint256 adjustedBidPrice_) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -74,7 +74,6 @@ abstract contract BiddingV3 is
 					// We multiply and then divide by `2 ** 13` to increase resolution of integer math.
 					// Max premium multiplier to multiply bid price by:
 					// 9742 ** 8 / 2 ** (13 * 8) == ~4
-					// todo-0 Test the actual multiplier and its exponential growth.
 					// Let's say, our bid price is 1_000_000_000. Calculating max premium:
 					// (9742n ** 8n * 1_000_000_000n) >> (13n * 8n) == 4_000_050_302n
 					//

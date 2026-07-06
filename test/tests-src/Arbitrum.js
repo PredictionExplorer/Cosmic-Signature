@@ -106,16 +106,16 @@ describe("Arbitrum", function () {
 				expect(cosmicSignatureGameProxyArbitrumErrorLogs_.length).equal(eventIndex_);
 			}
 
-			if ( ! (contractVersionNumber_ < 2) ) {
+			if ( ! (contractVersionNumber_ < 3) ) {
 				break;
 			}
 
-			const cosmicSignatureGameV2Factory_ =
-				await hre.ethers.getContractFactory("CosmicSignatureGameV2", contracts_.ownerSigner);
+			const newCosmicSignatureGameFactory_ =
+				await hre.ethers.getContractFactory((contractVersionNumber_ < 2) ? "CosmicSignatureGameV2" : "CosmicSignatureGameV3", contracts_.ownerSigner);
 			cosmicSignatureGameProxy_ =
 				await hre.upgrades.upgradeProxy(
 					contracts_.cosmicSignatureGameProxy,
-					cosmicSignatureGameV2Factory_,
+					newCosmicSignatureGameFactory_,
 					{
 						kind: "uups",
 						call: "reinitialize",

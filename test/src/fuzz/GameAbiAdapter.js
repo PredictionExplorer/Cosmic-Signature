@@ -1,18 +1,20 @@
 "use strict";
 
 /**
-Routes game calls to the V1 or V2 ABI. Actions call these helpers and never construct
+Routes game calls to the V1 or V2+ ABI. Actions call these helpers and never construct
 version-specific call data themselves, so every action works in every campaign phase.
 
-V2 differences handled here (see `docs/v2-vs-v1-changes.md`):
+V2 differences handled here (see `docs/v3-vs-v2-changes.md` for the V3 deltas, which change
+no call shapes):
 - all 6 bid methods gain a `bidCstRewardAmountMinLimit_` parameter (donate variants insert it 3rd);
-- `receive()` exists in both versions (plain ETH transfer);
-- `getBidCstRewardAmount*` exist only in V2.
+- `receive()` exists in every version (plain ETH transfer);
+- `getBidCstRewardAmount*` exist only in V2+.
+V3 keeps the V2 call shapes and only adds views (`getRoundLateBidDuration`) and setters.
 */
 class GameAbiAdapter {
 	/**
 	@param {import("ethers").Contract} gameContract_ Proxy bound to the right ABI for `version_`.
-	@param {1 | 2} version_
+	@param {1 | 2 | 3} version_
 	*/
 	constructor(gameContract_, version_) {
 		this.contract = gameContract_;
@@ -30,7 +32,7 @@ class GameAbiAdapter {
 	/**
 	@param {bigint} randomWalkNftId_ `-1n` for none.
 	@param {string} message_
-	@param {bigint} minReward_ V2 `bidCstRewardAmountMinLimit_`; ignored on V1.
+	@param {bigint} minReward_ V2+ `bidCstRewardAmountMinLimit_`; ignored on V1.
 	@param {{value: bigint, gasPrice?: bigint}} overrides_
 	*/
 	bidWithEth(randomWalkNftId_, message_, minReward_, overrides_) {
@@ -52,15 +54,15 @@ class GameAbiAdapter {
 	}
 
 	bidWithCst(priceMaxLimit_, message_, minReward_, overrides_ = {}) {
-		return (this.version === 2) ?
-			this.contract.bidWithCst(priceMaxLimit_, message_, minReward_, overrides_) :
-			this.contract.bidWithCst(priceMaxLimit_, message_, overrides_);
+		return (this.version === 1) ?
+			this.contract.bidWithCst(priceMaxLimit_, message_, overrides_) :
+			this.contract.bidWithCst(priceMaxLimit_, message_, minReward_, overrides_);
 	}
 
 	bidWithCstAndDonateToken(priceMaxLimit_, message_, minReward_, tokenAddress_, amount_, overrides_ = {}) {
-		return (this.version === 2) ?
-			this.contract.bidWithCstAndDonateToken(priceMaxLimit_, message_, minReward_, tokenAddress_, amount_, overrides_) :
-			this.contract.bidWithCstAndDonateToken(priceMaxLimit_, message_, tokenAddress_, amount_, overrides_);
+		return (this.version === 1) ?
+			this.contract.bidWithCstAndDonateToken(priceMaxLimit_, message_, tokenAddress_, amount_, overrides_) :
+			this.contract.bidWithCstAndDonateToken(priceMaxLimit_, message_, minReward_, tokenAddress_, amount_, overrides_);
 	}
 
 	claimMainPrize(overrides_ = {}) {

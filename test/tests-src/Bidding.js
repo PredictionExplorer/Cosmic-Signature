@@ -617,7 +617,7 @@ describe("Bidding", function () {
 				expect(bidderContractEthBalanceAmount_).equal((bidderContractEthDepositAcceptanceModeCode_ > 0n) ? 0n : ethRefundAmount_);
 			}
 
-			if ( ! (contractVersionNumber_ < 2) ) {
+			if ( ! (contractVersionNumber_ < 3) ) {
 				break;
 			}
 
@@ -628,12 +628,12 @@ describe("Bidding", function () {
 
 			await waitForTransactionReceipt(bidderContract_.connect(contracts_.signers[3]).surrenderMyEth());
 
-			const cosmicSignatureGameV2Factory_ =
-				await hre.ethers.getContractFactory("CosmicSignatureGameV2", contracts_.ownerSigner);
+			const newCosmicSignatureGameFactory_ =
+				await hre.ethers.getContractFactory((contractVersionNumber_ < 2) ? "CosmicSignatureGameV2" : "CosmicSignatureGameV3", contracts_.ownerSigner);
 			cosmicSignatureGameProxy_ =
 				await hre.upgrades.upgradeProxy(
 					contracts_.cosmicSignatureGameProxy,
-					cosmicSignatureGameV2Factory_,
+					newCosmicSignatureGameFactory_,
 					{
 						kind: "uups",
 						call: "reinitialize",
@@ -887,7 +887,7 @@ describe("Bidding", function () {
 				}
 			}
 
-			if ( ! (contractVersionNumber_ < 2) ) {
+			if ( ! (contractVersionNumber_ < 3) ) {
 				// console.info("%s", "202606167");
 				break;
 			}
@@ -898,12 +898,12 @@ describe("Bidding", function () {
 			// await hre.ethers.provider.send("evm_mine");
 			await waitForTransactionReceipt(cosmicSignatureGameProxy_.connect(contracts_.signers[5]).claimMainPrize());
 
-			const cosmicSignatureGameV2Factory_ =
-				await hre.ethers.getContractFactory("CosmicSignatureGameV2", contracts_.ownerSigner);
+			const newCosmicSignatureGameFactory_ =
+				await hre.ethers.getContractFactory((contractVersionNumber_ < 2) ? "CosmicSignatureGameV2" : "CosmicSignatureGameV3", contracts_.ownerSigner);
 			cosmicSignatureGameProxy_ =
 				await hre.upgrades.upgradeProxy(
 					contracts_.cosmicSignatureGameProxy,
-					cosmicSignatureGameV2Factory_,
+					newCosmicSignatureGameFactory_,
 					{
 						kind: "uups",
 						call: "reinitialize",

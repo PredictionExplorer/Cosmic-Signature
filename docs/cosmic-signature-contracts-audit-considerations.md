@@ -7,6 +7,7 @@ We recommned reviewing all files seen in this project, including, but not limite
 `${workspaceFolder}/README.md`,\
 `./cosmic-signature-contracts-class-diagram-and-calls.svg`,\
 `./cosmic-signature-contracts-functional-requirements.md`,\
+`./v3-vs-v2-changes.md`,\
 `${workspaceFolder}/tasks/docs/*.md`.
 
 #### Contracts to Audit

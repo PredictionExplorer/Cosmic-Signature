@@ -3,7 +3,7 @@
 // #region Imports
 
 const { expect } = require("chai");
-const { ZERO_ADDRESS } = require("./GameModel.js");
+const hre = require("hardhat");
 
 // #endregion
 // #region `ShadowState`
@@ -104,7 +104,7 @@ class ShadowState {
 		// RandomWalkNFT economic state.
 		this.randomWalkNft = {
 			price: 10n ** 15n, // 0.001 ether
-			lastMinter: ZERO_ADDRESS,
+			lastMinter: hre.ethers.ZeroAddress,
 			lastMintTime: 0n,
 			nextTokenId: 0n,
 			numWithdrawals: 0n,
@@ -126,6 +126,29 @@ class ShadowState {
 	registerContracts(addresses_, contractsByAddress_) {
 		this.addresses = addresses_;
 		this.contractsByAddress = contractsByAddress_;
+	}
+
+	/**
+	Rebinds the PrizesWallet ledger to a freshly deployed (empty) wallet after `setPrizesWallet`.
+	The caller must have fully drained the previous wallet first (every tracked ETH prize withdrawn and
+	every donated token/NFT claimed), so no obligations are forgotten here.
+	@param {string} newPrizesWalletAddress_
+	@param {import("ethers").Interface} prizesWalletInterface_
+	*/
+	swapPrizesWallet(newPrizesWalletAddress_, prizesWalletInterface_) {
+		const newAddressLower_ = newPrizesWalletAddress_.toLowerCase();
+		this.contractsByAddress.set(newAddressLower_, { name: "PrizesWallet", iface: prizesWalletInterface_ });
+		this.addresses.prizesWallet = newAddressLower_;
+		this.prizesWallet = {
+			ethBalances: new Map(),
+			mainPrizeBeneficiaries: new Map(),
+			roundTimeouts: new Map(),
+			timeoutDurationToWithdrawPrizes: 0n,
+			donatedNfts: new Map(),
+			nextDonatedNftIndex: 0n,
+			donatedMockErc20: new Map(),
+			donatedTokenHolders: new Map(),
+		};
 	}
 
 	// #endregion
@@ -232,7 +255,7 @@ class ShadowState {
 	_cstApplyTransfer(from_, to_, value_) {
 		const fromKey_ = from_.toLowerCase();
 		const toKey_ = to_.toLowerCase();
-		if (fromKey_ === ZERO_ADDRESS) {
+		if (fromKey_ === hre.ethers.ZeroAddress) {
 			this.cstTotalSupply += value_;
 			this.cstTotalMinted += value_;
 		} else {
@@ -240,7 +263,7 @@ class ShadowState {
 			expect(next_ >= 0n, `CST ledger: negative balance for ${this.labelOf(fromKey_)}`).to.equal(true);
 			this.cst.set(fromKey_, next_);
 		}
-		if (toKey_ === ZERO_ADDRESS) {
+		if (toKey_ === hre.ethers.ZeroAddress) {
 			this.cstTotalSupply -= value_;
 			this.cstTotalBurned += value_;
 		} else {
@@ -255,14 +278,14 @@ class ShadowState {
 	_mockErc20ApplyTransfer(from_, to_, value_) {
 		const fromKey_ = from_.toLowerCase();
 		const toKey_ = to_.toLowerCase();
-		if (fromKey_ === ZERO_ADDRESS) {
+		if (fromKey_ === hre.ethers.ZeroAddress) {
 			this.mockErc20TotalSupply += value_;
 		} else {
 			const next_ = this.mockErc20BalanceOf(fromKey_) - value_;
 			expect(next_ >= 0n, "mock ERC-20 ledger: negative balance").to.equal(true);
 			this.mockErc20.set(fromKey_, next_);
 		}
-		if (toKey_ !== ZERO_ADDRESS) {
+		if (toKey_ !== hre.ethers.ZeroAddress) {
 			this.mockErc20.set(toKey_, this.mockErc20BalanceOf(toKey_) + value_);
 		} else {
 			this.mockErc20TotalSupply -= value_;
@@ -273,12 +296,12 @@ class ShadowState {
 		const idKey_ = nftId_.toString();
 		const fromKey_ = from_.toLowerCase();
 		const toKey_ = to_.toLowerCase();
-		if (fromKey_ === ZERO_ADDRESS) {
+		if (fromKey_ === hre.ethers.ZeroAddress) {
 			expect(ownersMap_.has(idKey_), `NFT ledger: mint of existing id ${idKey_}`).to.equal(false);
 		} else {
 			expect(ownersMap_.get(idKey_), `NFT ledger: transfer from non-owner of id ${idKey_}`).to.equal(fromKey_);
 		}
-		if (toKey_ === ZERO_ADDRESS) {
+		if (toKey_ === hre.ethers.ZeroAddress) {
 			ownersMap_.delete(idKey_);
 		} else {
 			ownersMap_.set(idKey_, toKey_);

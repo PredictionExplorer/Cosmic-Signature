@@ -35,7 +35,6 @@ abstract contract CosmicSignatureGameStorageV3Base is CosmicSignatureGameStorage
 
 	/// @notice The number of Cosmic Signature NFTs to be minted to the main prize beneficiary.
 	/// Comment-202411064 applies.
-	/// todo-ai-0 Test different random values, like 1 through 5. Make sure all relevant asserts succeed.
 	uint256 public mainPrizeNumCosmicSignatureNfts;
 
 	// #endregion

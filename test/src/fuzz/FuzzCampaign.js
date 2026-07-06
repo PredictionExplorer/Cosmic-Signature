@@ -17,12 +17,12 @@ const {
 	uint256ToPaddedHexString,
 } = require("../../../src/Helpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../../src/ContractTestingHelpers.js");
-const { GameModel, ZERO_ADDRESS } = require("./GameModel.js");
+const { GameModel } = require("./GameModel.js");
 const { ShadowState } = require("./ShadowState.js");
 const { GameAbiAdapter } = require("./GameAbiAdapter.js");
 const { FuzzEngine } = require("./FuzzEngine.js");
 const { runInvariants, assertCoverageFloors, hasMinimalCoverageFloors, printCoverageReport, mergeStatsInto } = require("./Invariants.js");
-const { performUpgradeToV2, upgradeAuthProbe } = require("./UpgradePhase.js");
+const { performUpgradeToV2, performUpgradeToV3, performPrizesWalletSwap, upgradeAuthProbe } = require("./UpgradePhase.js");
 const { biddingActions, claimActions, donationActions, stakingActions, forceCompleteRound, runClaimRace } = require("./actions/CoreActions.js");
 const { randomWalkActions, tokenActions, prizesWalletActions, walletActions } = require("./actions/SecondaryActions.js");
 const { adminActions, daoActions } = require("./actions/AdminActions.js");
@@ -43,9 +43,10 @@ function buildProfile(longTestModeCode_, envOverrides_) {
 	if (longTestModeCode_ < 2) {
 		base_ = {
 			numActors: 6,
-			// Equal V1/V2 rounds => ~50/50 split of fuzzing time across the two code versions.
-			v1Rounds: 3,
-			v2Rounds: 3,
+			// Equal V1/V2/V3 rounds => roughly a third of the fuzzing time on each code version.
+			v1Rounds: 2,
+			v2Rounds: 2,
+			v3Rounds: 2,
 			actionsPerSegment: 22,
 			invariantEveryActions: 18,
 			negativeProbePercent: 14,
@@ -54,6 +55,8 @@ function buildProfile(longTestModeCode_, envOverrides_) {
 			chaosPercent: 35,
 			overflowModePercent: 10,
 			upgradeAfterRoundZeroPercent: 50,
+			upgradeToV3AfterOneMoreRoundPercent: 50,
+			swapPrizesWalletAfterV3UpgradePercent: 50,
 			enforceStrongCoverage: false,
 			// Quick CI profile: a single bounded campaign (no wall-clock soak).
 			maxSeconds: undefined,
@@ -61,8 +64,9 @@ function buildProfile(longTestModeCode_, envOverrides_) {
 	} else if (longTestModeCode_ < 3) {
 		base_ = {
 			numActors: 7,
-			v1Rounds: 5,
-			v2Rounds: 5,
+			v1Rounds: 3,
+			v2Rounds: 3,
+			v3Rounds: 3,
 			actionsPerSegment: 32,
 			invariantEveryActions: 28,
 			negativeProbePercent: 13,
@@ -71,6 +75,8 @@ function buildProfile(longTestModeCode_, envOverrides_) {
 			chaosPercent: 60,
 			overflowModePercent: 15,
 			upgradeAfterRoundZeroPercent: 50,
+			upgradeToV3AfterOneMoreRoundPercent: 50,
+			swapPrizesWalletAfterV3UpgradePercent: 50,
 			enforceStrongCoverage: false,
 			// A single, larger bounded campaign (override with FUZZ_MAX_SECONDS to soak).
 			maxSeconds: 0,
@@ -78,9 +84,10 @@ function buildProfile(longTestModeCode_, envOverrides_) {
 	} else {
 		base_ = {
 			numActors: 9,
-			// Equal V1/V2 rounds per campaign => ~50% of the time on V1 code and ~50% on V2 code.
-			v1Rounds: 10,
-			v2Rounds: 10,
+			// Equal V1/V2/V3 rounds per campaign => roughly a third of the time on each code version.
+			v1Rounds: 7,
+			v2Rounds: 7,
+			v3Rounds: 7,
 			actionsPerSegment: 45,
 			invariantEveryActions: 40,
 			negativeProbePercent: 12,
@@ -89,6 +96,8 @@ function buildProfile(longTestModeCode_, envOverrides_) {
 			chaosPercent: 70,
 			overflowModePercent: 20,
 			upgradeAfterRoundZeroPercent: 50,
+			upgradeToV3AfterOneMoreRoundPercent: 50,
+			swapPrizesWalletAfterV3UpgradePercent: 50,
 			enforceStrongCoverage: true,
 			// Default to a 20-minute soak (repeated independent bounded campaigns). Override with FUZZ_MAX_SECONDS.
 			maxSeconds: 1200,
@@ -109,6 +118,7 @@ function readEnvOverrides() {
 	};
 	num_("FUZZ_V1_ROUNDS", "v1Rounds");
 	num_("FUZZ_V2_ROUNDS", "v2Rounds");
+	num_("FUZZ_V3_ROUNDS", "v3Rounds");
 	num_("FUZZ_ACTORS", "numActors");
 	num_("FUZZ_MAX_SECONDS", "maxSeconds");
 	return overrides_;
@@ -126,16 +136,32 @@ function chanceFromSeed(seedWrapper_, percent_) {
 
 /**
 Derives per-campaign fuzz modes from the campaign seed so ordinary runs probabilistically cover
-chaos, overflow-targeting, and production-style round-zero upgrade timing without extra env toggles.
+chaos, overflow-targeting, production-style round-zero upgrade timing, the V2 -> V3 upgrade timing,
+and the post-V3 PrizesWallet swap, without extra env toggles.
 @param {object} profile_
 @param {{ value: bigint }} seedWrapper_
 */
 function deriveCampaignProfile(profile_, seedWrapper_) {
+	// V2 -> V3 upgrade timing: half of the campaigns upgrade after exactly 1 more (V2) round;
+	// the rest after a different seed-picked count: zero, 2, 3, ..., up to `v2Rounds`.
+	const upgradeToV3AfterOneMoreRound_ = chanceFromSeed(seedWrapper_, profile_.upgradeToV3AfterOneMoreRoundPercent ?? 0);
+	let v2RoundsBeforeV3Upgrade_;
+	if (upgradeToV3AfterOneMoreRound_) {
+		v2RoundsBeforeV3Upgrade_ = 1;
+	} else {
+		const otherChoices_ = [0];
+		for (let count_ = 2; count_ <= Math.max(profile_.v2Rounds, 2); ++ count_) {
+			otherChoices_.push(count_);
+		}
+		v2RoundsBeforeV3Upgrade_ = otherChoices_[Number(generateRandomUInt256FromSeedWrapper(seedWrapper_) % BigInt(otherChoices_.length))];
+	}
 	return {
 		...profile_,
 		chaos: chanceFromSeed(seedWrapper_, profile_.chaosPercent ?? 0),
 		overflowMode: chanceFromSeed(seedWrapper_, profile_.overflowModePercent ?? 0),
 		upgradeAfterRoundZero: chanceFromSeed(seedWrapper_, profile_.upgradeAfterRoundZeroPercent ?? 0),
+		v2RoundsBeforeV3Upgrade: v2RoundsBeforeV3Upgrade_,
+		swapPrizesWalletAfterV3Upgrade: chanceFromSeed(seedWrapper_, profile_.swapPrizesWalletAfterV3UpgradePercent ?? 0),
 	};
 }
 
@@ -159,6 +185,15 @@ class FuzzCampaign {
 		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 		this.contracts = contracts_;
 		contracts_.charitySignerAddress = contracts_.charitySigner.address;
+
+		// `loadFixture` memoizes ONE shared `contracts_` object across campaigns while the chain itself
+		// is snapshot-restored, so undo the PrizesWallet swap a previous campaign in this process may
+		// have performed on it (the first archived wallet is the fixture's original one).
+		if (contracts_.oldPrizesWallets !== undefined && contracts_.oldPrizesWallets.length > 0) {
+			contracts_.prizesWallet = contracts_.oldPrizesWallets[0].contract;
+			contracts_.prizesWalletAddress = contracts_.oldPrizesWallets[0].address;
+			contracts_.oldPrizesWallets = [];
+		}
 
 		// Deploy fuzz-only mock ERC-20 / ERC-721 used for donation paths.
 		const deployer_ = contracts_.signers[0];
@@ -263,6 +298,8 @@ class FuzzCampaign {
 
 		const v2GameFactory_ = await hre.ethers.getContractFactory("CosmicSignatureGameV2", c_.ownerSigner);
 		this.v2GameFactory = v2GameFactory_;
+		const v3GameFactory_ = await hre.ethers.getContractFactory("CosmicSignatureGameV3", c_.ownerSigner);
+		this.v3GameFactory = v3GameFactory_;
 		this.ledger.registerContracts(
 			{
 				game: c_.cosmicSignatureGameProxyAddress.toLowerCase(),
@@ -278,6 +315,7 @@ class FuzzCampaign {
 		this.engine.revertInterfaces = [
 			c_.cosmicSignatureGameProxy.interface,
 			v2GameFactory_.interface,
+			v3GameFactory_.interface,
 			c_.cosmicSignatureToken.interface,
 			c_.cosmicSignatureNft.interface,
 			c_.randomWalkNft.interface,
@@ -593,7 +631,7 @@ class FuzzCampaign {
 	/** Runs a same-block contention burst: usually 2-3 ETH bids; sometimes a two-claimer race. */
 	async _runBurst() {
 		// Occasionally race two simultaneous `claimMainPrize` calls when a round is claimable.
-		if (this.model.lastBidderAddress !== ZERO_ADDRESS && this.engine.chancePercent(35)) {
+		if (this.model.lastBidderAddress !== hre.ethers.ZeroAddress && this.engine.chancePercent(35)) {
 			const raced_ = await runClaimRace(this.context);
 			if (raced_) {
 				// The race ended the round; re-activate so the rest of the segment can keep bidding.
@@ -601,7 +639,7 @@ class FuzzCampaign {
 				return;
 			}
 		}
-		if (this.model.lastBidderAddress === ZERO_ADDRESS) {
+		if (this.model.lastBidderAddress === hre.ethers.ZeroAddress) {
 			// A first bid in a burst is tricky to model (champions need an existing last bidder); skip to a normal bid.
 			const actor_ = this.engine.pick(this.actors);
 			await this.engine.runAction({ name: "burstSeedBid", run: (ctx_, a_) => biddingActions[0].run(ctx_, a_) }, this.context, actor_);
@@ -609,17 +647,18 @@ class FuzzCampaign {
 		}
 		// Build 2-3 sequential ETH bids at the same timestamp, applying the model in submission order.
 		// Within one block each bid escalates the next bid's price (`nextEthBidPrice = p + p/div + 1`),
-		// so we compute the exact price ladder up front and send each bid its exact price (no refund).
+		// and in V3 each bid also moves the late-bid-premium window (`_extendMainPrizeTime` runs before
+		// the next bid prices in), so the model computes the exact price ladder up front and each bid
+		// sends its exact price (no refund).
 		const ts_ = this.engine.clampTs(this.engine.planTs(this.engine.boundaryCandidates()));
 		const count_ = this.engine.randomIntRange(2, 3);
-		const div_ = this.model.ethBidPriceIncreaseDivisor;
-		let price_ = this.model.getNextEthBidPrice(ts_);
+		const ladderPrices_ = this.model.planEthBidPriceLadder(ts_, count_);
 		const items_ = [];
 		const plans_ = [];
 		const needByActorAddress_ = new Map();
 		for (let index_ = 0; index_ < count_; ++ index_) {
 			const gasPrice_ = this.engine.randomGasPrice();
-			const value_ = price_;
+			const value_ = ladderPrices_[index_];
 			const candidates_ = this.actors.filter((actor_) => {
 				const previousNeed_ = needByActorAddress_.get(actor_.address) ?? 0n;
 				return this.ledger.expectedEth(actor_.address) >= previousNeed_ + value_ + this.engine.gasReserve;
@@ -636,7 +675,6 @@ class FuzzCampaign {
 				valueNeeded: value_,
 				buildTx: (overrides_) => this.game.connect(actor_.signer).bidWithEth(-1n, "burst", 0n, { ...overrides_, value: value_ }),
 			});
-			price_ = price_ + price_ / div_ + 1n;
 		}
 		if (items_.length < 2) {
 			return;
@@ -692,14 +730,16 @@ class FuzzCampaign {
 			`ENABLE_SMTCHECKER=${ENABLE_SMTCHECKER}`;
 
 		console.info("\n" + "=".repeat(80));
-		console.info(`  COSMIC SIGNATURE - UNIFIED FUZZ ${label_} (V1 -> upgrade -> V2)`);
+		console.info(`  COSMIC SIGNATURE - UNIFIED FUZZ ${label_} (V1 -> upgrade -> V2 -> upgrade -> V3)`);
 		console.info("=".repeat(80));
 		console.info(`  seed: ${uint256ToPaddedHexString(this.seed)}`);
 		console.info(
 			`  profile: actors=${this.profile.numActors} v1Rounds=${this.profile.v1Rounds} ` +
-			`v2Rounds=${this.profile.v2Rounds} chaos=${this.profile.chaos} ` +
+			`v2Rounds=${this.profile.v2Rounds} v3Rounds=${this.profile.v3Rounds} chaos=${this.profile.chaos} ` +
 			`overflowMode=${this.profile.overflowMode === true} ` +
-			`upgradeAfterRoundZero=${this.profile.upgradeAfterRoundZero === true}`
+			`upgradeAfterRoundZero=${this.profile.upgradeAfterRoundZero === true} ` +
+			`v2RoundsBeforeV3Upgrade=${this.profile.v2RoundsBeforeV3Upgrade} ` +
+			`swapPrizesWalletAfterV3Upgrade=${this.profile.swapPrizesWalletAfterV3Upgrade === true}`
 		);
 		console.info(`  build flags: ${buildFlags_}`);
 		console.info("=".repeat(80) + "\n");
@@ -719,8 +759,22 @@ class FuzzCampaign {
 		await runInvariants(this.context);
 		console.info("  >>> Upgrade complete; continuing on V2 <<<\n");
 
-		// Phase 2: V2.
-		await this._runPhase("V2", this.profile.v2Rounds);
+		// Phase 2: V2. Half of the campaigns run exactly 1 round here; the rest zero, 2, 3, ... rounds.
+		await this._runPhase("V2", this.profile.v2RoundsBeforeV3Upgrade);
+
+		// Second mid-campaign upgrade, plus (half of the time, in production-like builds)
+		// a swap to a freshly deployed PrizesWallet.
+		console.info("\n  >>> Performing V2 -> V3 upgrade <<<\n");
+		await performUpgradeToV3(this.context);
+		if (this.profile.swapPrizesWalletAfterV3Upgrade) {
+			await performPrizesWalletSwap(this.context);
+		}
+		await this._activateRound();
+		await runInvariants(this.context);
+		console.info("  >>> Upgrade complete; continuing on V3 <<<\n");
+
+		// Phase 3: V3.
+		await this._runPhase("V3", this.profile.v3Rounds);
 
 		// Final invariants. Coverage floors are asserted by the driver on the aggregate across
 		// campaigns (breadth floors are probabilistic for a single bounded campaign).
@@ -734,7 +788,7 @@ class FuzzCampaign {
 		console.info("  CAMPAIGN COMPLETE\n");
 
 		expect(this.engine.actionSeq).to.be.greaterThan(0);
-		expect(this.model.version, "campaign must end on V2").to.equal(2);
+		expect(this.model.version, "campaign must end on V3").to.equal(3);
 		expect(this.model.roundNum, "at least one round must have completed").to.be.greaterThan(0n);
 	}
 

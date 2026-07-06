@@ -47,7 +47,7 @@ contract BidderContract is BrokenEthReceiver {
 	}
 
 	function doBidWithEth() external payable {
-		if (contractVersionNumber != 2) {
+		if (contractVersionNumber < 2) {
 			// // #enable_asserts // #disable_smtchecker uint256 gasUsed_  = gasleft();
 			cosmicSignatureGame.bidWithEth{value: msg.value}(-1, "BidderContract ETH bid");
 			// // #enable_asserts // #disable_smtchecker gasUsed_  -= gasleft();
@@ -80,7 +80,7 @@ contract BidderContract is BrokenEthReceiver {
 
 	function doClaimMainPrize() external {
 		wonRoundNums.push(cosmicSignatureGame.roundNum());
-		if (contractVersionNumber != 2) {
+		if (contractVersionNumber < 2) {
 			// // #enable_asserts // #disable_smtchecker uint256 gasUsed_  = gasleft();
 			cosmicSignatureGame.claimMainPrize();
 			// // #enable_asserts // #disable_smtchecker gasUsed_  -= gasleft();

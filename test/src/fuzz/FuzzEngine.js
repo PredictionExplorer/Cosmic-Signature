@@ -229,6 +229,12 @@ class FuzzEngine {
 		if (model_.lastBidderAddress !== "0x0000000000000000000000000000000000000000") {
 			out_.push(model_.mainPrizeTime);
 			out_.push(model_.mainPrizeTime + model_.timeoutDurationToClaimMainPrize);
+			if (model_.version >= 3) {
+				// V3 late-bid-premium window edges (opening and midpoint), so bids actually land inside it.
+				const roundLateBidDuration_ = model_.getRoundLateBidDuration();
+				out_.push(model_.mainPrizeTime - roundLateBidDuration_);
+				out_.push(model_.mainPrizeTime - roundLateBidDuration_ / 2n);
+			}
 		}
 		out_.push(model_.cstDutchAuctionBeginningTimeStamp + model_.getCstDutchAuctionDuration());
 		out_.push(model_.roundActivationTime + model_.getEthDutchAuctionDuration());
