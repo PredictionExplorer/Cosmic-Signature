@@ -7,6 +7,7 @@ pragma solidity =0.8.34;
 // #region
 
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
+import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 import { CosmicSignatureGameStorageV3Base } from "./CosmicSignatureGameStorageV3Base.sol";
 import { BiddingV2 } from "./BiddingV2.sol";
 import { IBiddingV2 } from "./interfaces/IBiddingV2.sol";
@@ -38,6 +39,136 @@ abstract contract BiddingV3 is
 		// // #enable_smtchecker */
 
 		return _addRoundLateBidPricePremiumAmountIfNeeded(super.getNextCstBidPriceAdvanced(currentTimeOffset_), currentTimeOffset_);
+	}
+
+	// #endregion
+	// #region `getBidCstRewardAmountAdvanced`
+
+	/// @notice In V3+, the bid CST reward is linearly proportional to the elapsed duration since the last bid.
+	/// Comment-202607161 applies.
+	/// @return The total bid CST reward amount, which is to be split between the current last bidder and the new bidder,
+	/// as described in Comment-202607161.
+	function getBidCstRewardAmountAdvanced(int256 currentTimeOffset_) public view override (IBiddingV2, BiddingV2) /* virtual */ returns (uint256) {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			uint256 lastBidTimeStampCopy_ =
+				(lastBidderAddress == address(0)) ?
+				roundActivationTime :
+				biddersInfo[roundNum][lastBidderAddress].lastBidTimeStamp;
+
+			// Comment-202605295 applies.
+			int256 elapsedDuration_ = int256(block.timestamp) + currentTimeOffset_ - int256(lastBidTimeStampCopy_);
+
+			uint256 bidCstRewardAmount_ = 0;
+			if (elapsedDuration_ > int256(0)) {
+				// Comment-202607161 applies.
+				// Comment-202605295 applies.
+				bidCstRewardAmount_ = uint256(elapsedDuration_) * bidCstRewardAmountPerMinute / (1 minutes);
+			}
+			return bidCstRewardAmount_;
+		}
+	}
+
+	// #endregion
+	// #region `_getLastBidderBidCstRewardAmount`
+
+	/// @notice Calculates the share of the given total bid CST reward amount that belongs to the current last bidder.
+	/// Comment-202607161 applies.
+	/// @dev The new bidder share is to be calculated as the difference between the total and the returned value,
+	/// so no Wei is lost to rounding.
+	function _getLastBidderBidCstRewardAmount(uint256 bidCstRewardAmount_) private pure returns (uint256) {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			// Comment-202605295 applies.
+			return bidCstRewardAmount_ * CosmicSignatureConstants.BID_CST_REWARD_AMOUNT_LAST_BIDDER_PERCENTAGE / 100;
+		}
+	}
+
+	// #endregion
+	// #region `_mintBidCstReward`
+
+	/// @notice Comment-202607161 applies.
+	/// @dev Comment-202607162 applies.
+	/// [Comment-202607163]
+	/// The bid CST reward is minted, rather than transferred. `CosmicSignatureToken` minting performs no call
+	/// into the recipient, so a hostile last bidder contract that reverts on any incoming call or token callback
+	/// cannot prevent this minting from succeeding, and therefore cannot block further bids.
+	/// [/Comment-202607163]
+	function _mintBidCstReward(uint256 bidCstRewardAmount_) internal override /* virtual */ {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			if (bidCstRewardAmount_ > 0) {
+				// Comment-202607162 applies.
+				address lastBidderAddressCopy_ = lastBidderAddress;
+
+				uint256 lastBidderBidCstRewardAmount_ = _getLastBidderBidCstRewardAmount(bidCstRewardAmount_);
+				// #enable_asserts assert(lastBidderBidCstRewardAmount_ < bidCstRewardAmount_);
+				if (lastBidderAddressCopy_ == address(0)) {
+					// Comment-202607161 applies.
+					token.mint(_msgSender(), bidCstRewardAmount_ - lastBidderBidCstRewardAmount_);
+				} else {
+					// Comment-202607163 applies.
+					ICosmicSignatureToken.MintSpec[] memory mintSpecs_ = new ICosmicSignatureToken.MintSpec[](2);
+					mintSpecs_[0].account = lastBidderAddressCopy_;
+					mintSpecs_[0].value = lastBidderBidCstRewardAmount_;
+					mintSpecs_[1].account = _msgSender();
+					mintSpecs_[1].value = bidCstRewardAmount_ - lastBidderBidCstRewardAmount_;
+					token.mintMany(mintSpecs_);
+				}
+			}
+		}
+	}
+
+	// #endregion
+	// #region `_mintBidCstRewardAndBurnBidPrice`
+
+	/// @notice Comment-202607161 applies.
+	/// @dev Comment-202607162 applies.
+	/// Comment-202607163 applies.
+	function _mintBidCstRewardAndBurnBidPrice(uint256 bidCstRewardAmount_, uint256 paidPrice_) internal override /* virtual */ {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			if (bidCstRewardAmount_ > 0) {
+				// Comment-202607162 applies.
+				address lastBidderAddressCopy_ = lastBidderAddress;
+
+				uint256 lastBidderBidCstRewardAmount_ = _getLastBidderBidCstRewardAmount(bidCstRewardAmount_);
+				// #enable_asserts assert(lastBidderBidCstRewardAmount_ < bidCstRewardAmount_);
+
+				// [Comment-202607164]
+				// A CST bid cannot be the first bid in a bidding round, which `_bidCommon` is going to validate
+				// after this method returns. But this method must not attempt to mint to the zero address,
+				// so that the transaction reverted with the intended `WrongBidType` error, rather than with an ERC-20 error.
+				// [/Comment-202607164]
+				uint256 numMintAndBurnSpecs_ = (lastBidderAddressCopy_ == address(0)) ? 2 : 3;
+
+				ICosmicSignatureToken.MintOrBurnSpec[] memory mintAndBurnSpecs_ = new ICosmicSignatureToken.MintOrBurnSpec[](numMintAndBurnSpecs_);
+				mintAndBurnSpecs_[0].account = _msgSender();
+
+				// Comment-202606074 relates and/or applies.
+				mintAndBurnSpecs_[0].value = ( - int256(paidPrice_) );
+
+				mintAndBurnSpecs_[1].account = _msgSender();
+				mintAndBurnSpecs_[1].value = int256(bidCstRewardAmount_ - lastBidderBidCstRewardAmount_);
+				if (numMintAndBurnSpecs_ > 2) {
+					// Comment-202607163 applies.
+					mintAndBurnSpecs_[2].account = lastBidderAddressCopy_;
+					mintAndBurnSpecs_[2].value = int256(lastBidderBidCstRewardAmount_);
+				}
+				token.mintAndBurnMany(mintAndBurnSpecs_);
+			} else {
+				// This does not have the Comment-202606074 issue.
+				token.burn(_msgSender(), paidPrice_);
+			}
+		}
 	}
 
 	// #endregion

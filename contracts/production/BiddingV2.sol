@@ -140,6 +140,47 @@ abstract contract BiddingV2 is
 	}
 
 	// #endregion
+	// #region `_mintBidCstReward`
+
+	/// @notice Mints the given bid CST reward for an ETH bid.
+	/// @dev
+	/// [Comment-202607162]
+	/// This method and `_mintBidCstRewardAndBurnBidPrice` are `virtual` so that a newer contract version can override
+	/// how (and to whom) the bid CST reward is minted, without changing any other bidding logic.
+	/// This is called before `_bidCommon`, so `lastBidderAddress` still refers to the bidder being outbid.
+	/// [/Comment-202607162]
+	/// @param bidCstRewardAmount_ The total bid CST reward amount. Can be zero.
+	function _mintBidCstReward(uint256 bidCstRewardAmount_) internal virtual {
+		if (bidCstRewardAmount_ > 0) {
+			token.mint(_msgSender(), bidCstRewardAmount_);
+		}
+	}
+
+	// #endregion
+	// #region `_mintBidCstRewardAndBurnBidPrice`
+
+	/// @notice For a CST bid, mints the given bid CST reward and burns the paid CST bid price, atomically.
+	/// @dev Comment-202607162 applies.
+	/// @param bidCstRewardAmount_ The total bid CST reward amount. Can be zero.
+	/// @param paidPrice_ The paid CST bid price to burn from the bidder. Can be zero.
+	function _mintBidCstRewardAndBurnBidPrice(uint256 bidCstRewardAmount_, uint256 paidPrice_) internal virtual {
+		if (bidCstRewardAmount_ > 0) {
+			ICosmicSignatureToken.MintOrBurnSpec[] memory mintAndBurnSpecs_ = new ICosmicSignatureToken.MintOrBurnSpec[](2);
+			mintAndBurnSpecs_[0].account = _msgSender();
+
+			// Comment-202606074 relates and/or applies.
+			mintAndBurnSpecs_[0].value = ( - int256(paidPrice_) );
+
+			mintAndBurnSpecs_[1].account = _msgSender();
+			mintAndBurnSpecs_[1].value = int256(bidCstRewardAmount_);
+			token.mintAndBurnMany(mintAndBurnSpecs_);
+		} else {
+			// This does not have the Comment-202606074 issue.
+			token.burn(_msgSender(), paidPrice_);
+		}
+	}
+
+	// #endregion
 	// #region `_bidWithEth`
 
 	function _bidWithEth(int256 randomWalkNftId_, string memory message_, uint256 bidCstRewardAmountMinLimit_) private /*nonReentrant*/ /*_onlyRoundIsActive*/ {
@@ -258,10 +299,10 @@ abstract contract BiddingV2 is
 		uint256 newCstDutchAuctionDuration_ = (cstDutchAuctionDuration + 1) * cstDutchAuctionDurationChangeDivisor / (cstDutchAuctionDurationChangeDivisor + 1);
 
 		cstDutchAuctionDuration = newCstDutchAuctionDuration_;
-		if (bidCstRewardAmount_ > 0) {
-			// Comment-202501125 applies.
-			token.mint(_msgSender(), bidCstRewardAmount_);
-		}
+
+		// Comment-202501125 applies.
+		_mintBidCstReward(bidCstRewardAmount_);
+
 		_bidCommon(/*bidType_,*/ message_);
 		emit BidPlaced(
 			roundNum,
@@ -466,20 +507,7 @@ abstract contract BiddingV2 is
 
 		// Comment-202409177 applies.
 		// Comment-202501125 applies.
-		if (bidCstRewardAmount_ > 0) {
-			ICosmicSignatureToken.MintOrBurnSpec[] memory mintAndBurnSpecs_ = new ICosmicSignatureToken.MintOrBurnSpec[](2);
-			mintAndBurnSpecs_[0].account = _msgSender();
-
-			// Comment-202606074 relates and/or applies.
-			mintAndBurnSpecs_[0].value = ( - int256(paidPrice_) );
-
-			mintAndBurnSpecs_[1].account = _msgSender();
-			mintAndBurnSpecs_[1].value = int256(bidCstRewardAmount_);
-			token.mintAndBurnMany(mintAndBurnSpecs_);
-		} else {
-			// This does not have the Comment-202606074 issue.
-			token.burn(_msgSender(), paidPrice_);
-		}
+		_mintBidCstRewardAndBurnBidPrice(bidCstRewardAmount_, paidPrice_);
 
 		biddersInfo[roundNum][_msgSender()].totalSpentCstAmount += paidPrice_;
 		cstDutchAuctionBeginningTimeStamp = block.timestamp;
@@ -638,7 +666,7 @@ abstract contract BiddingV2 is
 	// #endregion
 	// #region `getBidCstRewardAmountAdvanced`
 
-	function getBidCstRewardAmountAdvanced(int256 currentTimeOffset_) public view override returns (uint256) {
+	function getBidCstRewardAmountAdvanced(int256 currentTimeOffset_) public view override virtual returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */

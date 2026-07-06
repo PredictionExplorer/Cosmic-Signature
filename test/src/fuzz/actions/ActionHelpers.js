@@ -264,8 +264,11 @@ async function executeEthBid(ctx_, actor_, options_) {
 		}
 	};
 
-	// Snapshot the CST balance before sending (the engine applies the receipt to the ledger inside `execTx`).
+	// Snapshot the CST balances before sending (the engine applies the receipt to the ledger inside `execTx`).
+	// In V3+, the bidder being outbid gets its bid CST reward share minted too (Comment-202607161).
 	const cstBefore_ = ledger.cstBalanceOf(actor_.address);
+	const snipedBidderAddress_ = (model.lastBidderAddress === hre.ethers.ZeroAddress) ? null : model.lastBidderAddress;
+	const snipedBidderCstBefore_ = (snipedBidderAddress_ === null) ? 0n : ledger.cstBalanceOf(snipedBidderAddress_);
 	const roundNumBefore_ = model.roundNum;
 	const result_ = await engine.execTx({ signer: actor_.signer, buildTx: buildTx_, ts: ts_, gasPrice: gasPrice_, valueNeeded: value_ });
 	const receipt_ = engine.expectOk(result_, `ETH bid (${options_.flavor})`);
@@ -292,7 +295,20 @@ async function executeEthBid(ctx_, actor_, options_) {
 		expect(bidPlaced_.args.cstDutchAuctionDuration).to.equal(expectations_.newCstDutchAuctionDuration);
 	}
 
-	expect(ledger.cstBalanceOf(actor_.address) - cstBefore_, "ETH bid: CST reward mismatch").to.equal(expectations_.bidCstRewardAmount);
+	{
+		const rewardSplit_ = expectations_.bidCstRewardSplit;
+		let expectedActorCstChange_ = rewardSplit_.newBidderAmount;
+		if (rewardSplit_.lastBidderAddress === actor_.addressLower) {
+			// A self-snipe: the actor receives both shares.
+			expectedActorCstChange_ += rewardSplit_.lastBidderAmount;
+		} else if (rewardSplit_.lastBidderAddress !== null) {
+			expect(
+				ledger.cstBalanceOf(rewardSplit_.lastBidderAddress) - snipedBidderCstBefore_,
+				"ETH bid: sniped bidder CST reward share mismatch"
+			).to.equal(rewardSplit_.lastBidderAmount);
+		}
+		expect(ledger.cstBalanceOf(actor_.address) - cstBefore_, "ETH bid: CST reward mismatch").to.equal(expectedActorCstChange_);
+	}
 
 	{
 		const chainLastBidTs_ = (await ctx_.game.contract.biddersInfo(roundNumBefore_, actor_.address)).lastBidTimeStamp;
@@ -377,8 +393,11 @@ async function executeCstBid(ctx_, actor_, options_) {
 		}
 	};
 
-	// Snapshot the CST balance before sending (the engine applies the receipt to the ledger inside `execTx`).
+	// Snapshot the CST balances before sending (the engine applies the receipt to the ledger inside `execTx`).
+	// In V3+, the bidder being outbid gets its bid CST reward share minted too (Comment-202607161).
 	const cstBefore_ = ledger.cstBalanceOf(actor_.address);
+	const snipedBidderAddress_ = (model.lastBidderAddress === hre.ethers.ZeroAddress) ? null : model.lastBidderAddress;
+	const snipedBidderCstBefore_ = (snipedBidderAddress_ === null) ? 0n : ledger.cstBalanceOf(snipedBidderAddress_);
 	const roundNumBefore_ = model.roundNum;
 	const result_ = await engine.execTx({ signer: actor_.signer, buildTx: buildTx_, ts: ts_ });
 	const receipt_ = engine.expectOk(result_, `CST bid (${options_.flavor})`);
@@ -399,8 +418,21 @@ async function executeCstBid(ctx_, actor_, options_) {
 		expect(bidPlaced_.args.cstDutchAuctionDuration).to.equal(expectations_.newCstDutchAuctionDuration);
 	}
 
-	expect(ledger.cstBalanceOf(actor_.address) - cstBefore_, "CST bid: net CST delta mismatch")
-		.to.equal(expectations_.bidCstRewardAmount - price_);
+	{
+		const rewardSplit_ = expectations_.bidCstRewardSplit;
+		let expectedActorCstChange_ = rewardSplit_.newBidderAmount - price_;
+		if (rewardSplit_.lastBidderAddress === actor_.addressLower) {
+			// A self-snipe: the actor receives both shares.
+			expectedActorCstChange_ += rewardSplit_.lastBidderAmount;
+		} else if (rewardSplit_.lastBidderAddress !== null) {
+			expect(
+				ledger.cstBalanceOf(rewardSplit_.lastBidderAddress) - snipedBidderCstBefore_,
+				"CST bid: sniped bidder CST reward share mismatch"
+			).to.equal(rewardSplit_.lastBidderAmount);
+		}
+		expect(ledger.cstBalanceOf(actor_.address) - cstBefore_, "CST bid: net CST delta mismatch")
+			.to.equal(expectedActorCstChange_);
+	}
 
 	{
 		const chainLastBidTs_ = (await ctx_.game.contract.biddersInfo(roundNumBefore_, actor_.address)).lastBidTimeStamp;

@@ -696,7 +696,15 @@ class FuzzCampaign {
 			const expectations_ = this.model.applyEthBid(plan_.actor.address, ts_, plan_.value, plan_.gasPrice, null);
 			this.ledger.addEth(plan_.actor.address, -expectations_.netEthPaid);
 			this.ledger.addEth(this.game.address, expectations_.netEthPaid);
-			expectedRewardByActor_.set(plan_.actor.addressLower, expectedRewardByActor_.get(plan_.actor.addressLower) + expectations_.bidCstRewardAmount);
+
+			// In V3+, the reward is split between the new bidder and the bidder being outbid (Comment-202607161).
+			// The outbid bidder's share is only tracked here if they are among the burst actors
+			// (the ledger, which is receipt-driven, stays exact either way).
+			const rewardSplit_ = expectations_.bidCstRewardSplit;
+			expectedRewardByActor_.set(plan_.actor.addressLower, expectedRewardByActor_.get(plan_.actor.addressLower) + rewardSplit_.newBidderAmount);
+			if (rewardSplit_.lastBidderAddress !== null && expectedRewardByActor_.has(rewardSplit_.lastBidderAddress)) {
+				expectedRewardByActor_.set(rewardSplit_.lastBidderAddress, expectedRewardByActor_.get(rewardSplit_.lastBidderAddress) + rewardSplit_.lastBidderAmount);
+			}
 		}
 		for (const [actorLower_, before_] of cstBefore_) {
 			expect(this.ledger.cstBalanceOf(actorLower_) - before_, "burst bid CST reward sum").to.equal(expectedRewardByActor_.get(actorLower_));

@@ -94,13 +94,14 @@ describe("CosmicSignatureGameV3-StorageLayout", function () {
 
 		const carriedState_ = await snapshotCarriedState(gameV2_);
 
-		// The 4 new V3 slots are taken from the gap region, so on V2 their getters must not even exist.
+		// The 5 new V3 slots are taken from the gap region, so on V2 their getters must not even exist.
 		const cosmicSignatureGameV3Factory_ =
 			await hre.ethers.getContractFactory("CosmicSignatureGameV3", contracts_.ownerSigner);
 		for (const newGetterName_ of [
 			"roundLateBidDurationDivisor()",
 			"roundLateBidPricePremiumAmountBaseMultiplier()",
 			"roundLateBidPricePremiumAmountExponent()",
+			"bidCstRewardAmountPerMinute()",
 			"mainPrizeNumCosmicSignatureNfts()",
 		]) {
 			await expect(

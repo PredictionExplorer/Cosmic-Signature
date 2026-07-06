@@ -107,7 +107,9 @@ Again, a Dutch auction is used for: (1) the first ETH bid price in a nonzero rou
 
 - When placing a CST bid, the current CST bid price gets burned from the bidder's CST balance.
 
-- When someone places a bid of any type, a configurable CST amount is minted for the bidder. In V1, the amount is fixed; in V2+, the amount is proportional to the square root since the previous bid or, in case there were no bids in the current bidding round yet, the round activation time.
+- When someone places a bid of any type, a configurable CST amount gets minted. In V1, the amount is fixed; in V2, the amount is proportional to the square root of the time elapsed since the previous bid or, in case there were no bids in the current bidding round yet, the round activation time; in V3+, the amount is linearly proportional to the same elapsed time, at a configurable rate expressed in CST per minute (`bidCstRewardAmountPerMinute`, 1 CST per minute by default).
+
+- In V1 and V2, the entire bid CST reward is minted to the bidder placing the bid. In V3+, 90% of it is minted to the bidder being outbid (the current last bidder) and the remaining ~10% to the new bidder; when there is no last bidder (the first bid in a round), only the new bidder share is minted. The reward accrued by the final bidder of a round is not minted when the main prize gets claimed — that bidder wins the main prize instead. The reward is minted, never transferred, so a bidder contract that rejects incoming calls cannot block other people's bids (Comment-202607163).
 
 ### `mainPrizeTime` Update Logic
 

@@ -66,6 +66,7 @@ class GameModel {
 		this.roundLateBidDurationDivisor = 0n; // V3 only
 		this.roundLateBidPricePremiumAmountBaseMultiplier = 0n; // V3 only
 		this.roundLateBidPricePremiumAmountExponent = 0n; // V3 only
+		this.bidCstRewardAmountPerMinute = 0n; // V3 only
 		this.mainPrizeNumCosmicSignatureNfts = 0n; // V3 only
 		/** @type {string} */
 		this.charityAddress = "";
@@ -132,6 +133,7 @@ class GameModel {
 			this.roundLateBidDurationDivisor = await game_.roundLateBidDurationDivisor();
 			this.roundLateBidPricePremiumAmountBaseMultiplier = await game_.roundLateBidPricePremiumAmountBaseMultiplier();
 			this.roundLateBidPricePremiumAmountExponent = await game_.roundLateBidPricePremiumAmountExponent();
+			this.bidCstRewardAmountPerMinute = await game_.bidCstRewardAmountPerMinute();
 			this.mainPrizeNumCosmicSignatureNfts = await game_.mainPrizeNumCosmicSignatureNfts();
 		}
 		this.cstDutchAuctionBeginningBidPriceMinLimit = await game_.cstDutchAuctionBeginningBidPriceMinLimit();
@@ -374,7 +376,10 @@ class GameModel {
 		return u256(beginningPrice_ * remaining_) / duration_;
 	}
 
-	/** Mirrors V2 `getBidCstRewardAmountAdvanced(0)` evaluated at block timestamp `ts_`. */
+	/**
+	Mirrors `getBidCstRewardAmountAdvanced(0)` evaluated at block timestamp `ts_`:
+	V2's sqrt formula, or V3's linear formula (Comment-202607161).
+	*/
 	getBidCstRewardAmount(ts_) {
 		if (this.isV1Like()) {
 			return this.bidCstRewardAmount;
@@ -387,9 +392,33 @@ class GameModel {
 		if (elapsed_ <= 0n) {
 			return 0n;
 		}
+		if (this.version >= 3) {
+			// Contract body is `unchecked`: the product wraps mod 2^256 before the division.
+			return u256(elapsed_ * this.bidCstRewardAmountPerMinute) / 60n;
+		}
 		// Contract body is `unchecked`: the product wraps mod 2^256 before the division.
 		const radicand_ = u256(elapsed_ * this.bidCstRewardAmountMultiplier) / this.mainPrizeTimeIncrementInMicroSeconds;
 		return sqrtFloor(radicand_);
+	}
+
+	/**
+	Mirrors the V3 bid CST reward minting split (Comment-202607161), evaluated BEFORE `_bidCommon`
+	updates `lastBidderAddress`. On V1/V2 the entire reward is minted to the bidder.
+	@param {bigint} totalRewardAmount_ The total reward, as returned by `getBidCstRewardAmount`.
+	@returns {{lastBidderAddress: string | null, lastBidderAmount: bigint, newBidderAmount: bigint}}
+	`lastBidderAddress` is `null` if no share is minted to a previous bidder.
+	*/
+	getBidCstRewardSplit(totalRewardAmount_) {
+		if (this.version < 3) {
+			return { lastBidderAddress: null, lastBidderAmount: 0n, newBidderAmount: totalRewardAmount_ };
+		}
+		const lastBidderAmount_ = totalRewardAmount_ * c.BID_CST_REWARD_AMOUNT_LAST_BIDDER_PERCENTAGE / 100n;
+		const newBidderAmount_ = totalRewardAmount_ - lastBidderAmount_;
+		if (this.lastBidderAddress === hre.ethers.ZeroAddress || totalRewardAmount_ <= 0n) {
+			// The first bid in a round mints only the new bidder share; a zero total mints nothing at all.
+			return { lastBidderAddress: null, lastBidderAmount: 0n, newBidderAmount: newBidderAmount_ };
+		}
+		return { lastBidderAddress: this.lastBidderAddress, lastBidderAmount: lastBidderAmount_, newBidderAmount: newBidderAmount_ };
 	}
 
 	/**
@@ -519,6 +548,7 @@ class GameModel {
 	planEthBid(ts_, msgValue_, gasPrice_, randomWalkNftId_) {
 		const ethBidPrice_ = this.getNextEthBidPrice(ts_);
 		const reward_ = this.getBidCstRewardAmount(ts_);
+		const rewardSplit_ = this.getBidCstRewardSplit(reward_);
 		const basePaidPrice_ = (randomWalkNftId_ === null) ? ethBidPrice_ : this.getEthPlusRandomWalkNftBidPrice(ethBidPrice_);
 		// `paidEthPrice_` is the value the contract records (BidPlaced event + `totalSpentEthAmount`);
 		// `netEthPaid_` is the ETH the bidder actually loses (== what the game keeps).
@@ -544,7 +574,7 @@ class GameModel {
 				refundAmount_ = overpaid_;
 			}
 		}
-		return { ethBidPrice: ethBidPrice_, paidEthPrice: paidEthPrice_, netEthPaid: netEthPaid_, refundAmount: refundAmount_, swallowed: swallowed_, insufficient: overpaid_ < 0n, bidCstRewardAmount: reward_ };
+		return { ethBidPrice: ethBidPrice_, paidEthPrice: paidEthPrice_, netEthPaid: netEthPaid_, refundAmount: refundAmount_, swallowed: swallowed_, insufficient: overpaid_ < 0n, bidCstRewardAmount: reward_, bidCstRewardSplit: rewardSplit_ };
 	}
 
 	/**
@@ -579,6 +609,7 @@ class GameModel {
 	applyCstBid(bidderAddress_, ts_) {
 		const paidPrice_ = this.getNextCstBidPrice(ts_);
 		const reward_ = this.getBidCstRewardAmount(ts_);
+		const rewardSplit_ = this.getBidCstRewardSplit(reward_);
 		this._bidderInfoForUpdate(bidderAddress_).totalSpentCstAmount += paidPrice_;
 		this.cstDutchAuctionBeginningTimeStamp = ts_;
 		const newBeginningBidPrice_ =
@@ -594,7 +625,7 @@ class GameModel {
 			this.cstDutchAuctionDuration = newCstDutchAuctionDuration_;
 		}
 		this._bidCommon(bidderAddress_, ts_);
-		return { paidPrice: paidPrice_, bidCstRewardAmount: reward_, newCstDutchAuctionDuration: newCstDutchAuctionDuration_, mainPrizeTime: this.mainPrizeTime };
+		return { paidPrice: paidPrice_, bidCstRewardAmount: reward_, bidCstRewardSplit: rewardSplit_, newCstDutchAuctionDuration: newCstDutchAuctionDuration_, mainPrizeTime: this.mainPrizeTime };
 	}
 
 	// #endregion
@@ -738,6 +769,7 @@ class GameModel {
 		this.roundLateBidDurationDivisor = c.DEFAULT_ROUND_LATE_BID_DURATION_DIVISOR;
 		this.roundLateBidPricePremiumAmountBaseMultiplier = c.DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_BASE_MULTIPLIER;
 		this.roundLateBidPricePremiumAmountExponent = c.DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_EXPONENT;
+		this.bidCstRewardAmountPerMinute = c.DEFAULT_BID_CST_REWARD_AMOUNT_PER_MINUTE;
 		this.mainPrizeNumCosmicSignatureNfts = c.DEFAULT_MAIN_PRIZE_NUM_COSMIC_SIGNATURE_NFTS;
 	}
 

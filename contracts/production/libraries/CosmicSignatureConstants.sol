@@ -131,6 +131,16 @@ library CosmicSignatureConstants {
 	/// @notice Default `CosmicSignatureGameStorageV2.bidCstRewardAmountMultiplier`.
 	uint256 internal constant DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER = 3 * (1 ether) ** 2 * INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND;
 
+	/// @notice Default `CosmicSignatureGameStorageV3Base.bidCstRewardAmountPerMinute`.
+	/// 1 CST per minute.
+	/// @dev Comment-202607161 applies.
+	uint256 internal constant DEFAULT_BID_CST_REWARD_AMOUNT_PER_MINUTE = 1 ether;
+
+	/// @notice In V3+, this percentage of the bid CST reward is minted to the bidding round current last bidder
+	/// (the one whose bid is being outbid); the rest is minted to the new bidder.
+	/// @dev Comment-202607161 applies.
+	uint256 internal constant BID_CST_REWARD_AMOUNT_LAST_BIDDER_PERCENTAGE = 90;
+
 	// #endregion
 	// #region Secondary Prizes
 

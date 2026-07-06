@@ -19,6 +19,11 @@ interface ISystemManagementV3 is ISystemManagementV2 {
 	/// @param newValue_ The new value.
 	function setRoundLateBidPricePremiumAmountExponent(uint256 newValue_) external;
 
+	/// @notice Sets `bidCstRewardAmountPerMinute`.
+	/// Only the contract owner is permitted to call this method.
+	/// @param newValue_ The new value.
+	function setBidCstRewardAmountPerMinute(uint256 newValue_) external;
+
 	/// @notice Sets `mainPrizeNumCosmicSignatureNfts`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.

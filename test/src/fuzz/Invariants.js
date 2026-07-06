@@ -107,6 +107,7 @@ async function runInvariants(ctx_) {
 		expect(await game_.roundLateBidDurationDivisor(), "roundLateBidDurationDivisor vs model").to.equal(model.roundLateBidDurationDivisor);
 		expect(await game_.roundLateBidPricePremiumAmountBaseMultiplier(), "roundLateBidPricePremiumAmountBaseMultiplier vs model").to.equal(model.roundLateBidPricePremiumAmountBaseMultiplier);
 		expect(await game_.roundLateBidPricePremiumAmountExponent(), "roundLateBidPricePremiumAmountExponent vs model").to.equal(model.roundLateBidPricePremiumAmountExponent);
+		expect(await game_.bidCstRewardAmountPerMinute(), "bidCstRewardAmountPerMinute vs model").to.equal(model.bidCstRewardAmountPerMinute);
 		expect(await game_.mainPrizeNumCosmicSignatureNfts(), "mainPrizeNumCosmicSignatureNfts vs model").to.equal(model.mainPrizeNumCosmicSignatureNfts);
 		expect(await game_.getRoundLateBidDuration(), "getRoundLateBidDuration vs model").to.equal(model.getRoundLateBidDuration());
 	}

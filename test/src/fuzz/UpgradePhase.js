@@ -213,6 +213,7 @@ async function performUpgradeToV3(ctx_) {
 
 		// The new V3 getters do not exist on V2 yet.
 		await expectUnknownSelector(v2Game_, hre.ethers.id("roundLateBidDurationDivisor()").slice(0, 10));
+		await expectUnknownSelector(v2Game_, hre.ethers.id("bidCstRewardAmountPerMinute()").slice(0, 10));
 		await expectUnknownSelector(v2Game_, hre.ethers.id("mainPrizeNumCosmicSignatureNfts()").slice(0, 10));
 		await expectUnknownSelector(v2Game_, hre.ethers.id("getRoundLateBidDuration()").slice(0, 10));
 	}
