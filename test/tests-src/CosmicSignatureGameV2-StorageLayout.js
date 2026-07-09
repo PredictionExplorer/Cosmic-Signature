@@ -6,7 +6,7 @@ const hre = require("hardhat");
 const { waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
 const {
-	DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER,
+	DEFAULT_BID_CST_REWARD_AMOUNT_RADICAND_MULTIPLIER,
 	DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR,
 	DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2,
 	INITIAL_CST_DUTCH_AUCTION_DURATION,
@@ -83,7 +83,7 @@ describe("CosmicSignatureGameV2-StorageLayout", function () {
 		const oldCstDutchAuctionDurationDivisor_ = await gameV1_.cstDutchAuctionDurationDivisor();
 		const oldBidCstRewardAmount_ = await gameV1_.bidCstRewardAmount();
 		expect(oldCstDutchAuctionDurationDivisor_).not.equal(INITIAL_CST_DUTCH_AUCTION_DURATION);
-		expect(oldBidCstRewardAmount_).not.equal(DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER);
+		expect(oldBidCstRewardAmount_).not.equal(DEFAULT_BID_CST_REWARD_AMOUNT_RADICAND_MULTIPLIER);
 
 		const cosmicSignatureGameV2Factory_ =
 			await hre.ethers.getContractFactory("CosmicSignatureGameV2", contracts_.ownerSigner);
@@ -101,7 +101,7 @@ describe("CosmicSignatureGameV2-StorageLayout", function () {
 
 		expect(await gameV2_.cstDutchAuctionDuration()).equal(INITIAL_CST_DUTCH_AUCTION_DURATION);
 		expect(await gameV2_.cstDutchAuctionDurationChangeDivisor()).equal(DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR);
-		expect(await gameV2_.bidCstRewardAmountMultiplier()).equal(DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER);
+		expect(await gameV2_.bidCstRewardAmountMultiplier()).equal(DEFAULT_BID_CST_REWARD_AMOUNT_RADICAND_MULTIPLIER);
 		expect(await gameV2_.timeoutDurationToClaimMainPrize()).equal(DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2);
 
 		await expectUnknownSelector(gameV2_, hre.ethers.id("cstDutchAuctionDurationDivisor()").slice(0, 10));

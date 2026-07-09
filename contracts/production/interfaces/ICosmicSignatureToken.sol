@@ -9,6 +9,7 @@ import { IAddressValidator } from "./IAddressValidator.sol";
 /// @author The Cosmic Signature Development Team.
 /// @notice This contract includes minting, burning, permit, and voting capabilities.
 /// @dev Comment-202511039 applies.
+/// Comment-202607163 relates and/or applies.
 /// [Comment-202412033]
 /// The total supply of this token is quite limited, and therefore it's guaranteed to remain
 /// many orders of magnitude below the point of overflow.

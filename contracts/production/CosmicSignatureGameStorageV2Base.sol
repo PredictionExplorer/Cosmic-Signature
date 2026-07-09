@@ -142,6 +142,10 @@ abstract contract CosmicSignatureGameStorageV2Base is ICosmicSignatureGameStorag
 	/// [Comment-202606057]
 	/// This occupies the same storage slot as `CosmicSignatureGameStorage.cstDutchAuctionDurationDivisor`.
 	/// [/Comment-202606057]
+	/// [Comment-202607169]
+	/// Issue. This variable is reused for versions after V2, where the `custom:oz-renamed-from` decoration is no longer correct.
+	/// But OpenZeppelin does not complain for some reason.
+	/// [/Comment-202607169]
 	/// @custom:oz-renamed-from cstDutchAuctionDurationDivisor
 	uint256 public cstDutchAuctionDuration;
 
@@ -170,11 +174,13 @@ abstract contract CosmicSignatureGameStorageV2Base is ICosmicSignatureGameStorag
 	uint256 public bidMessageLengthMaxLimit;
 
 	/// @notice We use this to calculate the CST amount to mint as a bidder reward for placing a bid.
+	/// In V2 vs. V3+, the formulas are different.
 	/// Comment-202411064 applies.
 	/// @dev
 	/// [Comment-202606053]
 	/// This occupies the same storage slot as `CosmicSignatureGameStorage.bidCstRewardAmount`.
 	/// [/Comment-202606053]
+	/// Comment-202607169 applies.
 	/// @custom:oz-renamed-from bidCstRewardAmount
 	uint256 public bidCstRewardAmountMultiplier;
 

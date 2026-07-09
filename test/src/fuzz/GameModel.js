@@ -412,7 +412,7 @@ class GameModel {
 		if (this.version < 3) {
 			return { lastBidderAddress: null, lastBidderAmount: 0n, newBidderAmount: totalRewardAmount_ };
 		}
-		const lastBidderAmount_ = totalRewardAmount_ * c.BID_CST_REWARD_AMOUNT_LAST_BIDDER_PERCENTAGE / 100n;
+		const lastBidderAmount_ = totalRewardAmount_ * c.DEFAULT_LAST_BIDDER_BID_CST_REWARD_AMOUNT_PERCENTAGE / 100n;
 		const newBidderAmount_ = totalRewardAmount_ - lastBidderAmount_;
 		if (this.lastBidderAddress === hre.ethers.ZeroAddress || totalRewardAmount_ <= 0n) {
 			// The first bid in a round mints only the new bidder share; a zero total mints nothing at all.
@@ -757,7 +757,7 @@ class GameModel {
 		this.version = 2;
 		this.cstDutchAuctionDuration = c.INITIAL_CST_DUTCH_AUCTION_DURATION;
 		this.cstDutchAuctionDurationChangeDivisor = c.DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR;
-		this.bidCstRewardAmountMultiplier = c.DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER;
+		this.bidCstRewardAmountMultiplier = c.DEFAULT_BID_CST_REWARD_AMOUNT_RADICAND_MULTIPLIER;
 		this.timeoutDurationToClaimMainPrize = c.DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2;
 		this.cstDutchAuctionDurationDivisor = 0n;
 		this.bidCstRewardAmount = 0n;
@@ -769,7 +769,7 @@ class GameModel {
 		this.roundLateBidDurationDivisor = c.DEFAULT_ROUND_LATE_BID_DURATION_DIVISOR;
 		this.roundLateBidPricePremiumAmountBaseMultiplier = c.DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_BASE_MULTIPLIER;
 		this.roundLateBidPricePremiumAmountExponent = c.DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_EXPONENT;
-		this.bidCstRewardAmountPerMinute = c.DEFAULT_BID_CST_REWARD_AMOUNT_PER_MINUTE;
+		this.bidCstRewardAmountPerMinute = c.INITIAL_BID_CST_REWARD_AMOUNT_PER_MINUTE;
 		this.mainPrizeNumCosmicSignatureNfts = c.DEFAULT_MAIN_PRIZE_NUM_COSMIC_SIGNATURE_NFTS;
 	}
 

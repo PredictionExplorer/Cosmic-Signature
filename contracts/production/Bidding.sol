@@ -348,9 +348,7 @@ abstract contract Bidding is
 		// [/Comment-202501061]
 		nextEthBidPrice = ethBidPrice_ + ethBidPrice_ / ethBidPriceIncreaseDivisor + 1;
 
-		// Comment-202501125 applies.
 		token.mint(_msgSender(), bidCstRewardAmount);
-
 		_bidCommon(/*bidType_,*/ message_);
 		emit BidPlaced(
 			roundNum,
@@ -567,18 +565,14 @@ abstract contract Bidding is
 			revert CosmicSignatureErrors.InsufficientReceivedBidAmount("The current CST bid price is greater than the maximum you allowed.", paidPrice_, priceMaxLimit_);
 		}
 
-		// [Comment-202409177]
-		// Burning the CST amount used for bidding.
-		// Doing it before subsequent minting, which requires the bidder to have the given amount.
-		// It probably makes little sense to call `ERC20Burnable.burn` or `ERC20Burnable.burnFrom` instead.
-		// [/Comment-202409177]
-		// [Comment-202501125]
-		// Minting a CST reward to the bidder for placing this bid.
-		// [/Comment-202501125]
 		{
 			ICosmicSignatureToken.MintOrBurnSpec[] memory mintAndBurnSpecs_ = new ICosmicSignatureToken.MintOrBurnSpec[](2);
 			mintAndBurnSpecs_[0].account = _msgSender();
 
+			// [Comment-202409177]
+			// Burning before minting requires the bidder to have the amount to burn.
+			// It probably makes little sense to call `ERC20Burnable.burn` or `ERC20Burnable.burnFrom` instead.
+			// [/Comment-202409177]
 			// Comment-202606074 relates and/or applies.
 			mintAndBurnSpecs_[0].value = ( - int256(paidPrice_) );
 
@@ -586,7 +580,6 @@ abstract contract Bidding is
 			mintAndBurnSpecs_[1].value = int256(bidCstRewardAmount);
 			token.mintAndBurnMany(mintAndBurnSpecs_);
 		}
-
 		biddersInfo[roundNum][_msgSender()].totalSpentCstAmount += paidPrice_;
 		cstDutchAuctionBeginningTimeStamp = block.timestamp;
 

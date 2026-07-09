@@ -7,43 +7,19 @@ pragma solidity =0.8.34;
 // #region
 
 // // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
-import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
-// import { OwnableUpgradeableWithReservedStorageGaps } from "./OwnableUpgradeableWithReservedStorageGaps.sol";
-// import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
-import { AddressValidator } from "./AddressValidator.sol";
-import { CosmicSignatureGameStorageV2 } from "./CosmicSignatureGameStorageV2.sol";
-// import { BiddingCommonV2 } from "./BiddingCommonV2.sol";
 import { CosmicSignatureGameV2Base } from "./CosmicSignatureGameV2Base.sol";
-import { MainPrizeCommonV2 } from "./MainPrizeCommonV2.sol";
-import { SystemManagementV2 } from "./SystemManagementV2.sol";
-import { EthDonationsV2 } from "./EthDonationsV2.sol";
-import { NftDonationsV2 } from "./NftDonationsV2.sol";
-import { BidStatisticsV2 } from "./BidStatisticsV2.sol";
-import { BiddingV2 } from "./BiddingV2.sol";
-import { SecondaryPrizesV2 } from "./SecondaryPrizesV2.sol";
 import { MainPrizeV2 } from "./MainPrizeV2.sol";
+import { CosmicSignatureGameStorageV2 } from "./CosmicSignatureGameStorageV2.sol";
 
 // #endregion
 // #region
 
 /// @custom:oz-upgrades-unsafe-allow missing-initializer
 contract CosmicSignatureGameV2 is
-	ReentrancyGuardTransientUpgradeable,
-	// OwnableUpgradeableWithReservedStorageGaps,
-	// UUPSUpgradeable,
-	AddressValidator,
-	CosmicSignatureGameStorageV2,
-	// BiddingCommonV2,
 	CosmicSignatureGameV2Base,
-	MainPrizeCommonV2,
-	SystemManagementV2,
-	EthDonationsV2,
-	NftDonationsV2,
-	BidStatisticsV2,
-	BiddingV2,
-	SecondaryPrizesV2,
-	MainPrizeV2 {
+	MainPrizeV2,
+	CosmicSignatureGameStorageV2 {
 	// #region Data.
 
 	uint256 private constant _CONTRACT_VERSION_NUMBER = 2;
@@ -67,7 +43,7 @@ contract CosmicSignatureGameV2 is
 
 		cstDutchAuctionDuration = CosmicSignatureConstants.INITIAL_CST_DUTCH_AUCTION_DURATION;
 		cstDutchAuctionDurationChangeDivisor = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR;
-		bidCstRewardAmountMultiplier = CosmicSignatureConstants.DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER;
+		bidCstRewardAmountMultiplier = CosmicSignatureConstants.DEFAULT_BID_CST_REWARD_AMOUNT_RADICAND_MULTIPLIER;
 		timeoutDurationToClaimMainPrize = CosmicSignatureConstants.DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2;
 	}
 

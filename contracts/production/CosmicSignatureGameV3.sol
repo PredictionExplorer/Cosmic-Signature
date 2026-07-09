@@ -7,43 +7,29 @@ pragma solidity =0.8.34;
 // #region
 
 // // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
-import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
-// import { OwnableUpgradeableWithReservedStorageGaps } from "./OwnableUpgradeableWithReservedStorageGaps.sol";
-// import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
-import { AddressValidator } from "./AddressValidator.sol";
-import { CosmicSignatureGameStorageV3 } from "./CosmicSignatureGameStorageV3.sol";
-// import { BiddingCommonV2 } from "./BiddingCommonV2.sol";
 import { CosmicSignatureGameV2Base } from "./CosmicSignatureGameV2Base.sol";
-import { MainPrizeCommonV2 } from "./MainPrizeCommonV2.sol";
+import { CosmicSignatureGameStorageV3Base } from "./CosmicSignatureGameStorageV3Base.sol";
 import { SystemManagementV3 } from "./SystemManagementV3.sol";
-import { EthDonationsV2 } from "./EthDonationsV2.sol";
-import { NftDonationsV2 } from "./NftDonationsV2.sol";
 import { BidStatisticsV2 } from "./BidStatisticsV2.sol";
+import { BidStatisticsV3 } from "./BidStatisticsV3.sol";
+import { BiddingV2 } from "./BiddingV2.sol";
 import { BiddingV3 } from "./BiddingV3.sol";
-import { SecondaryPrizesV2 } from "./SecondaryPrizesV2.sol";
 import { MainPrizeV3 } from "./MainPrizeV3.sol";
+import { CosmicSignatureGameStorageV3 } from "./CosmicSignatureGameStorageV3.sol";
 
 // #endregion
 // #region
 
 /// @custom:oz-upgrades-unsafe-allow missing-initializer
 contract CosmicSignatureGameV3 is
-	ReentrancyGuardTransientUpgradeable,
-	// OwnableUpgradeableWithReservedStorageGaps,
-	// UUPSUpgradeable,
-	AddressValidator,
-	CosmicSignatureGameStorageV3,
-	// BiddingCommonV2,
 	CosmicSignatureGameV2Base,
-	MainPrizeCommonV2,
+	CosmicSignatureGameStorageV3Base,
 	SystemManagementV3,
-	EthDonationsV2,
-	NftDonationsV2,
-	BidStatisticsV2,
+	BidStatisticsV3,
 	BiddingV3,
-	SecondaryPrizesV2,
-	MainPrizeV3 {
+	MainPrizeV3,
+	CosmicSignatureGameStorageV3 {
 	// #region Data.
 
 	uint256 private constant _CONTRACT_VERSION_NUMBER = 3;
@@ -60,7 +46,8 @@ contract CosmicSignatureGameV3 is
 		roundLateBidDurationDivisor = CosmicSignatureConstants.DEFAULT_ROUND_LATE_BID_DURATION_DIVISOR;
 		roundLateBidPricePremiumAmountBaseMultiplier = CosmicSignatureConstants.DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_BASE_MULTIPLIER;
 		roundLateBidPricePremiumAmountExponent = CosmicSignatureConstants.DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_EXPONENT;
-		bidCstRewardAmountPerMinute = CosmicSignatureConstants.DEFAULT_BID_CST_REWARD_AMOUNT_PER_MINUTE;
+		bidCstRewardAmountMultiplier = CosmicSignatureConstants.DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER;
+		lastBidderBidCstRewardAmountPercentage = CosmicSignatureConstants.DEFAULT_LAST_BIDDER_BID_CST_REWARD_AMOUNT_PERCENTAGE;
 		mainPrizeNumCosmicSignatureNfts = CosmicSignatureConstants.DEFAULT_MAIN_PRIZE_NUM_COSMIC_SIGNATURE_NFTS;
 	}
 
@@ -75,6 +62,33 @@ contract CosmicSignatureGameV3 is
 		// if ( ! isSuccess_ ) {
 		// 	revert InvalidInitialization();
 		// }
+	}
+
+	// #endregion
+	// #region Overrides Required By Solidity
+
+	function _saveChampionDurations() internal override (BidStatisticsV2, BidStatisticsV3, MainPrizeV3) /* virtual */ {
+		super._saveChampionDurations();
+	}
+
+	function getNextEthBidPriceAdvanced(int256 currentTimeOffset_) public view override (BiddingV2, BiddingV3) /* virtual */ returns (uint256) {
+		return super.getNextEthBidPriceAdvanced(currentTimeOffset_);
+	}
+
+	function getNextCstBidPriceAdvanced(int256 currentTimeOffset_) public view override (BiddingV2, BiddingV3) /* virtual */ returns (uint256) {
+		return super.getNextCstBidPriceAdvanced(currentTimeOffset_);
+	}
+
+	function getBidCstRewardAmountAdvanced(int256 currentTimeOffset_) public view override (BiddingV2, BiddingV3) /* virtual */ returns (uint256) {
+		return super.getBidCstRewardAmountAdvanced(currentTimeOffset_);
+	}
+
+	function _mintBidCstRewardAmountIfNeeded(uint256 bidCstRewardAmount_) internal override (BiddingV2, BiddingV3) /* virtual */ {
+		super._mintBidCstRewardAmountIfNeeded(bidCstRewardAmount_);
+	}
+
+	function _burnCstBidPriceAndMintBidCstRewardAmountIfNeeded(uint256 cstBidPrice_, uint256 bidCstRewardAmount_) internal override (BiddingV2, BiddingV3) /* virtual */ {
+		super._burnCstBidPriceAndMintBidCstRewardAmountIfNeeded(cstBidPrice_, bidCstRewardAmount_);
 	}
 
 	// #endregion

@@ -337,10 +337,7 @@ abstract contract BiddingOpenBid is
 		// #region
 
 		biddersInfo[roundNum][_msgSender()].totalSpentEthAmount += paidEthPrice_;
-
-		// Comment-202501125 applies.
 		token.mint(_msgSender(), bidCstRewardAmount);
-
 		_bidCommon(/*bidType_,*/ /*params_.message*/ message_);
 		emit BidPlaced(
 			roundNum,
@@ -543,12 +540,11 @@ abstract contract BiddingOpenBid is
 			revert CosmicSignatureErrors.InsufficientReceivedBidAmount("The current CST bid price is greater than the maximum you allowed.", paidPrice_, priceMaxLimit_);
 		}
 
-		// Comment-202409177 applies.
-		// Comment-202501125 applies.
 		{
 			ICosmicSignatureToken.MintOrBurnSpec[] memory mintAndBurnSpecs_ = new ICosmicSignatureToken.MintOrBurnSpec[](2);
 			mintAndBurnSpecs_[0].account = _msgSender();
 
+			// Comment-202409177 applies.
 			// Comment-202606074 relates and/or applies.
 			mintAndBurnSpecs_[0].value = ( - int256(paidPrice_) );
 
@@ -556,7 +552,6 @@ abstract contract BiddingOpenBid is
 			mintAndBurnSpecs_[1].value = int256(bidCstRewardAmount);
 			token.mintAndBurnMany(mintAndBurnSpecs_);
 		}
-
 		biddersInfo[roundNum][_msgSender()].totalSpentCstAmount += paidPrice_;
 		cstDutchAuctionBeginningTimeStamp = block.timestamp;
 

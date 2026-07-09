@@ -17,6 +17,7 @@ See its manual in another document.
 
 ### Notes
 
-- Any storage variable renames will be reported as errors. This utility does not support any decorators similar to `@custom:oz-renamed-from`.
+- Any storage variable renames will be reported as errors. This utility does not support any decorators similar to `@custom:oz-renamed-from`.\
+Comment-202607169 relates.
 
 - This utility is not aware of the special gap array that we tagged with Comment-202412142. Therefore it will report an error if the first item in the gap array was replace with a new storage variable.

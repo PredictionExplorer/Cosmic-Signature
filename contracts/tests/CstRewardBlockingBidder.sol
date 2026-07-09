@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity =0.8.34;
 
+import { CryptographyHelpers } from "../production/libraries/CryptographyHelpers.sol";
 import { CosmicSignatureGameV3 } from "../production/CosmicSignatureGameV3.sol";
 
 /// @title A hostile bidder that tries to make itself impossible to pay the bid CST reward to.
@@ -9,11 +10,16 @@ import { CosmicSignatureGameV3 } from "../production/CosmicSignatureGameV3.sol";
 /// the last bidder bid CST reward share to it. If that could succeed, nobody would be able to place further bids.
 /// The attack cannot succeed because the Game mints, rather than transfers, bid CST rewards,
 /// and `CosmicSignatureToken` minting performs no call into the recipient.
+/// todo-ai-0 I would rename this contract to `HostileBidder`.
 contract CstRewardBlockingBidder {
 	CosmicSignatureGameV3 public immutable game;
 
-	/// @notice 0 = accept incoming calls; 1 = revert with a reason string; 2 = fail an assertion (panic);
-	/// 3 = burn all provided gas; 4 = attempt to reenter `game.bidWithEth`.
+	/// @notice
+	/// 1 = revert with a reason string;
+	/// 2 = fail an assertion (panic);
+	/// 3 = burn all remaining gas;
+	/// 4 = reenter `game.bidWithEth`;
+	/// any other value = accept incoming calls.
 	uint256 public hostilityModeCode = 0;
 
 	constructor(CosmicSignatureGameV3 game_) {
@@ -21,11 +27,11 @@ contract CstRewardBlockingBidder {
 	}
 
 	receive() external payable {
-		_beHostileIfNeeded();
+		_takeHostileActionIfNeeded();
 	}
 
 	fallback() external payable {
-		_beHostileIfNeeded();
+		_takeHostileActionIfNeeded();
 	}
 
 	function setHostilityModeCode(uint256 newValue_) external {
@@ -40,17 +46,17 @@ contract CstRewardBlockingBidder {
 		game.bidWithCst(priceMaxLimit_, message_, bidCstRewardAmountMinLimit_);
 	}
 
-	function _beHostileIfNeeded() private {
+	function _takeHostileActionIfNeeded() private {
 		uint256 hostilityModeCode_ = hostilityModeCode;
 		if (hostilityModeCode_ == 1) {
 			revert ("CstRewardBlockingBidder rejects everything.");
 		} else if (hostilityModeCode_ == 2) {
 			assert(false);
 		} else if (hostilityModeCode_ == 3) {
-			// Burning all provided gas.
+			// Burning all remaining gas.
 			uint256 counter_ = 0;
-			while (true) {
-				counter_ = uint256(keccak256(abi.encodePacked(counter_)));
+			for (;;) {
+				counter_ = CryptographyHelpers.calculateHashSumOf(counter_);
 			}
 		} else if (hostilityModeCode_ == 4) {
 			// This reentry attempt is expected to revert due to the reentrancy guard,

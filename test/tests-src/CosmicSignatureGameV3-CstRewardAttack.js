@@ -1,3 +1,5 @@
+// todo-ai-0 Rename this file to `CosmicSignatureGameV3-BidCstRewardAttack.js`.
+
 "use strict";
 
 // Proves that the attack discussed in Comment-202607163 is impossible: a bidder contract that cannot

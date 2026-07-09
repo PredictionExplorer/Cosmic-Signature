@@ -16,8 +16,8 @@ const DEFAULT_ROUND_LATE_BID_DURATION_DIVISOR =
 const ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_RESOLUTION_EXPONENT = 13n;
 const DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_BASE_MULTIPLIER = 3567993n << ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_RESOLUTION_EXPONENT;
 const DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_EXPONENT = 8n;
-const DEFAULT_BID_CST_REWARD_AMOUNT_PER_MINUTE = 10n ** 18n;
-const BID_CST_REWARD_AMOUNT_LAST_BIDDER_PERCENTAGE = 90n;
+const INITIAL_BID_CST_REWARD_AMOUNT_PER_MINUTE = 10n ** 18n;
+const DEFAULT_LAST_BIDDER_BID_CST_REWARD_AMOUNT_PERCENTAGE = 90n;
 const DEFAULT_MAIN_PRIZE_NUM_COSMIC_SIGNATURE_NFTS = 3n;
 
 async function deployV1CompleteRoundZeroAndUpgradeToV2AndV3(roundActivationTime_ = 2n) {
@@ -55,7 +55,7 @@ async function assertDefaultV3Initialization(game_) {
 	expect(await game_.roundLateBidDurationDivisor()).equal(DEFAULT_ROUND_LATE_BID_DURATION_DIVISOR);
 	expect(await game_.roundLateBidPricePremiumAmountBaseMultiplier()).equal(DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_BASE_MULTIPLIER);
 	expect(await game_.roundLateBidPricePremiumAmountExponent()).equal(DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_EXPONENT);
-	expect(await game_.bidCstRewardAmountPerMinute()).equal(DEFAULT_BID_CST_REWARD_AMOUNT_PER_MINUTE);
+	expect(await game_.bidCstRewardAmountPerMinute()).equal(INITIAL_BID_CST_REWARD_AMOUNT_PER_MINUTE);
 	expect(await game_.mainPrizeNumCosmicSignatureNfts()).equal(DEFAULT_MAIN_PRIZE_NUM_COSMIC_SIGNATURE_NFTS);
 }
 
@@ -64,7 +64,7 @@ JS mirror of the V3 `getBidCstRewardAmountAdvanced` linear formula.
 @param {bigint} elapsedDuration_ Seconds since the last bid (or the round activation). May be non-positive.
 @param {bigint} bidCstRewardAmountPerMinute_
 */
-function getV3BidCstRewardAmount(elapsedDuration_, bidCstRewardAmountPerMinute_ = DEFAULT_BID_CST_REWARD_AMOUNT_PER_MINUTE) {
+function getV3BidCstRewardAmount(elapsedDuration_, bidCstRewardAmountPerMinute_ = INITIAL_BID_CST_REWARD_AMOUNT_PER_MINUTE) {
 	if (elapsedDuration_ <= 0n) {
 		return 0n;
 	}
@@ -77,7 +77,7 @@ JS mirror of the V3 bid CST reward 90/10 split (Comment-202607161).
 @returns {{lastBidderAmount: bigint, newBidderAmount: bigint}}
 */
 function splitV3BidCstRewardAmount(bidCstRewardAmount_) {
-	const lastBidderAmount_ = bidCstRewardAmount_ * BID_CST_REWARD_AMOUNT_LAST_BIDDER_PERCENTAGE / 100n;
+	const lastBidderAmount_ = bidCstRewardAmount_ * DEFAULT_LAST_BIDDER_BID_CST_REWARD_AMOUNT_PERCENTAGE / 100n;
 	return { lastBidderAmount: lastBidderAmount_, newBidderAmount: bidCstRewardAmount_ - lastBidderAmount_ };
 }
 
@@ -144,8 +144,8 @@ module.exports = {
 	ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_RESOLUTION_EXPONENT,
 	DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_BASE_MULTIPLIER,
 	DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_EXPONENT,
-	DEFAULT_BID_CST_REWARD_AMOUNT_PER_MINUTE,
-	BID_CST_REWARD_AMOUNT_LAST_BIDDER_PERCENTAGE,
+	INITIAL_BID_CST_REWARD_AMOUNT_PER_MINUTE,
+	DEFAULT_LAST_BIDDER_BID_CST_REWARD_AMOUNT_PERCENTAGE,
 	DEFAULT_MAIN_PRIZE_NUM_COSMIC_SIGNATURE_NFTS,
 	deployV1CompleteRoundZeroAndUpgradeToV2AndV3,
 	upgradeToV3,

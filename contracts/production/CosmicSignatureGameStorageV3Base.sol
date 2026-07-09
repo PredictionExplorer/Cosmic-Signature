@@ -7,11 +7,20 @@ pragma solidity =0.8.34;
 // #region
 
 import { CosmicSignatureGameStorageV2Base } from "./CosmicSignatureGameStorageV2Base.sol";
+import { ICosmicSignatureGameStorageV3 } from "./interfaces/ICosmicSignatureGameStorageV3.sol";
 
 // #endregion
 // #region
 
-abstract contract CosmicSignatureGameStorageV3Base is CosmicSignatureGameStorageV2Base {
+abstract contract CosmicSignatureGameStorageV3Base is
+	CosmicSignatureGameStorageV2Base,
+	ICosmicSignatureGameStorageV3 {
+	// #region Bid Statistics V3
+
+	/// @dev Comment-202411098 applies.
+	mapping(uint256 roundNum => ChampionDurations) public championDurations;
+
+	// #endregion
 	// #region Bidding V3
 
 	/// @notice This controls the duration before `mainPrizeTime` during which a bid price is to be increased.
@@ -30,19 +39,32 @@ abstract contract CosmicSignatureGameStorageV3Base is CosmicSignatureGameStorage
 	/// @dev Comment-202607117 applies.
 	uint256 public roundLateBidPricePremiumAmountExponent;
 
-	/// @notice In V3+, the bid CST reward accrues at this rate, expressed in CST Wei per minute,
-	/// since the last bid or, if no bids have been placed in the current bidding round yet, since the round activation.
+	// todo-ai-0 I have eliminated `bidCstRewardAmountPerMinute`. Using `bidCstRewardAmountMultiplier` instead.
+	// todo-ai-0 Delete this garbage now.
+	// todo-ai-0 Maybe delete Comment-202607161 as well. I have deleted references to it in Solidity code.
+	// todo-ai-0 If necessary, move the comment or some still valid parts of it elsewhere.
+	// todo-ai-0 Generally, avoid writing verbose comments because they are hard to read and maintain.
+	// todo-ai-0 Commnets themselves result a lot of complexity,
+	// todo-ai-0 and no comment can eliminate the need for a human to read the code.
+	// todo-ai-0 Write comments to explain unobvious intricacies, like what you did in Comment-202607163.
+	// /// @notice In V3+, the bid CST reward accrues at this rate, expressed in CST Wei per minute,
+	// /// since the last bid or, if no bids have been placed in the current bidding round yet, since the round activation.
+	// /// Comment-202411064 applies.
+	// /// @dev
+	// /// [Comment-202607161]
+	// /// In V3+, the bid CST reward is linearly proportional to the elapsed duration:
+	// /// `bidCstRewardAmount = elapsedDuration * bidCstRewardAmountPerMinute / 1 minutes`.
+	// /// When someone places a bid, `DEFAULT_LAST_BIDDER_BID_CST_REWARD_AMOUNT_PERCENTAGE` percent of the reward is minted to
+	// /// the current last bidder (whose bid is being outbid), and the rest is minted to the new bidder.
+	// /// If there is no last bidder (the new bid is the first one in the bidding round), only the new bidder share is minted.
+	// /// This replaces the V2 square root formula. `bidCstRewardAmountMultiplier` remains in storage, but V3+ ignores it.
+	// /// [/Comment-202607161]
+	// uint256 public bidCstRewardAmountPerMinute;
+
+	/// @notice In V3+, this percentage of the bid CST reward is minted to the current last bidder
+	/// (if there were bids in the current bidding round); the rest is minted to the new bidder.
 	/// Comment-202411064 applies.
-	/// @dev
-	/// [Comment-202607161]
-	/// In V3+, the bid CST reward is linearly proportional to the elapsed duration:
-	/// `bidCstRewardAmount = elapsedDuration * bidCstRewardAmountPerMinute / 1 minutes`.
-	/// When someone places a bid, `BID_CST_REWARD_AMOUNT_LAST_BIDDER_PERCENTAGE` percent of the reward is minted to
-	/// the current last bidder (whose bid is being outbid), and the rest is minted to the new bidder.
-	/// If there is no last bidder (the new bid is the first one in the bidding round), only the new bidder share is minted.
-	/// This replaces the V2 square root formula. `bidCstRewardAmountMultiplier` remains in storage, but V3+ ignores it.
-	/// [/Comment-202607161]
-	uint256 public bidCstRewardAmountPerMinute;
+	uint256 public lastBidderBidCstRewardAmountPercentage;
 
 	// #endregion
 	// #region Main Prize V3

@@ -13,7 +13,6 @@ import { RandomNumberHelpers } from "./libraries/RandomNumberHelpers.sol";
 import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 import { IPrizesWallet } from "./interfaces/IPrizesWallet.sol";
 import { MainPrizeV2Base } from "./MainPrizeV2Base.sol";
-import { SecondaryPrizesV2 } from "./SecondaryPrizesV2.sol";
 import { IMainPrize } from "./interfaces/IMainPrize.sol";
 
 // #endregion
@@ -21,7 +20,6 @@ import { IMainPrize } from "./interfaces/IMainPrize.sol";
 
 abstract contract MainPrizeV2 is
 	MainPrizeV2Base,
-	SecondaryPrizesV2,
 	IMainPrize {
 	// #region `_distributePrizes`
 

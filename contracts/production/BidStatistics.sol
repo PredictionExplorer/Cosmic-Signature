@@ -12,7 +12,9 @@ import { IBidStatistics } from "./interfaces/IBidStatistics.sol";
 // #endregion
 // #region
 
-abstract contract BidStatistics is CosmicSignatureGameStorage, IBidStatistics {
+abstract contract BidStatistics is
+	CosmicSignatureGameStorage,
+	IBidStatistics {
 	// #region `getTotalNumBids`
 
 	function getTotalNumBids(uint256 roundNum_) external view override returns (uint256) {

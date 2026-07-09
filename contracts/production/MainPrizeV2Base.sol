@@ -13,6 +13,7 @@ import { CosmicSignatureGameStorageV2Base } from "./CosmicSignatureGameStorageV2
 import { BiddingCommonV2 } from "./BiddingCommonV2.sol";
 import { MainPrizeCommonV2 } from "./MainPrizeCommonV2.sol";
 import { BidStatisticsV2 } from "./BidStatisticsV2.sol";
+import { SecondaryPrizesV2 } from "./SecondaryPrizesV2.sol";
 import { IMainPrize1 } from "./interfaces/IMainPrize1.sol";
 
 // #endregion
@@ -25,6 +26,7 @@ abstract contract MainPrizeV2Base is
 	BiddingCommonV2,
 	MainPrizeCommonV2,
 	BidStatisticsV2,
+	SecondaryPrizesV2,
 	IMainPrize1 {
 	// #region `claimMainPrize`
 
@@ -68,6 +70,9 @@ abstract contract MainPrizeV2Base is
 		// Comment-202605309 applies.
 		_updateChampionsIfNeeded();
 		_updateChronoWarriorIfNeeded(block.timestamp);
+
+		// Comment-202607178 relates.
+		_saveChampionDurations();
 
 		_distributePrizes();
 		_prepareNextRound();

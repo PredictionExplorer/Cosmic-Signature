@@ -12,7 +12,9 @@ import { IBidStatistics } from "./interfaces/IBidStatistics.sol";
 // #endregion
 // #region
 
-abstract contract BidStatisticsV2 is CosmicSignatureGameStorageV2Base, IBidStatistics {
+abstract contract BidStatisticsV2 is
+	CosmicSignatureGameStorageV2Base,
+	IBidStatistics {
 	// #region `getTotalNumBids`
 
 	function getTotalNumBids(uint256 roundNum_) external view override returns (uint256) {
@@ -167,6 +169,19 @@ abstract contract BidStatisticsV2 is CosmicSignatureGameStorageV2Base, IBidStati
 		}
 
 		// #endregion
+	}
+
+	// #endregion
+	// #region `_saveChampionDurations`
+
+	/// @dev
+	/// [Comment-202607178]
+	/// Issue. This is really needed only for V3+, but it's convenient to place this here,
+	/// so that `claimMainPrize` could call this. In V2, this is a no-op.
+	/// [/Comment-202607178]
+	function _saveChampionDurations() internal virtual {
+		// #enable_asserts assert(enduranceChampionDuration > 0);
+		// #enable_asserts assert(int256(chronoWarriorDuration) > int256(0));
 	}
 
 	// #endregion

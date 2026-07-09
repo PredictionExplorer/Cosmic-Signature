@@ -155,6 +155,7 @@ interface IBiddingV2 {
 
 	/// @notice Calculates and returns the current CST amount that would be minted to a bidder as a reward for placing a bid.
 	/// It can be zero.
+	/// In V3+, the bid CST reward is to be split between the current last bidder and the new bidder.
 	/// @param currentTimeOffset_ Comment-202501107 applies.
 	/// @dev This logic can, in theory, overflow, as detailed in Comment-202605295.
 	function getBidCstRewardAmountAdvanced(int256 currentTimeOffset_) external view returns (uint256);

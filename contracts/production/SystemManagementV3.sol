@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity =0.8.34;
 
-import { CosmicSignatureGameStorageV3Base } from "./CosmicSignatureGameStorageV3Base.sol";
 import { SystemManagementV2 } from "./SystemManagementV2.sol";
+import { CosmicSignatureGameStorageV3Base } from "./CosmicSignatureGameStorageV3Base.sol";
 import { ISystemEventsV3 } from "./interfaces/ISystemEventsV3.sol";
 import { ISystemManagementV3 } from "./interfaces/ISystemManagementV3.sol";
 
 abstract contract SystemManagementV3 is
-	CosmicSignatureGameStorageV3Base,
 	SystemManagementV2,
+	CosmicSignatureGameStorageV3Base,
 	ISystemEventsV3,
 	ISystemManagementV3 {
 	function setRoundLateBidDurationDivisor(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
@@ -26,9 +26,9 @@ abstract contract SystemManagementV3 is
 		emit RoundLateBidPricePremiumAmountExponentChanged(newValue_);
 	}
 
-	function setBidCstRewardAmountPerMinute(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
-		bidCstRewardAmountPerMinute = newValue_;
-		emit BidCstRewardAmountPerMinuteChanged(newValue_);
+	function setLastBidderBidCstRewardAmountPercentage(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
+		lastBidderBidCstRewardAmountPercentage = newValue_;
+		emit LastBidderBidCstRewardAmountPercentageChanged(newValue_);
 	}
 
 	function setMainPrizeNumCosmicSignatureNfts(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {

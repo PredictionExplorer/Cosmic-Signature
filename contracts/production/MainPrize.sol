@@ -76,12 +76,13 @@ abstract contract MainPrize is
 	///    `marketingWallet`.
 	///    `marketingWalletCstContributionAmount`.
 	///    `charityAddress`.
-	///    V3+: `CosmicSignatureGameStorageV3Base.mainPrizeNumCosmicSignatureNfts`.
+	///    V3+: `mainPrizeNumCosmicSignatureNfts`.
 	///    `_setRoundActivationTime`.
 	///    `getDurationUntilMainPrizeRaw`.
 	///    `_setMainPrizeTimeIncrementInMicroSeconds`.
 	///    `_updateChampionsIfNeeded`.
 	///    `_updateChronoWarriorIfNeeded`.
+	///    V2+: `_saveChampionDurations`.
 	///    `LastCstBidderPrizePaid`.
 	///    `EnduranceChampionPrizePaid`.
 	///    `ChronoWarriorPrizePaid`.

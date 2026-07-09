@@ -12,18 +12,19 @@ import { CosmicSignatureEvents } from "./libraries/CosmicSignatureEvents.sol";
 import { RandomNumberHelpers } from "./libraries/RandomNumberHelpers.sol";
 import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 import { IPrizesWallet } from "./interfaces/IPrizesWallet.sol";
-import { CosmicSignatureGameStorageV3Base } from "./CosmicSignatureGameStorageV3Base.sol";
 import { MainPrizeV2Base } from "./MainPrizeV2Base.sol";
-import { SecondaryPrizesV2 } from "./SecondaryPrizesV2.sol";
+import { CosmicSignatureGameStorageV3Base } from "./CosmicSignatureGameStorageV3Base.sol";
+import { BidStatisticsV2 } from "./BidStatisticsV2.sol";
+import { BidStatisticsV3 } from "./BidStatisticsV3.sol";
 import { IMainPrizeV3 } from "./interfaces/IMainPrizeV3.sol";
 
 // #endregion
 // #region
 
 abstract contract MainPrizeV3 is
-	CosmicSignatureGameStorageV3Base,
 	MainPrizeV2Base,
-	SecondaryPrizesV2,
+	CosmicSignatureGameStorageV3Base,
+	BidStatisticsV3,
 	IMainPrizeV3 {
 	// #region `_distributePrizes`
 
@@ -524,6 +525,13 @@ abstract contract MainPrizeV3 is
 		}
 
 		// #endregion
+	}
+
+	// #endregion
+	// #region Overrides Required By Solidity
+
+	function _saveChampionDurations() internal override (BidStatisticsV2, BidStatisticsV3) virtual {
+		super._saveChampionDurations();
 	}
 
 	// #endregion

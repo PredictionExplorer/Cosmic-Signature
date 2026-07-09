@@ -83,14 +83,14 @@ library CosmicSignatureConstants {
 	/// [/Comment-202502052]
 	uint256 internal constant DEFAULT_ETH_BID_REFUND_AMOUNT_IN_GAS_TO_SWALLOW_MAX_LIMIT = 6843;
 
-	/// @notice Initial `CosmicSignatureGameStorageV2.cstDutchAuctionDuration`.
+	/// @notice Initial `CosmicSignatureGameStorageV2Base.cstDutchAuctionDuration`.
 	uint256 internal constant INITIAL_CST_DUTCH_AUCTION_DURATION = (1 days) / 2;
 
 	/// @notice Default `CosmicSignatureGameStorage.cstDutchAuctionDurationDivisor`.
 	/// Comment-202508288 relates.
 	uint256 internal constant DEFAULT_CST_DUTCH_AUCTION_DURATION_DIVISOR = (INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND + INITIAL_CST_DUTCH_AUCTION_DURATION / 2) / INITIAL_CST_DUTCH_AUCTION_DURATION;
 
-	/// @notice Default `CosmicSignatureGameStorageV2.cstDutchAuctionDurationChangeDivisor`.
+	/// @notice Default `CosmicSignatureGameStorageV2Base.cstDutchAuctionDurationChangeDivisor`.
 	uint256 internal constant DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR = 250;
 
 	/// @notice Comment-202411066 relates.
@@ -128,18 +128,20 @@ library CosmicSignatureConstants {
 	/// @notice Default `CosmicSignatureGameStorage.bidCstRewardAmount` and `CosmicSignatureDao.proposalThreshold()`.
 	uint256 internal constant DEFAULT_BID_CST_REWARD_AMOUNT = 100 ether;
 
-	/// @notice Default `CosmicSignatureGameStorageV2.bidCstRewardAmountMultiplier`.
-	uint256 internal constant DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER = 3 * (1 ether) ** 2 * INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND;
+	/// @notice In V2, default `CosmicSignatureGameStorageV2Base.bidCstRewardAmountMultiplier`.
+	/// See also: `DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER`.
+	uint256 internal constant DEFAULT_BID_CST_REWARD_AMOUNT_RADICAND_MULTIPLIER = 3 * (1 ether) ** 2 * INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND;
 
-	/// @notice Default `CosmicSignatureGameStorageV3Base.bidCstRewardAmountPerMinute`.
-	/// 1 CST per minute.
-	/// @dev Comment-202607161 applies.
-	uint256 internal constant DEFAULT_BID_CST_REWARD_AMOUNT_PER_MINUTE = 1 ether;
+	uint256 internal constant INITIAL_BID_CST_REWARD_AMOUNT_PER_MINUTE = 1 ether;
 
-	/// @notice In V3+, this percentage of the bid CST reward is minted to the bidding round current last bidder
-	/// (the one whose bid is being outbid); the rest is minted to the new bidder.
-	/// @dev Comment-202607161 applies.
-	uint256 internal constant BID_CST_REWARD_AMOUNT_LAST_BIDDER_PERCENTAGE = 90;
+	/// @notice In V3+, default `CosmicSignatureGameStorageV2Base.bidCstRewardAmountMultiplier`.
+	/// See also: `DEFAULT_BID_CST_REWARD_AMOUNT_RADICAND_MULTIPLIER`.
+	/// todo-0 Make sure this produces the correct result, close to 1/60 CST per second.
+	/// todo-ai-0 ToDos like the above are for a human. You should pay attention to them, but do not delete them.
+	uint256 internal constant DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER = (INITIAL_BID_CST_REWARD_AMOUNT_PER_MINUTE * INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND + (1 minutes) / 2) / (1 minutes);
+
+	/// @notice Default `CosmicSignatureGameStorageV3Base.lastBidderBidCstRewardAmountPercentage`.
+	uint256 internal constant DEFAULT_LAST_BIDDER_BID_CST_REWARD_AMOUNT_PERCENTAGE = 90;
 
 	// #endregion
 	// #region Secondary Prizes
@@ -182,7 +184,7 @@ library CosmicSignatureConstants {
 	/// See also: `DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2`, `DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES`.
 	uint256 internal constant DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE = 1 days;
 
-	/// @notice Default `CosmicSignatureGameStorageV2.timeoutDurationToClaimMainPrize`.
+	/// @notice Default `CosmicSignatureGameStorageV2Base.timeoutDurationToClaimMainPrize`.
 	/// See also: `DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE`, `DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES`.
 	uint256 internal constant DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2 = 2 days;
 

@@ -7,18 +7,40 @@ pragma solidity =0.8.34;
 // #region
 
 // // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
+import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
 import { OwnableUpgradeableWithReservedStorageGaps } from "./OwnableUpgradeableWithReservedStorageGaps.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { AddressValidator } from "./AddressValidator.sol";
+import { CosmicSignatureGameStorageV2Base } from "./CosmicSignatureGameStorageV2Base.sol";
 import { BiddingCommonV2 } from "./BiddingCommonV2.sol";
+import { MainPrizeCommonV2 } from "./MainPrizeCommonV2.sol";
+import { SystemManagementV2 } from "./SystemManagementV2.sol";
+import { EthDonationsV2 } from "./EthDonationsV2.sol";
+import { NftDonationsV2 } from "./NftDonationsV2.sol";
+import { BidStatisticsV2 } from "./BidStatisticsV2.sol";
+import { BiddingV2 } from "./BiddingV2.sol";
+import { SecondaryPrizesV2 } from "./SecondaryPrizesV2.sol";
+import { MainPrizeV2Base } from "./MainPrizeV2Base.sol";
 import { ICosmicSignatureGameV2 } from "./interfaces/ICosmicSignatureGameV2.sol";
 
 // #endregion
 // #region
 
 abstract contract CosmicSignatureGameV2Base is
+	ReentrancyGuardTransientUpgradeable,
 	OwnableUpgradeableWithReservedStorageGaps,
 	UUPSUpgradeable,
+	AddressValidator,
+	CosmicSignatureGameStorageV2Base,
 	BiddingCommonV2,
+	MainPrizeCommonV2,
+	SystemManagementV2,
+	EthDonationsV2,
+	NftDonationsV2,
+	BidStatisticsV2,
+	BiddingV2,
+	SecondaryPrizesV2,
+	MainPrizeV2Base,
 	ICosmicSignatureGameV2 {
 	// #region `constructor`
 
