@@ -97,6 +97,64 @@ describe("CosmicSignatureGameV3-GuardsAndMisconfig", function () {
 		await expect(game_.connect(contracts_.signers[3]).claimMainPrize()).revertedWithPanic(0x11);
 	});
 
+	it("documents that bidCstRewardAmountMultiplier = 0 stops rewards without bricking", async function () {
+		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3(2n);
+		const game_ = contracts_.cosmicSignatureGameV3Proxy;
+		const token_ = contracts_.cosmicSignatureToken;
+		await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setBidCstRewardAmountMultiplier(0n));
+		await activateCurrentRound(game_, contracts_.ownerSigner);
+		const bidder1_ = contracts_.signers[2];
+		const bidder2_ = contracts_.signers[3];
+
+		// The derived CST floor and the reward-per-increment views are 0.
+		expect(await game_.getCstDutchAuctionBeginningBidPriceMinLimit()).equal(0n);
+		expect(await game_.getBidCstRewardAmountPerMainPrizeTimeIncrement()).equal(0n);
+
+		// Bidding keeps working; no CST is ever minted.
+		await waitForTransactionReceipt(game_.connect(bidder1_).bidWithEth(-1n, "", 0n, {value: 10n ** 18n,}));
+		const cstBidPriceAtFirstBid_ = await game_.getNextCstBidPrice();
+		await waitForTransactionReceipt(
+			game_.connect(bidder2_).bidWithEth(-1n, "", 0n, {value: await game_.getNextEthBidPriceAdvanced(1n),})
+		);
+		expect(await token_.balanceOf(bidder1_.address)).equal(0n);
+		expect(await token_.balanceOf(bidder2_.address)).equal(0n);
+
+		// With a zero accrual rate, the wage-rate decline degenerates, so the price declines over the
+		// duration max limit instead (Comment-202607170), and the emergent-duration view reports that limit.
+		expect(cstBidPriceAtFirstBid_).greaterThan(0n);
+		{
+			const durationMaxLimit_ =
+				12n * (await game_.mainPrizeTimeIncrementInMicroSeconds()) / 1_000_000n;
+			expect((await game_.getCstDutchAuctionDurations())[0]).equal(durationMaxLimit_);
+			const beginningTimeStamp_ = await game_.cstDutchAuctionBeginningTimeStamp();
+			const latestTimeStamp_ = await hre.ethers.provider.getBlock("latest").then((block_) => BigInt(block_.timestamp));
+			const sampleOffset_ = 600n;
+			const remainingDuration_ = durationMaxLimit_ - (latestTimeStamp_ + sampleOffset_ - beginningTimeStamp_);
+			expect(await game_.getNextCstBidPriceAdvanced(sampleOffset_))
+				.equal(cstBidPriceAtFirstBid_ * remainingDuration_ / durationMaxLimit_);
+		}
+
+		// A CST bid burns the price and mints nothing; with the floor at 0, the next auction begins at 2x the paid price.
+		// (Skipped here: the bidders hold no CST at a zero rate. A free bid after the max limit still works.)
+		{
+			const beginningTimeStamp_ = await game_.cstDutchAuctionBeginningTimeStamp();
+			const durationMaxLimit_ = (await game_.getCstDutchAuctionDurations())[0];
+			await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(beginningTimeStamp_ + durationMaxLimit_),]);
+			await waitForTransactionReceipt(game_.connect(bidder1_).bidWithCst(0n, "", 0n));
+			expect(await game_.cstDutchAuctionBeginningBidPrice()).equal(0n);
+			expect(await token_.balanceOf(bidder1_.address)).equal(0n);
+		}
+
+		// The claim works, after which the owner can repair the parameter.
+		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(await game_.mainPrizeTime()),]);
+		await waitForTransactionReceipt(game_.connect(bidder1_).claimMainPrize());
+		await waitForTransactionReceipt(
+			game_.connect(contracts_.ownerSigner).setBidCstRewardAmountMultiplier(6n * 10n ** 25n)
+		);
+		await activateCurrentRound(game_, contracts_.ownerSigner);
+		expect(await game_.getBidCstRewardAmountPerMainPrizeTimeIncrement()).greaterThan(0n);
+	});
+
 	it("documents that roundLateBidDurationDivisor = 0 owner misconfiguration freezes bidding until the claim", async function () {
 		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3(2n);
 		const game_ = contracts_.cosmicSignatureGameV3Proxy;

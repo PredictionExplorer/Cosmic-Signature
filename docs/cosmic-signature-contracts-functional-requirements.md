@@ -92,10 +92,10 @@ Starting with round 1, the first bid beginning ETH bid price equals 2x of the fi
 If an ETH bid is accompanied by a Random Walk NFT, the bid price becomes a half of its normal value.
 
 Every **CST bid price** is formed using a Dutch auction. The first CST Dutch auction in a given round begins when a user places the first ETH bid.\
-The beginning CST bid price of round zero equals a configurable beginning minimum. Then over a configurable duration it declines lineraly down to zero. As soon as someone places a bid, the new beginning price is calculated as 2x of the paid price, but no lower than the same configurable beginning minimum. After each CST bid the Dutch auction repeats.\
+The beginning CST bid price of round zero equals a beginning minimum. In V1 and V2, the price then declines linearly down to zero over a configurable duration, and the beginning minimum is configurable. In V3+, the price declines at exactly the rate at which the bid CST reward accrues (see "docs/round-termination-proof.md"), so the duration is emergent rather than configurable, and the beginning minimum is derived: 3x the bid CST reward amount that accrues over one `mainPrizeTime` increment. As soon as someone places a CST bid, the new beginning price is calculated as 2x of the paid price, but no lower than the beginning minimum. After each CST bid the Dutch auction repeats.\
 The beginning CST bid price of the first bid in a nonzero round equals beginning price of the second bid in the previous round.
 
-In V2+, each ETH bid reduces CST Dutch auction duration, while each CST bid increases it.
+In V2 (but not in V3+), each ETH bid reduces CST Dutch auction duration, while each CST bid increases it.
 
 In V3+, if someone bids within a configurable duration before `mainPrizeTime`, a premium is added to the bid price.
 
@@ -107,7 +107,7 @@ Again, a Dutch auction is used for: (1) the first ETH bid price in a nonzero rou
 
 - When placing a CST bid, the current CST bid price gets burned from the bidder's CST balance.
 
-- When someone places a bid of any type, a configurable CST amount gets minted. In V1, the amount is fixed; in V2, the amount is proportional to the square root of the time elapsed since the previous bid or, in case there were no bids in the current bidding round yet, the round activation time; in V3+, the amount is linearly proportional to the same elapsed time, at a configurable rate expressed in CST per minute (`bidCstRewardAmountPerMinute`, 1 CST per minute by default).
+- When someone places a bid of any type, a configurable CST amount gets minted. In V1, the amount is fixed; in V2, the amount is proportional to the square root of the time elapsed since the previous bid or, in case there were no bids in the current bidding round yet, the round activation time; in V3+, the amount is linearly proportional to the same elapsed time, at the rate of `bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds` CST Wei per second (1 CST per minute by default). The same rate is what the CST bid price declines at (Comment-202607165).
 
 - In V1 and V2, the entire bid CST reward is minted to the bidder placing the bid. In V3+, 90% of it is minted to the bidder being outbid (the current last bidder) and the remaining ~10% to the new bidder; when there is no last bidder (the first bid in a round), only the new bidder share is minted. The reward accrued by the final bidder of a round is not minted when the main prize gets claimed — that bidder wins the main prize instead. The reward is minted, never transferred, so a bidder contract that rejects incoming calls cannot block other people's bids (Comment-202607163).
 
@@ -122,7 +122,7 @@ When another bid is placed, V1 calculaates `mainPrizeTime` as `max(mainPrizeTime
 
 - The first bid in a round is required to be ETH.
 
-- In V2+, each bid changes CST Dutch auction duration, as described in a separate section.
+- In V2 (but not in V3+), each bid changes CST Dutch auction duration, as described in a separate section.
 
 - Each bid changes the next bid price, as described in a separate section. In V2+, an ETH bid also affects the next CST bid price.
 
@@ -170,7 +170,7 @@ Some prize winners are picked randomly. We have done our best to generate high q
 
 ### Exponential Duration Increase
 
-At the end of each round, the following configurable durations automatically increase exponentially by a configurable fraction: ETH Dutch auction duration; initial duration until main prize (used to calculate `mainPrizeTime` on the first bid in a round); `mainPrizeTime` increment (by how much `mainPrizeTime` gets extended on each subsequent bid in a round). In V1, CST Dutch auction duration is increased as well; in V2+, it's reduced on each ETH bid and increased on each CST bid by a separate configurable fraction. In V3+, the duration before `mainPrizeTime` during which a premium is added to the bid price.
+At the end of each round, the following configurable durations automatically increase exponentially by a configurable fraction: ETH Dutch auction duration; initial duration until main prize (used to calculate `mainPrizeTime` on the first bid in a round); `mainPrizeTime` increment (by how much `mainPrizeTime` gets extended on each subsequent bid in a round). In V1, CST Dutch auction duration is increased as well; in V2, it's reduced on each ETH bid and increased on each CST bid by a separate configurable fraction; in V3+, it's emergent (the beginning bid price divided by the price decline rate), so it stretches together with the `mainPrizeTime` increment. In V3+, the duration before `mainPrizeTime` during which a premium is added to the bid price also increases exponentially.
 
 ### Cosmic Signature and Random Walk NFT Staking
 
@@ -260,7 +260,7 @@ A user also can force-send ETH to the Game contract by `selfdestruct`ing a contr
 
 - Update `mainPrizeTime`.
 
-- V2+: reduce CST Dutch auction duration.
+- V2 (but not V3+): reduce CST Dutch auction duration.
 
 - If the user sent us more ETH than required: transfer the excess back to them. But don't do it if the refund amount is less than or equal than what it would cost to transfer it.
 
@@ -289,7 +289,7 @@ A user also can force-send ETH to the Game contract by `selfdestruct`ing a contr
 
 - Update `mainPrizeTime`.
 
-- V2+: increase CST Dutch auction duration.
+- V2 (but not V3+): increase CST Dutch auction duration.
 
 #### A user claims the current bidding round main prize.
 

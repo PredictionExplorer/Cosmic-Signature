@@ -1,11 +1,9 @@
-// todo-ai-0 Rename this file to `CosmicSignatureGameV3-BidCstRewardAttack.js`.
-
 "use strict";
 
 // Proves that the attack discussed in Comment-202607163 is impossible: a bidder contract that cannot
 // (or refuses to) receive anything cannot block the last bidder bid CST reward share minting,
 // and therefore cannot prevent other people from bidding, nor prevent the bidding round from completing.
-// The reward is minted, not transferred, and `CosmicSignatureToken` minting performs no call into the recipient.
+// The reward is minted, not transferred, and `CosmicSignatureToken` makes no callbacks into token holders.
 
 const { describe, it } = require("mocha");
 const { expect } = require("chai");
@@ -19,6 +17,7 @@ const {
 } = require("../src/V2UpgradeTestHelpers.js");
 const {
 	deployV1CompleteRoundZeroAndUpgradeToV2AndV3,
+	bidCstRewardMultiplierForRatePerMinute,
 	getV3BidCstRewardAmount,
 	splitV3BidCstRewardAmount,
 	findTimeStampWithAffordableCstBidPrice,
@@ -26,11 +25,12 @@ const {
 
 // A high reward rate, so that the hostile contract can quickly afford CST bids: 300 CST per minute.
 const RATE_PER_MINUTE = 300n * 10n ** 18n;
+const REWARD_MULTIPLIER = bidCstRewardMultiplierForRatePerMinute(RATE_PER_MINUTE);
 
 async function deployGameAndHostileBidder() {
 	const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3(2n);
 	const game_ = contracts_.cosmicSignatureGameV3Proxy;
-	await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setBidCstRewardAmountPerMinute(RATE_PER_MINUTE));
+	await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setBidCstRewardAmountMultiplier(REWARD_MULTIPLIER));
 	await activateCurrentRound(game_, contracts_.ownerSigner);
 	const cstRewardBlockingBidderFactory_ = await hre.ethers.getContractFactory("CstRewardBlockingBidder", contracts_.signers[10]);
 	const cstRewardBlockingBidder_ = await cstRewardBlockingBidderFactory_.deploy(await game_.getAddress());
@@ -60,7 +60,7 @@ async function hostileBidWithEthAt(game_, cstRewardBlockingBidder_, callerSigner
 	return receipt_;
 }
 
-describe("CosmicSignatureGameV3-CstRewardAttack", function () {
+describe("CosmicSignatureGameV3-BidCstRewardAttack", function () {
 	it("a bidder contract that rejects all incoming calls cannot block subsequent ETH or CST bids", async function () {
 		const { contracts_, game_, cstRewardBlockingBidder_ } = await deployGameAndHostileBidder();
 		const token_ = contracts_.cosmicSignatureToken;
@@ -93,7 +93,7 @@ describe("CosmicSignatureGameV3-CstRewardAttack", function () {
 				const hostileCstBalanceBefore_ = await token_.balanceOf(cstRewardBlockingBidderAddress_);
 				const bidTimeStamp_ = (await getLatestBlockTimestamp()) + 60n;
 				const receipt_ = await bidWithEthAt(game_, eoaBidder2_, bidTimeStamp_);
-				const totalRewardAmount_ = getV3BidCstRewardAmount(bidTimeStamp_ - lastBidTimeStamp_, RATE_PER_MINUTE);
+				const totalRewardAmount_ = getV3BidCstRewardAmount(bidTimeStamp_ - lastBidTimeStamp_, REWARD_MULTIPLIER);
 				const { lastBidderAmount: lastBidderAmount_, } = splitV3BidCstRewardAmount(totalRewardAmount_);
 				expect(lastBidderAmount_).greaterThan(0n);
 				const bidPlaced_ = findParsedEvent(receipt_, game_, "BidPlaced");
@@ -117,7 +117,7 @@ describe("CosmicSignatureGameV3-CstRewardAttack", function () {
 				await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(bidTimeStamp_),]);
 				const receipt_ = await waitForTransactionReceipt(game_.connect(eoaBidder2_).bidWithCst(cstBidPrice_, "", 0n));
 				expect(await blockTimestampOfReceipt(receipt_)).equal(bidTimeStamp_);
-				const totalRewardAmount_ = getV3BidCstRewardAmount(bidTimeStamp_ - lastBidTimeStamp_, RATE_PER_MINUTE);
+				const totalRewardAmount_ = getV3BidCstRewardAmount(bidTimeStamp_ - lastBidTimeStamp_, REWARD_MULTIPLIER);
 				const { lastBidderAmount: lastBidderAmount_, } = splitV3BidCstRewardAmount(totalRewardAmount_);
 				expect(lastBidderAmount_).greaterThan(0n);
 				expect(await token_.balanceOf(cstRewardBlockingBidderAddress_) - hostileCstBalanceBefore_).equal(lastBidderAmount_);
@@ -142,7 +142,7 @@ describe("CosmicSignatureGameV3-CstRewardAttack", function () {
 			expect(await blockTimestampOfReceipt(receipt_)).equal(bidTimeStamp_);
 
 			// A CST self-snipe: the hostile contract accrues both shares, minus the burned price.
-			const totalRewardAmount_ = getV3BidCstRewardAmount(bidTimeStamp_ - lastBidTimeStamp_, RATE_PER_MINUTE);
+			const totalRewardAmount_ = getV3BidCstRewardAmount(bidTimeStamp_ - lastBidTimeStamp_, REWARD_MULTIPLIER);
 			expect(await token_.balanceOf(cstRewardBlockingBidderAddress_) - hostileCstBalanceBefore_).equal(totalRewardAmount_ - cstBidPrice_);
 		}
 

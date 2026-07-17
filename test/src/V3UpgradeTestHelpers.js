@@ -16,9 +16,14 @@ const DEFAULT_ROUND_LATE_BID_DURATION_DIVISOR =
 const ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_RESOLUTION_EXPONENT = 13n;
 const DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_BASE_MULTIPLIER = 3567993n << ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_RESOLUTION_EXPONENT;
 const DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_EXPONENT = 8n;
-const INITIAL_BID_CST_REWARD_AMOUNT_PER_MINUTE = 10n ** 18n;
+const DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER = (10n ** 18n * (60n * 60n * 1_000_000n) + 30n) / 60n;
 const DEFAULT_LAST_BIDDER_BID_CST_REWARD_AMOUNT_PERCENTAGE = 90n;
 const DEFAULT_MAIN_PRIZE_NUM_COSMIC_SIGNATURE_NFTS = 3n;
+const CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT_INCREMENT_REWARD_MULTIPLE = 3n;
+const CST_DUTCH_AUCTION_DURATION_INCREMENT_MAX_MULTIPLE = 12n;
+
+// `mainPrizeTimeIncrementInMicroSeconds` after `completeRoundZero` (the initial 1 hour, stretched by 1%).
+const MAIN_PRIZE_TIME_INCREMENT_US_AFTER_ROUND_ZERO = 3_600n * 1_000_000n + 3_600n * 1_000_000n / 100n;
 
 async function deployV1CompleteRoundZeroAndUpgradeToV2AndV3(roundActivationTime_ = 2n) {
 	const contracts_ = await loadFixtureDeployContractsForTesting(roundActivationTime_);
@@ -55,29 +60,112 @@ async function assertDefaultV3Initialization(game_) {
 	expect(await game_.roundLateBidDurationDivisor()).equal(DEFAULT_ROUND_LATE_BID_DURATION_DIVISOR);
 	expect(await game_.roundLateBidPricePremiumAmountBaseMultiplier()).equal(DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_BASE_MULTIPLIER);
 	expect(await game_.roundLateBidPricePremiumAmountExponent()).equal(DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_EXPONENT);
-	expect(await game_.bidCstRewardAmountPerMinute()).equal(INITIAL_BID_CST_REWARD_AMOUNT_PER_MINUTE);
+	expect(await game_.bidCstRewardAmountMultiplier()).equal(DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER);
+	expect(await game_.lastBidderBidCstRewardAmountPercentage()).equal(DEFAULT_LAST_BIDDER_BID_CST_REWARD_AMOUNT_PERCENTAGE);
 	expect(await game_.mainPrizeNumCosmicSignatureNfts()).equal(DEFAULT_MAIN_PRIZE_NUM_COSMIC_SIGNATURE_NFTS);
 }
 
 /**
-JS mirror of the V3 `getBidCstRewardAmountAdvanced` linear formula.
-@param {bigint} elapsedDuration_ Seconds since the last bid (or the round activation). May be non-positive.
-@param {bigint} bidCstRewardAmountPerMinute_
+Calculates the `bidCstRewardAmountMultiplier` at which the bid CST reward accrues at exactly
+`ratePerMinute_` CST Wei per minute, given the current `mainPrizeTimeIncrementInMicroSeconds`.
+The division is exact for any whole-Wei rate as long as the increment is a multiple of 60 microseconds,
+which it is in all our test scenarios; the mirror formulas below rely on that exactness.
+@param {bigint} ratePerMinute_
+@param {bigint} mainPrizeTimeIncrementInMicroSeconds_
 */
-function getV3BidCstRewardAmount(elapsedDuration_, bidCstRewardAmountPerMinute_ = INITIAL_BID_CST_REWARD_AMOUNT_PER_MINUTE) {
-	if (elapsedDuration_ <= 0n) {
-		return 0n;
-	}
-	return elapsedDuration_ * bidCstRewardAmountPerMinute_ / 60n;
+function bidCstRewardMultiplierForRatePerMinute(ratePerMinute_, mainPrizeTimeIncrementInMicroSeconds_ = MAIN_PRIZE_TIME_INCREMENT_US_AFTER_ROUND_ZERO) {
+	expect(mainPrizeTimeIncrementInMicroSeconds_ % 60n).equal(0n);
+	return ratePerMinute_ * (mainPrizeTimeIncrementInMicroSeconds_ / 60n);
 }
 
 /**
-JS mirror of the V3 bid CST reward 90/10 split (Comment-202607161).
+JS mirror of the V3 CST accrual formula (Comment-202607165), which is both the bid CST reward
+(`getBidCstRewardAmountAdvanced`) and the CST bid price decline amount.
+@param {bigint} elapsedDuration_ Seconds since the last bid (or the round activation). May be non-positive.
+@param {bigint} bidCstRewardAmountMultiplier_
+@param {bigint} mainPrizeTimeIncrementInMicroSeconds_
+*/
+function getV3BidCstRewardAmount(
+	elapsedDuration_,
+	bidCstRewardAmountMultiplier_ = DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER,
+	mainPrizeTimeIncrementInMicroSeconds_ = MAIN_PRIZE_TIME_INCREMENT_US_AFTER_ROUND_ZERO
+) {
+	if (elapsedDuration_ <= 0n) {
+		return 0n;
+	}
+	return elapsedDuration_ * bidCstRewardAmountMultiplier_ / mainPrizeTimeIncrementInMicroSeconds_;
+}
+
+/**
+JS mirror of the V3 CST Dutch auction duration max limit (Comment-202607170): 12 increments, in seconds.
+*/
+function getV3CstDutchAuctionDurationMaxLimit(mainPrizeTimeIncrementInMicroSeconds_ = MAIN_PRIZE_TIME_INCREMENT_US_AFTER_ROUND_ZERO) {
+	return CST_DUTCH_AUCTION_DURATION_INCREMENT_MAX_MULTIPLE * mainPrizeTimeIncrementInMicroSeconds_ / 1_000_000n;
+}
+
+/**
+JS mirror of the V3 CST Dutch auction base price (Comment-202607165), before the late bid premium:
+`max(0, beginningBidPrice - accruedSinceAuctionBeginning)`, or, above the duration cap
+(Comment-202607170), the proportionally faster `beginningBidPrice * remaining / maxLimit` decline.
+@param {bigint} beginningBidPrice_
+@param {bigint} elapsedDuration_ Seconds since the CST Dutch auction beginning. Must be non-negative.
+@param {bigint} bidCstRewardAmountMultiplier_
+@param {bigint} mainPrizeTimeIncrementInMicroSeconds_
+*/
+function getV3CstBidPriceBase(
+	beginningBidPrice_,
+	elapsedDuration_,
+	bidCstRewardAmountMultiplier_ = DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER,
+	mainPrizeTimeIncrementInMicroSeconds_ = MAIN_PRIZE_TIME_INCREMENT_US_AFTER_ROUND_ZERO
+) {
+	expect(elapsedDuration_).greaterThanOrEqual(0n);
+	const durationMaxLimit_ = getV3CstDutchAuctionDurationMaxLimit(mainPrizeTimeIncrementInMicroSeconds_);
+	if (beginningBidPrice_ > durationMaxLimit_ * bidCstRewardAmountMultiplier_ / mainPrizeTimeIncrementInMicroSeconds_) {
+		const remainingDuration_ = durationMaxLimit_ - elapsedDuration_;
+		return (remainingDuration_ > 0n) ? (beginningBidPrice_ * remainingDuration_ / durationMaxLimit_) : 0n;
+	}
+	const declineAmount_ = elapsedDuration_ * bidCstRewardAmountMultiplier_ / mainPrizeTimeIncrementInMicroSeconds_;
+	return (declineAmount_ < beginningBidPrice_) ? (beginningBidPrice_ - declineAmount_) : 0n;
+}
+
+/**
+JS mirror of the V3 emergent CST Dutch auction duration (`_getCstDutchAuctionDuration`):
+the exact number of seconds from the auction beginning until the price declines to zero,
+capped at 12 increments (Comment-202607170).
+*/
+function getV3CstDutchAuctionDuration(
+	beginningBidPrice_,
+	bidCstRewardAmountMultiplier_ = DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER,
+	mainPrizeTimeIncrementInMicroSeconds_ = MAIN_PRIZE_TIME_INCREMENT_US_AFTER_ROUND_ZERO
+) {
+	if (beginningBidPrice_ === 0n) {
+		return 0n;
+	}
+	const durationMaxLimit_ = getV3CstDutchAuctionDurationMaxLimit(mainPrizeTimeIncrementInMicroSeconds_);
+	if (bidCstRewardAmountMultiplier_ === 0n) {
+		return durationMaxLimit_;
+	}
+	const uncappedDuration_ =
+		(beginningBidPrice_ * mainPrizeTimeIncrementInMicroSeconds_ + (bidCstRewardAmountMultiplier_ - 1n)) / bidCstRewardAmountMultiplier_;
+	return (uncappedDuration_ < durationMaxLimit_) ? uncappedDuration_ : durationMaxLimit_;
+}
+
+/**
+JS mirror of the V3 derived CST Dutch auction beginning bid price min limit (Comment-202607166):
+3 main prize time increments' worth of CST accrual.
+*/
+function getV3CstDutchAuctionBeginningBidPriceMinLimit(bidCstRewardAmountMultiplier_ = DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER) {
+	return CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT_INCREMENT_REWARD_MULTIPLE * bidCstRewardAmountMultiplier_ / 1_000_000n;
+}
+
+/**
+JS mirror of the V3 bid CST reward split (Comment-202607161).
 @param {bigint} bidCstRewardAmount_ The total reward.
+@param {bigint} lastBidderBidCstRewardAmountPercentage_
 @returns {{lastBidderAmount: bigint, newBidderAmount: bigint}}
 */
-function splitV3BidCstRewardAmount(bidCstRewardAmount_) {
-	const lastBidderAmount_ = bidCstRewardAmount_ * DEFAULT_LAST_BIDDER_BID_CST_REWARD_AMOUNT_PERCENTAGE / 100n;
+function splitV3BidCstRewardAmount(bidCstRewardAmount_, lastBidderBidCstRewardAmountPercentage_ = DEFAULT_LAST_BIDDER_BID_CST_REWARD_AMOUNT_PERCENTAGE) {
+	const lastBidderAmount_ = bidCstRewardAmount_ * lastBidderBidCstRewardAmountPercentage_ / 100n;
 	return { lastBidderAmount: lastBidderAmount_, newBidderAmount: bidCstRewardAmount_ - lastBidderAmount_ };
 }
 
@@ -91,7 +179,11 @@ unless a nonzero price is required and the affordable window has already fully p
 async function findTimeStampWithAffordableCstBidPrice(game_, maxPrice_, minTimeStamp_, requireNonZeroPrice_ = false) {
 	const latestTimeStamp_ = await getLatestBlockTimestamp();
 	const beginningTimeStamp_ = await game_.cstDutchAuctionBeginningTimeStamp();
-	const auctionEndTimeStamp_ = beginningTimeStamp_ + await game_.cstDutchAuctionDuration();
+
+	// In V3+, the returned duration is emergent (Comment-202607165), so this works both before and after the redesign.
+	const [cstDutchAuctionDuration_,] = await game_.getCstDutchAuctionDurations();
+
+	const auctionEndTimeStamp_ = beginningTimeStamp_ + cstDutchAuctionDuration_;
 	const numSteps_ = 128n;
 	for (let step_ = 0n; step_ <= numSteps_; ++ step_) {
 		const candidateTimeStamp_ =
@@ -144,14 +236,22 @@ module.exports = {
 	ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_RESOLUTION_EXPONENT,
 	DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_BASE_MULTIPLIER,
 	DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_EXPONENT,
-	INITIAL_BID_CST_REWARD_AMOUNT_PER_MINUTE,
+	DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER,
 	DEFAULT_LAST_BIDDER_BID_CST_REWARD_AMOUNT_PERCENTAGE,
 	DEFAULT_MAIN_PRIZE_NUM_COSMIC_SIGNATURE_NFTS,
+	CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT_INCREMENT_REWARD_MULTIPLE,
+	CST_DUTCH_AUCTION_DURATION_INCREMENT_MAX_MULTIPLE,
+	MAIN_PRIZE_TIME_INCREMENT_US_AFTER_ROUND_ZERO,
 	deployV1CompleteRoundZeroAndUpgradeToV2AndV3,
 	upgradeToV3,
 	assertDefaultV3Initialization,
 	addRoundLateBidPricePremiumAmountIfNeeded,
+	bidCstRewardMultiplierForRatePerMinute,
 	getV3BidCstRewardAmount,
+	getV3CstDutchAuctionDurationMaxLimit,
+	getV3CstBidPriceBase,
+	getV3CstDutchAuctionDuration,
+	getV3CstDutchAuctionBeginningBidPriceMinLimit,
 	splitV3BidCstRewardAmount,
 	findTimeStampWithAffordableCstBidPrice,
 };

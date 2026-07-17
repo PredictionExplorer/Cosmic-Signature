@@ -183,9 +183,9 @@ function buildSafeMutations(ctx_) {
 		add_("setRoundLateBidPricePremiumAmountExponent", BigInt(engine.randomIntRange(1, 10)), (m_, v_) => { m_.roundLateBidPricePremiumAmountExponent = v_; });
 		// Comment-202411064: the number of main prize NFTs; exercise 1 through 5.
 		add_("setMainPrizeNumCosmicSignatureNfts", BigInt(engine.randomIntRange(1, 5)), (m_, v_) => { m_.mainPrizeNumCosmicSignatureNfts = v_; });
-		// Comment-202607161: the linear bid CST reward rate; exercise 0 (rewards disabled) through 100 CST per minute,
-		// including non-whole-CST rates.
-		add_("setBidCstRewardAmountPerMinute", BigInt(engine.randomIntRange(0, 100 * 10 ** 6)) * 10n ** 12n, (m_, v_) => { m_.bidCstRewardAmountPerMinute = v_; });
+		// Comment-202607161: the bid CST reward split; exercise 0 (everything to the new bidder) through 99.
+		// 100 would trip the `_getLastBidderBidCstRewardAmount` assert in assert-enabled builds.
+		add_("setLastBidderBidCstRewardAmountPercentage", BigInt(engine.randomIntRange(0, 99)), (m_, v_) => { m_.lastBidderBidCstRewardAmountPercentage = v_; });
 	}
 	return mutations_;
 }

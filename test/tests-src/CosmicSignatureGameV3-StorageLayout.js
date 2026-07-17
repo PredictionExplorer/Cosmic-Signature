@@ -29,10 +29,11 @@ async function snapshotCarriedState(game_) {
 		ethBidRefundAmountInGasToSwallowMaxLimit: await game_.ethBidRefundAmountInGasToSwallowMaxLimit(),
 		cstDutchAuctionBeginningTimeStamp: await game_.cstDutchAuctionBeginningTimeStamp(),
 
-		// V2 slots (including the 2 repurposed ones and the 1 appended one) must survive the V3 upgrade too.
+		// V2 slots must survive the V3 upgrade too. `bidCstRewardAmountMultiplier` keeps its slot but is
+		// intentionally RESET by the V3 `reinitialize` (Comment-202607165), so it is excluded here and
+		// asserted via `assertDefaultV3Initialization` instead.
 		cstDutchAuctionDuration: await game_.cstDutchAuctionDuration(),
 		cstDutchAuctionDurationChangeDivisor: await game_.cstDutchAuctionDurationChangeDivisor(),
-		bidCstRewardAmountMultiplier: await game_.bidCstRewardAmountMultiplier(),
 
 		cstDutchAuctionBeginningBidPrice: await game_.cstDutchAuctionBeginningBidPrice(),
 		nextRoundFirstCstDutchAuctionBeginningBidPrice: await game_.nextRoundFirstCstDutchAuctionBeginningBidPrice(),
@@ -94,15 +95,18 @@ describe("CosmicSignatureGameV3-StorageLayout", function () {
 
 		const carriedState_ = await snapshotCarriedState(gameV2_);
 
-		// The 5 new V3 slots are taken from the gap region, so on V2 their getters must not even exist.
+		// The new V3 slots are taken from the gap region, so on V2 their getters (and the new V3 views)
+		// must not even exist.
 		const cosmicSignatureGameV3Factory_ =
 			await hre.ethers.getContractFactory("CosmicSignatureGameV3", contracts_.ownerSigner);
 		for (const newGetterName_ of [
 			"roundLateBidDurationDivisor()",
 			"roundLateBidPricePremiumAmountBaseMultiplier()",
 			"roundLateBidPricePremiumAmountExponent()",
-			"bidCstRewardAmountPerMinute()",
+			"lastBidderBidCstRewardAmountPercentage()",
 			"mainPrizeNumCosmicSignatureNfts()",
+			"getBidCstRewardAmountPerMainPrizeTimeIncrement()",
+			"getCstDutchAuctionBeginningBidPriceMinLimit()",
 		]) {
 			await expect(
 				hre.ethers.provider.call({
@@ -125,6 +129,10 @@ describe("CosmicSignatureGameV3-StorageLayout", function () {
 
 		await assertCarriedStateUnchanged(gameV3_, carriedState_);
 		await assertDefaultV3Initialization(gameV3_);
+
+		// The V2-era `bidCstRewardAmountMultiplier` (set off-default above) was reset by `reinitialize`
+		// to the V3 default: it now drives the whole CST time standard (Comment-202607165).
+		expect(await gameV3_.bidCstRewardAmountMultiplier()).not.equal(123_456_789n);
 
 		// V3 removes no selectors; a couple of representative V2 methods must still exist and work.
 		expect(await gameV3_.getBidCstRewardAmount()).greaterThanOrEqual(0n);

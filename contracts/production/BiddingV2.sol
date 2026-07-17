@@ -244,20 +244,7 @@ abstract contract BiddingV2 is
 		// Comment-202501061 applies.
 		nextEthBidPrice = ethBidPrice_ + ethBidPrice_ / ethBidPriceIncreaseDivisor + 1;
 
-		// [Comment-202606059]
-		// Given a variable `var` and a divisor `div`. Both are treated as unsigned integers.
-		// Assuming `div > 0 && var >= div`.
-		// `var` increase formula: `var += var / div`
-		// `var` reduction formula: `var = (var + 1) * div / (div + 1)`
-		// The formulas are lossless, meaning an increases + a reduction or a reduction + an increase will produce the original value.
-		// The reduction formula can reach the minimum of `var == div`. Further reduction attempts will not change `var`.
-		// In other words, the losslessness breaks at that point.
-		// Obviously, the formulas can overflow. The reduction formula is more susceptible to overflow.
-		// [/Comment-202606059]
-		// Comment-202605295 applies.
-		uint256 newCstDutchAuctionDuration_ = (cstDutchAuctionDuration + 1) * cstDutchAuctionDurationChangeDivisor / (cstDutchAuctionDurationChangeDivisor + 1);
-
-		cstDutchAuctionDuration = newCstDutchAuctionDuration_;
+		uint256 newCstDutchAuctionDuration_ = _updateCstDutchAuctionOnEthBid();
 		_mintBidCstRewardAmountIfNeeded(bidCstRewardAmount_);
 		_bidCommon(/*bidType_,*/ message_);
 		emit BidPlaced(
@@ -297,6 +284,29 @@ abstract contract BiddingV2 is
 		}
 
 		// #endregion
+	}
+
+	// #endregion
+	// #region `_updateCstDutchAuctionOnEthBid`
+
+	/// @notice Updates the CST Dutch auction state on an ETH bid.
+	/// @return The CST Dutch auction duration to emit in the `BidPlaced` event.
+	function _updateCstDutchAuctionOnEthBid() internal virtual returns (uint256) {
+		// [Comment-202606059]
+		// Given a variable `var` and a divisor `div`. Both are treated as unsigned integers.
+		// Assuming `div > 0 && var >= div`.
+		// `var` increase formula: `var += var / div`
+		// `var` reduction formula: `var = (var + 1) * div / (div + 1)`
+		// The formulas are lossless, meaning an increases + a reduction or a reduction + an increase will produce the original value.
+		// The reduction formula can reach the minimum of `var == div`. Further reduction attempts will not change `var`.
+		// In other words, the losslessness breaks at that point.
+		// Obviously, the formulas can overflow. The reduction formula is more susceptible to overflow.
+		// [/Comment-202606059]
+		// Comment-202605295 applies.
+		uint256 newCstDutchAuctionDuration_ = (cstDutchAuctionDuration + 1) * cstDutchAuctionDurationChangeDivisor / (cstDutchAuctionDurationChangeDivisor + 1);
+
+		cstDutchAuctionDuration = newCstDutchAuctionDuration_;
+		return newCstDutchAuctionDuration_;
 	}
 
 	// #endregion
@@ -467,7 +477,7 @@ abstract contract BiddingV2 is
 
 		// Comment-202409163 applies.
 		uint256 newCstDutchAuctionBeginningBidPrice_ =
-			Math.max(paidPrice_ * CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, cstDutchAuctionBeginningBidPriceMinLimit);
+			Math.max(paidPrice_ * CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, _getCstDutchAuctionBeginningBidPriceMinLimit());
 		cstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
 
 		if (lastCstBidderAddress == address(0)) {
@@ -477,13 +487,7 @@ abstract contract BiddingV2 is
 			nextRoundFirstCstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
 		}
 		lastCstBidderAddress = _msgSender();
-
-		// Comment-202606059 applies.
-		// Comment-202605295 applies.
-		uint256 newCstDutchAuctionDuration_ = cstDutchAuctionDuration;
-		newCstDutchAuctionDuration_ += newCstDutchAuctionDuration_ / cstDutchAuctionDurationChangeDivisor;
-
-		cstDutchAuctionDuration = newCstDutchAuctionDuration_;
+		uint256 newCstDutchAuctionDuration_ = _updateCstDutchAuctionOnCstBid();
 		_bidCommon(/*BidType.CST,*/ message_);
 		emit BidPlaced(
 			roundNum,
@@ -496,6 +500,31 @@ abstract contract BiddingV2 is
 			newCstDutchAuctionDuration_,
 			mainPrizeTime
 		);
+	}
+
+	// #endregion
+	// #region `_getCstDutchAuctionBeginningBidPriceMinLimit`
+
+	/// @notice Returns the minimum limit that a CST bid imposes on the next CST Dutch auction beginning bid price.
+	/// Comment-202409163 relates.
+	function _getCstDutchAuctionBeginningBidPriceMinLimit() internal view virtual returns (uint256) {
+		return cstDutchAuctionBeginningBidPriceMinLimit;
+	}
+
+	// #endregion
+	// #region `_updateCstDutchAuctionOnCstBid`
+
+	/// @notice Updates the CST Dutch auction state on a CST bid.
+	/// To be called after `cstDutchAuctionBeginningBidPrice` has been updated.
+	/// @return The CST Dutch auction duration to emit in the `BidPlaced` event.
+	function _updateCstDutchAuctionOnCstBid() internal virtual returns (uint256) {
+		// Comment-202606059 applies.
+		// Comment-202605295 applies.
+		uint256 newCstDutchAuctionDuration_ = cstDutchAuctionDuration;
+		newCstDutchAuctionDuration_ += newCstDutchAuctionDuration_ / cstDutchAuctionDurationChangeDivisor;
+
+		cstDutchAuctionDuration = newCstDutchAuctionDuration_;
+		return newCstDutchAuctionDuration_;
 	}
 
 	// #endregion
@@ -531,7 +560,9 @@ abstract contract BiddingV2 is
 	// #endregion
 	// #region `getCstDutchAuctionDurations`
 
-	function getCstDutchAuctionDurations() external view override returns (uint256, int256) {
+	/// @dev In V2, this was `external`. In V3+, it's `public` -- to make it possible
+	/// to resolve the diamond inheritance of its override by calling `super`.
+	function getCstDutchAuctionDurations() public view override virtual returns (uint256, int256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -544,7 +575,7 @@ abstract contract BiddingV2 is
 	// #endregion
 	// #region `_getCstDutchAuctionElapsedDuration`
 
-	function _getCstDutchAuctionElapsedDuration() private view returns (int256) {
+	function _getCstDutchAuctionElapsedDuration() internal view returns (int256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -612,12 +643,6 @@ abstract contract BiddingV2 is
 	// #endregion
 	// #region `_mintBidCstRewardAmountIfNeeded`
 
-	/// todo-ai-0 I have deleted Comment-202607162 and references to it in Solidity code.
-	/// todo-ai-0 It's obvious what virtual methods are for
-	/// todo-ai-0 and that `lastBidderAddress` is supposed to be used before assigning to it.
-	/// todo-ai-0 Make sure we use `lastBidderAddress` before assigning to it.
-	/// todo-ai-0 We also use some variables after assigning to them. If logic that uses a variable before or after assigning to it
-	/// todo-ai-0 appears to be incorrect express your concerns in a comment.
 	/// @notice Mints the given bid CST reward amount.
 	/// @param bidCstRewardAmount_ The CST amount to mint. May be zero.
 	function _mintBidCstRewardAmountIfNeeded(uint256 bidCstRewardAmount_) internal virtual {

@@ -66,7 +66,7 @@ class GameModel {
 		this.roundLateBidDurationDivisor = 0n; // V3 only
 		this.roundLateBidPricePremiumAmountBaseMultiplier = 0n; // V3 only
 		this.roundLateBidPricePremiumAmountExponent = 0n; // V3 only
-		this.bidCstRewardAmountPerMinute = 0n; // V3 only
+		this.lastBidderBidCstRewardAmountPercentage = 0n; // V3 only
 		this.mainPrizeNumCosmicSignatureNfts = 0n; // V3 only
 		/** @type {string} */
 		this.charityAddress = "";
@@ -133,7 +133,7 @@ class GameModel {
 			this.roundLateBidDurationDivisor = await game_.roundLateBidDurationDivisor();
 			this.roundLateBidPricePremiumAmountBaseMultiplier = await game_.roundLateBidPricePremiumAmountBaseMultiplier();
 			this.roundLateBidPricePremiumAmountExponent = await game_.roundLateBidPricePremiumAmountExponent();
-			this.bidCstRewardAmountPerMinute = await game_.bidCstRewardAmountPerMinute();
+			this.lastBidderBidCstRewardAmountPercentage = await game_.lastBidderBidCstRewardAmountPercentage();
 			this.mainPrizeNumCosmicSignatureNfts = await game_.mainPrizeNumCosmicSignatureNfts();
 		}
 		this.cstDutchAuctionBeginningBidPriceMinLimit = await game_.cstDutchAuctionBeginningBidPriceMinLimit();
@@ -345,33 +345,87 @@ class GameModel {
 		return u256(ethBidPrice_ + (c.RANDOMWALK_NFT_BID_PRICE_DIVISOR - 1n)) / c.RANDOMWALK_NFT_BID_PRICE_DIVISOR;
 	}
 
-	/** CST Dutch auction total duration (V1: derived; V2: stored). */
+	/**
+	Mirrors the V3 CST accrual formula (Comment-202607165): the amount that accrues over `elapsedDuration_`
+	at the rate of `bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds` per second.
+	*/
+	getAccruedCstAmount(elapsedDuration_) {
+		// Contract body is `unchecked`: the product wraps mod 2^256 before the division.
+		return u256(elapsedDuration_ * this.bidCstRewardAmountMultiplier) / this.mainPrizeTimeIncrementInMicroSeconds;
+	}
+
+	/** Mirrors the V3 derived CST Dutch auction beginning bid price min limit (Comment-202607166). */
+	getCstDutchAuctionBeginningBidPriceMinLimit() {
+		expect(this.version >= 3, "model: derived CST min limit is V3+").to.equal(true);
+		return u256(c.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT_INCREMENT_REWARD_MULTIPLE * this.bidCstRewardAmountMultiplier) / c.MICROSECONDS_PER_SECOND;
+	}
+
+	/** Mirrors the V3 CST Dutch auction emergent duration max limit (Comment-202607170), in seconds. */
+	getCstDutchAuctionDurationMaxLimit() {
+		return c.CST_DUTCH_AUCTION_DURATION_INCREMENT_MAX_MULTIPLE * this.mainPrizeTimeIncrementInMicroSeconds / c.MICROSECONDS_PER_SECOND;
+	}
+
+	/**
+	CST Dutch auction total duration (V1: derived from a divisor; V2: stored;
+	V3+: emergent -- the beginning bid price divided by the accrual rate, rounded up,
+	capped at 12 increments, Comment-202607170).
+	*/
 	getCstDutchAuctionDuration() {
+		if (this.version >= 3) {
+			const beginningPrice_ =
+				(this.lastCstBidderAddress === hre.ethers.ZeroAddress) ?
+				this.nextRoundFirstCstDutchAuctionBeginningBidPrice :
+				this.cstDutchAuctionBeginningBidPrice;
+			if (beginningPrice_ === 0n) {
+				return 0n;
+			}
+			const durationMaxLimit_ = this.getCstDutchAuctionDurationMaxLimit();
+			if (this.bidCstRewardAmountMultiplier === 0n) {
+				return durationMaxLimit_;
+			}
+			const uncappedDuration_ =
+				u256(beginningPrice_ * this.mainPrizeTimeIncrementInMicroSeconds + (this.bidCstRewardAmountMultiplier - 1n)) /
+				this.bidCstRewardAmountMultiplier;
+			return (uncappedDuration_ < durationMaxLimit_) ? uncappedDuration_ : durationMaxLimit_;
+		}
 		return this.isV1Like() ?
 			this.mainPrizeTimeIncrementInMicroSeconds / this.cstDutchAuctionDurationDivisor :
 			this.cstDutchAuctionDuration;
 	}
 
 	/**
-	Mirrors `getNextCstBidPriceAdvanced(0)` evaluated at block timestamp `ts_` (V3 wraps the V2 price
+	Mirrors `getNextCstBidPriceAdvanced(0)` evaluated at block timestamp `ts_` (V3 wraps the base price
 	with the late bid premium).
 	*/
 	getNextCstBidPrice(ts_) {
 		return this.addLateBidPremiumIfNeeded(this.getNextCstBidPriceBase(ts_), ts_);
 	}
 
-	/** Mirrors V2 `getNextCstBidPriceAdvanced(0)` (the V3 `super` call) evaluated at block timestamp `ts_`. */
+	/** Mirrors the pre-premium CST Dutch auction price evaluated at block timestamp `ts_`. */
 	getNextCstBidPriceBase(ts_) {
-		const duration_ = this.getCstDutchAuctionDuration();
 		const elapsed_ = ts_ - this.cstDutchAuctionBeginningTimeStamp;
-		const remaining_ = duration_ - elapsed_;
-		if (remaining_ <= 0n) {
-			return 0n;
-		}
 		const beginningPrice_ =
 			(this.lastCstBidderAddress === hre.ethers.ZeroAddress) ?
 			this.nextRoundFirstCstDutchAuctionBeginningBidPrice :
 			this.cstDutchAuctionBeginningBidPrice;
+		if (this.version >= 3) {
+			// The V3 wage-rate decline (Comment-202607165), capped at 12 increments (Comment-202607170).
+			const durationMaxLimit_ = this.getCstDutchAuctionDurationMaxLimit();
+			if (beginningPrice_ > this.getAccruedCstAmount(durationMaxLimit_)) {
+				const remaining_ = durationMaxLimit_ - elapsed_;
+				return (remaining_ > 0n) ? (u256(beginningPrice_ * remaining_) / durationMaxLimit_) : 0n;
+			}
+			if (elapsed_ <= 0n) {
+				return beginningPrice_ + this.getAccruedCstAmount(-elapsed_);
+			}
+			const declineAmount_ = this.getAccruedCstAmount(elapsed_);
+			return (declineAmount_ < beginningPrice_) ? (beginningPrice_ - declineAmount_) : 0n;
+		}
+		const duration_ = this.getCstDutchAuctionDuration();
+		const remaining_ = duration_ - elapsed_;
+		if (remaining_ <= 0n) {
+			return 0n;
+		}
 		// Contract body is `unchecked`: the product wraps mod 2^256 before the division.
 		return u256(beginningPrice_ * remaining_) / duration_;
 	}
@@ -393,8 +447,7 @@ class GameModel {
 			return 0n;
 		}
 		if (this.version >= 3) {
-			// Contract body is `unchecked`: the product wraps mod 2^256 before the division.
-			return u256(elapsed_ * this.bidCstRewardAmountPerMinute) / 60n;
+			return this.getAccruedCstAmount(elapsed_);
 		}
 		// Contract body is `unchecked`: the product wraps mod 2^256 before the division.
 		const radicand_ = u256(elapsed_ * this.bidCstRewardAmountMultiplier) / this.mainPrizeTimeIncrementInMicroSeconds;
@@ -412,7 +465,7 @@ class GameModel {
 		if (this.version < 3) {
 			return { lastBidderAddress: null, lastBidderAmount: 0n, newBidderAmount: totalRewardAmount_ };
 		}
-		const lastBidderAmount_ = totalRewardAmount_ * c.DEFAULT_LAST_BIDDER_BID_CST_REWARD_AMOUNT_PERCENTAGE / 100n;
+		const lastBidderAmount_ = totalRewardAmount_ * this.lastBidderBidCstRewardAmountPercentage / 100n;
 		const newBidderAmount_ = totalRewardAmount_ - lastBidderAmount_;
 		if (this.lastBidderAddress === hre.ethers.ZeroAddress || totalRewardAmount_ <= 0n) {
 			// The first bid in a round mints only the new bidder share; a zero total mints nothing at all.
@@ -593,7 +646,10 @@ class GameModel {
 		}
 		this.nextEthBidPrice = plan_.ethBidPrice + plan_.ethBidPrice / this.ethBidPriceIncreaseDivisor + 1n;
 		let newCstDutchAuctionDuration_ = null;
-		if (this.version >= 2) {
+		if (this.version >= 3) {
+			// In V3+, an ETH bid does not change the CST Dutch auction state; the emitted duration is emergent.
+			newCstDutchAuctionDuration_ = this.getCstDutchAuctionDuration();
+		} else if (this.version >= 2) {
 			newCstDutchAuctionDuration_ =
 				(this.cstDutchAuctionDuration + 1n) * this.cstDutchAuctionDurationChangeDivisor / (this.cstDutchAuctionDurationChangeDivisor + 1n);
 			this.cstDutchAuctionDuration = newCstDutchAuctionDuration_;
@@ -612,15 +668,23 @@ class GameModel {
 		const rewardSplit_ = this.getBidCstRewardSplit(reward_);
 		this._bidderInfoForUpdate(bidderAddress_).totalSpentCstAmount += paidPrice_;
 		this.cstDutchAuctionBeginningTimeStamp = ts_;
+
+		// In V3+, the min limit is derived from the reward accrual rate (Comment-202607166).
+		const beginningBidPriceMinLimit_ =
+			(this.version >= 3) ? this.getCstDutchAuctionBeginningBidPriceMinLimit() : this.cstDutchAuctionBeginningBidPriceMinLimit;
+
 		const newBeginningBidPrice_ =
-			maxBigInt(paidPrice_ * c.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, this.cstDutchAuctionBeginningBidPriceMinLimit);
+			maxBigInt(paidPrice_ * c.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, beginningBidPriceMinLimit_);
 		this.cstDutchAuctionBeginningBidPrice = newBeginningBidPrice_;
 		if (this.lastCstBidderAddress === hre.ethers.ZeroAddress) {
 			this.nextRoundFirstCstDutchAuctionBeginningBidPrice = newBeginningBidPrice_;
 		}
 		this.lastCstBidderAddress = bidderAddress_.toLowerCase();
 		let newCstDutchAuctionDuration_ = null;
-		if (this.version >= 2) {
+		if (this.version >= 3) {
+			// In V3+, the duration drift is retired; the emitted duration is the new auction's emergent one.
+			newCstDutchAuctionDuration_ = this.getCstDutchAuctionDuration();
+		} else if (this.version >= 2) {
 			newCstDutchAuctionDuration_ = this.cstDutchAuctionDuration + this.cstDutchAuctionDuration / this.cstDutchAuctionDurationChangeDivisor;
 			this.cstDutchAuctionDuration = newCstDutchAuctionDuration_;
 		}
@@ -769,7 +833,8 @@ class GameModel {
 		this.roundLateBidDurationDivisor = c.DEFAULT_ROUND_LATE_BID_DURATION_DIVISOR;
 		this.roundLateBidPricePremiumAmountBaseMultiplier = c.DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_BASE_MULTIPLIER;
 		this.roundLateBidPricePremiumAmountExponent = c.DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_EXPONENT;
-		this.bidCstRewardAmountPerMinute = c.INITIAL_BID_CST_REWARD_AMOUNT_PER_MINUTE;
+		this.bidCstRewardAmountMultiplier = c.DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER;
+		this.lastBidderBidCstRewardAmountPercentage = c.DEFAULT_LAST_BIDDER_BID_CST_REWARD_AMOUNT_PERCENTAGE;
 		this.mainPrizeNumCosmicSignatureNfts = c.DEFAULT_MAIN_PRIZE_NUM_COSMIC_SIGNATURE_NFTS;
 	}
 

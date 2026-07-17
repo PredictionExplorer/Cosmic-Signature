@@ -98,7 +98,40 @@ library CosmicSignatureConstants {
 
 	/// @notice Initial `nextRoundFirstCstDutchAuctionBeginningBidPrice`.
 	/// Default `cstDutchAuctionBeginningBidPriceMinLimit`.
+	/// In V3+, `cstDutchAuctionBeginningBidPriceMinLimit` is ignored;
+	/// see `CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT_INCREMENT_REWARD_MULTIPLE`.
 	uint256 internal constant DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT = 200 ether;
+
+	/// @notice In V3+, the CST Dutch auction beginning bid price minimum limit equals the bid CST reward amount
+	/// that accrues over one main prize time increment (Comment-202607165), multiplied by this.
+	/// @dev
+	/// [Comment-202607166]
+	/// Why 3? This multiple must exceed 2 to guarantee that every bidding round ends.
+	/// A bid extends `mainPrizeTime` by 1 main prize time increment and mints at most 1 increment's worth of CST reward accrual
+	/// if placed no later than 1 increment after the previous bid. With this multiple being `m`, a CST bid placed that soon
+	/// after the CST Dutch auction restart burns at least `m - 1` increments' worth. So at `m > 2` any bidding pattern
+	/// that keeps a round alive burns CST faster than the game mints it, and CST balances are finite.
+	/// At `m == 2` minting and burning would exactly balance at the equilibrium; at `m < 2` bidders could keep a round alive
+	/// at a CST profit forever. The proof is in "docs/round-termination-proof.md".
+	/// With the default `bidCstRewardAmountMultiplier`, this makes the minimum limit 3 hours' worth of accrual = 180 CST,
+	/// which is close to the 200 CST `DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT` it replaces.
+	/// [/Comment-202607166]
+	uint256 internal constant CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT_INCREMENT_REWARD_MULTIPLE = 3;
+
+	/// @notice In V3+, the CST Dutch auction emergent duration is capped at this many main prize time increments.
+	/// @dev
+	/// [Comment-202607170]
+	/// This is a liveness cap. Normally the price declines at the reward accrual rate (Comment-202607165), so a beginning
+	/// bid price of `n` increments' worth of accrual takes `n` increments to reach zero. Without a cap, one whale bid
+	/// paying, say, 250 increments' worth would freeze the CST lane at unaffordable prices for 500 increments (weeks).
+	/// When the beginning bid price exceeds this many increments' worth of accrual, the price instead declines
+	/// proportionally faster, reaching zero after exactly this many increments -- like the (initially 12-hour) V2 auction.
+	/// This cannot break the round-termination guarantee as long as this cap is at least
+	/// `CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT_INCREMENT_REWARD_MULTIPLE`:
+	/// the capped price, `beginningBidPrice * (1 - elapsed / (cap * increment))`, then still exceeds
+	/// `minLimit - accruedCstAmount(elapsed)`, which is all the proof in "docs/round-termination-proof.md" needs.
+	/// [/Comment-202607170]
+	uint256 internal constant CST_DUTCH_AUCTION_DURATION_INCREMENT_MAX_MULTIPLE = 12;
 
 	/// @dev
 	/// [Comment-202607117]

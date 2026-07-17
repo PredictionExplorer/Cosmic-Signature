@@ -205,10 +205,10 @@ describe("CosmicSignatureGameV3-LateBidPremium", function () {
 		{
 			// Restart the CST Dutch auction close to `mainPrizeTime` (a free CST bid once the previous
 			// auction has fully decayed to zero), so the new auction's nonzero price range overlaps the
-			// premium window.
+			// premium window. In V3+, the auction duration is emergent (Comment-202607165).
 			{
 				const cstDutchAuctionEndTime_ =
-					(await game_.cstDutchAuctionBeginningTimeStamp()) + (await game_.cstDutchAuctionDuration());
+					(await game_.cstDutchAuctionBeginningTimeStamp()) + (await game_.getCstDutchAuctionDurations())[0];
 				/** @type {bigint} */
 				const mainPrizeTime_ = await game_.mainPrizeTime();
 				const cstBidTs_ =
@@ -220,12 +220,16 @@ describe("CosmicSignatureGameV3-LateBidPremium", function () {
 
 			const cstDutchAuctionBeginningTimeStamp_ = await game_.cstDutchAuctionBeginningTimeStamp();
 			const cstDutchAuctionBeginningBidPrice_ = await game_.cstDutchAuctionBeginningBidPrice();
-			const cstDutchAuctionDuration_ = await game_.cstDutchAuctionDuration();
+			const bidCstRewardAmountMultiplier_ = await game_.bidCstRewardAmountMultiplier();
 			/** @type {bigint} */
 			const mainPrizeTime_ = await game_.mainPrizeTime();
 			const ts_ = await getLatestBlockTimestamp();
 			expect(mainPrizeTime_ - roundLateBidDuration_).greaterThan(ts_);
-			expect(cstDutchAuctionBeginningTimeStamp_ + cstDutchAuctionDuration_).greaterThan(mainPrizeTime_);
+
+			// The free bid restarted the auction at the derived floor (Comment-202607166),
+			// whose emergent duration is 3 increments -- long enough to cover the premium window.
+			expect(cstDutchAuctionBeginningBidPrice_).equal(3n * bidCstRewardAmountMultiplier_ / 1_000_000n);
+			expect(cstDutchAuctionBeginningTimeStamp_ + (await game_.getCstDutchAuctionDurations())[0]).greaterThan(mainPrizeTime_);
 
 			for (const durationUntilMainPrize_ of [
 				roundLateBidDuration_ + 60n,
@@ -237,9 +241,14 @@ describe("CosmicSignatureGameV3-LateBidPremium", function () {
 				-60n,
 			]) {
 				const sampleTs_ = mainPrizeTime_ - durationUntilMainPrize_;
-				const cstDutchAuctionRemainingDuration_ = cstDutchAuctionDuration_ - (sampleTs_ - cstDutchAuctionBeginningTimeStamp_);
-				expect(cstDutchAuctionRemainingDuration_).greaterThan(0n);
-				const cstBidPriceBase_ = cstDutchAuctionBeginningBidPrice_ * cstDutchAuctionRemainingDuration_ / cstDutchAuctionDuration_;
+
+				// The V3 base price: the beginning bid price minus the reward accrual since the auction beginning
+				// (Comment-202607165).
+				const cstBidPriceDeclineAmount_ =
+					(sampleTs_ - cstDutchAuctionBeginningTimeStamp_) * bidCstRewardAmountMultiplier_ / mainPrizeTimeIncrementInMicroSeconds_;
+				expect(cstBidPriceDeclineAmount_).lessThan(cstDutchAuctionBeginningBidPrice_);
+				const cstBidPriceBase_ = cstDutchAuctionBeginningBidPrice_ - cstBidPriceDeclineAmount_;
+
 				expect(cstBidPriceBase_).greaterThan(0n);
 				const adjustedCstPrice_ = addRoundLateBidPricePremiumAmountIfNeeded(
 					cstBidPriceBase_,

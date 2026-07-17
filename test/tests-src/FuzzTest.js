@@ -15,9 +15,10 @@
 //   5. Continue fuzzing the V3 game for several more complete rounds.
 //
 // The campaign is model-based: a JS `GameModel` reimplements the deterministic on-chain math
-// exactly (prices, the V2 sqrt / V3 linear-and-split CST bid reward, CST Dutch-auction duration drift,
-// the V3 late-bid price premium, mainPrize timing, champion automaton, round advancement,
-// the V3 multi-NFT main prize), and `ShadowState` ledgers track every ETH/CST/NFT/donation flow.
+// exactly (prices, the V2 sqrt / V3 linear-and-split CST bid reward, the V2 CST Dutch-auction duration
+// drift, the V3 CST time standard with its wage-rate price decline and derived restart floor
+// (Comment-202607165), the V3 late-bid price premium, mainPrize timing, champion automaton, round
+// advancement, the V3 multi-NFT main prize), and `ShadowState` ledgers track every ETH/CST/NFT/donation flow.
 // Every action verifies its exact event set and exact ledger deltas; negative probes assert exact
 // custom errors. Adversarial actors (reentrancy, broken charity receiver, malicious token donations)
 // and Arbitrum-precompile chaos are mixed in. See `test/src/fuzz/` for the engine.

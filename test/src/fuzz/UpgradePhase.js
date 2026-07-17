@@ -66,12 +66,16 @@ const CARRIED_OVER_GETTERS = [
 	"charityEthDonationAmountPercentage",
 ];
 
-/** V2 getters (on top of `CARRIED_OVER_GETTERS`) that must survive the V2 -> V3 upgrade unchanged. */
+/**
+V2 getters (on top of `CARRIED_OVER_GETTERS`) that must survive the V2 -> V3 upgrade unchanged.
+`bidCstRewardAmountMultiplier` keeps its slot but is intentionally RESET by the V3 `reinitialize`
+(it becomes the single knob of the V3 CST time standard, Comment-202607165), so it is asserted
+via `assertDefaultV3Initialization` instead.
+*/
 const CARRIED_OVER_GETTERS_V2 = [
 	...CARRIED_OVER_GETTERS,
 	"cstDutchAuctionDuration",
 	"cstDutchAuctionDurationChangeDivisor",
-	"bidCstRewardAmountMultiplier",
 ];
 
 /** Reads all the given getters into a plain object (values stringified for diffing). */
@@ -213,9 +217,11 @@ async function performUpgradeToV3(ctx_) {
 
 		// The new V3 getters do not exist on V2 yet.
 		await expectUnknownSelector(v2Game_, hre.ethers.id("roundLateBidDurationDivisor()").slice(0, 10));
-		await expectUnknownSelector(v2Game_, hre.ethers.id("bidCstRewardAmountPerMinute()").slice(0, 10));
+		await expectUnknownSelector(v2Game_, hre.ethers.id("lastBidderBidCstRewardAmountPercentage()").slice(0, 10));
 		await expectUnknownSelector(v2Game_, hre.ethers.id("mainPrizeNumCosmicSignatureNfts()").slice(0, 10));
 		await expectUnknownSelector(v2Game_, hre.ethers.id("getRoundLateBidDuration()").slice(0, 10));
+		await expectUnknownSelector(v2Game_, hre.ethers.id("getBidCstRewardAmountPerMainPrizeTimeIncrement()").slice(0, 10));
+		await expectUnknownSelector(v2Game_, hre.ethers.id("getCstDutchAuctionBeginningBidPriceMinLimit()").slice(0, 10));
 	}
 
 	// 4. The real upgrade (UUPS `upgradeToAndCall` + `reinitialize`), via the project helper.
@@ -236,11 +242,20 @@ async function performUpgradeToV3(ctx_) {
 	}
 	expect(await engine.provider.getBalance(contracts.cosmicSignatureGameProxyAddress), "game ETH balance changed across the V3 upgrade").to.equal(gameEthBefore_);
 
-	// 6. V3 initialization values.
+	// 6. V3 initialization values (including the reset `bidCstRewardAmountMultiplier`).
 	await assertDefaultV3Initialization(v3Proxy_);
 
-	// 7. V3 removes no selectors; a representative V2 view must still work.
+	// 7. V3 removes no selectors; a representative V2 view must still work, and the CST time standard
+	// views must immediately reflect the reinitialized multiplier (Comment-202607165, Comment-202607166).
 	expect(await v3Proxy_.getBidCstRewardAmount()).to.be.greaterThanOrEqual(0n);
+	{
+		const multiplier_ = await v3Proxy_.bidCstRewardAmountMultiplier();
+		expect(await v3Proxy_.getCstDutchAuctionBeginningBidPriceMinLimit(), "V3 derived CST floor right after the upgrade")
+			.to.equal(3n * multiplier_ / 1_000_000n);
+		const increment_ = (await v3Proxy_.mainPrizeTimeIncrementInMicroSeconds()) / 1_000_000n;
+		expect(await v3Proxy_.getBidCstRewardAmountPerMainPrizeTimeIncrement(), "V3 reward per increment right after the upgrade")
+			.to.equal(increment_ * multiplier_ / (await v3Proxy_.mainPrizeTimeIncrementInMicroSeconds()));
+	}
 
 	// 8. Double `reinitialize` must revert. In a production build the `reinitializer(3)` guard throws
 	// `InvalidInitialization`; in an assert-enabled build the `_onlyIfPrevVersionWasInitialized` assert

@@ -79,6 +79,22 @@ contract CosmicSignatureGameV3 is
 		return super.getNextCstBidPriceAdvanced(currentTimeOffset_);
 	}
 
+	function getCstDutchAuctionDurations() public view override (BiddingV2, BiddingV3) /* virtual */ returns (uint256, int256) {
+		return super.getCstDutchAuctionDurations();
+	}
+
+	function _getCstDutchAuctionBeginningBidPriceMinLimit() internal view override (BiddingV2, BiddingV3) /* virtual */ returns (uint256) {
+		return super._getCstDutchAuctionBeginningBidPriceMinLimit();
+	}
+
+	function _updateCstDutchAuctionOnEthBid() internal view override (BiddingV2, BiddingV3) /* virtual */ returns (uint256) {
+		return super._updateCstDutchAuctionOnEthBid();
+	}
+
+	function _updateCstDutchAuctionOnCstBid() internal view override (BiddingV2, BiddingV3) /* virtual */ returns (uint256) {
+		return super._updateCstDutchAuctionOnCstBid();
+	}
+
 	function getBidCstRewardAmountAdvanced(int256 currentTimeOffset_) public view override (BiddingV2, BiddingV3) /* virtual */ returns (uint256) {
 		return super.getBidCstRewardAmountAdvanced(currentTimeOffset_);
 	}

@@ -8,6 +8,7 @@ We recommned reviewing all files seen in this project, including, but not limite
 `./cosmic-signature-contracts-class-diagram-and-calls.svg`,\
 `./cosmic-signature-contracts-functional-requirements.md`,\
 `./v3-vs-v2-changes.md`,\
+`./round-termination-proof.md` (the V3+ CST tokenomics invariant and the proof that every bidding round ends),\
 `${workspaceFolder}/tasks/docs/*.md`.
 
 #### Contracts to Audit

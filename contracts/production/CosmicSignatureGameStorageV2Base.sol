@@ -135,6 +135,7 @@ abstract contract CosmicSignatureGameStorageV2Base is ICosmicSignatureGameStorag
 	/// We change this based on `cstDutchAuctionDurationChangeDivisor`.
 	/// The change formulas are described in Comment-202606059.
 	/// [/Comment-202606101]
+	/// In V3+, this remains in storage, but the logic ignores it; the duration is emergent instead. Comment-202607165 applies.
 	/// Comment-202411064 applies.
 	/// Comment-202411172 applies.
 	/// @dev One might want to make this non-configurable. But when we increase `div` in the Comment-202606059 formula,
@@ -161,6 +162,7 @@ abstract contract CosmicSignatureGameStorageV2Base is ICosmicSignatureGameStorag
 	/// @notice Comment-202411066 relates.
 	/// Comment-202411064 applies.
 	/// Comment-202504212 relates.
+	/// In V3+, this remains in storage, but the logic ignores it; the minimum limit is derived instead. Comment-202607166 applies.
 	uint256 public cstDutchAuctionBeginningBidPriceMinLimit;
 
 	/// @notice Comment-202605202 applies.
@@ -320,6 +322,7 @@ abstract contract CosmicSignatureGameStorageV2Base is ICosmicSignatureGameStorag
 
 	/// @notice Comment-202606101 relates.
 	/// Comment-202411064 applies.
+	/// In V3+, this remains in storage, but the logic ignores it. Comment-202607165 applies.
 	uint256 public cstDutchAuctionDurationChangeDivisor;
 
 	// #endregion

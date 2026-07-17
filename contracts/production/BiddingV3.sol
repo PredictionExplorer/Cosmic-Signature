@@ -6,6 +6,7 @@ pragma solidity =0.8.34;
 // #endregion
 // #region
 
+import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 import { IBiddingV2, BiddingV2 } from "./BiddingV2.sol";
@@ -33,12 +34,163 @@ abstract contract BiddingV3 is
 	// #endregion
 	// #region `getNextCstBidPriceAdvanced`
 
+	/// @notice
+	/// [Comment-202607165]
+	/// The CST time standard.
+	/// In V3+, a single rate -- the bid CST reward accrual rate of
+	/// `bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds` CST Wei per second, computed by `_getAccruedCstAmount` --
+	/// governs both how the game mints CST and how it burns CST:
+	/// the bid CST reward equals the amount accrued since the last bid,
+	/// and the CST bid price equals `cstDutchAuctionBeginningBidPrice` minus the amount accrued
+	/// since the CST Dutch auction beginning, clamped at zero.
+	/// So between CST bids the price falls at exactly the rate at which the reward grows.
+	/// On a CST bid, the auction restarts at `max(paidPrice * 2, minLimit)`,
+	/// where the min limit is 3 main prize time increments' worth of reward accrual (Comment-202607166).
+	/// The auction duration is not a parameter any more; it's emergent: the beginning bid price divided by the rate,
+	/// capped at 12 increments (Comment-202607170; above the cap the price declines proportionally faster, like in V2).
+	/// `cstDutchAuctionDuration`, `cstDutchAuctionDurationChangeDivisor`, and `cstDutchAuctionBeginningBidPriceMinLimit`
+	/// remain in storage and their setters keep working, but V3+ pricing ignores them.
+	/// This design guarantees that every bidding round ends, provided someone is willing to claim the main prize.
+	/// The proof is in "docs/round-termination-proof.md".
+	/// [/Comment-202607165]
 	function getNextCstBidPriceAdvanced(int256 currentTimeOffset_) public view override (IBiddingV2, BiddingV2) virtual returns (uint256) {
-		// // #enable_smtchecker /*
-		// unchecked
-		// // #enable_smtchecker */
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			// Comment-202605295 applies.
+			int256 cstDutchAuctionElapsedDuration_ = _getCstDutchAuctionElapsedDuration() + currentTimeOffset_;
 
-		return _addRoundLateBidPricePremiumAmountIfNeeded(super.getNextCstBidPriceAdvanced(currentTimeOffset_), currentTimeOffset_);
+			// Comment-202501307 relates and/or applies.
+			uint256 cstDutchAuctionBeginningBidPrice_ =
+				(lastCstBidderAddress == address(0)) ? nextRoundFirstCstDutchAuctionBeginningBidPrice : cstDutchAuctionBeginningBidPrice;
+
+			uint256 cstDutchAuctionDurationMaxLimit_ = _getCstDutchAuctionDurationMaxLimit();
+			uint256 nextCstBidPrice_;
+			if (cstDutchAuctionBeginningBidPrice_ > _getAccruedCstAmount(cstDutchAuctionDurationMaxLimit_)) {
+				// Comment-202607170 applies. The whole price line is scaled to fit into the duration max limit,
+				// similarly to the V2 formula.
+				int256 cstDutchAuctionRemainingDuration_ = int256(cstDutchAuctionDurationMaxLimit_) - cstDutchAuctionElapsedDuration_;
+				nextCstBidPrice_ =
+					(cstDutchAuctionRemainingDuration_ > int256(0)) ?
+					(cstDutchAuctionBeginningBidPrice_ * uint256(cstDutchAuctionRemainingDuration_) / cstDutchAuctionDurationMaxLimit_) :
+					0;
+			} else if (cstDutchAuctionElapsedDuration_ <= int256(0)) {
+				// Given a negative `currentTimeOffset_`, extrapolating the price line backwards, above the beginning bid price,
+				// similarly to how the V2 formula behaves.
+				nextCstBidPrice_ = cstDutchAuctionBeginningBidPrice_ + _getAccruedCstAmount(uint256( - cstDutchAuctionElapsedDuration_));
+			} else {
+				uint256 cstBidPriceDeclineAmount_ = _getAccruedCstAmount(uint256(cstDutchAuctionElapsedDuration_));
+				nextCstBidPrice_ =
+					(cstBidPriceDeclineAmount_ < cstDutchAuctionBeginningBidPrice_) ?
+					(cstDutchAuctionBeginningBidPrice_ - cstBidPriceDeclineAmount_) :
+					0;
+			}
+			return _addRoundLateBidPricePremiumAmountIfNeeded(nextCstBidPrice_, currentTimeOffset_);
+		}
+	}
+
+	// #endregion
+	// #region `_getCstDutchAuctionDurationMaxLimit`
+
+	/// @notice Calculates and returns the CST Dutch auction emergent duration max limit, in seconds.
+	/// Comment-202607170 applies.
+	function _getCstDutchAuctionDurationMaxLimit() internal view returns (uint256) {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			return
+				CosmicSignatureConstants.CST_DUTCH_AUCTION_DURATION_INCREMENT_MAX_MULTIPLE *
+				mainPrizeTimeIncrementInMicroSeconds /
+				CosmicSignatureConstants.MICROSECONDS_PER_SECOND;
+		}
+	}
+
+	// #endregion
+	// #region `_getCstDutchAuctionDuration`
+
+	/// @notice Calculates and returns the current CST Dutch auction emergent duration:
+	/// the number of seconds from the auction beginning until the CST bid price declines to zero.
+	/// Comment-202607165 applies.
+	/// Comment-202607170 applies.
+	/// @dev The result is exact: the price is nonzero 1 second before the auction end and zero at it.
+	/// In the uncapped branch that's thanks to rounding the division up.
+	function _getCstDutchAuctionDuration() internal view returns (uint256) {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			// Comment-202501307 relates and/or applies.
+			uint256 cstDutchAuctionBeginningBidPrice_ =
+				(lastCstBidderAddress == address(0)) ? nextRoundFirstCstDutchAuctionBeginningBidPrice : cstDutchAuctionBeginningBidPrice;
+
+			if (cstDutchAuctionBeginningBidPrice_ == 0) {
+				return 0;
+			}
+			uint256 bidCstRewardAmountMultiplierCopy_ = bidCstRewardAmountMultiplier;
+			uint256 cstDutchAuctionDurationMaxLimit_ = _getCstDutchAuctionDurationMaxLimit();
+			if (bidCstRewardAmountMultiplierCopy_ == 0) {
+				// The price declines over the duration max limit (the Comment-202607170 branch).
+				return cstDutchAuctionDurationMaxLimit_;
+			}
+			uint256 cstDutchAuctionDuration_ =
+				(cstDutchAuctionBeginningBidPrice_ * mainPrizeTimeIncrementInMicroSeconds + (bidCstRewardAmountMultiplierCopy_ - 1)) /
+				bidCstRewardAmountMultiplierCopy_;
+			return Math.min(cstDutchAuctionDuration_, cstDutchAuctionDurationMaxLimit_);
+		}
+	}
+
+	// #endregion
+	// #region `getCstDutchAuctionDurations`
+
+	function getCstDutchAuctionDurations() public view override (IBiddingV2, BiddingV2) virtual returns (uint256, int256) {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			int256 cstDutchAuctionElapsedDuration_ = _getCstDutchAuctionElapsedDuration();
+			return (_getCstDutchAuctionDuration(), cstDutchAuctionElapsedDuration_);
+		}
+	}
+
+	// #endregion
+	// #region `getCstDutchAuctionBeginningBidPriceMinLimit`
+
+	function getCstDutchAuctionBeginningBidPriceMinLimit() external view override returns (uint256) {
+		return _getCstDutchAuctionBeginningBidPriceMinLimit();
+	}
+
+	// #endregion
+	// #region `_getCstDutchAuctionBeginningBidPriceMinLimit`
+
+	/// @notice Comment-202607166 applies.
+	function _getCstDutchAuctionBeginningBidPriceMinLimit() internal view override virtual returns (uint256) {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			return
+				CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT_INCREMENT_REWARD_MULTIPLE *
+				bidCstRewardAmountMultiplier /
+				CosmicSignatureConstants.MICROSECONDS_PER_SECOND;
+		}
+	}
+
+	// #endregion
+	// #region `_updateCstDutchAuctionOnEthBid`
+
+	/// @notice In V3+, an ETH bid does not change the CST Dutch auction state. Comment-202607165 applies.
+	function _updateCstDutchAuctionOnEthBid() internal view override virtual returns (uint256) {
+		return _getCstDutchAuctionDuration();
+	}
+
+	// #endregion
+	// #region `_updateCstDutchAuctionOnCstBid`
+
+	/// @notice In V3+, a CST bid restarts the CST Dutch auction, but the duration is emergent. Comment-202607165 applies.
+	function _updateCstDutchAuctionOnCstBid() internal view override virtual returns (uint256) {
+		return _getCstDutchAuctionDuration();
 	}
 
 	// #endregion
@@ -108,6 +260,31 @@ abstract contract BiddingV3 is
 	}
 
 	// #endregion
+	// #region `_getAccruedCstAmount`
+
+	/// @notice Calculates and returns the CST amount that accrues over the given duration
+	/// at the rate of `bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds` CST Wei per second.
+	/// This single formula governs both the bid CST reward and the CST bid price decline.
+	/// Comment-202607165 applies.
+	function _getAccruedCstAmount(uint256 elapsedDuration_) internal view returns (uint256) {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			// Comment-202607167 applies.
+			// Comment-202605295 applies.
+			return elapsedDuration_ * bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds;
+		}
+	}
+
+	// #endregion
+	// #region `getBidCstRewardAmountPerMainPrizeTimeIncrement`
+
+	function getBidCstRewardAmountPerMainPrizeTimeIncrement() external view override returns (uint256) {
+		return _getAccruedCstAmount(getMainPrizeTimeIncrement());
+	}
+
+	// #endregion
 	// #region `getBidCstRewardAmountAdvanced`
 
 	function getBidCstRewardAmountAdvanced(int256 currentTimeOffset_) public view override (IBiddingV2, BiddingV2) virtual returns (uint256) {
@@ -125,9 +302,7 @@ abstract contract BiddingV3 is
 
 			uint256 bidCstRewardAmount_ = 0;
 			if (elapsedDuration_ > int256(0)) {
-				// Comment-202607167 applies.
-				// Comment-202605295 applies.
-				bidCstRewardAmount_ = uint256(elapsedDuration_) * bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds;
+				bidCstRewardAmount_ = _getAccruedCstAmount(uint256(elapsedDuration_));
 			}
 			return bidCstRewardAmount_;
 		}
@@ -152,12 +327,9 @@ abstract contract BiddingV3 is
 					mintSpecs_[0].value = bidCstRewardAmount_ - lastBidderBidCstRewardAmount_;
 
 					// [Comment-202607163]
-					// The bid CST reward is minted, rather than transferred. `CosmicSignatureToken` minting performs no call
-					// into the recipient, so a hostile last bidder contract that reverts on any incoming call or token callback
+					// `CosmicSignatureToken` makes no callbacks into token holders, period -- neither on mints nor on transfers.
+					// So a hostile last bidder contract that reverts on any incoming call
 					// cannot prevent this minting from succeeding, and therefore cannot block further bids.
-					// todo-ai-0 A hostile actor can't block a CST transfer either, right?
-					// todo-ai-0 So would it be better to rephrase this and other related comments
-					// todo-ai-0 to clarify that `CosmicSignatureToken` does not make any callbacks, period?
 					// [/Comment-202607163]
 					mintSpecs_[1].account = lastBidderAddressCopy_;
 
@@ -178,7 +350,18 @@ abstract contract BiddingV3 is
 		{
 			if (bidCstRewardAmount_ > 0) {
 				uint256 lastBidderBidCstRewardAmount_ = _getLastBidderBidCstRewardAmount(bidCstRewardAmount_);
-				ICosmicSignatureToken.MintOrBurnSpec[] memory mintAndBurnSpecs_ = new ICosmicSignatureToken.MintOrBurnSpec[](3);
+				address lastBidderAddressCopy_ = lastBidderAddress;
+
+				// [Comment-202607164]
+				// We can reach this point only on CST bid.
+				// A CST bid is not allowed to be the first in a bidding round, but we are yet to validate that near Comment-202501044,
+				// so it's not guaranteed that `lastBidderAddress` is a nonzero.
+				// If it's zero, we skip the last bidder mint spec (whose zero account would make `CosmicSignatureToken` revert
+				// with a confusing error), let `_bidCommon` perform the validation, and revert there.
+				// [/Comment-202607164]
+				uint256 numMintAndBurnSpecs_ = (lastBidderAddressCopy_ == address(0)) ? 2 : 3;
+
+				ICosmicSignatureToken.MintOrBurnSpec[] memory mintAndBurnSpecs_ = new ICosmicSignatureToken.MintOrBurnSpec[](numMintAndBurnSpecs_);
 				mintAndBurnSpecs_[0].account = _msgSender();
 
 				// Comment-202409177 applies.
@@ -188,17 +371,12 @@ abstract contract BiddingV3 is
 				mintAndBurnSpecs_[1].account = _msgSender();
 				mintAndBurnSpecs_[1].value = int256(bidCstRewardAmount_ - lastBidderBidCstRewardAmount_);
 
-				// [Comment-202607164]
-				// We can reach this point only on CST bid.
-				// A CST bid is not allowed to be the first in a bidding round, which we are yet to validate near Comment-202501044.
-				// Therefore it's not guaranteed that this is a nonzero.
-				// If this is zero, we would revert with a different error than near Comment-202501044.
-				// This behavior is kinda questionable, but keeping it simple.
-				// [/Comment-202607164]
-				// Comment-202607163 applies.
-				mintAndBurnSpecs_[2].account = lastBidderAddress;
+				if (numMintAndBurnSpecs_ > 2) {
+					// Comment-202607163 applies.
+					mintAndBurnSpecs_[2].account = lastBidderAddressCopy_;
 
-				mintAndBurnSpecs_[2].value = int256(lastBidderBidCstRewardAmount_);
+					mintAndBurnSpecs_[2].value = int256(lastBidderBidCstRewardAmount_);
+				}
 				token.mintAndBurnMany(mintAndBurnSpecs_);
 			} else {
 				// Comment-202607168 applies.

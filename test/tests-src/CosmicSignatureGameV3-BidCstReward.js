@@ -1,10 +1,9 @@
-// todo-ai-0 Rename this file to `CosmicSignatureGameV3-BidCstReward.js`.
-
 "use strict";
 
 // Tests `BiddingV3`'s linear bid CST reward and its 90/10 split (Comment-202607161):
-// the reward accrues at `bidCstRewardAmountPerMinute` (default 1 CST per minute) since the last bid,
-// and when someone places a bid, 90% of it is minted to the bidder being outbid and 10% to the new bidder.
+// the reward accrues at `bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds` CST Wei
+// per second since the last bid (Comment-202607165), and when someone places a bid, 90% of it is minted
+// to the bidder being outbid and 10% to the new bidder.
 
 const { describe, it } = require("mocha");
 const { expect } = require("chai");
@@ -17,8 +16,10 @@ const {
 	findParsedEvent,
 } = require("../src/V2UpgradeTestHelpers.js");
 const {
+	DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER,
 	deployV1CompleteRoundZeroAndUpgradeToV2AndV3,
 	assertDefaultV3Initialization,
+	bidCstRewardMultiplierForRatePerMinute,
 	getV3BidCstRewardAmount,
 	splitV3BidCstRewardAmount,
 	findTimeStampWithAffordableCstBidPrice,
@@ -70,12 +71,16 @@ async function bidWithCstAt(game_, bidderSigner_, timeStamp_) {
 
 // #endregion
 
-describe("CosmicSignatureGameV3-CstReward", function () {
-	it("reinitialize sets bidCstRewardAmountPerMinute to 1 CST per minute", async function () {
+describe("CosmicSignatureGameV3-BidCstReward", function () {
+	it("reinitialize sets bidCstRewardAmountMultiplier to the default (60 CST per main prize time increment)", async function () {
 		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3(2n);
 		const game_ = contracts_.cosmicSignatureGameV3Proxy;
 		await assertDefaultV3Initialization(game_);
-		expect(await game_.bidCstRewardAmountPerMinute()).equal(10n ** 18n);
+		expect(await game_.bidCstRewardAmountMultiplier()).equal(DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER);
+
+		// One increment's worth of accrual is exactly `bidCstRewardAmountMultiplier / 10^6` = 60 CST,
+		// regardless of how much the increment has stretched (Comment-202607165).
+		expect(await game_.getBidCstRewardAmountPerMainPrizeTimeIncrement()).equal(60n * 10n ** 18n);
 	});
 
 	it("the reward getter mirrors the linear formula at any elapsed duration", async function () {
@@ -113,11 +118,11 @@ describe("CosmicSignatureGameV3-CstReward", function () {
 			}
 			expect(await game_.getBidCstRewardAmount()).equal(0n);
 
-			// Spot-check the linear formula against hardcoded values: 1 CST per minute.
-			expect(await game_.getBidCstRewardAmountAdvanced(60n)).equal(10n ** 18n);
-			expect(await game_.getBidCstRewardAmountAdvanced(90n)).equal(15n * 10n ** 17n);
-			expect(await game_.getBidCstRewardAmountAdvanced(3_600n)).equal(60n * 10n ** 18n);
-			expect(await game_.getBidCstRewardAmountAdvanced(1n)).equal(10n ** 18n / 60n);
+			// Spot-check: exactly one increment of waiting accrues exactly the per-increment reward (60 CST).
+			const mainPrizeTimeIncrement_ = (await game_.mainPrizeTimeIncrementInMicroSeconds()) / 1_000_000n;
+			expect(await game_.getBidCstRewardAmountAdvanced(mainPrizeTimeIncrement_))
+				.equal(await game_.getBidCstRewardAmountPerMainPrizeTimeIncrement());
+			expect(await game_.getBidCstRewardAmountAdvanced(mainPrizeTimeIncrement_)).equal(60n * 10n ** 18n);
 		}
 	});
 
@@ -175,16 +180,16 @@ describe("CosmicSignatureGameV3-CstReward", function () {
 			expect(await token_.totalSupply() - totalSupplyBefore_).equal(totalRewardAmount_);
 
 			// Exactly 2 mints happened.
-			// `CosmicSignatureToken.mintMany` iterates the specs in the reverse order,
-			// so the new bidder share `Transfer` is emitted before the sniped bidder one.
+			// The new bidder mint spec comes first and `CosmicSignatureToken.mintMany` iterates the specs
+			// in the reverse order, so the sniped bidder share `Transfer` is emitted before the new bidder one.
 			const transfers_ = findParsedEvents(receipt_, token_, "Transfer");
 			expect(transfers_.length).equal(2);
 			expect(transfers_[0].args.from).equal(hre.ethers.ZeroAddress);
-			expect(transfers_[0].args.to).equal(bidder2_.address);
-			expect(transfers_[0].args.value).equal(newBidderAmount_);
+			expect(transfers_[0].args.to).equal(bidder1_.address);
+			expect(transfers_[0].args.value).equal(lastBidderAmount_);
 			expect(transfers_[1].args.from).equal(hre.ethers.ZeroAddress);
-			expect(transfers_[1].args.to).equal(bidder1_.address);
-			expect(transfers_[1].args.value).equal(lastBidderAmount_);
+			expect(transfers_[1].args.to).equal(bidder2_.address);
+			expect(transfers_[1].args.value).equal(newBidderAmount_);
 		}
 
 		// #endregion
@@ -207,23 +212,28 @@ describe("CosmicSignatureGameV3-CstReward", function () {
 		const token_ = contracts_.cosmicSignatureToken;
 
 		// A high reward rate, so that the bidders can quickly afford CST bids: 60 CST per minute.
+		// Note that the CST bid price declines at the same rate (Comment-202607165), so the round-opening
+		// auction (which begins at `nextRoundFirstCstDutchAuctionBeginningBidPrice` = 200 CST) reaches zero
+		// in 200 seconds; the timing below keeps the paid CST bid within that window.
 		const ratePerMinute_ = 60n * 10n ** 18n;
-		await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setBidCstRewardAmountPerMinute(ratePerMinute_));
+		const rewardMultiplier_ = bidCstRewardMultiplierForRatePerMinute(ratePerMinute_);
+		await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setBidCstRewardAmountMultiplier(rewardMultiplier_));
 		await activateCurrentRound(game_, contracts_.ownerSigner);
 		const bidder1_ = contracts_.signers[1];
 		const bidder2_ = contracts_.signers[2];
 
-		// Accumulate CST for bidder2: it places the 2nd bid and gets sniped 400 seconds later,
-		// which mints it 90% of 400 CST.
-		await bidWithEthAt(game_, bidder1_, (await getLatestBlockTimestamp()) + 10n);
-		await bidWithEthAt(game_, bidder2_, (await getLatestBlockTimestamp()) + 30n);
-		await bidWithEthAt(game_, bidder1_, (await getLatestBlockTimestamp()) + 400n);
+		// Accumulate CST for bidder2: it places the 2nd bid and gets sniped 100 seconds later,
+		// which mints it 90% of 100 CST.
+		const firstBidTimeStamp_ = (await getLatestBlockTimestamp()) + 10n;
+		await bidWithEthAt(game_, bidder1_, firstBidTimeStamp_);
+		await bidWithEthAt(game_, bidder2_, firstBidTimeStamp_ + 10n);
+		await bidWithEthAt(game_, bidder1_, firstBidTimeStamp_ + 110n);
 
 		const bidder1CstBalanceBefore_ = await token_.balanceOf(bidder1_.address);
 		const bidder2CstBalanceBefore_ = await token_.balanceOf(bidder2_.address);
 		const totalSupplyBefore_ = await token_.totalSupply();
 		const lastBidTimeStamp_ = await getLatestBlockTimestamp();
-		const cstBidTimeStamp_ = lastBidTimeStamp_ + 300n;
+		const cstBidTimeStamp_ = lastBidTimeStamp_ + 5n;
 
 		// Make sure bidder2 can afford the CST bid price.
 		expect(await game_.getNextCstBidPriceAdvanced(cstBidTimeStamp_ - lastBidTimeStamp_)).lessThanOrEqual(bidder2CstBalanceBefore_);
@@ -231,7 +241,7 @@ describe("CosmicSignatureGameV3-CstReward", function () {
 		const { receipt_, cstBidPrice_ } = await bidWithCstAt(game_, bidder2_, cstBidTimeStamp_);
 		expect(cstBidPrice_).greaterThan(0n);
 
-		const totalRewardAmount_ = getV3BidCstRewardAmount(300n, ratePerMinute_);
+		const totalRewardAmount_ = getV3BidCstRewardAmount(5n, rewardMultiplier_);
 		const { lastBidderAmount: lastBidderAmount_, newBidderAmount: newBidderAmount_, } = splitV3BidCstRewardAmount(totalRewardAmount_);
 
 		const bidPlaced_ = findParsedEvent(receipt_, game_, "BidPlaced");
@@ -258,14 +268,14 @@ describe("CosmicSignatureGameV3-CstReward", function () {
 		expect(transfers_[2].args.value).equal(lastBidderAmount_);
 
 		// A CST self-snipe nets `totalReward - paidPrice` to the bidder.
-		// The previous CST bid restarted the CST Dutch auction at about twice the paid price,
-		// so find a timestamp at which bidder2 can afford another one.
+		// The previous CST bid restarted the CST Dutch auction at `max(2x the paid price, the derived floor)`
+		// (Comment-202607166), so find a timestamp at which bidder2 can afford another one.
 		{
 			const bidder2CstBalanceBefore2_ = await token_.balanceOf(bidder2_.address);
 			const { timeStamp: cstBidTimeStamp2_ } =
 				await findTimeStampWithAffordableCstBidPrice(game_, bidder2CstBalanceBefore2_, cstBidTimeStamp_ + 123n);
 			const { cstBidPrice_: cstBidPrice2_ } = await bidWithCstAt(game_, bidder2_, cstBidTimeStamp2_);
-			const totalRewardAmount2_ = getV3BidCstRewardAmount(cstBidTimeStamp2_ - cstBidTimeStamp_, ratePerMinute_);
+			const totalRewardAmount2_ = getV3BidCstRewardAmount(cstBidTimeStamp2_ - cstBidTimeStamp_, rewardMultiplier_);
 			expect(await token_.balanceOf(bidder2_.address) - bidder2CstBalanceBefore2_).equal(totalRewardAmount2_ - cstBidPrice2_);
 		}
 	});
@@ -315,6 +325,10 @@ describe("CosmicSignatureGameV3-CstReward", function () {
 	it("bidCstRewardAmountMinLimit_ compares against the total reward, not the bidder share", async function () {
 		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3(2n);
 		const game_ = contracts_.cosmicSignatureGameV3Proxy;
+
+		// A rate of exactly 1 CST per minute, so the expectations below are round numbers.
+		const rewardMultiplier_ = bidCstRewardMultiplierForRatePerMinute(10n ** 18n);
+		await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setBidCstRewardAmountMultiplier(rewardMultiplier_));
 		await activateCurrentRound(game_, contracts_.ownerSigner);
 		const bidder1_ = contracts_.signers[1];
 		const bidder2_ = contracts_.signers[2];
@@ -326,7 +340,7 @@ describe("CosmicSignatureGameV3-CstReward", function () {
 		// A min limit above the total reverts, even though it is above what the bidder would personally receive.
 		{
 			const bidTimeStamp_ = lastBidTimeStamp_ + 60n;
-			const totalRewardAmount_ = getV3BidCstRewardAmount(60n);
+			const totalRewardAmount_ = getV3BidCstRewardAmount(60n, rewardMultiplier_);
 			expect(totalRewardAmount_).equal(10n ** 18n);
 			const ethBidPrice_ = await game_.getNextEthBidPriceAdvanced(bidTimeStamp_ - lastBidTimeStamp_);
 			await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(bidTimeStamp_),]);
@@ -340,7 +354,7 @@ describe("CosmicSignatureGameV3-CstReward", function () {
 		// A min limit equal the total succeeds, even though the bidder personally receives only 10% of it.
 		{
 			const bidTimeStamp_ = lastBidTimeStamp_ + 120n;
-			const totalRewardAmount_ = getV3BidCstRewardAmount(120n);
+			const totalRewardAmount_ = getV3BidCstRewardAmount(120n, rewardMultiplier_);
 			expect(totalRewardAmount_).equal(2n * 10n ** 18n);
 			const { receipt_ } = await bidWithEthAt(game_, bidder2_, bidTimeStamp_, totalRewardAmount_);
 			const bidPlaced_ = findParsedEvent(receipt_, game_, "BidPlaced");
@@ -348,36 +362,89 @@ describe("CosmicSignatureGameV3-CstReward", function () {
 		}
 	});
 
-	it("setBidCstRewardAmountPerMinute: authorization, round-inactive guard, event, effect", async function () {
+	it("setBidCstRewardAmountMultiplier drives the reward, the CST price decline, and the derived floor together", async function () {
 		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3(2n);
 		const game_ = contracts_.cosmicSignatureGameV3Proxy;
 		const token_ = contracts_.cosmicSignatureToken;
 		const bidder1_ = contracts_.signers[1];
 		const bidder2_ = contracts_.signers[2];
 		const newRatePerMinute_ = 5n * 10n ** 18n;
+		const newRewardMultiplier_ = bidCstRewardMultiplierForRatePerMinute(newRatePerMinute_);
 
 		// The round is currently inactive (the V3 upgrade requires that), so the owner can set the parameter.
-		await expect(game_.connect(bidder1_).setBidCstRewardAmountPerMinute(newRatePerMinute_))
+		await expect(game_.connect(bidder1_).setBidCstRewardAmountMultiplier(newRewardMultiplier_))
 			.revertedWithCustomError(game_, "OwnableUnauthorizedAccount");
-		await expect(game_.connect(contracts_.ownerSigner).setBidCstRewardAmountPerMinute(newRatePerMinute_))
-			.emit(game_, "BidCstRewardAmountPerMinuteChanged").withArgs(newRatePerMinute_);
-		expect(await game_.bidCstRewardAmountPerMinute()).equal(newRatePerMinute_);
+		await expect(game_.connect(contracts_.ownerSigner).setBidCstRewardAmountMultiplier(newRewardMultiplier_))
+			.emit(game_, "BidCstRewardAmountMultiplierChanged").withArgs(newRewardMultiplier_);
+		expect(await game_.bidCstRewardAmountMultiplier()).equal(newRewardMultiplier_);
 
-		// The new rate drives both the getter and the actual minting.
+		// The single knob scales all three quantities of the CST time standard (Comment-202607165):
+		// the derived floor is 3 increments' worth of accrual...
+		const mainPrizeTimeIncrement_ = (await game_.mainPrizeTimeIncrementInMicroSeconds()) / 1_000_000n;
+		expect(await game_.getBidCstRewardAmountPerMainPrizeTimeIncrement()).equal(newRatePerMinute_ * mainPrizeTimeIncrement_ / 60n);
+		expect(await game_.getCstDutchAuctionBeginningBidPriceMinLimit()).equal(3n * newRewardMultiplier_ / 1_000_000n);
+
+		// ...the reward getter accrues at the new rate...
 		await activateCurrentRound(game_, contracts_.ownerSigner);
 		await bidWithEthAt(game_, bidder1_, (await getLatestBlockTimestamp()) + 10n);
 		expect(await game_.getBidCstRewardAmountAdvanced(60n)).equal(newRatePerMinute_);
+
+		// ...and the CST bid price declines at exactly the same rate (the one-formula identity).
+		{
+			const priceNow_ = await game_.getNextCstBidPriceAdvanced(0n);
+			for (const offset_ of [60n, 300n, 1_200n,]) {
+				const priceLater_ = await game_.getNextCstBidPriceAdvanced(offset_);
+				if (priceLater_ > 0n) {
+					expect(priceNow_ - priceLater_, `price decline over ${offset_} vs reward accrual`)
+						.equal(await game_.getBidCstRewardAmountAdvanced(offset_));
+				}
+			}
+		}
+
+		// The new rate drives the actual minting too.
 		{
 			const bidder1CstBalanceBefore_ = await token_.balanceOf(bidder1_.address);
 			await bidWithEthAt(game_, bidder2_, (await getLatestBlockTimestamp()) + 120n);
-			const totalRewardAmount_ = getV3BidCstRewardAmount(120n, newRatePerMinute_);
+			const totalRewardAmount_ = getV3BidCstRewardAmount(120n, newRewardMultiplier_);
 			expect(totalRewardAmount_).equal(10n * 10n ** 18n);
 			expect(await token_.balanceOf(bidder1_.address) - bidder1CstBalanceBefore_)
 				.equal(splitV3BidCstRewardAmount(totalRewardAmount_).lastBidderAmount);
 		}
 
 		// While the round is active, the owner cannot change the parameter.
-		await expect(game_.connect(contracts_.ownerSigner).setBidCstRewardAmountPerMinute(10n ** 18n))
+		await expect(game_.connect(contracts_.ownerSigner).setBidCstRewardAmountMultiplier(10n ** 18n))
+			.revertedWithCustomError(game_, "RoundIsActive");
+	});
+
+	it("setLastBidderBidCstRewardAmountPercentage: authorization, round-inactive guard, event, effect", async function () {
+		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3(2n);
+		const game_ = contracts_.cosmicSignatureGameV3Proxy;
+		const token_ = contracts_.cosmicSignatureToken;
+		const bidder1_ = contracts_.signers[1];
+		const bidder2_ = contracts_.signers[2];
+		const newPercentage_ = 25n;
+
+		await expect(game_.connect(bidder1_).setLastBidderBidCstRewardAmountPercentage(newPercentage_))
+			.revertedWithCustomError(game_, "OwnableUnauthorizedAccount");
+		await expect(game_.connect(contracts_.ownerSigner).setLastBidderBidCstRewardAmountPercentage(newPercentage_))
+			.emit(game_, "LastBidderBidCstRewardAmountPercentageChanged").withArgs(newPercentage_);
+		expect(await game_.lastBidderBidCstRewardAmountPercentage()).equal(newPercentage_);
+
+		await activateCurrentRound(game_, contracts_.ownerSigner);
+		await bidWithEthAt(game_, bidder1_, (await getLatestBlockTimestamp()) + 10n);
+		{
+			const bidder1CstBalanceBefore_ = await token_.balanceOf(bidder1_.address);
+			const bidder2CstBalanceBefore_ = await token_.balanceOf(bidder2_.address);
+			await bidWithEthAt(game_, bidder2_, (await getLatestBlockTimestamp()) + 120n);
+			const totalRewardAmount_ = getV3BidCstRewardAmount(120n);
+			const { lastBidderAmount: lastBidderAmount_, newBidderAmount: newBidderAmount_, } =
+				splitV3BidCstRewardAmount(totalRewardAmount_, newPercentage_);
+			expect(lastBidderAmount_).equal(totalRewardAmount_ * newPercentage_ / 100n);
+			expect(await token_.balanceOf(bidder1_.address) - bidder1CstBalanceBefore_).equal(lastBidderAmount_);
+			expect(await token_.balanceOf(bidder2_.address) - bidder2CstBalanceBefore_).equal(newBidderAmount_);
+		}
+
+		await expect(game_.connect(contracts_.ownerSigner).setLastBidderBidCstRewardAmountPercentage(90n))
 			.revertedWithCustomError(game_, "RoundIsActive");
 	});
 
@@ -387,7 +454,7 @@ describe("CosmicSignatureGameV3-CstReward", function () {
 		const token_ = contracts_.cosmicSignatureToken;
 		const bidder1_ = contracts_.signers[1];
 		const bidder2_ = contracts_.signers[2];
-		await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setBidCstRewardAmountPerMinute(0n));
+		await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setBidCstRewardAmountMultiplier(0n));
 		await activateCurrentRound(game_, contracts_.ownerSigner);
 		const bidder1CstBalanceBefore_ = await token_.balanceOf(bidder1_.address);
 		const bidder2CstBalanceBefore_ = await token_.balanceOf(bidder2_.address);
@@ -409,7 +476,9 @@ describe("CosmicSignatureGameV3-CstReward", function () {
 		const bidder2_ = contracts_.signers[2];
 
 		// 1 Wei per minute.
-		await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setBidCstRewardAmountPerMinute(1n));
+		await waitForTransactionReceipt(
+			game_.connect(contracts_.ownerSigner).setBidCstRewardAmountMultiplier(bidCstRewardMultiplierForRatePerMinute(1n))
+		);
 		await activateCurrentRound(game_, contracts_.ownerSigner);
 		const bidder1CstBalanceBefore_ = await token_.balanceOf(bidder1_.address);
 		const bidder2CstBalanceBefore_ = await token_.balanceOf(bidder2_.address);
@@ -427,14 +496,14 @@ describe("CosmicSignatureGameV3-CstReward", function () {
 		expect(await token_.balanceOf(bidder2_.address) - bidder2CstBalanceBefore_).equal(1n);
 		expect(await token_.totalSupply() - totalSupplyBefore_).equal(1n);
 
-		// Comment-202607161: the sniped bidder share `Transfer` (a zero-value mint) is emitted after
+		// Comment-202607161: the sniped bidder share `Transfer` (a zero-value mint) is emitted before
 		// the new bidder one, because `mintMany` iterates the specs in the reverse order.
 		const transfers_ = findParsedEvents(receipt_, token_, "Transfer");
 		expect(transfers_.length).equal(2);
-		expect(transfers_[0].args.to).equal(bidder2_.address);
-		expect(transfers_[0].args.value).equal(1n);
-		expect(transfers_[1].args.to).equal(bidder1_.address);
-		expect(transfers_[1].args.value).equal(0n);
+		expect(transfers_[0].args.to).equal(bidder1_.address);
+		expect(transfers_[0].args.value).equal(0n);
+		expect(transfers_[1].args.to).equal(bidder2_.address);
+		expect(transfers_[1].args.value).equal(1n);
 	});
 
 	it("randomized campaign: exact CST accounting across many random bids and rates", async function () {
@@ -458,7 +527,8 @@ describe("CosmicSignatureGameV3-CstReward", function () {
 
 		// A random reward rate: either a whole number of CST, or a completely arbitrary Wei amount, per minute.
 		const ratePerMinute_ = (nextRandom_() % 2n === 0n) ? nextRandomRange_(1n, 100n) * 10n ** 18n : nextRandomRange_(1n, 10n ** 20n);
-		await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setBidCstRewardAmountPerMinute(ratePerMinute_));
+		const rewardMultiplier_ = bidCstRewardMultiplierForRatePerMinute(ratePerMinute_);
+		await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setBidCstRewardAmountMultiplier(rewardMultiplier_));
 		await activateCurrentRound(game_, contracts_.ownerSigner);
 
 		const actorSigners_ = contracts_.signers.slice(1, 6);
@@ -477,7 +547,7 @@ describe("CosmicSignatureGameV3-CstReward", function () {
 			const gapDuration_ = nextRandomRange_(1n, 5_400n);
 			const latestTimeStamp_ = await getLatestBlockTimestamp();
 			const bidTimeStamp_ = (latestTimeStamp_ > lastBidTimeStamp_ ? latestTimeStamp_ : lastBidTimeStamp_) + gapDuration_;
-			const totalRewardAmount_ = getV3BidCstRewardAmount(bidTimeStamp_ - lastBidTimeStamp_, ratePerMinute_);
+			const totalRewardAmount_ = getV3BidCstRewardAmount(bidTimeStamp_ - lastBidTimeStamp_, rewardMultiplier_);
 			const { lastBidderAmount: lastBidderAmount_, newBidderAmount: newBidderAmount_, } = splitV3BidCstRewardAmount(totalRewardAmount_);
 
 			// A CST bid is possible if this is not the first bid of the round and the actor can afford the price.

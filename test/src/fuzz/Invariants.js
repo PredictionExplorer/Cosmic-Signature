@@ -107,9 +107,15 @@ async function runInvariants(ctx_) {
 		expect(await game_.roundLateBidDurationDivisor(), "roundLateBidDurationDivisor vs model").to.equal(model.roundLateBidDurationDivisor);
 		expect(await game_.roundLateBidPricePremiumAmountBaseMultiplier(), "roundLateBidPricePremiumAmountBaseMultiplier vs model").to.equal(model.roundLateBidPricePremiumAmountBaseMultiplier);
 		expect(await game_.roundLateBidPricePremiumAmountExponent(), "roundLateBidPricePremiumAmountExponent vs model").to.equal(model.roundLateBidPricePremiumAmountExponent);
-		expect(await game_.bidCstRewardAmountPerMinute(), "bidCstRewardAmountPerMinute vs model").to.equal(model.bidCstRewardAmountPerMinute);
+		expect(await game_.lastBidderBidCstRewardAmountPercentage(), "lastBidderBidCstRewardAmountPercentage vs model").to.equal(model.lastBidderBidCstRewardAmountPercentage);
 		expect(await game_.mainPrizeNumCosmicSignatureNfts(), "mainPrizeNumCosmicSignatureNfts vs model").to.equal(model.mainPrizeNumCosmicSignatureNfts);
 		expect(await game_.getRoundLateBidDuration(), "getRoundLateBidDuration vs model").to.equal(model.getRoundLateBidDuration());
+
+		// The CST time standard views (Comment-202607165, Comment-202607166).
+		expect(await game_.getBidCstRewardAmountPerMainPrizeTimeIncrement(), "getBidCstRewardAmountPerMainPrizeTimeIncrement vs model")
+			.to.equal(model.getAccruedCstAmount(model.getMainPrizeTimeIncrement()));
+		expect(await game_.getCstDutchAuctionBeginningBidPriceMinLimit(), "getCstDutchAuctionBeginningBidPriceMinLimit vs model")
+			.to.equal(model.getCstDutchAuctionBeginningBidPriceMinLimit());
 	}
 
 	{
@@ -276,6 +282,30 @@ async function runInvariants(ctx_) {
 	{
 		expect(ledger.cstTotalMinted - ledger.cstTotalBurned, "CST minted - burned == ledger totalSupply").to.equal(ledger.cstTotalSupply);
 		expect(await contracts.cosmicSignatureToken.totalSupply(), "CST minted - burned == chain totalSupply").to.equal(ledger.cstTotalMinted - ledger.cstTotalBurned);
+	}
+
+	// 4. The V3+ round-termination invariant (Comment-202607166, docs/round-termination-proof.md), read
+	//    straight from the chain: after any CST bid, the CST Dutch auction beginning bid price is at least
+	//    3 main prize time increments' worth of reward accrual, so the emergent auction duration is at least
+	//    3 increments -- a free CST bid always costs strictly more waiting time than the 1 increment it buys.
+	if (model.version >= 3) {
+		const multiplier_ = await game_.bidCstRewardAmountMultiplier();
+		if (multiplier_ > 0n) {
+			const derivedMinLimit_ = 3n * multiplier_ / 1_000_000n;
+			expect(await game_.getCstDutchAuctionBeginningBidPriceMinLimit(), "V3 derived CST floor formula").to.equal(derivedMinLimit_);
+			if ((await game_.lastCstBidderAddress()) !== hre.ethers.ZeroAddress) {
+				expect(
+					(await game_.cstDutchAuctionBeginningBidPrice()) >= derivedMinLimit_,
+					"V3 CST auction beginning bid price fell below the termination floor"
+				).to.equal(true);
+				const [emergentDuration_,] = await game_.getCstDutchAuctionDurations();
+				const increment_ = (await game_.mainPrizeTimeIncrementInMicroSeconds()) / 1_000_000n;
+				expect(
+					emergentDuration_ >= 3n * increment_ - 1n,
+					`V3 emergent CST auction duration ${emergentDuration_} is under 3 increments (${3n * increment_})`
+				).to.equal(true);
+			}
+		}
 	}
 
 	// #endregion

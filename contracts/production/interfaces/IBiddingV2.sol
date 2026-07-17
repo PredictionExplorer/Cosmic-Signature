@@ -28,8 +28,8 @@ interface IBiddingV2 {
 	/// @param message Comment-202503155 applies.
 	/// @param bidCstRewardAmount The CST reward amount minted to the bidder.
 	/// It can be zero.
-	/// @param cstDutchAuctionDuration Comment-202606101 applies.
-	/// Comment-202606099 relates.
+	/// @param cstDutchAuctionDuration In V2, Comment-202606101 applies, and Comment-202606099 relates.
+	/// In V3+, this is the emergent CST Dutch auction duration; Comment-202607165 and Comment-202607170 apply.
 	/// @param mainPrizeTime Comment-202412152 applies.
 	event BidPlaced(
 		uint256 indexed roundNum,
@@ -146,6 +146,7 @@ interface IBiddingV2 {
 	function getNextCstBidPriceAdvanced(int256 currentTimeOffset_) external view returns (uint256);
 
 	/// @return Comment-202605273 applies.
+	/// In V3+, the returned total duration is emergent; Comment-202607165 and Comment-202607170 apply.
 	/// Comment-202501022 applies to the returned elapsed duration.
 	function getCstDutchAuctionDurations() external view returns (uint256, int256);
 
