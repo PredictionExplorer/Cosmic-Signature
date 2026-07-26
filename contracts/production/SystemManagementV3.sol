@@ -26,11 +26,6 @@ abstract contract SystemManagementV3 is
 		emit RoundLateBidPricePremiumAmountExponentChanged(newValue_);
 	}
 
-	function setLastBidderBidCstRewardAmountPercentage(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
-		lastBidderBidCstRewardAmountPercentage = newValue_;
-		emit LastBidderBidCstRewardAmountPercentageChanged(newValue_);
-	}
-
 	function setMainPrizeNumCosmicSignatureNfts(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
 		mainPrizeNumCosmicSignatureNfts = newValue_;
 		emit MainPrizeNumCosmicSignatureNftsChanged(newValue_);

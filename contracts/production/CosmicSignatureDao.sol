@@ -51,7 +51,7 @@ contract CosmicSignatureDao is
 		GovernorSettings(
 			CosmicSignatureConstants.DAO_DEFAULT_VOTING_DELAY,
 			CosmicSignatureConstants.DAO_DEFAULT_VOTING_PERIOD,
-			CosmicSignatureConstants.DEFAULT_BID_CST_REWARD_AMOUNT
+			CosmicSignatureConstants.DAO_DEFAULT_PROPOSAL_THRESHOLD
 		)
 
 		// [Comment-202502249]

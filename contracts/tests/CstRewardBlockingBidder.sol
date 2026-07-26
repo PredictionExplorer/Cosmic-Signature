@@ -5,11 +5,12 @@ import { CryptographyHelpers } from "../production/libraries/CryptographyHelpers
 import { CosmicSignatureGameV3 } from "../production/CosmicSignatureGameV3.sol";
 
 /// @title A hostile bidder that tries to make itself impossible to pay the bid CST reward to.
-/// @notice This contract attempts the attack discussed in Comment-202607163: it places a bid and then behaves
-/// as hostile as possible towards any incoming call, attempting to make it impossible to pay
-/// the last bidder bid CST reward share to it. If that could succeed, nobody would be able to place further bids.
+/// @notice This contract attempts the attack discussed in Comment-202607163: it places a bid
+/// and then behaves as hostile as possible towards any incoming call, attempting to make it impossible to pay
+/// the bid CST reward to the last bidder. If that could succeed, nobody would be able to place further bids.
 /// The attack cannot succeed because the Game mints, rather than transfers, bid CST rewards,
 /// and `CosmicSignatureToken` minting performs no call into the recipient.
+/// todo-ai-0 Even if the game transferred, the attack would not succeed either, right?
 /// todo-ai-0 I would rename this contract to `HostileBidder`.
 contract CstRewardBlockingBidder {
 	CosmicSignatureGameV3 public immutable game;
@@ -54,9 +55,9 @@ contract CstRewardBlockingBidder {
 			assert(false);
 		} else if (hostilityModeCode_ == 3) {
 			// Burning all remaining gas.
-			uint256 counter_ = 0;
+			uint256 uselessValue_ = block.timestamp;
 			for (;;) {
-				counter_ = CryptographyHelpers.calculateHashSumOf(counter_);
+				uselessValue_ = CryptographyHelpers.calculateHashSumOf(uselessValue_);
 			}
 		} else if (hostilityModeCode_ == 4) {
 			// This reentry attempt is expected to revert due to the reentrancy guard,

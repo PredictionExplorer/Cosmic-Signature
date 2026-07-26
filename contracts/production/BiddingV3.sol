@@ -115,10 +115,10 @@ abstract contract BiddingV3 is
 		unchecked
 		// #enable_smtchecker */
 		{
-			uint256 lastBidTimeStampCopy_ =
-				(lastBidderAddress == address(0)) ?
-				roundActivationTime :
-				biddersInfo[roundNum][lastBidderAddress].lastBidTimeStamp;
+			// Comment-202501022 applies.
+			// That's OK, because there is no bid CST reward for the first bid in a bidding round.
+			// todo-0 Tell Nick to not show the reward until someone places the first bid.
+			uint256 lastBidTimeStampCopy_ = biddersInfo[roundNum][lastBidderAddress].lastBidTimeStamp;
 
 			// Comment-202605295 applies.
 			int256 elapsedDuration_ = int256(block.timestamp) + currentTimeOffset_ - int256(lastBidTimeStampCopy_);
@@ -136,36 +136,30 @@ abstract contract BiddingV3 is
 	// #endregion
 	// #region `_mintBidCstRewardAmountIfNeeded`
 
+	/// todo-0 Base method comment says that `bidCstRewardAmount_ may be zero.
+	/// todo-0 But here it cannot be because we enforce at least 1 second since the previous bid and do not pay any reward to the first bidder.
+	/// todo-0 Cross-ref with where we enforce that.
 	function _mintBidCstRewardAmountIfNeeded(uint256 bidCstRewardAmount_) internal override virtual {
-		// #enable_smtchecker /*
-		unchecked
-		// #enable_smtchecker */
-		{
-			if (bidCstRewardAmount_ > 0) {
-				uint256 lastBidderBidCstRewardAmount_ = _getLastBidderBidCstRewardAmount(bidCstRewardAmount_);
-				address lastBidderAddressCopy_ = lastBidderAddress;
-				if (lastBidderAddressCopy_ == address(0)) {
-					token.mint(_msgSender(), bidCstRewardAmount_ - lastBidderBidCstRewardAmount_);
-				} else {
-					ICosmicSignatureToken.MintSpec[] memory mintSpecs_ = new ICosmicSignatureToken.MintSpec[](2);
-					mintSpecs_[0].account = _msgSender();
-					mintSpecs_[0].value = bidCstRewardAmount_ - lastBidderBidCstRewardAmount_;
+		// // #enable_smtchecker /*
+		// unchecked
+		// // #enable_smtchecker */
 
-					// [Comment-202607163]
-					// The bid CST reward is minted, rather than transferred. `CosmicSignatureToken` minting performs no call
-					// into the recipient, so a hostile last bidder contract that reverts on any incoming call or token callback
-					// cannot prevent this minting from succeeding, and therefore cannot block further bids.
-					// todo-ai-0 A hostile actor can't block a CST transfer either, right?
-					// todo-ai-0 So would it be better to rephrase this and other related comments
-					// todo-ai-0 to clarify that `CosmicSignatureToken` does not make any callbacks, period?
-					// [/Comment-202607163]
-					mintSpecs_[1].account = lastBidderAddressCopy_;
+		// [Comment-202607263]
+		// If this wasn't guaranteed it would make sense to check this before minting.
+		// [/Comment-202607263]
+		// #enable_asserts assert(bidCstRewardAmount_ > 0);
 
-					mintSpecs_[1].value = lastBidderBidCstRewardAmount_;
-					token.mintMany(mintSpecs_);
-				}
-			}
-		}
+		// #enable_asserts assert(lastBidderAddress != address(0));
+
+		// [Comment-202607163]
+		// The bid CST reward is minted, rather than transferred. `CosmicSignatureToken` minting performs no call
+		// into the recipient, so a hostile last bidder contract that reverts on any incoming call or token callback
+		// cannot prevent this minting from succeeding, and therefore cannot block further bids.
+		// todo-ai-0 A hostile actor can't block a CST transfer either, right?
+		// todo-ai-0 So would it be better to rephrase this and any other related comments
+		// todo-ai-0 to clarify that `CosmicSignatureToken` does not make any callbacks, period?
+		// [/Comment-202607163]
+		token.mint(lastBidderAddress, bidCstRewardAmount_);
 	}
 
 	// #endregion
@@ -176,51 +170,28 @@ abstract contract BiddingV3 is
 		unchecked
 		// #enable_smtchecker */
 		{
-			if (bidCstRewardAmount_ > 0) {
-				uint256 lastBidderBidCstRewardAmount_ = _getLastBidderBidCstRewardAmount(bidCstRewardAmount_);
-				ICosmicSignatureToken.MintOrBurnSpec[] memory mintAndBurnSpecs_ = new ICosmicSignatureToken.MintOrBurnSpec[](3);
-				mintAndBurnSpecs_[0].account = _msgSender();
+			// Comment-202607263 applies.
+			// #enable_asserts assert(bidCstRewardAmount_ > 0);
 
-				// Comment-202409177 applies.
-				// Comment-202606074 relates and/or applies.
-				mintAndBurnSpecs_[0].value = ( - int256(cstBidPrice_) );
+			ICosmicSignatureToken.MintOrBurnSpec[] memory mintAndBurnSpecs_ = new ICosmicSignatureToken.MintOrBurnSpec[](2);
+			mintAndBurnSpecs_[0].account = _msgSender();
 
-				mintAndBurnSpecs_[1].account = _msgSender();
-				mintAndBurnSpecs_[1].value = int256(bidCstRewardAmount_ - lastBidderBidCstRewardAmount_);
+			// Comment-202409177 applies.
+			// Comment-202606074 relates and/or applies.
+			mintAndBurnSpecs_[0].value = ( - int256(cstBidPrice_) );
 
-				// [Comment-202607164]
-				// We can reach this point only on CST bid.
-				// A CST bid is not allowed to be the first in a bidding round, which we are yet to validate near Comment-202501044.
-				// Therefore it's not guaranteed that this is a nonzero.
-				// If this is zero, we would revert with a different error than near Comment-202501044.
-				// This behavior is kinda questionable, but keeping it simple.
-				// [/Comment-202607164]
-				// Comment-202607163 applies.
-				mintAndBurnSpecs_[2].account = lastBidderAddress;
+			// [Comment-202607164]
+			// We can reach this point only on CST bid.
+			// A CST bid is not allowed to be the first in a bidding round, which we are yet to validate near Comment-202501044.
+			// Therefore it's not guaranteed that this is a nonzero.
+			// If this is zero, we would revert with a different error than near Comment-202501044.
+			// This behavior is kinda questionable, but keeping it simple.
+			// [/Comment-202607164]
+			// Comment-202607163 applies.
+			mintAndBurnSpecs_[1].account = lastBidderAddress;
 
-				mintAndBurnSpecs_[2].value = int256(lastBidderBidCstRewardAmount_);
-				token.mintAndBurnMany(mintAndBurnSpecs_);
-			} else {
-				// Comment-202607168 applies.
-				token.burn(_msgSender(), cstBidPrice_);
-			}
-		}
-	}
-
-	// #endregion
-	// #region `_getLastBidderBidCstRewardAmount`
-
-	/// @notice Calculates and returns the share of the given total bid CST reward amount that belongs to the current last bidder.
-	/// This can potentially return zero when given a nonzero, but in practice this unlikely ever will.
-	function _getLastBidderBidCstRewardAmount(uint256 bidCstRewardAmount_) private view returns (uint256 lastBidderBidCstRewardAmount_) {
-		// #enable_smtchecker /*
-		unchecked
-		// #enable_smtchecker */
-		{
-			// Comment-202605295 applies.
-			lastBidderBidCstRewardAmount_ = bidCstRewardAmount_ * lastBidderBidCstRewardAmountPercentage / 100;
-
-			// #enable_asserts assert(lastBidderBidCstRewardAmount_ < bidCstRewardAmount_);
+			mintAndBurnSpecs_[1].value = int256(bidCstRewardAmount_);
+			token.mintAndBurnMany(mintAndBurnSpecs_);
 		}
 	}
 

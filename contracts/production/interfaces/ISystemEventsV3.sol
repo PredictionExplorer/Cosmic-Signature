@@ -19,10 +19,6 @@ interface ISystemEventsV3 is ISystemEventsV2 {
 	/// @param newValue The new value.
 	event RoundLateBidPricePremiumAmountExponentChanged(uint256 newValue);
 
-	/// @notice Emitted when `lastBidderBidCstRewardAmountPercentage` is changed.
-	/// @param newValue The new value.
-	event LastBidderBidCstRewardAmountPercentageChanged(uint256 newValue);
-
 	/// @notice Emitted when `mainPrizeNumCosmicSignatureNfts` is changed.
 	/// @param newValue The new value.
 	event MainPrizeNumCosmicSignatureNftsChanged(uint256 newValue);

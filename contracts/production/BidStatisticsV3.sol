@@ -17,7 +17,7 @@ abstract contract BidStatisticsV3 is
 	CosmicSignatureGameStorageV3Base {
 	// #region `_saveChampionDurations`
 
-	// todo-0 Test that this is called.
+	/// todo-0 Test that this is called.
 	function _saveChampionDurations() internal override virtual {
 		super._saveChampionDurations();
 		ChampionDurations storage championDurationsReference_ = championDurations[roundNum];

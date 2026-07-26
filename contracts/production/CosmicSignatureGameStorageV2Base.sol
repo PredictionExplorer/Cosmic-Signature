@@ -126,7 +126,7 @@ abstract contract CosmicSignatureGameStorageV2Base is ICosmicSignatureGameStorag
 	/// Comment-202501022 applies.
 	uint256 public cstDutchAuctionBeginningTimeStamp;
 
-	/// @notice
+	/// @notice In V2.
 	/// [Comment-202606101]
 	/// How long CST Dutch auction lasts.
 	/// We reduce this on each ETH bid and increase on each CST bid,
@@ -143,8 +143,10 @@ abstract contract CosmicSignatureGameStorageV2Base is ICosmicSignatureGameStorag
 	/// This occupies the same storage slot as `CosmicSignatureGameStorage.cstDutchAuctionDurationDivisor`.
 	/// [/Comment-202606057]
 	/// [Comment-202607169]
-	/// Issue. This variable is reused for versions after V2, where the `custom:oz-renamed-from` decoration is no longer correct.
-	/// But OpenZeppelin does not complain for some reason.
+	/// Issue. This variable is reused for further versions of the contract,
+	/// where the `custom:oz-renamed-from` decoration is no longer correct.
+	/// But OpenZeppelin does not complain.
+	/// todo-3 ??? Maybe remove these decorations. But make sure doing so does not break tests.
 	/// [/Comment-202607169]
 	/// @custom:oz-renamed-from cstDutchAuctionDurationDivisor
 	uint256 public cstDutchAuctionDuration;
@@ -173,7 +175,7 @@ abstract contract CosmicSignatureGameStorageV2Base is ICosmicSignatureGameStorag
 	/// @dev Comment-202605204 applies.
 	uint256 public bidMessageLengthMaxLimit;
 
-	/// @notice We use this to calculate the CST amount to mint as a bidder reward for placing a bid.
+	/// @notice In V2+, we use this to calculate the CST amount to mint as a bidder reward for placing a bid.
 	/// In V2 vs. V3+, the formulas are different.
 	/// Comment-202411064 applies.
 	/// @dev
@@ -318,7 +320,8 @@ abstract contract CosmicSignatureGameStorageV2Base is ICosmicSignatureGameStorag
 	// #endregion
 	// #region Bidding V2
 
-	/// @notice Comment-202606101 relates.
+	/// @notice In V2.
+	/// Comment-202606101 relates.
 	/// Comment-202411064 applies.
 	uint256 public cstDutchAuctionDurationChangeDivisor;
 

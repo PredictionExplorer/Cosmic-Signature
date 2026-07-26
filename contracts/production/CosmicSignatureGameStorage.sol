@@ -52,7 +52,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// @notice
 	/// [Comment-202605183]
 	/// The address of the account that placed the last CST bid.
-	/// This will remain zero if nobody bids with CST.
+	/// This will remain zero if nobody bids with CST during the current bidding round.
 	/// [/Comment-202605183]
 	address public lastCstBidderAddress;
 
@@ -225,7 +225,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Comment-202501022 applies.
 	uint256 public cstDutchAuctionBeginningTimeStamp;
 
-	/// @notice
+	/// @notice In V1.
 	/// [Comment-202501025]
 	/// We divide `mainPrizeTimeIncrementInMicroSeconds` by this.
 	/// [/Comment-202501025]
@@ -285,7 +285,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [/Comment-202605204]
 	uint256 public bidMessageLengthMaxLimit;
 
-	/// @notice We mint this CST amount as a bidder reward for placing a bid.
+	/// @notice In V1, we mint this CST amount as a bidder reward for placing a bid.
 	/// Comment-202411064 applies.
 	/// @dev Comment-202606053 relates.
 	uint256 public bidCstRewardAmount;

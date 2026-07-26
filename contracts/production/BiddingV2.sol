@@ -150,6 +150,7 @@ abstract contract BiddingV2 is
 		// #endregion
 		// #region
 
+		// todo-0 In V3+, don't do this on the first bid.
 		uint256 bidCstRewardAmount_ = getBidCstRewardAmountAdvanced(int256(0));
 
 		// Comment-202412045 applies.
@@ -446,6 +447,8 @@ abstract contract BiddingV2 is
 
 		// Comment-202501045 applies.
 
+		// todo-0 In V3+, don't do this on the first bid.
+		// todo-0 But on CST bid it's kinda OK. Comment.
 		uint256 bidCstRewardAmount_ = getBidCstRewardAmountAdvanced(int256(0));
 
 		// Comment-202412045 applies.
@@ -653,9 +656,7 @@ abstract contract BiddingV2 is
 				mintAndBurnSpecs_[1].value = int256(bidCstRewardAmount_);
 				token.mintAndBurnMany(mintAndBurnSpecs_);
 			} else {
-				// [Comment-202607168]
 				// There is no Comment-202606074 issue here.
-				// [/Comment-202607168]
 				token.burn(_msgSender(), cstBidPrice_);
 			}
 		}

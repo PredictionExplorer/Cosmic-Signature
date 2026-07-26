@@ -64,9 +64,10 @@ abstract contract MainPrizeCommon is
 		// #enable_smtchecker */
 		{
 			// [Comment-202606175]
-			// Issue. This logic ensures that `mainPrizeTime` becomes in the future, even if it's already in the past.
+			// todo-0 This comment does not need revisiting for V3+.
+			// This logic ensures that `mainPrizeTime` becomes in the future, even if it's already in the past.
 			// There is also a main prize claim timeout on top of that.
-			// As a result, someone can, at least in theory, make a free or, at least, less expensive than the bidding reward CST bid
+			// Issue. As a result, someone can, at least in theory, make a free or, at least, less expensive than the bidding reward CST bid
 			// before the timeout expires. The timeout is long enough to allow that.
 			// They can keep doing it for as long as they want to.
 			// In V2+, this problem is somewhat mitigated by the increase of CST Dutch auction duration on each CST bid,

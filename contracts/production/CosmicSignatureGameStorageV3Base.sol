@@ -42,6 +42,8 @@ abstract contract CosmicSignatureGameStorageV3Base is
 	// todo-ai-0 I have eliminated `bidCstRewardAmountPerMinute`. Using `bidCstRewardAmountMultiplier` instead.
 	// todo-ai-0 Delete this garbage now.
 	// todo-ai-0 Maybe delete Comment-202607161 as well. I have deleted references to it in Solidity code.
+	// todo-ai-0 Rememeber that when a numbered comment gets deleted, all mentionings of it in all files, including tests and docs,
+	// todo-ai-0 must be deleted as well.
 	// todo-ai-0 If necessary, move the comment or some still valid parts of it elsewhere.
 	// todo-ai-0 Generally, avoid writing verbose comments because they are hard to read and maintain.
 	// todo-ai-0 Commnets themselves result a lot of complexity,
@@ -57,14 +59,10 @@ abstract contract CosmicSignatureGameStorageV3Base is
 	// /// When someone places a bid, `DEFAULT_LAST_BIDDER_BID_CST_REWARD_AMOUNT_PERCENTAGE` percent of the reward is minted to
 	// /// the current last bidder (whose bid is being outbid), and the rest is minted to the new bidder.
 	// /// If there is no last bidder (the new bid is the first one in the bidding round), only the new bidder share is minted.
+	// /// todo-ai-0 The new bidder gets nothing now.
 	// /// This replaces the V2 square root formula. `bidCstRewardAmountMultiplier` remains in storage, but V3+ ignores it.
 	// /// [/Comment-202607161]
 	// uint256 public bidCstRewardAmountPerMinute;
-
-	/// @notice In V3+, this percentage of the bid CST reward is minted to the current last bidder
-	/// (if there were bids in the current bidding round); the rest is minted to the new bidder.
-	/// Comment-202411064 applies.
-	uint256 public lastBidderBidCstRewardAmountPercentage;
 
 	// #endregion
 	// #region Main Prize V3
