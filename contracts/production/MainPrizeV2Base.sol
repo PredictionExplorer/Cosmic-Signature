@@ -9,6 +9,7 @@ pragma solidity =0.8.34;
 import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
 import { OwnableUpgradeableWithReservedStorageGaps } from "./OwnableUpgradeableWithReservedStorageGaps.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
+import { CosmicSignatureHelpers } from "./libraries/CosmicSignatureHelpers.sol";
 import { CosmicSignatureGameStorageV2Base } from "./CosmicSignatureGameStorageV2Base.sol";
 import { BiddingCommonV2 } from "./BiddingCommonV2.sol";
 import { MainPrizeCommonV2 } from "./MainPrizeCommonV2.sol";
@@ -116,7 +117,7 @@ abstract contract MainPrizeV2Base is
 			// // Comment-202501307 applies.
 			// cstDutchAuctionBeginningBidPrice = nextRoundFirstCstDutchAuctionBeginningBidPrice;
 
-			_setMainPrizeTimeIncrementInMicroSeconds(mainPrizeTimeIncrementInMicroSeconds + mainPrizeTimeIncrementInMicroSeconds / mainPrizeTimeIncrementIncreaseDivisor);
+			_setMainPrizeTimeIncrementInMicroSeconds(CosmicSignatureHelpers.tryIncreaseValueExponentially(mainPrizeTimeIncrementInMicroSeconds, mainPrizeTimeIncrementIncreaseDivisor));
 
 			// [Comment-202606235]
 			// In V2+ (but not in V1), all code in the `_prepareNextRound` method is wrapped in an `unchecked` block.

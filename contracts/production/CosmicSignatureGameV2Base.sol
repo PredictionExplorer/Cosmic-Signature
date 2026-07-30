@@ -18,7 +18,7 @@ import { SystemManagementV2 } from "./SystemManagementV2.sol";
 import { EthDonationsV2 } from "./EthDonationsV2.sol";
 import { NftDonationsV2 } from "./NftDonationsV2.sol";
 import { BidStatisticsV2 } from "./BidStatisticsV2.sol";
-import { BiddingV2 } from "./BiddingV2.sol";
+import { BiddingV2Base } from "./BiddingV2Base.sol";
 import { SecondaryPrizesV2 } from "./SecondaryPrizesV2.sol";
 import { MainPrizeV2Base } from "./MainPrizeV2Base.sol";
 import { ICosmicSignatureGameV2 } from "./interfaces/ICosmicSignatureGameV2.sol";
@@ -38,7 +38,7 @@ abstract contract CosmicSignatureGameV2Base is
 	EthDonationsV2,
 	NftDonationsV2,
 	BidStatisticsV2,
-	BiddingV2,
+	BiddingV2Base,
 	SecondaryPrizesV2,
 	MainPrizeV2Base,
 	ICosmicSignatureGameV2 {

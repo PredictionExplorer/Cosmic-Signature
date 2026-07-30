@@ -6,7 +6,7 @@ pragma solidity =0.8.34;
 /// @notice Comment-202606014 applies.
 /// @dev Comment-202606017 applies.
 interface ICosmicSignatureGameV2 {
-	// /// @notice See also: `IBiddingV2.receive`.
+	// /// @notice See also: `IBidding1V2.receive`, `IEthDonations.donateEth`.
 	// /// @dev It appears that we don't need this.
 	// fallback() external payable;
 

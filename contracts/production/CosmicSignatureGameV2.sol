@@ -9,6 +9,8 @@ pragma solidity =0.8.34;
 // // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureGameV2Base } from "./CosmicSignatureGameV2Base.sol";
+import { BiddingV2Base } from "./BiddingV2Base.sol";
+import { BiddingV2 } from "./BiddingV2.sol";
 import { MainPrizeV2 } from "./MainPrizeV2.sol";
 import { CosmicSignatureGameStorageV2 } from "./CosmicSignatureGameStorageV2.sol";
 
@@ -18,6 +20,7 @@ import { CosmicSignatureGameStorageV2 } from "./CosmicSignatureGameStorageV2.sol
 /// @custom:oz-upgrades-unsafe-allow missing-initializer
 contract CosmicSignatureGameV2 is
 	CosmicSignatureGameV2Base,
+	BiddingV2,
 	MainPrizeV2,
 	CosmicSignatureGameStorageV2 {
 	// #region Data.
@@ -58,6 +61,17 @@ contract CosmicSignatureGameV2 is
 		// if ( ! isSuccess_ ) {
 		// 	revert InvalidInitialization();
 		// }
+	}
+
+	// #endregion
+	// #region Overrides Required By Solidity
+
+	function getNextCstBidPriceAdvanced(int256 currentTimeOffset_) public view override (BiddingV2Base, BiddingV2) /* virtual */ returns (uint256) {
+		return super.getNextCstBidPriceAdvanced(currentTimeOffset_);
+	}
+
+	function getBidCstRewardAmountAdvanced(int256 currentTimeOffset_) public view override (BiddingV2Base, BiddingV2) /* virtual */ returns (uint256) {
+		return getBidCstRewardAmountAdvanced(currentTimeOffset_);
 	}
 
 	// #endregion

@@ -2,9 +2,8 @@
 pragma solidity =0.8.34;
 
 import { IBidding1V2 } from "./IBidding1V2.sol";
-import { IBidding2V2 } from "./IBidding2V2.sol";
 
 /// @notice Comment-202605251 applies.
-interface IBiddingV2 is IBidding1V2, IBidding2V2 {
-	// Empty.
+interface IBidding1V3 is IBidding1V2 {
+	function getRoundLateBidDuration() external view returns (uint256);
 }

@@ -23,6 +23,16 @@ abstract contract CosmicSignatureGameStorageV3Base is
 	// #endregion
 	// #region Bidding V3
 
+	/// In V3+.
+	/// todo-0 Comments are similar to those near `cstDutchAuctionDuration` and `cstDutchAuctionDurationChangeDivisor`.
+	/// todo-0 Review all occurrences of those, including their events, setters, etc.
+	uint256 public cstBidPriceDeclineMultiplier;
+
+	/// In V3+.
+	/// todo-0 Comments are similar to those near `cstDutchAuctionDuration` and `cstDutchAuctionDurationChangeDivisor`.
+	/// todo-0 Review all occurrences of those, including their events, setters, etc.
+	uint256 public cstBidPriceDeclineMultiplierChangeDivisor;
+
 	/// @notice This controls the duration before `mainPrizeTime` during which a bid price is to be increased.
 	/// The increase/premium accelerates exponentially as the current time approaches `mainPrizeTime`.
 	/// Comment-202501025 applies.

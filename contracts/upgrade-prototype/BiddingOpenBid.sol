@@ -14,6 +14,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { CosmicSignatureConstants } from "../production/libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureErrors } from "../production/libraries/CosmicSignatureErrors.sol";
+import { CosmicSignatureHelpers } from "../production/libraries/CosmicSignatureHelpers.sol";
 import { ICosmicSignatureToken } from "../production/interfaces/ICosmicSignatureToken.sol";
 import { CosmicSignatureGameStorage } from "../production/CosmicSignatureGameStorage.sol";
 import { BiddingCommon } from "../production/BiddingCommon.sol";
@@ -280,7 +281,7 @@ abstract contract BiddingOpenBid is
 			}
 
 			// Comment-202501061 applies.
-			nextEthBidPrice = paidEthPrice_ + paidEthPrice_ / ethBidPriceIncreaseDivisor + 1;
+			nextEthBidPrice = CosmicSignatureHelpers.tryIncreaseValueExponentially(paidEthPrice_, ethBidPriceIncreaseDivisor) + 1;
 
 			// // #enable_asserts assert(bidType_ == BidType.ETH);
 
@@ -304,7 +305,7 @@ abstract contract BiddingOpenBid is
 			}
 
 			// Comment-202501061 applies.
-			nextEthBidPrice = ethBidPrice_ + ethBidPrice_ / ethBidPriceIncreaseDivisor + 1;
+			nextEthBidPrice = CosmicSignatureHelpers.tryIncreaseValueExponentially(ethBidPrice_, ethBidPriceIncreaseDivisor) + 1;
 			
 			// #endregion
 			// #region
@@ -465,14 +466,13 @@ abstract contract BiddingOpenBid is
 	// #region `getEthDutchAuctionDurations`
 
 	function getEthDutchAuctionDurations() public view override returns (uint256, int256) {
-		// #enable_smtchecker /*
-		unchecked
-		// #enable_smtchecker */
-		{
-			uint256 ethDutchAuctionDuration_ = _getEthDutchAuctionDuration();
-			int256 ethDutchAuctionElapsedDuration_ = getDurationElapsedSinceRoundActivation();
-			return (ethDutchAuctionDuration_, ethDutchAuctionElapsedDuration_);
-		}
+		// // #enable_smtchecker /*
+		// unchecked
+		// // #enable_smtchecker */
+
+		uint256 ethDutchAuctionDuration_ = _getEthDutchAuctionDuration();
+		int256 ethDutchAuctionElapsedDuration_ = getDurationElapsedSinceRoundActivation();
+		return (ethDutchAuctionDuration_, ethDutchAuctionElapsedDuration_);
 	}
 
 	// #endregion
@@ -554,12 +554,9 @@ abstract contract BiddingOpenBid is
 		}
 		biddersInfo[roundNum][_msgSender()].totalSpentCstAmount += paidPrice_;
 		cstDutchAuctionBeginningTimeStamp = block.timestamp;
-
-		// Comment-202409163 applies.
 		uint256 newCstDutchAuctionBeginningBidPrice_ =
 			Math.max(paidPrice_ * CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, cstDutchAuctionBeginningBidPriceMinLimit);
 		cstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
-
 		if (lastCstBidderAddress == address(0)) {
 			// Comment-202501045 applies.
 
@@ -613,14 +610,13 @@ abstract contract BiddingOpenBid is
 	// #region `getCstDutchAuctionDurations`
 
 	function getCstDutchAuctionDurations() external view override returns (uint256, int256) {
-		// #enable_smtchecker /*
-		unchecked
-		// #enable_smtchecker */
-		{
-			uint256 cstDutchAuctionDuration_ = _getCstDutchAuctionDuration();
-			int256 cstDutchAuctionElapsedDuration_ = _getCstDutchAuctionElapsedDuration();
-			return (cstDutchAuctionDuration_, cstDutchAuctionElapsedDuration_);
-		}
+		// // #enable_smtchecker /*
+		// unchecked
+		// // #enable_smtchecker */
+
+		uint256 cstDutchAuctionDuration_ = _getCstDutchAuctionDuration();
+		int256 cstDutchAuctionElapsedDuration_ = _getCstDutchAuctionElapsedDuration();
+		return (cstDutchAuctionDuration_, cstDutchAuctionElapsedDuration_);
 	}
 
 	// #endregion

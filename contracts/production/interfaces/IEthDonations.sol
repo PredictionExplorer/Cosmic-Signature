@@ -37,7 +37,7 @@ interface IEthDonations {
 	/// The logic running on the blockchain doesn't enforce a minimum donation.
 	/// The enforcement is done at higher levels in the stack.
 	/// [/Comment-202503113]
-	/// See also: `donateEthWithInfo`, `IBidding.receive`.
+	/// See also: `donateEthWithInfo`, `IBidding.receive`, `IBidding1V2.receive`, `ICosmicSignatureGame.fallback`, `ICosmicSignatureGameV2.fallback`.
 	function donateEth() external payable;
 
 	/// @notice This method is similar to `donateEth`.

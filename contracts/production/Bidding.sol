@@ -14,6 +14,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
+import { CosmicSignatureHelpers } from "./libraries/CosmicSignatureHelpers.sol";
 import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
 import { BiddingCommon } from "./BiddingCommon.sol";
@@ -346,7 +347,7 @@ abstract contract Bidding is
 		// [Comment-202501061]
 		// This formula ensures that the result increases.
 		// [/Comment-202501061]
-		nextEthBidPrice = ethBidPrice_ + ethBidPrice_ / ethBidPriceIncreaseDivisor + 1;
+		nextEthBidPrice = CosmicSignatureHelpers.tryIncreaseValueExponentially(ethBidPrice_, ethBidPriceIncreaseDivisor) + 1;
 
 		token.mint(_msgSender(), bidCstRewardAmount);
 		_bidCommon(/*bidType_,*/ message_);
@@ -478,14 +479,13 @@ abstract contract Bidding is
 	// #region `getEthDutchAuctionDurations`
 
 	function getEthDutchAuctionDurations() public view override returns (uint256, int256) {
-		// #enable_smtchecker /*
-		unchecked
-		// #enable_smtchecker */
-		{
-			uint256 ethDutchAuctionDuration_ = _getEthDutchAuctionDuration();
-			int256 ethDutchAuctionElapsedDuration_ = getDurationElapsedSinceRoundActivation();
-			return (ethDutchAuctionDuration_, ethDutchAuctionElapsedDuration_);
-		}
+		// // #enable_smtchecker /*
+		// unchecked
+		// // #enable_smtchecker */
+
+		uint256 ethDutchAuctionDuration_ = _getEthDutchAuctionDuration();
+		int256 ethDutchAuctionElapsedDuration_ = getDurationElapsedSinceRoundActivation();
+		return (ethDutchAuctionDuration_, ethDutchAuctionElapsedDuration_);
 	}
 
 	// #endregion
@@ -555,6 +555,8 @@ abstract contract Bidding is
 		// [Comment-202501045]
 		// Somewhere around here, one might want to validate that the first bid in a bidding round is ETH.
 		// But we are going to validate that near Comment-202501044.
+		// If no bids have been placed in the current bidding round yet, the behavior is undefined,
+		// but it's guaranteed that we will not skip that validation, unless we revert before that.
 		// [/Comment-202501045]
 
 		// Comment-202503162 relates and/or applies.
@@ -582,14 +584,9 @@ abstract contract Bidding is
 		}
 		biddersInfo[roundNum][_msgSender()].totalSpentCstAmount += paidPrice_;
 		cstDutchAuctionBeginningTimeStamp = block.timestamp;
-
-		// [Comment-202409163]
-		// Increasing the starting CST price for the next CST bid, while enforcing a minimum.
-		// [/Comment-202409163]
 		uint256 newCstDutchAuctionBeginningBidPrice_ =
 			Math.max(paidPrice_ * CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, cstDutchAuctionBeginningBidPriceMinLimit);
 		cstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
-
 		if (lastCstBidderAddress == address(0)) {
 			// Comment-202501045 applies.
 
@@ -647,14 +644,13 @@ abstract contract Bidding is
 	// #region `getCstDutchAuctionDurations`
 
 	function getCstDutchAuctionDurations() external view override returns (uint256, int256) {
-		// #enable_smtchecker /*
-		unchecked
-		// #enable_smtchecker */
-		{
-			uint256 cstDutchAuctionDuration_ = _getCstDutchAuctionDuration();
-			int256 cstDutchAuctionElapsedDuration_ = _getCstDutchAuctionElapsedDuration();
-			return (cstDutchAuctionDuration_, cstDutchAuctionElapsedDuration_);
-		}
+		// // #enable_smtchecker /*
+		// unchecked
+		// // #enable_smtchecker */
+
+		uint256 cstDutchAuctionDuration_ = _getCstDutchAuctionDuration();
+		int256 cstDutchAuctionElapsedDuration_ = _getCstDutchAuctionElapsedDuration();
+		return (cstDutchAuctionDuration_, cstDutchAuctionElapsedDuration_);
 	}
 
 	// #endregion

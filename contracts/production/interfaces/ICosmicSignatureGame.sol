@@ -19,7 +19,7 @@ pragma solidity =0.8.34;
 /// But I have no plans to implement the self-destruction feature in the production code.
 /// [/Comment-202606017]
 interface ICosmicSignatureGame {
-	// /// @notice See also: `IBidding.receive`.
+	// /// @notice See also: `IBidding.receive`, `IEthDonations.donateEth`.
 	// /// @dev It appears that we don't need this.
 	// fallback() external payable;
 

@@ -206,7 +206,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// We increase this based on `ethBidPriceIncreaseDivisor`.
 	/// [/Comment-202411065]
 	/// [Comment-202501022]
-	/// This value is valid only after the 1st ETH bid has been placed in the current bidding round.
+	/// This value is valid only after the first ETH bid has been placed in the current bidding round.
 	/// [/Comment-202501022]
 	uint256 public nextEthBidPrice;
 
@@ -238,7 +238,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [Comment-202411066]
 	/// CST Dutch auction beginning bid price.
 	/// We calculate this based on `CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER`.
-	/// We don't let this fall below `cstDutchAuctionBeginningBidPriceMinLimit`.
+	/// We don't let this fall below `cstDutchAuctionBeginningBidPriceMinLimit`,
+	/// which eliminates some marginal cases, such as a possibility for a bidding round to last forever.
 	/// [/Comment-202411066]
 	/// [Comment-202605197]
 	/// This variable becomes valid when someone places a CST bid in the current bidding round.
@@ -285,7 +286,10 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [/Comment-202605204]
 	uint256 public bidMessageLengthMaxLimit;
 
-	/// @notice In V1, we mint this CST amount as a bidder reward for placing a bid.
+	/// @notice In V1.
+	/// [Comment-202607273]
+	/// We mint this CST amount as a bidder reward for placing a bid.
+	/// [/Comment-202607273]
 	/// Comment-202411064 applies.
 	/// @dev Comment-202606053 relates.
 	uint256 public bidCstRewardAmount;

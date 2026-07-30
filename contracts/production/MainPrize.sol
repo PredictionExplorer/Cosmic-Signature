@@ -11,6 +11,7 @@ import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upg
 import { OwnableUpgradeableWithReservedStorageGaps } from "./OwnableUpgradeableWithReservedStorageGaps.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { CosmicSignatureEvents } from "./libraries/CosmicSignatureEvents.sol";
+import { CosmicSignatureHelpers } from "./libraries/CosmicSignatureHelpers.sol";
 import { RandomNumberHelpers } from "./libraries/RandomNumberHelpers.sol";
 import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 import { IPrizesWallet } from "./interfaces/IPrizesWallet.sol";
@@ -45,6 +46,7 @@ abstract contract MainPrize is
 	///    `_msgSender`.
 	///    `CosmicSignatureErrors`.
 	///    `CosmicSignatureEvents`.
+	///    `CosmicSignatureHelpers.tryIncreaseValueExponentially`.
 	///    `RandomNumberHelpers.RandomNumberSeedWrapper`.
 	///    `RandomNumberHelpers` methods.
 	///    `ICosmicSignatureToken.MintSpec`.
@@ -719,7 +721,7 @@ abstract contract MainPrize is
 		// // [/Comment-202501307]
 		// cstDutchAuctionBeginningBidPrice = nextRoundFirstCstDutchAuctionBeginningBidPrice;
 
-		_setMainPrizeTimeIncrementInMicroSeconds(mainPrizeTimeIncrementInMicroSeconds + mainPrizeTimeIncrementInMicroSeconds / mainPrizeTimeIncrementIncreaseDivisor);
+		_setMainPrizeTimeIncrementInMicroSeconds(CosmicSignatureHelpers.tryIncreaseValueExponentially(mainPrizeTimeIncrementInMicroSeconds, mainPrizeTimeIncrementIncreaseDivisor));
 
 		// Comment-202606235 applies.
 		_setRoundActivationTime(block.timestamp + delayDurationBeforeRoundActivation);
