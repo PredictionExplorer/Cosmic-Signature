@@ -202,6 +202,9 @@ abstract contract BiddingV3 is
 		// This cannot be zero, at least if someone has already placed a bid in the current bidding round.
 		// Otherwise, according to Comment-202501045, the behavior is undefined.
 		uint256 bidCstRewardAmount_ = getBidCstRewardAmountAdvanced(int256(0));
+		// todo-0 I have added this assert. It's guaranteed to succeed even if somone tries to place a CST bid before an ETH one.
+		// todo-0 Cross-ref with `_bidWithEth` and the bid CST reward minting methods.
+		// #enable_asserts assert(bidCstRewardAmount_ > 0);
 
 		// Comment-202412045 applies.
 		if ( ! (bidCstRewardAmount_ >= bidCstRewardAmountMinLimit_) ) {
@@ -506,6 +509,7 @@ abstract contract BiddingV3 is
 		// If this wasn't guaranteed it would make sense to check this before minting.
 		// [/Comment-202607263]
 		// todo-0 Is this really correct? Cross-ref with any other logic?
+		// todo-0 Cross-ref with where we force no more than 1 bid within each second and not paying bid CST reward on the first bid.
 		// #enable_asserts assert(bidCstRewardAmount_ > 0);
 
 		// todo-0 Is this really correct? Cross-ref with any other logic?
@@ -531,7 +535,7 @@ abstract contract BiddingV3 is
 		// #enable_smtchecker */
 		{
 			// Comment-202607263 applies.
-			// todo-0 Is this really correct? Cross-ref with any other logic?
+			// todo-0 Same todos as in `_mintBidCstRewardAmount`.
 			// todo-0 Even if they try running this on the very first bid in the current bidding round?
 			// todo-0 Reference Comment-202607164 ? If not, it does not need to e numbered.
 			// #enable_asserts assert(bidCstRewardAmount_ > 0);

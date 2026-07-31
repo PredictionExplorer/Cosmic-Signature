@@ -116,7 +116,7 @@ library CosmicSignatureConstants {
 	/// @dev
 	/// [Comment-202607301]
 	/// This is lesser than `DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR` --
-	/// to discourage too many bids of the same type in a row.
+	/// to discourage a lot of bids of the same type in a row.
 	/// [/Comment-202607301]
 	uint256 internal constant DEFAULT_CST_BID_PRICE_DECLINE_MULTIPLIER_CHANGE_DIVISOR = 100;
 

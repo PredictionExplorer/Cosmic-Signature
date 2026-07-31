@@ -287,6 +287,7 @@ task("upgrade-cosmic-signature-game", "Upgrades the CosmicSignatureGame contract
 	}
 	console.info("%s", `Done. Report saved to "${upgradeConfigObject.reportFilePath}".${nodeOsModule.EOL}`);
 
+	// todo-0 Review and execute this code.
 	// // [Comment-202607153]
 	// // Optionally, deploy a new `PrizesWallet` and point the game at it.
 	// // Uncomment this if the new game contract version is to be paired with a fresh `PrizesWallet`.
@@ -331,6 +332,7 @@ task("register-upgraded-cosmic-signature-game", "Verifies and registers a newly 
 		// constructorArguments: [],
 	});
 
+	// todo-0 Review and execute this code.
 	// // [Comment-202607156]
 	// // Optionally, register the new `PrizesWallet` deployed near Comment-202607153.
 	// // Before uncommenting and running this, edit the hardcoded address (copy it from the

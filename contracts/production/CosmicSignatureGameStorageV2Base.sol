@@ -153,7 +153,8 @@ abstract contract CosmicSignatureGameStorageV2Base is ICosmicSignatureGameStorag
 	/// Issue. This variable is reused for further versions of the contract,
 	/// where the `custom:oz-renamed-from` decoration is no longer correct.
 	/// But OpenZeppelin does not complain.
-	/// todo-3 ??? Maybe remove these decorations. But make sure doing so does not break tests.
+	/// todo-0 ??? Maybe remove these decorations. But make sure doing so does not break tests.
+	/// todo-0 Maybe make the above todo todo-3.
 	/// [/Comment-202607169]
 	/// @custom:oz-renamed-from cstDutchAuctionDurationDivisor
 	uint256 public cstDutchAuctionDuration;

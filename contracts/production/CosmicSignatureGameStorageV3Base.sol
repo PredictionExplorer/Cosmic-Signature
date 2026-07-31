@@ -26,11 +26,14 @@ abstract contract CosmicSignatureGameStorageV3Base is
 	/// In V3+.
 	/// todo-0 Comments are similar to those near `cstDutchAuctionDuration` and `cstDutchAuctionDurationChangeDivisor`.
 	/// todo-0 Review all occurrences of those, including their events, setters, etc.
+	/// todo-0 Remember to reference Comment-202411064 and sometimes Comment-202411172.
+	/// todo-0 There is a comment near `cstDutchAuctionDuration` about possibly not making it configurable. It applies here too.
 	uint256 public cstBidPriceDeclineMultiplier;
 
 	/// In V3+.
 	/// todo-0 Comments are similar to those near `cstDutchAuctionDuration` and `cstDutchAuctionDurationChangeDivisor`.
 	/// todo-0 Review all occurrences of those, including their events, setters, etc.
+	/// todo-0 Remember to reference Comment-202411064 and sometimes Comment-202411172.
 	uint256 public cstBidPriceDeclineMultiplierChangeDivisor;
 
 	/// @notice This controls the duration before `mainPrizeTime` during which a bid price is to be increased.
