@@ -9,6 +9,8 @@ import { ISystemEventsV2 } from "./ISystemEventsV2.sol";
 interface ISystemEventsV3 is ISystemEventsV2 {
 	/// @notice Emitted when `cstBidPriceDeclineMultiplier` is changed.
 	/// todo-0 Comment-202606099 applies. Where else it's referenced?
+	/// todo-0 Actually that comment is talking about `cstDutchAuctionDuration`, so it relates here.
+	/// todo-0 So write another numbered comment and cross-ref them.
 	/// @param newValue The new value.
 	event CstBidPriceDeclineMultiplierChanged(uint256 newValue);
 

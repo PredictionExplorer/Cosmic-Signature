@@ -71,7 +71,7 @@ contract CosmicSignatureGameV2 is
 	}
 
 	function getBidCstRewardAmountAdvanced(int256 currentTimeOffset_) public view override (BiddingV2Base, BiddingV2) /* virtual */ returns (uint256) {
-		return getBidCstRewardAmountAdvanced(currentTimeOffset_);
+		return super.getBidCstRewardAmountAdvanced(currentTimeOffset_);
 	}
 
 	// #endregion
