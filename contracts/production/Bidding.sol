@@ -556,7 +556,7 @@ abstract contract Bidding is
 		// Somewhere around here, one might want to validate that the first bid in a bidding round is ETH.
 		// But we are going to validate that near Comment-202501044.
 		// If no bids have been placed in the current bidding round yet, the behavior is undefined,
-		// but it's guaranteed that we will not skip that validation, unless we revert before that.
+		// but it's guaranteed that we will not skip that validation, unless we revert before it.
 		// [/Comment-202501045]
 
 		// Comment-202503162 relates and/or applies.

@@ -6,6 +6,7 @@ pragma solidity =0.8.34;
 // #endregion
 // #region
 
+// // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
@@ -26,8 +27,8 @@ abstract contract BiddingV3 is
 	IBiddingV3 {
 	// #region `_bidWithEth`
 
-	/// @dev Comment-202412045 applies to `_onlyNoBidPlacedWithinCurrentSecond`.
-	function _bidWithEth(int256 randomWalkNftId_, string memory message_, uint256 bidCstRewardAmountMinLimit_) internal override /* virtual */ /*nonReentrant*/ /*_onlyRoundIsActive*/ _onlyNoBidPlacedWithinCurrentSecond() {
+	/// @dev Comment-202412045 applies to `_onlyIfNoBidPlacedWithinCurrentSecond`.
+	function _bidWithEth(int256 randomWalkNftId_, string memory message_, uint256 bidCstRewardAmountMinLimit_) internal override /* virtual */ /*nonReentrant*/ /*_onlyRoundIsActive*/ _onlyIfNoBidPlacedWithinCurrentSecond() {
 		// #region //
 
 		// BidType bidType_;
@@ -192,18 +193,18 @@ abstract contract BiddingV3 is
 	// #endregion
 	// #region `_bidWithCst`
 
-	/// @dev Comment-202412045 applies to `_onlyNoBidPlacedWithinCurrentSecond`.
-	function _bidWithCst(uint256 priceMaxLimit_, string memory message_, uint256 bidCstRewardAmountMinLimit_) internal override /* virtual */ /*nonReentrant*/ /*_onlyRoundIsActive*/ _onlyNoBidPlacedWithinCurrentSecond() {
+	/// @dev Comment-202412045 applies to `_onlyIfNoBidPlacedWithinCurrentSecond`.
+	function _bidWithCst(uint256 priceMaxLimit_, string memory message_, uint256 bidCstRewardAmountMinLimit_) internal override /* virtual */ /*nonReentrant*/ /*_onlyRoundIsActive*/ _onlyIfNoBidPlacedWithinCurrentSecond() {
 		// Comment-202412251 applies.
 		// #enable_asserts assert(_msgSender() != marketingWallet);
 
 		// Comment-202501045 applies.
 
-		// This cannot be zero, at least if someone has already placed a bid in the current bidding round.
-		// Otherwise, according to Comment-202501045, the behavior is undefined.
+		// This cannot be zero, because we called `_onlyIfNoBidPlacedWithinCurrentSecond`.
+		// But there is a special case when somone is trying to place a CST bid before an ETH one.
+		// According to Comment-202501045, in that case the behavior is allowed to be undefined.
+		// But even then, this cannot be zero.
 		uint256 bidCstRewardAmount_ = getBidCstRewardAmountAdvanced(int256(0));
-		// todo-0 I have added this assert. It's guaranteed to succeed even if somone tries to place a CST bid before an ETH one.
-		// todo-0 Cross-ref with `_bidWithEth` and the bid CST reward minting methods.
 		// #enable_asserts assert(bidCstRewardAmount_ > 0);
 
 		// Comment-202412045 applies.
@@ -302,18 +303,18 @@ abstract contract BiddingV3 is
 	}
 
 	// #endregion
-	// #region `_onlyNoBidPlacedWithinCurrentSecond`
+	// #region `_onlyIfNoBidPlacedWithinCurrentSecond`
 
-	modifier _onlyNoBidPlacedWithinCurrentSecond() {
-		_checkNoBidPlacedWithinCurrentSecond();
+	modifier _onlyIfNoBidPlacedWithinCurrentSecond() {
+		_checkIfNoBidPlacedWithinCurrentSecond();
 		_;
 	}
 
 	// #endregion
-	// #region `_checkNoBidPlacedWithinCurrentSecond`
+	// #region `_checkIfNoBidPlacedWithinCurrentSecond`
 
 	/// @notice This restriction makes life of bots a little more difficult, while manual bidders rarely run into it.
-	function _checkNoBidPlacedWithinCurrentSecond() private view {
+	function _checkIfNoBidPlacedWithinCurrentSecond() private view {
 		// It's OK if `lastBidderAddress` is zero.
 		uint256 lastBidTimeStampCopy_ = biddersInfo[roundNum][lastBidderAddress].lastBidTimeStamp;
 

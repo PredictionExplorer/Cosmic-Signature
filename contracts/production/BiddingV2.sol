@@ -6,6 +6,7 @@ pragma solidity =0.8.34;
 // #endregion
 // #region
 
+// // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
@@ -317,6 +318,7 @@ abstract contract BiddingV2 is
 	/// todo-ai-0 appears to be incorrect express your concerns in a comment.
 	/// @notice Mints the given bid CST reward amount.
 	/// @param bidCstRewardAmount_ The CST amount to mint. May be zero.
+	// todo-0 Remove this garbage.
 	// function _mintBidCstRewardAmountIfNeeded(uint256 bidCstRewardAmount_) internal virtual {
 	function _mintBidCstRewardAmountIfNeeded(uint256 bidCstRewardAmount_) private {
 		// // #enable_smtchecker /*
@@ -334,6 +336,7 @@ abstract contract BiddingV2 is
 	/// @notice Burns the given CST bid price from the caller and mints the given bid CST reward amount.
 	/// @param cstBidPrice_ The CST amount to burn. May be zero, but unlikely is.
 	/// @param bidCstRewardAmount_ The CST amount to mint. May be zero.
+	// todo-0 Remove this garbage.
 	// function _burnCstBidPriceAndMintBidCstRewardAmountIfNeeded(uint256 cstBidPrice_, uint256 bidCstRewardAmount_) internal virtual {
 	function _burnCstBidPriceAndMintBidCstRewardAmountIfNeeded(uint256 cstBidPrice_, uint256 bidCstRewardAmount_) private {
 		// #enable_smtchecker /*
