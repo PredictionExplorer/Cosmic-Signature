@@ -48,11 +48,16 @@ interface ISystemManagementV2 {
 
 	/// @notice Sets `cstDutchAuctionDuration`.
 	/// Only the contract owner is permitted to call this method.
+	/// [Comment-202608014]
+	/// This is implemented only in V2. This unconditionally reverts in V3+.
+	/// Issue. Ideally, this should not even exist in V3+.
+	/// [/Comment-202608014]
 	/// @param newValue_ The new value.
 	function setCstDutchAuctionDuration(uint256 newValue_) external;
 
 	/// @notice Sets `cstDutchAuctionDurationChangeDivisor`.
 	/// Only the contract owner is permitted to call this method.
+	/// Comment-202608014 applies.
 	/// @param newValue_ The new value.
 	function setCstDutchAuctionDurationChangeDivisor(uint256 newValue_) external;
 

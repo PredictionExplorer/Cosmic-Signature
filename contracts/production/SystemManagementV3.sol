@@ -12,11 +12,11 @@ abstract contract SystemManagementV3 is
 	CosmicSignatureGameStorageV3Base,
 	ISystemEventsV3,
 	ISystemManagementV3 {
-	function setCstDutchAuctionDuration(uint256 /* newValue_ */) /* external */ public pure override (ISystemManagementV2, SystemManagementV2) virtual {
+	function setCstDutchAuctionDuration(uint256 /* newValue_ */) /* external */ public override (ISystemManagementV2, SystemManagementV2) virtual {
 		revert CosmicSignatureErrors.NotImplemented();
 	}
 
-	function setCstDutchAuctionDurationChangeDivisor(uint256 /* newValue_ */) /* external */ public pure override (ISystemManagementV2, SystemManagementV2) virtual {
+	function setCstDutchAuctionDurationChangeDivisor(uint256 /* newValue_ */) /* external */ public override (ISystemManagementV2, SystemManagementV2) virtual {
 		revert CosmicSignatureErrors.NotImplemented();
 	}
 

@@ -71,11 +71,11 @@ contract CosmicSignatureGameV3 is
 	// #endregion
 	// #region Overrides Required By Solidity
 
-	function setCstDutchAuctionDuration(uint256 newValue_) /* external */ public pure override (SystemManagementV2, SystemManagementV3) /* virtual */ {
+	function setCstDutchAuctionDuration(uint256 newValue_) /* external */ public override (SystemManagementV2, SystemManagementV3) /* virtual */ {
 		super.setCstDutchAuctionDuration(newValue_);
 	}
 
-	function setCstDutchAuctionDurationChangeDivisor(uint256 newValue_) /* external */ public pure override (SystemManagementV2, SystemManagementV3) /* virtual */ {
+	function setCstDutchAuctionDurationChangeDivisor(uint256 newValue_) /* external */ public override (SystemManagementV2, SystemManagementV3) /* virtual */ {
 		super.setCstDutchAuctionDurationChangeDivisor(newValue_);
 	}
 
