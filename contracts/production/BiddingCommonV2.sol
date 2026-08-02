@@ -15,7 +15,7 @@ abstract contract BiddingCommonV2 is
 		_;
 	}
 
-	function _checkNonFirstRound() internal view {
+	function _checkNonFirstRound() private view {
 		// [Comment-202605294]
 		// In V2+, this is guaranteed, so it's unnecessary to evaluate this.
 		// [/Comment-202605294]
@@ -27,7 +27,7 @@ abstract contract BiddingCommonV2 is
 		_;
 	}
 
-	function _checkRoundIsInactive() internal view {
+	function _checkRoundIsInactive() private view {
 		uint256 roundActivationTimeCopy_ = roundActivationTime;
 		if ( ! (block.timestamp < roundActivationTimeCopy_) ) {
 			revert CosmicSignatureErrors.RoundIsActive("The current bidding round is already active.", roundActivationTimeCopy_, block.timestamp);
@@ -53,7 +53,7 @@ abstract contract BiddingCommonV2 is
 	}
 
 	/// @notice Comment-202503108 applies.
-	function _checkBeforeBidPlacedInRound() internal view {
+	function _checkBeforeBidPlacedInRound() private view {
 		if ( ! (lastBidderAddress == address(0)) ) {
 			revert CosmicSignatureErrors.BidHasBeenPlacedInCurrentRound("A bid has already been placed in the current bidding round.");
 		}

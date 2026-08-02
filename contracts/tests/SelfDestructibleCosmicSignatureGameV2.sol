@@ -10,7 +10,7 @@ import { CosmicSignatureGameV2 } from "../production/CosmicSignatureGameV2.sol";
 contract SelfDestructibleCosmicSignatureGameV2 is CosmicSignatureGameV2 {
 	/// @notice Comment-202508065 applies.
 	/// // @custom:oz-upgrades-unsafe-allow selfdestruct
-	function finalizeTesting() external onlyOwner {
+	function finalizeTesting() external onlyOwner() {
 		// Comment-202606032 relates.
 
 		// Comment-202509241 applies.

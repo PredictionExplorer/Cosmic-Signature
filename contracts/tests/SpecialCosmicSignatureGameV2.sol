@@ -27,6 +27,7 @@ contract SpecialCosmicSignatureGameV2 is CosmicSignatureGameV2 {
 		}
 	}
 
+	// /// @dev Comment-202607078 applies.
 	// function depositToStakingWalletCosmicSignatureNft() external payable {
 	// 	stakingWalletCosmicSignatureNft.deposit{value: msg.value}(roundNum);
 	// }

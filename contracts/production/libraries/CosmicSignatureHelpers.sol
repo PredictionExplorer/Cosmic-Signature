@@ -7,11 +7,11 @@ pragma solidity =0.8.34;
 // #region
 
 library CosmicSignatureHelpers {
-	// #region `max`
+	// #region // `max`
 
-	function max(int256 value1_, int256 value2_) internal pure returns (int256) {
-		return (value1_ >= value2_) ? value1_ : value2_;
-	}
+	// function max(int256 value1_, int256 value2_) internal pure returns (int256) {
+	// 	return (value1_ >= value2_) ? value1_ : value2_;
+	// }
 
 	// #endregion
 	// #region `tryIncreaseValueExponentially`

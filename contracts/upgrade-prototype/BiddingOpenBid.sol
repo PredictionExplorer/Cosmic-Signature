@@ -64,7 +64,7 @@ abstract contract BiddingOpenBid is
 	// #region `setTimesEthBidPrice`
 
 	/// @dev ToDo-202412164-3 applies.
-	function setTimesEthBidPrice(uint256 newValue_) external onlyOwner {
+	function setTimesEthBidPrice(uint256 newValue_) external onlyOwner() {
 		timesEthBidPrice = newValue_;
 		emit TimesEthBidPriceChanged(newValue_);
 	}

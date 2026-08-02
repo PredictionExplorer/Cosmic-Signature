@@ -30,7 +30,7 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 
 	/// @dev
 	/// [Comment-202607078]
-	/// Issue. I dislike this hack. Instead, we should mint CS NFTs naturally, by completihg bidding rounds.
+	/// Issue. I dislike this hack. Instead, we should do this naturally, by completihg bidding rounds.
 	/// [/Comment-202607078]
 	function mintCosmicSignatureNft(address nftOwnerAddress_) external {
 		_prepareEntropyOnce();
@@ -47,6 +47,7 @@ contract SpecialCosmicSignatureGame is CosmicSignatureGame {
 		}
 	}
 
+	// /// @dev Comment-202607078 applies.
 	// function depositToStakingWalletCosmicSignatureNft() external payable {
 	// 	stakingWalletCosmicSignatureNft.deposit{value: msg.value}(roundNum);
 	// }

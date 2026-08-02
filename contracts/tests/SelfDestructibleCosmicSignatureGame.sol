@@ -21,7 +21,7 @@ contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
 
 	/// @notice Comment-202508065 applies.
 	/// // @custom:oz-upgrades-unsafe-allow selfdestruct
-	function finalizeTesting() external onlyOwner {
+	function finalizeTesting() external onlyOwner() {
 		// [Comment-202606032]
 		// I haven't copied most of this commented code to `SelfDestructibleCosmicSignatureGameV2`.
 		// [/Comment-202606032]
