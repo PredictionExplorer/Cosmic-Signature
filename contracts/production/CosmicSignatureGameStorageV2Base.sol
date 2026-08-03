@@ -328,6 +328,9 @@ abstract contract CosmicSignatureGameStorageV2Base is ICosmicSignatureGameStorag
 	// #endregion
 	// #region Bidding V2
 
+	/// todo-0 V3+: `cstDutchAuctionDuration` and `cstDutchAuctionDurationChangeDivisor` not used.
+	/// todo-0 Replaced with `cstBidPriceDeclineMultiplier` and `cstBidPriceDeclineMultiplierChangeDivisor`.
+	/// todo-0 Comment and cross-ref.
 	/// @notice Comment-202607293 applies.
 	/// Comment-202606101 relates.
 	/// Comment-202411064 applies.
