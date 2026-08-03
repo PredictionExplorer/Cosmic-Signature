@@ -56,7 +56,11 @@ abstract contract MainPrize is
 	///    `lastCstBidderAddress`.
 	///    `bidderAddresses`.
 	///    `enduranceChampionAddress`.
+	///    // `enduranceChampionStartTimeStamp`
+	///    // `enduranceChampionDuration`
+	///    `prevEnduranceChampionDuration`.
 	///    `chronoWarriorAddress`.
+	///    `chronoWarriorDuration`.
 	///    `roundNum`.
 	///    `delayDurationBeforeRoundActivation`.
 	///    `roundActivationTime`.
@@ -712,6 +716,8 @@ abstract contract MainPrize is
 
 		prevEnduranceChampionDuration = 0;
 		chronoWarriorAddress = address(0);
+		// todo-0 Given that V3+ enforces no multiple bids within a second, is it still important to reset this to -1? Would resetting to zero be adequate?
+		// todo-0 At least comment everywhere we assign -1 and where we enforce that.
 		chronoWarriorDuration = uint256(int256(-1));
 		++ roundNum;
 

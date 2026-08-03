@@ -121,7 +121,7 @@ interface IBidding1V2 {
 
 	/// @return Comment-202605273 applies.
 	/// Comment-202501022 applies to the returned elapsed duration.
-	function getCstDutchAuctionDurations() external view returns (uint256, int256);
+	function getCstDutchAuctionDurations() external view returns (uint256, uint256);
 
 	/// @notice Calls `getBidCstRewardAmountAdvanced` with `currentTimeOffset_ = 0`.
 	/// Comments near `getBidCstRewardAmountAdvanced` apply.

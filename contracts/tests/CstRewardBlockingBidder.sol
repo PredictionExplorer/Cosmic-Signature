@@ -39,11 +39,11 @@ contract CstRewardBlockingBidder {
 		hostilityModeCode = newValue_;
 	}
 
-	function doBidWithEth(int256 randomWalkNftId_, string memory message_, uint256 bidCstRewardAmountMinLimit_) external payable {
+	function doBidWithEth(int256 randomWalkNftId_, string calldata message_, uint256 bidCstRewardAmountMinLimit_) external payable {
 		game.bidWithEth{value: msg.value}(randomWalkNftId_, message_, bidCstRewardAmountMinLimit_);
 	}
 
-	function doBidWithCst(uint256 priceMaxLimit_, string memory message_, uint256 bidCstRewardAmountMinLimit_) external {
+	function doBidWithCst(uint256 priceMaxLimit_, string calldata message_, uint256 bidCstRewardAmountMinLimit_) external {
 		game.bidWithCst(priceMaxLimit_, message_, bidCstRewardAmountMinLimit_);
 	}
 

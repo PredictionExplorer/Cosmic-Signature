@@ -21,7 +21,7 @@ abstract contract SystemManagementV2 is
 	BiddingCommonV2,
 	MainPrizeCommonV2,
 	ISystemManagementV2 {
-	function setDelayDurationBeforeRoundActivation(uint256 newValue_) external override onlyOwner /*_onlyRoundIsInactive*/ {
+	function setDelayDurationBeforeRoundActivation(uint256 newValue_) external override onlyOwner /*_onlyRoundIsInactive*/ /*_onlyBeforeBidPlacedInRound*/ {
 		delayDurationBeforeRoundActivation = newValue_;
 		emit DelayDurationBeforeRoundActivationChanged(newValue_);
 	}

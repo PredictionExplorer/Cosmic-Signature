@@ -38,7 +38,9 @@ abstract contract BiddingV3 is
 
 		uint256 bidCstRewardAmount_ = 0;
 		if (lastBidderAddress != address(0)) {
-			// This cannot be zero.
+			// [Comment-202608022]
+			// This cannot be zero, because we called `_onlyIfNoBidPlacedWithinCurrentSecond`.
+			// [/Comment-202608022]
 			bidCstRewardAmount_ = getBidCstRewardAmountAdvanced(int256(0));
 			// #enable_asserts assert(bidCstRewardAmount_ > 0);
 
@@ -128,7 +130,10 @@ abstract contract BiddingV3 is
 		// #region
 
 		biddersInfo[roundNum][_msgSender()].totalSpentEthAmount += paidEthPrice_;
+
+		// Comment-202608022 relates and/or applies.
 		// #enable_asserts assert((bidCstRewardAmount_ == 0) == (lastBidderAddress == address(0)));
+
 		if (bidCstRewardAmount_ == 0) {
 			ethDutchAuctionBeginningBidPrice = ethBidPrice_ * CosmicSignatureConstants.ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
 		} else {
@@ -200,8 +205,8 @@ abstract contract BiddingV3 is
 
 		// Comment-202501045 applies.
 
-		// This cannot be zero, because we called `_onlyIfNoBidPlacedWithinCurrentSecond`.
-		// But there is a special case when somone is trying to place a CST bid before an ETH one.
+		// Comment-202608022 applies.
+		// But there is a special case when somone is trying to place a CST bid before the first ETH one.
 		// According to Comment-202501045, in that case the behavior is allowed to be undefined.
 		// But even then, this cannot be zero.
 		uint256 bidCstRewardAmount_ = getBidCstRewardAmountAdvanced(int256(0));
@@ -285,18 +290,15 @@ abstract contract BiddingV3 is
 		unchecked
 		// #enable_smtchecker */
 		{
+			int256 cstDutchAuctionElapsedDuration_ = int256(_getCstDutchAuctionElapsedDuration()) + currentTimeOffset_;
+
 			// Comment-202501307 relates and/or applies.
 			uint256 cstDutchAuctionBeginningBidPrice_ =
 				(lastCstBidderAddress == address(0)) ? nextRoundFirstCstDutchAuctionBeginningBidPrice : cstDutchAuctionBeginningBidPrice;
 
-			int256 nextCstBidPrice_ = int256(cstDutchAuctionBeginningBidPrice_);
-			// #enable_asserts assert(nextCstBidPrice_ > int256(0));
-			int256 cstDutchAuctionElapsedDuration_ = _getCstDutchAuctionElapsedDuration() + currentTimeOffset_;
-			if (cstDutchAuctionElapsedDuration_ > int256(0)) {
-				nextCstBidPrice_ -= int256(uint256(cstDutchAuctionElapsedDuration_) * cstBidPriceDeclineMultiplier);
-				if (nextCstBidPrice_ <= int256(0)) {
-					return 0;
-				}
+			int256 nextCstBidPrice_ = int256(cstDutchAuctionBeginningBidPrice_) - cstDutchAuctionElapsedDuration_ * int256(cstBidPriceDeclineMultiplier);
+			if (nextCstBidPrice_ <= int256(0)) {
+				return 0;
 			}
 			return _addRoundLateBidPricePremiumAmountIfNeeded(uint256(nextCstBidPrice_), currentTimeOffset_);
 		}
@@ -375,13 +377,13 @@ abstract contract BiddingV3 is
 	// #endregion
 	// #region `getCstDutchAuctionDurations`
 
-	function getCstDutchAuctionDurations() external view override /* virtual */ returns (uint256, int256) {
+	function getCstDutchAuctionDurations() external view override /* virtual */ returns (uint256, uint256) {
 		// // #enable_smtchecker /*
 		// unchecked
 		// // #enable_smtchecker */
 
 		uint256 cstDutchAuctionDuration_ = _getCstDutchAuctionDuration();
-		int256 cstDutchAuctionElapsedDuration_ = _getCstDutchAuctionElapsedDuration();
+		uint256 cstDutchAuctionElapsedDuration_ = _getCstDutchAuctionElapsedDuration();
 		return (cstDutchAuctionDuration_, cstDutchAuctionElapsedDuration_);
 	}
 
@@ -489,6 +491,7 @@ abstract contract BiddingV3 is
 			if (elapsedDuration_ > int256(0)) {
 				// Comment-202607167 applies.
 				// Comment-202605295 applies.
+				// todo-0 Test what this equals.
 				bidCstRewardAmount_ = uint256(elapsedDuration_) * bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds;
 			}
 			return bidCstRewardAmount_;

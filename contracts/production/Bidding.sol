@@ -643,13 +643,13 @@ abstract contract Bidding is
 	// #endregion
 	// #region `getCstDutchAuctionDurations`
 
-	function getCstDutchAuctionDurations() external view override returns (uint256, int256) {
+	function getCstDutchAuctionDurations() external view override returns (uint256, uint256) {
 		// // #enable_smtchecker /*
 		// unchecked
 		// // #enable_smtchecker */
 
 		uint256 cstDutchAuctionDuration_ = _getCstDutchAuctionDuration();
-		int256 cstDutchAuctionElapsedDuration_ = _getCstDutchAuctionElapsedDuration();
+		uint256 cstDutchAuctionElapsedDuration_ = _getCstDutchAuctionElapsedDuration();
 		return (cstDutchAuctionDuration_, cstDutchAuctionElapsedDuration_);
 	}
 
@@ -669,12 +669,13 @@ abstract contract Bidding is
 	// #endregion
 	// #region `_getCstDutchAuctionElapsedDuration`
 
-	function _getCstDutchAuctionElapsedDuration() private view returns (int256) {
+	function _getCstDutchAuctionElapsedDuration() private view returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
 		{
-			int256 cstDutchAuctionElapsedDuration_ = int256(block.timestamp) - int256(cstDutchAuctionBeginningTimeStamp);
+			uint256 cstDutchAuctionElapsedDuration_ = block.timestamp - cstDutchAuctionBeginningTimeStamp;
+			// #enable_asserts assert(int256(cstDutchAuctionElapsedDuration_) >= int256(0));
 			return cstDutchAuctionElapsedDuration_;
 		}
 	}
@@ -688,8 +689,8 @@ abstract contract Bidding is
 		// #enable_smtchecker */
 		{
 			uint256 cstDutchAuctionDuration_ = _getCstDutchAuctionDuration();
-			int256 cstDutchAuctionElapsedDuration_ = _getCstDutchAuctionElapsedDuration();
-			int256 cstDutchAuctionRemainingDuration_ = int256(cstDutchAuctionDuration_) - cstDutchAuctionElapsedDuration_;
+			uint256 cstDutchAuctionElapsedDuration_ = _getCstDutchAuctionElapsedDuration();
+			int256 cstDutchAuctionRemainingDuration_ = int256(cstDutchAuctionDuration_) - int256(cstDutchAuctionElapsedDuration_);
 			return (cstDutchAuctionDuration_, cstDutchAuctionRemainingDuration_);
 		}
 	}

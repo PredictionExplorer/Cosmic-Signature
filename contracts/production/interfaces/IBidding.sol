@@ -217,6 +217,7 @@ interface IBidding {
 	/// Calculates the current price that a bidder is required to pay to place a CST bid.
 	/// The price declines linearly over CST Dutch auction duration.
 	/// In V2+, it also slightly declines on each ETH bid, as mentioned in Comment-202606101.
+	/// todo-0 What about V3+?
 	/// [/Comment-202605271]
 	/// See also: `getNextCstBidPrice`.
 	/// @param currentTimeOffset_ .
@@ -254,5 +255,5 @@ interface IBidding {
 	/// A tuple containing the total and elapsed durations of the current CST Dutch auction.
 	/// [/Comment-202605273]
 	/// Comment-202501022 applies to the returned elapsed duration.
-	function getCstDutchAuctionDurations() external view returns (uint256, int256);
+	function getCstDutchAuctionDurations() external view returns (uint256, uint256);
 }

@@ -299,12 +299,13 @@ abstract contract BiddingV2Base is
 	// #endregion
 	// #region `_getCstDutchAuctionElapsedDuration`
 
-	function _getCstDutchAuctionElapsedDuration() internal view returns (int256) {
+	function _getCstDutchAuctionElapsedDuration() internal view returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
 		{
-			int256 cstDutchAuctionElapsedDuration_ = int256(block.timestamp) - int256(cstDutchAuctionBeginningTimeStamp);
+			uint256 cstDutchAuctionElapsedDuration_ = block.timestamp - cstDutchAuctionBeginningTimeStamp;
+			// #enable_asserts assert(int256(cstDutchAuctionElapsedDuration_) >= int256(0));
 			return cstDutchAuctionElapsedDuration_;
 		}
 	}

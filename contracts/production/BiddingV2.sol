@@ -250,12 +250,12 @@ abstract contract BiddingV2 is
 	// #endregion
 	// #region `getCstDutchAuctionDurations`
 
-	function getCstDutchAuctionDurations() external view override /* virtual */ returns (uint256, int256) {
+	function getCstDutchAuctionDurations() external view override /* virtual */ returns (uint256, uint256) {
 		// // #enable_smtchecker /*
 		// unchecked
 		// // #enable_smtchecker */
 
-		int256 cstDutchAuctionElapsedDuration_ = _getCstDutchAuctionElapsedDuration();
+		uint256 cstDutchAuctionElapsedDuration_ = _getCstDutchAuctionElapsedDuration();
 		return (cstDutchAuctionDuration, cstDutchAuctionElapsedDuration_);
 	}
 
@@ -267,8 +267,8 @@ abstract contract BiddingV2 is
 		unchecked
 		// #enable_smtchecker */
 		{
-			int256 cstDutchAuctionElapsedDuration_ = _getCstDutchAuctionElapsedDuration();
-			int256 cstDutchAuctionRemainingDuration_ = int256(cstDutchAuctionDuration) - cstDutchAuctionElapsedDuration_;
+			uint256 cstDutchAuctionElapsedDuration_ = _getCstDutchAuctionElapsedDuration();
+			int256 cstDutchAuctionRemainingDuration_ = int256(cstDutchAuctionDuration) - int256(cstDutchAuctionElapsedDuration_);
 			return cstDutchAuctionRemainingDuration_;
 		}
 	}
@@ -287,6 +287,7 @@ abstract contract BiddingV2 is
 				biddersInfo[roundNum][lastBidderAddress].lastBidTimeStamp;
 
 			// [Comment-202605295]
+			// todo-0 Do we really need this comment?
 			// It's safe to assume that this will not overflow, provided `currentTimeOffset_` is relatively small,
 			// positive, negative, or zero.
 			// [/Comment-202605295]

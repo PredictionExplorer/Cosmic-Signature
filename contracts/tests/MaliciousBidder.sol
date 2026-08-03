@@ -20,11 +20,7 @@ contract MaliciousBidder {
 		modeCode = newValue_;
 	}
 
-	function doBidWithEth(int256 randomWalkNftId_, string memory message_) external payable {
-		_doBidWithEth(randomWalkNftId_, message_);
-	}
-
-	function _doBidWithEth(int256 randomWalkNftId_, string memory message_) private {
+	function doBidWithEth(int256 randomWalkNftId_, string memory message_) public payable {
 		cosmicSignatureGame.bidWithEth{value: msg.value}(randomWalkNftId_, message_);
 	}
 
@@ -46,7 +42,7 @@ contract MaliciousBidder {
 			// But we have another test near Comment-202507057 that attempts to reenter all of them.
 			// [/Comment-202507059]
 			if (modeCode == 1) {
-				_doBidWithEth(-1, "");
+				doBidWithEth(-1, "");
 			} else if (modeCode == 2) {
 				doBidWithCst(1, "");
 			} else if (modeCode == 3) {

@@ -8,7 +8,7 @@
 
 @ Use a reg-exp pattern like this to remove lines from the report file:
 
-^.*? (?:no-empty-blocks|gas-multitoken1155|ordering|no-inline-assembly)\n
+^.*? (?:no-empty-blocks|gas-multitoken1155|ordering|no-inline-assembly|max-states-count)\n
 ^.*? (?:gas-custom-errors|comprehensive-interface)\n
 
 @ An alternative option is to execute the following command in the VS Code integrated terminal:
