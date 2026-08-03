@@ -15,7 +15,7 @@ abstract contract BiddingCommon is
 		_;
 	}
 
-	function _checkNonFirstRound() private view {
+	function _checkNonFirstRound() internal view {
 		if ( ! (roundNum > 0) ) {
 			revert CosmicSignatureErrors.FirstRound("This operation is invalid during the very first bidding round.");
 		}
@@ -26,7 +26,7 @@ abstract contract BiddingCommon is
 		_;
 	}
 
-	function _checkRoundIsInactive() private view {
+	function _checkRoundIsInactive() internal view {
 		uint256 roundActivationTimeCopy_ = roundActivationTime;
 		if ( ! (block.timestamp < roundActivationTimeCopy_) ) {
 			revert CosmicSignatureErrors.RoundIsActive("The current bidding round is already active.", roundActivationTimeCopy_, block.timestamp);
@@ -56,7 +56,7 @@ abstract contract BiddingCommon is
 	/// It doesn't matter whether the current bidding round is active or not.
 	/// This only requires that no bids have been placed in the current bidding round yet.
 	/// [/Comment-202503108]
-	function _checkBeforeBidPlacedInRound() private view {
+	function _checkBeforeBidPlacedInRound() internal view {
 		if ( ! (lastBidderAddress == address(0)) ) {
 			revert CosmicSignatureErrors.BidHasBeenPlacedInCurrentRound("A bid has already been placed in the current bidding round.");
 		}

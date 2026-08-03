@@ -239,7 +239,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// CST Dutch auction beginning bid price.
 	/// We calculate this based on `CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER`.
 	/// We don't let this fall below `cstDutchAuctionBeginningBidPriceMinLimit`,
-	/// which eliminates some marginal cases, such as a possibility for a bidding round to last forever.
+	/// which relieves us from the annoyance of possible marginal cases, such as a bidding round lasting forever.
 	/// [/Comment-202411066]
 	/// [Comment-202605197]
 	/// This variable becomes valid when someone places a CST bid in the current bidding round.

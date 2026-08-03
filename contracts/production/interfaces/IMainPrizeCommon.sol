@@ -6,6 +6,9 @@ interface IMainPrizeCommon {
 
 	/// @notice This is a "friendly" version of `getDurationUntilMainPrizeRaw` that can't return a negative value.
 	/// Comments near `getDurationUntilMainPrizeRaw` apply.
+	/// todo-0 Maybe eliminate this method to reduce contract size.
+	/// todo-0 Rename `getDurationUntilMainPrizeRaw` to `getDurationUntilMainPrize`. It will remain `public`.
+	/// todo-0 Tell Nick.
 	function getDurationUntilMainPrize() external view returns (uint256);
 
 	/// @notice See also: `getDurationUntilMainPrize`.
