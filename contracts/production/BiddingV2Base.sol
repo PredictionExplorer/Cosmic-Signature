@@ -297,6 +297,11 @@ abstract contract BiddingV2Base is
 	function getNextCstBidPriceAdvanced(int256 currentTimeOffset_) public view virtual returns (uint256);
 
 	// #endregion
+	// #region // `getCstDutchAuctionDurations`
+
+	// function getCstDutchAuctionDurations() external view virtual returns (uint256, uint256);
+
+	// #endregion
 	// #region `_getCstDutchAuctionElapsedDuration`
 
 	function _getCstDutchAuctionElapsedDuration() internal view returns (uint256) {
