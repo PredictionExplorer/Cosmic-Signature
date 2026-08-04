@@ -177,7 +177,8 @@ abstract contract BidStatisticsV2 is
 	/// @dev
 	/// [Comment-202607178]
 	/// Issue. This is really needed only for V3+, but it's convenient to place this here,
-	/// so that `claimMainPrize` could call this. In V2, this is a no-op.
+	/// so that `claimMainPrize` could call this.
+	/// In V2, this is a no-op.
 	/// [/Comment-202607178]
 	function _saveChampionDurations() internal virtual {
 		// #enable_asserts assert(enduranceChampionDuration > 0);

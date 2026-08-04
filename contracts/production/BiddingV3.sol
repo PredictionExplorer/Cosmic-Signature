@@ -406,19 +406,6 @@ abstract contract BiddingV3 is
 	}
 
 	// #endregion
-	// #region `getRoundLateBidDuration`
-
-	function getRoundLateBidDuration() public view override returns (uint256) {
-		// #enable_smtchecker /*
-		unchecked
-		// #enable_smtchecker */
-		{
-			uint256 roundLateBidDuration_ = mainPrizeTimeIncrementInMicroSeconds / roundLateBidDurationDivisor;
-			return roundLateBidDuration_;
-		}
-	}
-
-	// #endregion
 	// #region `_addRoundLateBidPricePremiumAmountIfNeeded`
 
 	function _addRoundLateBidPricePremiumAmountIfNeeded(uint256 bidPrice_, int256 currentTimeOffset_) private view returns (uint256 adjustedBidPrice_) {
@@ -468,6 +455,19 @@ abstract contract BiddingV3 is
 					adjustedBidPrice_ += roundLateBidPricePremiumAmount_;
 				}
 			}
+		}
+	}
+
+	// #endregion
+	// #region `getRoundLateBidDuration`
+
+	function getRoundLateBidDuration() public view override returns (uint256) {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			uint256 roundLateBidDuration_ = mainPrizeTimeIncrementInMicroSeconds / roundLateBidDurationDivisor;
+			return roundLateBidDuration_;
 		}
 	}
 
