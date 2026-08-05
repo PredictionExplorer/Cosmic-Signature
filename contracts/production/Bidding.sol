@@ -57,6 +57,7 @@ abstract contract Bidding is
 	///       [Comment-202508134]
 	///       Given Comment-202508094, this logic can't work on the very first bidding round.
 	///       [/Comment-202508134]
+	///     // `_onlyRoundIsInactive`
 	///    `_onlyBeforeBidPlacedInRound`.
 	///    `_setEthDutchAuctionDurationDivisor`.
 	///    `_setEthDutchAuctionEndingBidPriceDivisor`.
@@ -256,7 +257,7 @@ abstract contract Bidding is
 		int256 overpaidEthPrice_ = int256(msg.value) - int256(paidEthPrice_);
 		if (overpaidEthPrice_ == int256(0)) {
 			// [Comment-202605286]
-			// This is the most common case. Doing nothing. Not spending any gas.
+			// This is probably the most common case. Doing nothing. Not spending any gas.
 			// [/Comment-202605286]
 		} else if (overpaidEthPrice_ > int256(0)) {
 			// [Comment-202605288]

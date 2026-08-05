@@ -62,7 +62,7 @@ abstract contract CosmicSignatureGameV2Base is
 	// #endregion
 	// #region `reinitialize`
 
-	function reinitialize() external virtual;
+	function reinitialize() external override virtual;
 
 	// #endregion
 	// #region `_onlyIfPrevVersionWasInitialized`

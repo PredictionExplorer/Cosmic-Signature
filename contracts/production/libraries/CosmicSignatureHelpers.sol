@@ -57,6 +57,11 @@ library CosmicSignatureHelpers {
 	/// @dev Issue. In some places where we transfer ETH by calling `address.call`,
 	/// it could make sense to call this method instead.
 	/// But I have no immediate plans to refactor anything.
+	/// todo-0 Maybe replace those calls with calling this one.
+	/// todo-0 If necessary, remove import of `CosmicSignatureErrors.sol` and/or `CosmicSignatureEvents.sol` .
+	/// todo-0 Revisit this dev comment and Comment-202502043.
+	/// todo-0 Will Comment-202502043 need to remain numbered?
+	/// todo-0 Maybe so because we will still call `address.call` to transfer to charity on main prize claim.
 	function transferEthTo(address payable toAddress_, uint256 amount_) internal {
 		// [Comment-202502043]
 		// In most cases, we make high level calls to strongly typed addresses --

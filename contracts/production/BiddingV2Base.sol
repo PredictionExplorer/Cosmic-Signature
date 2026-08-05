@@ -294,12 +294,12 @@ abstract contract BiddingV2Base is
 	// #endregion
 	// #region `getNextCstBidPriceAdvanced`
 
-	function getNextCstBidPriceAdvanced(int256 currentTimeOffset_) public view virtual returns (uint256);
+	function getNextCstBidPriceAdvanced(int256 currentTimeOffset_) public view override virtual returns (uint256);
 
 	// #endregion
 	// #region // `getCstDutchAuctionDurations`
 
-	// function getCstDutchAuctionDurations() external view virtual returns (uint256, uint256);
+	// function getCstDutchAuctionDurations() external view override virtual returns (uint256, uint256);
 
 	// #endregion
 	// #region `_getCstDutchAuctionElapsedDuration`
@@ -325,7 +325,7 @@ abstract contract BiddingV2Base is
 	// #endregion
 	// #region `getBidCstRewardAmountAdvanced`
 
-	function getBidCstRewardAmountAdvanced(int256 currentTimeOffset_) public view virtual returns (uint256);
+	function getBidCstRewardAmountAdvanced(int256 currentTimeOffset_) public view override virtual returns (uint256);
 
 	// #endregion
 	// #region `_bidCommon`

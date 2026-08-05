@@ -10,6 +10,7 @@ pragma solidity =0.8.34;
 /// @author The Cosmic Signature Development Team.
 /// @notice This library contains events used by the Cosmic Signature contracts.
 /// See also: `CosmicSignatureErrors`.
+/// todo-0 To reduce contract size, remove string params from errors and events.
 library CosmicSignatureEvents {
 	// #region Charity
 

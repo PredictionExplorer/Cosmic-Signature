@@ -28,7 +28,7 @@ abstract contract BiddingV3 is
 	// #region `_bidWithEth`
 
 	/// @dev Comment-202412045 applies to `_onlyIfNoBidPlacedWithinCurrentSecond`.
-	function _bidWithEth(int256 randomWalkNftId_, string memory message_, uint256 bidCstRewardAmountMinLimit_) internal override /* virtual */ /*nonReentrant*/ /*_onlyRoundIsActive*/ _onlyIfNoBidPlacedWithinCurrentSecond() {
+	function _bidWithEth(int256 randomWalkNftId_, string memory message_, uint256 bidCstRewardAmountMinLimit_) internal override /* virtual */ /* nonReentrant() */ /* _onlyRoundIsActive() */ _onlyIfNoBidPlacedWithinCurrentSecond() {
 		// #region //
 
 		// BidType bidType_;
@@ -199,7 +199,7 @@ abstract contract BiddingV3 is
 	// #region `_bidWithCst`
 
 	/// @dev Comment-202412045 applies to `_onlyIfNoBidPlacedWithinCurrentSecond`.
-	function _bidWithCst(uint256 priceMaxLimit_, string memory message_, uint256 bidCstRewardAmountMinLimit_) internal override /* virtual */ /*nonReentrant*/ /*_onlyRoundIsActive*/ _onlyIfNoBidPlacedWithinCurrentSecond() {
+	function _bidWithCst(uint256 priceMaxLimit_, string memory message_, uint256 bidCstRewardAmountMinLimit_) internal override /* virtual */ /* nonReentrant() */ /* _onlyRoundIsActive() */ _onlyIfNoBidPlacedWithinCurrentSecond() {
 		// Comment-202412251 applies.
 		// #enable_asserts assert(_msgSender() != marketingWallet);
 
@@ -290,6 +290,8 @@ abstract contract BiddingV3 is
 		unchecked
 		// #enable_smtchecker */
 		{
+			// This can be negative, if `currentTimeOffset_` is negative.
+			// In that case, Comment-202501107 allows us to not do our best to produce a good result.
 			int256 cstDutchAuctionElapsedDuration_ = int256(_getCstDutchAuctionElapsedDuration()) + currentTimeOffset_;
 
 			// Comment-202501307 relates and/or applies.
@@ -408,6 +410,7 @@ abstract contract BiddingV3 is
 	// #endregion
 	// #region `_addRoundLateBidPricePremiumAmountIfNeeded`
 
+	/// @param bidPrice_ If it's zero the result will be zero as well.
 	function _addRoundLateBidPricePremiumAmountIfNeeded(uint256 bidPrice_, int256 currentTimeOffset_) private view returns (uint256 adjustedBidPrice_) {
 		// #enable_smtchecker /*
 		unchecked
@@ -504,6 +507,7 @@ abstract contract BiddingV3 is
 	/// todo-0 Base method comment says that `bidCstRewardAmount_ may be zero.
 	/// todo-0 But here it cannot be because we enforce at least 1 second since the previous bid and do not pay any reward to the first bidder.
 	/// todo-0 Cross-ref with where we enforce that.
+	/// todo-0 Also reference Comment-202608022.
 	function _mintBidCstRewardAmount(uint256 bidCstRewardAmount_) private {
 		// // #enable_smtchecker /*
 		// unchecked

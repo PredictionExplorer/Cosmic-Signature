@@ -24,7 +24,7 @@ abstract contract BiddingV2 is
 	IBiddingV2 {
 	// #region `_bidWithEth`
 
-	function _bidWithEth(int256 randomWalkNftId_, string memory message_, uint256 bidCstRewardAmountMinLimit_) internal override /* virtual */ /*nonReentrant*/ /*_onlyRoundIsActive*/ {
+	function _bidWithEth(int256 randomWalkNftId_, string memory message_, uint256 bidCstRewardAmountMinLimit_) internal override /* virtual */ /* nonReentrant() */ /* _onlyRoundIsActive() */ {
 		// #region //
 
 		// BidType bidType_;
@@ -173,7 +173,7 @@ abstract contract BiddingV2 is
 	// #endregion
 	// #region `_bidWithCst`
 
-	function _bidWithCst(uint256 priceMaxLimit_, string memory message_, uint256 bidCstRewardAmountMinLimit_) internal override /* virtual */ /*nonReentrant*/ /*_onlyRoundIsActive*/ {
+	function _bidWithCst(uint256 priceMaxLimit_, string memory message_, uint256 bidCstRewardAmountMinLimit_) internal override /* virtual */ /* nonReentrant() */ /* _onlyRoundIsActive() */ {
 		// Comment-202412251 applies.
 		// #enable_asserts assert(_msgSender() != marketingWallet);
 
