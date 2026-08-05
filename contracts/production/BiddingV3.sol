@@ -290,8 +290,8 @@ abstract contract BiddingV3 is
 		unchecked
 		// #enable_smtchecker */
 		{
-			// This can be negative, if `currentTimeOffset_` is negative.
-			// In that case, Comment-202501107 allows us to not do our best to produce a good result.
+			// This can be negative.
+			// Comment-202608052 applies.
 			int256 cstDutchAuctionElapsedDuration_ = int256(_getCstDutchAuctionElapsedDuration()) + currentTimeOffset_;
 
 			// Comment-202501307 relates and/or applies.
@@ -410,7 +410,8 @@ abstract contract BiddingV3 is
 	// #endregion
 	// #region `_addRoundLateBidPricePremiumAmountIfNeeded`
 
-	/// @param bidPrice_ If it's zero the result will be zero as well.
+	/// @param bidPrice_ As mentioned in Comment-202607119, if it's zero the result will be zero as well.
+	/// todo-0 Test this. Really, all new code needs testing.
 	function _addRoundLateBidPricePremiumAmountIfNeeded(uint256 bidPrice_, int256 currentTimeOffset_) private view returns (uint256 adjustedBidPrice_) {
 		// #enable_smtchecker /*
 		unchecked
@@ -483,17 +484,14 @@ abstract contract BiddingV3 is
 		// #enable_smtchecker */
 		{
 			// Comment-202501022 applies.
-			// That's OK, because there is no bid CST reward for the first bid in a bidding round.
+			// And that's OK, because there is no bid CST reward for the first bid in a bidding round.
 			// todo-0 Tell Nick to not show bid CST reward until someone places the first bid in the current round.
 			uint256 lastBidTimeStampCopy_ = biddersInfo[roundNum][lastBidderAddress].lastBidTimeStamp;
 
-			// Comment-202605295 applies.
 			int256 elapsedDuration_ = int256(block.timestamp) + currentTimeOffset_ - int256(lastBidTimeStampCopy_);
-
 			uint256 bidCstRewardAmount_ = 0;
 			if (elapsedDuration_ > int256(0)) {
 				// Comment-202607167 applies.
-				// Comment-202605295 applies.
 				// todo-0 Test what this equals.
 				bidCstRewardAmount_ = uint256(elapsedDuration_) * bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds;
 			}

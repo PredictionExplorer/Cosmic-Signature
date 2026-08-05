@@ -257,7 +257,7 @@ abstract contract Bidding is
 		int256 overpaidEthPrice_ = int256(msg.value) - int256(paidEthPrice_);
 		if (overpaidEthPrice_ == int256(0)) {
 			// [Comment-202605286]
-			// This is probably the most common case. Doing nothing. Not spending any gas.
+			// This is the most common case. Doing nothing. Not spending any gas.
 			// [/Comment-202605286]
 		} else if (overpaidEthPrice_ > int256(0)) {
 			// [Comment-202605288]
@@ -627,7 +627,15 @@ abstract contract Bidding is
 		// #enable_smtchecker */
 		{
 			(uint256 cstDutchAuctionDuration_, int256 cstDutchAuctionRemainingDuration_) = _getCstDutchAuctionTotalAndRemainingDurations();
+
+			// [Comment-202608054]
+			// This can exceed `cstDutchAuctionDuration_`.
+			// [/Comment-202608054]
+			// [Comment-202608052]
+			// In that case, Comment-202501107 allows us to not do our best to produce a good result.
+			// [/Comment-202608052]
 			cstDutchAuctionRemainingDuration_ -= currentTimeOffset_;
+
 			if (cstDutchAuctionRemainingDuration_ <= int256(0)) {
 				return 0;
 			}

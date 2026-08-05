@@ -232,8 +232,10 @@ abstract contract BiddingV2 is
 		unchecked
 		// #enable_smtchecker */
 		{
-			int256 cstDutchAuctionRemainingDuration_ = _getCstDutchAuctionRemainingDuration();
-			cstDutchAuctionRemainingDuration_ -= currentTimeOffset_;
+			// Comment-202608054 applies.
+			// Comment-202608052 applies.
+			int256 cstDutchAuctionRemainingDuration_ = _getCstDutchAuctionRemainingDuration() - currentTimeOffset_;
+
 			if (cstDutchAuctionRemainingDuration_ <= int256(0)) {
 				return 0;
 			}
@@ -285,21 +287,13 @@ abstract contract BiddingV2 is
 				(lastBidderAddress == address(0)) ?
 				roundActivationTime :
 				biddersInfo[roundNum][lastBidderAddress].lastBidTimeStamp;
-
-			// [Comment-202605295]
-			// todo-0 Do we really need this comment?
-			// It's safe to assume that this will not overflow, provided `currentTimeOffset_` is relatively small,
-			// positive, negative, or zero.
-			// [/Comment-202605295]
 			int256 elapsedDuration_ = int256(block.timestamp) + currentTimeOffset_ - int256(lastBidTimeStampCopy_);
-
 			uint256 bidCstRewardAmount_ = 0;
 			if (elapsedDuration_ > int256(0)) {
 				// [Comment-202607167]
 				// The numerator is expected to have tendency to be proportional to the denominator.
 				// As a result, this formula is neither inflationary nor deflationary for CST.
 				// [/Comment-202607167]
-				// Comment-202605295 applies.
 				uint256 radicand_ = uint256(elapsedDuration_) * bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds;
 
 				bidCstRewardAmount_ = Math.sqrt(radicand_);

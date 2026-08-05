@@ -133,6 +133,5 @@ interface IBidding1V2 {
 	/// It can be zero.
 	/// In V3+, Comment-202501022 applies.
 	/// @param currentTimeOffset_ Comment-202501107 applies.
-	/// @dev This logic can, in theory, overflow, as detailed in Comment-202605295.
 	function getBidCstRewardAmountAdvanced(int256 currentTimeOffset_) external view returns (uint256);
 }
