@@ -14,6 +14,7 @@ pragma solidity =0.8.34;
 library CosmicSignatureEvents {
 	// #region Charity
 
+	// todo-0 Rename to `EthTransferredToCharity`.
 	/// @notice Emitted after a donation has been transferred to charity.
 	/// This is used only for ETH.
 	/// @param charityAddress Charity address.
@@ -32,6 +33,9 @@ library CosmicSignatureEvents {
 	// #region Monetary Transfers
 
 	/// @notice This is similar to `CosmicSignatureErrors.FundTransferFailed`.
+	/// todo-0 Rename `Fund` to `Eth`. Or eliminate this event?
+	/// todo-0 We need a separate `EthTransferToCharityFailed` event, without the `errStr` param.
+	/// todo-0 Place it in the above region.
 	event FundTransferFailed(string errStr, address indexed destinationAddress, uint256 amount);
 
 	// #endregion

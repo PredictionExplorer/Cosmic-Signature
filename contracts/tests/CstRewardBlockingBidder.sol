@@ -10,7 +10,8 @@ import { CosmicSignatureGameV3 } from "../production/CosmicSignatureGameV3.sol";
 /// the bid CST reward to the last bidder. If that could succeed, nobody would be able to place further bids.
 /// The attack cannot succeed because the Game mints, rather than transfers, bid CST rewards,
 /// and `CosmicSignatureToken` minting performs no call into the recipient.
-/// todo-ai-0 Even if the game transferred, the attack would not succeed either, right?
+/// todo-ai-0 Even if the game transferred CST, the attack would not succeed either, right?
+/// todo-ai-0 So improve this comment. Try to keep comments short.
 /// todo-ai-0 I would rename this contract to `HostileBidder`.
 contract CstRewardBlockingBidder {
 	CosmicSignatureGameV3 public immutable game;

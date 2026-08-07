@@ -31,9 +31,8 @@ abstract contract CosmicSignatureGameStorageV3Base is
 	uint256 public cstBidPriceDeclineMultiplier;
 
 	/// In V3+.
-	/// todo-0 Comments are similar to those near `cstDutchAuctionDuration` and `cstDutchAuctionDurationChangeDivisor`.
-	/// todo-0 Review all occurrences of those, including their events, setters, etc.
-	/// todo-0 Remember to reference Comment-202411064 and sometimes Comment-202411172.
+	/// todo-0 See todos near `cstBidPriceDeclineMultiplier`.
+	/// @dev Comment-202607301 relates and/or applies.
 	uint256 public cstBidPriceDeclineMultiplierChangeDivisor;
 
 	/// @notice This controls the duration before `mainPrizeTime` during which a bid price is to be increased.
@@ -60,7 +59,8 @@ abstract contract CosmicSignatureGameStorageV3Base is
 	// todo-ai-0 If necessary, move the comment or some still valid parts of it elsewhere.
 	// todo-ai-0 Generally, avoid writing verbose comments because they are hard to read and maintain.
 	// todo-ai-0 Commnets themselves result a lot of complexity,
-	// todo-ai-0 and no comment can eliminate the need for a human to read the code.
+	// todo-ai-0 and no comment can eliminate the need for a human to read the code,
+	// todo-ai-0 which is often easier to understand than a versose comment.
 	// todo-ai-0 Write comments to explain unobvious intricacies, like what you did in Comment-202607163.
 	// /// @notice In V3+, the bid CST reward accrues at this rate, expressed in CST Wei per minute,
 	// /// since the last bid or, if no bids have been placed in the current bidding round yet, since the round activation.

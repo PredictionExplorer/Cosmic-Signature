@@ -331,7 +331,6 @@ abstract contract BiddingV3 is
 	// #region `_tryIncreaseCstBidPriceDeclineMultiplier`
 
 	function _tryIncreaseCstBidPriceDeclineMultiplier() private returns (uint256) {
-		// todo-0 Review all `unchecked` and comment some out.
 		// // #enable_smtchecker /*
 		// unchecked
 		// // #enable_smtchecker */
@@ -443,6 +442,7 @@ abstract contract BiddingV3 is
 					// We multiply and then divide by `2 ** 13` to increase resolution of integer math.
 					// Max premium multiplier to multiply bid price by:
 					// 9742 ** 8 / 2 ** (13 * 8) == ~4
+					// todo-0 Test the actual multiplier and its exponential growth.
 					// Let's say, our bid price is 1_000_000_000. Calculating max premium:
 					// (9742n ** 8n * 1_000_000_000n) >> (13n * 8n) == 4_000_050_302n
 					//
@@ -503,6 +503,7 @@ abstract contract BiddingV3 is
 	// #region `_mintBidCstRewardAmount`
 
 	/// todo-0 Base method comment says that `bidCstRewardAmount_ may be zero.
+	/// todo-0 (But this is now not virtual.)
 	/// todo-0 But here it cannot be because we enforce at least 1 second since the previous bid and do not pay any reward to the first bidder.
 	/// todo-0 Cross-ref with where we enforce that.
 	/// todo-0 Also reference Comment-202608022.
@@ -527,7 +528,7 @@ abstract contract BiddingV3 is
 		// cannot prevent this minting from succeeding, and therefore cannot block further bids.
 		// todo-ai-0 A hostile actor can't block a CST transfer either, right?
 		// todo-ai-0 So would it be better to rephrase this and any other related comments
-		// todo-ai-0 to clarify that `CosmicSignatureToken` does not make any callbacks, period?
+		// todo-ai-0 to clarify that `CosmicSignatureToken` does not make any callbacks, without specifying whether it's mint or transfer.
 		// [/Comment-202607163]
 		token.mint(lastBidderAddress, bidCstRewardAmount_);
 	}
@@ -543,7 +544,7 @@ abstract contract BiddingV3 is
 			// Comment-202607263 applies.
 			// todo-0 Same todos as in `_mintBidCstRewardAmount`.
 			// todo-0 Even if they try running this on the very first bid in the current bidding round?
-			// todo-0 Reference Comment-202607164 ? If not, it does not need to e numbered.
+			// todo-0 Reference Comment-202607164 ? If no need to reference it, it does not need to e numbered.
 			// #enable_asserts assert(bidCstRewardAmount_ > 0);
 
 			ICosmicSignatureToken.MintOrBurnSpec[] memory mintAndBurnSpecs_ = new ICosmicSignatureToken.MintOrBurnSpec[](2);

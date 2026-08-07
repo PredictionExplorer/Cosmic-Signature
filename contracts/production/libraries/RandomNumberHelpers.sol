@@ -1,10 +1,20 @@
+// #region
+
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity =0.8.34;
+
+// #endregion
+// #region
 
 import { CryptographyHelpers } from "./CryptographyHelpers.sol";
 import { ArbitrumHelpers } from "./ArbitrumHelpers.sol";
 
+// #endregion
+// #region
+
 library RandomNumberHelpers {
+	// #region `RandomNumberSeedWrapper`
+
 	struct RandomNumberSeedWrapper {
 		/// @dev
 		/// [Comment-202502075]
@@ -21,6 +31,9 @@ library RandomNumberHelpers {
 		/// [/Comment-202502077]
 		uint256 value;
 	}
+
+	// #endregion
+	// #region `generateRandomNumberSeed`
 
 	/// @notice
 	/// [Comment-202504067]
@@ -89,6 +102,9 @@ library RandomNumberHelpers {
 		return randomNumberSeed_;
 	}
 
+	// #endregion
+	// #region `generateRandomNumber`
+
 	/// @notice
 	/// [Comment-202504065]
 	/// Similar logic exists in multiple places.
@@ -98,6 +114,9 @@ library RandomNumberHelpers {
 		return generateRandomNumber(seedWrapper_.value);
 	}
 
+	// #endregion
+	// #region `generateRandomNumber`
+
 	/// @notice
 	/// [Comment-202504063]
 	/// Similar logic exists in multiple places.
@@ -105,4 +124,8 @@ library RandomNumberHelpers {
 	function generateRandomNumber(uint256 seed_) internal pure returns (uint256) {
 		return CryptographyHelpers.calculateHashSumOf(seed_);
 	}
+
+	// #endregion
 }
+
+// #endregion

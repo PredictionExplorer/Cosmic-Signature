@@ -47,6 +47,7 @@ abstract contract MainPrize is
 	///    `CosmicSignatureErrors`.
 	///    `CosmicSignatureEvents`.
 	///    `CosmicSignatureHelpers.tryIncreaseValueExponentially`.
+	///    todo-0 `CosmicSignatureHelpers.transferEthTo`.
 	///    `RandomNumberHelpers.RandomNumberSeedWrapper`.
 	///    `RandomNumberHelpers` methods.
 	///    `ICosmicSignatureToken.MintSpec`.

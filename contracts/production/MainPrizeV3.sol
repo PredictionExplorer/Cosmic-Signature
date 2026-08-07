@@ -12,9 +12,9 @@ import { CosmicSignatureEvents } from "./libraries/CosmicSignatureEvents.sol";
 import { RandomNumberHelpers } from "./libraries/RandomNumberHelpers.sol";
 import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 import { IPrizesWallet } from "./interfaces/IPrizesWallet.sol";
+import { BidStatisticsV2 } from "./BidStatisticsV2.sol";
 import { MainPrizeV2Base } from "./MainPrizeV2Base.sol";
 import { CosmicSignatureGameStorageV3Base } from "./CosmicSignatureGameStorageV3Base.sol";
-import { BidStatisticsV2 } from "./BidStatisticsV2.sol";
 import { BidStatisticsV3 } from "./BidStatisticsV3.sol";
 import { IMainPrizeV3 } from "./interfaces/IMainPrizeV3.sol";
 
@@ -177,7 +177,7 @@ abstract contract MainPrizeV3 is
 		{
 			// Comment-202502043 applies.
 			(bool isSuccess_, ) = _msgSender().call{value: mainEthPrizeAmount_}("");
-
+		
 			if ( ! isSuccess_ ) {
 				revert CosmicSignatureErrors.FundTransferFailed("ETH transfer to bidding round main prize beneficiary failed.", _msgSender(), mainEthPrizeAmount_);
 			}
@@ -241,6 +241,7 @@ abstract contract MainPrizeV3 is
 					// #enable_asserts assert(cosmicSignatureNftOwnerAddresses_.length - cosmicSignatureTokenMintSpecIndex_ == mainPrizeNumCosmicSignatureNfts);
 
 					// This makes `mainPrizeNumCosmicSignatureNfts` iterations.
+					// todo-0 Test the above.
 					for (uint256 cosmicSignatureNftIndex_ = cosmicSignatureNftOwnerAddresses_.length; ; ) {
 						-- cosmicSignatureNftIndex_;
 						cosmicSignatureNftOwnerAddresses_[cosmicSignatureNftIndex_] = _msgSender();

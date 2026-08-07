@@ -32,6 +32,7 @@ function sqrtFloor(value_) {
 
 /**
 Solidity-style `Math.max`.
+Although it appears that the OpenZeppelin implementation supports only unsigned integers.
 @param {bigint} a_
 @param {bigint} b_
 */

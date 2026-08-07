@@ -9,7 +9,6 @@ interface IMainPrizeCommon {
 	/// todo-0 Maybe eliminate this method to reduce contract size.
 	/// todo-0 Rename `getDurationUntilMainPrizeRaw` to `getDurationUntilMainPrize`. It will remain `public`.
 	/// todo-0 Tell Nick.
-	/// todo-0 Also, to reduce contract size, make everything `unchecked`.
 	function getDurationUntilMainPrize() external view returns (uint256);
 
 	/// @notice See also: `getDurationUntilMainPrize`.
