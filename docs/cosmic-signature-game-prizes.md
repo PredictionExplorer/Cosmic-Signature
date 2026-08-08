@@ -62,7 +62,7 @@ The rest of this document lists prizes from groups 1 and 2.
 |  | CST | 1 | `cstPrizeAmount` |  |
 |  | Cosmic Signature NFT | 1 | 1 |  |
 |  |  |  |  |  |
-| Bidders | CST | 1 per bid | V1: `bidCstRewardAmount`<br>V2: `sqrt(secondsSinceLastBid * bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds)`<br>V3+: `secondsSinceLastBid * bidCstRewardAmountPerMinute / 60` | On each bid, CST gets minted. In V1 and V2, the entire amount goes to the bidder. In V3+, 90% of it goes to the bidder being outbid (the current last bidder) and the rest to the new bidder; on the first bid in a round, only the new bidder ~10% share is minted. |
+| Bidders | CST | 1 per bid | V1: `bidCstRewardAmount`<br>V2: `sqrt(secondsSinceLastBid * bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds)`<br>V3+: `secondsSinceLastBid * bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds` | On each bid, CST gets minted. In V2-, the bidder placing the bid gets the reward. In V3+, the bidder who placed the previous bid in the current bidding round gets the reward. That implies that the first bidder gets no reward at the moment of bidding, while the last bidder (main prize winner) gets no reward at all. |
 |  |  |  |  |  |
 | Bidders Picked Via ETH Prize Raffle | ETH | `numRaffleEthPrizesForBidders` | `gameEthBalance * raffleTotalEthPrizeAmountForBiddersPercentage / 100 / numRaffleEthPrizesForBidders` | Bids are picked randomly. |
 |  |  |  |  |  |
@@ -105,6 +105,6 @@ The rest of this document lists prizes from groups 1 and 2.
 
 #### Notes
 
-- Prize Count often equals the number of winners, each getting 1 prize of the given type. But if Prize Count is greater than 1, a winner can get multiple prizes of the given type, which would reduce the number of winners.
+- Prize Count likely equals the number of winners, each getting 1 prize of the given type. But if Prize Count is greater than 1, a winner can get multiple prizes of the given type, which would reduce the number of winners.
 
 - In a division result, any fractional part is truncated. Therefore, for example, 299 / 100 equals 2.
