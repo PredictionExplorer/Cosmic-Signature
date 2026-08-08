@@ -56,6 +56,7 @@ interface IBidding {
 	/// Comments there apply.
 	/// [/Comment-202503147]
 	/// See also: `ICosmicSignatureGame.fallback`, `IEthDonations.donateEth`.
+	/// todo-0 Maybe eliminate this, to reduce contract size. Then declare the `message_` param `calldata`.
 	receive() external payable;
 
 	/// @notice
