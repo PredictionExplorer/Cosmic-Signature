@@ -26,6 +26,6 @@
 
 @ Execute './compile-1.bash'.
 
-@ While it's running, you might want to review "hardhat.config.js" to get an idea what's under the hood.
+@ While it's running, you might want to review `hardhat.config.js` to get an idea what's under the hood.
 
 @ After the script finishes, review the newly created file in the subfolder specified near Comment-202409014.
