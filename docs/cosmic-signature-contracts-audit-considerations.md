@@ -7,14 +7,13 @@ We recommned reviewing all files seen in this project, including, but not limite
 `${workspaceFolder}/README.md`,\
 `./cosmic-signature-contracts-class-diagram-and-calls.svg`,\
 `./cosmic-signature-contracts-functional-requirements.md`,\
-`./v3-vs-v2-changes.md`,\
 `${workspaceFolder}/tasks/docs/*.md`.
 
 #### Contracts to Audit
 
 - Only contracts in the `${workspaceFolder}/contracts/production` folder, except `RandomWalkNFT` and its interface are to be audited. Those are to be deployed. `RandomWalkNFT` was deployed a few years ago, while contracts in other folders are used only for testing. Feel free to take a look at them as well, especially if you are going to review tests.
 
-- Update. We have now deployed all contracts and then upgraded the `CosmicSignatureGame` contract a few times. If a new audit is going to be conducted, only the latest `CosmicSignatureGame` contract is to be audited. It reuses some parts from older versions.
+- Update. We have now deployed all the contracts and then upgraded the `CosmicSignatureGame` contract a few times. If a new audit is going to be conducted, only the latest `CosmicSignatureGame` contract version is to be audited. It reuses some parts from older versions.
 
 #### Tests and Solidity Coverage
 
