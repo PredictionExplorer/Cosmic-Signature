@@ -44,7 +44,7 @@ Save some arguments to Hardhat Configuration Variables. If you are dealing with 
 
 - Execute `../runners/run-deploy-cosmic-signature-contracts-<network-name>.bash`. It will deploy all Cosmic Signature contracts.
 
-- Observe the newly created `../output/deploy-cosmic-signature-contracts-report-<network-name>.json` file. It contains addresses of all deployed contracts. Copy it outside the Git repo, but leave the original in-place, so that other scripts could use it. Note that the `../output` folder is included in `.gitignore` near Comment-202606197.
+- Observe the newly created `../output/deploy-cosmic-signature-contracts-report-<network-name>.json` file. It contains addresses of all deployed contracts. Save it outside the Git repo, but leave the original in-place, so that other scripts could use it. Note that the `../output` folder is included in `.gitignore` near Comment-202606197.
 
 - Only if you are dealing with a mainnet or a testnet, execute `../runners/run-register-cosmic-signature-contracts-<network-name>.bash`. It will verify and register the source code of the previously deployed Cosmic Signature contracts on ArbiScan.
 
@@ -52,12 +52,12 @@ Save some arguments to Hardhat Configuration Variables. If you are dealing with 
 
 #### Caveats
 
+- After you deploy to a mainnet or a testnet, you will notice the `.openzeppelin` subfolder under the folder in which you ran the deployment scripts. OpenZeppelin Hardhat Upgrades stores important tracking info in there. The folder contains no secrets (make sure it's the case). I deployed on Arbitrum Sepolia, deleted the folder, and then tried to upgrade. It failed. But when I deployed and upgraded on `hardhat_on_localhost`, everything worked without creating the folder. It's said to be possible to force an upgrade without the folder, but I haven't tried it.\
+So after you deploy to a testnet, it's safe to delete the folder when you no longer need it. After you deploy to a mainnet, move the folder to a location outside the Git repo. Although it's also OK to commit the folder to the Git repo.
+
 - ArbiScan returns an "already verified" error if another contract with the same source code has already been verified/registered. Hardhat Verify ignores the error, but OpenZeppelin Hardhat Upgrades does not when registering a proxy contract. Near Comment-202509125, I have implemented logic that ignores that error.
 
 - If a proxy and/or implementation contract registration failed with the "already verifified" error, sometimes it also fails to link the proxy with the implementation. If you observe such an error, link them manually on ArbiScan.
-
-- After you deploy to a mainnet or a testnet, you will notice the `.openzeppelin` subfolder under the folder in which you ran the deployment scripts. OpenZeppelin Hardhat Upgrades stores important tracking info in there. The folder contains no secrets (make sure it's the case). I deployed on Arbitrum Sepolia, deleted the folder, and then tried to upgrade. It failed. But when I deployed and upgraded on `hardhat_on_localhost`, everything worked without creating the folder. It's said to be possible to force an upgrade without the folder, but I haven't tried it.\
-So after you deploy to a testnet, it's safe to delete the folder when you no longer need it. After you deploy to a mainnet, move the folder to a location outside the Git repo. Although it's also OK to commit the folder to the Git repo.
 
 #### Afterwards
 

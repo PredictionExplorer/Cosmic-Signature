@@ -61,11 +61,11 @@ OpenZeppelin would actually disallow the upgrade from V2+ to `CosmicSignatureGam
 
 - When developing V2, I made 2 changes in V1's `CosmicSignatureGameStorage`.\
 (1) I renamed `cstRewardAmountForBidding` to `bidCstRewardAmount` (which I further renamed in V2).\
-(2) I reduced `__gap_persistent` length a few orders of magnitude, because OpenZeppelin's upgradeable contract validation logic executed by `upgradeProxy` was crashing due to an overflow. But storage layout remains compatible because the given storage variable is the last. Testing with `CosmicSignatureGameOpenBid` has not run into this case because it added a storage variable after the gap (which is a violation of Comment-202412148).\
+(2) I reduced `__gap_persistent` length a few orders of magnitude, because OpenZeppelin's upgradeable contract validation logic executed by `upgradeProxy` was crashing due to an overflow. But storage layout remains compatible because the given storage variable is the last. Testing with `CosmicSignatureGameOpenBid` has not run into this case because it added a storage variable after the gap (which is actually a violation of Comment-202412148).\
 The problem is that the initially deployed `CosmicSignatureGame` ABI still exists in the tracking info stored in `.openzeppelin`. Therefore, when upgrading to V2 in the production, OpenZeppelin's upgradeable contract validation logic will complain. To silence it, before upgrading, in `../config/upgrade-cosmic-signature-game-config-arbitrumOne-CosmicSignatureGameV2.json`, temporarily set `unsafeAllowRenames` and `unsafeSkipStorageCheck` to `true`.
 
 #### Afterwards
 
-- Revert any temporary edits you made in config files.
+- Revert any temporary edits you made in files.
 
 - See respective section in `Cosmic-Signature-Contracts-Deployment-And-Registration.md`.

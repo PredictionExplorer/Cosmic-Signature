@@ -241,7 +241,7 @@ task("upgrade-cosmic-signature-game", "Upgrades the CosmicSignatureGame contract
 	// 	const cosmicSignatureGameFactory =
 	// 		await hre.ethers.getContractFactory(deployConfigObject.cosmicSignatureGameContractName, deployerSigner);
 	// 	const cosmicSignatureGameProxy = cosmicSignatureGameFactory.attach(deployCosmicSignatureContractsReportObject.cosmicSignatureGameProxyAddress);
-	// 	await setRoundActivationTimeIfNeeded(cosmicSignatureGameProxy, 10n);
+	// 	await setRoundActivationTimeIfNeeded(cosmicSignatureGameProxy, 60n);
 	// }
 
 	const newCosmicSignatureGameFactory =
@@ -287,32 +287,30 @@ task("upgrade-cosmic-signature-game", "Upgrades the CosmicSignatureGame contract
 	}
 	console.info("%s", `Done. Report saved to "${upgradeConfigObject.reportFilePath}".${nodeOsModule.EOL}`);
 
-	// todo-0 Review and execute this code.
+	// todo-0 I have reviewed this code. Now test it.
+	// todo-0 Execute this code in the production.
 	// // [Comment-202607153]
-	// // Optionally, deploy a new `PrizesWallet` and point the game at it.
-	// // Uncomment this if the new game contract version is to be paired with a fresh `PrizesWallet`.
-	// // Remember that the old `PrizesWallet` remains live afterwards: prize winners can still withdraw
-	// // their unclaimed prizes from it, but the game will register new bidding rounds with the new one.
+	// // Pairing the new game contract with a fresh `PrizesWallet`.
 	// // The round must still be inactive for `setPrizesWallet` to succeed.
 	// // Comment-202607156 relates.
 	// // [/Comment-202607153]
 	// {
-	// 	console.info("%s", "Deploying a new PrizesWallet.");
+	// 	console.info("%s", `${nodeOsModule.EOL}Deploying a new PrizesWallet.`);
 	// 	const prizesWalletFactory = await hre.ethers.getContractFactory("PrizesWallet", deployerSigner);
 	// 	const newPrizesWallet = await prizesWalletFactory.deploy(deployCosmicSignatureContractsReportObject.cosmicSignatureGameProxyAddress);
 	// 	await newPrizesWallet.waitForDeployment();
 	// 	const newPrizesWalletAddress = await newPrizesWallet.getAddress();
 	// 	console.info(/*"%s",*/ "New PrizesWallet address:", newPrizesWalletAddress);
-	//
+	// 
 	// 	console.info("%s", "Pointing the game proxy contract at the new PrizesWallet.");
 	// 	const newCosmicSignatureGameProxy =
 	// 		newCosmicSignatureGameFactory.attach(deployCosmicSignatureContractsReportObject.cosmicSignatureGameProxyAddress);
 	// 	await waitForTransactionReceipt(newCosmicSignatureGameProxy.setPrizesWallet(newPrizesWalletAddress));
-	//
+	// 
+	// 	console.info("%s", "Done.");
 	// 	console.info(
 	// 		"%s",
-	// 		`${nodeOsModule.EOL}Reminder. Update the PrizesWallet address in "${deployConfigObject.reportFilePath}" ` +
-	// 		"and on the web site."
+	// 		`${nodeOsModule.EOL}Reminder. Update the PrizesWallet address in "${deployConfigObject.reportFilePath}" and any its copies, as well as on the web site.`
 	// 	);
 	// }
 })
@@ -332,15 +330,20 @@ task("register-upgraded-cosmic-signature-game", "Verifies and registers a newly 
 		// constructorArguments: [],
 	});
 
-	// todo-0 Review and execute this code.
+	// todo-0 I have reviewed this code. Now test it.
+	// todo-0 Execute this code in the production.
 	// // [Comment-202607156]
-	// // Optionally, register the new `PrizesWallet` deployed near Comment-202607153.
-	// // Before uncommenting and running this, edit the hardcoded address (copy it from the
-	// // upgrade-cosmic-signature-game task console output), as well as the game proxy address.
+	// // Registering the new `PrizesWallet` deployed near Comment-202607153.
+	// // Before running this, edit the hardcoded addresses.
 	// // [/Comment-202607156]
 	// {
-	// 	const newPrizesWalletAddress = "0x0000000000000000000000000000000000000000";
+	// 	// Remember to provide this value.
 	// 	const cosmicSignatureGameProxyAddress = "0x0000000000000000000000000000000000000000";
+	// 
+	// 	// Remember to provide this value.
+	// 	// Take it from the upgrade-cosmic-signature-game task console output.
+	// 	const newPrizesWalletAddress = "0x0000000000000000000000000000000000000000";
+	// 
 	// 	console.info("%s", `${nodeOsModule.EOL}Registering PrizesWallet.`);
 	// 	await hre.run("verify:verify", {
 	// 		address: newPrizesWalletAddress,
