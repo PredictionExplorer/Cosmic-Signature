@@ -61,8 +61,8 @@ library CosmicSignatureErrors {
 	/// This is used for both ETH and CST bids.
 	/// @param errStr Description of the error.
 	/// @param bidPrice The current bid price.
-	/// @param receivedAmount The amount the bidder transferred to us.
-	/// It can potentially be zero.
+	/// @param receivedAmount The ETH amount the bidder transferred to us or the maximum CST amount they allowed us to burn.
+	/// It can be zero.
 	error InsufficientReceivedBidAmount(string errStr, uint256 bidPrice, uint256 receivedAmount);
 
 	/// @notice Thrown when the actual CST reward amount for placing a bid is below the bidder's specified minimum.
