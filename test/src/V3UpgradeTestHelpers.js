@@ -8,6 +8,7 @@ const {
 	upgradeToV2,
 } = require("./V2UpgradeTestHelpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
+const { deployCosmicSignatureGameV3Modules, buildCombinedCosmicSignatureGameV3Abi } = require("../../src/ContractDeploymentHelpers.js");
 
 // #region JS mirrors of the V3 `reinitialize` defaults in `CosmicSignatureConstants`.
 
@@ -53,25 +54,42 @@ async function deployV1CompleteRoundZeroAndUpgradeToV2AndV3(roundActivationTime_
 }
 
 async function upgradeToV3(contracts_, upgradeOptions_ = {}) {
+	const modules_ = await deployCosmicSignatureGameV3Modules(contracts_.ownerSigner);
 	const cosmicSignatureGameV3Factory_ =
 		await hre.ethers.getContractFactory("CosmicSignatureGameV3", contracts_.ownerSigner);
 	const prevImplementationAddress_ =
 		await hre.upgrades.erc1967.getImplementationAddress(contracts_.cosmicSignatureGameProxyAddress);
-	const cosmicSignatureGameV3Proxy_ =
-		await hre.upgrades.upgradeProxy(
-			contracts_.cosmicSignatureGameProxy,
-			cosmicSignatureGameV3Factory_,
-			{
-				kind: "uups",
-				call: "reinitialize",
-				...upgradeOptions_,
-			}
-		);
+	await hre.upgrades.upgradeProxy(
+		contracts_.cosmicSignatureGameProxy,
+		cosmicSignatureGameV3Factory_,
+		{
+			kind: "uups",
+			call: "reinitialize",
+			constructorArgs: [modules_.cosmicSignatureGameViewsModuleAddress, modules_.cosmicSignatureGamePrizesModuleAddress,],
+			...upgradeOptions_,
+		}
+	);
 	const cosmicSignatureGameV3ImplementationAddress_ =
 		await hre.upgrades.erc1967.getImplementationAddress(contracts_.cosmicSignatureGameProxyAddress);
 	expect(cosmicSignatureGameV3ImplementationAddress_).not.equal(prevImplementationAddress_);
+
+	// The full pre-split Game ABI, attached to the proxy. Comment-202608245 applies.
+	const combinedAbi_ =
+		buildCombinedCosmicSignatureGameV3Abi(
+			cosmicSignatureGameV3Factory_.interface,
+			[
+				modules_.cosmicSignatureGameViewsModuleFactory.interface,
+				modules_.cosmicSignatureGameAdminModuleFactory.interface,
+				modules_.cosmicSignatureGamePrizesModuleFactory.interface,
+			]
+		);
+	const cosmicSignatureGameV3Proxy_ =
+		new hre.ethers.Contract(contracts_.cosmicSignatureGameProxyAddress, combinedAbi_, contracts_.ownerSigner);
+
+	Object.assign(contracts_, modules_);
 	contracts_.cosmicSignatureGameV3Factory = cosmicSignatureGameV3Factory_;
 	contracts_.cosmicSignatureGameV3Proxy = cosmicSignatureGameV3Proxy_;
+	contracts_.cosmicSignatureGameV3CombinedAbi = combinedAbi_;
 	contracts_.cosmicSignatureGameV3ImplementationAddress = cosmicSignatureGameV3ImplementationAddress_;
 }
 

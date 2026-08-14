@@ -4,16 +4,18 @@
 //
 // [Comment-202608128]
 // This script:
-//    1. Validates V2 -> V3 storage layout compatibility with the OpenZeppelin Upgrades plugin.
+//    1. Validates V2 -> V3 storage layout compatibility with the OpenZeppelin Upgrades machinery
+//       (the V3 implementation and additionally each of the 3 delegatecall modules, Comment-202608245).
 //    2. Forks the live blockchain in the in-process Hardhat Network.
 //    3. Snapshots the game proxy state (every storage-backed no-argument getter).
-//    4. Impersonates the contract owner and performs `upgradeToAndCall` to a freshly deployed `CosmicSignatureGameV3`,
-//       with `reinitialize` as the call payload -- the same effect the "upgrade-cosmic-signature-game" Hardhat task
-//       produces in the production.
+//    4. Impersonates the contract owner, deploys the 3 delegatecall modules and a fresh `CosmicSignatureGameV3`
+//       implementation wired to them, and performs `upgradeToAndCall` with `reinitialize` as the call payload --
+//       the same effect the "upgrade-cosmic-signature-game" Hardhat task produces in the production.
 //    5. Verifies: the implementation address changed; the initialized version is 3; every carried-over storage
 //       variable is unchanged, except the values that `reinitialize` intentionally overwrites; the new V3 parameters
 //       have the expected defaults; the retired setters revert; `reinitialize` cannot run twice;
-//       the new setters validate zero values.
+//       the new setters validate zero values; an unknown selector reverts with empty data;
+//       calling a module directly is harmless (Comment-202608247).
 //    6. Smoke-tests gameplay: an ETH bid, the same-second bid throttle, the bid CST reward minted to the previous
 //       bidder, and, when possible, a CST bid and a main prize claim with `mainPrizeNumCosmicSignatureNfts` NFTs.
 //
@@ -33,6 +35,7 @@
 "use strict";
 
 const hre = require("hardhat");
+const { deployCosmicSignatureGameV3Modules, getCosmicSignatureGameV3CombinedAbiContract } = require("../../src/ContractDeploymentHelpers.js");
 
 // #endregion
 // #region Constants.
@@ -176,19 +179,54 @@ async function main() {
 	// #endregion
 	// #region Validating storage layout compatibility.
 
-	console.info("%s", "Validating V2 -> V3 storage layout compatibility with the OpenZeppelin Upgrades plugin.");
+	console.info("%s", "Validating V2 -> V3 storage layout compatibility with the OpenZeppelin Upgrades machinery.");
 	{
-		const cosmicSignatureGameV2Factory_ = await hre.ethers.getContractFactory("CosmicSignatureGameV2");
-		const cosmicSignatureGameV3Factory_ = await hre.ethers.getContractFactory("CosmicSignatureGameV3");
-		await hre.upgrades.validateUpgrade(cosmicSignatureGameV2Factory_, cosmicSignatureGameV3Factory_, {kind: "uups",});
+		// The plugin's `validateUpgrade(factory1, factory2, options)` passes a single `constructorArgs` to both
+		// factories, which cannot work here, because the V3 implementation constructor takes 2 arguments
+		// while the V2 one takes none. So this uses the same machinery one level lower, with per-factory
+		// deploy data, which is exactly what `validateUpgrade` does internally.
+		const { getDeployData } = require("@openzeppelin/hardhat-upgrades/dist/utils/deploy-impl.js");
+		const { assertUpgradeSafe, assertStorageUpgradeSafe } = require("@openzeppelin/upgrades-core");
+		const zeroAddress_ = hre.ethers.ZeroAddress;
+		const cosmicSignatureGameV2DeployData_ =
+			await getDeployData(hre, await hre.ethers.getContractFactory("CosmicSignatureGameV2"), {kind: "uups",});
+		const newContractDescriptors_ = [
+			// The implementation is the OpenZeppelin-managed contract, so it gets the full upgrade safety
+			// assertion (its constructor and immutables carry the `@custom:oz-upgrades-unsafe-allow` annotations)
+			// plus the storage layout assertion.
+			{contractName: "CosmicSignatureGameV3", constructorArgs: [zeroAddress_, zeroAddress_,], isPluginManaged: true,},
+
+			// The modules are plain non-upgradeable contracts (Comment-202608253), so the upgrade-pattern
+			// hygiene assertion does not apply to them; but they see the same proxy storage under `delegatecall`,
+			// so each of them must be storage-compatible with the live V2 layout.
+			// `CosmicSignatureGameV3-ModularEquality.js` additionally asserts that their layouts are identical
+			// to the implementation's.
+			{contractName: "CosmicSignatureGameViewsModuleV3", constructorArgs: [zeroAddress_,], isPluginManaged: false,},
+			{contractName: "CosmicSignatureGameAdminModuleV3", constructorArgs: [zeroAddress_,], isPluginManaged: false,},
+			{contractName: "CosmicSignatureGamePrizesModuleV3", constructorArgs: [], isPluginManaged: false,},
+		];
+		for (const newContractDescriptor_ of newContractDescriptors_) {
+			const newContractDeployData_ =
+				await getDeployData(
+					hre,
+					await hre.ethers.getContractFactory(newContractDescriptor_.contractName),
+					{kind: "uups", constructorArgs: newContractDescriptor_.constructorArgs, unsafeAllow: ["missing-initializer",],}
+				);
+			if (newContractDescriptor_.isPluginManaged) {
+				assertUpgradeSafe(newContractDeployData_.validations, newContractDeployData_.version, newContractDeployData_.fullOpts);
+			}
+			assertStorageUpgradeSafe(cosmicSignatureGameV2DeployData_.layout, newContractDeployData_.layout, newContractDeployData_.fullOpts);
+			check(true, `OpenZeppelin storage layout validation: CosmicSignatureGameV2 -> ${newContractDescriptor_.contractName} is storage-compatible.`);
+		}
 	}
-	check(true, "OpenZeppelin validateUpgrade: CosmicSignatureGameV2 -> CosmicSignatureGameV3 is storage-compatible.");
 
 	// #endregion
 	// #region Snapshotting the pre-upgrade state.
 
 	const cosmicSignatureGameV2Proxy_ = await hre.ethers.getContractAt("CosmicSignatureGameV2", proxyAddress_);
-	const cosmicSignatureGameV3Proxy_ = await hre.ethers.getContractAt("CosmicSignatureGameV3", proxyAddress_);
+
+	// The full combined ABI of the modular V3 Game (Comment-202608245), bound to the proxy.
+	const cosmicSignatureGameV3Proxy_ = await getCosmicSignatureGameV3CombinedAbiContract(proxyAddress_, hre.ethers.provider);
 
 	const oldImplementationAddress_ = await hre.upgrades.erc1967.getImplementationAddress(proxyAddress_);
 	console.info(/*"%s",*/ "Current implementation address:", oldImplementationAddress_);
@@ -236,9 +274,16 @@ async function main() {
 	await hre.network.provider.request({method: "hardhat_setBalance", params: [ownerAddress_, hre.ethers.toBeHex(10n * 10n ** 18n),],});
 	const ownerSigner_ = await hre.ethers.getSigner(ownerAddress_);
 
+	console.info("%s", "Deploying the CosmicSignatureGame V3 delegatecall modules.");
+	const modules_ = await deployCosmicSignatureGameV3Modules(ownerSigner_);
+	console.info(/*"%s",*/ "CosmicSignatureGamePrizesModuleV3 address:", modules_.cosmicSignatureGamePrizesModuleAddress);
+	console.info(/*"%s",*/ "CosmicSignatureGameAdminModuleV3 address:", modules_.cosmicSignatureGameAdminModuleAddress);
+	console.info(/*"%s",*/ "CosmicSignatureGameViewsModuleV3 address:", modules_.cosmicSignatureGameViewsModuleAddress);
+
 	console.info("%s", "Deploying the CosmicSignatureGameV3 implementation.");
 	const cosmicSignatureGameV3Factory_ = await hre.ethers.getContractFactory("CosmicSignatureGameV3", ownerSigner_);
-	const newCosmicSignatureGameImplementation_ = await cosmicSignatureGameV3Factory_.deploy();
+	const newCosmicSignatureGameImplementation_ =
+		await cosmicSignatureGameV3Factory_.deploy(modules_.cosmicSignatureGameViewsModuleAddress, modules_.cosmicSignatureGamePrizesModuleAddress);
 	await newCosmicSignatureGameImplementation_.waitForDeployment();
 	const newImplementationAddress_ = await newCosmicSignatureGameImplementation_.getAddress();
 	console.info(/*"%s",*/ "New implementation address:", newImplementationAddress_);
@@ -331,6 +376,23 @@ async function main() {
 			"setMainPrizeNumCosmicSignatureNfts works for the owner while the round is inactive."
 		);
 	}
+
+	// The modular architecture specifics. Comment-202608245 applies.
+	await checkReverts(
+		hre.ethers.provider.call({to: proxyAddress_, data: "0xdeadbeef",}),
+		"",
+		"An unknown selector reverts, exactly like on the monolith."
+	);
+	await checkReverts(
+		modules_.cosmicSignatureGameAdminModule.connect(ownerSigner_).setMainPrizeNumCosmicSignatureNfts(1n),
+		"OwnableUnauthorizedAccount",
+		"A configuration setter called directly on the admin module (not through the proxy) reverts. Comment-202608247 applies."
+	);
+	await checkReverts(
+		modules_.cosmicSignatureGamePrizesModule.connect(ownerSigner_).claimMainPrize(),
+		"NoBidsPlacedInCurrentRound",
+		"claimMainPrize called directly on the prizes module (not through the proxy) reverts. Comment-202608247 applies."
+	);
 
 	// #endregion
 	// #region Restoring `roundActivationTime` if we modified it.

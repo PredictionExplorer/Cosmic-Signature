@@ -57,11 +57,13 @@ describe("CosmicSignatureGameV3-GuardsAndMisconfig", function () {
 		const cosmicSignatureGameV3Factory_ = await hre.ethers.getContractFactory("CosmicSignatureGameV3", contracts_.ownerSigner);
 		if (ENABLE_ASSERTS) {
 			// `CosmicSignatureGameV3._checkIfPrevVersionWasInitialized` asserts `_getInitializedVersion() == 2`.
+			// The upgrade transaction reverts at `reinitialize`, so zero module addresses are adequate
+			// for the implementation deployment here. Comment-202608245 applies.
 			await expect(
 				hre.upgrades.upgradeProxy(
 					contracts_.cosmicSignatureGameProxy,
 					cosmicSignatureGameV3Factory_,
-					{ kind: "uups", call: "reinitialize" }
+					{ kind: "uups", call: "reinitialize", constructorArgs: [hre.ethers.ZeroAddress, hre.ethers.ZeroAddress,] }
 				)
 			).revertedWithPanic(0x1);
 		} else {

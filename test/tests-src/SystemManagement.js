@@ -7,6 +7,7 @@ const hre = require("hardhat");
 const { generateRandomUInt256, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { setRoundActivationTimeIfNeeded } = require("../../src/ContractDeploymentHelpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
+const { upgradeToV3 } = require("../src/V3UpgradeTestHelpers.js");
 
 describe("SystemManagement", function () {
 	it("Setters while the current bidding round is inactive", async function () {
@@ -39,17 +40,10 @@ describe("SystemManagement", function () {
 				// await cosmicSignatureGameProxy_.waitForDeployment();
 
 				if (contractVersionNumber_ >= 3) {
-					const cosmicSignatureGameV3Factory_ =
-						await hre.ethers.getContractFactory("CosmicSignatureGameV3", contracts_.ownerSigner);
-					cosmicSignatureGameProxy_ =
-						await hre.upgrades.upgradeProxy(
-							contracts_.cosmicSignatureGameProxy,
-							cosmicSignatureGameV3Factory_,
-							{
-								kind: "uups",
-								call: "reinitialize",
-							}
-						);
+					// The V3 upgrade deploys the delegatecall modules and attaches the combined ABI.
+					// Comment-202608245 applies.
+					await upgradeToV3(contracts_);
+					cosmicSignatureGameProxy_ = contracts_.cosmicSignatureGameV3Proxy;
 				}
 
 				cosmicSignatureGameProxyForOwner_ = cosmicSignatureGameProxy_.connect(contracts_.ownerSigner);
@@ -521,18 +515,25 @@ describe("SystemManagement", function () {
 			// await hre.ethers.provider.send("evm_mine");
 			await waitForTransactionReceipt(cosmicSignatureGameProxyForSigner_.claimMainPrize());
 
-			const newCosmicSignatureGameFactory_ =
-				await hre.ethers.getContractFactory((contractVersionNumber_ < 2) ? "CosmicSignatureGameV2" : "CosmicSignatureGameV3", contracts_.ownerSigner);
-			const newCosmicSignatureGameProxy_ =
-				await hre.upgrades.upgradeProxy(
-					contracts_.cosmicSignatureGameProxy,
-					newCosmicSignatureGameFactory_,
-					{
-						kind: "uups",
-						call: "reinitialize",
-					}
-				);
-			// await newCosmicSignatureGameProxy_.waitForDeployment();
+			let newCosmicSignatureGameProxy_;
+			if (contractVersionNumber_ < 2) {
+				const newCosmicSignatureGameFactory_ =
+					await hre.ethers.getContractFactory("CosmicSignatureGameV2", contracts_.ownerSigner);
+				newCosmicSignatureGameProxy_ =
+					await hre.upgrades.upgradeProxy(
+						contracts_.cosmicSignatureGameProxy,
+						newCosmicSignatureGameFactory_,
+						{
+							kind: "uups",
+							call: "reinitialize",
+						}
+					);
+				// await newCosmicSignatureGameProxy_.waitForDeployment();
+			} else {
+				// The V3 upgrade deploys the delegatecall modules and attaches the combined ABI. Comment-202608245 applies.
+				await upgradeToV3(contracts_);
+				newCosmicSignatureGameProxy_ = contracts_.cosmicSignatureGameV3Proxy;
+			}
 			
 			cosmicSignatureGameProxyForOwner_ = newCosmicSignatureGameProxy_.connect(contracts_.ownerSigner);
 			cosmicSignatureGameProxyForSigner_ = newCosmicSignatureGameProxy_.connect(contracts_.signers[3]);
@@ -613,18 +614,25 @@ describe("SystemManagement", function () {
 				break;
 			}
 
-			const newCosmicSignatureGameFactory_ =
-				await hre.ethers.getContractFactory((contractVersionNumber_ < 2) ? "CosmicSignatureGameV2" : "CosmicSignatureGameV3", contracts_.ownerSigner);
-			const newCosmicSignatureGameProxy_ =
-				await hre.upgrades.upgradeProxy(
-					contracts_.cosmicSignatureGameProxy,
-					newCosmicSignatureGameFactory_,
-					{
-						kind: "uups",
-						call: "reinitialize",
-					}
-				);
-			// await newCosmicSignatureGameProxy_.waitForDeployment();
+			let newCosmicSignatureGameProxy_;
+			if (contractVersionNumber_ < 2) {
+				const newCosmicSignatureGameFactory_ =
+					await hre.ethers.getContractFactory("CosmicSignatureGameV2", contracts_.ownerSigner);
+				newCosmicSignatureGameProxy_ =
+					await hre.upgrades.upgradeProxy(
+						contracts_.cosmicSignatureGameProxy,
+						newCosmicSignatureGameFactory_,
+						{
+							kind: "uups",
+							call: "reinitialize",
+						}
+					);
+				// await newCosmicSignatureGameProxy_.waitForDeployment();
+			} else {
+				// The V3 upgrade deploys the delegatecall modules and attaches the combined ABI. Comment-202608245 applies.
+				await upgradeToV3(contracts_);
+				newCosmicSignatureGameProxy_ = contracts_.cosmicSignatureGameV3Proxy;
+			}
 
 			cosmicSignatureGameProxyForSigner_ = newCosmicSignatureGameProxy_.connect(contracts_.signers[3]);
 		}

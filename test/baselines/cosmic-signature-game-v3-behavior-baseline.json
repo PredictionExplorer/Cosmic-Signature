@@ -1,0 +1,3279 @@
+{
+	"note": "Behavior baseline of the CosmicSignatureGameV3 monolith, recorded by test/tests-src/CosmicSignatureGameV3-BehaviorParity.js. Comment-202608242 applies.",
+	"commit": "9496fc3145d280cc8479d3f960650ec006569c71",
+	"generatedAt": "2026-08-14T07:21:33.009Z",
+	"steps": [
+		{
+			"kind": "probe",
+			"label": "retired setter reverts NotImplemented",
+			"outcome": {
+				"succeeded": false,
+				"revertData": "0xd6234725"
+			}
+		},
+		{
+			"kind": "probe",
+			"label": "zero value rejected by V3 setter",
+			"outcome": {
+				"succeeded": false,
+				"revertData": "0xd0fd11df0000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000007a4484090000000000000000000000000000000000000000000000000000000083aa7e80000000000000000000000000000000000000000000000000000000000000002c5468652063757272656e742062696464696e6720726f756e6420697320616c7265616479206163746976652e0000000000000000000000000000000000000000"
+			}
+		},
+		{
+			"kind": "probe",
+			"label": "reinitialize replay rejected",
+			"outcome": {
+				"succeeded": false,
+				"revertData": "0xf92ee8a9"
+			}
+		},
+		{
+			"kind": "probe",
+			"label": "non-owner cannot upgrade",
+			"outcome": {
+				"succeeded": false,
+				"revertData": "0x118cdaa700000000000000000000000070997970c51812dc3a010c7d01b50e0d17dc79c8"
+			}
+		},
+		{
+			"kind": "probe",
+			"label": "non-owner cannot set parameters",
+			"outcome": {
+				"succeeded": false,
+				"revertData": "0x118cdaa700000000000000000000000070997970c51812dc3a010c7d01b50e0d17dc79c8"
+			}
+		},
+		{
+			"kind": "probe",
+			"label": "unknown selector reverts without data",
+			"outcome": {
+				"succeeded": false,
+				"revertData": "0x"
+			}
+		},
+		{
+			"kind": "transaction",
+			"label": "owner sets delayDurationBeforeRoundActivation",
+			"blockTimeStamp": "2208988810",
+			"events": [
+				{
+					"emitter": "game-proxy",
+					"event": "DelayDurationBeforeRoundActivationChanged",
+					"arguments": [
+						[
+							"newValue",
+							"1800"
+						]
+					]
+				}
+			]
+		},
+		{
+			"kind": "transaction",
+			"label": "owner sets roundActivationTime",
+			"blockTimeStamp": "2208988811",
+			"events": [
+				{
+					"emitter": "game-proxy",
+					"event": "RoundActivationTimeChanged",
+					"arguments": [
+						[
+							"newValue",
+							"2208988820"
+						]
+					]
+				}
+			]
+		},
+		{
+			"kind": "probe",
+			"label": "bid before round activation rejected",
+			"outcome": {
+				"succeeded": false,
+				"revertData": "0x16df8bd800000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000083aa7e940000000000000000000000000000000000000000000000000000000083aa7e8b000000000000000000000000000000000000000000000000000000000000002c5468652063757272656e742062696464696e6720726f756e64206973206e6f7420616374697665207965742e0000000000000000000000000000000000000000"
+			}
+		},
+		{
+			"kind": "snapshot",
+			"label": "pre-bids",
+			"values": {
+				"roundNum": "1",
+				"lastBidderAddress": "zero-address",
+				"lastCstBidderAddress": "zero-address",
+				"enduranceChampionAddress": "zero-address",
+				"enduranceChampionStartTimeStamp": "2051222402",
+				"enduranceChampionDuration": "86399",
+				"prevEnduranceChampionDuration": "0",
+				"chronoWarriorAddress": "zero-address",
+				"chronoWarriorDuration": "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+				"delayDurationBeforeRoundActivation": "1800",
+				"roundActivationTime": "2208988820",
+				"ethDutchAuctionDurationDivisor": "20833",
+				"ethDutchAuctionBeginningBidPrice": "200000000000000",
+				"ethDutchAuctionEndingBidPriceDivisor": "200",
+				"nextEthBidPrice": "101000000000001",
+				"ethBidPriceIncreaseDivisor": "100",
+				"ethBidRefundAmountInGasToSwallowMaxLimit": "6843",
+				"cstDutchAuctionBeginningTimeStamp": "2051222402",
+				"cstDutchAuctionDuration": "43200",
+				"cstDutchAuctionBeginningBidPrice": "0",
+				"nextRoundFirstCstDutchAuctionBeginningBidPrice": "200000000000000000000",
+				"cstDutchAuctionBeginningBidPriceMinLimit": "1000000000000000000",
+				"bidMessageLengthMaxLimit": "280",
+				"bidCstRewardAmountMultiplier": "60000000000000000000000000",
+				"cstPrizeAmount": "1000000000000000000000",
+				"chronoWarriorEthPrizeAmountPercentage": "15",
+				"raffleTotalEthPrizeAmountForBiddersPercentage": "5",
+				"numRaffleEthPrizesForBidders": "3",
+				"numRaffleCosmicSignatureNftsForBidders": "10",
+				"numRaffleCosmicSignatureNftsForRandomWalkNftStakers": "10",
+				"cosmicSignatureNftStakingTotalEthRewardAmountPercentage": "5",
+				"initialDurationUntilMainPrizeDivisor": "41667",
+				"mainPrizeTime": "2051308801",
+				"mainPrizeTimeIncrementInMicroSeconds": "3636000000",
+				"mainPrizeTimeIncrementIncreaseDivisor": "100",
+				"timeoutDurationToClaimMainPrize": "172800",
+				"mainEthPrizeAmountPercentage": "20",
+				"token": "token",
+				"randomWalkNft": "random-walk-nft",
+				"nft": "nft",
+				"prizesWallet": "prizes-wallet",
+				"stakingWalletRandomWalkNft": "staking-wallet-random-walk-nft",
+				"stakingWalletCosmicSignatureNft": "staking-wallet-cosmic-signature-nft",
+				"marketingWallet": "marketing-wallet",
+				"marketingWalletCstContributionAmount": "3000000000000000000000",
+				"charityAddress": "charity-wallet",
+				"charityEthDonationAmountPercentage": "5",
+				"cstDutchAuctionDurationChangeDivisor": "250",
+				"cstBidPriceDeclineMultiplier": "16666666666666667",
+				"cstBidPriceDeclineMultiplierChangeDivisor": "100",
+				"roundLateBidDurationDivisor": "3000000",
+				"roundLateBidPricePremiumAmountBaseMultiplier": "29228998656",
+				"roundLateBidPricePremiumAmountExponent": "8",
+				"mainPrizeNumCosmicSignatureNfts": "3",
+				"numEthDonationWithInfoRecords": "0",
+				"owner": "owner",
+				"UPGRADE_INTERFACE_VERSION": "5.0.0",
+				"getNextEthBidPrice": "200000000000000",
+				"getNextCstBidPrice": "0",
+				"getBidCstRewardAmount": "0",
+				"getEthDutchAuctionDurations": [
+					"174530",
+					"-9"
+				],
+				"getCstDutchAuctionDurations": [
+					"12000",
+					"157766409"
+				],
+				"getMainEthPrizeAmount": "11200000000000",
+				"getCharityEthDonationAmount": "2800000000000",
+				"getChronoWarriorEthPrizeAmount": "8400000000000",
+				"getRaffleTotalEthPrizeAmountForBidders": "2800000000000",
+				"getCosmicSignatureNftStakingTotalEthRewardAmount": "2800000000000",
+				"getMainPrizeTimeIncrement": "3636",
+				"getInitialDurationUntilMainPrize": "87263",
+				"getDurationUntilMainPrize": "0",
+				"getDurationUntilMainPrizeRaw": "-157680010",
+				"getDurationUntilRoundActivation": "9",
+				"getDurationElapsedSinceRoundActivation": "-9",
+				"getRoundLateBidDuration": "1212",
+				"getEthPlusRandomWalkNftBidPrice": "500000000000000000",
+				"tryGetCurrentChampions": [
+					"zero-address",
+					"0",
+					"zero-address",
+					"0"
+				],
+				"getTotalNumBids(currentRound)": "0",
+				"championDurations(1)": [
+					"0",
+					"0"
+				],
+				"championDurations(2)": [
+					"0",
+					"0"
+				],
+				"balance:game": "56000000000001",
+				"balance:prizes-wallet": "11999999999999",
+				"balance:charity-wallet": "7000000000000",
+				"balance:staking-wallet-cosmic-signature-nft": "0",
+				"totalSupply:token": "16100000000000000000000",
+				"totalSupply:nft": "13",
+				"balanceOf:token:marketing-wallet": "3000000000000000000000"
+			}
+		},
+		{
+			"kind": "transaction",
+			"label": "signer-1 places the first ETH bid",
+			"blockTimeStamp": "2208988820",
+			"events": [
+				{
+					"emitter": "game-proxy",
+					"event": "FirstBidPlacedInRound",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"blockTimeStamp",
+							"2208988820"
+						]
+					]
+				},
+				{
+					"emitter": "game-proxy",
+					"event": "BidPlaced",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"lastBidderAddress",
+							"signer-1"
+						],
+						[
+							"paidEthPrice",
+							"200000000000000"
+						],
+						[
+							"paidCstPrice",
+							"-1"
+						],
+						[
+							"randomWalkNftId",
+							"-1"
+						],
+						[
+							"message",
+							"hello world"
+						],
+						[
+							"bidCstRewardAmount",
+							"0"
+						],
+						[
+							"cstBidPriceDeclineMultiplier",
+							"16833333333333333"
+						],
+						[
+							"mainPrizeTime",
+							"2209076083"
+						]
+					]
+				}
+			]
+		},
+		{
+			"kind": "probe",
+			"label": "same-second bid rejected",
+			"outcome": {
+				"succeeded": false,
+				"revertData": "0xf3bb3803"
+			}
+		},
+		{
+			"kind": "probe",
+			"label": "CST bid rejected while it is not the first bid... but with a bid placed it is allowed to fail on price only; probing max limit 0",
+			"outcome": {
+				"succeeded": false,
+				"revertData": "0xf3bb3803"
+			}
+		},
+		{
+			"kind": "transaction",
+			"label": "signer-2 places an ETH bid with a generous overpayment",
+			"blockTimeStamp": "2208988850",
+			"events": [
+				{
+					"emitter": "token",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"signer-1"
+						],
+						[
+							"value",
+							"495049504950495049"
+						]
+					]
+				},
+				{
+					"emitter": "game-proxy",
+					"event": "BidPlaced",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"lastBidderAddress",
+							"signer-2"
+						],
+						[
+							"paidEthPrice",
+							"202000000000001"
+						],
+						[
+							"paidCstPrice",
+							"-1"
+						],
+						[
+							"randomWalkNftId",
+							"-1"
+						],
+						[
+							"message",
+							""
+						],
+						[
+							"bidCstRewardAmount",
+							"495049504950495049"
+						],
+						[
+							"cstBidPriceDeclineMultiplier",
+							"17001666666666666"
+						],
+						[
+							"mainPrizeTime",
+							"2209079719"
+						]
+					]
+				}
+			]
+		},
+		{
+			"kind": "transaction",
+			"label": "signer-2 mints a Random Walk NFT",
+			"blockTimeStamp": "2208988880",
+			"events": [
+				{
+					"emitter": "random-walk-nft",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"signer-2"
+						],
+						[
+							"tokenId",
+							"0"
+						]
+					]
+				},
+				{
+					"emitter": "random-walk-nft",
+					"event": "MintEvent",
+					"arguments": [
+						[
+							"tokenId",
+							"0"
+						],
+						[
+							"owner",
+							"signer-2"
+						],
+						[
+							"seed",
+							"0xe3fc64edc3c949602ebbea5530871455e484834ee549771710f61ab6c7c9af39"
+						],
+						[
+							"price",
+							"1001100000000000"
+						]
+					]
+				}
+			]
+		},
+		{
+			"kind": "transaction",
+			"label": "signer-2 places an ETH bid with a Random Walk NFT",
+			"blockTimeStamp": "2208988881",
+			"events": [
+				{
+					"emitter": "token",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"signer-2"
+						],
+						[
+							"value",
+							"511551155115511551"
+						]
+					]
+				},
+				{
+					"emitter": "game-proxy",
+					"event": "BidPlaced",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"lastBidderAddress",
+							"signer-2"
+						],
+						[
+							"paidEthPrice",
+							"102010000000001"
+						],
+						[
+							"paidCstPrice",
+							"-1"
+						],
+						[
+							"randomWalkNftId",
+							"0"
+						],
+						[
+							"message",
+							"rw bid"
+						],
+						[
+							"bidCstRewardAmount",
+							"511551155115511551"
+						],
+						[
+							"cstBidPriceDeclineMultiplier",
+							"17171683333333332"
+						],
+						[
+							"mainPrizeTime",
+							"2209083355"
+						]
+					]
+				}
+			]
+		},
+		{
+			"kind": "probe",
+			"label": "reusing the Random Walk NFT is rejected",
+			"outcome": {
+				"succeeded": false,
+				"revertData": "0xf3bb3803"
+			}
+		},
+		{
+			"kind": "probe",
+			"label": "bidding with a foreign Random Walk NFT is rejected",
+			"outcome": {
+				"succeeded": false,
+				"revertData": "0xf3bb3803"
+			}
+		},
+		{
+			"kind": "transaction",
+			"label": "signer-3 places an ETH bid and donates an ERC-20 token",
+			"blockTimeStamp": "2208988920",
+			"events": [
+				{
+					"emitter": "token",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"signer-2"
+						],
+						[
+							"value",
+							"643564356435643564"
+						]
+					]
+				},
+				{
+					"emitter": "game-proxy",
+					"event": "BidPlaced",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"lastBidderAddress",
+							"signer-3"
+						],
+						[
+							"paidEthPrice",
+							"206060200000003"
+						],
+						[
+							"paidCstPrice",
+							"-1"
+						],
+						[
+							"randomWalkNftId",
+							"-1"
+						],
+						[
+							"message",
+							"with token"
+						],
+						[
+							"bidCstRewardAmount",
+							"643564356435643564"
+						],
+						[
+							"cstBidPriceDeclineMultiplier",
+							"17343400166666665"
+						],
+						[
+							"mainPrizeTime",
+							"2209086991"
+						]
+					]
+				},
+				{
+					"emitter": "mock-erc20",
+					"event": "Approval",
+					"arguments": [
+						[
+							"owner",
+							"unknown-0"
+						],
+						[
+							"spender",
+							"prizes-wallet"
+						],
+						[
+							"value",
+							"115792089237316195423570985008687907853269984665640564039457584007913129639935"
+						]
+					]
+				},
+				{
+					"emitter": "prizes-wallet",
+					"event": "TokenDonated",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"donorAddress",
+							"signer-3"
+						],
+						[
+							"tokenAddress",
+							"mock-erc20"
+						],
+						[
+							"amount",
+							"1000"
+						]
+					]
+				},
+				{
+					"emitter": "mock-erc20",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"signer-3"
+						],
+						[
+							"to",
+							"unknown-0"
+						],
+						[
+							"value",
+							"1000"
+						]
+					]
+				}
+			]
+		},
+		{
+			"kind": "transaction",
+			"label": "signer-4 places an ETH bid and donates an NFT",
+			"blockTimeStamp": "2208988950",
+			"events": [
+				{
+					"emitter": "token",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"signer-3"
+						],
+						[
+							"value",
+							"495049504950495049"
+						]
+					]
+				},
+				{
+					"emitter": "game-proxy",
+					"event": "BidPlaced",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"lastBidderAddress",
+							"signer-4"
+						],
+						[
+							"paidEthPrice",
+							"208120802000004"
+						],
+						[
+							"paidCstPrice",
+							"-1"
+						],
+						[
+							"randomWalkNftId",
+							"-1"
+						],
+						[
+							"message",
+							"with nft"
+						],
+						[
+							"bidCstRewardAmount",
+							"495049504950495049"
+						],
+						[
+							"cstBidPriceDeclineMultiplier",
+							"17516834168333331"
+						],
+						[
+							"mainPrizeTime",
+							"2209090627"
+						]
+					]
+				},
+				{
+					"emitter": "prizes-wallet",
+					"event": "NftDonated",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"donorAddress",
+							"signer-4"
+						],
+						[
+							"nftAddress",
+							"mock-erc721"
+						],
+						[
+							"nftId",
+							"1"
+						],
+						[
+							"index",
+							"0"
+						]
+					]
+				},
+				{
+					"emitter": "mock-erc721",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"signer-4"
+						],
+						[
+							"to",
+							"prizes-wallet"
+						],
+						[
+							"tokenId",
+							"1"
+						]
+					]
+				}
+			]
+		},
+		{
+			"kind": "transaction",
+			"label": "signer-5 donates ETH",
+			"blockTimeStamp": "2208988960",
+			"events": [
+				{
+					"emitter": "game-proxy",
+					"event": "EthDonated",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"donorAddress",
+							"signer-5"
+						],
+						[
+							"amount",
+							"100000000000000000"
+						]
+					]
+				}
+			]
+		},
+		{
+			"kind": "transaction",
+			"label": "signer-5 donates ETH with info",
+			"blockTimeStamp": "2208988961",
+			"events": [
+				{
+					"emitter": "game-proxy",
+					"event": "EthDonatedWithInfo",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"donorAddress",
+							"signer-5"
+						],
+						[
+							"amount",
+							"10000000000000000"
+						],
+						[
+							"ethDonationWithInfoRecordIndex",
+							"0"
+						]
+					]
+				}
+			]
+		},
+		{
+			"kind": "snapshot",
+			"label": "mid-round",
+			"values": {
+				"roundNum": "1",
+				"lastBidderAddress": "signer-4",
+				"lastCstBidderAddress": "zero-address",
+				"enduranceChampionAddress": "signer-2",
+				"enduranceChampionStartTimeStamp": "2208988881",
+				"enduranceChampionDuration": "39",
+				"prevEnduranceChampionDuration": "31",
+				"chronoWarriorAddress": "signer-1",
+				"chronoWarriorDuration": "60",
+				"delayDurationBeforeRoundActivation": "1800",
+				"roundActivationTime": "2208988820",
+				"ethDutchAuctionDurationDivisor": "20833",
+				"ethDutchAuctionBeginningBidPrice": "400000000000000",
+				"ethDutchAuctionEndingBidPriceDivisor": "200",
+				"nextEthBidPrice": "210202010020005",
+				"ethBidPriceIncreaseDivisor": "100",
+				"ethBidRefundAmountInGasToSwallowMaxLimit": "6843",
+				"cstDutchAuctionBeginningTimeStamp": "2208988820",
+				"cstDutchAuctionDuration": "43200",
+				"cstDutchAuctionBeginningBidPrice": "0",
+				"nextRoundFirstCstDutchAuctionBeginningBidPrice": "200000000000000000000",
+				"cstDutchAuctionBeginningBidPriceMinLimit": "1000000000000000000",
+				"bidMessageLengthMaxLimit": "280",
+				"bidCstRewardAmountMultiplier": "60000000000000000000000000",
+				"cstPrizeAmount": "1000000000000000000000",
+				"chronoWarriorEthPrizeAmountPercentage": "15",
+				"raffleTotalEthPrizeAmountForBiddersPercentage": "5",
+				"numRaffleEthPrizesForBidders": "3",
+				"numRaffleCosmicSignatureNftsForBidders": "10",
+				"numRaffleCosmicSignatureNftsForRandomWalkNftStakers": "10",
+				"cosmicSignatureNftStakingTotalEthRewardAmountPercentage": "5",
+				"initialDurationUntilMainPrizeDivisor": "41667",
+				"mainPrizeTime": "2209090627",
+				"mainPrizeTimeIncrementInMicroSeconds": "3636000000",
+				"mainPrizeTimeIncrementIncreaseDivisor": "100",
+				"timeoutDurationToClaimMainPrize": "172800",
+				"mainEthPrizeAmountPercentage": "20",
+				"token": "token",
+				"randomWalkNft": "random-walk-nft",
+				"nft": "nft",
+				"prizesWallet": "prizes-wallet",
+				"stakingWalletRandomWalkNft": "staking-wallet-random-walk-nft",
+				"stakingWalletCosmicSignatureNft": "staking-wallet-cosmic-signature-nft",
+				"marketingWallet": "marketing-wallet",
+				"marketingWalletCstContributionAmount": "3000000000000000000000",
+				"charityAddress": "charity-wallet",
+				"charityEthDonationAmountPercentage": "5",
+				"cstDutchAuctionDurationChangeDivisor": "250",
+				"cstBidPriceDeclineMultiplier": "17516834168333331",
+				"cstBidPriceDeclineMultiplierChangeDivisor": "100",
+				"roundLateBidDurationDivisor": "3000000",
+				"roundLateBidPricePremiumAmountBaseMultiplier": "29228998656",
+				"roundLateBidPricePremiumAmountExponent": "8",
+				"mainPrizeNumCosmicSignatureNfts": "3",
+				"numEthDonationWithInfoRecords": "1",
+				"owner": "owner",
+				"UPGRADE_INTERFACE_VERSION": "5.0.0",
+				"getNextEthBidPrice": "210202010020005",
+				"getNextCstBidPrice": "197530126382265000329",
+				"getBidCstRewardAmount": "181518151815181518",
+				"getEthDutchAuctionDurations": [
+					"174530",
+					"141"
+				],
+				"getCstDutchAuctionDurations": [
+					"11418",
+					"141"
+				],
+				"getMainEthPrizeAmount": "22194838200400002",
+				"getCharityEthDonationAmount": "5548709550100000",
+				"getChronoWarriorEthPrizeAmount": "16646128650300001",
+				"getRaffleTotalEthPrizeAmountForBidders": "5548709550100000",
+				"getCosmicSignatureNftStakingTotalEthRewardAmount": "5548709550100000",
+				"getMainPrizeTimeIncrement": "3636",
+				"getInitialDurationUntilMainPrize": "87263",
+				"getDurationUntilMainPrize": "101666",
+				"getDurationUntilMainPrizeRaw": "101666",
+				"getDurationUntilRoundActivation": "-141",
+				"getDurationElapsedSinceRoundActivation": "141",
+				"getRoundLateBidDuration": "1212",
+				"getEthPlusRandomWalkNftBidPrice": "500000000000000000",
+				"tryGetCurrentChampions": [
+					"signer-2",
+					"39",
+					"signer-1",
+					"60"
+				],
+				"getTotalNumBids(currentRound)": "5",
+				"championDurations(1)": [
+					"0",
+					"0"
+				],
+				"championDurations(2)": [
+					"0",
+					"0"
+				],
+				"balance:game": "110974191002000010",
+				"balance:prizes-wallet": "11999999999999",
+				"balance:charity-wallet": "7000000000000",
+				"balance:staking-wallet-cosmic-signature-nft": "0",
+				"totalSupply:token": "16102145214521452145213",
+				"totalSupply:nft": "13",
+				"balanceOf:token:marketing-wallet": "3000000000000000000000"
+			}
+		},
+		{
+			"kind": "transaction",
+			"label": "signer-1 places an ETH bid after a long pause",
+			"blockTimeStamp": "2209000300",
+			"events": [
+				{
+					"emitter": "token",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"signer-4"
+						],
+						[
+							"value",
+							"187293729372937293729"
+						]
+					]
+				},
+				{
+					"emitter": "game-proxy",
+					"event": "BidPlaced",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"lastBidderAddress",
+							"signer-1"
+						],
+						[
+							"paidEthPrice",
+							"210202010020005"
+						],
+						[
+							"paidCstPrice",
+							"-1"
+						],
+						[
+							"randomWalkNftId",
+							"-1"
+						],
+						[
+							"message",
+							"big reward incoming"
+						],
+						[
+							"bidCstRewardAmount",
+							"187293729372937293729"
+						],
+						[
+							"cstBidPriceDeclineMultiplier",
+							"17692002510016664"
+						],
+						[
+							"mainPrizeTime",
+							"2209094263"
+						]
+					]
+				}
+			]
+		},
+		{
+			"kind": "transaction",
+			"label": "signer-4 places a CST bid",
+			"blockTimeStamp": "2209000360",
+			"events": [
+				{
+					"emitter": "token",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"signer-4"
+						],
+						[
+							"value",
+							"0"
+						]
+					]
+				},
+				{
+					"emitter": "token",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"signer-1"
+						],
+						[
+							"value",
+							"990099009900990099"
+						]
+					]
+				},
+				{
+					"emitter": "game-proxy",
+					"event": "BidPlaced",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"lastBidderAddress",
+							"signer-4"
+						],
+						[
+							"paidEthPrice",
+							"-1"
+						],
+						[
+							"paidCstPrice",
+							"0"
+						],
+						[
+							"randomWalkNftId",
+							"-1"
+						],
+						[
+							"message",
+							"cst bid 1"
+						],
+						[
+							"bidCstRewardAmount",
+							"990099009900990099"
+						],
+						[
+							"cstBidPriceDeclineMultiplier",
+							"17516834168333331"
+						],
+						[
+							"mainPrizeTime",
+							"2209097899"
+						]
+					]
+				}
+			]
+		},
+		{
+			"kind": "transaction",
+			"label": "signer-4 places a CST bid and donates an ERC-20 token",
+			"blockTimeStamp": "2209000420",
+			"events": [
+				{
+					"emitter": "token",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"signer-4"
+						],
+						[
+							"value",
+							"0"
+						]
+					]
+				},
+				{
+					"emitter": "token",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"signer-4"
+						],
+						[
+							"value",
+							"990099009900990099"
+						]
+					]
+				},
+				{
+					"emitter": "game-proxy",
+					"event": "BidPlaced",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"lastBidderAddress",
+							"signer-4"
+						],
+						[
+							"paidEthPrice",
+							"-1"
+						],
+						[
+							"paidCstPrice",
+							"0"
+						],
+						[
+							"randomWalkNftId",
+							"-1"
+						],
+						[
+							"message",
+							"cst bid 2"
+						],
+						[
+							"bidCstRewardAmount",
+							"990099009900990099"
+						],
+						[
+							"cstBidPriceDeclineMultiplier",
+							"17343400166666665"
+						],
+						[
+							"mainPrizeTime",
+							"2209101535"
+						]
+					]
+				},
+				{
+					"emitter": "mock-erc20",
+					"event": "Approval",
+					"arguments": [
+						[
+							"owner",
+							"unknown-0"
+						],
+						[
+							"spender",
+							"prizes-wallet"
+						],
+						[
+							"value",
+							"115792089237316195423570985008687907853269984665640564039457584007913129639935"
+						]
+					]
+				},
+				{
+					"emitter": "prizes-wallet",
+					"event": "TokenDonated",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"donorAddress",
+							"signer-4"
+						],
+						[
+							"tokenAddress",
+							"mock-erc20"
+						],
+						[
+							"amount",
+							"500"
+						]
+					]
+				},
+				{
+					"emitter": "mock-erc20",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"signer-4"
+						],
+						[
+							"to",
+							"unknown-0"
+						],
+						[
+							"value",
+							"500"
+						]
+					]
+				}
+			]
+		},
+		{
+			"kind": "transaction",
+			"label": "signer-4 places a CST bid and donates an NFT",
+			"blockTimeStamp": "2209000481",
+			"events": [
+				{
+					"emitter": "token",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"signer-4"
+						],
+						[
+							"value",
+							"0"
+						]
+					]
+				},
+				{
+					"emitter": "token",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"signer-4"
+						],
+						[
+							"value",
+							"1006600660066006600"
+						]
+					]
+				},
+				{
+					"emitter": "game-proxy",
+					"event": "BidPlaced",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"lastBidderAddress",
+							"signer-4"
+						],
+						[
+							"paidEthPrice",
+							"-1"
+						],
+						[
+							"paidCstPrice",
+							"0"
+						],
+						[
+							"randomWalkNftId",
+							"-1"
+						],
+						[
+							"message",
+							"cst bid 3"
+						],
+						[
+							"bidCstRewardAmount",
+							"1006600660066006600"
+						],
+						[
+							"cstBidPriceDeclineMultiplier",
+							"17171683333333332"
+						],
+						[
+							"mainPrizeTime",
+							"2209105171"
+						]
+					]
+				},
+				{
+					"emitter": "prizes-wallet",
+					"event": "NftDonated",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"donorAddress",
+							"signer-4"
+						],
+						[
+							"nftAddress",
+							"mock-erc721"
+						],
+						[
+							"nftId",
+							"2"
+						],
+						[
+							"index",
+							"1"
+						]
+					]
+				},
+				{
+					"emitter": "mock-erc721",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"signer-4"
+						],
+						[
+							"to",
+							"prizes-wallet"
+						],
+						[
+							"tokenId",
+							"2"
+						]
+					]
+				}
+			]
+		},
+		{
+			"kind": "probe",
+			"label": "bid CST reward min limit not reached",
+			"outcome": {
+				"succeeded": false,
+				"revertData": "0xf3bb3803"
+			}
+		},
+		{
+			"kind": "probe",
+			"label": "halving the ETH Dutch auction ending bid price is rejected mid-round",
+			"outcome": {
+				"succeeded": false,
+				"revertData": "0x4283f4b90000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000003b41206269642068617320616c7265616479206265656e20706c6163656420696e207468652063757272656e742062696464696e6720726f756e642e0000000000"
+			}
+		},
+		{
+			"kind": "probe",
+			"label": "setter requiring an inactive round is rejected mid-round",
+			"outcome": {
+				"succeeded": false,
+				"revertData": "0xd0fd11df00000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000083aa7e940000000000000000000000000000000000000000000000000000000083aaac21000000000000000000000000000000000000000000000000000000000000002c5468652063757272656e742062696464696e6720726f756e6420697320616c7265616479206163746976652e0000000000000000000000000000000000000000"
+			}
+		},
+		{
+			"kind": "snapshot",
+			"label": "after-cst-bids",
+			"values": {
+				"roundNum": "1",
+				"lastBidderAddress": "signer-4",
+				"lastCstBidderAddress": "signer-4",
+				"enduranceChampionAddress": "signer-4",
+				"enduranceChampionStartTimeStamp": "2208988950",
+				"enduranceChampionDuration": "11350",
+				"prevEnduranceChampionDuration": "39",
+				"chronoWarriorAddress": "signer-2",
+				"chronoWarriorDuration": "77",
+				"delayDurationBeforeRoundActivation": "1800",
+				"roundActivationTime": "2208988820",
+				"ethDutchAuctionDurationDivisor": "20833",
+				"ethDutchAuctionBeginningBidPrice": "400000000000000",
+				"ethDutchAuctionEndingBidPriceDivisor": "200",
+				"nextEthBidPrice": "212304030120206",
+				"ethBidPriceIncreaseDivisor": "100",
+				"ethBidRefundAmountInGasToSwallowMaxLimit": "6843",
+				"cstDutchAuctionBeginningTimeStamp": "2209000481",
+				"cstDutchAuctionDuration": "43200",
+				"cstDutchAuctionBeginningBidPrice": "1000000000000000000",
+				"nextRoundFirstCstDutchAuctionBeginningBidPrice": "1000000000000000000",
+				"cstDutchAuctionBeginningBidPriceMinLimit": "1000000000000000000",
+				"bidMessageLengthMaxLimit": "280",
+				"bidCstRewardAmountMultiplier": "60000000000000000000000000",
+				"cstPrizeAmount": "1000000000000000000000",
+				"chronoWarriorEthPrizeAmountPercentage": "15",
+				"raffleTotalEthPrizeAmountForBiddersPercentage": "5",
+				"numRaffleEthPrizesForBidders": "3",
+				"numRaffleCosmicSignatureNftsForBidders": "10",
+				"numRaffleCosmicSignatureNftsForRandomWalkNftStakers": "10",
+				"cosmicSignatureNftStakingTotalEthRewardAmountPercentage": "5",
+				"initialDurationUntilMainPrizeDivisor": "41667",
+				"mainPrizeTime": "2209105171",
+				"mainPrizeTimeIncrementInMicroSeconds": "3636000000",
+				"mainPrizeTimeIncrementIncreaseDivisor": "100",
+				"timeoutDurationToClaimMainPrize": "172800",
+				"mainEthPrizeAmountPercentage": "20",
+				"token": "token",
+				"randomWalkNft": "random-walk-nft",
+				"nft": "nft",
+				"prizesWallet": "prizes-wallet",
+				"stakingWalletRandomWalkNft": "staking-wallet-random-walk-nft",
+				"stakingWalletCosmicSignatureNft": "staking-wallet-cosmic-signature-nft",
+				"marketingWallet": "marketing-wallet",
+				"marketingWalletCstContributionAmount": "3000000000000000000000",
+				"charityAddress": "charity-wallet",
+				"charityEthDonationAmountPercentage": "5",
+				"cstDutchAuctionDurationChangeDivisor": "250",
+				"cstBidPriceDeclineMultiplier": "17171683333333332",
+				"cstBidPriceDeclineMultiplierChangeDivisor": "100",
+				"roundLateBidDurationDivisor": "3000000",
+				"roundLateBidPricePremiumAmountBaseMultiplier": "29228998656",
+				"roundLateBidPricePremiumAmountExponent": "8",
+				"mainPrizeNumCosmicSignatureNfts": "3",
+				"numEthDonationWithInfoRecords": "1",
+				"owner": "owner",
+				"UPGRADE_INTERFACE_VERSION": "5.0.0",
+				"getNextEthBidPrice": "212304030120206",
+				"getNextCstBidPrice": "1000000000000000000",
+				"getBidCstRewardAmount": "0",
+				"getEthDutchAuctionDurations": [
+					"174530",
+					"11661"
+				],
+				"getCstDutchAuctionDurations": [
+					"59",
+					"0"
+				],
+				"getMainEthPrizeAmount": "22236878602404003",
+				"getCharityEthDonationAmount": "5559219650601000",
+				"getChronoWarriorEthPrizeAmount": "16677658951803002",
+				"getRaffleTotalEthPrizeAmountForBidders": "5559219650601000",
+				"getCosmicSignatureNftStakingTotalEthRewardAmount": "5559219650601000",
+				"getMainPrizeTimeIncrement": "3636",
+				"getInitialDurationUntilMainPrize": "87263",
+				"getDurationUntilMainPrize": "104690",
+				"getDurationUntilMainPrizeRaw": "104690",
+				"getDurationUntilRoundActivation": "-11661",
+				"getDurationElapsedSinceRoundActivation": "11661",
+				"getRoundLateBidDuration": "1212",
+				"getEthPlusRandomWalkNftBidPrice": "500000000000000000",
+				"tryGetCurrentChampions": [
+					"signer-4",
+					"11350",
+					"signer-4",
+					"11492"
+				],
+				"getTotalNumBids(currentRound)": "9",
+				"championDurations(1)": [
+					"0",
+					"0"
+				],
+				"championDurations(2)": [
+					"0",
+					"0"
+				],
+				"balance:game": "111184393012020015",
+				"balance:prizes-wallet": "11999999999999",
+				"balance:charity-wallet": "7000000000000",
+				"balance:staking-wallet-cosmic-signature-nft": "0",
+				"totalSupply:token": "16292425742574257425740",
+				"totalSupply:nft": "13",
+				"balanceOf:token:marketing-wallet": "3000000000000000000000"
+			}
+		},
+		{
+			"kind": "probe",
+			"label": "early claim by the last bidder is rejected",
+			"outcome": {
+				"succeeded": false,
+				"revertData": "0x8d31bb1500000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000083ac45130000000000000000000000000000000000000000000000000000000083aaac21000000000000000000000000000000000000000000000000000000000000001c4e6f7420656e6f7567682074696d652068617320656c61707365642e00000000"
+			}
+		},
+		{
+			"kind": "probe",
+			"label": "claim by a non-last-bidder before the timeout is rejected",
+			"outcome": {
+				"succeeded": false,
+				"revertData": "0xcd96628c000000000000000000000000000000000000000000000000000000000000008000000000000000000000000015d34aaf54267db7d7c367839aaf71a00a2c6a6500000000000000000000000070997970c51812dc3a010c7d01b50e0d17dc79c80000000000000000000000000000000000000000000000000000000000043bf200000000000000000000000000000000000000000000000000000000000000614f6e6c7920746865206c61737420626964646572206973207065726d697474656420746f20636c61696d207468652062696464696e6720726f756e64206d61696e207072697a65206265666f726520612074696d656f757420657870697265732e00000000000000000000000000000000000000000000000000000000000000"
+			}
+		},
+		{
+			"kind": "transaction",
+			"label": "signer-4 claims the main prize",
+			"blockTimeStamp": "2209105271",
+			"events": [
+				{
+					"emitter": "game-proxy",
+					"event": "RaffleWinnerBidderEthPrizeAllocated",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"winnerIndex",
+							"2"
+						],
+						[
+							"winnerAddress",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"ethPrizeAmount",
+							"1853073216867000"
+						]
+					]
+				},
+				{
+					"emitter": "game-proxy",
+					"event": "RaffleWinnerBidderEthPrizeAllocated",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"winnerIndex",
+							"1"
+						],
+						[
+							"winnerAddress",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"ethPrizeAmount",
+							"1853073216867000"
+						]
+					]
+				},
+				{
+					"emitter": "game-proxy",
+					"event": "RaffleWinnerBidderEthPrizeAllocated",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"winnerIndex",
+							"0"
+						],
+						[
+							"winnerAddress",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"ethPrizeAmount",
+							"1853073216867000"
+						]
+					]
+				},
+				{
+					"emitter": "prizes-wallet",
+					"event": "EthReceived",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"prizeWinnerIndex",
+							"3"
+						],
+						[
+							"prizeWinnerAddress",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"amount",
+							"16677658951803002"
+						]
+					]
+				},
+				{
+					"emitter": "prizes-wallet",
+					"event": "EthReceived",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"prizeWinnerIndex",
+							"2"
+						],
+						[
+							"prizeWinnerAddress",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"amount",
+							"1853073216867000"
+						]
+					]
+				},
+				{
+					"emitter": "prizes-wallet",
+					"event": "EthReceived",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"prizeWinnerIndex",
+							"1"
+						],
+						[
+							"prizeWinnerAddress",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"amount",
+							"1853073216867000"
+						]
+					]
+				},
+				{
+					"emitter": "prizes-wallet",
+					"event": "EthReceived",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"prizeWinnerIndex",
+							"0"
+						],
+						[
+							"prizeWinnerAddress",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"amount",
+							"1853073216867000"
+						]
+					]
+				},
+				{
+					"emitter": "charity-wallet",
+					"event": "DonationReceived",
+					"arguments": [
+						[
+							"donorAddress",
+							"game-proxy"
+						],
+						[
+							"amount",
+							"5559219650601000"
+						]
+					]
+				},
+				{
+					"emitter": "game-proxy",
+					"event": "FundsTransferredToCharity",
+					"arguments": [
+						[
+							"charityAddress",
+							"charity-wallet"
+						],
+						[
+							"amount",
+							"5559219650601000"
+						]
+					]
+				},
+				{
+					"emitter": "token",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"marketing-wallet"
+						],
+						[
+							"value",
+							"3000000000000000000000"
+						]
+					]
+				},
+				{
+					"emitter": "token",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"value",
+							"1000000000000000000000"
+						]
+					]
+				},
+				{
+					"emitter": "token",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"value",
+							"1000000000000000000000"
+						]
+					]
+				},
+				{
+					"emitter": "token",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"value",
+							"1000000000000000000000"
+						]
+					]
+				},
+				{
+					"emitter": "token",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"value",
+							"1000000000000000000000"
+						]
+					]
+				},
+				{
+					"emitter": "token",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"value",
+							"1000000000000000000000"
+						]
+					]
+				},
+				{
+					"emitter": "token",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"value",
+							"1000000000000000000000"
+						]
+					]
+				},
+				{
+					"emitter": "token",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"value",
+							"1000000000000000000000"
+						]
+					]
+				},
+				{
+					"emitter": "token",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"value",
+							"1000000000000000000000"
+						]
+					]
+				},
+				{
+					"emitter": "token",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"value",
+							"1000000000000000000000"
+						]
+					]
+				},
+				{
+					"emitter": "token",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"value",
+							"1000000000000000000000"
+						]
+					]
+				},
+				{
+					"emitter": "token",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"value",
+							"1000000000000000000000"
+						]
+					]
+				},
+				{
+					"emitter": "token",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"value",
+							"1000000000000000000000"
+						]
+					]
+				},
+				{
+					"emitter": "token",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"value",
+							"1000000000000000000000"
+						]
+					]
+				},
+				{
+					"emitter": "token",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"value",
+							"1000000000000000000000"
+						]
+					]
+				},
+				{
+					"emitter": "nft",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"tokenId",
+							"13"
+						]
+					]
+				},
+				{
+					"emitter": "nft",
+					"event": "NftMinted",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"nftOwnerAddress",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"nftSeed",
+							"MASKED_RANDOM"
+						],
+						[
+							"nftId",
+							"13"
+						]
+					]
+				},
+				{
+					"emitter": "nft",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"tokenId",
+							"14"
+						]
+					]
+				},
+				{
+					"emitter": "nft",
+					"event": "NftMinted",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"nftOwnerAddress",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"nftSeed",
+							"MASKED_RANDOM"
+						],
+						[
+							"nftId",
+							"14"
+						]
+					]
+				},
+				{
+					"emitter": "nft",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"tokenId",
+							"15"
+						]
+					]
+				},
+				{
+					"emitter": "nft",
+					"event": "NftMinted",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"nftOwnerAddress",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"nftSeed",
+							"MASKED_RANDOM"
+						],
+						[
+							"nftId",
+							"15"
+						]
+					]
+				},
+				{
+					"emitter": "nft",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"tokenId",
+							"16"
+						]
+					]
+				},
+				{
+					"emitter": "nft",
+					"event": "NftMinted",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"nftOwnerAddress",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"nftSeed",
+							"MASKED_RANDOM"
+						],
+						[
+							"nftId",
+							"16"
+						]
+					]
+				},
+				{
+					"emitter": "nft",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"tokenId",
+							"17"
+						]
+					]
+				},
+				{
+					"emitter": "nft",
+					"event": "NftMinted",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"nftOwnerAddress",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"nftSeed",
+							"MASKED_RANDOM"
+						],
+						[
+							"nftId",
+							"17"
+						]
+					]
+				},
+				{
+					"emitter": "nft",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"tokenId",
+							"18"
+						]
+					]
+				},
+				{
+					"emitter": "nft",
+					"event": "NftMinted",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"nftOwnerAddress",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"nftSeed",
+							"MASKED_RANDOM"
+						],
+						[
+							"nftId",
+							"18"
+						]
+					]
+				},
+				{
+					"emitter": "nft",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"tokenId",
+							"19"
+						]
+					]
+				},
+				{
+					"emitter": "nft",
+					"event": "NftMinted",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"nftOwnerAddress",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"nftSeed",
+							"MASKED_RANDOM"
+						],
+						[
+							"nftId",
+							"19"
+						]
+					]
+				},
+				{
+					"emitter": "nft",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"tokenId",
+							"20"
+						]
+					]
+				},
+				{
+					"emitter": "nft",
+					"event": "NftMinted",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"nftOwnerAddress",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"nftSeed",
+							"MASKED_RANDOM"
+						],
+						[
+							"nftId",
+							"20"
+						]
+					]
+				},
+				{
+					"emitter": "nft",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"tokenId",
+							"21"
+						]
+					]
+				},
+				{
+					"emitter": "nft",
+					"event": "NftMinted",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"nftOwnerAddress",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"nftSeed",
+							"MASKED_RANDOM"
+						],
+						[
+							"nftId",
+							"21"
+						]
+					]
+				},
+				{
+					"emitter": "nft",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"tokenId",
+							"22"
+						]
+					]
+				},
+				{
+					"emitter": "nft",
+					"event": "NftMinted",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"nftOwnerAddress",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"nftSeed",
+							"MASKED_RANDOM"
+						],
+						[
+							"nftId",
+							"22"
+						]
+					]
+				},
+				{
+					"emitter": "nft",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"tokenId",
+							"23"
+						]
+					]
+				},
+				{
+					"emitter": "nft",
+					"event": "NftMinted",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"nftOwnerAddress",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"nftSeed",
+							"MASKED_RANDOM"
+						],
+						[
+							"nftId",
+							"23"
+						]
+					]
+				},
+				{
+					"emitter": "nft",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"tokenId",
+							"24"
+						]
+					]
+				},
+				{
+					"emitter": "nft",
+					"event": "NftMinted",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"nftOwnerAddress",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"nftSeed",
+							"MASKED_RANDOM"
+						],
+						[
+							"nftId",
+							"24"
+						]
+					]
+				},
+				{
+					"emitter": "nft",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"tokenId",
+							"25"
+						]
+					]
+				},
+				{
+					"emitter": "nft",
+					"event": "NftMinted",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"nftOwnerAddress",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"nftSeed",
+							"MASKED_RANDOM"
+						],
+						[
+							"nftId",
+							"25"
+						]
+					]
+				},
+				{
+					"emitter": "nft",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"tokenId",
+							"26"
+						]
+					]
+				},
+				{
+					"emitter": "nft",
+					"event": "NftMinted",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"nftOwnerAddress",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"nftSeed",
+							"MASKED_RANDOM"
+						],
+						[
+							"nftId",
+							"26"
+						]
+					]
+				},
+				{
+					"emitter": "nft",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"tokenId",
+							"27"
+						]
+					]
+				},
+				{
+					"emitter": "nft",
+					"event": "NftMinted",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"nftOwnerAddress",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"nftSeed",
+							"MASKED_RANDOM"
+						],
+						[
+							"nftId",
+							"27"
+						]
+					]
+				},
+				{
+					"emitter": "nft",
+					"event": "Transfer",
+					"arguments": [
+						[
+							"from",
+							"zero-address"
+						],
+						[
+							"to",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"tokenId",
+							"28"
+						]
+					]
+				},
+				{
+					"emitter": "nft",
+					"event": "NftMinted",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"nftOwnerAddress",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"nftSeed",
+							"MASKED_RANDOM"
+						],
+						[
+							"nftId",
+							"28"
+						]
+					]
+				},
+				{
+					"emitter": "game-proxy",
+					"event": "MainPrizeClaimed",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"beneficiaryAddress",
+							"signer-4"
+						],
+						[
+							"ethPrizeAmount",
+							"22236878602404003"
+						],
+						[
+							"cstPrizeAmount",
+							"1000000000000000000000"
+						],
+						[
+							"prizeFirstCosmicSignatureNftId",
+							"26"
+						],
+						[
+							"prizeNumCosmicSignatureNfts",
+							"3"
+						],
+						[
+							"timeoutTimeToWithdrawSecondaryPrizes",
+							"2212129271"
+						]
+					]
+				},
+				{
+					"emitter": "game-proxy",
+					"event": "RaffleWinnerPrizePaid",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"winnerIsRandomWalkNftStaker",
+							false
+						],
+						[
+							"winnerIndex",
+							"9"
+						],
+						[
+							"winnerAddress",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"cstPrizeAmount",
+							"1000000000000000000000"
+						],
+						[
+							"prizeCosmicSignatureNftId",
+							"25"
+						]
+					]
+				},
+				{
+					"emitter": "game-proxy",
+					"event": "RaffleWinnerPrizePaid",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"winnerIsRandomWalkNftStaker",
+							false
+						],
+						[
+							"winnerIndex",
+							"8"
+						],
+						[
+							"winnerAddress",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"cstPrizeAmount",
+							"1000000000000000000000"
+						],
+						[
+							"prizeCosmicSignatureNftId",
+							"24"
+						]
+					]
+				},
+				{
+					"emitter": "game-proxy",
+					"event": "RaffleWinnerPrizePaid",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"winnerIsRandomWalkNftStaker",
+							false
+						],
+						[
+							"winnerIndex",
+							"7"
+						],
+						[
+							"winnerAddress",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"cstPrizeAmount",
+							"1000000000000000000000"
+						],
+						[
+							"prizeCosmicSignatureNftId",
+							"23"
+						]
+					]
+				},
+				{
+					"emitter": "game-proxy",
+					"event": "RaffleWinnerPrizePaid",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"winnerIsRandomWalkNftStaker",
+							false
+						],
+						[
+							"winnerIndex",
+							"6"
+						],
+						[
+							"winnerAddress",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"cstPrizeAmount",
+							"1000000000000000000000"
+						],
+						[
+							"prizeCosmicSignatureNftId",
+							"22"
+						]
+					]
+				},
+				{
+					"emitter": "game-proxy",
+					"event": "RaffleWinnerPrizePaid",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"winnerIsRandomWalkNftStaker",
+							false
+						],
+						[
+							"winnerIndex",
+							"5"
+						],
+						[
+							"winnerAddress",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"cstPrizeAmount",
+							"1000000000000000000000"
+						],
+						[
+							"prizeCosmicSignatureNftId",
+							"21"
+						]
+					]
+				},
+				{
+					"emitter": "game-proxy",
+					"event": "RaffleWinnerPrizePaid",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"winnerIsRandomWalkNftStaker",
+							false
+						],
+						[
+							"winnerIndex",
+							"4"
+						],
+						[
+							"winnerAddress",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"cstPrizeAmount",
+							"1000000000000000000000"
+						],
+						[
+							"prizeCosmicSignatureNftId",
+							"20"
+						]
+					]
+				},
+				{
+					"emitter": "game-proxy",
+					"event": "RaffleWinnerPrizePaid",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"winnerIsRandomWalkNftStaker",
+							false
+						],
+						[
+							"winnerIndex",
+							"3"
+						],
+						[
+							"winnerAddress",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"cstPrizeAmount",
+							"1000000000000000000000"
+						],
+						[
+							"prizeCosmicSignatureNftId",
+							"19"
+						]
+					]
+				},
+				{
+					"emitter": "game-proxy",
+					"event": "RaffleWinnerPrizePaid",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"winnerIsRandomWalkNftStaker",
+							false
+						],
+						[
+							"winnerIndex",
+							"2"
+						],
+						[
+							"winnerAddress",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"cstPrizeAmount",
+							"1000000000000000000000"
+						],
+						[
+							"prizeCosmicSignatureNftId",
+							"18"
+						]
+					]
+				},
+				{
+					"emitter": "game-proxy",
+					"event": "RaffleWinnerPrizePaid",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"winnerIsRandomWalkNftStaker",
+							false
+						],
+						[
+							"winnerIndex",
+							"1"
+						],
+						[
+							"winnerAddress",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"cstPrizeAmount",
+							"1000000000000000000000"
+						],
+						[
+							"prizeCosmicSignatureNftId",
+							"17"
+						]
+					]
+				},
+				{
+					"emitter": "game-proxy",
+					"event": "RaffleWinnerPrizePaid",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"winnerIsRandomWalkNftStaker",
+							false
+						],
+						[
+							"winnerIndex",
+							"0"
+						],
+						[
+							"winnerAddress",
+							"MASKED_RAFFLE_WINNER"
+						],
+						[
+							"cstPrizeAmount",
+							"1000000000000000000000"
+						],
+						[
+							"prizeCosmicSignatureNftId",
+							"16"
+						]
+					]
+				},
+				{
+					"emitter": "game-proxy",
+					"event": "ChronoWarriorPrizePaid",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"winnerIndex",
+							"3"
+						],
+						[
+							"chronoWarriorAddress",
+							"signer-4"
+						],
+						[
+							"ethPrizeAmount",
+							"16677658951803002"
+						],
+						[
+							"cstPrizeAmount",
+							"1000000000000000000000"
+						],
+						[
+							"prizeCosmicSignatureNftId",
+							"15"
+						]
+					]
+				},
+				{
+					"emitter": "game-proxy",
+					"event": "EnduranceChampionPrizePaid",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"enduranceChampionAddress",
+							"signer-4"
+						],
+						[
+							"cstPrizeAmount",
+							"1000000000000000000000"
+						],
+						[
+							"prizeCosmicSignatureNftId",
+							"14"
+						]
+					]
+				},
+				{
+					"emitter": "game-proxy",
+					"event": "LastCstBidderPrizePaid",
+					"arguments": [
+						[
+							"roundNum",
+							"1"
+						],
+						[
+							"lastCstBidderAddress",
+							"signer-4"
+						],
+						[
+							"cstPrizeAmount",
+							"1000000000000000000000"
+						],
+						[
+							"prizeCosmicSignatureNftId",
+							"13"
+						]
+					]
+				},
+				{
+					"emitter": "game-proxy",
+					"event": "MainPrizeTimeIncrementInMicroSecondsChanged",
+					"arguments": [
+						[
+							"newValue",
+							"3672360000"
+						]
+					]
+				},
+				{
+					"emitter": "game-proxy",
+					"event": "RoundActivationTimeChanged",
+					"arguments": [
+						[
+							"newValue",
+							"2209107071"
+						]
+					]
+				}
+			]
+		},
+		{
+			"kind": "snapshot",
+			"label": "post-claim",
+			"values": {
+				"roundNum": "2",
+				"lastBidderAddress": "zero-address",
+				"lastCstBidderAddress": "zero-address",
+				"enduranceChampionAddress": "zero-address",
+				"enduranceChampionStartTimeStamp": "2209000481",
+				"enduranceChampionDuration": "104790",
+				"prevEnduranceChampionDuration": "0",
+				"chronoWarriorAddress": "zero-address",
+				"chronoWarriorDuration": "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+				"delayDurationBeforeRoundActivation": "1800",
+				"roundActivationTime": "2209107071",
+				"ethDutchAuctionDurationDivisor": "20833",
+				"ethDutchAuctionBeginningBidPrice": "400000000000000",
+				"ethDutchAuctionEndingBidPriceDivisor": "200",
+				"nextEthBidPrice": "212304030120206",
+				"ethBidPriceIncreaseDivisor": "100",
+				"ethBidRefundAmountInGasToSwallowMaxLimit": "6843",
+				"cstDutchAuctionBeginningTimeStamp": "2209000481",
+				"cstDutchAuctionDuration": "43200",
+				"cstDutchAuctionBeginningBidPrice": "1000000000000000000",
+				"nextRoundFirstCstDutchAuctionBeginningBidPrice": "1000000000000000000",
+				"cstDutchAuctionBeginningBidPriceMinLimit": "1000000000000000000",
+				"bidMessageLengthMaxLimit": "280",
+				"bidCstRewardAmountMultiplier": "60000000000000000000000000",
+				"cstPrizeAmount": "1000000000000000000000",
+				"chronoWarriorEthPrizeAmountPercentage": "15",
+				"raffleTotalEthPrizeAmountForBiddersPercentage": "5",
+				"numRaffleEthPrizesForBidders": "3",
+				"numRaffleCosmicSignatureNftsForBidders": "10",
+				"numRaffleCosmicSignatureNftsForRandomWalkNftStakers": "10",
+				"cosmicSignatureNftStakingTotalEthRewardAmountPercentage": "5",
+				"initialDurationUntilMainPrizeDivisor": "41667",
+				"mainPrizeTime": "2209105171",
+				"mainPrizeTimeIncrementInMicroSeconds": "3672360000",
+				"mainPrizeTimeIncrementIncreaseDivisor": "100",
+				"timeoutDurationToClaimMainPrize": "172800",
+				"mainEthPrizeAmountPercentage": "20",
+				"token": "token",
+				"randomWalkNft": "random-walk-nft",
+				"nft": "nft",
+				"prizesWallet": "prizes-wallet",
+				"stakingWalletRandomWalkNft": "staking-wallet-random-walk-nft",
+				"stakingWalletCosmicSignatureNft": "staking-wallet-cosmic-signature-nft",
+				"marketingWallet": "marketing-wallet",
+				"marketingWalletCstContributionAmount": "3000000000000000000000",
+				"charityAddress": "charity-wallet",
+				"charityEthDonationAmountPercentage": "5",
+				"cstDutchAuctionDurationChangeDivisor": "250",
+				"cstBidPriceDeclineMultiplier": "17171683333333332",
+				"cstBidPriceDeclineMultiplierChangeDivisor": "100",
+				"roundLateBidDurationDivisor": "3000000",
+				"roundLateBidPricePremiumAmountBaseMultiplier": "29228998656",
+				"roundLateBidPricePremiumAmountExponent": "8",
+				"mainPrizeNumCosmicSignatureNfts": "3",
+				"numEthDonationWithInfoRecords": "1",
+				"owner": "owner",
+				"UPGRADE_INTERFACE_VERSION": "5.0.0",
+				"getNextEthBidPrice": "400000000000000",
+				"getNextCstBidPrice": "0",
+				"getBidCstRewardAmount": "0",
+				"getEthDutchAuctionDurations": [
+					"176276",
+					"-1800"
+				],
+				"getCstDutchAuctionDurations": [
+					"59",
+					"104790"
+				],
+				"getMainEthPrizeAmount": "12230283231322202",
+				"getCharityEthDonationAmount": "3057570807830550",
+				"getChronoWarriorEthPrizeAmount": "9172712423491651",
+				"getRaffleTotalEthPrizeAmountForBidders": "3057570807830550",
+				"getCosmicSignatureNftStakingTotalEthRewardAmount": "3057570807830550",
+				"getMainPrizeTimeIncrement": "3672",
+				"getInitialDurationUntilMainPrize": "88135",
+				"getDurationUntilMainPrize": "0",
+				"getDurationUntilMainPrizeRaw": "-100",
+				"getDurationUntilRoundActivation": "1800",
+				"getDurationElapsedSinceRoundActivation": "-1800",
+				"getRoundLateBidDuration": "1224",
+				"getEthPlusRandomWalkNftBidPrice": "500000000000000000",
+				"tryGetCurrentChampions": [
+					"zero-address",
+					"0",
+					"zero-address",
+					"0"
+				],
+				"getTotalNumBids(currentRound)": "0",
+				"championDurations(1)": [
+					"104790",
+					"93440"
+				],
+				"championDurations(2)": [
+					"0",
+					"0"
+				],
+				"balance:game": "61151416156611010",
+				"balance:prizes-wallet": "22248878602404001",
+				"balance:charity-wallet": "5566219650601000",
+				"balance:staking-wallet-cosmic-signature-nft": "0",
+				"totalSupply:token": "33292425742574257425740",
+				"totalSupply:nft": "29",
+				"balanceOf:token:marketing-wallet": "6000000000000000000000"
+			}
+		},
+		{
+			"kind": "transaction",
+			"label": "owner restarts the round at an absolute time",
+			"blockTimeStamp": "2209105571",
+			"events": [
+				{
+					"emitter": "game-proxy",
+					"event": "RoundActivationTimeChanged",
+					"arguments": [
+						[
+							"newValue",
+							"2209105581"
+						]
+					]
+				}
+			]
+		},
+		{
+			"kind": "transaction",
+			"label": "signer-5 places the first ETH bid of the next round",
+			"blockTimeStamp": "2209105581",
+			"events": [
+				{
+					"emitter": "game-proxy",
+					"event": "FirstBidPlacedInRound",
+					"arguments": [
+						[
+							"roundNum",
+							"2"
+						],
+						[
+							"blockTimeStamp",
+							"2209105581"
+						]
+					]
+				},
+				{
+					"emitter": "game-proxy",
+					"event": "BidPlaced",
+					"arguments": [
+						[
+							"roundNum",
+							"2"
+						],
+						[
+							"lastBidderAddress",
+							"signer-5"
+						],
+						[
+							"paidEthPrice",
+							"400000000000000"
+						],
+						[
+							"paidCstPrice",
+							"-1"
+						],
+						[
+							"randomWalkNftId",
+							"-1"
+						],
+						[
+							"message",
+							"round 3"
+						],
+						[
+							"bidCstRewardAmount",
+							"0"
+						],
+						[
+							"cstBidPriceDeclineMultiplier",
+							"17343400166666665"
+						],
+						[
+							"mainPrizeTime",
+							"2209193716"
+						]
+					]
+				}
+			]
+		},
+		{
+			"kind": "snapshot",
+			"label": "next-round",
+			"values": {
+				"roundNum": "2",
+				"lastBidderAddress": "signer-5",
+				"lastCstBidderAddress": "zero-address",
+				"enduranceChampionAddress": "zero-address",
+				"enduranceChampionStartTimeStamp": "2209000481",
+				"enduranceChampionDuration": "104790",
+				"prevEnduranceChampionDuration": "0",
+				"chronoWarriorAddress": "zero-address",
+				"chronoWarriorDuration": "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+				"delayDurationBeforeRoundActivation": "1800",
+				"roundActivationTime": "2209105581",
+				"ethDutchAuctionDurationDivisor": "20833",
+				"ethDutchAuctionBeginningBidPrice": "800000000000000",
+				"ethDutchAuctionEndingBidPriceDivisor": "200",
+				"nextEthBidPrice": "404000000000001",
+				"ethBidPriceIncreaseDivisor": "100",
+				"ethBidRefundAmountInGasToSwallowMaxLimit": "6843",
+				"cstDutchAuctionBeginningTimeStamp": "2209105581",
+				"cstDutchAuctionDuration": "43200",
+				"cstDutchAuctionBeginningBidPrice": "1000000000000000000",
+				"nextRoundFirstCstDutchAuctionBeginningBidPrice": "1000000000000000000",
+				"cstDutchAuctionBeginningBidPriceMinLimit": "1000000000000000000",
+				"bidMessageLengthMaxLimit": "280",
+				"bidCstRewardAmountMultiplier": "60000000000000000000000000",
+				"cstPrizeAmount": "1000000000000000000000",
+				"chronoWarriorEthPrizeAmountPercentage": "15",
+				"raffleTotalEthPrizeAmountForBiddersPercentage": "5",
+				"numRaffleEthPrizesForBidders": "3",
+				"numRaffleCosmicSignatureNftsForBidders": "10",
+				"numRaffleCosmicSignatureNftsForRandomWalkNftStakers": "10",
+				"cosmicSignatureNftStakingTotalEthRewardAmountPercentage": "5",
+				"initialDurationUntilMainPrizeDivisor": "41667",
+				"mainPrizeTime": "2209193716",
+				"mainPrizeTimeIncrementInMicroSeconds": "3672360000",
+				"mainPrizeTimeIncrementIncreaseDivisor": "100",
+				"timeoutDurationToClaimMainPrize": "172800",
+				"mainEthPrizeAmountPercentage": "20",
+				"token": "token",
+				"randomWalkNft": "random-walk-nft",
+				"nft": "nft",
+				"prizesWallet": "prizes-wallet",
+				"stakingWalletRandomWalkNft": "staking-wallet-random-walk-nft",
+				"stakingWalletCosmicSignatureNft": "staking-wallet-cosmic-signature-nft",
+				"marketingWallet": "marketing-wallet",
+				"marketingWalletCstContributionAmount": "3000000000000000000000",
+				"charityAddress": "charity-wallet",
+				"charityEthDonationAmountPercentage": "5",
+				"cstDutchAuctionDurationChangeDivisor": "250",
+				"cstBidPriceDeclineMultiplier": "17343400166666665",
+				"cstBidPriceDeclineMultiplierChangeDivisor": "100",
+				"roundLateBidDurationDivisor": "3000000",
+				"roundLateBidPricePremiumAmountBaseMultiplier": "29228998656",
+				"roundLateBidPricePremiumAmountExponent": "8",
+				"mainPrizeNumCosmicSignatureNfts": "3",
+				"numEthDonationWithInfoRecords": "1",
+				"owner": "owner",
+				"UPGRADE_INTERFACE_VERSION": "5.0.0",
+				"getNextEthBidPrice": "404000000000001",
+				"getNextCstBidPrice": "1000000000000000000",
+				"getBidCstRewardAmount": "0",
+				"getEthDutchAuctionDurations": [
+					"176276",
+					"0"
+				],
+				"getCstDutchAuctionDurations": [
+					"58",
+					"0"
+				],
+				"getMainEthPrizeAmount": "12310283231322202",
+				"getCharityEthDonationAmount": "3077570807830550",
+				"getChronoWarriorEthPrizeAmount": "9232712423491651",
+				"getRaffleTotalEthPrizeAmountForBidders": "3077570807830550",
+				"getCosmicSignatureNftStakingTotalEthRewardAmount": "3077570807830550",
+				"getMainPrizeTimeIncrement": "3672",
+				"getInitialDurationUntilMainPrize": "88135",
+				"getDurationUntilMainPrize": "88135",
+				"getDurationUntilMainPrizeRaw": "88135",
+				"getDurationUntilRoundActivation": "0",
+				"getDurationElapsedSinceRoundActivation": "0",
+				"getRoundLateBidDuration": "1224",
+				"getEthPlusRandomWalkNftBidPrice": "500000000000000000",
+				"tryGetCurrentChampions": [
+					"signer-5",
+					"0",
+					"signer-5",
+					"0"
+				],
+				"getTotalNumBids(currentRound)": "1",
+				"championDurations(1)": [
+					"104790",
+					"93440"
+				],
+				"championDurations(2)": [
+					"0",
+					"0"
+				],
+				"balance:game": "61551416156611010",
+				"balance:prizes-wallet": "22248878602404001",
+				"balance:charity-wallet": "5566219650601000",
+				"balance:staking-wallet-cosmic-signature-nft": "0",
+				"totalSupply:token": "33292425742574257425740",
+				"totalSupply:nft": "29",
+				"balanceOf:token:marketing-wallet": "6000000000000000000000"
+			}
+		}
+	]
+}

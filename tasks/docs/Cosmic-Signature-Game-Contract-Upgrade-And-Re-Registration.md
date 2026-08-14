@@ -52,7 +52,7 @@ Before upgrading a mainnet, rehearse the exact upgrade on an in-process fork of 
 
 - Execute `../runners/run-fork-rehearse-cosmic-signature-game-v3-upgrade-arbitrumOne.bash` (Comment-202608128).
 
-It validates V2 -> V3 storage layout compatibility with the OpenZeppelin Upgrades plugin, impersonates the owner, performs `upgradeToAndCall` + `reinitialize` against the forked production proxy, verifies that every carried-over storage value is unchanged (and that the values `reinitialize` intentionally overwrites get the expected defaults), checks the retired setters and validations, and smoke-tests bidding and main prize claiming on the upgraded fork. It must end with "SUCCESS. All rehearsal checks passed."
+It validates V2 -> V3 storage layout compatibility with the OpenZeppelin Upgrades machinery (for the implementation and for each of the 3 delegatecall modules), impersonates the owner, deploys the modules and the implementation exactly like the upgrade task does, performs `upgradeToAndCall` + `reinitialize` against the forked production proxy, verifies that every carried-over storage value is unchanged (and that the values `reinitialize` intentionally overwrites get the expected defaults), checks the retired setters and validations, checks the modular routing specifics (an unknown selector reverts; direct module calls are harmless), and smoke-tests bidding and main prize claiming on the upgraded fork. It must end with "SUCCESS. All rehearsal checks passed."
 
 #### Run Scripts
 
@@ -79,6 +79,14 @@ The problem is that the initially deployed `CosmicSignatureGame` ABI still exist
 #### V3 Specifics (2026-08)
 
 - No unsafe OpenZeppelin flags are needed for the V2 -> V3 upgrade (`unsafeAllowRenames` and `unsafeSkipStorageCheck` stay `false`): V3 only appends storage variables.
+
+- **The modular delegatecall architecture (Comment-202608245).** In V3+, the Game consists of a slim UUPS implementation contract (`CosmicSignatureGameV3`, ~7.3 KB of the 24 KB EIP-170 limit) plus 3 plain delegatecall modules: `CosmicSignatureGameViewsModuleV3`, `CosmicSignatureGameAdminModuleV3`, and `CosmicSignatureGamePrizesModuleV3` (each far below the limit as well; the pre-split monolith had only 154 bytes of headroom). The proxy address, every function selector, every event, and every error are unchanged; the modules are reached transparently through the implementation's fallback. The upgrade task deploys the modules automatically when the config sets `deployCosmicSignatureGameV3Modules` (the V3 configs already do), deploying in this order: prizes, admin (wired to prizes), views (wired to admin), then the implementation (wired to views and prizes), then the usual `upgradeProxy`. The report file gains the 3 module addresses; save them along with the implementation address.
+
+- The re-registration script verifies all 4 new contracts (the 3 modules with their constructor arguments, then the implementation) on ArbiScan.
+
+- ArbiScan UI caveat: the proxy "Read/Write as Proxy" tabs auto-display only the implementation ABI (the bids, `claimMainPrize`, `reinitialize`, and the `Ownable`/`UUPS` members). The getters, the other views, the configuration setters, and the donations are served by the modules and do not appear there, although they work at the proxy exactly as before; interact with them through the verified module pages, through a custom ABI, or through the Hardhat tasks. RPC/frontend calls with the full ABI are entirely unaffected. The combined full ABI equals the pre-split monolith ABI (asserted by `test/tests-src/CosmicSignatureGameV3-ModularEquality.js` against `test/baselines/cosmic-signature-game-v3-abi-baseline.json`, which can be handed to the web site / indexer team as is).
+
+- Calling a module directly at its own address (not through the proxy) is harmless; Comment-202608247 explains why, and the fork rehearsal checks it.
 
 - `reinitialize` (the `upgradeToAndCall` payload) sets the 6 new V3 parameters and overwrites 7 existing values: `cstDutchAuctionBeginningBidPriceMinLimit` (200 CST -> 1 CST), `bidCstRewardAmountMultiplier` (repurposed for the V3 linear bid CST reward), and the five ETH prize percentages (20% main, 5% charity, 5% bidder raffles, 5% CS NFT stakers, 15% Chrono Warrior). Those prize percentages total 50%, leaving the other 50% in the game as rollover. See `docs/v3-vs-v2-changes.md`.
 

@@ -3,6 +3,7 @@
 	"cosmicSignatureGameProxyAddress": "0x6a714Ae7B5b6eA520F6BCA23d2E609C4Fd5863F2",
 	"existingCosmicSignatureGameContractName": "CosmicSignatureGameV2",
 	"newCosmicSignatureGameContractName": "CosmicSignatureGameV3",
+	"deployCosmicSignatureGameV3Modules": true,
 	"unsafeAllowRenames": false,
 	"unsafeSkipStorageCheck": false,
 	"newInitializerMethodName": "reinitialize",

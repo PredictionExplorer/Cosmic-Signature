@@ -10,7 +10,9 @@ const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { ENABLE_ASSERTS, waitForTransactionReceipt } = require("../../src/Helpers.js");
+const { getCosmicSignatureGameV3CombinedAbiContract } = require("../../src/ContractDeploymentHelpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
+const { upgradeToV3 } = require("../src/V3UpgradeTestHelpers.js");
 
 // #endregion
 // #region `describe`
@@ -142,20 +144,12 @@ describe("CosmicSignatureGame-3", function () {
 		// #endregion
 		// #region
 
-		const cosmicSignatureGameV3Factory_ =
-			await hre.ethers.getContractFactory("CosmicSignatureGameV3", contracts_.ownerSigner);
-		const cosmicSignatureGameV3Proxy_ =
-			await hre.upgrades.upgradeProxy(
-				contracts_.cosmicSignatureGameProxy,
-				cosmicSignatureGameV3Factory_,
-				{
-					kind: "uups",
-					call: "reinitialize",
-				}
-			);
-		// await cosmicSignatureGameV3Proxy_.waitForDeployment();
+		// The V3 upgrade deploys the delegatecall modules and attaches the combined ABI. Comment-202608245 applies.
+		await upgradeToV3(contracts_);
+		const cosmicSignatureGameV3Factory_ = contracts_.cosmicSignatureGameV3Factory;
+		const cosmicSignatureGameV3Proxy_ = contracts_.cosmicSignatureGameV3Proxy;
 		expect(await cosmicSignatureGameV3Proxy_.getAddress()).equal(contracts_.cosmicSignatureGameProxyAddress);
-		const cosmicSignatureGameV3ImplementationAddress_ = await hre.upgrades.erc1967.getImplementationAddress(contracts_.cosmicSignatureGameProxyAddress);
+		const cosmicSignatureGameV3ImplementationAddress_ = contracts_.cosmicSignatureGameV3ImplementationAddress;
 		expect(cosmicSignatureGameV3ImplementationAddress_).not.equal(cosmicSignatureGameV2ImplementationAddress_);
 		const cosmicSignatureGameV3Implementation_ = cosmicSignatureGameV3Factory_.attach(cosmicSignatureGameV3ImplementationAddress_);
 		// await expect(cosmicSignatureGameV3Proxy_.connect(contracts_.ownerSigner).initialize(contracts_.ownerSigner.address)).revertedWithCustomError(cosmicSignatureGameV3Proxy_, "InvalidInitialization");
@@ -189,13 +183,24 @@ describe("CosmicSignatureGame-3", function () {
 		await waitForTransactionReceipt(cosmicSignatureGameV3Proxy_.connect(contracts_.ownerSigner).setMainPrizeNumCosmicSignatureNfts(5n));
 		expect(await cosmicSignatureGameV3Proxy_.mainPrizeNumCosmicSignatureNfts()).equal(5n);
 		expect(await cosmicSignatureGameV3Implementation_.owner()).equal(hre.ethers.ZeroAddress);
-		expect(await cosmicSignatureGameV3Implementation_.mainPrizeNumCosmicSignatureNfts()).equal(0n);
+		{
+			// The getter is served by the views module through the implementation's fallback,
+			// reading, in this direct-call case, the implementation's own (empty) storage.
+			// Comment-202608245 and Comment-202608247 apply.
+			const cosmicSignatureGameV3ImplementationWithCombinedAbi_ =
+				await getCosmicSignatureGameV3CombinedAbiContract(cosmicSignatureGameV3ImplementationAddress_, hre.ethers.provider);
+			expect(await cosmicSignatureGameV3ImplementationWithCombinedAbi_.mainPrizeNumCosmicSignatureNfts()).equal(0n);
+		}
 
 		// Comment-202606139 applies.
+		// Since the modular delegatecall restructuring (Comment-202608245), the V3 implementation is slim:
+		// the size budget assertions, including the modules', live in
+		// "test/tests-src/CosmicSignatureGameV3-ModularEquality.js". Here, a basic sanity range.
 		const cosmicSignatureGameV3ImplementationByteCodeSize_ =
 			// cosmicSignatureGameV3Factory.bytecode.length / 2 - 1;
 			(await hre.ethers.provider.getCode(cosmicSignatureGameV3ImplementationAddress_)).length / 2 - 1;
-		expect(cosmicSignatureGameV3ImplementationByteCodeSize_).greaterThanOrEqual(21 * 1024);
+		expect(cosmicSignatureGameV3ImplementationByteCodeSize_).greaterThanOrEqual(4 * 1024);
+		expect(cosmicSignatureGameV3ImplementationByteCodeSize_).lessThanOrEqual(20_000);
 		console.info(
 			"%s",
 			"CosmicSignatureGameV3 implementation bytecode size is " +

@@ -6,6 +6,7 @@ const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { generateRandomUInt256, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { loadFixtureDeployContractsForTesting, assertEvent } = require("../../src/ContractTestingHelpers.js");
+const { upgradeToV3 } = require("../src/V3UpgradeTestHelpers.js");
 
 describe("Arbitrum", function () {
 	it("Calls to Arbitrum precompile contracts errors", async function () {
@@ -110,18 +111,24 @@ describe("Arbitrum", function () {
 				break;
 			}
 
-			const newCosmicSignatureGameFactory_ =
-				await hre.ethers.getContractFactory((contractVersionNumber_ < 2) ? "CosmicSignatureGameV2" : "CosmicSignatureGameV3", contracts_.ownerSigner);
-			cosmicSignatureGameProxy_ =
-				await hre.upgrades.upgradeProxy(
-					contracts_.cosmicSignatureGameProxy,
-					newCosmicSignatureGameFactory_,
-					{
-						kind: "uups",
-						call: "reinitialize",
-					}
-				);
-			// await cosmicSignatureGameProxy_.waitForDeployment();
+			if (contractVersionNumber_ < 2) {
+				const newCosmicSignatureGameFactory_ =
+					await hre.ethers.getContractFactory("CosmicSignatureGameV2", contracts_.ownerSigner);
+				cosmicSignatureGameProxy_ =
+					await hre.upgrades.upgradeProxy(
+						contracts_.cosmicSignatureGameProxy,
+						newCosmicSignatureGameFactory_,
+						{
+							kind: "uups",
+							call: "reinitialize",
+						}
+					);
+				// await cosmicSignatureGameProxy_.waitForDeployment();
+			} else {
+				// The V3 upgrade deploys the delegatecall modules and attaches the combined ABI. Comment-202608245 applies.
+				await upgradeToV3(contracts_);
+				cosmicSignatureGameProxy_ = contracts_.cosmicSignatureGameV3Proxy;
+			}
 		}
 	});
 });

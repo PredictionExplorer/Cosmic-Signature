@@ -257,8 +257,19 @@ The new V3 setters reject the dangerous zero values with `ZeroValue()`:
   (arithmetic refactored into `CosmicSignatureHelpers.tryIncreaseValueExponentially`/`tryReduceValueExponentially`
   and `ArbitrumHelpers._tryCallPrecompile` is algebraically/observably identical), and stays covered by the
   exact-assertion V1/V2 suites and the fuzz campaign's V1/V2 phases.
-- 2026-08 bytecode size work (V3 was 1,024 bytes over the EIP-170 limit; with the prize migration it is now 154 bytes under): per-file compiler
-  override for `CosmicSignatureGameV3.sol` (optimizer runs=1, no CBOR metadata; Comment-202608121 in
+- 2026-08 bytecode size work, stage 1 (V3 was 1,024 bytes over the EIP-170 limit; the monolith ended 154 bytes under): per-file compiler
+  override for `CosmicSignatureGameV3.sol` (optimizer runs=1, no CBOR metadata; former Comment-202608121 in
   `hardhat.config.js`), shared emit/validation helpers in `BiddingV3` (Comment-202608122, Comment-202608124), and
   the `ArbitrumHelpers` consolidation (Comment-202608125).
+- 2026-08 bytecode size work, stage 2 -- **the modular delegatecall restructuring** (Comment-202608245): the V3
+  implementation was split into a slim UUPS implementation (7,316 bytes, ~70% headroom) plus 3 delegatecall modules
+  (`CosmicSignatureGameViewsModuleV3` 13,398, `CosmicSignatureGamePrizesModuleV3` 11,451,
+  `CosmicSignatureGameAdminModuleV3` 9,566 bytes), each far below the limit, reached through an immutable-address
+  fallback forwarding chain (Comment-202608246). The proxy's external interface and behavior are unchanged
+  (selector-for-selector ABI equality and a deterministic behavior-trace replay against the monolith are enforced by
+  `test/tests-src/CosmicSignatureGameV3-ModularEquality.js` and `-BehaviorParity.js` with committed baselines under
+  `test/baselines/`). The runs=1 override and the `SLITHER_UNIFORM_BUILD` workaround became unnecessary and were
+  removed; everything compiles uniformly with runs=400 again, which also restores the runtime-gas-oriented optimizer
+  profile for the Game. Future versions get their headroom by extending the modules (or appending new ones to the
+  chain); the implementation only grows for new hot-path entry points.
 - Test contracts `tests/BidderContract.sol` and `tests/MaliciousActorBase.sol`: the version routing changed from `contractVersionNumber != 2` to `contractVersionNumber < 2`, so `contractVersionNumber = 3` uses the V2-compatible call shapes (which V3 keeps).

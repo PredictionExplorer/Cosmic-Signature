@@ -182,6 +182,106 @@ const deployContractsAdvanced = async function (
 };
 
 // #endregion
+// #region `deployCosmicSignatureGameV3Modules`
+
+/**
+Deploys the 3 delegatecall modules of the V3 Game (Comment-202608245), in the reverse of
+the fallback forwarding chain order (Comment-202608246): prizes (the chain tail),
+then admin (forwarding to prizes), then views (forwarding to admin).
+The views module address plus the prizes module address are the `CosmicSignatureGameV3` implementation
+constructor arguments.
+@param {import("ethers").Signer} deployerSigner_
+*/
+async function deployCosmicSignatureGameV3Modules(deployerSigner_) {
+	// Comment-202409255 applies.
+	const hre = HardhatContext.getHardhatContext().environment;
+
+	const cosmicSignatureGamePrizesModuleFactory_ =
+		await hre.ethers.getContractFactory("CosmicSignatureGamePrizesModuleV3", deployerSigner_);
+	const cosmicSignatureGamePrizesModule_ = await cosmicSignatureGamePrizesModuleFactory_.deploy();
+	await cosmicSignatureGamePrizesModule_.waitForDeployment();
+	const cosmicSignatureGamePrizesModuleAddress_ = await cosmicSignatureGamePrizesModule_.getAddress();
+
+	const cosmicSignatureGameAdminModuleFactory_ =
+		await hre.ethers.getContractFactory("CosmicSignatureGameAdminModuleV3", deployerSigner_);
+	const cosmicSignatureGameAdminModule_ = await cosmicSignatureGameAdminModuleFactory_.deploy(cosmicSignatureGamePrizesModuleAddress_);
+	await cosmicSignatureGameAdminModule_.waitForDeployment();
+	const cosmicSignatureGameAdminModuleAddress_ = await cosmicSignatureGameAdminModule_.getAddress();
+
+	const cosmicSignatureGameViewsModuleFactory_ =
+		await hre.ethers.getContractFactory("CosmicSignatureGameViewsModuleV3", deployerSigner_);
+	const cosmicSignatureGameViewsModule_ = await cosmicSignatureGameViewsModuleFactory_.deploy(cosmicSignatureGameAdminModuleAddress_);
+	await cosmicSignatureGameViewsModule_.waitForDeployment();
+	const cosmicSignatureGameViewsModuleAddress_ = await cosmicSignatureGameViewsModule_.getAddress();
+
+	return {
+		cosmicSignatureGamePrizesModuleFactory: cosmicSignatureGamePrizesModuleFactory_,
+		cosmicSignatureGamePrizesModule: cosmicSignatureGamePrizesModule_,
+		cosmicSignatureGamePrizesModuleAddress: cosmicSignatureGamePrizesModuleAddress_,
+		cosmicSignatureGameAdminModuleFactory: cosmicSignatureGameAdminModuleFactory_,
+		cosmicSignatureGameAdminModule: cosmicSignatureGameAdminModule_,
+		cosmicSignatureGameAdminModuleAddress: cosmicSignatureGameAdminModuleAddress_,
+		cosmicSignatureGameViewsModuleFactory: cosmicSignatureGameViewsModuleFactory_,
+		cosmicSignatureGameViewsModule: cosmicSignatureGameViewsModule_,
+		cosmicSignatureGameViewsModuleAddress: cosmicSignatureGameViewsModuleAddress_,
+	};
+}
+
+// #endregion
+// #region `buildCombinedCosmicSignatureGameV3Abi`
+
+/**
+Builds the combined ABI of the modular V3 Game as observed at the proxy: the implementation's own ABI
+plus everything the modules serve through the fallback forwarding chain (Comment-202608246),
+deduplicated in chain-precedence order. `test/tests-src/CosmicSignatureGameV3-ModularEquality.js` asserts
+that this equals the recorded pre-split monolith ABI baseline.
+@param {import("ethers").Interface} implementationInterface_
+@param {import("ethers").Interface[]} moduleInterfaces_ In the fallback forwarding chain order.
+*/
+function buildCombinedCosmicSignatureGameV3Abi(implementationInterface_, moduleInterfaces_) {
+	const seenFragmentKeys_ = new Set();
+	const combinedAbiFragments_ = [];
+	const addFragmentIfNew_ = (fragment_) => {
+		const fragmentKey_ = fragment_.type + ":" + fragment_.format("sighash");
+		if ( ! seenFragmentKeys_.has(fragmentKey_) ) {
+			seenFragmentKeys_.add(fragmentKey_);
+			combinedAbiFragments_.push(JSON.parse(fragment_.format("json")));
+		}
+	};
+	for (const interface_ of [implementationInterface_, ...moduleInterfaces_,]) {
+		interface_.forEachFunction(addFragmentIfNew_);
+		interface_.forEachEvent(addFragmentIfNew_);
+		interface_.forEachError(addFragmentIfNew_);
+	}
+	return combinedAbiFragments_;
+}
+
+// #endregion
+// #region `getCosmicSignatureGameV3CombinedAbiContract`
+
+/**
+Returns an ethers `Contract` bound to the given V3 Game proxy address with the full combined ABI
+of the modular V3 Game. Comment-202608245 applies.
+@param {string} cosmicSignatureGameProxyAddress_
+@param {import("ethers").Signer | import("ethers").Provider} signerOrProvider_
+*/
+async function getCosmicSignatureGameV3CombinedAbiContract(cosmicSignatureGameProxyAddress_, signerOrProvider_) {
+	// Comment-202409255 applies.
+	const hre = HardhatContext.getHardhatContext().environment;
+
+	const combinedAbi_ =
+		buildCombinedCosmicSignatureGameV3Abi(
+			(await hre.ethers.getContractFactory("CosmicSignatureGameV3")).interface,
+			[
+				(await hre.ethers.getContractFactory("CosmicSignatureGameViewsModuleV3")).interface,
+				(await hre.ethers.getContractFactory("CosmicSignatureGameAdminModuleV3")).interface,
+				(await hre.ethers.getContractFactory("CosmicSignatureGamePrizesModuleV3")).interface,
+			]
+		);
+	return new hre.ethers.Contract(cosmicSignatureGameProxyAddress_, combinedAbi_, signerOrProvider_);
+}
+
+// #endregion
 // #region `setRoundActivationTimeIfNeeded`
 
 /**
@@ -218,6 +318,9 @@ async function setRoundActivationTimeIfNeeded(cosmicSignatureGameProxy, roundAct
 module.exports = {
 	deployContracts,
 	deployContractsAdvanced,
+	deployCosmicSignatureGameV3Modules,
+	buildCombinedCosmicSignatureGameV3Abi,
+	getCosmicSignatureGameV3CombinedAbiContract,
 	setRoundActivationTimeIfNeeded,
 };
 

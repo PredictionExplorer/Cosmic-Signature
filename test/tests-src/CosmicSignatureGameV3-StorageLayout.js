@@ -130,7 +130,9 @@ describe("CosmicSignatureGameV3-StorageLayout", function () {
 			contracts_.cosmicSignatureGameProxy,
 			cosmicSignatureGameV3Factory_,
 			// `validateUpgrade` accepts validation options only; the initializer call is exercised by `upgradeToV3` below.
-			{ kind: "uups" }
+			// The constructor arguments are only used to assemble deploy data; nothing is deployed,
+			// so zero module addresses are adequate here. Comment-202608245 applies.
+			{ kind: "uups", constructorArgs: [hre.ethers.ZeroAddress, hre.ethers.ZeroAddress,] }
 		);
 
 		await upgradeToV3(contracts_);

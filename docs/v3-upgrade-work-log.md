@@ -124,6 +124,31 @@ contract hardening and test-model updates. This log covers both; coordinate befo
   `docs/cosmic-signature-contracts-audit-considerations.md`: permissionless one-shot `reinitialize` after a bare
   upgrade, and the production no-op previous-version check. Per owner direction these are documented/tested,
   not patched; the atomic checked-in upgrade task remains the operational mitigation.
+- 2026-08-14: THE MODULAR DELEGATECALL RESTRUCTURING (Comment-202608245/202608246/202608248). The V3 Game was
+  split into a slim UUPS implementation (`CosmicSignatureGameV3`, now the hot path only: `receive`, `bidWithEth`,
+  `bidWithCst`, a `claimMainPrize` forwarder, `reinitialize`, Ownable/UUPS) plus 3 plain delegatecall modules
+  compiled from the original mixins over the identical storage layout: `CosmicSignatureGameViewsModuleV3`
+  (state getters, computed views, bid-with-donation combos, `halveEthDutchAuctionEndingBidPrice`),
+  `CosmicSignatureGameAdminModuleV3` (all setters + ETH donations), `CosmicSignatureGamePrizesModuleV3`
+  (`claimMainPrize` + prize distribution + prize views), routed via an immutable-address fallback chain
+  (impl -> views -> admin -> prizes -> empty revert). The implementation inherits a new `internal`-visibility
+  storage chassis (`CosmicSignatureGameStorageV3Core`) and lean `*V3Core` forks of the bid-path mixins;
+  the modules inherit the original `public`-var chassis, so the compiler regenerates the original getters there.
+  Bytecode sizes (production, uniform runs=400 restored; the per-file runs=1 override and the
+  `SLITHER_UNIFORM_BUILD` workaround are gone): implementation 7,316 (was 24,422 of 24,576, i.e. 154 bytes of
+  headroom; now ~17.3 KB of headroom), views module 13,398, prizes module 11,451, admin module 9,566.
+  Externally the proxy is selector-for-selector, event-for-event, error-for-error identical to the monolith:
+  enforced by `CosmicSignatureGameV3-ModularEquality.js` (combined-ABI equality against the recorded monolith
+  baseline `test/baselines/cosmic-signature-game-v3-abi-baseline.json`, exact storage layout identity of the
+  implementation and every module, selector routing, size budgets impl<=20,000/modules<=22,000, direct-module-call
+  safety per Comment-202608247) and by `CosmicSignatureGameV3-BehaviorParity.js` (a 38-step deterministic
+  gameplay scenario -- bids of every kind, donations, setter/guard revert probes, a full claim, and the next
+  round -- replayed against the event/state trace recorded on the audited monolith at commit 9496fc31,
+  `test/baselines/cosmic-signature-game-v3-behavior-baseline.json`; only RNG-derived values are masked).
+  The upgrade task deploys the modules when the config sets `deployCosmicSignatureGameV3Modules` (V3 configs
+  updated); the re-registration task verifies all 4 contracts; the fork rehearsal deploys and checks the modular
+  wiring; `upgradeToV3` in tests deploys modules and attaches the combined ABI to the proxy. V1/V2 sources,
+  artifacts, and ABIs are untouched.
 - 2026-08-14: Added the V3 ETH prize migration to `reinitialize`: 20% main prize, 5% charity, 5% total across
   3 bidder-raffle draws, 5% CS NFT stakers, and 15% Chrono Warrior, leaving 50% implicit rollover. V1/V2 defaults
   remain unchanged. Upgrade/storage assertions, the fuzz model, a focused end-to-end ETH payout test, fork

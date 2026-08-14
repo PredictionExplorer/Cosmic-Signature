@@ -13,17 +13,6 @@ const helpersModule = require("./src/Helpers.js");
 // #endregion
 // #region
 
-// [Comment-202608134]
-// `slither-check-upgradeability` cannot find a contract that lives in a different compilation unit
-// than the old contract, and the per-file compiler settings override near Comment-202608121 splits
-// `CosmicSignatureGameV3` into its own compilation unit.
-// So the Slither scripts set this environment variable, which disables the override
-// and compiles everything uniformly into a separate folder.
-// The uniformly compiled `CosmicSignatureGameV3` bytecode exceeds the max allowed size,
-// but that's inconsequential for static analysis.
-// [/Comment-202608134]
-const uniformCompilationForSlither = helpersModule.parseBooleanEnvironmentVariable("SLITHER_UNIFORM_BUILD", false);
-
 // [Comment-202503272]
 // The use of different folders prevents a recompile of some Solidity sources
 // when using a different combination of environment variables.
@@ -32,13 +21,9 @@ const uniformCompilationForSlither = helpersModule.parseBooleanEnvironmentVariab
 // A similar folder name exists in multiple places.
 // [/Comment-202503302]
 const solidityCompilationCacheSubFolderName =
-	uniformCompilationForSlither ?
-	"slither-uniform" :
-	(
-		helpersModule.ENABLE_HARDHAT_PREPROCESSOR ?
-		`debug-${helpersModule.ENABLE_ASSERTS}-${helpersModule.ENABLE_SMTCHECKER > 0}` :
-		"production"
-	);
+	helpersModule.ENABLE_HARDHAT_PREPROCESSOR ?
+	`debug-${helpersModule.ENABLE_ASSERTS}-${helpersModule.ENABLE_SMTCHECKER > 0}` :
+	"production";
 
 // #endregion
 // #region
@@ -272,15 +257,10 @@ function preProcessSolidityLine(hre, line) {
 
 /**
 Creates a Solidity compiler settings object.
-Comment-202608121 relates.
 @param {number} optimizerRuns_
-@param {boolean} minimizeBytecodeSize_ When `true`, the compiler will not append the CBOR metadata section,
-which includes the metadata hash, to the contract bytecode, which makes the bytecode a little smaller.
-Source code verification on EtherScan/Arbiscan still works without it.
 */
-function createSoliditySettings(optimizerRuns_, minimizeBytecodeSize_ = false, yulOptimizerSteps_ = undefined) {
+function createSoliditySettings(optimizerRuns_) {
 	return {
-		...(minimizeBytecodeSize_ ? {metadata: {appendCBOR: false, bytecodeHash: "none",},} : {}),
 		// [Comment-202408026]
 		// By default, this is "paris".
 		// See https://v2.hardhat.org/hardhat-runner/docs/config#default-evm-version
@@ -300,21 +280,15 @@ function createSoliditySettings(optimizerRuns_, minimizeBytecodeSize_ = false, y
 			enabled: true,
 
 			// By default, this is 200.
-			// A big value here can cause excessive inlining, which can results in the Game contract bytecode size
-			// exceeding the max allowed limit.
-			// Comment-202608121 relates.
+			// [Comment-202608121]
+			// Until 2026-08, the monolithic `CosmicSignatureGameV3` exceeded the EIP-170 limit of 24576 bytes
+			// at `runs: 400`, and this file configured a per-file override compiling it with `runs: 1`
+			// and no CBOR metadata (plus the `SLITHER_UNIFORM_BUILD` workaround near former Comment-202608134,
+			// because the override split the compilation into 2 units, which `slither-check-upgradeability`
+			// cannot see across). The modular delegatecall restructuring (Comment-202608248) made all of that
+			// unnecessary: every deployed contract is now far below the limit at the uniform `runs: 400`.
+			// [/Comment-202608121]
 			runs: optimizerRuns_,
-
-			...((yulOptimizerSteps_ !== undefined) ?
-				{
-					details: {
-						yulDetails: {
-							optimizerSteps: yulOptimizerSteps_,
-						},
-					},
-				} :
-				{}
-			),
 
 			// details: {
 			// 	yulDetails: {
@@ -365,26 +339,6 @@ const hardhatUserConfig = {
 				settings: createSoliditySettings(400),
 			},
 		],
-
-		// [Comment-202608121]
-		// `CosmicSignatureGameV3` deployed bytecode size exceeds the EIP-170 limit of 24576 bytes
-		// when compiled with `runs: 400` (25600 bytes as of 2026-08).
-		// A lower `runs` value reduces inlining, which brings it under the limit,
-		// at the cost of a small runtime gas increase for this one contract.
-		// Other contracts keep the default settings configured above.
-		// Note that this must be the `compilers` array form rather than the single-compiler shorthand,
-		// because Hardhat ignores `overrides` when the shorthand is used.
-		// Comment-202608134 relates.
-		// [/Comment-202608121]
-		overrides:
-			uniformCompilationForSlither ?
-			{} :
-			{
-				"contracts/production/CosmicSignatureGameV3.sol": {
-					version: solidityVersion,
-					settings: createSoliditySettings(1, true),
-				},
-			},
 	},
 
 	// #endregion
@@ -659,7 +613,6 @@ const hardhatUserConfig = {
 if (helpersModule.ENABLE_SMTCHECKER >= 2) {
 	// See https://docs.soliditylang.org/en/latest/using-the-compiler.html#compiler-input-and-output-json-description
 	// On that page, find: modelChecker
-	// Comment-202608121 relates.
 	const modelCheckerSettings = {
 		// [Comment-202409013]
 		// If you don't list any contracts here, all contracts under the "contracts" folder tree, except abstract ones, will be analyzed.
@@ -748,12 +701,8 @@ if (helpersModule.ENABLE_SMTCHECKER >= 2) {
 		timeout: 24 * 60 * 60 * 1000,
 	};
 
-	// Applying to all compilation jobs, including the per-file overrides.
-	// Comment-202608121 relates.
+	// Applying to all compilation jobs.
 	for (const solidityCompilerConfig of hardhatUserConfig.solidity.compilers) {
-		solidityCompilerConfig.settings.modelChecker = modelCheckerSettings;
-	}
-	for (const solidityCompilerConfig of Object.values(hardhatUserConfig.solidity.overrides)) {
 		solidityCompilerConfig.settings.modelChecker = modelCheckerSettings;
 	}
 }
