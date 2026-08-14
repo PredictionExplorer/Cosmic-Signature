@@ -17,9 +17,13 @@ The V1 -> V2 -> V3 game proxy storage layout remains fully compatible:
 
 - V3 appends exactly 7 new variables in `CosmicSignatureGameStorageV3Base` (which derives from `CosmicSignatureGameStorageV2Base`): `championDurations` (a mapping), `cstBidPriceDeclineMultiplier`, `cstBidPriceDeclineMultiplierChangeDivisor`, `roundLateBidDurationDivisor`, `roundLateBidPricePremiumAmountBaseMultiplier`, `roundLateBidPricePremiumAmountExponent`, `mainPrizeNumCosmicSignatureNfts`.
 - `CosmicSignatureGameStorageV3.__gap_persistent` shrank by 7 slots to `uint256[(1 << 30) - 1 - 7]` to compensate, so all pre-existing variables keep their slots.
-- No slots are renamed or repurposed (the V1 -> V2 upgrade repurposed 2 slots; V3 does nothing of the kind). However, `reinitialize()` overwrites the values of 2 pre-existing slots: `cstDutchAuctionBeginningBidPriceMinLimit` (200 CST -> 1 CST, which effectively eliminates the minimum while still avoiding zero-beginning-price marginal cases) and `bidCstRewardAmountMultiplier` (repurposed from the V2 square-root reward formula's radicand multiplier to the V3 linear reward formula's multiplier; its `setBidCstRewardAmountMultiplier` setter keeps working and now tunes the V3 linear reward). `cstDutchAuctionDuration` and `cstDutchAuctionDurationChangeDivisor` keep their slots and values but V3's logic no longer reads them, and their setters revert (see the ABI changes below).
+- No slots are renamed or repurposed (the V1 -> V2 upgrade repurposed 2 slots; V3 does nothing of the kind). However, `reinitialize()` intentionally overwrites 7 pre-existing values:
+  - `cstDutchAuctionBeginningBidPriceMinLimit` (200 CST -> 1 CST), which effectively eliminates the minimum while still avoiding zero-beginning-price marginal cases.
+  - `bidCstRewardAmountMultiplier`, repurposed from the V2 square-root reward formula's radicand multiplier to the V3 linear reward formula's multiplier; its setter keeps working and now tunes the V3 linear reward.
+  - The ETH prize percentages: main prize 25% -> 20%, charity 7% -> 5%, bidder-raffle total 4% -> 5%, CS NFT stakers 6% -> 5%, and Chrono Warrior 8% -> 15%. The paid total remains 50%, so the implicit rollover remains 50%.
+- `cstDutchAuctionDuration` and `cstDutchAuctionDurationChangeDivisor` keep their slots and values, but V3's logic no longer reads them and their setters revert (see the ABI changes below).
 
-This is verified by OpenZeppelin `validateUpgrade` in `test/tests-src/CosmicSignatureGameV3-StorageLayout.js`, by `slither/slither-check-upgradeability-CosmicSignatureGameV3.bash`, and by the fuzz campaign's V2 -> V3 upgrade phase, which snapshots and diffs every carried-over getter (including the V2 parameters).
+This is verified by OpenZeppelin `validateUpgrade` in `test/tests-src/CosmicSignatureGameV3-StorageLayout.js`, by `slither/slither-check-upgradeability-CosmicSignatureGameV3.bash`, and by the fuzz campaign's V2 -> V3 upgrade phase, which snapshots and diffs every remaining carried-over getter (including the V2 parameters) and checks all intentional overwrites.
 
 ## ABI Changes
 
@@ -108,7 +112,7 @@ event MainPrizeClaimed(
 
 ### 6. Initializer
 
-- `reinitialize()`, declared `reinitializer(3)`. Executed once, as the `upgradeToAndCall` payload during the upgrade; it sets the 6 new V3 parameters to the defaults listed above and overwrites 2 pre-existing V2 slots: `cstDutchAuctionBeginningBidPriceMinLimit = 1 ether` and `bidCstRewardAmountMultiplier = DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER` (the V3 linear reward multiplier; ~1 CST per minute at the initial main prize time increment). The selector is unchanged from V2's `reinitialize()` (a second call on the upgraded proxy reverts with `InvalidInitialization`).
+- `reinitialize()`, declared `reinitializer(3)`. Executed once, as the `upgradeToAndCall` payload during the upgrade; it sets the 6 new V3 parameters to the defaults listed above and overwrites 7 pre-existing V2 values: `cstDutchAuctionBeginningBidPriceMinLimit = 1 ether`, `bidCstRewardAmountMultiplier = DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER`, and the five ETH prize percentages (20% main, 5% charity, 5% bidder raffles, 5% CS NFT stakers, 15% Chrono Warrior). The selector is unchanged from V2's `reinitialize()` (a second call on the upgraded proxy reverts with `InvalidInitialization`).
 - Like in V2, the important preconditions (`_onlyNonFirstRound`, `_onlyIfPrevVersionWasInitialized`) are assert-only production no-ops; the real protection is V2's `_authorizeUpgrade` (`onlyOwner` + `_onlyRoundIsInactive`). `test/tests-src/CosmicSignatureGameV3-GuardsAndMisconfig.js` documents both.
 
 ### 7. No selectors removed; 3 new custom errors
@@ -196,18 +200,28 @@ The V2 sqrt bid CST reward formula is replaced, and the reward recipient changes
   per-minute rate slowly decreases as `mainPrizeTimeIncrementInMicroSeconds` grows ~1% per round, unless the owner
   re-tunes `bidCstRewardAmountMultiplier`.
 
-### 5. Multi-NFT main prize (`MainPrizeV3`)
+### 5. V3 ETH prize distribution
 
-- The main prize beneficiary receives `mainPrizeNumCosmicSignatureNfts` (default 3) Cosmic Signature NFTs instead of 1, minted as one sequential ID block. All other prize NFT counts (last CST bidder, Endurance Champion, Chrono-Warrior, raffle winners, Random Walk NFT stakers) are unchanged, as are all CST amounts and all ETH amounts.
+At upgrade time, `reinitialize()` changes the five existing ETH prize percentages to 20% main prize, 5% charity,
+5% bidder raffles, 5% CS NFT stakers, and 15% Chrono Warrior. Every amount is still calculated independently
+from the full game balance at claim time. The configured payouts total 50%; the other 50% remains in the game
+for subsequent rounds. Rollover remains implicit rather than a stored percentage. The number of bidder-raffle
+draws remains 3, so the raffle's 5% total is split among three winners and any integer-division remainder stays
+in the game. No event or selector changes accompany this configuration migration; frontends and indexers should
+read the existing percentage getters after the upgrade and update any hardcoded prize copy.
+
+### 6. Multi-NFT main prize (`MainPrizeV3`)
+
+- The main prize beneficiary receives `mainPrizeNumCosmicSignatureNfts` (default 3) Cosmic Signature NFTs instead of 1, minted as one sequential ID block. All other prize NFT counts (last CST bidder, Endurance Champion, Chrono-Warrior, raffle winners, Random Walk NFT stakers) and all CST amounts are unchanged.
 - The CST/NFT recipient bookkeeping inside `_distributePrizes` was restructured accordingly (Comment-202511094, Comment-202511104, Comment-202606011: in V3+ the number of CS NFTs minted exceeds the number of CST prize mints by `mainPrizeNumCosmicSignatureNfts - 1`, and the item order differs).
 
-### 6. Champion durations persisted per round (`BidStatisticsV3`)
+### 7. Champion durations persisted per round (`BidStatisticsV3`)
 
 At main prize claim time, the `_saveChampionDurations` hook (a no-op in V2) writes the round's final endurance
 champion duration and chrono-warrior duration to the new public `championDurations[roundNum]` mapping, so they
 remain queryable after `_prepareNextRound` resets the working variables.
 
-### 7. Owner misconfiguration footguns — now largely closed (Comment-202608171)
+### 8. Owner misconfiguration footguns — now largely closed (Comment-202608171)
 
 The new V3 setters reject the dangerous zero values with `ZeroValue()`:
 
@@ -217,17 +231,17 @@ The new V3 setters reject the dangerous zero values with `ZeroValue()`:
 - `setRoundLateBidPricePremiumAmountBaseMultiplier(0)` remains valid: it disables the late bid price premium.
 - Remaining (accepted) footguns: extreme `roundLateBidPricePremiumAmountBaseMultiplier` / `roundLateBidPricePremiumAmountExponent` values can make the premium arithmetic wrap (the formula runs in an `unchecked` block in production builds), producing bogus prices; an absurdly high `bidCstRewardAmountMultiplier` (on the order of `2^200`) can similarly wrap the reward arithmetic. Sane values are nowhere near those ranges, and the benevolent-owner assumption (Comment-202411064) applies.
 
-### 8. What did not change
+### 9. What did not change
 
 - All V2 bid method signatures and validations, including the `bidCstRewardAmountMinLimit_` mechanism (though it now guards the previous bidder's linear reward).
 - The ETH Dutch auction, the exponential next-ETH-bid-price ladder, the Random Walk NFT discount, and the ETH overpayment refund logic.
 - `mainPrizeTime` extension (unchecked add, no clamping), claim authorization and timeout logic, `_prepareNextRound` (including the Comment-202606235 unchecked overflow hardening).
-- All ETH prize amounts and percentages, the end-of-round CST prize amounts, the charity donation, the staking deposit, `PrizesWallet` interactions (including `setPrizesWallet`, which has existed since V2), donations, and all live `SystemManagementV2` setters (the two retired CST Dutch auction duration setters excepted).
+- ETH prize calculation and transfer mechanics (apart from the V3 percentage allocation above), the end-of-round CST prize amounts, the staking deposit and charity transfer paths, `PrizesWallet` interactions (including `setPrizesWallet`, which has existed since V2), donations, and all live `SystemManagementV2` setters (the two retired CST Dutch auction duration setters excepted).
 - The upgrade authorization rules (`_authorizeUpgrade` in `CosmicSignatureGameV2Base`: `onlyOwner` + `_onlyRoundIsInactive`), which also govern any future V4+ upgrade.
 
 ## Changes In Shared Sources Attributed To V3
 
-- `production/libraries/CosmicSignatureConstants.sol`: new constants `INITIAL_ROUND_LATE_BID_DURATION` (20 minutes), `DEFAULT_ROUND_LATE_BID_DURATION_DIVISOR` (3_000_000), `ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_RESOLUTION_EXPONENT` (13), `DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_BASE_MULTIPLIER` (`3567993 << 13`), `DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_EXPONENT` (8), `INITIAL_BID_CST_REWARD_AMOUNT_PER_MINUTE` (`1 ether`), `DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER` (derived from the former; ~1 CST/minute at the initial main prize time increment), `DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT_V3` (`1 ether`), `INITIAL_CST_BID_PRICE_DECLINE_MULTIPLIER` (~`1 ether / 60`), `DEFAULT_CST_BID_PRICE_DECLINE_MULTIPLIER_CHANGE_DIVISOR` (100), `DEFAULT_MAIN_PRIZE_NUM_COSMIC_SIGNATURE_NFTS` (3). The V2 constant `DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER` was renamed to `DEFAULT_BID_CST_REWARD_AMOUNT_RADICAND_MULTIPLIER` (same value; V2's `reinitialize` uses it). The defaults are consumed by `CosmicSignatureGameV3.reinitialize`.
+- `production/libraries/CosmicSignatureConstants.sol`: new constants `INITIAL_ROUND_LATE_BID_DURATION` (20 minutes), `DEFAULT_ROUND_LATE_BID_DURATION_DIVISOR` (3_000_000), `ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_RESOLUTION_EXPONENT` (13), `DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_BASE_MULTIPLIER` (`3567993 << 13`), `DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_EXPONENT` (8), `INITIAL_BID_CST_REWARD_AMOUNT_PER_MINUTE` (`1 ether`), `DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER` (derived from the former; ~1 CST/minute at the initial main prize time increment), `DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT_V3` (`1 ether`), `INITIAL_CST_BID_PRICE_DECLINE_MULTIPLIER` (~`1 ether / 60`), `DEFAULT_CST_BID_PRICE_DECLINE_MULTIPLIER_CHANGE_DIVISOR` (100), `DEFAULT_MAIN_PRIZE_NUM_COSMIC_SIGNATURE_NFTS` (3), and V3-specific constants for the five ETH prize percentages (20/5/5/5/15). The V2 constant `DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER` was renamed to `DEFAULT_BID_CST_REWARD_AMOUNT_RADICAND_MULTIPLIER` (same value; V2's `reinitialize` uses it). The V3 defaults are consumed by `CosmicSignatureGameV3.reinitialize`.
 - Extract-base refactorings that let V3 reuse V2 code without changing V2's ABI (other than the initializer rename below) or behavior:
   - `CosmicSignatureGameStorageV2` was split into `CosmicSignatureGameStorageV2Base` (all state variables) + `CosmicSignatureGameStorageV2` (the storage gaps); the V2 modules now derive from the base, so `CosmicSignatureGameStorageV3Base` can extend it before the gap.
   - `CosmicSignatureGameV2Base` was extracted from `CosmicSignatureGameV2` (constructor with `_disableInitializers`, the virtual `reinitialize()` declaration, `_onlyIfPrevVersionWasInitialized`, `_authorizeUpgrade`).
@@ -243,7 +257,7 @@ The new V3 setters reject the dangerous zero values with `ZeroValue()`:
   (arithmetic refactored into `CosmicSignatureHelpers.tryIncreaseValueExponentially`/`tryReduceValueExponentially`
   and `ArbitrumHelpers._tryCallPrecompile` is algebraically/observably identical), and stays covered by the
   exact-assertion V1/V2 suites and the fuzz campaign's V1/V2 phases.
-- 2026-08 bytecode size work (V3 was 1,024 bytes over the EIP-170 limit; now 275 bytes under): per-file compiler
+- 2026-08 bytecode size work (V3 was 1,024 bytes over the EIP-170 limit; with the prize migration it is now 154 bytes under): per-file compiler
   override for `CosmicSignatureGameV3.sol` (optimizer runs=1, no CBOR metadata; Comment-202608121 in
   `hardhat.config.js`), shared emit/validation helpers in `BiddingV3` (Comment-202608122, Comment-202608124), and
   the `ArbitrumHelpers` consolidation (Comment-202608125).

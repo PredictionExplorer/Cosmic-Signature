@@ -12,11 +12,11 @@ Live proxy `0x6a714Ae7B5b6eA520F6BCA23d2E609C4Fd5863F2` (Arbitrum One) is at ini
 | 2a | Cleanup: `todo-ai-0` garbage, dead commented code, `WRONG>>>` comment | done: `WRONG>>>` block resolved into real `BidPlaced` param docs (Comment-202608181 documents `cstBidPriceDeclineMultiplier` in `CosmicSignatureGameStorageV3Base`); `todo-ai-0` magic numbers in `V2UpgradeTestHelpers.js` replaced with the Solidity formulas; remaining `todo-0`s are design questions for the developer (listed in the review doc); the standing `todo-ai-0` instruction in `CosmicSignatureConstants.sol` kept as directed |
 | 2b | Harden: define first-CST-bid behavior; reward view returns 0 with no last bidder | done (Comment-202608167, Comment-202608176) |
 | 2c | Harden: bounds validation on the new V3 setters | done (`_providedValueIsNonZero`, `ZeroValue` error, Comment-202608171); plus the reward-floor ETH auction anchor fix (Comment-202608177) |
-| 3 | V3 bytecode under 24,576 bytes; explain old->new V2 size drop | done (24,341 bytes with the hardening included, headroom 235; a delegatecall prize module measured at 21,533 remains available if more headroom is needed) |
+| 3 | V3 bytecode under 24,576 bytes; explain old->new V2 size drop | done (24,422 bytes with the V3 prize migration included, headroom 154; a delegatecall prize module measured at 21,533 remains available if more headroom is needed) |
 | 4a | Fix stale V3 tests/fuzz model (remove `bidCstRewardAmountPerMinute`, 90/10) | done and verified: full suite 128 passing / 0 failing (fuzz soak: 89 V1->V2->V3 campaigns, 97/97 actions covered) |
 | 4b | Fix test-suite instability (OZ manifest lock contention; OOM not reproduced) | done (per-worker TMPDIR, Comment-202608173; the lock errors were collateral of the stale-test failures) |
 | 4c | New tests: upgrade preservation, dispatch, setter validation, size | done (StorageLayout, GuardsAndMisconfig, SystemManagement, BidCstReward, LateBidPremium, MainPrize suites) |
-| 5 | OZ + Slither validation; Arbitrum One fork upgrade rehearsal; runbook | done: fork rehearsal PASSING against live Arbitrum One state (all 25 checks incl. gameplay smoke); runbook written; upgrade task runs from any machine (Comment-202608126, Comment-202608127); Slither upgradeability check runs via uniform build (Comment-202608134) with only the expected benign gap-consumption findings |
+| 5 | OZ + Slither validation; Arbitrum One fork upgrade rehearsal; runbook | done: fork rehearsal PASSING against live Arbitrum One state (all 34 checks incl. the V3 prize migration and gameplay smoke); runbook written; upgrade task runs from any machine (Comment-202608126, Comment-202608127); Slither upgradeability check runs via uniform build (Comment-202608134) with only the expected benign gap-consumption findings |
 
 Note: a parallel workstream (concurrent edits in the working tree, same comment-numbering scheme) is handling
 contract hardening and test-model updates. This log covers both; coordinate before touching
@@ -27,7 +27,7 @@ contract hardening and test-model updates. This log covers both; coordinate befo
 - Storage layout V1->V2->V3 verified safe. V3 appends 7 slots (308-314); gap shrinks exactly. Old-vs-new V1/V2 layouts identical.
 - Inheritance verified correct: shared `CosmicSignatureGameV2Base` chassis + version leaves; `BiddingV3`/`MainPrizeV3` fork from `*V2Base`, V2 leaves absent from V3 MRO; diamond overrides resolve to V3 implementations.
 - ABI deltas: V1+V2 `getCstDutchAuctionDurations` 2nd return `int256`->`uint256`; V2 `initializeV2()`->`reinitialize()`; V3 adds overloaded `BidPlaced`, changes `MainPrizeClaimed` (topic0), retires 2 setters with `NotImplemented`.
-- Bytecode sizes (production settings): V1 22,124; V2 22,463; V3 24,301 of 24,576 max. Before this work V3 was 25,600 (1,024 over).
+- Bytecode sizes (production settings): V1 22,124; V2 22,463; V3 24,422 of 24,576 max. Before this work V3 was 25,600 (1,024 over).
 - Old->new V2 size delta is only -156 bytes (22,920 -> 22,764 before this work), not the feared ~3K; no SolC bug indication. The developer likely compared different artifacts or commits.
 - Baseline `HARDHAT_MODE_CODE=1` test run: no out-of-memory crash; ~21 failures, all stale-design drift (old `bidCstRewardAmountPerMinute` API, retired setters now reverting `NotImplemented`, fuzz expecting old 200 CST min limit). OZ-upgrades manifest lock contention in parallel Mocha identified and being fixed via per-worker TMPDIR.
 
@@ -83,7 +83,7 @@ contract hardening and test-model updates. This log covers both; coordinate befo
 - 2026-08-13: New fork upgrade rehearsal (Comment-202608128): `tasks/src/fork-rehearse-cosmic-signature-game-v3-upgrade.js`
   + runner `tasks/runners/run-fork-rehearse-cosmic-signature-game-v3-upgrade-arbitrumOne.bash`.
   Rehearses the real V2->V3 upgrade against forked live Arbitrum One state: OZ `validateUpgrade`, owner-impersonated
-  `upgradeToAndCall` + `reinitialize`, 47 carried-over getters unchanged, 2 intentional overwrites + 6 new params
+  `upgradeToAndCall` + `reinitialize`, 42 carried-over getters unchanged, 7 intentional overwrites + 6 new params
   at expected defaults, `InvalidInitialization` replay guard, `NotImplemented` retired setters, `ZeroValue`
   validation, ETH bid, same-second throttle (`BidPlacedWithinCurrentSecond`), whole reward to previous bidder,
   `claimMainPrize` with 3 CS NFTs to the beneficiary, `championDurations` persisted, `roundNum` incremented.
@@ -117,11 +117,19 @@ contract hardening and test-model updates. This log covers both; coordinate befo
   exact unchecked premium wrapping under extreme owner parameters, reverting ERC-20/ERC-721 donation rollback,
   and donated-NFT self-grief/recovery. `RevertingToken.sol` is the non-reentrant failure double;
   `HostileBidder.sol` gained V3 claim reentry. The focused production-profile run is 17 passing and the new
-  suite is 8 passing with Solidity assertions enabled. No `contracts/production` source changed.
+  suite is 8 passing with Solidity assertions enabled. The overflow test now distinguishes production wrapping
+  from the checked arithmetic intentionally generated by SMT preprocessing. No security-follow-up
+  `contracts/production` source changed.
 - 2026-08-14: Documented 2 medium upgrade-path findings in
   `docs/cosmic-signature-contracts-audit-considerations.md`: permissionless one-shot `reinitialize` after a bare
   upgrade, and the production no-op previous-version check. Per owner direction these are documented/tested,
   not patched; the atomic checked-in upgrade task remains the operational mitigation.
+- 2026-08-14: Added the V3 ETH prize migration to `reinitialize`: 20% main prize, 5% charity, 5% total across
+  3 bidder-raffle draws, 5% CS NFT stakers, and 15% Chrono Warrior, leaving 50% implicit rollover. V1/V2 defaults
+  remain unchanged. Upgrade/storage assertions, the fuzz model, a focused end-to-end ETH payout test, fork
+  rehearsal, runbook, primary prize reference, and V3 comparison docs now cover the intentional overwrites.
+  The production implementation is 24,422 bytes (154 bytes under EIP-170). All four bounded full-suite
+  configurations pass with 137 tests each, and the Arbitrum One fork rehearsal passes all 34 checks.
 
 ## Remaining items for humans
 

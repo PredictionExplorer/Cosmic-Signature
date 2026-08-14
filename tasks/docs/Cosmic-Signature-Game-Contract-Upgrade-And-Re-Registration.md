@@ -80,15 +80,16 @@ The problem is that the initially deployed `CosmicSignatureGame` ABI still exist
 
 - No unsafe OpenZeppelin flags are needed for the V2 -> V3 upgrade (`unsafeAllowRenames` and `unsafeSkipStorageCheck` stay `false`): V3 only appends storage variables.
 
-- `reinitialize` (the `upgradeToAndCall` payload) sets the 6 new V3 parameters and overwrites 2 existing ones: `cstDutchAuctionBeginningBidPriceMinLimit` (200 CST -> 1 CST) and `bidCstRewardAmountMultiplier` (repurposed for the V3 linear bid CST reward). See `docs/v3-vs-v2-changes.md`.
+- `reinitialize` (the `upgradeToAndCall` payload) sets the 6 new V3 parameters and overwrites 7 existing values: `cstDutchAuctionBeginningBidPriceMinLimit` (200 CST -> 1 CST), `bidCstRewardAmountMultiplier` (repurposed for the V3 linear bid CST reward), and the five ETH prize percentages (20% main, 5% charity, 5% bidder raffles, 5% CS NFT stakers, 15% Chrono Warrior). Those prize percentages total 50%, leaving the other 50% in the game as rollover. See `docs/v3-vs-v2-changes.md`.
 
 - After the upgrade, notify the web site / indexer team:
 	- `MainPrizeClaimed` has a new signature (its topic0 hash changed).
 	- `BidPlaced` keeps its topic0, but the 7th data field is now the reward minted to the PREVIOUS bidder (0 on the first bid of a round), and the 8th is `cstBidPriceDeclineMultiplier` (was `cstDutchAuctionDuration`).
 	- `setCstDutchAuctionDuration` and `setCstDutchAuctionDurationChangeDivisor` now always revert with `NotImplemented`.
 	- Bids can newly revert with `BidPlacedWithinCurrentSecond` (same-second throttle); frontends should not display a bid CST reward quote before the first bid of a round (the getter returns 0).
+	- Update any hardcoded prize copy to the 20%/5%/5%/5%/15% V3 allocation; the existing percentage getters expose the post-upgrade values and the raffle count remains 3.
 
-- Post-upgrade sanity reads (e.g. on ArbiScan): `mainPrizeNumCosmicSignatureNfts()` = 3, `cstBidPriceDeclineMultiplierChangeDivisor()` = 100, `roundLateBidPricePremiumAmountExponent()` = 8, and the ERC-1967 implementation slot points at the newly reported implementation address.
+- Post-upgrade sanity reads (e.g. on ArbiScan): `mainPrizeNumCosmicSignatureNfts()` = 3, `cstBidPriceDeclineMultiplierChangeDivisor()` = 100, `roundLateBidPricePremiumAmountExponent()` = 8, `mainEthPrizeAmountPercentage()` = 20, `charityEthDonationAmountPercentage()` = 5, `raffleTotalEthPrizeAmountForBiddersPercentage()` = 5, `cosmicSignatureNftStakingTotalEthRewardAmountPercentage()` = 5, `chronoWarriorEthPrizeAmountPercentage()` = 15, `numRaffleEthPrizesForBidders()` = 3, and the ERC-1967 implementation slot points at the newly reported implementation address.
 
 #### Afterwards
 

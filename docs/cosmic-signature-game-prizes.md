@@ -44,6 +44,16 @@ The rest of this document lists prizes from groups 1 and 2.
 
 - Any other variables not listed here are implied to be the `CosmicSignatureGame` contract publicly visible properties. For example, `mainEthPrizeAmountPercentage`.
 
+#### Versioned ETH Prize Allocation
+
+- V1 and V2 defaults: 25% main prize, 7% charity, 4% bidder-raffle total, 6% CS NFT stakers, and 8% Chrono-Warrior.
+
+- During the V2 -> V3 upgrade, `reinitialize()` atomically changes those existing percentages to 20% main prize, 5% charity, 5% bidder-raffle total, 5% CS NFT stakers, and 15% Chrono-Warrior.
+
+- Both allocations pay a nominal 50% of `gameEthBalance`; the other 50% remains in the Game contract for future rounds. Rollover is implicit rather than a stored percentage. Integer-division remainders and any amount that cannot be transferred also remain in their respective contract.
+
+- V3 keeps `numRaffleEthPrizesForBidders` at 3, so the raffle's 5% total is divided across three draws.
+
 #### Prize List
 
 | Prize Winner | Prize Type | Prize Count | Prize Amount | Notes |

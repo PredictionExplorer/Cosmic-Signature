@@ -11,7 +11,7 @@
 //       with `reinitialize` as the call payload -- the same effect the "upgrade-cosmic-signature-game" Hardhat task
 //       produces in the production.
 //    5. Verifies: the implementation address changed; the initialized version is 3; every carried-over storage
-//       variable is unchanged, except the 2 that `reinitialize` intentionally overwrites; the new V3 parameters
+//       variable is unchanged, except the values that `reinitialize` intentionally overwrites; the new V3 parameters
 //       have the expected defaults; the retired setters revert; `reinitialize` cannot run twice;
 //       the new setters validate zero values.
 //    6. Smoke-tests gameplay: an ETH bid, the same-second bid throttle, the bid CST reward minted to the previous
@@ -58,9 +58,12 @@ const ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_RESOLUTION_EXPONENT = 13n;
 const DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_BASE_MULTIPLIER = 3567993n << ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_RESOLUTION_EXPONENT;
 const DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_EXPONENT = 8n;
 const DEFAULT_MAIN_PRIZE_NUM_COSMIC_SIGNATURE_NFTS = 3n;
-
-// ERC-1967 implementation slot.
-const ERC1967_IMPLEMENTATION_SLOT = "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc";
+const DEFAULT_MAIN_ETH_PRIZE_AMOUNT_PERCENTAGE_V3 = 20n;
+const DEFAULT_CHARITY_ETH_DONATION_AMOUNT_PERCENTAGE_V3 = 5n;
+const DEFAULT_RAFFLE_TOTAL_ETH_PRIZE_AMOUNT_FOR_BIDDERS_PERCENTAGE_V3 = 5n;
+const DEFAULT_NUM_RAFFLE_ETH_PRIZES_FOR_BIDDERS = 3n;
+const DEFAULT_COSMIC_SIGNATURE_NFT_STAKING_TOTAL_ETH_REWARD_AMOUNT_PERCENTAGE_V3 = 5n;
+const DEFAULT_CHRONO_WARRIOR_ETH_PRIZE_AMOUNT_PERCENTAGE_V3 = 15n;
 
 // OpenZeppelin `Initializable` ERC-7201 namespaced slot.
 const INITIALIZABLE_STORAGE_SLOT = "0xf0c57e16840df040f15088dc2f81fe391c3923bec73e23a9662efc9c229c6a00";
@@ -79,13 +82,13 @@ const CARRIED_OVER_GETTER_NAMES = [
 	"cstDutchAuctionBeginningTimeStamp", "cstDutchAuctionDuration", "cstDutchAuctionBeginningBidPrice",
 	"nextRoundFirstCstDutchAuctionBeginningBidPrice",
 	"bidMessageLengthMaxLimit",
-	"cstPrizeAmount", "chronoWarriorEthPrizeAmountPercentage", "raffleTotalEthPrizeAmountForBiddersPercentage",
+	"cstPrizeAmount",
 	"numRaffleEthPrizesForBidders", "numRaffleCosmicSignatureNftsForBidders",
-	"numRaffleCosmicSignatureNftsForRandomWalkNftStakers", "cosmicSignatureNftStakingTotalEthRewardAmountPercentage",
+	"numRaffleCosmicSignatureNftsForRandomWalkNftStakers",
 	"initialDurationUntilMainPrizeDivisor", "mainPrizeTime", "mainPrizeTimeIncrementInMicroSeconds",
-	"mainPrizeTimeIncrementIncreaseDivisor", "timeoutDurationToClaimMainPrize", "mainEthPrizeAmountPercentage",
+	"mainPrizeTimeIncrementIncreaseDivisor", "timeoutDurationToClaimMainPrize",
 	"token", "randomWalkNft", "nft", "prizesWallet", "stakingWalletRandomWalkNft", "stakingWalletCosmicSignatureNft",
-	"marketingWallet", "marketingWalletCstContributionAmount", "charityAddress", "charityEthDonationAmountPercentage",
+	"marketingWallet", "marketingWalletCstContributionAmount", "charityAddress",
 	"cstDutchAuctionDurationChangeDivisor",
 	"owner",
 ];
@@ -94,6 +97,11 @@ const CARRIED_OVER_GETTER_NAMES = [
 const OVERWRITTEN_GETTER_EXPECTED_NEW_VALUES = {
 	cstDutchAuctionBeginningBidPriceMinLimit: DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT_V3,
 	bidCstRewardAmountMultiplier: DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER,
+	mainEthPrizeAmountPercentage: DEFAULT_MAIN_ETH_PRIZE_AMOUNT_PERCENTAGE_V3,
+	charityEthDonationAmountPercentage: DEFAULT_CHARITY_ETH_DONATION_AMOUNT_PERCENTAGE_V3,
+	raffleTotalEthPrizeAmountForBiddersPercentage: DEFAULT_RAFFLE_TOTAL_ETH_PRIZE_AMOUNT_FOR_BIDDERS_PERCENTAGE_V3,
+	cosmicSignatureNftStakingTotalEthRewardAmountPercentage: DEFAULT_COSMIC_SIGNATURE_NFT_STAKING_TOTAL_ETH_REWARD_AMOUNT_PERCENTAGE_V3,
+	chronoWarriorEthPrizeAmountPercentage: DEFAULT_CHRONO_WARRIOR_ETH_PRIZE_AMOUNT_PERCENTAGE_V3,
 };
 
 // New V3 getters with the expected `reinitialize` defaults.
@@ -135,7 +143,7 @@ async function checkReverts(promise_, expectedErrorText_, description_) {
 		await promise_;
 		check(false, description_, "the transaction did not revert");
 	} catch (errorObject_) {
-		const errorText_ = errorObject_.toString();
+		const errorText_ = (errorObject_ instanceof Error) ? errorObject_.toString() : "Unknown non-Error rejection.";
 		check(expectedErrorText_.length <= 0 || errorText_.includes(expectedErrorText_), description_, errorText_.slice(0, 300));
 	}
 }
@@ -271,6 +279,25 @@ async function main() {
 	for (const [getterName_, expectedValue_] of Object.entries(OVERWRITTEN_GETTER_EXPECTED_NEW_VALUES)) {
 		const postUpgradeValue_ = await cosmicSignatureGameV3Proxy_[getterName_]();
 		check(postUpgradeValue_ == expectedValue_, `"${getterName_}" was overwritten by reinitialize to the expected value.`, `expected ${expectedValue_}, got ${postUpgradeValue_}`);
+	}
+	{
+		const paidEthPrizeAmountPercentage_ =
+			(await cosmicSignatureGameV3Proxy_.mainEthPrizeAmountPercentage()) +
+			(await cosmicSignatureGameV3Proxy_.charityEthDonationAmountPercentage()) +
+			(await cosmicSignatureGameV3Proxy_.raffleTotalEthPrizeAmountForBiddersPercentage()) +
+			(await cosmicSignatureGameV3Proxy_.cosmicSignatureNftStakingTotalEthRewardAmountPercentage()) +
+			(await cosmicSignatureGameV3Proxy_.chronoWarriorEthPrizeAmountPercentage());
+		check(
+			paidEthPrizeAmountPercentage_ == 50n,
+			"The V3 ETH prize percentages pay 50%, leaving 50% to roll over.",
+			paidEthPrizeAmountPercentage_
+		);
+		const numRaffleEthPrizesForBidders_ = await cosmicSignatureGameV3Proxy_.numRaffleEthPrizesForBidders();
+		check(
+			numRaffleEthPrizesForBidders_ == DEFAULT_NUM_RAFFLE_ETH_PRIZES_FOR_BIDDERS,
+			"V3 keeps 3 bidder-raffle draws.",
+			numRaffleEthPrizesForBidders_
+		);
 	}
 	for (const [getterName_, expectedValue_] of Object.entries(NEW_GETTER_EXPECTED_VALUES)) {
 		const postUpgradeValue_ = await cosmicSignatureGameV3Proxy_[getterName_]();

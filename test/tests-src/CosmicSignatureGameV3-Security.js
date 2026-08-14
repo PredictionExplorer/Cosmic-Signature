@@ -3,7 +3,7 @@
 const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
-const { ENABLE_ASSERTS, waitForTransactionReceipt } = require("../../src/Helpers.js");
+const { ENABLE_ASSERTS, ENABLE_SMTCHECKER, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const {
 	getLatestBlockTimestamp,
 	activateCurrentRound,
@@ -214,7 +214,7 @@ describe("CosmicSignatureGameV3-Security", function () {
 		}
 	});
 
-	it("extreme premium parameters follow explicit uint256 wrapping without panicking", async function () {
+	it("extreme premium parameters wrap in production and use checked arithmetic in SMT builds", async function () {
 		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3(2n);
 		const game_ = contracts_.cosmicSignatureGameV3Proxy;
 		const gameForOwner_ = game_.connect(contracts_.ownerSigner);
@@ -241,6 +241,14 @@ describe("CosmicSignatureGameV3-Security", function () {
 
 		// Prove that this actually exercises the overflow path, rather than only large safe arithmetic.
 		expect(roundLateBidDuration_ * baseMultiplier_).greaterThan(UINT256_MAX);
+
+		// SMT preprocessing intentionally removes this formula's `unchecked` block so the checker can reason
+		// about its arithmetic. The same extreme owner configuration therefore panics only in that build mode.
+		if (ENABLE_SMTCHECKER > 0) {
+			await expect(game_.getNextEthBidPriceAdvanced(currentTimeOffset_)).revertedWithPanic(0x11);
+			await expect(game_.getNextCstBidPriceAdvanced(currentTimeOffset_)).revertedWithPanic(0x11);
+			return;
+		}
 
 		const ethBasePrice_ = await game_.nextEthBidPrice();
 		const expectedEthPrice_ = getWrappedLateBidPrice(
