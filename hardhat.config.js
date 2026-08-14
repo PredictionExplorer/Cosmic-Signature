@@ -13,6 +13,17 @@ const helpersModule = require("./src/Helpers.js");
 // #endregion
 // #region
 
+// [Comment-202608134]
+// `slither-check-upgradeability` cannot find a contract that lives in a different compilation unit
+// than the old contract, and the per-file compiler settings override near Comment-202608121 splits
+// `CosmicSignatureGameV3` into its own compilation unit.
+// So the Slither scripts set this environment variable, which disables the override
+// and compiles everything uniformly into a separate folder.
+// The uniformly compiled `CosmicSignatureGameV3` bytecode exceeds the max allowed size,
+// but that's inconsequential for static analysis.
+// [/Comment-202608134]
+const uniformCompilationForSlither = helpersModule.parseBooleanEnvironmentVariable("SLITHER_UNIFORM_BUILD", false);
+
 // [Comment-202503272]
 // The use of different folders prevents a recompile of some Solidity sources
 // when using a different combination of environment variables.
@@ -21,9 +32,13 @@ const helpersModule = require("./src/Helpers.js");
 // A similar folder name exists in multiple places.
 // [/Comment-202503302]
 const solidityCompilationCacheSubFolderName =
-	helpersModule.ENABLE_HARDHAT_PREPROCESSOR ?
-	`debug-${helpersModule.ENABLE_ASSERTS}-${helpersModule.ENABLE_SMTCHECKER > 0}` :
-	"production";
+	uniformCompilationForSlither ?
+	"slither-uniform" :
+	(
+		helpersModule.ENABLE_HARDHAT_PREPROCESSOR ?
+		`debug-${helpersModule.ENABLE_ASSERTS}-${helpersModule.ENABLE_SMTCHECKER > 0}` :
+		"production"
+	);
 
 // #endregion
 // #region
@@ -150,7 +165,7 @@ if (helpersModule.ENABLE_HARDHAT_PREPROCESSOR) {
 // require("hardhat-docgen");
 
 require("@nomiclabs/hardhat-solhint");
-require("hardhat-tracer");
+if (process.env["DISABLE_HARDHAT_TRACER"] != "true") { require("hardhat-tracer"); }
 
 // // It appears that it's unnecessary to include this into `package.json` or import this.
 // require("@nomiclabs/hardhat-etherscan");
@@ -255,6 +270,79 @@ function preProcessSolidityLine(hre, line) {
 // #endregion
 // #region
 
+/**
+Creates a Solidity compiler settings object.
+Comment-202608121 relates.
+@param {number} optimizerRuns_
+@param {boolean} minimizeBytecodeSize_ When `true`, the compiler will not append the CBOR metadata section,
+which includes the metadata hash, to the contract bytecode, which makes the bytecode a little smaller.
+Source code verification on EtherScan/Arbiscan still works without it.
+*/
+function createSoliditySettings(optimizerRuns_, minimizeBytecodeSize_ = false, yulOptimizerSteps_ = undefined) {
+	return {
+		...(minimizeBytecodeSize_ ? {metadata: {appendCBOR: false, bytecodeHash: "none",},} : {}),
+		// [Comment-202408026]
+		// By default, this is "paris".
+		// See https://v2.hardhat.org/hardhat-runner/docs/config#default-evm-version
+		// But we want this to be the latest Arbitrum-compatible.
+		// [/Comment-202408026]
+		evmVersion: "osaka",
+
+		// [Comment-202408025]
+		// See https://v2.hardhat.org/hardhat-runner/docs/reference/solidity-support
+		// [/Comment-202408025]
+		// Is this going to become `true` by default in a future Solidity version?
+		// As of the 0.8.34, this is `false` by default.
+		viaIR: true,
+
+		// Comment-202408025 applies.
+		optimizer: {
+			enabled: true,
+
+			// By default, this is 200.
+			// A big value here can cause excessive inlining, which can results in the Game contract bytecode size
+			// exceeding the max allowed limit.
+			// Comment-202608121 relates.
+			runs: optimizerRuns_,
+
+			...((yulOptimizerSteps_ !== undefined) ?
+				{
+					details: {
+						yulDetails: {
+							optimizerSteps: yulOptimizerSteps_,
+						},
+					},
+				} :
+				{}
+			),
+
+			// details: {
+			// 	yulDetails: {
+			// 		// Hardhat docs at https://v2.hardhat.org/hardhat-runner/docs/reference/solidity-support says that
+			// 		// this setting makes Hardhat "work as well as possible".
+			// 		// Issue. But it appears to increase contract binary size and, possibly, gas use.
+			// 		// So we not necessarily need this.
+			// 		// Although it could make sense to enable this if Hardhat Preprocessor is enabled.
+			// 		optimizerSteps: "u",
+			// 	},
+			// },
+		},
+
+		// // This appears to be a legacy setting.
+		// // The latest Hardhat 2.x ignores this.
+		// outputSelection: {
+		// 	"*": {
+		// 		"*": [
+		// 			"storageLayout",
+		// 			// "ir",
+		// 			// "irOptimized",
+		// 			// "bytecode",
+		// 		],
+		// 	},
+		// },
+	};
+}
+
 /** @type {import("hardhat/config").HardhatUserConfig} */
 const hardhatUserConfig = {
 	// #region
@@ -271,56 +359,32 @@ const hardhatUserConfig = {
 	// #region
 
 	solidity: {
-		version: solidityVersion,
-		settings: {
-			// [Comment-202408026]
-			// By default, this is "paris".
-			// See https://v2.hardhat.org/hardhat-runner/docs/config#default-evm-version
-			// But we want this to be the latest Arbitrum-compatible.
-			// [/Comment-202408026]
-			evmVersion: "osaka",
-
-			// [Comment-202408025]
-			// See https://v2.hardhat.org/hardhat-runner/docs/reference/solidity-support
-			// [/Comment-202408025]
-			// Is this going to become `true` by default in a future Solidity version?
-			// As of the 0.8.34, this is `false` by default.
-			viaIR: true,
-
-			// Comment-202408025 applies.
-			optimizer: {
-				enabled: true,
-
-				// By default, this is 200.
-				// A big value here can cause excessive inlining, which can results in the Game contract bytecode size
-				// exceeding the max allowed limit.
-				runs: /* 20_000, */ 400,
-
-				// details: {
-				// 	yulDetails: {
-				// 		// Hardhat docs at https://v2.hardhat.org/hardhat-runner/docs/reference/solidity-support says that
-				// 		// this setting makes Hardhat "work as well as possible".
-				// 		// Issue. But it appears to increase contract binary size and, possibly, gas use.
-				// 		// So we not necessarily need this.
-				// 		// Although it could make sense to enable this if Hardhat Preprocessor is enabled.
-				// 		optimizerSteps: "u",
-				// 	},
-				// },
+		compilers: [
+			{
+				version: solidityVersion,
+				settings: createSoliditySettings(400),
 			},
+		],
 
-			// // This appears to be a legacy setting.
-			// // The latest Hardhat 2.x ignores this.
-			// outputSelection: {
-			// 	"*": {
-			// 		"*": [
-			// 			"storageLayout",
-			// 			// "ir",
-			// 			// "irOptimized",
-			// 			// "bytecode",
-			// 		],
-			// 	},
-			// },
-		},
+		// [Comment-202608121]
+		// `CosmicSignatureGameV3` deployed bytecode size exceeds the EIP-170 limit of 24576 bytes
+		// when compiled with `runs: 400` (25600 bytes as of 2026-08).
+		// A lower `runs` value reduces inlining, which brings it under the limit,
+		// at the cost of a small runtime gas increase for this one contract.
+		// Other contracts keep the default settings configured above.
+		// Note that this must be the `compilers` array form rather than the single-compiler shorthand,
+		// because Hardhat ignores `overrides` when the shorthand is used.
+		// Comment-202608134 relates.
+		// [/Comment-202608121]
+		overrides:
+			uniformCompilationForSlither ?
+			{} :
+			{
+				"contracts/production/CosmicSignatureGameV3.sol": {
+					version: solidityVersion,
+					settings: createSoliditySettings(1, true),
+				},
+			},
 	},
 
 	// #endregion
@@ -393,17 +457,56 @@ const hardhatUserConfig = {
 	// todo-2 When making changes to the networks, remember to refactor the logic near Comment-202408313.
 	networks: {
 		hardhat: {
+			// [Comment-202608131]
+			// When the `FORK_RPC_URL` environment variable is set, the in-process Hardhat Network forks the given
+			// live blockchain. `FORK_BLOCK_NUMBER` optionally pins the fork block, which makes runs deterministic
+			// and cacheable. This is used by "tasks/src/fork-rehearse-cosmic-signature-game-v3-upgrade.js"
+			// (Comment-202608128).
+			// It has to be configured statically here, rather than at runtime via "hardhat_reset",
+			// because in the current Hardhat version resetting into a fork fails with
+			// "Storage overrides are not supported for forked blocks yet"
+			// (see https://github.com/NomicFoundation/edr/issues/911 ).
+			// [/Comment-202608131]
+			forking:
+				((process.env["FORK_RPC_URL"] ?? "").length > 0) ?
+				{
+					url: process.env["FORK_RPC_URL"],
+					blockNumber: ((process.env["FORK_BLOCK_NUMBER"] ?? "").length > 0) ? Number.parseInt(process.env["FORK_BLOCK_NUMBER"]) : undefined,
+				} :
+				undefined,
+
+			// Comment-202608131 relates.
+			// Without a hardfork activation history, executing calls on or before the fork block fails with
+			// "No known hardfork for execution on historical block".
+			// Treating the whole history as the latest hardfork is adequate for our purposes,
+			// given that we fork at a recent block.
+			// Note that this EDR version appears to not support "osaka" here; "cancun" works.
+			// Cancun supports the transient storage opcodes, which our contracts use.
+			chains:
+				((process.env["FORK_RPC_URL"] ?? "").length > 0) ?
+				{
+					// Arbitrum One.
+					42161: {hardforkHistory: {cancun: 0,},},
+
+					// Arbitrum Sepolia.
+					421614: {hardforkHistory: {cancun: 0,},},
+				} :
+				undefined,
+
 			chainId: 31337,
 
 			// Comment-202501193 relates and/or applies.
 			// We also use this near Comment-202510196.
-			initialDate: (helpersModule.HARDHAT_MODE_CODE == 1) ? "2025-01-01" : undefined,
+			// Comment-202608131 relates (no initial date on a forked blockchain; its timestamps come from the fork block).
+			initialDate: (helpersModule.HARDHAT_MODE_CODE == 1 && (process.env["FORK_RPC_URL"] ?? "").length <= 0) ? "2025-01-01" : undefined,
 
 			// By default, this is `false`.
 			// Comment-202501193 relates and/or applies.
 			allowBlocksWithSameTimestamp: (helpersModule.HARDHAT_MODE_CODE != 2) ? false : true,
 
-			allowUnlimitedContractSize: true,
+			// Comment-202608131 relates. When rehearsing an upgrade on a fork, we want the real EIP-170 limit
+			// to be enforced, so that deploying an oversized implementation fails, like it would in the production.
+			allowUnlimitedContractSize: ((process.env["FORK_RPC_URL"] ?? "").length > 0) ? false : true,
 
 			// [Comment-202507272]
 			// Providing a particular value, rather than "auto", improves Hardhat Network performance.
@@ -556,7 +659,8 @@ const hardhatUserConfig = {
 if (helpersModule.ENABLE_SMTCHECKER >= 2) {
 	// See https://docs.soliditylang.org/en/latest/using-the-compiler.html#compiler-input-and-output-json-description
 	// On that page, find: modelChecker
-	hardhatUserConfig.solidity.settings.modelChecker = {
+	// Comment-202608121 relates.
+	const modelCheckerSettings = {
 		// [Comment-202409013]
 		// If you don't list any contracts here, all contracts under the "contracts" folder tree, except abstract ones, will be analyzed.
 		// [Comment-202408173]
@@ -643,6 +747,15 @@ if (helpersModule.ENABLE_SMTCHECKER >= 2) {
 		// Milliseconds.
 		timeout: 24 * 60 * 60 * 1000,
 	};
+
+	// Applying to all compilation jobs, including the per-file overrides.
+	// Comment-202608121 relates.
+	for (const solidityCompilerConfig of hardhatUserConfig.solidity.compilers) {
+		solidityCompilerConfig.settings.modelChecker = modelCheckerSettings;
+	}
+	for (const solidityCompilerConfig of Object.values(hardhatUserConfig.solidity.overrides)) {
+		solidityCompilerConfig.settings.modelChecker = modelCheckerSettings;
+	}
 }
 
 // #endregion

@@ -16,17 +16,17 @@ interface IBidding2V3 {
 	/// A negative value indicates that no Random Walk NFT was used.
 	/// @param message Comment-202503155 applies.
 	/// @param bidCstRewardAmount Comment-202607273 applies.
-	/// It's guaranteed to be a nonzero.
-	/// @param cstBidPriceDeclineMultiplier todo-0 Reference the comment from this storage variable.
-	/// todo-0 What comments are referenced in V2?
-	/// todo-0 Tell Nick that this replaced `cstDutchAuctionDuration` param.
-	/// todo-0 The `getCstDutchAuctionDurations` function still exists. It now calculates the duration.
+	/// In V3+, this is minted to the previous bidder, not to the bidder who placed this bid.
+	/// This is zero on the first bid in a bidding round, because there is no previous bidder to reward.
+	/// Comment-202608022 relates.
+	/// @param cstBidPriceDeclineMultiplier Comment-202608181 applies.
+	/// This is the value after this bid's adjustment.
+	/// In the V2 version of this event, this parameter slot was `cstDutchAuctionDuration`;
+	/// the event signature and therefore its topic hash are unchanged, so off-chain code
+	/// must reinterpret this field after the V3 upgrade.
+	/// The `getCstDutchAuctionDurations` function still exists; in V3+ it derives the duration
+	/// from the auction beginning bid price and this multiplier.
 	/// @param mainPrizeTime Comment-202412152 applies.
-	/// @dev
-	/// todo-0 WRONG>>> There is no `cstBidPriceDeclineMultiplier` parameter here because we don't have a setter for it,
-	/// todo-0 WRONG>>> and therefore no other event that to be emitted when it changes.
-	/// todo-0 WRONG>>> The reasoning why `cstDutchAuctionDuration` needs to be settable does not apply -- find that comment and cross-ref
-	/// todo-0 WRONG>>> here and near `cstBidPriceDeclineMultiplier`.
 	event BidPlaced(
 		uint256 indexed roundNum,
 		address indexed lastBidderAddress,

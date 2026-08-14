@@ -74,52 +74,56 @@ describe("CosmicSignatureGameV3-GuardsAndMisconfig", function () {
 		}
 	});
 
-	it("documents that mainPrizeNumCosmicSignatureNfts = 0 owner misconfiguration bricks claimMainPrize", async function () {
+	it("setters whose zero value would brick or freeze the game reject a zero (Comment-202608171)", async function () {
 		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3(2n);
 		const game_ = contracts_.cosmicSignatureGameV3Proxy;
-		await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setMainPrizeNumCosmicSignatureNfts(0n));
+		const gameForOwner_ = game_.connect(contracts_.ownerSigner);
+
+		// `mainPrizeNumCosmicSignatureNfts == 0` would make every `claimMainPrize` revert with `Panic(0x11)`.
+		// Because both this setter and `_authorizeUpgrade` require an inactive round, a round with a bid
+		// would be impossible to complete or repair, permanently bricking the game. So the setter rejects a zero.
+		await expect(gameForOwner_.setMainPrizeNumCosmicSignatureNfts(0n)).revertedWithCustomError(game_, "ZeroValue");
+
+		// A zero in these would make bid pricing and/or bid placement panic with a division by zero
+		// until the round completes and the owner repairs the value.
+		await expect(gameForOwner_.setRoundLateBidDurationDivisor(0n)).revertedWithCustomError(game_, "ZeroValue");
+		await expect(gameForOwner_.setCstBidPriceDeclineMultiplier(0n)).revertedWithCustomError(game_, "ZeroValue");
+		await expect(gameForOwner_.setCstBidPriceDeclineMultiplierChangeDivisor(0n)).revertedWithCustomError(game_, "ZeroValue");
+
+		// A zero exponent would double every late bid price rather than disable the premium.
+		await expect(gameForOwner_.setRoundLateBidPricePremiumAmountExponent(0n)).revertedWithCustomError(game_, "ZeroValue");
+
+		// A zero base multiplier is valid: it disables the late bid price premium.
+		await waitForTransactionReceipt(gameForOwner_.setRoundLateBidPricePremiumAmountBaseMultiplier(0n));
+		expect(await game_.roundLateBidPricePremiumAmountBaseMultiplier()).equal(0n);
+
+		// A zero reward multiplier is valid: it disables bid CST rewards.
+		await waitForTransactionReceipt(gameForOwner_.setBidCstRewardAmountMultiplier(0n));
+		expect(await game_.bidCstRewardAmountMultiplier()).equal(0n);
+
+		// Nonzero values keep working, and the game remains fully functional with the premium disabled.
+		await waitForTransactionReceipt(gameForOwner_.setMainPrizeNumCosmicSignatureNfts(3n));
 		await activateCurrentRound(game_, contracts_.ownerSigner);
-
 		const bidder_ = contracts_.signers[2];
-		await waitForTransactionReceipt(game_.connect(bidder_).bidWithEth(-1n, "count misconfigured to zero", 0n, {value: 10n ** 18n,}));
-
-		// Once a bid exists, the owner can no longer fix the parameter or upgrade (the round is active),
-		// and every claim reverts with a checked-arithmetic underflow panic: the game is bricked.
-		await expect(game_.connect(contracts_.ownerSigner).setMainPrizeNumCosmicSignatureNfts(3n))
-			.revertedWithCustomError(game_, "RoundIsActive");
-
-		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(await game_.mainPrizeTime()),]);
-		await expect(game_.connect(bidder_).claimMainPrize()).revertedWithPanic(0x11);
-
-		// Even the "anyone after a timeout" claim path stays bricked.
-		const timeoutClaimTime_ = (await game_.mainPrizeTime()) + (await game_.timeoutDurationToClaimMainPrize()) + 1n;
-		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(timeoutClaimTime_),]);
-		await expect(game_.connect(contracts_.signers[3]).claimMainPrize()).revertedWithPanic(0x11);
-	});
-
-	it("documents that roundLateBidDurationDivisor = 0 owner misconfiguration freezes bidding until the claim", async function () {
-		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3(2n);
-		const game_ = contracts_.cosmicSignatureGameV3Proxy;
-		await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setRoundLateBidDurationDivisor(0n));
-		await activateCurrentRound(game_, contracts_.ownerSigner);
-
-		// The first bid of the round does not evaluate the premium (there is no last bidder), so it works.
-		const bidder_ = contracts_.signers[2];
-		await waitForTransactionReceipt(game_.connect(bidder_).bidWithEth(-1n, "divisor misconfigured to zero", 0n, {value: 10n ** 18n,}));
-
-		// From now on, every price view and every further bid panics with a division by zero.
-		await expect(game_.getNextEthBidPrice()).revertedWithPanic(0x12);
-		await expect(game_.getNextCstBidPrice()).revertedWithPanic(0x12);
-		await expect(game_.getRoundLateBidDuration()).revertedWithPanic(0x12);
-		await expect(game_.connect(contracts_.signers[3]).bidWithEth(-1n, "", 0n, {value: 10n ** 19n,}))
-			.revertedWithPanic(0x12);
-		await expect(game_.connect(bidder_).bidWithCst((1n << 255n), "", 0n)).revertedWithPanic(0x12);
-
-		// The claim does not price bids, so the round still completes, after which the owner can repair the parameter.
+		await waitForTransactionReceipt(game_.connect(bidder_).bidWithEth(-1n, "", 0n, {value: 10n ** 18n,}));
+		expect(await game_.getNextEthBidPrice()).greaterThan(0n);
+		expect(await game_.getNextCstBidPrice()).greaterThanOrEqual(0n);
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(await game_.mainPrizeTime()),]);
 		await waitForTransactionReceipt(game_.connect(bidder_).claimMainPrize());
-		await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setRoundLateBidDurationDivisor(3_000_000n));
-		await activateCurrentRound(game_, contracts_.ownerSigner);
-		expect(await game_.getNextEthBidPrice()).greaterThan(0n);
+	});
+
+	it("the V2 CST Dutch auction duration setters revert with NotImplemented in V3", async function () {
+		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3(2n);
+		const game_ = contracts_.cosmicSignatureGameV3Proxy;
+		const gameForOwner_ = game_.connect(contracts_.ownerSigner);
+
+		// V3 does not use `cstDutchAuctionDuration` and `cstDutchAuctionDurationChangeDivisor`,
+		// so their setters revert, even for the owner while the round is inactive.
+		await expect(gameForOwner_.setCstDutchAuctionDuration(12n * 60n * 60n)).revertedWithCustomError(game_, "NotImplemented");
+		await expect(gameForOwner_.setCstDutchAuctionDurationChangeDivisor(250n)).revertedWithCustomError(game_, "NotImplemented");
+
+		// The getters still exist and keep returning the stale values V2 left in the storage slots.
+		expect(await game_.cstDutchAuctionDuration()).equal(12n * 60n * 60n);
+		expect(await game_.cstDutchAuctionDurationChangeDivisor()).equal(250n);
 	});
 });

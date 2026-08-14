@@ -259,9 +259,11 @@ library CosmicSignatureErrors {
 	/// @param errStr Description of the error.
 	error ZeroAddress(string errStr);
 
-	// /// @notice Thrown when a nonzero value is required, but zero is observed.
-	// /// @param errStr Description of the error.
-	// error ZeroValue(string errStr);
+	/// @notice Thrown when a nonzero value is required, but zero is observed.
+	/// @dev In V3+, some configuration setters use this to reject values
+	/// that would otherwise brick bid placement or main prize claiming.
+	/// Comment-202608171 relates.
+	error ZeroValue(/* string errStr */);
 
 	// /// @notice Thrown when a nonzero balance amount is required, but zero is observed.
 	// /// @param errStr Description of the error.

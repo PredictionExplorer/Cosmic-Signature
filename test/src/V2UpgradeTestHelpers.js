@@ -6,12 +6,12 @@ const { getBlockTimeStampByBlockNumber, waitForTransactionReceipt } = require(".
 const { setRoundActivationTimeIfNeeded } = require("../../src/ContractDeploymentHelpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
 
-const INITIAL_CST_DUTCH_AUCTION_DURATION = 12n * 60n * 60n;
+// These mirror the formulas in `CosmicSignatureConstants.sol`.
+const MICROSECONDS_PER_SECOND = 10n ** 6n;
+const INITIAL_MAIN_PRIZE_TIME_INCREMENT = 1n * 60n * 60n;
+const INITIAL_CST_DUTCH_AUCTION_DURATION = 24n * 60n * 60n / 2n;
 const DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR = 250n;
-// todo-ai-0 Don't use magic numbers like this in JavaScript.
-// todo-ai-0 See how this and other constants are calculaated in `CosmicSignatureConstants.sol`.
-// todo-ai-0 Use the same formulas in JavaScript.
-const DEFAULT_BID_CST_REWARD_AMOUNT_RADICAND_MULTIPLIER = 10800000000000000000000000000000000000000000000n;
+const DEFAULT_BID_CST_REWARD_AMOUNT_RADICAND_MULTIPLIER = 3n * (10n ** 18n) ** 2n * INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND;
 const DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2 = 2n * 24n * 60n * 60n;
 const TIMESTAMP_9000_01_01 = 221845392000n;
 

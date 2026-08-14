@@ -107,9 +107,19 @@ async function runInvariants(ctx_) {
 		expect(await game_.roundLateBidDurationDivisor(), "roundLateBidDurationDivisor vs model").to.equal(model.roundLateBidDurationDivisor);
 		expect(await game_.roundLateBidPricePremiumAmountBaseMultiplier(), "roundLateBidPricePremiumAmountBaseMultiplier vs model").to.equal(model.roundLateBidPricePremiumAmountBaseMultiplier);
 		expect(await game_.roundLateBidPricePremiumAmountExponent(), "roundLateBidPricePremiumAmountExponent vs model").to.equal(model.roundLateBidPricePremiumAmountExponent);
-		expect(await game_.bidCstRewardAmountPerMinute(), "bidCstRewardAmountPerMinute vs model").to.equal(model.bidCstRewardAmountPerMinute);
+		expect(await game_.cstBidPriceDeclineMultiplier(), "cstBidPriceDeclineMultiplier vs model").to.equal(model.cstBidPriceDeclineMultiplier);
+		expect(await game_.cstBidPriceDeclineMultiplierChangeDivisor(), "cstBidPriceDeclineMultiplierChangeDivisor vs model").to.equal(model.cstBidPriceDeclineMultiplierChangeDivisor);
 		expect(await game_.mainPrizeNumCosmicSignatureNfts(), "mainPrizeNumCosmicSignatureNfts vs model").to.equal(model.mainPrizeNumCosmicSignatureNfts);
 		expect(await game_.getRoundLateBidDuration(), "getRoundLateBidDuration vs model").to.equal(model.getRoundLateBidDuration());
+
+		// `championDurations` of every completed V3 round (saved by `_saveChampionDurations` on the claim).
+		for (const [roundNumString_, expectedDurations_] of model.championDurationsByRound) {
+			const onChainDurations_ = await game_.championDurations(BigInt(roundNumString_));
+			expect(onChainDurations_[0], `championDurations[${roundNumString_}].enduranceChampion vs model`)
+				.to.equal(expectedDurations_.enduranceChampion);
+			expect(onChainDurations_[1], `championDurations[${roundNumString_}].chronoWarrior vs model`)
+				.to.equal(expectedDurations_.chronoWarrior);
+		}
 	}
 
 	{

@@ -40,6 +40,10 @@
 /cache/
 /artifacts/
 
+# EDR remote state cache, created when the in-process Hardhat Network forks a live blockchain.
+# Comment-202608131 relates.
+/edr-cache/
+
 # # Comment-202408024 applies.
 # /abi/
 

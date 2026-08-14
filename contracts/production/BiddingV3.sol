@@ -36,18 +36,24 @@ abstract contract BiddingV3 is
 		// #endregion
 		// #region
 
+		// [Comment-202608166]
+		// The bid CST reward is minted only if there is a previous bidder, that is only if
+		// at least 1 bid has already been placed in the current bidding round.
+		// [/Comment-202608166]
 		uint256 bidCstRewardAmount_ = 0;
 		if (lastBidderAddress != address(0)) {
 			// [Comment-202608022]
-			// This cannot be zero, because we called `_onlyIfNoBidPlacedWithinCurrentSecond`.
+			// `_onlyIfNoBidPlacedWithinCurrentSecond` guarantees that at least 1 second has elapsed since the last bid,
+			// so under a sane configuration this is a nonzero.
+			// But if the contract owner configures `bidCstRewardAmountMultiplier` to a zero
+			// or to a nonzero lesser than `mainPrizeTimeIncrementInMicroSeconds`, this can floor to zero.
+			// Comment-202608177 relates.
 			// [/Comment-202608022]
 			bidCstRewardAmount_ = getBidCstRewardAmountAdvanced(int256(0));
-			// #enable_asserts assert(bidCstRewardAmount_ > 0);
 
 			// Comment-202412045 applies.
-			if ( ! (bidCstRewardAmount_ >= bidCstRewardAmountMinLimit_) ) {
-				revert CosmicSignatureErrors.BidCstRewardAmountMinLimitNotReached(bidCstRewardAmount_, bidCstRewardAmountMinLimit_);
-			}
+			// Comment-202608124 applies.
+			_checkBidCstRewardAmountMinLimit(bidCstRewardAmount_, bidCstRewardAmountMinLimit_);
 		}
 
 		// #endregion
@@ -131,12 +137,21 @@ abstract contract BiddingV3 is
 
 		biddersInfo[roundNum][_msgSender()].totalSpentEthAmount += paidEthPrice_;
 
-		// Comment-202608022 relates and/or applies.
-		// #enable_asserts assert((bidCstRewardAmount_ == 0) == (lastBidderAddress == address(0)));
+		// [Comment-202608177]
+		// This branch is keyed on `lastBidderAddress`, not on `bidCstRewardAmount_ == 0`.
+		// Given Comment-202608022, under a sane configuration the two conditions are equivalent.
+		// But if the contract owner configures `bidCstRewardAmountMultiplier` to a zero
+		// or to a nonzero lesser than `mainPrizeTimeIncrementInMicroSeconds`,
+		// `bidCstRewardAmount_` can floor to zero on a non-first bid as well.
+		// Keying on `bidCstRewardAmount_` would then overwrite `ethDutchAuctionBeginningBidPrice` mid-round,
+		// corrupting the next bidding round's ETH Dutch auction beginning bid price.
+		// [/Comment-202608177]
+		if (lastBidderAddress == address(0)) {
+			// Comment-202608022 relates.
+			// #enable_asserts assert(bidCstRewardAmount_ == 0);
 
-		if (bidCstRewardAmount_ == 0) {
 			ethDutchAuctionBeginningBidPrice = ethBidPrice_ * CosmicSignatureConstants.ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
-		} else {
+		} else if (bidCstRewardAmount_ > 0) {
 			_mintBidCstRewardAmount(bidCstRewardAmount_);
 		}
 
@@ -145,17 +160,9 @@ abstract contract BiddingV3 is
 
 		uint256 newCstBidPriceDeclineMultiplier_ = _tryIncreaseCstBidPriceDeclineMultiplier();
 		_bidCommon(/*bidType_,*/ message_);
-		emit BidPlaced(
-			roundNum,
-			_msgSender(),
-			int256(paidEthPrice_),
-			-1,
-			randomWalkNftId_,
-			message_,
-			bidCstRewardAmount_,
-			newCstBidPriceDeclineMultiplier_,
-			mainPrizeTime
-		);
+
+		// Comment-202608122 applies.
+		_emitBidPlaced(int256(paidEthPrice_), -1, randomWalkNftId_, message_, bidCstRewardAmount_, newCstBidPriceDeclineMultiplier_);
 
 		// #endregion
 		// #region
@@ -203,19 +210,32 @@ abstract contract BiddingV3 is
 		// Comment-202412251 applies.
 		// #enable_asserts assert(_msgSender() != marketingWallet);
 
-		// Comment-202501045 applies.
+		// [Comment-202608167]
+		// Comment-202501045 relates.
+		// Comment-202501044 relates.
+		// In V3+, we fully validate here, rather than relying on the equivalent validation in `_bidCommon`,
+		// which executes near the end of this method.
+		// That's because in V3+ the bid CST reward is minted to `lastBidderAddress`.
+		// If no bids have been placed in the current bidding round yet, that address is zero,
+		// so without this validation `_burnCstBidPriceAndMintBidCstRewardAmount` would revert
+		// with an unhelpful `ERC20InvalidReceiver` error.
+		// The validation order matches the one in `_bidCommon`, so this transaction reverts with the same error
+		// with which it would revert in V2-.
+		// [/Comment-202608167]
+		if (lastBidderAddress == address(0)) {
+			// Comment-202411169 relates.
+			_checkRoundIsActive();
+
+			// Comment-202501044 relates and/or applies.
+			revert CosmicSignatureErrors.WrongBidType("The first bid in a bidding round shall be ETH.");
+		}
 
 		// Comment-202608022 applies.
-		// But there is a special case when somone is trying to place a CST bid before the first ETH one.
-		// According to Comment-202501045, in that case the behavior is allowed to be undefined.
-		// But even then, this cannot be zero.
 		uint256 bidCstRewardAmount_ = getBidCstRewardAmountAdvanced(int256(0));
-		// #enable_asserts assert(bidCstRewardAmount_ > 0);
 
 		// Comment-202412045 applies.
-		if ( ! (bidCstRewardAmount_ >= bidCstRewardAmountMinLimit_) ) {
-			revert CosmicSignatureErrors.BidCstRewardAmountMinLimitNotReached(bidCstRewardAmount_, bidCstRewardAmountMinLimit_);
-		}
+		// Comment-202608124 applies.
+		_checkBidCstRewardAmountMinLimit(bidCstRewardAmount_, bidCstRewardAmountMinLimit_);
 
 		// Comment-202503162 relates and/or applies.
 		uint256 paidPrice_ = getNextCstBidPriceAdvanced(int256(0));
@@ -269,12 +289,49 @@ abstract contract BiddingV3 is
 		lastCstBidderAddress = _msgSender();
 		uint256 newCstBidPriceDeclineMultiplier_ = _tryReduceCstBidPriceDeclineMultiplier();
 		_bidCommon(/*BidType.CST,*/ message_);
+
+		// Comment-202608122 applies.
+		_emitBidPlaced(-1, int256(paidPrice_), -1, message_, bidCstRewardAmount_, newCstBidPriceDeclineMultiplier_);
+	}
+
+	// #endregion
+	// #region `_checkBidCstRewardAmountMinLimit`
+
+	/// @dev
+	/// [Comment-202608124]
+	/// This method validates the given bid CST reward amount against the given min limit
+	/// on behalf of both `_bidWithEth` and `_bidWithCst`.
+	/// Comment-202608122 applies.
+	/// [/Comment-202608124]
+	function _checkBidCstRewardAmountMinLimit(uint256 bidCstRewardAmount_, uint256 bidCstRewardAmountMinLimit_) private pure {
+		if ( ! (bidCstRewardAmount_ >= bidCstRewardAmountMinLimit_) ) {
+			revert CosmicSignatureErrors.BidCstRewardAmountMinLimitNotReached(bidCstRewardAmount_, bidCstRewardAmountMinLimit_);
+		}
+	}
+
+	// #endregion
+	// #region `_emitBidPlaced`
+
+	/// @dev
+	/// [Comment-202608122]
+	/// This method emits the `BidPlaced` event on behalf of both `_bidWithEth` and `_bidWithCst`.
+	/// Emitting it in a shared method, rather than in each of them, reduces contract bytecode size,
+	/// which is at a premium, given that it's close to exceeding the max limit.
+	/// [/Comment-202608122]
+	function _emitBidPlaced(
+		int256 paidEthPrice_,
+		int256 paidCstPrice_,
+		int256 randomWalkNftId_,
+		string memory message_,
+		uint256 bidCstRewardAmount_,
+		uint256 newCstBidPriceDeclineMultiplier_
+	) private {
 		emit BidPlaced(
 			roundNum,
 			_msgSender(),
-			-1,
-			int256(paidPrice_),
-			-1,
+			paidEthPrice_,
+			paidCstPrice_,
+			randomWalkNftId_,
 			message_,
 			bidCstRewardAmount_,
 			newCstBidPriceDeclineMultiplier_,
@@ -483,9 +540,15 @@ abstract contract BiddingV3 is
 		unchecked
 		// #enable_smtchecker */
 		{
-			// Comment-202501022 applies.
-			// And that's OK, because there is no bid CST reward for the first bid in a bidding round.
-			// todo-0 Tell Nick to not show bid CST reward until someone places the first bid in the current round.
+			// [Comment-202608176]
+			// In V3+, there is no bid CST reward for the first bid in a bidding round,
+			// because the reward is minted to the previous bidder, and there is no previous bidder to reward.
+			// So this method returns zero until someone places the first bid in the current bidding round.
+			// [/Comment-202608176]
+			if (lastBidderAddress == address(0)) {
+				return 0;
+			}
+
 			uint256 lastBidTimeStampCopy_ = biddersInfo[roundNum][lastBidderAddress].lastBidTimeStamp;
 
 			int256 elapsedDuration_ = int256(block.timestamp) + currentTimeOffset_ - int256(lastBidTimeStampCopy_);
@@ -502,33 +565,27 @@ abstract contract BiddingV3 is
 	// #endregion
 	// #region `_mintBidCstRewardAmount`
 
-	/// todo-0 Base method comment says that `bidCstRewardAmount_ may be zero.
-	/// todo-0 (But this is now not virtual.)
-	/// todo-0 But here it cannot be because we enforce at least 1 second since the previous bid and do not pay any reward to the first bidder.
-	/// todo-0 Cross-ref with where we enforce that.
-	/// todo-0 Also reference Comment-202608022.
+	/// @notice Mints the given bid CST reward amount to the previous bidder.
+	/// @param bidCstRewardAmount_ The CST amount to mint.
+	/// The caller is required to ensure that it's a nonzero.
 	function _mintBidCstRewardAmount(uint256 bidCstRewardAmount_) private {
 		// // #enable_smtchecker /*
 		// unchecked
 		// // #enable_smtchecker */
 
 		// [Comment-202607263]
+		// The caller, `_bidWithEth`, calls this method only with a nonzero amount, near Comment-202608166.
 		// If this wasn't guaranteed it would make sense to check this before minting.
 		// [/Comment-202607263]
-		// todo-0 Is this really correct? Cross-ref with any other logic?
-		// todo-0 Cross-ref with where we force no more than 1 bid within each second and not paying bid CST reward on the first bid.
 		// #enable_asserts assert(bidCstRewardAmount_ > 0);
 
-		// todo-0 Is this really correct? Cross-ref with any other logic?
+		// `_bidWithEth` calls this method only when there is a previous bidder, near Comment-202608166.
 		// #enable_asserts assert(lastBidderAddress != address(0));
 
 		// [Comment-202607163]
-		// The bid CST reward is minted, rather than transferred. `CosmicSignatureToken` minting performs no call
-		// into the recipient, so a hostile last bidder contract that reverts on any incoming call or token callback
+		// `CosmicSignatureToken` performs no call into the token recipient, neither on a minting nor on a transfer,
+		// so a hostile last bidder contract that reverts on any incoming call or token callback
 		// cannot prevent this minting from succeeding, and therefore cannot block further bids.
-		// todo-ai-0 A hostile actor can't block a CST transfer either, right?
-		// todo-ai-0 So would it be better to rephrase this and any other related comments
-		// todo-ai-0 to clarify that `CosmicSignatureToken` does not make any callbacks, without specifying whether it's mint or transfer.
 		// [/Comment-202607163]
 		token.mint(lastBidderAddress, bidCstRewardAmount_);
 	}
@@ -536,17 +593,16 @@ abstract contract BiddingV3 is
 	// #endregion
 	// #region `_burnCstBidPriceAndMintBidCstRewardAmount`
 
+	/// @notice Burns the given CST bid price from the caller and mints the given bid CST reward amount
+	/// to the previous bidder.
+	/// @param cstBidPrice_ The CST amount to burn. May be zero, but unlikely is.
+	/// @param bidCstRewardAmount_ The CST amount to mint.
+	/// Comment-202608022 applies.
 	function _burnCstBidPriceAndMintBidCstRewardAmount(uint256 cstBidPrice_, uint256 bidCstRewardAmount_) private {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
 		{
-			// Comment-202607263 applies.
-			// todo-0 Same todos as in `_mintBidCstRewardAmount`.
-			// todo-0 Even if they try running this on the very first bid in the current bidding round?
-			// todo-0 Reference Comment-202607164 ? If no need to reference it, it does not need to e numbered.
-			// #enable_asserts assert(bidCstRewardAmount_ > 0);
-
 			ICosmicSignatureToken.MintOrBurnSpec[] memory mintAndBurnSpecs_ = new ICosmicSignatureToken.MintOrBurnSpec[](2);
 			mintAndBurnSpecs_[0].account = _msgSender();
 
@@ -555,11 +611,11 @@ abstract contract BiddingV3 is
 			mintAndBurnSpecs_[0].value = ( - int256(cstBidPrice_) );
 
 			// [Comment-202607164]
-			// It's not guaranteed that this is a nonzero.
-			// Comment-202501045 relates and/or applies.
+			// This is guaranteed to be a nonzero, thanks to the validation near Comment-202608167.
 			// [/Comment-202607164]
 			// Comment-202607163 applies.
 			mintAndBurnSpecs_[1].account = lastBidderAddress;
+			// #enable_asserts assert(lastBidderAddress != address(0));
 
 			mintAndBurnSpecs_[1].value = int256(bidCstRewardAmount_);
 			token.mintAndBurnMany(mintAndBurnSpecs_);

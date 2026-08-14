@@ -110,7 +110,7 @@ describe("SystemManagement", function () {
 					.emit(cosmicSignatureGameProxyForOwner_, "CstDutchAuctionDurationDivisorChanged")
 					.withArgs(newValue_);
 				expect(await cosmicSignatureGameProxyForOwner_.cstDutchAuctionDurationDivisor()).equal(newValue_);
-			} else {
+			} else if (contractVersionNumber_ <= 2) {
 				{
 					const newValue_ = 9n + generateRandomUInt256() % 3n;
 					await expect(cosmicSignatureGameProxyForOwner_.setCstDutchAuctionDuration(newValue_))
@@ -126,6 +126,14 @@ describe("SystemManagement", function () {
 						.withArgs(newValue_);
 					expect(await cosmicSignatureGameProxyForOwner_.cstDutchAuctionDurationChangeDivisor()).equal(newValue_);
 				}
+			} else {
+				// In V3+, these setters revert with `NotImplemented`, even for the owner while the round is inactive,
+				// because V3+ does not use the respective parameters.
+				const newValue_ = 9n + generateRandomUInt256() % 3n;
+				await expect(cosmicSignatureGameProxyForOwner_.setCstDutchAuctionDuration(newValue_))
+					.revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "NotImplemented");
+				await expect(cosmicSignatureGameProxyForOwner_.setCstDutchAuctionDurationChangeDivisor(newValue_))
+					.revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "NotImplemented");
 			}
 
 			{
@@ -185,10 +193,44 @@ describe("SystemManagement", function () {
 
 				{
 					const newValue_ = 9n + generateRandomUInt256() % 3n;
+					await expect(cosmicSignatureGameProxyForOwner_.setCstBidPriceDeclineMultiplier(newValue_))
+						.emit(cosmicSignatureGameProxyForOwner_, "CstBidPriceDeclineMultiplierChanged")
+						.withArgs(newValue_);
+					expect(await cosmicSignatureGameProxyForOwner_.cstBidPriceDeclineMultiplier()).equal(newValue_);
+				}
+
+				{
+					const newValue_ = 9n + generateRandomUInt256() % 3n;
+					await expect(cosmicSignatureGameProxyForOwner_.setCstBidPriceDeclineMultiplierChangeDivisor(newValue_))
+						.emit(cosmicSignatureGameProxyForOwner_, "CstBidPriceDeclineMultiplierChangeDivisorChanged")
+						.withArgs(newValue_);
+					expect(await cosmicSignatureGameProxyForOwner_.cstBidPriceDeclineMultiplierChangeDivisor()).equal(newValue_);
+				}
+
+				{
+					const newValue_ = 9n + generateRandomUInt256() % 3n;
 					await expect(cosmicSignatureGameProxyForOwner_.setMainPrizeNumCosmicSignatureNfts(newValue_))
 						.emit(cosmicSignatureGameProxyForOwner_, "MainPrizeNumCosmicSignatureNftsChanged")
 						.withArgs(newValue_);
 					expect(await cosmicSignatureGameProxyForOwner_.mainPrizeNumCosmicSignatureNfts()).equal(newValue_);
+				}
+
+				// Comment-202608171: the setters for whose parameter a zero value would be dangerous reject a zero.
+				await expect(cosmicSignatureGameProxyForOwner_.setCstBidPriceDeclineMultiplier(0n))
+					.revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "ZeroValue");
+				await expect(cosmicSignatureGameProxyForOwner_.setCstBidPriceDeclineMultiplierChangeDivisor(0n))
+					.revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "ZeroValue");
+				await expect(cosmicSignatureGameProxyForOwner_.setRoundLateBidDurationDivisor(0n))
+					.revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "ZeroValue");
+				await expect(cosmicSignatureGameProxyForOwner_.setRoundLateBidPricePremiumAmountExponent(0n))
+					.revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "ZeroValue");
+				await expect(cosmicSignatureGameProxyForOwner_.setMainPrizeNumCosmicSignatureNfts(0n))
+					.revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "ZeroValue");
+
+				// A zero is a valid value here. It disables the round late bid price premium.
+				{
+					await waitForTransactionReceipt(cosmicSignatureGameProxyForOwner_.setRoundLateBidPricePremiumAmountBaseMultiplier(0n));
+					expect(await cosmicSignatureGameProxyForOwner_.roundLateBidPricePremiumAmountBaseMultiplier()).equal(0n);
 				}
 			}
 
@@ -419,9 +461,13 @@ describe("SystemManagement", function () {
 			await expect(cosmicSignatureGameProxyForOwner_.setEthBidRefundAmountInGasToSwallowMaxLimit(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "RoundIsActive");
 			if (contractVersionNumber_ <= 1) {
 				await expect(cosmicSignatureGameProxyForOwner_.setCstDutchAuctionDurationDivisor(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "RoundIsActive");
-			} else {
+			} else if (contractVersionNumber_ <= 2) {
 				await expect(cosmicSignatureGameProxyForOwner_.setCstDutchAuctionDuration(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "RoundIsActive");
 				await expect(cosmicSignatureGameProxyForOwner_.setCstDutchAuctionDurationChangeDivisor(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "RoundIsActive");
+			} else {
+				// In V3+, these revert with `NotImplemented` regardless of the round state or the caller.
+				await expect(cosmicSignatureGameProxyForOwner_.setCstDutchAuctionDuration(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "NotImplemented");
+				await expect(cosmicSignatureGameProxyForOwner_.setCstDutchAuctionDurationChangeDivisor(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "NotImplemented");
 			}
 			await expect(cosmicSignatureGameProxyForOwner_.setCstDutchAuctionBeginningBidPriceMinLimit(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "RoundIsActive");
 			await expect(cosmicSignatureGameProxyForOwner_.setBidMessageLengthMaxLimit(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "RoundIsActive");
@@ -434,6 +480,8 @@ describe("SystemManagement", function () {
 				await expect(cosmicSignatureGameProxyForOwner_.setRoundLateBidDurationDivisor(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "RoundIsActive");
 				await expect(cosmicSignatureGameProxyForOwner_.setRoundLateBidPricePremiumAmountBaseMultiplier(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "RoundIsActive");
 				await expect(cosmicSignatureGameProxyForOwner_.setRoundLateBidPricePremiumAmountExponent(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "RoundIsActive");
+				await expect(cosmicSignatureGameProxyForOwner_.setCstBidPriceDeclineMultiplier(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "RoundIsActive");
+				await expect(cosmicSignatureGameProxyForOwner_.setCstBidPriceDeclineMultiplierChangeDivisor(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "RoundIsActive");
 				await expect(cosmicSignatureGameProxyForOwner_.setMainPrizeNumCosmicSignatureNfts(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "RoundIsActive");
 			}
 			await expect(cosmicSignatureGameProxyForOwner_.setCstPrizeAmount(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "RoundIsActive");
@@ -515,9 +563,13 @@ describe("SystemManagement", function () {
 			await expect(cosmicSignatureGameProxyForSigner_.setEthBidRefundAmountInGasToSwallowMaxLimit(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");
 			if (contractVersionNumber_ <= 1) {
 				await expect(cosmicSignatureGameProxyForSigner_.setCstDutchAuctionDurationDivisor(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");
-			} else {
+			} else if (contractVersionNumber_ <= 2) {
 				await expect(cosmicSignatureGameProxyForSigner_.setCstDutchAuctionDuration(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");
 				await expect(cosmicSignatureGameProxyForSigner_.setCstDutchAuctionDurationChangeDivisor(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");
+			} else {
+				// In V3+, these revert with `NotImplemented` regardless of the round state or the caller.
+				await expect(cosmicSignatureGameProxyForSigner_.setCstDutchAuctionDuration(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "NotImplemented");
+				await expect(cosmicSignatureGameProxyForSigner_.setCstDutchAuctionDurationChangeDivisor(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "NotImplemented");
 			}
 			await expect(cosmicSignatureGameProxyForSigner_.setCstDutchAuctionBeginningBidPriceMinLimit(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");
 			await expect(cosmicSignatureGameProxyForSigner_.setBidMessageLengthMaxLimit(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");
@@ -530,6 +582,8 @@ describe("SystemManagement", function () {
 				await expect(cosmicSignatureGameProxyForSigner_.setRoundLateBidDurationDivisor(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");
 				await expect(cosmicSignatureGameProxyForSigner_.setRoundLateBidPricePremiumAmountBaseMultiplier(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");
 				await expect(cosmicSignatureGameProxyForSigner_.setRoundLateBidPricePremiumAmountExponent(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");
+				await expect(cosmicSignatureGameProxyForSigner_.setCstBidPriceDeclineMultiplier(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");
+				await expect(cosmicSignatureGameProxyForSigner_.setCstBidPriceDeclineMultiplierChangeDivisor(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");
 				await expect(cosmicSignatureGameProxyForSigner_.setMainPrizeNumCosmicSignatureNfts(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");
 			}
 			await expect(cosmicSignatureGameProxyForSigner_.setCstPrizeAmount(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");

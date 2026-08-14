@@ -11,7 +11,11 @@
 			SlitherFolderPath=''
 		fi
 		export HARDHAT_MODE_CODE='1'
-		"${SlitherFolderPath}slither-check-upgradeability" '..' '--hardhat-artifacts-directory' 'artifacts/production' 'CosmicSignatureGameV2' '--new-contract-name' 'CosmicSignatureGameV3'
+
+		# Comment-202608134 applies.
+		export SLITHER_UNIFORM_BUILD='true'
+
+		"${SlitherFolderPath}slither-check-upgradeability" '..' '--hardhat-artifacts-directory' 'artifacts/slither-uniform' 'CosmicSignatureGameV2' '--new-contract-name' 'CosmicSignatureGameV3'
 		if [ $? -ne 0 ]; then
 			read '-r' '-n' '1' '-s' '-p' 'Error. slither-check-upgradeability failed. Press any key to finish.'
 			OutcomeCode=2

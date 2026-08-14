@@ -52,12 +52,13 @@ describe("CosmicSignatureGameV3-MainPrize", function () {
 				game_.connect(bidder2_).bidWithEth(-1n, "", 0n, {value: await game_.getNextEthBidPriceAdvanced(1n),})
 			);
 
-			// In even rounds, also place a free CST bid (the CST Dutch auction price falls to zero at its end),
+			// In even rounds, also place a free CST bid (the CST bid price linearly declines to zero,
+			// and in V3 `getCstDutchAuctionDurations` derives how long that takes),
 			// covering both the with- and without-last-CST-bidder prize layouts.
 			const placeCstBid_ = roundIndex_ % 2 === 0;
 			if (placeCstBid_) {
 				const cstDutchAuctionEndTime_ =
-					(await game_.cstDutchAuctionBeginningTimeStamp()) + (await game_.cstDutchAuctionDuration());
+					(await game_.cstDutchAuctionBeginningTimeStamp()) + (await game_.getCstDutchAuctionDurations())[0];
 				if (cstDutchAuctionEndTime_ + 1n > await getLatestBlockTimestamp()) {
 					await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(cstDutchAuctionEndTime_ + 1n),]);
 				}

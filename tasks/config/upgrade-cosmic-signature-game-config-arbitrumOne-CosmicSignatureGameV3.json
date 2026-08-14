@@ -1,5 +1,7 @@
 {
 	"deploymentConfigurationFilePath": "../config/deploy-cosmic-signature-contracts-config-arbitrumOne.json",
+	"cosmicSignatureGameProxyAddress": "0x6a714Ae7B5b6eA520F6BCA23d2E609C4Fd5863F2",
+	"existingCosmicSignatureGameContractName": "CosmicSignatureGameV2",
 	"newCosmicSignatureGameContractName": "CosmicSignatureGameV3",
 	"unsafeAllowRenames": false,
 	"unsafeSkipStorageCheck": false,

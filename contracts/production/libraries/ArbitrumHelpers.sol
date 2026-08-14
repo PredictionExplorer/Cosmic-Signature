@@ -10,6 +10,45 @@ library ArbitrumHelpers {
 	ArbGasInfo internal constant arbGasInfo = ArbGasInfo(address(0x6C));
 
 	function tryGetArbBlockNumber() internal /*view*/ returns (bool isSuccess_, uint256 arbBlockNumber_) {
+		(isSuccess_, arbBlockNumber_) = _tryCallPrecompile(address(arbSys), abi.encodeWithSelector(ArbSys.arbBlockNumber.selector), "ArbSys.arbBlockNumber call failed.");
+		// #enable_asserts assert(( ! isSuccess_ ) || arbBlockNumber_ > 0);
+	}
+
+	function tryGetArbBlockHash(uint256 arbBlockNumber_) internal /*view*/ returns (bool isSuccess_, bytes32 arbBlockHash_) {
+		uint256 arbBlockHashAsUint256_;
+		(isSuccess_, arbBlockHashAsUint256_) = _tryCallPrecompile(address(arbSys), abi.encodeWithSelector(ArbSys.arbBlockHash.selector, arbBlockNumber_), "ArbSys.arbBlockHash call failed.");
+		arbBlockHash_ = bytes32(arbBlockHashAsUint256_);
+		// #enable_asserts assert(( ! isSuccess_ ) || uint256(arbBlockHash_) > 0);
+	}
+
+	function tryGetGasBacklog() internal /*view*/ returns (bool isSuccess_, uint256 gasBacklog_) {
+		// Comment-202506298 applies.
+		(isSuccess_, gasBacklog_) = _tryCallPrecompile(address(arbGasInfo), abi.encodeWithSelector(ArbGasInfo.getGasBacklog.selector), "ArbGasInfo.getGasBacklog call failed.");
+	}
+
+	function tryGetL1PricingUnitsSinceUpdate() internal /*view*/ returns (bool isSuccess_, uint256 l1PricingUnitsSinceUpdate_) {
+		// Comment-202506298 applies.
+		(isSuccess_, l1PricingUnitsSinceUpdate_) = _tryCallPrecompile(address(arbGasInfo), abi.encodeWithSelector(ArbGasInfo.getL1PricingUnitsSinceUpdate.selector), "ArbGasInfo.getL1PricingUnitsSinceUpdate call failed.");
+	}
+
+	/// @notice Makes a low level call to the given precompile and treats the returned data as a single 256-bit word.
+	/// If the call fails or returns data of an unexpected length, emits `CosmicSignatureEvents.ArbitrumError`
+	/// with the given error description.
+	/// @dev
+	/// [Comment-202608125]
+	/// This method acts as a shared core of the `tryGet*` methods declared above.
+	/// It behaves the same way their former separate bodies did.
+	/// Sharing this logic reduces contract bytecode size.
+	/// Comment-202608122 relates.
+	/// [/Comment-202608125]
+	/// [Comment-202506298]
+	/// Some of the methods being called (almost?) always return a different value for each transaction.
+	/// [/Comment-202506298]
+	/// [Comment-202506301]
+	/// Some of the values being returned are really shorter unsigned integers,
+	/// but it's probably more efficient to treat them as blockchain-native words.
+	/// [/Comment-202506301]
+	function _tryCallPrecompile(address precompileAddress_, bytes memory callData_, string memory errorDescription_) private returns (bool isSuccess_, uint256 result_) {
 		{
 			bytes memory returnData_;
 
@@ -19,88 +58,18 @@ library ArbitrumHelpers {
 			// but Solidity doesn't appear to guarantee that the transaction won't be reversed after certain errors.
 			// Comment-202502043 relates.
 			// [/Comment-202506296]
-			(isSuccess_, returnData_) = address(arbSys).call(abi.encodeWithSelector(ArbSys.arbBlockNumber.selector));
+			(isSuccess_, returnData_) = precompileAddress_.call(callData_);
 
 			if (isSuccess_) {
 				if (returnData_.length == 256 / 8) {
-					arbBlockNumber_ = abi.decode(returnData_, (uint256));
-					// #enable_asserts assert(arbBlockNumber_ > 0);
+					result_ = abi.decode(returnData_, (uint256));
 				} else {
 					isSuccess_ = false;
 				}
-			}		
+			}
 		}
 		if ( ! isSuccess_ ) {
-			emit CosmicSignatureEvents.ArbitrumError("ArbSys.arbBlockNumber call failed.");
-		}
-	}
-
-	function tryGetArbBlockHash(uint256 arbBlockNumber_) internal /*view*/ returns (bool isSuccess_, bytes32 arbBlockHash_) {
-		{
-			bytes memory returnData_;
-
-			// Comment-202506296 applies.
-			(isSuccess_, returnData_) = address(arbSys).call(abi.encodeWithSelector(ArbSys.arbBlockHash.selector, arbBlockNumber_));
-
-			if (isSuccess_) {
-				if (returnData_.length == 32) {
-					arbBlockHash_ = abi.decode(returnData_, (bytes32));
-					// #enable_asserts assert(uint256(arbBlockHash_) > 0);
-				} else {
-					isSuccess_ = false;
-				}
-			}		
-		}
-		if ( ! isSuccess_ ) {
-			emit CosmicSignatureEvents.ArbitrumError("ArbSys.arbBlockHash call failed.");
-		}
-	}
-
-	function tryGetGasBacklog() internal /*view*/ returns (bool isSuccess_, uint256 gasBacklog_) {
-		{
-			bytes memory returnData_;
-
-			// [Comment-202506298]
-			// This method (almost?) always returns a different value for each transaction.
-			// [/Comment-202506298]
-			// Comment-202506296 applies.
-			(isSuccess_, returnData_) = address(arbGasInfo).call(abi.encodeWithSelector(ArbGasInfo.getGasBacklog.selector));
-
-			if (isSuccess_) {
-				if (returnData_.length == 256 / 8) {
-					// [Comment-202506301]
-					// This is really a shorter unsigned integer, but it's probably more efficient to treat this as a blockchain-native word.
-					// [/Comment-202506301]
-					gasBacklog_ = abi.decode(returnData_, (uint256));
-				} else {
-					isSuccess_ = false;
-				}
-			}		
-		}
-		if ( ! isSuccess_ ) {
-			emit CosmicSignatureEvents.ArbitrumError("ArbGasInfo.getGasBacklog call failed.");
-		}
-	}
-
-	function tryGetL1PricingUnitsSinceUpdate() internal /*view*/ returns (bool isSuccess_, uint256 l1PricingUnitsSinceUpdate_) {
-		{
-			bytes memory returnData_;
-
-			// Comment-202506298 applies.
-			// Comment-202506296 applies.
-			(isSuccess_, returnData_) = address(arbGasInfo).call(abi.encodeWithSelector(ArbGasInfo.getL1PricingUnitsSinceUpdate.selector));
-
-			if (isSuccess_) {
-				if (returnData_.length == 256 / 8) {
-					// Comment-202506301 applies.
-					l1PricingUnitsSinceUpdate_ = abi.decode(returnData_, (uint256));
-				} else {
-					isSuccess_ = false;
-				}
-			}		
-		}
-		if ( ! isSuccess_ ) {
-			emit CosmicSignatureEvents.ArbitrumError("ArbGasInfo.getL1PricingUnitsSinceUpdate call failed.");
+			emit CosmicSignatureEvents.ArbitrumError(errorDescription_);
 		}
 	}
 }

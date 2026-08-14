@@ -229,12 +229,40 @@ task("upgrade-cosmic-signature-game", "Upgrades the CosmicSignatureGame contract
 	if (deployConfigObject.deployerPrivateKey.length <= 0) {
 		deployConfigObject.deployerPrivateKey = vars.get(`deployerPrivateKey_${hre.network.name}`);
 	}
-	const deployCosmicSignatureContractsReportJsonString = await nodeFsModule.promises.readFile(deployConfigObject.reportFilePath, "utf8");
-	const deployCosmicSignatureContractsReportObject = JSON.parse(deployCosmicSignatureContractsReportJsonString);
+
+	// [Comment-202608126]
+	// The deployment report file is not committed to the repo, so it only exists on the machine that ran the deployment.
+	// To make it possible to run an upgrade from any machine, the upgrade configuration file may provide
+	// the game proxy address explicitly. Otherwise we take it from the deployment report, like we did before.
+	// [/Comment-202608126]
+	let cosmicSignatureGameProxyAddress_;
+	if ((upgradeConfigObject.cosmicSignatureGameProxyAddress ?? "").length > 0) {
+		cosmicSignatureGameProxyAddress_ = upgradeConfigObject.cosmicSignatureGameProxyAddress;
+	} else {
+		const deployCosmicSignatureContractsReportJsonString = await nodeFsModule.promises.readFile(deployConfigObject.reportFilePath, "utf8");
+		const deployCosmicSignatureContractsReportObject = JSON.parse(deployCosmicSignatureContractsReportJsonString);
+		cosmicSignatureGameProxyAddress_ = deployCosmicSignatureContractsReportObject.cosmicSignatureGameProxyAddress;
+	}
+	console.info(/*"%s",*/ "Game proxy address:", cosmicSignatureGameProxyAddress_);
 	const deployerSigner = new hre.ethers.Wallet(deployConfigObject.deployerPrivateKey, hre.ethers.provider);
 
 	await hre.run("compile");
 	console.info();
+
+	// [Comment-202608127]
+	// The OpenZeppelin Hardhat Upgrades network manifest (the ".openzeppelin" folder) is not committed to the repo,
+	// so it only exists on the machine that ran the previous deployment or upgrade. Without it, `upgradeProxy` fails.
+	// If the upgrade configuration file provides `existingCosmicSignatureGameContractName`
+	// (the name of the currently deployed contract version, e.g. "CosmicSignatureGameV2"),
+	// we (re)create the manifest entry for the proxy and its current implementation with `forceImport`.
+	// Comment-202608126 relates.
+	// [/Comment-202608127]
+	if ((upgradeConfigObject.existingCosmicSignatureGameContractName ?? "").length > 0) {
+		console.info("%s", `Force-importing the proxy and its current implementation, ${upgradeConfigObject.existingCosmicSignatureGameContractName}, into the OpenZeppelin network manifest.`);
+		const existingCosmicSignatureGameFactory =
+			await hre.ethers.getContractFactory(upgradeConfigObject.existingCosmicSignatureGameContractName, deployerSigner);
+		await hre.upgrades.forceImport(cosmicSignatureGameProxyAddress_, existingCosmicSignatureGameFactory, {kind: "uups",});
+	}
 
 	// // Testing.
 	// {
@@ -257,22 +285,22 @@ task("upgrade-cosmic-signature-game", "Upgrades the CosmicSignatureGame contract
 	}
 
 	// [Comment-202606198]
-	// This will be different from `deployCosmicSignatureContractsReportObject.cosmicSignatureGameImplementationAddress`
+	// This will be different from the deployment report's `cosmicSignatureGameImplementationAddress`
 	// if we are upgrading to V3+. It's possible to get this from the previous version deployment or upgrade report,
 	// but keeping it simple.
 	// [/Comment-202606198]
-	const existingCosmicSignatureGameImplementationAddress = await hre.upgrades.erc1967.getImplementationAddress(deployCosmicSignatureContractsReportObject.cosmicSignatureGameProxyAddress);
+	const existingCosmicSignatureGameImplementationAddress = await hre.upgrades.erc1967.getImplementationAddress(cosmicSignatureGameProxyAddress_);
 
 	console.info("%s", `Upgrading to ${upgradeConfigObject.newCosmicSignatureGameContractName}.`);
 	// const newCosmicSignatureGameProxy =
-		await hre.upgrades.upgradeProxy(deployCosmicSignatureContractsReportObject.cosmicSignatureGameProxyAddress, newCosmicSignatureGameFactory, upgradeProxyOptions);
+		await hre.upgrades.upgradeProxy(cosmicSignatureGameProxyAddress_, newCosmicSignatureGameFactory, upgradeProxyOptions);
 	// await newCosmicSignatureGameProxy.waitForDeployment();
 
 	// Issue. As per Comment-202510208, the transaction is still being mined.
 	console.info("%s", "Submitted an upgrade transaction.");
 
 	const reportObject = {
-		newCosmicSignatureGameImplementationAddress: await safeErc1967GetChangedImplementationAddress(deployCosmicSignatureContractsReportObject.cosmicSignatureGameProxyAddress, existingCosmicSignatureGameImplementationAddress),
+		newCosmicSignatureGameImplementationAddress: await safeErc1967GetChangedImplementationAddress(cosmicSignatureGameProxyAddress_, existingCosmicSignatureGameImplementationAddress),
 	};
 	console.info();
 	const reportJsonString = JSON.stringify(reportObject, null, 3);
@@ -297,14 +325,14 @@ task("upgrade-cosmic-signature-game", "Upgrades the CosmicSignatureGame contract
 	// {
 	// 	console.info("%s", `${nodeOsModule.EOL}Deploying a new PrizesWallet.`);
 	// 	const prizesWalletFactory = await hre.ethers.getContractFactory("PrizesWallet", deployerSigner);
-	// 	const newPrizesWallet = await prizesWalletFactory.deploy(deployCosmicSignatureContractsReportObject.cosmicSignatureGameProxyAddress);
+	// 	const newPrizesWallet = await prizesWalletFactory.deploy(cosmicSignatureGameProxyAddress_);
 	// 	await newPrizesWallet.waitForDeployment();
 	// 	const newPrizesWalletAddress = await newPrizesWallet.getAddress();
 	// 	console.info(/*"%s",*/ "New PrizesWallet address:", newPrizesWalletAddress);
 	// 
 	// 	console.info("%s", "Pointing the game proxy contract at the new PrizesWallet.");
 	// 	const newCosmicSignatureGameProxy =
-	// 		newCosmicSignatureGameFactory.attach(deployCosmicSignatureContractsReportObject.cosmicSignatureGameProxyAddress);
+	// 		newCosmicSignatureGameFactory.attach(cosmicSignatureGameProxyAddress_);
 	// 	await waitForTransactionReceipt(newCosmicSignatureGameProxy.setPrizesWallet(newPrizesWalletAddress));
 	// 
 	// 	console.info("%s", "Done.");

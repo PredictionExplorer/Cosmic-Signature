@@ -130,9 +130,10 @@ interface IBidding1V2 {
 	/// Comments near `getBidCstRewardAmountAdvanced` apply.
 	function getBidCstRewardAmount() external view returns (uint256);
 
-	/// @notice Calculates and returns the current CST amount to be minted to a bidder as a reward for placing a bid.
+	/// @notice Calculates and returns the current CST amount to be minted as a reward for placing a bid.
 	/// It can be zero.
-	/// In V3+, Comment-202501022 applies.
+	/// In V3+, the reward is minted to the previous bidder, and this method returns zero
+	/// if no bids have been placed in the current bidding round yet. Comment-202608176 applies.
 	/// @param currentTimeOffset_ Comment-202501107 applies.
 	function getBidCstRewardAmountAdvanced(int256 currentTimeOffset_) external view returns (uint256);
 }

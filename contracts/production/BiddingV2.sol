@@ -305,16 +305,8 @@ abstract contract BiddingV2 is
 	// #endregion
 	// #region `_mintBidCstRewardAmountIfNeeded`
 
-	/// todo-ai-0 I have deleted Comment-202607162 and references to it in Solidity code.
-	/// todo-ai-0 It's obvious what virtual methods are for
-	/// todo-ai-0 and that `lastBidderAddress` is supposed to be used before assigning to it.
-	/// todo-ai-0 Make sure we use `lastBidderAddress` before assigning to it.
-	/// todo-ai-0 We also use some variables after assigning to them. If logic that uses a variable before or after assigning to it
-	/// todo-ai-0 appears to be incorrect express your concerns in a comment.
 	/// @notice Mints the given bid CST reward amount.
 	/// @param bidCstRewardAmount_ The CST amount to mint. May be zero.
-	// todo-0 Remove this garbage.
-	// function _mintBidCstRewardAmountIfNeeded(uint256 bidCstRewardAmount_) internal virtual {
 	function _mintBidCstRewardAmountIfNeeded(uint256 bidCstRewardAmount_) private {
 		// // #enable_smtchecker /*
 		// unchecked
@@ -331,8 +323,6 @@ abstract contract BiddingV2 is
 	/// @notice Burns the given CST bid price from the caller and mints the given bid CST reward amount.
 	/// @param cstBidPrice_ The CST amount to burn. May be zero, but unlikely is.
 	/// @param bidCstRewardAmount_ The CST amount to mint. May be zero.
-	// todo-0 Remove this garbage.
-	// function _burnCstBidPriceAndMintBidCstRewardAmountIfNeeded(uint256 cstBidPrice_, uint256 bidCstRewardAmount_) internal virtual {
 	function _burnCstBidPriceAndMintBidCstRewardAmountIfNeeded(uint256 cstBidPrice_, uint256 bidCstRewardAmount_) private {
 		// #enable_smtchecker /*
 		unchecked
