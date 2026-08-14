@@ -29,6 +29,27 @@ Because some tests are driven by random numbers, occasionally you can observe so
 
 If you observe a test failure due to one of the above listed reasons or some unexpected parts of the codebase not covered, execute the test/coverage script again.
 
+#### V3 Reinitializer Findings
+
+The 2026-08 V3 security review identified 2 medium-severity upgrade-path risks. We are documenting and testing them,
+but leaving the production contracts unchanged pending the developer's decision because Comment-202606128
+deliberately omits `onlyOwner` under the assumption that the upgrade and reinitializer call are atomic.
+
+1. `CosmicSignatureGameV2.reinitialize` and `CosmicSignatureGameV3.reinitialize` are permissionless.
+   If an owner performed a bare implementation upgrade without bundling `reinitialize` in the same transaction,
+   another account could call the one-shot reinitializer first and reset the version's economic parameters.
+   The production upgrade task mitigates this by always using `upgradeProxy` with `call: "reinitialize"`.
+   Tests cover both sides: after the standard atomic upgrade, owner and non-owner reinitializer calls revert
+   `InvalidInitialization`; after a deliberately bare test upgrade, a non-owner can initialize once.
+
+2. `_checkIfPrevVersionWasInitialized` only asserts in assert-enabled builds. In production builds its
+   `InvalidInitialization` revert is commented out, so an operationally incorrect V1 -> V3 jump can skip V2's
+   reinitializer. `CosmicSignatureGameV3-GuardsAndMisconfig.js` explicitly characterizes the assert and production
+   behaviors.
+
+Operational requirement: always execute upgrades through the checked-in upgrade task/runbook, which bundles
+`upgradeToAndCall` and `reinitialize`, and never perform a bare UUPS implementation upgrade.
+
 #### Benevolent Owner
 
 We assume that the contract owner is not malicious. One implication is that we assume that they will not upgrade the Game contract to one doing anything malicious, such as stealing assets held in `PrizesWallet`.

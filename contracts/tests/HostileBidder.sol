@@ -18,6 +18,7 @@ contract HostileBidder {
 	/// 2 = fail an assertion (panic);
 	/// 3 = burn all remaining gas;
 	/// 4 = reenter `game.bidWithEth`;
+	/// 5 = reenter `game.claimMainPrize`;
 	/// any other value = accept incoming calls.
 	uint256 public hostilityModeCode = 0;
 
@@ -45,6 +46,10 @@ contract HostileBidder {
 		game.bidWithCst(priceMaxLimit_, message_, bidCstRewardAmountMinLimit_);
 	}
 
+	function doClaimMainPrize() external {
+		game.claimMainPrize();
+	}
+
 	function _takeHostileActionIfNeeded() private {
 		uint256 hostilityModeCode_ = hostilityModeCode;
 		if (hostilityModeCode_ == 1) {
@@ -61,6 +66,11 @@ contract HostileBidder {
 			// This reentry attempt is expected to revert due to the reentrancy guard,
 			// which would make the incoming ETH transfer that triggered it revert as well.
 			game.bidWithEth(-1, "reentry", 0);
+		} else if (hostilityModeCode_ == 5) {
+			// This reentry attempt is expected to revert due to the reentrancy guard.
+			// If this contract is the main prize beneficiary, that makes the incoming
+			// main prize ETH transfer and therefore the outer claim revert as well.
+			game.claimMainPrize();
 		}
 	}
 }

@@ -112,10 +112,22 @@ contract hardening and test-model updates. This log covers both; coordinate befo
   max observed `claimMainPrize` gas 4.46M). Combined with the passing Arbitrum One fork rehearsal, clean OZ
   `validateUpgrade`, and benign-only Slither findings, the V3 upgrade is ready for the production runbook in
   `tasks/docs/Cosmic-Signature-Game-Contract-Upgrade-And-Re-Registration.md`.
+- 2026-08-14: Security follow-up added `CosmicSignatureGameV3-Security.js` (8 tests): atomic-vs-bare
+  reinitializer characterization, V3 beneficiary and charity reentrancy, same-second `receive()` throttling,
+  exact unchecked premium wrapping under extreme owner parameters, reverting ERC-20/ERC-721 donation rollback,
+  and donated-NFT self-grief/recovery. `RevertingToken.sol` is the non-reentrant failure double;
+  `HostileBidder.sol` gained V3 claim reentry. The focused production-profile run is 17 passing and the new
+  suite is 8 passing with Solidity assertions enabled. No `contracts/production` source changed.
+- 2026-08-14: Documented 2 medium upgrade-path findings in
+  `docs/cosmic-signature-contracts-audit-considerations.md`: permissionless one-shot `reinitialize` after a bare
+  upgrade, and the production no-op previous-version check. Per owner direction these are documented/tested,
+  not patched; the atomic checked-in upgrade task remains the operational mitigation.
 
 ## Remaining items for humans
 
 - Decide the open `todo-0` design questions (see the review doc and the cleanup entry above).
+- Decide whether a future contract version should add `onlyOwner`/`_onlyRoundIsInactive` to `reinitialize`
+  and enforce the previous initialized version in production; the current V3 leaves both behaviors unchanged.
 - Run the live upgrade per the runbook (requires the owner key; time it while the bidding round is inactive).
 - After the upgrade: run the Arbiscan registration script; update the site/indexer per the review doc's
   off-chain impact checklist.
