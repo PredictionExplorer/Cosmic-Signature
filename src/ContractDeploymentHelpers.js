@@ -185,10 +185,10 @@ const deployContractsAdvanced = async function (
 // #region `deployCosmicSignatureGameV3Modules`
 
 /**
-Deploys the 3 delegatecall modules of the V3 Game (Comment-202608245), in the reverse of
+Deploys the 2 delegatecall modules of the V3 Game (Comment-202608245), in the reverse of
 the fallback forwarding chain order (Comment-202608246): prizes (the chain tail),
-then admin (forwarding to prizes), then views (forwarding to admin).
-The views module address plus the prizes module address are the `CosmicSignatureGameV3` implementation
+then admin (forwarding to prizes).
+The admin module address plus the prizes module address are the `CosmicSignatureGameV3` implementation
 constructor arguments.
 @param {import("ethers").Signer} deployerSigner_
 */
@@ -208,12 +208,6 @@ async function deployCosmicSignatureGameV3Modules(deployerSigner_) {
 	await cosmicSignatureGameAdminModule_.waitForDeployment();
 	const cosmicSignatureGameAdminModuleAddress_ = await cosmicSignatureGameAdminModule_.getAddress();
 
-	const cosmicSignatureGameViewsModuleFactory_ =
-		await hre.ethers.getContractFactory("CosmicSignatureGameViewsModuleV3", deployerSigner_);
-	const cosmicSignatureGameViewsModule_ = await cosmicSignatureGameViewsModuleFactory_.deploy(cosmicSignatureGameAdminModuleAddress_);
-	await cosmicSignatureGameViewsModule_.waitForDeployment();
-	const cosmicSignatureGameViewsModuleAddress_ = await cosmicSignatureGameViewsModule_.getAddress();
-
 	return {
 		cosmicSignatureGamePrizesModuleFactory: cosmicSignatureGamePrizesModuleFactory_,
 		cosmicSignatureGamePrizesModule: cosmicSignatureGamePrizesModule_,
@@ -221,9 +215,6 @@ async function deployCosmicSignatureGameV3Modules(deployerSigner_) {
 		cosmicSignatureGameAdminModuleFactory: cosmicSignatureGameAdminModuleFactory_,
 		cosmicSignatureGameAdminModule: cosmicSignatureGameAdminModule_,
 		cosmicSignatureGameAdminModuleAddress: cosmicSignatureGameAdminModuleAddress_,
-		cosmicSignatureGameViewsModuleFactory: cosmicSignatureGameViewsModuleFactory_,
-		cosmicSignatureGameViewsModule: cosmicSignatureGameViewsModule_,
-		cosmicSignatureGameViewsModuleAddress: cosmicSignatureGameViewsModuleAddress_,
 	};
 }
 
@@ -273,7 +264,6 @@ async function getCosmicSignatureGameV3CombinedAbiContract(cosmicSignatureGamePr
 		buildCombinedCosmicSignatureGameV3Abi(
 			(await hre.ethers.getContractFactory("CosmicSignatureGameV3")).interface,
 			[
-				(await hre.ethers.getContractFactory("CosmicSignatureGameViewsModuleV3")).interface,
 				(await hre.ethers.getContractFactory("CosmicSignatureGameAdminModuleV3")).interface,
 				(await hre.ethers.getContractFactory("CosmicSignatureGamePrizesModuleV3")).interface,
 			]

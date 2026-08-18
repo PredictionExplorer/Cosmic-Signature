@@ -174,6 +174,32 @@ contract hardening and test-model updates. This log covers both; coordinate befo
   The behavior-parity baseline is unaffected (its scenario never bids inside the window). Certora specs are
   unaffected (they verify the V1 contract, which has no premium). `docs/v3-vs-v2-changes.md` updated.
 
+- 2026-08-18: THE DE-DUPLICATION RESTRUCTURING (stage 3 of the bytecode size work; Comment-202608281 relates).
+  Addressed the developer review findings on the stage-2 modular architecture:
+  (1) The duplicated `internal`-visibility storage chassis (`CosmicSignatureGameStorageV3Core`) and the forked
+  bid hot path (`BiddingV3Core`, `BiddingCommonV3Core`, `MainPrizeCommonV3Core`, `BidStatisticsV3Core`) are gone,
+  together with `CosmicSignatureGameViewsModuleV3`. The implementation inherits the original `public` chassis and
+  the original `BiddingCommonV2`/`MainPrizeCommonV2`/`BidStatisticsV2`/`BiddingV2Base`/`BiddingV3` mixins, so it
+  again carries the auto-generated getters, all bid entry points (incl. donations), and the computed views;
+  the storage layout and every behavior now have exactly one source. 2 modules remain (admin: setters + ETH
+  donations; prizes: claim + prize views), chain: implementation -> admin -> prizes. Sizes at uniform runs=400:
+  implementation 14,715 (59.9%), prizes 11,532, admin 9,639. The same-second-throttle test seam
+  (Comment-202608265) moved from the deleted `BiddingV3Core` into `BiddingV3`
+  (`_checkIfNoBidPlacedWithinCurrentSecond` is `internal virtual` there now).
+  (2) The implementation and module constructors set their own `roundActivationTime` to the finite
+  `TIMESTAMP_9000_01_01` house convention instead of `type(uint256).max`, whose `int256` cast equals -1 and made
+  `getDurationElapsedSinceRoundActivation` return bogus positive durations on direct calls (Comment-202608281).
+  (3) `docs/v3-vs-v2-changes.md` corrections: the Slither upgradeability script is documented as an advisory,
+  expected-to-exit-nonzero check (its own manual documents that it cannot understand the storage gap or
+  `@custom:oz-renamed-from`), not a passing verification gate; the bid CST reward safety is attributed to
+  `CosmicSignatureToken` having no recipient callbacks on mint or transfer, not to "minted rather than
+  transferred"; the stale claim that V3 inherits `CosmicSignatureGameV2Base` was fixed, and the new-sources list
+  was completed. `ModularEquality.js` reworked for the 2-module chain (implementation-declared/module-only
+  selector membership, direct calls to the implementation itself incl. the `claimMainPrize` forwarder dead-end,
+  2-module layout identity and budgets); deployment helpers, the upgrade task, the re-registration task, and the
+  fork rehearsal deploy/verify 2 modules. The ABI and behavior baselines are UNCHANGED and both gates pass,
+  proving the proxy's interface and behavior survived stages 2 and 3 byte for byte.
+
 ## Remaining items for humans
 
 - Decide the open `todo-0` design questions (see the review doc and the cleanup entry above).

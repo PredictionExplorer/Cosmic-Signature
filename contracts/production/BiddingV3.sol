@@ -399,7 +399,6 @@ abstract contract BiddingV3 is
 	/// @notice Appends the given bid raffle weight for the bid that `_bidCommon` has just recorded.
 	/// Comment-202608261 applies.
 	/// Comment-202608262 applies.
-	/// @dev Comment-202608263 applies.
 	function _appendBidRaffleWeight(uint256 bidRaffleWeight_) private {
 		// Comment-202608262 applies.
 		// #enable_asserts assert(bidRaffleWeight_ > 0);
@@ -419,7 +418,14 @@ abstract contract BiddingV3 is
 	// #region `_checkIfNoBidPlacedWithinCurrentSecond`
 
 	/// @notice This restriction makes life of bots a little more difficult, while manual bidders rarely run into it.
-	function _checkIfNoBidPlacedWithinCurrentSecond() private view {
+	/// @dev
+	/// [Comment-202608265]
+	/// This is `internal virtual`, rather than `private`, only to serve as a test seam:
+	/// the test-only `SpecialCosmicSignatureGameV3` overrides it with a no-op to prove that
+	/// the weighted bidder raffle (Comment-202608261) keeps working unchanged with multiple bids
+	/// placed within a single second. Production behavior is unchanged.
+	/// [/Comment-202608265]
+	function _checkIfNoBidPlacedWithinCurrentSecond() internal view virtual {
 		// It's OK if `lastBidderAddress` is zero.
 		uint256 lastBidTimeStampCopy_ = biddersInfo[roundNum][lastBidderAddress].lastBidTimeStamp;
 

@@ -107,13 +107,17 @@ The 154-byte margin is thin. Measured options if more headroom is needed:
 - The planned removal of string params from errors and events (todo-0 in `CosmicSignatureEvents.sol`) would save the most, at the cost of changing every error selector.
 
 **2026-08 update: the modular delegatecall restructuring superseded the table above.** The V3 Game now consists of
-a slim UUPS implementation plus 3 delegatecall modules sharing the identical storage layout (Comment-202608245).
-Production sizes at the restored uniform `runs = 400`: `CosmicSignatureGameV3` 7,316 bytes (29.8% of the limit),
-`CosmicSignatureGameViewsModuleV3` 13,398 (54.5%), `CosmicSignatureGamePrizesModuleV3` 11,451 (46.6%),
-`CosmicSignatureGameAdminModuleV3` 9,566 (38.9%). The external interface and behavior at the proxy are unchanged,
-enforced by the ABI/layout/routing/size gates in `test/tests-src/CosmicSignatureGameV3-ModularEquality.js` and the
-deterministic behavior-trace replay in `test/tests-src/CosmicSignatureGameV3-BehaviorParity.js`, both pinned to
-baselines recorded on the audited monolith (commit 9496fc31) and committed under `test/baselines/`.
+a UUPS implementation plus 2 delegatecall modules sharing the identical storage layout (Comment-202608245).
+An initial 3-module variant (stage 2) kept the implementation slim by re-declaring the storage layout with
+`internal` visibility and forking the bid hot path; the follow-up de-duplication restructuring (stage 3,
+Comment-202608281 relates) removed both duplications: the implementation inherits the original `public`-variable
+chassis and the original bid mixins again, and only the cold areas remain in modules. Production sizes at the
+uniform `runs = 400`: `CosmicSignatureGameV3` 14,715 bytes (59.9% of the limit),
+`CosmicSignatureGamePrizesModuleV3` 11,532 (46.9%), `CosmicSignatureGameAdminModuleV3` 9,639 (39.2%).
+The external interface and behavior at the proxy are unchanged, enforced by the ABI/layout/routing/size gates in
+`test/tests-src/CosmicSignatureGameV3-ModularEquality.js` and the deterministic behavior-trace replay in
+`test/tests-src/CosmicSignatureGameV3-BehaviorParity.js`, both pinned to baselines recorded on the audited monolith
+(commit 9496fc31) and committed under `test/baselines/`.
 See `docs/v3-vs-v2-changes.md` and the work log for details.
 
 The V2 size drop that looked suspicious ("like 3K less") is explained by the intentional source changes, primarily the `ArbitrumHelpers` and `BiddingV3`/shared-helper deduplication plus normal optimizer variance; old-vs-new V2 sources differ only in the documented ways (section 2/3), and the assert-enabled debug builds (which are the ones the test suite deploys) were never subject to the EIP-170 limit because the Hardhat network runs with `allowUnlimitedContractSize`.

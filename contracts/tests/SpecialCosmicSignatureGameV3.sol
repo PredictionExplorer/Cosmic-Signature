@@ -10,8 +10,8 @@ import { CosmicSignatureGameV3 } from "../production/CosmicSignatureGameV3.sol";
 /// @custom:oz-upgrades-unsafe-allow missing-initializer state-variable-immutable
 contract SpecialCosmicSignatureGameV3 is CosmicSignatureGameV3 {
 	/// @custom:oz-upgrades-unsafe-allow constructor
-	constructor(address viewsModuleAddress_, address prizesModuleAddress_)
-		CosmicSignatureGameV3(viewsModuleAddress_, prizesModuleAddress_) {
+	constructor(address adminModuleAddress_, address prizesModuleAddress_)
+		CosmicSignatureGameV3(adminModuleAddress_, prizesModuleAddress_) {
 		// Doing nothing.
 	}
 

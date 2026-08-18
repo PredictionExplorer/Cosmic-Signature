@@ -70,7 +70,7 @@ async function upgradeToV3(contracts_, upgradeOptions_ = {}, gameContractName_ =
 		{
 			kind: "uups",
 			call: "reinitialize",
-			constructorArgs: [modules_.cosmicSignatureGameViewsModuleAddress, modules_.cosmicSignatureGamePrizesModuleAddress,],
+			constructorArgs: [modules_.cosmicSignatureGameAdminModuleAddress, modules_.cosmicSignatureGamePrizesModuleAddress,],
 			...upgradeOptions_,
 		}
 	);
@@ -83,7 +83,6 @@ async function upgradeToV3(contracts_, upgradeOptions_ = {}, gameContractName_ =
 		buildCombinedCosmicSignatureGameV3Abi(
 			cosmicSignatureGameV3Factory_.interface,
 			[
-				modules_.cosmicSignatureGameViewsModuleFactory.interface,
 				modules_.cosmicSignatureGameAdminModuleFactory.interface,
 				modules_.cosmicSignatureGamePrizesModuleFactory.interface,
 			]

@@ -201,7 +201,6 @@ async function main() {
 			// so each of them must be storage-compatible with the live V2 layout.
 			// `CosmicSignatureGameV3-ModularEquality.js` additionally asserts that their layouts are identical
 			// to the implementation's.
-			{contractName: "CosmicSignatureGameViewsModuleV3", constructorArgs: [zeroAddress_,], isPluginManaged: false,},
 			{contractName: "CosmicSignatureGameAdminModuleV3", constructorArgs: [zeroAddress_,], isPluginManaged: false,},
 			{contractName: "CosmicSignatureGamePrizesModuleV3", constructorArgs: [], isPluginManaged: false,},
 		];
@@ -278,12 +277,11 @@ async function main() {
 	const modules_ = await deployCosmicSignatureGameV3Modules(ownerSigner_);
 	console.info(/*"%s",*/ "CosmicSignatureGamePrizesModuleV3 address:", modules_.cosmicSignatureGamePrizesModuleAddress);
 	console.info(/*"%s",*/ "CosmicSignatureGameAdminModuleV3 address:", modules_.cosmicSignatureGameAdminModuleAddress);
-	console.info(/*"%s",*/ "CosmicSignatureGameViewsModuleV3 address:", modules_.cosmicSignatureGameViewsModuleAddress);
 
 	console.info("%s", "Deploying the CosmicSignatureGameV3 implementation.");
 	const cosmicSignatureGameV3Factory_ = await hre.ethers.getContractFactory("CosmicSignatureGameV3", ownerSigner_);
 	const newCosmicSignatureGameImplementation_ =
-		await cosmicSignatureGameV3Factory_.deploy(modules_.cosmicSignatureGameViewsModuleAddress, modules_.cosmicSignatureGamePrizesModuleAddress);
+		await cosmicSignatureGameV3Factory_.deploy(modules_.cosmicSignatureGameAdminModuleAddress, modules_.cosmicSignatureGamePrizesModuleAddress);
 	await newCosmicSignatureGameImplementation_.waitForDeployment();
 	const newImplementationAddress_ = await newCosmicSignatureGameImplementation_.getAddress();
 	console.info(/*"%s",*/ "New implementation address:", newImplementationAddress_);

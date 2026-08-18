@@ -6,6 +6,7 @@ pragma solidity =0.8.34;
 // #endregion
 // #region
 
+import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { BiddingCommonV2 } from "./BiddingCommonV2.sol";
 import { MainPrizeCommonV2 } from "./MainPrizeCommonV2.sol";
 import { BidStatisticsV2 } from "./BidStatisticsV2.sol";
@@ -44,7 +45,9 @@ contract CosmicSignatureGamePrizesModuleV3 is
 	/// @notice Comment-202608247 applies.
 	constructor() {
 		_disableInitializers();
-		roundActivationTime = type(uint256).max;
+
+		// Comment-202608281 applies.
+		roundActivationTime = CosmicSignatureConstants.TIMESTAMP_9000_01_01;
 	}
 
 	// #endregion

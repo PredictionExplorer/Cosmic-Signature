@@ -4,10 +4,12 @@ This document compares `CosmicSignatureGameV3` (the version to upgrade the proxy
 
 V3 is implemented by deriving from the V2 module hierarchy. New sources (all under `contracts/production/`):
 
-- `CosmicSignatureGameV3.sol`, `CosmicSignatureGameStorageV3.sol`, `CosmicSignatureGameStorageV3Base.sol`, `BiddingV3.sol`, `MainPrizeV3.sol`, `SystemManagementV3.sol`
-- Interfaces: `IBiddingV3.sol`, `IMainPrizeV3.sol`, `IMainPrize2V3.sol`, `ISystemManagementV3.sol`, `ISystemEventsV3.sol`
+- `CosmicSignatureGameV3.sol`, `CosmicSignatureGameStorageV3.sol`, `CosmicSignatureGameStorageV3Base.sol`, `BiddingV3.sol`, `MainPrizeV3.sol`, `BidStatisticsV3.sol`, `SystemManagementV3.sol`
+- The delegatecall modules (see "bytecode size work" below): `CosmicSignatureGameAdminModuleV3.sol`, `CosmicSignatureGamePrizesModuleV3.sol`
+- The library `libraries/RaffleWeightHelpers.sol`
+- Interfaces: `IBiddingV3.sol`, `IBidding2V3.sol`, `IMainPrizeV3.sol`, `IMainPrize2V3.sol`, `ISystemManagementV3.sol`, `ISystemEventsV3.sol`, `ICosmicSignatureGameStorageV3.sol`
 
-V3 reuses the V2 modules unchanged: `CosmicSignatureGameV2Base` (constructor, `reinitialize` declaration, `_authorizeUpgrade`), `MainPrizeCommonV2`, `SystemManagementV2` (as the base of `SystemManagementV3`), `EthDonationsV2`, `NftDonationsV2`, `BidStatisticsV2` (as the base of `BidStatisticsV3`), `BiddingV2Base` (as the base of `BiddingV3`), `SecondaryPrizesV2`, `MainPrizeV2Base` (as the base of `MainPrizeV3`). The V2 leaves `BiddingV2` (the V2 `_bidWithEth`/`_bidWithCst`) and `MainPrizeV2` (the V2 `_distributePrizes`) are not inherited by V3; `BiddingV3` and `MainPrizeV3` override those virtual methods instead.
+V3 reuses the V2 modules unchanged: `MainPrizeCommonV2`, `SystemManagementV2` (as the base of `SystemManagementV3`), `EthDonationsV2`, `NftDonationsV2`, `BidStatisticsV2` (as the base of `BidStatisticsV3`), `BiddingV2Base` (as the base of `BiddingV3`), `SecondaryPrizesV2`, `MainPrizeV2Base` (as the base of `MainPrizeV3`). The V2 leaves `BiddingV2` (the V2 `_bidWithEth`/`_bidWithCst`) and `MainPrizeV2` (the V2 `_distributePrizes`) are not inherited by V3; `BiddingV3` and `MainPrizeV3` override those virtual methods instead. (`CosmicSignatureGameV2Base` is not inherited by the V3 implementation contract, because it also carries `SystemManagementV2` and `MainPrizeV2Base`, which V3 serves from the delegatecall modules; the V3 implementation re-declares the few leaf members V2Base provided: the `_disableInitializers` constructor, `reinitialize`, and `_authorizeUpgrade`, with identical behavior.)
 
 V3 is deployed by **upgrading the existing proxy** (UUPS `upgradeToAndCall` with `reinitialize` as the call payload), so "ABI changes" below describe what changes for callers of the proxy once it is upgraded. Unlike the V1 -> V2 upgrade, this upgrade needs **no unsafe OpenZeppelin flags**: no storage slots are renamed or repurposed, and the `.openzeppelin` manifest already reflects the V2 layout (see `tasks/config/upgrade-cosmic-signature-game-config-<network-name>-CosmicSignatureGameV3.json`, where `unsafeAllowRenames` and `unsafeSkipStorageCheck` are `false`).
 
@@ -23,7 +25,7 @@ The V1 -> V2 -> V3 game proxy storage layout remains fully compatible:
   - The ETH prize percentages: main prize 25% -> 20%, charity 7% -> 5%, bidder-raffle total 4% -> 5%, CS NFT stakers 6% -> 5%, and Chrono Warrior 8% -> 15%. The paid total remains 50%, so the implicit rollover remains 50%.
 - `cstDutchAuctionDuration` and `cstDutchAuctionDurationChangeDivisor` keep their slots and values, but V3's logic no longer reads them and their setters revert (see the ABI changes below).
 
-This is verified by OpenZeppelin `validateUpgrade` in `test/tests-src/CosmicSignatureGameV3-StorageLayout.js`, by `slither/slither-check-upgradeability-CosmicSignatureGameV3.bash`, and by the fuzz campaign's V2 -> V3 upgrade phase, which snapshots and diffs every remaining carried-over getter (including the V2 parameters) and checks all intentional overwrites.
+This is verified by OpenZeppelin `validateUpgrade` in `test/tests-src/CosmicSignatureGameV3-StorageLayout.js` and by the fuzz campaign's V2 -> V3 upgrade phase, which snapshots and diffs every remaining carried-over getter (including the V2 parameters) and checks all intentional overwrites. The `slither/slither-check-upgradeability-CosmicSignatureGameV3.bash` script is advisory only: `slither-check-upgradeability` does not understand the Comment-202412142 storage gap or `@custom:oz-renamed-from` (see `slither/slither-check-upgradeability-manual.md`), so it is expected to exit nonzero, reporting the gap-consumption patterns that OpenZeppelin `validateUpgrade` (which does understand gaps) proves safe. Its findings must be manually triaged against that known-benign set; it is not a passing gate.
 
 ## ABI Changes
 
@@ -193,10 +195,13 @@ The V2 sqrt bid CST reward formula is replaced, and the reward recipient changes
   check now runs at the beginning of `_bidWithCst` (after the round-active check, matching V2's validation order)
   rather than in `_bidCommon` near the end. Without this, the reward minting to the nonexistent previous bidder
   would have reverted with an unhelpful `ERC20InvalidReceiver`.
-- **No new attack surface (Comment-202607163).** The reward is minted, never transferred: `CosmicSignatureToken`
-  performs no call into the recipient, so a hostile contract that reverts on any incoming call cannot block the
-  reward minting, and therefore cannot prevent other people from bidding (covered by
-  `test/tests-src/CosmicSignatureGameV3-BidCstRewardAttack.js`).
+- **No new attack surface (Comment-202607163).** `CosmicSignatureToken` is a plain OpenZeppelin ERC-20 with no
+  recipient callbacks on either a minting or a transfer, so a hostile contract that reverts on any incoming call
+  cannot block the reward minting, and therefore cannot prevent other people from bidding (covered by
+  `test/tests-src/CosmicSignatureGameV3-BidCstRewardAttack.js`). (Note that the safety comes from the absence of
+  recipient callbacks in this token, not from the reward being minted rather than transferred; an ERC-20 transfer
+  would be equally unblockable. Minting is used because the reward is new issuance; the Game holds no CST to
+  transfer from.)
 - **Economics.** Unlike the V2 sqrt formula (which was designed to be supply-neutral relative to the main prize time
   increment), the linear formula's issuance is directly proportional to real time spent between bids; the effective
   per-minute rate slowly decreases as `mainPrizeTimeIncrementInMicroSeconds` grows ~1% per round, unless the owner
@@ -282,14 +287,28 @@ selection distribution did.
   `hardhat.config.js`), shared emit/validation helpers in `BiddingV3` (Comment-202608122, Comment-202608124), and
   the `ArbitrumHelpers` consolidation (Comment-202608125).
 - 2026-08 bytecode size work, stage 2 -- **the modular delegatecall restructuring** (Comment-202608245): the V3
-  implementation was split into a slim UUPS implementation (7,316 bytes, ~70% headroom) plus 3 delegatecall modules
-  (`CosmicSignatureGameViewsModuleV3` 13,398, `CosmicSignatureGamePrizesModuleV3` 11,451,
-  `CosmicSignatureGameAdminModuleV3` 9,566 bytes), each far below the limit, reached through an immutable-address
-  fallback forwarding chain (Comment-202608246). The proxy's external interface and behavior are unchanged
-  (selector-for-selector ABI equality and a deterministic behavior-trace replay against the monolith are enforced by
-  `test/tests-src/CosmicSignatureGameV3-ModularEquality.js` and `-BehaviorParity.js` with committed baselines under
-  `test/baselines/`). The runs=1 override and the `SLITHER_UNIFORM_BUILD` workaround became unnecessary and were
-  removed; everything compiles uniformly with runs=400 again, which also restores the runtime-gas-oriented optimizer
-  profile for the Game. Future versions get their headroom by extending the modules (or appending new ones to the
-  chain); the implementation only grows for new hot-path entry points.
+  implementation was split into a slim UUPS implementation plus 3 delegatecall modules reached through an
+  immutable-address fallback forwarding chain (Comment-202608246), with the proxy's external interface and behavior
+  unchanged (selector-for-selector ABI equality and a deterministic behavior-trace replay against the monolith are
+  enforced by `test/tests-src/CosmicSignatureGameV3-ModularEquality.js` and `-BehaviorParity.js` with committed
+  baselines under `test/baselines/`). The runs=1 override and the `SLITHER_UNIFORM_BUILD` workaround became
+  unnecessary and were removed; everything compiles uniformly with runs=400 again, which also restores the
+  runtime-gas-oriented optimizer profile for the Game. To keep the auto-generated state variable getters out of the
+  implementation, this stage re-declared the whole storage layout with `internal` visibility
+  (`CosmicSignatureGameStorageV3Core`) and forked the bid hot path (`BiddingV3Core` and 3 sibling `*V3Core` files),
+  which stage 3 eliminated.
+- 2026-08 bytecode size work, stage 3 -- **the de-duplication restructuring** (Comment-202608281 relates): the
+  stage-2 duplication was removed. The implementation went back to inheriting the original `public`-variable storage
+  chassis and the original `BiddingV2Base`/`BiddingV3` mixins, so it again carries the auto-generated getters, all
+  bid entry points (including the bid-with-donation combinations), and the computed views; the views module and the
+  5 `*Core` fork files were deleted. The storage layout and every piece of logic now have exactly one source. Two
+  delegatecall modules remain: `CosmicSignatureGameAdminModuleV3` (every configuration setter + ETH donations;
+  9,639 bytes) and `CosmicSignatureGamePrizesModuleV3` (`claimMainPrize` + prize distribution + prize amount views;
+  11,532 bytes); the implementation is 14,715 bytes, ~40% below the EIP-170 limit, at uniform runs=400. The chain is
+  now implementation -> admin -> prizes, with `claimMainPrize` forwarded to the prizes module in a single hop, and
+  state getters/views gained one hop less than in stage 2. The same `ModularEquality`/`BehaviorParity` gates
+  (unchanged committed baselines) prove the proxy's ABI and behavior remained identical through both stages. The
+  implementation and module constructors now set their own (never proxy-visible) `roundActivationTime` to the finite
+  `TIMESTAMP_9000_01_01` house convention instead of `type(uint256).max`, whose `int256` cast is -1 and made
+  direct-call duration views return bogus positive values (Comment-202608281).
 - Test contracts `tests/BidderContract.sol` and `tests/MaliciousActorBase.sol`: the version routing changed from `contractVersionNumber != 2` to `contractVersionNumber < 2`, so `contractVersionNumber = 3` uses the V2-compatible call shapes (which V3 keeps).

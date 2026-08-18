@@ -14,16 +14,20 @@
 //       (`test/baselines/cosmic-signature-game-v3-abi-baseline.json`).
 //    2. Storage layout identity: the implementation and every module pass the OpenZeppelin storage layout
 //       compatibility validation against each other in both directions, which, together with them
-//       sharing the same trailing gap, means their layouts are identical. The V2 -> V3 upgrade validation
-//       is additionally covered by `CosmicSignatureGameV3-StorageLayout.js`.
-//    3. Selector routing: every function selector is served where it is supposed to be served,
-//       and a selector unknown to the whole chain reverts with empty revert data, with or without ETH,
-//       exactly like the monolith did.
-//    4. Bytecode size budgets: every deployed production contract must stay far below the EIP-170 limit;
-//       the implementation gets the strictest budget, so that future versions cannot silently regress
-//       toward the limit (the monolith had 154 bytes of headroom; the implementation now has ~17000).
-//    5. Direct-call safety: calling a module at its own address, rather than through the proxy,
-//       is harmless. Comment-202608247 applies.
+//       sharing the same trailing gap, means their layouts are identical. (Since the de-duplication
+//       restructuring, they all inherit the very same storage chassis source, so this holds
+//       by construction; the gate remains to catch any future divergence.) The V2 -> V3 upgrade
+//       validation is additionally covered by `CosmicSignatureGameV3-StorageLayout.js`.
+//    3. Selector routing: every function selector is served where it is supposed to be served
+//       (the implementation dispatches everything except the configuration setters and the ETH donations,
+//       which live in the admin module, and the main prize claim with the prize amount views,
+//       which live in the prizes module), and a selector unknown to the whole chain reverts with
+//       empty revert data, with or without ETH, exactly like the monolith did.
+//    4. Bytecode size budgets: every deployed production contract must stay far below the EIP-170 limit,
+//       so that future versions cannot silently regress toward the limit (the monolith had 154 bytes
+//       of headroom; the implementation now has ~9,900).
+//    5. Direct-call safety: calling the implementation or a module at its own address, rather than
+//       through the proxy, is harmless. Comment-202608247 applies.
 // [/Comment-202608252]
 
 // #endregion
@@ -57,6 +61,12 @@ function canonicalizeAbi(abiJson_) {
 	interface_.forEachError((fragment_) => { members_.push("error " + fragment_.format("full")); });
 	members_.sort();
 	return members_;
+}
+
+function getInterfaceFunctionNames(interface_) {
+	const functionNames_ = new Set();
+	interface_.forEachFunction((fragment_) => { functionNames_.add(fragment_.name); });
+	return functionNames_;
 }
 
 function readArtifactDeployedBytecodeSize(contractName_) {
@@ -99,7 +109,6 @@ describe("CosmicSignatureGameV3-ModularEquality", function () {
 		const implementationDeployData_ =
 			await getDeployData(hre, await hre.ethers.getContractFactory("CosmicSignatureGameV3"), {kind: "uups", constructorArgs: [zeroAddress_, zeroAddress_,],});
 		const moduleDescriptors_ = [
-			{contractName: "CosmicSignatureGameViewsModuleV3", constructorArgs: [zeroAddress_,],},
 			{contractName: "CosmicSignatureGameAdminModuleV3", constructorArgs: [zeroAddress_,],},
 			{contractName: "CosmicSignatureGamePrizesModuleV3", constructorArgs: [],},
 		];
@@ -120,30 +129,52 @@ describe("CosmicSignatureGameV3-ModularEquality", function () {
 		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3(2n);
 		const game_ = contracts_.cosmicSignatureGameV3Proxy;
 
-		// The implementation itself dispatches exactly the hot path and the upgrade machinery.
+		// The implementation dispatches everything except the two module areas (Comment-202608248):
+		// it declares the whole user action API, every state variable getter, and every computed view
+		// of the bidding/statistics area, and it declares none of the configuration setters,
+		// the ETH donations, or the prize amount views.
 		{
-			const implementationInterface_ = contracts_.cosmicSignatureGameV3Factory.interface;
-			const implementationFunctionNames_ = [];
-			implementationInterface_.forEachFunction((fragment_) => { implementationFunctionNames_.push(fragment_.name); });
-			implementationFunctionNames_.sort();
-			expect(implementationFunctionNames_).deep.equal(
+			const implementationFunctionNames_ = getInterfaceFunctionNames(contracts_.cosmicSignatureGameV3Factory.interface);
+			for (
+				const expectedFunctionName_ of
 				[
-					"UPGRADE_INTERFACE_VERSION",
-					"bidWithCst",
-					"bidWithEth",
+					// The user action API, including the `claimMainPrize` forwarder.
+					"bidWithEth", "bidWithEthAndDonateToken", "bidWithEthAndDonateNft",
+					"bidWithCst", "bidWithCstAndDonateToken", "bidWithCstAndDonateNft",
 					"claimMainPrize",
-					"owner",
-					"proxiableUUID",
-					"reinitialize",
-					"renounceOwnership",
-					"transferOwnership",
-					"upgradeToAndCall",
+
+					// A sample of the state variable getters (the `public` storage chassis).
+					"roundNum", "nextEthBidPrice", "mainPrizeTime", "championDurations", "bidRaffleCumulativeWeights",
+
+					// A sample of the computed views and the owner action served by the implementation.
+					"getNextEthBidPrice", "getNextCstBidPriceAdvanced", "getBidCstRewardAmountAdvanced",
+					"getCstDutchAuctionDurations", "getRoundLateBidDuration", "getDurationUntilMainPrize",
+					"getTotalNumBids", "tryGetCurrentChampions", "halveEthDutchAuctionEndingBidPrice",
+
+					// The upgrade machinery.
+					"reinitialize", "owner", "upgradeToAndCall", "proxiableUUID",
 				]
-			);
+			) {
+				expect(implementationFunctionNames_.has(expectedFunctionName_), `The implementation is expected to declare ${expectedFunctionName_}.`).equal(true);
+			}
+			for (
+				const moduleOnlyFunctionName_ of
+				[
+					// The admin module: configuration setters and ETH donations.
+					"setBidMessageLengthMaxLimit", "setMainPrizeNumCosmicSignatureNfts", "setRoundActivationTime",
+					"setCstDutchAuctionDuration", "donateEth", "donateEthWithInfo", "numEthDonationWithInfoRecords",
+
+					// The prizes module: prize amount views.
+					"getMainEthPrizeAmount", "getCharityEthDonationAmount",
+				]
+			) {
+				expect(implementationFunctionNames_.has(moduleOnlyFunctionName_), `${moduleOnlyFunctionName_} is expected to be served by a module, not by the implementation.`).equal(false);
+			}
 		}
 
 		// A sample of every routed area works at the proxy:
-		// a state getter, a computed view, and an admin setter (routed through 2 forwarding hops).
+		// a state getter and a computed view (dispatched by the implementation itself),
+		// an admin setter (routed through 1 forwarding hop), and a prize view (routed through 2 hops).
 		expect(await game_.roundNum()).equal(1n);
 		expect(await game_.getNextEthBidPrice()).greaterThan(0n);
 		expect(await game_.getMainEthPrizeAmount()).greaterThanOrEqual(0n);
@@ -165,7 +196,6 @@ describe("CosmicSignatureGameV3-ModularEquality", function () {
 
 	it("Every production contract stays far below the EIP-170 bytecode size limit", function () {
 		expect(readArtifactDeployedBytecodeSize("CosmicSignatureGameV3")).lessThanOrEqual(implementationDeployedBytecodeSizeMaxLimit);
-		expect(readArtifactDeployedBytecodeSize("CosmicSignatureGameViewsModuleV3")).lessThanOrEqual(moduleDeployedBytecodeSizeMaxLimit);
 		expect(readArtifactDeployedBytecodeSize("CosmicSignatureGameAdminModuleV3")).lessThanOrEqual(moduleDeployedBytecodeSizeMaxLimit);
 		expect(readArtifactDeployedBytecodeSize("CosmicSignatureGamePrizesModuleV3")).lessThanOrEqual(moduleDeployedBytecodeSizeMaxLimit);
 	});
@@ -173,29 +203,44 @@ describe("CosmicSignatureGameV3-ModularEquality", function () {
 	// #endregion
 	// #region Direct-call safety.
 
-	it("Calling a module directly, not through the proxy, is harmless", async function () {
+	it("Calling the implementation or a module directly, not through the proxy, is harmless", async function () {
 		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3(2n);
 		const caller_ = contracts_.signers[10];
 
 		// Comment-202608247 applies.
-		for (const module_ of [contracts_.cosmicSignatureGameViewsModule, contracts_.cosmicSignatureGameAdminModule, contracts_.cosmicSignatureGamePrizesModule,]) {
-			const moduleAddress_ = await module_.getAddress();
+		// The implementation at its own address: its constructor permanently disabled initializers
+		// and set its own `roundActivationTime` far into the future (Comment-202608281).
+		{
+			const implementation_ =
+				contracts_.cosmicSignatureGameV3Factory.attach(contracts_.cosmicSignatureGameV3ImplementationAddress);
 
-			// Every bid path reverts on the modules' own empty storage:
-			// an ETH bid panics computing the ETH Dutch auction price (division by the zero divisor
-			// in the production build; a fired assertion in the assert-enabled build),
-			// and a CST bid hits the round-inactivity check (the modules' own `roundActivationTime`
-			// is the maximum value). Either way, no direct bid can succeed, and no ETH is ever accepted.
-			if (module_ === contracts_.cosmicSignatureGameViewsModule) {
-				await expect(module_.connect(caller_).bidWithEth((-1n), "", 0n, {value: 10n ** 18n,}))
-					.revertedWithPanic();
-				await expect(caller_.sendTransaction({to: moduleAddress_, value: 10n ** 18n,}))
-					.revertedWithPanic();
-				await expect(module_.connect(caller_).bidWithCst(10n ** 30n, "", 0n))
-					.revertedWithCustomError(module_, "RoundIsInactive");
-				await expect(module_.connect(caller_).halveEthDutchAuctionEndingBidPrice())
-					.revertedWithCustomError(module_, "OwnableUnauthorizedAccount");
-			}
+			// An ETH bid reverts on the implementation's own empty storage:
+			// with a panic (division by the zero `ethBidPriceIncreaseDivisor` in the production build;
+			// a fired assertion in the assert-enabled build). No ETH is ever accepted.
+			await expect(implementation_.connect(caller_).bidWithEth((-1n), "", 0n, {value: 10n ** 18n,}))
+				.revertedWithPanic();
+			await expect(caller_.sendTransaction({to: contracts_.cosmicSignatureGameV3ImplementationAddress, value: 10n ** 18n,}))
+				.revertedWithPanic();
+
+			// A CST bid hits the round-inactivity check
+			// (the implementation's own `roundActivationTime` is in the year 9000).
+			await expect(implementation_.connect(caller_).bidWithCst(10n ** 30n, "", 0n))
+				.revertedWithCustomError(implementation_, "RoundIsInactive");
+
+			// The implementation's own `owner()` is the zero address, so every `onlyOwner` function reverts.
+			expect(await implementation_.owner()).equal(hre.ethers.ZeroAddress);
+			await expect(implementation_.connect(caller_).halveEthDutchAuctionEndingBidPrice())
+				.revertedWithCustomError(implementation_, "OwnableUnauthorizedAccount");
+
+			// The `claimMainPrize` forwarder dead-ends on the implementation's own empty storage.
+			// (The error originates in the prizes module's code, so it is decoded through that interface.)
+			await expect(implementation_.connect(caller_).claimMainPrize())
+				.revertedWithCustomError(contracts_.cosmicSignatureGamePrizesModule, "NoBidsPlacedInCurrentRound");
+		}
+
+		// Comment-202608247 applies.
+		for (const module_ of [contracts_.cosmicSignatureGameAdminModule, contracts_.cosmicSignatureGamePrizesModule,]) {
+			const moduleAddress_ = await module_.getAddress();
 
 			// The modules' own `owner()` is the zero address, so every `onlyOwner` function reverts.
 			if (module_ === contracts_.cosmicSignatureGameAdminModule) {
@@ -214,6 +259,10 @@ describe("CosmicSignatureGameV3-ModularEquality", function () {
 			expect(await hre.ethers.provider.getStorage(moduleAddress_, "0xf0c57e16840df040f15088dc2f81fe391c3923bec73e23a9662efc9c229c6a00"))
 				.equal("0x000000000000000000000000000000000000000000000000ffffffffffffffff");
 		}
+
+		// The implementation's initializers are permanently disabled too.
+		expect(await hre.ethers.provider.getStorage(contracts_.cosmicSignatureGameV3ImplementationAddress, "0xf0c57e16840df040f15088dc2f81fe391c3923bec73e23a9662efc9c229c6a00"))
+			.equal("0x000000000000000000000000000000000000000000000000ffffffffffffffff");
 
 		// None of the above touched the proxy's state.
 		expect(await contracts_.cosmicSignatureGameV3Proxy.roundNum()).equal(1n);

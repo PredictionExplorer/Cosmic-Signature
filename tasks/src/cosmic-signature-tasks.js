@@ -285,10 +285,10 @@ task("upgrade-cosmic-signature-game", "Upgrades the CosmicSignatureGame contract
 	}
 
 	// [Comment-202608254]
-	// In V3+, the Game consists of a slim UUPS implementation contract plus 3 delegatecall modules
+	// In V3+, the Game consists of a UUPS implementation contract plus 2 delegatecall modules
 	// (Comment-202608245). When the upgrade configuration file sets `deployCosmicSignatureGameV3Modules`,
 	// we deploy the modules first, in the reverse of the fallback forwarding chain order (Comment-202608246),
-	// and pass the views and prizes module addresses to the implementation constructor as immutables.
+	// and pass the admin and prizes module addresses to the implementation constructor as immutables.
 	// The modules are plain non-upgradeable contracts, so they are deployed directly, not through
 	// the OpenZeppelin Upgrades plugin; only the implementation is plugin-managed. Comment-202608253 applies.
 	// [/Comment-202608254]
@@ -298,10 +298,8 @@ task("upgrade-cosmic-signature-game", "Upgrades the CosmicSignatureGame contract
 		const modules_ = await deployCosmicSignatureGameV3Modules(deployerSigner);
 		console.info(/*"%s",*/ "CosmicSignatureGamePrizesModuleV3 address:", modules_.cosmicSignatureGamePrizesModuleAddress);
 		console.info(/*"%s",*/ "CosmicSignatureGameAdminModuleV3 address:", modules_.cosmicSignatureGameAdminModuleAddress);
-		console.info(/*"%s",*/ "CosmicSignatureGameViewsModuleV3 address:", modules_.cosmicSignatureGameViewsModuleAddress);
-		upgradeProxyOptions.constructorArgs = [modules_.cosmicSignatureGameViewsModuleAddress, modules_.cosmicSignatureGamePrizesModuleAddress,];
+		upgradeProxyOptions.constructorArgs = [modules_.cosmicSignatureGameAdminModuleAddress, modules_.cosmicSignatureGamePrizesModuleAddress,];
 		cosmicSignatureGameModuleAddresses_ = {
-			cosmicSignatureGameViewsModuleAddress: modules_.cosmicSignatureGameViewsModuleAddress,
 			cosmicSignatureGameAdminModuleAddress: modules_.cosmicSignatureGameAdminModuleAddress,
 			cosmicSignatureGamePrizesModuleAddress: modules_.cosmicSignatureGamePrizesModuleAddress,
 		};
@@ -391,12 +389,6 @@ task("register-upgraded-cosmic-signature-game", "Verifies and registers a newly 
 			address: upgradeCosmicSignatureGameReportObject.cosmicSignatureGameAdminModuleAddress,
 			constructorArguments: [upgradeCosmicSignatureGameReportObject.cosmicSignatureGamePrizesModuleAddress,],
 		});
-
-		console.info("%s", `${nodeOsModule.EOL}Registering CosmicSignatureGameViewsModuleV3.`);
-		await hre.run("verify:verify", {
-			address: upgradeCosmicSignatureGameReportObject.cosmicSignatureGameViewsModuleAddress,
-			constructorArguments: [upgradeCosmicSignatureGameReportObject.cosmicSignatureGameAdminModuleAddress,],
-		});
 	}
 
 	console.info("%s", `${nodeOsModule.EOL}Registering ${upgradeConfigObject.newCosmicSignatureGameContractName} implementation.`);
@@ -405,9 +397,9 @@ task("register-upgraded-cosmic-signature-game", "Verifies and registers a newly 
 
 		// Comment-202608254 applies.
 		constructorArguments:
-			((upgradeCosmicSignatureGameReportObject.cosmicSignatureGameViewsModuleAddress ?? "").length > 0) ?
+			((upgradeCosmicSignatureGameReportObject.cosmicSignatureGameAdminModuleAddress ?? "").length > 0) ?
 			[
-				upgradeCosmicSignatureGameReportObject.cosmicSignatureGameViewsModuleAddress,
+				upgradeCosmicSignatureGameReportObject.cosmicSignatureGameAdminModuleAddress,
 				upgradeCosmicSignatureGameReportObject.cosmicSignatureGamePrizesModuleAddress,
 			] :
 			[],
