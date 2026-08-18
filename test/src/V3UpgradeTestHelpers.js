@@ -45,18 +45,23 @@ const DEFAULT_PAID_ETH_PRIZE_AMOUNT_PERCENTAGE_V3 = 50n;
 // #endregion
 // #region Deployment / upgrade helpers.
 
-async function deployV1CompleteRoundZeroAndUpgradeToV2AndV3(roundActivationTime_ = 2n) {
+async function deployV1CompleteRoundZeroAndUpgradeToV2AndV3(roundActivationTime_ = 2n, gameContractName_ = "CosmicSignatureGameV3") {
 	const contracts_ = await loadFixtureDeployContractsForTesting(roundActivationTime_);
 	await completeRoundZero(contracts_);
 	await upgradeToV2(contracts_);
-	await upgradeToV3(contracts_);
+	await upgradeToV3(contracts_, {}, gameContractName_);
 	return contracts_;
 }
 
-async function upgradeToV3(contracts_, upgradeOptions_ = {}) {
+/**
+@param {string} gameContractName_ The implementation contract to upgrade to; tests may pass
+"SpecialCosmicSignatureGameV3" (a `CosmicSignatureGameV3` subclass with the same-second bid throttle
+disabled, Comment-202608265) to exercise multiple bids within a single second.
+*/
+async function upgradeToV3(contracts_, upgradeOptions_ = {}, gameContractName_ = "CosmicSignatureGameV3") {
 	const modules_ = await deployCosmicSignatureGameV3Modules(contracts_.ownerSigner);
 	const cosmicSignatureGameV3Factory_ =
-		await hre.ethers.getContractFactory("CosmicSignatureGameV3", contracts_.ownerSigner);
+		await hre.ethers.getContractFactory(gameContractName_, contracts_.ownerSigner);
 	const prevImplementationAddress_ =
 		await hre.upgrades.erc1967.getImplementationAddress(contracts_.cosmicSignatureGameProxyAddress);
 	await hre.upgrades.upgradeProxy(

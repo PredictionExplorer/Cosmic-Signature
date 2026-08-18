@@ -146,13 +146,20 @@ abstract contract CosmicSignatureGameStorageV3Core is ICosmicSignatureGameStorag
 	uint256 internal mainPrizeNumCosmicSignatureNfts;
 
 	// #endregion
+	// #region Secondary Prizes V3
+
+	/// @dev Comment-202608261 applies.
+	/// Comment-202608262 applies.
+	mapping(uint256 roundNum => mapping(uint256 bidNum => uint256 cumulativeWeight)) internal bidRaffleCumulativeWeights;
+
+	// #endregion
 	// #region Gap
 
 	/// @dev Comment-202412142 applies.
 	/// Comment-202412148 applies.
 	/// This is the same trailing gap that `CosmicSignatureGameStorageV3` declares. Comment-202608243 applies.
 	// solhint-disable-next-line var-name-mixedcase
-	uint256[(1 << 30) - 1 - 7] private __gap_persistent;
+	uint256[(1 << 30) - 1 - 8] private __gap_persistent;
 
 	/// @dev Comment-202412142 applies.
 	/// Comment-202412148 applies.

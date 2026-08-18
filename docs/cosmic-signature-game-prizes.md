@@ -54,6 +54,17 @@ The rest of this document lists prizes from groups 1 and 2.
 
 - V3 keeps `numRaffleEthPrizesForBidders` at 3, so the raffle's 5% total is divided across three draws.
 
+#### Weighted Bidder Raffle (V3+)
+
+In V2-, every bid was one raffle ticket of equal weight, which made spamming cheap bids near a bidding round start profitable. In V3+, each bid's raffle weight equals the ETH bid price posted at the moment of the bid:
+
+- A plain ETH bid weighs exactly what it pays.
+- An ETH + Random Walk NFT bid weighs the full undiscounted price (the 50% discount applies to the price only).
+- A CST bid weighs the concurrent ETH bid price.
+- A swallowed ETH overpayment does not increase the weight.
+
+A raffle winner is drawn by picking a uniformly random wei in `[0, total weight)` and binary-searching the round's cumulative weight sums (the `bidRaffleCumulativeWeights` getter exposes them) for the bid that owns that wei. The expected raffle return per ETH spent is therefore identical at every moment of the round: neither splitting one bid into many, nor bid timing, nor spreading bids across addresses changes anybody's odds. The mechanism reads no timestamps, so it does not depend on the one-bid-per-second restriction. See Comment-202608261 in `contracts/production/libraries/RaffleWeightHelpers.sol`.
+
 #### Prize List
 
 | Prize Winner | Prize Type | Prize Count | Prize Amount | Notes |
@@ -74,10 +85,10 @@ The rest of this document lists prizes from groups 1 and 2.
 |  |  |  |  |  |
 | Bidders | CST | 1 per bid | V1: `bidCstRewardAmount`<br>V2: `sqrt(secondsSinceLastBid * bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds)`<br>V3+: `secondsSinceLastBid * bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds` | On each bid, CST gets minted. In V2-, the bidder placing the bid gets the reward. In V3+, the bidder who placed the previous bid in the current bidding round gets the reward. That implies that the first bidder gets no reward at the moment of bidding, while the last bidder (main prize winner) gets no reward at all. |
 |  |  |  |  |  |
-| Bidders Picked Via ETH Prize Raffle | ETH | `numRaffleEthPrizesForBidders` | `gameEthBalance * raffleTotalEthPrizeAmountForBiddersPercentage / 100 / numRaffleEthPrizesForBidders` | Bids are picked randomly. |
+| Bidders Picked Via ETH Prize Raffle | ETH | `numRaffleEthPrizesForBidders` | `gameEthBalance * raffleTotalEthPrizeAmountForBiddersPercentage / 100 / numRaffleEthPrizesForBidders` | Bids are picked randomly. In V2-, with equal weights; in V3+, weighted (see Weighted Bidder Raffle above). |
 |  |  |  |  |  |
-| Bidders Picked Via CST And CS NFT Prize Raffle | CST | `numRaffleCosmicSignatureNftsForBidders` | `cstPrizeAmount` | Bids are picked randomly. Each winner gets both CST and CS NFT. |
-|  | Cosmic Signature NFT | `numRaffleCosmicSignatureNftsForBidders` | 1 | Bids are picked randomly. Each winner gets both CST and CS NFT. |
+| Bidders Picked Via CST And CS NFT Prize Raffle | CST | `numRaffleCosmicSignatureNftsForBidders` | `cstPrizeAmount` | Bids are picked randomly (V3+: weighted). Each winner gets both CST and CS NFT. |
+|  | Cosmic Signature NFT | `numRaffleCosmicSignatureNftsForBidders` | 1 | Bids are picked randomly (V3+: weighted). Each winner gets both CST and CS NFT. |
 |  |  |  |  |  |
 | Random Walk NFT Stakers | CST | 0 or `numRaffleCosmicSignatureNftsForRandomWalkNftStakers` | `cstPrizeAmount` | Staked RW NFTs are picked randomly. Each winner gets both CST and CS NFT. If there are no staked RW NFTs, nobody would get this prize. |
 |  | Cosmic Signature NFT | 0 or `numRaffleCosmicSignatureNftsForRandomWalkNftStakers` | 1 | Staked RW NFTs are picked randomly. Each winner gets both CST and CS NFT. If there are no staked RW NFTs, nobody would get this prize. |

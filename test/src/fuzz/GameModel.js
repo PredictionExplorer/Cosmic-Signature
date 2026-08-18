@@ -112,7 +112,9 @@ class GameModel {
 
 		/**
 		Per-round bid statistics. Key: round number as string.
-		@type {Map<string, {bidderAddresses: string[], biddersInfo: Map<string, {totalSpentEthAmount: bigint, totalSpentCstAmount: bigint, lastBidTimeStamp: bigint}>}>}
+		`bidRaffleCumulativeWeights` mirrors the V3 weighted bidder raffle sums (Comment-202608261);
+		it stays empty before V3.
+		@type {Map<string, {bidderAddresses: string[], bidRaffleCumulativeWeights: bigint[], biddersInfo: Map<string, {totalSpentEthAmount: bigint, totalSpentCstAmount: bigint, lastBidTimeStamp: bigint}>}>}
 		*/
 		this.rounds = new Map();
 	}
@@ -191,7 +193,7 @@ class GameModel {
 		const key_ = this.roundNum.toString();
 		let round_ = this.rounds.get(key_);
 		if (round_ === undefined) {
-			round_ = { bidderAddresses: [], biddersInfo: new Map() };
+			round_ = { bidderAddresses: [], bidRaffleCumulativeWeights: [], biddersInfo: new Map() };
 			this.rounds.set(key_, round_);
 		}
 		return round_;
@@ -225,6 +227,21 @@ class GameModel {
 
 	getBidderAddresses(roundNum_) {
 		return this.rounds.get(roundNum_.toString())?.bidderAddresses ?? [];
+	}
+
+	/** The V3 weighted bidder raffle cumulative weight sums of the given round (Comment-202608261). */
+	getBidRaffleCumulativeWeights(roundNum_) {
+		return this.rounds.get(roundNum_.toString())?.bidRaffleCumulativeWeights ?? [];
+	}
+
+	/**
+	Mirrors `_appendBidRaffleWeight` (Comment-202608262): the raffle weight of every bid is
+	the ETH bid price posted at the moment of the bid. Only meaningful in V3+.
+	*/
+	_appendBidRaffleWeight(bidRaffleWeight_) {
+		const round_ = this._currentRound();
+		const previousCumulativeWeight_ = round_.bidRaffleCumulativeWeights.at(-1) ?? 0n;
+		round_.bidRaffleCumulativeWeights.push(previousCumulativeWeight_ + bidRaffleWeight_);
 	}
 
 	// #endregion
@@ -660,11 +677,16 @@ class GameModel {
 			this.cstDutchAuctionDuration = newCstDutchAuctionDuration_;
 		}
 		this._bidCommon(bidderAddress_, ts_);
+		if (this.version >= 3) {
+			// Comment-202608262: an ETH bid's raffle weight is the posted (undiscounted) ETH bid price.
+			this._appendBidRaffleWeight(plan_.ethBidPrice);
+		}
 		return {
 			...plan_,
 			newCstDutchAuctionDuration: newCstDutchAuctionDuration_,
 			newCstBidPriceDeclineMultiplier: newCstBidPriceDeclineMultiplier_,
 			mainPrizeTime: this.mainPrizeTime,
+			bidRaffleCumulativeWeight: this._currentRound().bidRaffleCumulativeWeights.at(-1) ?? null,
 		};
 	}
 
@@ -702,7 +724,14 @@ class GameModel {
 			newCstDutchAuctionDuration_ = this.cstDutchAuctionDuration + this.cstDutchAuctionDuration / this.cstDutchAuctionDurationChangeDivisor;
 			this.cstDutchAuctionDuration = newCstDutchAuctionDuration_;
 		}
+		// Comment-202608262: a CST bid's raffle weight is the concurrent ETH bid price,
+		// evaluated before `_bidCommon` extends `mainPrizeTime` (the late bid premium depends on it).
+		const bidRaffleWeight_ = (this.version >= 3) ? this.getNextEthBidPrice(ts_) : null;
+
 		this._bidCommon(bidderAddress_, ts_);
+		if (this.version >= 3) {
+			this._appendBidRaffleWeight(bidRaffleWeight_);
+		}
 		return {
 			paidPrice: paidPrice_,
 			bidCstRewardAmount: reward_,
@@ -710,6 +739,7 @@ class GameModel {
 			newCstDutchAuctionDuration: newCstDutchAuctionDuration_,
 			newCstBidPriceDeclineMultiplier: newCstBidPriceDeclineMultiplier_,
 			mainPrizeTime: this.mainPrizeTime,
+			bidRaffleCumulativeWeight: this._currentRound().bidRaffleCumulativeWeights.at(-1) ?? null,
 		};
 	}
 

@@ -11,6 +11,7 @@ import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { CosmicSignatureHelpers } from "./libraries/CosmicSignatureHelpers.sol";
+import { RaffleWeightHelpers } from "./libraries/RaffleWeightHelpers.sol";
 import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 import { IBidding1V2 } from "./interfaces/IBidding1V2.sol";
 import { BiddingV2Base } from "./BiddingV2Base.sol";
@@ -161,6 +162,9 @@ abstract contract BiddingV3 is
 		uint256 newCstBidPriceDeclineMultiplier_ = _tryIncreaseCstBidPriceDeclineMultiplier();
 		_bidCommon(/*bidType_,*/ message_);
 
+		// Comment-202608262 applies.
+		_appendBidRaffleWeight(ethBidPrice_);
+
 		// Comment-202608122 applies.
 		_emitBidPlaced(int256(paidEthPrice_), -1, randomWalkNftId_, message_, bidCstRewardAmount_, newCstBidPriceDeclineMultiplier_);
 
@@ -288,7 +292,12 @@ abstract contract BiddingV3 is
 		}
 		lastCstBidderAddress = _msgSender();
 		uint256 newCstBidPriceDeclineMultiplier_ = _tryReduceCstBidPriceDeclineMultiplier();
+
+		// Comment-202608262 applies: evaluated before the bid extends `mainPrizeTime`.
+		uint256 bidRaffleWeight_ = getNextEthBidPriceAdvanced(int256(0));
+
 		_bidCommon(/*BidType.CST,*/ message_);
+		_appendBidRaffleWeight(bidRaffleWeight_);
 
 		// Comment-202608122 applies.
 		_emitBidPlaced(-1, int256(paidPrice_), -1, message_, bidCstRewardAmount_, newCstBidPriceDeclineMultiplier_);
@@ -361,6 +370,20 @@ abstract contract BiddingV3 is
 			}
 			return _addRoundLateBidPricePremiumAmountIfNeeded(uint256(nextCstBidPrice_), currentTimeOffset_);
 		}
+	}
+
+	// #endregion
+	// #region `_appendBidRaffleWeight`
+
+	/// @notice Appends the given bid raffle weight for the bid that `_bidCommon` has just recorded.
+	/// Comment-202608261 applies.
+	/// Comment-202608262 applies.
+	/// @dev Comment-202608263 applies.
+	function _appendBidRaffleWeight(uint256 bidRaffleWeight_) private {
+		// Comment-202608262 applies.
+		// #enable_asserts assert(bidRaffleWeight_ > 0);
+
+		RaffleWeightHelpers.appendWeight(bidRaffleCumulativeWeights[roundNum], bidderAddresses[roundNum].numItems - 1, bidRaffleWeight_);
 	}
 
 	// #endregion

@@ -10,6 +10,7 @@ import { Panic as OpenZeppelinPanic } from "@openzeppelin/contracts/utils/Panic.
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { CosmicSignatureEvents } from "./libraries/CosmicSignatureEvents.sol";
 import { RandomNumberHelpers } from "./libraries/RandomNumberHelpers.sol";
+import { RaffleWeightHelpers } from "./libraries/RaffleWeightHelpers.sol";
 import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 import { IPrizesWallet } from "./interfaces/IPrizesWallet.sol";
 import { BidStatisticsV2 } from "./BidStatisticsV2.sol";
@@ -37,7 +38,6 @@ abstract contract MainPrizeV3 is
 		// Comment-202605312 applies.
 		randomNumberSeedWrapper_.value = RandomNumberHelpers.generateRandomNumberSeed();
 
-		BidderAddresses storage bidderAddressesReference_ = bidderAddresses[roundNum];
 		uint256 timeoutTimeToWithdrawSecondaryPrizes_;
 
 		// Comment-202501161 applies.
@@ -108,7 +108,9 @@ abstract contract MainPrizeV3 is
 						-- ethDepositIndex_;
 						IPrizesWallet.EthDeposit memory ethDepositReference_ = ethDeposits_[ethDepositIndex_];
 						uint256 randomNumber_ = RandomNumberHelpers.generateRandomNumber(randomNumberSeedWrapper_);
-						address raffleWinnerAddress_ = bidderAddressesReference_.items[randomNumber_ % bidderAddressesReference_.numItems];
+
+						// Comment-202608261 applies.
+						address raffleWinnerAddress_ = _pickRaffleWinnerAddress(randomNumber_);
 						// #enable_asserts assert(raffleWinnerAddress_ != address(0));
 						ethDepositReference_.prizeWinnerAddress = raffleWinnerAddress_;
 						ethDepositReference_.amount = raffleEthPrizeAmountForBidder_;
@@ -277,7 +279,10 @@ abstract contract MainPrizeV3 is
 				// #enable_asserts assert(numRaffleCosmicSignatureNftsForBidders > 0);
 				for (uint256 raffleWinnerIndex_ = numRaffleCosmicSignatureNftsForBidders; ; ) {
 					uint256 randomNumber_ = RandomNumberHelpers.generateRandomNumber(randomNumberSeedWrapper_);
-					address raffleWinnerAddress_ = bidderAddressesReference_.items[randomNumber_ % bidderAddressesReference_.numItems];
+
+					// Comment-202608261 applies.
+					address raffleWinnerAddress_ = _pickRaffleWinnerAddress(randomNumber_);
+
 					// #enable_asserts assert(raffleWinnerAddress_ != address(0));
 					-- cosmicSignatureTokenMintSpecIndex_;
 					ICosmicSignatureToken.MintSpec memory cosmicSignatureTokenMintSpec_ = cosmicSignatureTokenMintSpecs_[cosmicSignatureTokenMintSpecIndex_];
@@ -526,6 +531,37 @@ abstract contract MainPrizeV3 is
 		}
 
 		// #endregion
+	}
+
+	// #endregion
+	// #region `_pickRaffleWinnerAddress`
+
+	/// @notice Draws one weighted bidder raffle winner: picks a uniformly random wei
+	/// in `[0, the current bidding round total raffle weight)` and returns the address of the bidder
+	/// whose bid owns that wei. Comment-202608261 applies.
+	/// @param randomNumber_ A random number.
+	/// @dev
+	/// [Comment-202608264]
+	/// The total raffle weight, the denominator of every draw, is guaranteed to be a nonzero,
+	/// because by now the current bidding round contains at least 1 bid,
+	/// and Comment-202608262 guarantees that every bid raffle weight is a nonzero.
+	/// [/Comment-202608264]
+	/// This method re-reads the total from storage on each draw. That costs 1 warm storage read per draw,
+	/// which is cheaper than the stack slots that caching it in `_distributePrizes` would occupy
+	/// (that method is at the edge of the EVM stack depth).
+	function _pickRaffleWinnerAddress(uint256 randomNumber_) private view returns (address) {
+		BidderAddresses storage bidderAddressesReference_ = bidderAddresses[roundNum];
+		uint256 numBids_ = bidderAddressesReference_.numItems;
+		// #enable_asserts assert(numBids_ > 0);
+
+		mapping(uint256 bidNum => uint256 cumulativeWeight) storage bidRaffleCumulativeWeightsReference_ = bidRaffleCumulativeWeights[roundNum];
+
+		// Comment-202608264 applies.
+		uint256 bidRaffleTotalWeight_ = RaffleWeightHelpers.getTotalWeight(bidRaffleCumulativeWeightsReference_, numBids_);
+		// #enable_asserts assert(bidRaffleTotalWeight_ > 0);
+
+		uint256 raffleWinnerBidIndex_ = RaffleWeightHelpers.pickBidIndex(bidRaffleCumulativeWeightsReference_, numBids_, randomNumber_ % bidRaffleTotalWeight_);
+		return bidderAddressesReference_.items[raffleWinnerBidIndex_];
 	}
 
 	// #endregion

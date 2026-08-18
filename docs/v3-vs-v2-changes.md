@@ -15,8 +15,8 @@ V3 is deployed by **upgrading the existing proxy** (UUPS `upgradeToAndCall` with
 
 The V1 -> V2 -> V3 game proxy storage layout remains fully compatible:
 
-- V3 appends exactly 7 new variables in `CosmicSignatureGameStorageV3Base` (which derives from `CosmicSignatureGameStorageV2Base`): `championDurations` (a mapping), `cstBidPriceDeclineMultiplier`, `cstBidPriceDeclineMultiplierChangeDivisor`, `roundLateBidDurationDivisor`, `roundLateBidPricePremiumAmountBaseMultiplier`, `roundLateBidPricePremiumAmountExponent`, `mainPrizeNumCosmicSignatureNfts`.
-- `CosmicSignatureGameStorageV3.__gap_persistent` shrank by 7 slots to `uint256[(1 << 30) - 1 - 7]` to compensate, so all pre-existing variables keep their slots.
+- V3 appends exactly 8 new variables in `CosmicSignatureGameStorageV3Base` (which derives from `CosmicSignatureGameStorageV2Base`): `championDurations` (a mapping), `cstBidPriceDeclineMultiplier`, `cstBidPriceDeclineMultiplierChangeDivisor`, `roundLateBidDurationDivisor`, `roundLateBidPricePremiumAmountBaseMultiplier`, `roundLateBidPricePremiumAmountExponent`, `mainPrizeNumCosmicSignatureNfts`, `bidRaffleCumulativeWeights` (a nested mapping; the weighted bidder raffle, behavior change 9 below).
+- `CosmicSignatureGameStorageV3.__gap_persistent` shrank by 8 slots to `uint256[(1 << 30) - 1 - 8]` to compensate, so all pre-existing variables keep their slots.
 - No slots are renamed or repurposed (the V1 -> V2 upgrade repurposed 2 slots; V3 does nothing of the kind). However, `reinitialize()` intentionally overwrites 7 pre-existing values:
   - `cstDutchAuctionBeginningBidPriceMinLimit` (200 CST -> 1 CST), which effectively eliminates the minimum while still avoiding zero-beginning-price marginal cases.
   - `bidCstRewardAmountMultiplier`, repurposed from the V2 square-root reward formula's radicand multiplier to the V3 linear reward formula's multiplier; its setter keeps working and now tunes the V3 linear reward.
@@ -38,6 +38,7 @@ This is verified by OpenZeppelin `validateUpgrade` in `test/tests-src/CosmicSign
 | `roundLateBidPricePremiumAmountBaseMultiplier()` | `3567993 << 13` = 29_228_998_656 |
 | `roundLateBidPricePremiumAmountExponent()` | 8 |
 | `mainPrizeNumCosmicSignatureNfts()` | 3 |
+| `bidRaffleCumulativeWeights(uint256 roundNum, uint256 bidNum)` | (not initialized; written per bid, see behavior change 9) |
 
 ### 2. New view method (`BiddingV3`)
 
@@ -231,7 +232,23 @@ The new V3 setters reject the dangerous zero values with `ZeroValue()`:
 - `setRoundLateBidPricePremiumAmountBaseMultiplier(0)` remains valid: it disables the late bid price premium.
 - Remaining (accepted) footguns: extreme `roundLateBidPricePremiumAmountBaseMultiplier` / `roundLateBidPricePremiumAmountExponent` values can make the premium arithmetic wrap (the formula runs in an `unchecked` block in production builds), producing bogus prices; an absurdly high `bidCstRewardAmountMultiplier` (on the order of `2^200`) can similarly wrap the reward arithmetic. Sane values are nowhere near those ranges, and the benevolent-owner assumption (Comment-202411064) applies.
 
-### 9. What did not change
+### 9. Weighted bidder raffle (`BiddingV3`, `MainPrizeV3`, `RaffleWeightHelpers`)
+
+In V2-, every bid was one raffle ticket of equal weight for the bidder raffles (3 ETH prizes + 10 CST/CS NFT
+prizes), so spamming cheap bids near a round start (the ETH Dutch auction trough) bought raffle odds at a small
+fraction of their mid-round cost. In V3+, each bid's raffle weight equals the ETH bid price posted at the moment
+of the bid (Comment-202608262): the full undiscounted price for an ETH + Random Walk NFT bid, the concurrent ETH
+bid price for a CST bid, and never including a swallowed ETH overpayment. Winners are drawn by picking a uniformly
+random wei in `[0, total weight)` and binary-searching the round's cumulative weight sums
+(`contracts/production/libraries/RaffleWeightHelpers.sol`, Comment-202608261), which costs `O(log numBids)`
+storage reads per draw. The expected raffle return per ETH spent is therefore identical at every moment of the
+round, so neither bid splitting, nor timing, nor Sybil addresses change anybody's odds. The sums are exposed by the
+new `bidRaffleCumulativeWeights(roundNum, bidNum)` getter. The mechanism reads no timestamps, so it does not
+depend on the one-bid-per-second restriction (behavior change 1); `test/tests-src/CosmicSignatureGameV3-WeightedRaffleSameSecond.js`
+proves it keeps working with that restriction disabled. No raffle event signatures changed; only the winner
+selection distribution did.
+
+### 10. What did not change
 
 - All V2 bid method signatures and validations, including the `bidCstRewardAmountMinLimit_` mechanism (though it now guards the previous bidder's linear reward).
 - The ETH Dutch auction, the exponential next-ETH-bid-price ladder, the Random Walk NFT discount, and the ETH overpayment refund logic.

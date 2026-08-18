@@ -68,6 +68,18 @@ abstract contract CosmicSignatureGameStorageV3Base is
 	uint256 public mainPrizeNumCosmicSignatureNfts;
 
 	// #endregion
+	// #region Secondary Prizes V3
+
+	/// @notice Per bidding round, per bid: the cumulative sum of bid raffle weights through that bid.
+	/// So the raffle weight of bid `bidNum` is
+	/// `bidRaffleCumulativeWeights[roundNum][bidNum] - bidRaffleCumulativeWeights[roundNum][bidNum - 1]`
+	/// (with an implicit zero before the first bid), and the round's total raffle weight is the last item.
+	/// Comment-202608261 applies.
+	/// Comment-202608262 applies.
+	/// @dev `RaffleWeightHelpers` maintains and searches this. The bid indexes match `bidderAddresses` items.
+	mapping(uint256 roundNum => mapping(uint256 bidNum => uint256 cumulativeWeight)) public bidRaffleCumulativeWeights;
+
+	// #endregion
 }
 
 // #endregion

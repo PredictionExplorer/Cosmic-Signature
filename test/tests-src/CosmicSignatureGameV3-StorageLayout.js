@@ -105,7 +105,7 @@ describe("CosmicSignatureGameV3-StorageLayout", function () {
 		expect(await gameV2_.bidCstRewardAmountMultiplier()).equal(123_456_789n);
 		expect(await gameV2_.cstDutchAuctionBeginningBidPriceMinLimit()).not.equal(10n ** 18n);
 
-		// The 7 new V3 slots are taken from the gap region, so on V2 their getters must not even exist.
+		// The 8 new V3 slots are taken from the gap region, so on V2 their getters must not even exist.
 		const cosmicSignatureGameV3Factory_ =
 			await hre.ethers.getContractFactory("CosmicSignatureGameV3", contracts_.ownerSigner);
 		for (const newGetterName_ of [
@@ -116,6 +116,7 @@ describe("CosmicSignatureGameV3-StorageLayout", function () {
 			"roundLateBidPricePremiumAmountBaseMultiplier()",
 			"roundLateBidPricePremiumAmountExponent()",
 			"mainPrizeNumCosmicSignatureNfts()",
+			"bidRaffleCumulativeWeights(uint256,uint256)",
 		]) {
 			await expect(
 				hre.ethers.provider.call({

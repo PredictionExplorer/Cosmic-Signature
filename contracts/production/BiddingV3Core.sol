@@ -13,6 +13,7 @@ import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { CosmicSignatureHelpers } from "./libraries/CosmicSignatureHelpers.sol";
+import { RaffleWeightHelpers } from "./libraries/RaffleWeightHelpers.sol";
 import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 import { IBidding1V2 } from "./interfaces/IBidding1V2.sol";
 import { IBidding2V3 } from "./interfaces/IBidding2V3.sol";
@@ -150,6 +151,9 @@ abstract contract BiddingV3Core is
 
 		uint256 newCstBidPriceDeclineMultiplier_ = _tryIncreaseCstBidPriceDeclineMultiplier();
 		_bidCommon(message_);
+
+		// Comment-202608262 applies.
+		_appendBidRaffleWeight(ethBidPrice_);
 
 		// Comment-202608122 applies.
 		_emitBidPlaced(int256(paidEthPrice_), -1, randomWalkNftId_, message_, bidCstRewardAmount_, newCstBidPriceDeclineMultiplier_);
@@ -313,7 +317,27 @@ abstract contract BiddingV3Core is
 		}
 		lastCstBidderAddress = _msgSender();
 		uint256 newCstBidPriceDeclineMultiplier_ = _tryReduceCstBidPriceDeclineMultiplier();
+
+		// [Comment-202608262]
+		// Every bid's raffle weight equals the ETH bid price posted at the moment of the bid,
+		// as returned by `getNextEthBidPriceAdvanced(0)` evaluated before the bid extends `mainPrizeTime`
+		// (the late bid price premium depends on it):
+		//    * A plain ETH bid weighs exactly what it pays.
+		//    * An ETH + Random Walk NFT bid weighs the full undiscounted price: the 50% discount
+		//      (Comment-202412036) applies to the price only, which keeps the raffle perk of the discount
+		//      bounded at 2x odds per wei paid.
+		//    * A CST bid weighs the concurrent ETH bid price, which keeps CST bids raffle-eligible
+		//      without needing a CST/ETH exchange rate.
+		//    * A swallowed ETH bid overpayment (Comment-202502052) does not increase the weight.
+		// The first bid in a bidding round is always ETH with a nonzero price (Comment-202501044,
+		// Comment-202605294), and `getNextEthBidPriceAdvanced` never returns a zero afterwards either,
+		// so every weight and therefore the round's total raffle weight is guaranteed to be a nonzero.
+		// Comment-202608261 applies.
+		// [/Comment-202608262]
+		uint256 bidRaffleWeight_ = getNextEthBidPriceAdvanced(int256(0));
+
 		_bidCommon(message_);
+		_appendBidRaffleWeight(bidRaffleWeight_);
 
 		// Comment-202608122 applies.
 		_emitBidPlaced(-1, int256(paidPrice_), -1, message_, bidCstRewardAmount_, newCstBidPriceDeclineMultiplier_);
@@ -394,6 +418,25 @@ abstract contract BiddingV3Core is
 	}
 
 	// #endregion
+	// #region `_appendBidRaffleWeight`
+
+	/// @notice Appends the given bid raffle weight for the bid that `_bidCommon` has just recorded.
+	/// Comment-202608261 applies.
+	/// Comment-202608262 applies.
+	/// @dev
+	/// [Comment-202608263]
+	/// This logic must stay identical in `BiddingV3Core` (the implementation contract hot path)
+	/// and in `BiddingV3` (the module lineage that serves the bid-with-donation combinations).
+	/// Both append to the same `bidRaffleCumulativeWeights` storage.
+	/// [/Comment-202608263]
+	function _appendBidRaffleWeight(uint256 bidRaffleWeight_) private {
+		// Comment-202608262 applies.
+		// #enable_asserts assert(bidRaffleWeight_ > 0);
+
+		RaffleWeightHelpers.appendWeight(bidRaffleCumulativeWeights[roundNum], bidderAddresses[roundNum].numItems - 1, bidRaffleWeight_);
+	}
+
+	// #endregion
 	// #region `_onlyIfNoBidPlacedWithinCurrentSecond`
 
 	modifier _onlyIfNoBidPlacedWithinCurrentSecond() {
@@ -405,7 +448,14 @@ abstract contract BiddingV3Core is
 	// #region `_checkIfNoBidPlacedWithinCurrentSecond`
 
 	/// @notice This restriction makes life of bots a little more difficult, while manual bidders rarely run into it.
-	function _checkIfNoBidPlacedWithinCurrentSecond() private view {
+	/// @dev
+	/// [Comment-202608265]
+	/// This is `internal virtual`, rather than `private`, only to serve as a test seam:
+	/// the test-only `SpecialCosmicSignatureGameV3` overrides it with a no-op to prove that
+	/// the weighted bidder raffle (Comment-202608261) keeps working unchanged with multiple bids
+	/// placed within a single second. Production behavior is unchanged.
+	/// [/Comment-202608265]
+	function _checkIfNoBidPlacedWithinCurrentSecond() internal view virtual {
 		// It's OK if `lastBidderAddress` is zero.
 		uint256 lastBidTimeStampCopy_ = biddersInfo[roundNum][lastBidderAddress].lastBidTimeStamp;
 

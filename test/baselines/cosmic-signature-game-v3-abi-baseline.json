@@ -1,5 +1,5 @@
 {
-	"note": "Full external ABI of the monolithic CosmicSignatureGameV3 implementation, recorded before the modular delegatecall restructuring. The combined ABI of the modular build (implementation + modules, chain-precedence deduplicated) must remain selector-for-selector identical to this. See test/tests-src/CosmicSignatureGameV3-ModularEquality.js.",
+	"note": "Full external ABI of the monolithic CosmicSignatureGameV3 implementation, recorded before the modular delegatecall restructuring. The combined ABI of the modular build (implementation + modules, chain-precedence deduplicated) must remain selector-for-selector identical to this. See test/tests-src/CosmicSignatureGameV3-ModularEquality.js. Amended for the V3 weighted bidder raffle (Comment-202608261): added the bidRaffleCumulativeWeights getter.",
 	"commit": "9496fc3145d280cc8479d3f960650ec006569c71",
 	"generatedAt": "2026-08-14T07:08:58.271Z",
 	"deployedBytecodeSize": 24422,
@@ -3395,6 +3395,30 @@
 		{
 			"stateMutability": "payable",
 			"type": "receive"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "uint256",
+					"name": "roundNum",
+					"type": "uint256"
+				},
+				{
+					"internalType": "uint256",
+					"name": "bidNum",
+					"type": "uint256"
+				}
+			],
+			"name": "bidRaffleCumulativeWeights",
+			"outputs": [
+				{
+					"internalType": "uint256",
+					"name": "cumulativeWeight",
+					"type": "uint256"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
 		}
 	]
 }

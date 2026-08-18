@@ -243,6 +243,30 @@ async function runInvariants(ctx_) {
 	}
 
 	// #endregion
+	// #region Weighted bidder raffle sums (V3+, Comment-202608261)
+
+	// Per-bid exactness is asserted at bid time in `ActionHelpers`; here we spot-check that the chain
+	// and the model agree on the current round's first and last cumulative weight sums, and that
+	// the sums strictly increase (every bid weighs a nonzero, Comment-202608262).
+	if (model.version >= 3) {
+		const cumulativeWeights_ = model.getBidRaffleCumulativeWeights(model.roundNum);
+		if (cumulativeWeights_.length > 0) {
+			expect(await game_.bidRaffleCumulativeWeights(model.roundNum, 0n), "bidRaffleCumulativeWeights[0] vs model")
+				.to.equal(cumulativeWeights_[0]);
+			const lastBidIndex_ = BigInt(cumulativeWeights_.length - 1);
+			expect(await game_.bidRaffleCumulativeWeights(model.roundNum, lastBidIndex_), "bidRaffleCumulativeWeights[last] vs model")
+				.to.equal(cumulativeWeights_.at(-1));
+			expect(cumulativeWeights_[0] > 0n, "the first bid raffle weight must be a nonzero").to.equal(true);
+			for ( let bidIndex_ = 1; bidIndex_ < cumulativeWeights_.length; ++ bidIndex_ ) {
+				expect(
+					cumulativeWeights_[bidIndex_] > cumulativeWeights_[bidIndex_ - 1],
+					`bid raffle cumulative weights must strictly increase at ${bidIndex_}`
+				).to.equal(true);
+			}
+		}
+	}
+
+	// #endregion
 	// #region PrizesWallet solvency
 
 	{
