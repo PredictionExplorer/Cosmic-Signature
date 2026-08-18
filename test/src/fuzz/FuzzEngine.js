@@ -230,10 +230,14 @@ class FuzzEngine {
 			out_.push(model_.mainPrizeTime);
 			out_.push(model_.mainPrizeTime + model_.timeoutDurationToClaimMainPrize);
 			if (model_.version >= 3) {
-				// V3 late-bid-premium window edges (opening and midpoint), so bids actually land inside it.
+				// V3 late-bid-premium window edges (opening, midpoint, and deep near the deadline where
+				// the premium is steep), so bids actually land inside it. With the +-2s snapping jitter,
+				// the `mainPrizeTime` candidate above also lands bids just before and just past the deadline,
+				// covering the maximum-premium clamp (Comment-202608271 relates).
 				const roundLateBidDuration_ = model_.getRoundLateBidDuration();
 				out_.push(model_.mainPrizeTime - roundLateBidDuration_);
 				out_.push(model_.mainPrizeTime - roundLateBidDuration_ / 2n);
+				out_.push(model_.mainPrizeTime - roundLateBidDuration_ / 8n);
 			}
 		}
 		out_.push(model_.cstDutchAuctionBeginningTimeStamp + model_.getCstDutchAuctionDuration());

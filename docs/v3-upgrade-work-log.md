@@ -155,6 +155,24 @@ contract hardening and test-model updates. This log covers both; coordinate befo
   rehearsal, runbook, primary prize reference, and V3 comparison docs now cover the intentional overwrites.
   The production implementation is 24,422 bytes (154 bytes under EIP-170). All four bounded full-suite
   configurations pass with 137 tests each, and the Arbitrum One fork rehearsal passes all 34 checks.
+- 2026-08-18: THE NON-RATCHETING LATE BID PRICE PREMIUM (Comment-202608271). The premium is now a one-time
+  toll on the bid that pays it: every stored price update consumes the premium-free base price instead of the
+  premium-inclusive paid price. `nextEthBidPrice` grows exponentially from the base returned by the new
+  `_getNextEthBidPriceBase`, and `cstDutchAuctionBeginningBidPrice` (plus its
+  `nextRoundFirstCstDutchAuctionBeginningBidPrice` next-round carry-over, which previously leaked the premium
+  across rounds) doubles the base returned by the new `_getNextCstBidPriceBase`. Previously a single bid at the
+  deadline re-anchored the whole round's ETH price ~5x higher; now, once the bid's `mainPrizeTime` extension
+  closes the window, every posted price is exactly what it would have been had the premium logic not existed.
+  Payment, refunds, `BidPlaced` prices, and spent totals keep recording the premium-inclusive price; the bid
+  raffle weight (Comment-202608262) uses the premium-free base as well, so the premium buys no raffle odds --
+  a maximum-premium bid pays ~5x per unit of raffle weight, a pure penalty. Changed identically in both lineages
+  (`BiddingV3Core.sol` hot path and the `BiddingV3.sol` module lineage, Comment-202608263 discipline);
+  public price getters still quote the premium-inclusive price. The fuzz `GameModel` mirrors the new update
+  rule, the fuzz invariants now also assert the two stored CST price anchors against the model, and the fuzz
+  engine additionally snaps bid timestamps deep into the premium window; `LateBidPremium` gains a dedicated
+  non-ratcheting test covering plain-ETH, ETH + Random Walk NFT (max premium past the deadline), and CST bids.
+  The behavior-parity baseline is unaffected (its scenario never bids inside the window). Certora specs are
+  unaffected (they verify the V1 contract, which has no premium). `docs/v3-vs-v2-changes.md` updated.
 
 ## Remaining items for humans
 

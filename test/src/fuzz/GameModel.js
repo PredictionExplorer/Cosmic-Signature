@@ -236,7 +236,8 @@ class GameModel {
 
 	/**
 	Mirrors `_appendBidRaffleWeight` (Comment-202608262): the raffle weight of every bid is
-	the ETH bid price posted at the moment of the bid. Only meaningful in V3+.
+	the premium-free ETH bid price base posted at the moment of the bid (the late bid price premium
+	buys no raffle weight). Only meaningful in V3+.
 	*/
 	_appendBidRaffleWeight(bidRaffleWeight_) {
 		const round_ = this._currentRound();
@@ -346,7 +347,8 @@ class GameModel {
 
 	/**
 	Exact prices for `count_` back-to-back ETH bids in ONE block at timestamp `ts_` (the same-block burst).
-	Mirrors how each bid escalates the next price (`nextEthBidPrice = p + p / div + 1`) and, in V3,
+	Mirrors how each bid escalates the next price from the premium-free base
+	(`nextEthBidPrice = base + base / div + 1`, Comment-202608271) and, in V3,
 	how each bid's `_extendMainPrizeTime` moves the premium window before the next bid prices in.
 	Does not mutate the model.
 	@returns {bigint[]}
@@ -359,7 +361,8 @@ class GameModel {
 		for (let index_ = 0; index_ < count_; ++ index_) {
 			const price_ = this.addLateBidPremiumIfNeeded(base_, ts_, mainPrizeTime_);
 			prices_.push(price_);
-			base_ = price_ + price_ / this.ethBidPriceIncreaseDivisor + 1n;
+			// Comment-202608271: the premium a burst bid pays does not ratchet the ladder.
+			base_ = base_ + base_ / this.ethBidPriceIncreaseDivisor + 1n;
 			// All burst bids are non-first bids, so `_extendMainPrizeTime` runs for each of them.
 			mainPrizeTime_ = this.isV1Like() ? (maxBigInt(mainPrizeTime_, ts_) + increment_) : (mainPrizeTime_ + increment_);
 		}
@@ -617,7 +620,10 @@ class GameModel {
 	@returns Expected outcome (does not validate revert conditions; callers pre-check applicability).
 	*/
 	planEthBid(ts_, msgValue_, gasPrice_, randomWalkNftId_) {
-		const ethBidPrice_ = this.getNextEthBidPrice(ts_);
+		// Comment-202608271: the bidder pays the premium-inclusive posted price, while every stored
+		// price update -- and, in V3+, the bid's raffle weight -- consumes the premium-free base.
+		const ethBidPriceBase_ = this.getNextEthBidPriceBase(ts_);
+		const ethBidPrice_ = this.addLateBidPremiumIfNeeded(ethBidPriceBase_, ts_);
 		const reward_ = this.getBidCstRewardAmount(ts_);
 		const rewardSplit_ = this.getBidCstRewardSplit(reward_);
 		const basePaidPrice_ = (randomWalkNftId_ === null) ? ethBidPrice_ : this.getEthPlusRandomWalkNftBidPrice(ethBidPrice_);
@@ -645,7 +651,7 @@ class GameModel {
 				refundAmount_ = overpaid_;
 			}
 		}
-		return { ethBidPrice: ethBidPrice_, paidEthPrice: paidEthPrice_, netEthPaid: netEthPaid_, refundAmount: refundAmount_, swallowed: swallowed_, insufficient: overpaid_ < 0n, bidCstRewardAmount: reward_, bidCstRewardSplit: rewardSplit_ };
+		return { ethBidPriceBase: ethBidPriceBase_, ethBidPrice: ethBidPrice_, paidEthPrice: paidEthPrice_, netEthPaid: netEthPaid_, refundAmount: refundAmount_, swallowed: swallowed_, insufficient: overpaid_ < 0n, bidCstRewardAmount: reward_, bidCstRewardSplit: rewardSplit_ };
 	}
 
 	/**
@@ -661,9 +667,11 @@ class GameModel {
 		}
 		this._bidderInfoForUpdate(bidderAddress_).totalSpentEthAmount += plan_.paidEthPrice;
 		if (this.lastBidderAddress === hre.ethers.ZeroAddress) {
-			this.ethDutchAuctionBeginningBidPrice = plan_.ethBidPrice * c.ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
+			// Comment-202608271: base == posted price on a first bid (the premium needs a nonzero last bidder).
+			this.ethDutchAuctionBeginningBidPrice = plan_.ethBidPriceBase * c.ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
 		}
-		this.nextEthBidPrice = plan_.ethBidPrice + plan_.ethBidPrice / this.ethBidPriceIncreaseDivisor + 1n;
+		// Comment-202608271: the exponential next-bid price ladder grows from the premium-free base.
+		this.nextEthBidPrice = plan_.ethBidPriceBase + plan_.ethBidPriceBase / this.ethBidPriceIncreaseDivisor + 1n;
 		let newCstDutchAuctionDuration_ = null;
 		let newCstBidPriceDeclineMultiplier_ = null;
 		if (this.version >= 3) {
@@ -678,8 +686,8 @@ class GameModel {
 		}
 		this._bidCommon(bidderAddress_, ts_);
 		if (this.version >= 3) {
-			// Comment-202608262: an ETH bid's raffle weight is the posted (undiscounted) ETH bid price.
-			this._appendBidRaffleWeight(plan_.ethBidPrice);
+			// Comment-202608262: an ETH bid's raffle weight is the premium-free (undiscounted) ETH bid price base.
+			this._appendBidRaffleWeight(plan_.ethBidPriceBase);
 		}
 		return {
 			...plan_,
@@ -701,13 +709,16 @@ class GameModel {
 			"model: applying a first-in-round CST bid"
 		).to.equal(true);
 		expect(this.isBidPlacedWithinCurrentSecond(ts_), "model: applying a CST bid within the current second").to.equal(false);
-		const paidPrice_ = this.getNextCstBidPrice(ts_);
+		// Comment-202608271: the bidder pays the premium-inclusive price, while the auction reset
+		// consumes the premium-free base (they only differ in V3+ within the late bid window).
+		const cstBidPriceBase_ = this.getNextCstBidPriceBase(ts_);
+		const paidPrice_ = this.addLateBidPremiumIfNeeded(cstBidPriceBase_, ts_);
 		const reward_ = this.getBidCstRewardAmount(ts_);
 		const rewardSplit_ = this.getBidCstRewardSplit(reward_);
 		this._bidderInfoForUpdate(bidderAddress_).totalSpentCstAmount += paidPrice_;
 		this.cstDutchAuctionBeginningTimeStamp = ts_;
 		const newBeginningBidPrice_ =
-			maxBigInt(paidPrice_ * c.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, this.cstDutchAuctionBeginningBidPriceMinLimit);
+			maxBigInt(cstBidPriceBase_ * c.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, this.cstDutchAuctionBeginningBidPriceMinLimit);
 		this.cstDutchAuctionBeginningBidPrice = newBeginningBidPrice_;
 		if (this.lastCstBidderAddress === hre.ethers.ZeroAddress) {
 			this.nextRoundFirstCstDutchAuctionBeginningBidPrice = newBeginningBidPrice_;
@@ -724,9 +735,8 @@ class GameModel {
 			newCstDutchAuctionDuration_ = this.cstDutchAuctionDuration + this.cstDutchAuctionDuration / this.cstDutchAuctionDurationChangeDivisor;
 			this.cstDutchAuctionDuration = newCstDutchAuctionDuration_;
 		}
-		// Comment-202608262: a CST bid's raffle weight is the concurrent ETH bid price,
-		// evaluated before `_bidCommon` extends `mainPrizeTime` (the late bid premium depends on it).
-		const bidRaffleWeight_ = (this.version >= 3) ? this.getNextEthBidPrice(ts_) : null;
+		// Comment-202608262: a CST bid's raffle weight is the concurrent premium-free ETH bid price base.
+		const bidRaffleWeight_ = (this.version >= 3) ? this.getNextEthBidPriceBase(ts_) : null;
 
 		this._bidCommon(bidderAddress_, ts_);
 		if (this.version >= 3) {

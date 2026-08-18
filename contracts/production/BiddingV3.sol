@@ -61,7 +61,10 @@ abstract contract BiddingV3 is
 		// #region
 
 		// Comment-202503162 relates and/or applies.
-		uint256 ethBidPrice_ = getNextEthBidPriceAdvanced(int256(0));
+		// Comment-202608271 applies.
+		// The premium-free base price is the V2 price: the same `super` call that `getNextEthBidPriceAdvanced` wraps.
+		uint256 ethBidPriceBase_ = super.getNextEthBidPriceAdvanced(int256(0));
+		uint256 ethBidPrice_ = _addRoundLateBidPricePremiumAmountIfNeeded(ethBidPriceBase_, int256(0));
 		uint256 paidEthPrice_ =
 			(randomWalkNftId_ < int256(0)) ?
 			ethBidPrice_ :
@@ -151,19 +154,21 @@ abstract contract BiddingV3 is
 			// Comment-202608022 relates.
 			// #enable_asserts assert(bidCstRewardAmount_ == 0);
 
-			ethDutchAuctionBeginningBidPrice = ethBidPrice_ * CosmicSignatureConstants.ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
+			// Comment-202608271 applies.
+			ethDutchAuctionBeginningBidPrice = ethBidPriceBase_ * CosmicSignatureConstants.ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
 		} else if (bidCstRewardAmount_ > 0) {
 			_mintBidCstRewardAmount(bidCstRewardAmount_);
 		}
 
 		// Comment-202501061 applies.
-		nextEthBidPrice = CosmicSignatureHelpers.tryIncreaseValueExponentially(ethBidPrice_, ethBidPriceIncreaseDivisor) + 1;
+		// Comment-202608271 applies.
+		nextEthBidPrice = CosmicSignatureHelpers.tryIncreaseValueExponentially(ethBidPriceBase_, ethBidPriceIncreaseDivisor) + 1;
 
 		uint256 newCstBidPriceDeclineMultiplier_ = _tryIncreaseCstBidPriceDeclineMultiplier();
 		_bidCommon(/*bidType_,*/ message_);
 
 		// Comment-202608262 applies.
-		_appendBidRaffleWeight(ethBidPrice_);
+		_appendBidRaffleWeight(ethBidPriceBase_);
 
 		// Comment-202608122 applies.
 		_emitBidPlaced(int256(paidEthPrice_), -1, randomWalkNftId_, message_, bidCstRewardAmount_, newCstBidPriceDeclineMultiplier_);
@@ -242,7 +247,9 @@ abstract contract BiddingV3 is
 		_checkBidCstRewardAmountMinLimit(bidCstRewardAmount_, bidCstRewardAmountMinLimit_);
 
 		// Comment-202503162 relates and/or applies.
-		uint256 paidPrice_ = getNextCstBidPriceAdvanced(int256(0));
+		// Comment-202608271 applies.
+		uint256 cstBidPriceBase_ = _getNextCstBidPriceBase(int256(0));
+		uint256 paidPrice_ = _addRoundLateBidPricePremiumAmountIfNeeded(cstBidPriceBase_, int256(0));
 
 		// Comment-202412045 applies.
 		if ( ! (paidPrice_ <= priceMaxLimit_) ) {
@@ -281,8 +288,9 @@ abstract contract BiddingV3 is
 		// 		)
 		// 	);
 
+		// Comment-202608271 applies.
 		uint256 newCstDutchAuctionBeginningBidPrice_ =
-			Math.max(paidPrice_ * CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, cstDutchAuctionBeginningBidPriceMinLimit);
+			Math.max(cstBidPriceBase_ * CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, cstDutchAuctionBeginningBidPriceMinLimit);
 		cstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
 		if (lastCstBidderAddress == address(0)) {
 			// Comment-202501045 applies.
@@ -293,8 +301,9 @@ abstract contract BiddingV3 is
 		lastCstBidderAddress = _msgSender();
 		uint256 newCstBidPriceDeclineMultiplier_ = _tryReduceCstBidPriceDeclineMultiplier();
 
-		// Comment-202608262 applies: evaluated before the bid extends `mainPrizeTime`.
-		uint256 bidRaffleWeight_ = getNextEthBidPriceAdvanced(int256(0));
+		// Comment-202608262 applies.
+		// The premium-free base is the V2 price: the same `super` call that `getNextEthBidPriceAdvanced` wraps.
+		uint256 bidRaffleWeight_ = super.getNextEthBidPriceAdvanced(int256(0));
 
 		_bidCommon(/*BidType.CST,*/ message_);
 		_appendBidRaffleWeight(bidRaffleWeight_);
@@ -351,7 +360,19 @@ abstract contract BiddingV3 is
 	// #endregion
 	// #region `getNextCstBidPriceAdvanced`
 
+	/// @dev This adds the V3 late bid price premium on top of the premium-free `_getNextCstBidPriceBase`.
+	/// A zero base stays a zero (Comment-202607119), like it did before the split.
 	function getNextCstBidPriceAdvanced(int256 currentTimeOffset_) public view override (IBidding1V2, BiddingV2Base) virtual returns (uint256) {
+		return _addRoundLateBidPricePremiumAmountIfNeeded(_getNextCstBidPriceBase(currentTimeOffset_), currentTimeOffset_);
+	}
+
+	// #endregion
+	// #region `_getNextCstBidPriceBase`
+
+	/// @notice Calculates the premium-free CST bid price: the V3 linear price decline
+	/// without the V3 late bid price premium.
+	/// Comment-202608271 applies: this is what every stored price update consumes.
+	function _getNextCstBidPriceBase(int256 currentTimeOffset_) private view returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -368,7 +389,7 @@ abstract contract BiddingV3 is
 			if (nextCstBidPrice_ <= int256(0)) {
 				return 0;
 			}
-			return _addRoundLateBidPricePremiumAmountIfNeeded(uint256(nextCstBidPrice_), currentTimeOffset_);
+			return uint256(nextCstBidPrice_);
 		}
 	}
 
@@ -490,6 +511,8 @@ abstract contract BiddingV3 is
 	// #region `_addRoundLateBidPricePremiumAmountIfNeeded`
 
 	/// @param bidPrice_ As mentioned in Comment-202607119, if it's zero the result will be zero as well.
+	/// @dev Comment-202608271 applies: the premium is a one-time toll on the bid that pays it;
+	/// stored price state always updates from the premium-free base price.
 	/// todo-0 Test this. Really, all new code needs testing.
 	function _addRoundLateBidPricePremiumAmountIfNeeded(uint256 bidPrice_, int256 currentTimeOffset_) private view returns (uint256 adjustedBidPrice_) {
 		// #enable_smtchecker /*

@@ -56,14 +56,15 @@ The rest of this document lists prizes from groups 1 and 2.
 
 #### Weighted Bidder Raffle (V3+)
 
-In V2-, every bid was one raffle ticket of equal weight, which made spamming cheap bids near a bidding round start profitable. In V3+, each bid's raffle weight equals the ETH bid price posted at the moment of the bid:
+In V2-, every bid was one raffle ticket of equal weight, which made spamming cheap bids near a bidding round start profitable. In V3+, each bid's raffle weight equals the premium-free ETH bid price base posted at the moment of the bid:
 
-- A plain ETH bid weighs exactly what it pays.
-- An ETH + Random Walk NFT bid weighs the full undiscounted price (the 50% discount applies to the price only).
-- A CST bid weighs the concurrent ETH bid price.
+- A plain ETH bid outside the late bid window weighs exactly what it pays.
+- Inside the late bid window, a bid weighs only the premium-free base: the late bid price premium buys no raffle odds, so a maximum-premium bid pays ~5x per unit of raffle weight.
+- An ETH + Random Walk NFT bid weighs the full undiscounted base (the 50% discount applies to the price only).
+- A CST bid weighs the concurrent premium-free ETH bid price base.
 - A swallowed ETH overpayment does not increase the weight.
 
-A raffle winner is drawn by picking a uniformly random wei in `[0, total weight)` and binary-searching the round's cumulative weight sums (the `bidRaffleCumulativeWeights` getter exposes them) for the bid that owns that wei. The expected raffle return per ETH spent is therefore identical at every moment of the round: neither splitting one bid into many, nor bid timing, nor spreading bids across addresses changes anybody's odds. The mechanism reads no timestamps, so it does not depend on the one-bid-per-second restriction. See Comment-202608261 in `contracts/production/libraries/RaffleWeightHelpers.sol`.
+A raffle winner is drawn by picking a uniformly random wei in `[0, total weight)` and binary-searching the round's cumulative weight sums (the `bidRaffleCumulativeWeights` getter exposes them) for the bid that owns that wei. The expected raffle return per ETH spent is therefore identical at every moment of the round outside the late bid window (neither splitting one bid into many, nor bid timing, nor spreading bids across addresses changes anybody's odds), and deliberately worse inside it. The mechanism reads no timestamps, so it does not depend on the one-bid-per-second restriction. See Comment-202608261 in `contracts/production/libraries/RaffleWeightHelpers.sol`.
 
 #### Prize List
 

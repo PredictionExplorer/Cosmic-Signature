@@ -162,8 +162,9 @@ Within `getRoundLateBidDuration()` seconds before `mainPrizeTime` (and after it,
 - `getNextEthBidPriceAdvanced` and `getNextCstBidPriceAdvanced` (and therefore `getNextEthBidPrice`, `getNextCstBidPrice`, and every bid method) return/charge the adjusted price.
 - The premium amount is `((elapsed * baseMultiplier / mainPrizeTimeIncrementInMicroSeconds) ** exponent * price) >> (exponent * 13)`, where `elapsed` is the time since the window opened, clamped to the window length (Comment-202607119).
 - With the default parameters the maximum premium amount is ~4x the price, so a bid exactly at (or after) `mainPrizeTime` costs ~5x the unadjusted price.
-- Knock-on effects: the premium-adjusted paid price feeds the exponential next-ETH-bid-price ladder (`nextEthBidPrice = paid + paid / ethBidPriceIncreaseDivisor + 1`), the ETH Dutch auction beginning price of the next round (2x the last price), the CST Dutch auction beginning price (2x the paid CST price), `BidPlaced.paidEthPrice` / `paidCstPrice`, and `biddersInfo` spent totals.
-- There is no premium before the first bid of a round (no last bidder means no `mainPrizeTime` pressure), so the premium never interferes with the round-opening Dutch auctions.
+- The premium is a one-time toll on the bid that pays it (Comment-202608271); it never ratchets stored price state. The exponential next-ETH-bid-price ladder grows from the premium-free base (`nextEthBidPrice = base + base / ethBidPriceIncreaseDivisor + 1`), and the CST Dutch auction beginning price (including the `nextRoundFirstCstDutchAuctionBeginningBidPrice` carry-over into the next round) doubles the premium-free CST price. So as soon as the bid's `mainPrizeTime` extension closes the window, every posted price is exactly what it would have been had the premium logic not existed: a late bidder hurts only themselves, without raising the price ladder for everyone else.
+- The premium still surfaces in `BidPlaced.paidEthPrice` / `paidCstPrice` and in the `biddersInfo` spent totals (they record what was actually paid), but NOT in the bid's raffle weight (behavior change 9): a late bid weighs only the premium-free base, so the premium buys no raffle odds -- a maximum-premium bid pays ~5x per unit of raffle weight, a pure penalty.
+- There is no premium before the first bid of a round (no last bidder means no `mainPrizeTime` pressure), so the premium never interferes with the round-opening Dutch auctions, and the `ethDutchAuctionBeginningBidPrice` a round's first bid records (2x its price) is premium-free by construction.
 - New revert possibility: an ETH bid that would have succeeded on V2 can revert with `InsufficientReceivedBidAmount` on V3 if it lands inside the window without paying the premium; a CST bid can similarly exceed `priceMaxLimit_`. Frontends should re-quote prices frequently near `mainPrizeTime`.
 
 ### 4. Linear bid CST reward, minted entirely to the outbid (previous) bidder (`BiddingV3`)
@@ -236,13 +237,15 @@ The new V3 setters reject the dangerous zero values with `ZeroValue()`:
 
 In V2-, every bid was one raffle ticket of equal weight for the bidder raffles (3 ETH prizes + 10 CST/CS NFT
 prizes), so spamming cheap bids near a round start (the ETH Dutch auction trough) bought raffle odds at a small
-fraction of their mid-round cost. In V3+, each bid's raffle weight equals the ETH bid price posted at the moment
-of the bid (Comment-202608262): the full undiscounted price for an ETH + Random Walk NFT bid, the concurrent ETH
-bid price for a CST bid, and never including a swallowed ETH overpayment. Winners are drawn by picking a uniformly
-random wei in `[0, total weight)` and binary-searching the round's cumulative weight sums
+fraction of their mid-round cost. In V3+, each bid's raffle weight equals the premium-free ETH bid price base
+posted at the moment of the bid (Comment-202608262): the full undiscounted base for an ETH + Random Walk NFT bid,
+the concurrent premium-free ETH base for a CST bid, never including a swallowed ETH overpayment, and never
+including the late bid price premium (behavior change 3) -- the premium buys no raffle odds. Winners are drawn by
+picking a uniformly random wei in `[0, total weight)` and binary-searching the round's cumulative weight sums
 (`contracts/production/libraries/RaffleWeightHelpers.sol`, Comment-202608261), which costs `O(log numBids)`
 storage reads per draw. The expected raffle return per ETH spent is therefore identical at every moment of the
-round, so neither bid splitting, nor timing, nor Sybil addresses change anybody's odds. The sums are exposed by the
+round outside the late bid window, so neither bid splitting, nor timing, nor Sybil addresses change anybody's
+odds; inside the window, late bids deliberately get strictly worse raffle odds per wei paid. The sums are exposed by the
 new `bidRaffleCumulativeWeights(roundNum, bidNum)` getter. The mechanism reads no timestamps, so it does not
 depend on the one-bid-per-second restriction (behavior change 1); `test/tests-src/CosmicSignatureGameV3-WeightedRaffleSameSecond.js`
 proves it keeps working with that restriction disabled. No raffle event signatures changed; only the winner

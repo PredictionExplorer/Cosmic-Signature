@@ -14,11 +14,13 @@ pragma solidity =0.8.34;
 /// Up to and including V2, every bid was one raffle ticket of an equal weight, regardless of the bid price paid.
 /// Near a bidding round start, when the ETH Dutch auction makes bids cheap, that sold the same expected raffle value
 /// at a small fraction of its mid-round cost, so placing as many cheap bids as possible was profitable.
-/// In V3+, every bid instead carries a raffle weight equal to the ETH bid price posted at the moment of the bid
-/// (Comment-202608262), and a raffle winner is drawn by picking a uniformly random wei in `[0, total weight)`
-/// and binary-searching the per-round cumulative weight sums for the bid that owns that wei.
-/// The expected raffle return per ETH spent is then identical at every moment of the bidding round,
-/// so neither splitting one bid into many nor spreading bids across multiple addresses changes anybody's odds.
+/// In V3+, every bid instead carries a raffle weight equal to the premium-free ETH bid price base posted
+/// at the moment of the bid (Comment-202608262), and a raffle winner is drawn by picking a uniformly random wei
+/// in `[0, total weight)` and binary-searching the per-round cumulative weight sums for the bid that owns that wei.
+/// The expected raffle return per ETH spent is then identical at every moment of the bidding round outside
+/// the late bid window, so neither splitting one bid into many nor spreading bids across multiple addresses
+/// changes anybody's odds; inside the window, the late bid price premium (Comment-202608271) buys no weight,
+/// so late bids deliberately get strictly worse raffle odds per wei paid.
 /// This mechanism reads no timestamps, so it keeps working unchanged if multiple bids share a second
 /// (a hypothetical zero-weight bid would own an empty wei range and would never be drawn; see `pickBidIndex`).
 /// [/Comment-202608261]

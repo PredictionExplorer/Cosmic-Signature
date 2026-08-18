@@ -200,9 +200,18 @@ describe("CosmicSignatureGameV3-LateBidPremium", function () {
 				}
 				expect(bidPlacedLog_.args.paidEthPrice).equal(adjustedPrice_);
 
-				// The premium-adjusted price feeds the exponential next-bid price ladder.
+				// Comment-202608271: the premium is a one-time toll on the bid that paid it.
+				// The exponential next-bid price ladder grows from the premium-free base,
+				// NOT from the premium-adjusted paid price.
 				const ethBidPriceIncreaseDivisor_ = await game_.ethBidPriceIncreaseDivisor();
-				expect(await game_.nextEthBidPrice()).equal(adjustedPrice_ + adjustedPrice_ / ethBidPriceIncreaseDivisor_ + 1n);
+				const newEthBidPriceBase_ = ethBidPriceBase_ + ethBidPriceBase_ / ethBidPriceIncreaseDivisor_ + 1n;
+				expect(await game_.nextEthBidPrice()).equal(newEthBidPriceBase_);
+
+				// The bid also pushed `mainPrizeTime` a full increment out, which closed the premium window,
+				// so the posted price right now is exactly the premium-free ladder value --
+				// as if the premium logic did not exist.
+				expect((await game_.mainPrizeTime()) - (await getLatestBlockTimestamp())).greaterThan(roundLateBidDuration_);
+				expect(await game_.getNextEthBidPrice()).equal(newEthBidPriceBase_);
 			}
 		}
 
@@ -264,6 +273,163 @@ describe("CosmicSignatureGameV3-LateBidPremium", function () {
 					expect(adjustedCstPrice_ - cstBidPriceBase_).greaterThan(cstBidPriceBase_ * 4n * 99n / 100n);
 				}
 			}
+		}
+
+		// #endregion
+	});
+
+	it("keeps the premium a one-time toll: no stored price ever absorbs it (Comment-202608271)", async function () {
+		// #region Setup: V1 -> V2 -> V3; slow the CST price decline (like the test above); activate; first bid.
+
+		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3(2n);
+		const game_ = contracts_.cosmicSignatureGameV3Proxy;
+		const [bidder1_, bidder2_,] = contracts_.signers.slice(1, 3);
+		await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setCstBidPriceDeclineMultiplier(10n ** 15n));
+		await activateCurrentRound(game_, contracts_.ownerSigner);
+
+		// `bidder2_` mints a Random Walk NFT for the discounted maximum-premium bid below.
+		await waitForTransactionReceipt(
+			contracts_.randomWalkNft.connect(bidder2_).mint({value: await contracts_.randomWalkNft.getMintPrice(),})
+		);
+		const randomWalkNftId_ = (await contracts_.randomWalkNft.totalSupply()) - 1n;
+
+		const roundNum_ = await game_.roundNum();
+		await waitForTransactionReceipt(game_.connect(bidder1_).bidWithEth(-1n, "", 0n, {value: 10n ** 18n,}));
+
+		const mainPrizeTimeIncrementInMicroSeconds_ = await game_.mainPrizeTimeIncrementInMicroSeconds();
+		const roundLateBidDuration_ = await game_.getRoundLateBidDuration();
+		const ethBidPriceIncreaseDivisor_ = await game_.ethBidPriceIncreaseDivisor();
+
+		const findBidPlacedLog_ = (transactionReceipt_) => {
+			for (const log_ of transactionReceipt_.logs) {
+				let parsedLog_;
+				try { parsedLog_ = game_.interface.parseLog(log_); } catch { continue; }
+				if (parsedLog_?.name === "BidPlaced") {
+					return parsedLog_;
+				}
+			}
+			throw new Error("No BidPlaced event found.");
+		};
+
+		/** The JS premium mirror at the given absolute bid timestamp, against the current `mainPrizeTime`. */
+		const premiumAdjustedPriceAt_ = async (basePrice_, bidTimeStamp_) => addRoundLateBidPricePremiumAmountIfNeeded(
+			basePrice_,
+			(await game_.mainPrizeTime()) - bidTimeStamp_,
+			roundLateBidDuration_,
+			mainPrizeTimeIncrementInMicroSeconds_
+		);
+
+		// #endregion
+		// #region A plain ETH bid deep in the window pays a steep premium; the ladder ignores it.
+
+		{
+			const ethBidPriceBase_ = await game_.nextEthBidPrice();
+			const bidTimeStamp_ = (await game_.mainPrizeTime()) - roundLateBidDuration_ / 8n;
+			const adjustedPrice_ = await premiumAdjustedPriceAt_(ethBidPriceBase_, bidTimeStamp_);
+
+			// Sanity: deep in the window, this is a real premium (over 2x the base in total).
+			expect(adjustedPrice_).greaterThan(ethBidPriceBase_ * 2n);
+
+			await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(bidTimeStamp_),]);
+			const transactionReceipt_ =
+				await waitForTransactionReceipt(game_.connect(bidder1_).bidWithEth(-1n, "", 0n, {value: adjustedPrice_,}));
+			expect(findBidPlacedLog_(transactionReceipt_).args.paidEthPrice).equal(adjustedPrice_);
+
+			// The ladder grew from the premium-free base...
+			const newEthBidPriceBase_ = ethBidPriceBase_ + ethBidPriceBase_ / ethBidPriceIncreaseDivisor_ + 1n;
+			expect(await game_.nextEthBidPrice()).equal(newEthBidPriceBase_);
+
+			// ...and with the premium window closed by the bid's `mainPrizeTime` extension,
+			// that is exactly the posted price -- as if the premium logic did not exist.
+			expect(await game_.getNextEthBidPrice()).equal(newEthBidPriceBase_);
+
+			// The bid's raffle weight is the premium-free base too (Comment-202608262): the premium
+			// buys no raffle odds, so this bid paid over 2x per unit of raffle weight.
+			expect(
+				(await game_.bidRaffleCumulativeWeights(roundNum_, 1n)) - (await game_.bidRaffleCumulativeWeights(roundNum_, 0n))
+			).equal(ethBidPriceBase_);
+		}
+
+		// #endregion
+		// #region An ETH + Random Walk NFT bid past the deadline pays half the maximum premium; same ladder rule.
+
+		{
+			const ethBidPriceBase_ = await game_.nextEthBidPrice();
+
+			// Past `mainPrizeTime`, the premium is clamped at its maximum: the amount is ~4x the price.
+			const bidTimeStamp_ = (await game_.mainPrizeTime()) + 123n;
+			const adjustedPrice_ = await premiumAdjustedPriceAt_(ethBidPriceBase_, bidTimeStamp_);
+			expect(adjustedPrice_ - ethBidPriceBase_).greaterThan(ethBidPriceBase_ * 4n * 99n / 100n);
+			expect(adjustedPrice_ - ethBidPriceBase_).lessThan(ethBidPriceBase_ * 4n * 101n / 100n);
+
+			// The Random Walk NFT discount halves the premium-inclusive posted price.
+			const discountedPrice_ = await game_.getEthPlusRandomWalkNftBidPrice(adjustedPrice_);
+			expect(discountedPrice_).equal((adjustedPrice_ + 1n) / 2n);
+
+			await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(bidTimeStamp_),]);
+			const transactionReceipt_ = await waitForTransactionReceipt(
+				game_.connect(bidder2_).bidWithEth(randomWalkNftId_, "", 0n, {value: discountedPrice_,})
+			);
+			expect(findBidPlacedLog_(transactionReceipt_).args.paidEthPrice).equal(discountedPrice_);
+
+			// Even a maximum-premium bid leaves only the plain exponential step behind.
+			expect(await game_.nextEthBidPrice()).equal(ethBidPriceBase_ + ethBidPriceBase_ / ethBidPriceIncreaseDivisor_ + 1n);
+
+			// The raffle weight is the undiscounted premium-free base: neither the ~5x premium
+			// nor the Random Walk NFT discount shows up in it (Comment-202608262).
+			expect(
+				(await game_.bidRaffleCumulativeWeights(roundNum_, 2n)) - (await game_.bidRaffleCumulativeWeights(roundNum_, 1n))
+			).equal(ethBidPriceBase_);
+		}
+
+		// #endregion
+		// #region A CST bid in the window burns the premium price, but the auction resets from the base.
+
+		{
+			const ethBidPriceLadderBefore_ = await game_.nextEthBidPrice();
+			const bidTimeStamp_ = (await game_.mainPrizeTime()) - roundLateBidDuration_ / 4n;
+
+			// This is the round's first CST bid, so the price declines from
+			// `nextRoundFirstCstDutchAuctionBeginningBidPrice` since the round's first bid.
+			expect(await game_.lastCstBidderAddress()).equal(hre.ethers.ZeroAddress);
+			const cstBidPriceBase_ =
+				(await game_.nextRoundFirstCstDutchAuctionBeginningBidPrice()) -
+				(bidTimeStamp_ - await game_.cstDutchAuctionBeginningTimeStamp()) * (await game_.cstBidPriceDeclineMultiplier());
+			expect(cstBidPriceBase_).greaterThan(0n);
+			const adjustedCstPrice_ = await premiumAdjustedPriceAt_(cstBidPriceBase_, bidTimeStamp_);
+			expect(adjustedCstPrice_).greaterThan(cstBidPriceBase_);
+
+			// `bidder1_` has been minted bid CST rewards for being outbid (over a day elapsed), enough to pay.
+			await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(bidTimeStamp_),]);
+			const transactionReceipt_ =
+				await waitForTransactionReceipt(game_.connect(bidder1_).bidWithCst(adjustedCstPrice_, "", 0n));
+			expect(findBidPlacedLog_(transactionReceipt_).args.paidCstPrice).equal(adjustedCstPrice_);
+
+			// The bidder was really charged (and statistics record) the premium-inclusive price...
+			expect((await game_.getBidderTotalSpentAmounts(roundNum_, bidder1_.address))[1]).equal(adjustedCstPrice_);
+
+			// ...but the next CST Dutch auction begins from the doubled premium-free base...
+			const cstDutchAuctionBeginningBidPriceMinLimit_ = await game_.cstDutchAuctionBeginningBidPriceMinLimit();
+			const doubledCstBidPriceBase_ = cstBidPriceBase_ * 2n;
+			const expectedNewCstDutchAuctionBeginningBidPrice_ =
+				(doubledCstBidPriceBase_ >= cstDutchAuctionBeginningBidPriceMinLimit_) ?
+				doubledCstBidPriceBase_ :
+				cstDutchAuctionBeginningBidPriceMinLimit_;
+			expect(await game_.cstDutchAuctionBeginningBidPrice()).equal(expectedNewCstDutchAuctionBeginningBidPrice_);
+			expect(expectedNewCstDutchAuctionBeginningBidPrice_).lessThan(adjustedCstPrice_ * 2n);
+
+			// ...and so does the next round's first CST auction anchor (this was the round's first CST bid),
+			// so the premium cannot leak into the next bidding round either.
+			expect(await game_.nextRoundFirstCstDutchAuctionBeginningBidPrice()).equal(expectedNewCstDutchAuctionBeginningBidPrice_);
+
+			// A CST bid never touches the ETH price ladder.
+			expect(await game_.nextEthBidPrice()).equal(ethBidPriceLadderBefore_);
+
+			// A late CST bid weighs the concurrent premium-free ETH bid price base
+			// (the stored ladder value), with no premium in the weight (Comment-202608262).
+			expect(
+				(await game_.bidRaffleCumulativeWeights(roundNum_, 3n)) - (await game_.bidRaffleCumulativeWeights(roundNum_, 2n))
+			).equal(ethBidPriceLadderBefore_);
 		}
 
 		// #endregion

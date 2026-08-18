@@ -1,10 +1,11 @@
 "use strict";
 
 // Tests the V3 weighted bidder raffle (Comment-202608261): every bid's raffle weight equals
-// the ETH bid price posted at the moment of the bid (Comment-202608262) -- the full undiscounted
-// price for a Random Walk NFT bid, the concurrent ETH price for a CST bid, and never including
-// a swallowed ETH overpayment -- and the raffle winners are drawn by picking random weis,
-// which an exact off-chain replay of the on-chain draws verifies winner by winner.
+// the premium-free ETH bid price base posted at the moment of the bid (Comment-202608262) -- the full
+// undiscounted base for a Random Walk NFT bid, the concurrent premium-free ETH base for a CST bid,
+// never including a swallowed ETH overpayment nor the late bid price premium (the in-window weight
+// cases live in CosmicSignatureGameV3-LateBidPremium.js) -- and the raffle winners are drawn by
+// picking random weis, which an exact off-chain replay of the on-chain draws verifies winner by winner.
 
 const { describe, it } = require("mocha");
 const { expect } = require("chai");
@@ -161,19 +162,28 @@ describe("CosmicSignatureGameV3-WeightedRaffle", function () {
 		await activateCurrentRound(game_, contracts_.ownerSigner);
 		const roundNum_ = await game_.roundNum();
 
-		// Several bidders with unequal weights (the price ladder grows on each bid; the last bid is boosted
-		// by the late bid price premium because it lands close to `mainPrizeTime`).
+		// Several bidders with unequal weights (the price ladder grows on each bid; the last bid lands
+		// deep inside the late bid premium window, pays the premium, and still weighs only the
+		// premium-free base, Comment-202608262).
 		const bidders_ = [1, 2, 3, 4, 2,].map((signerIndex_) => (contracts_.signers[signerIndex_]));
 		for ( let bidIndex_ = 0; bidIndex_ < bidders_.length; ++ bidIndex_ ) {
 			const isLastBid_ = bidIndex_ === bidders_.length - 1;
 			let postedEthBidPrice_;
+			let expectedBidRaffleWeight_;
 			if (isLastBid_) {
 				// Bid 10 seconds before `mainPrizeTime`, deep inside the late bid premium window.
 				const bidTimeStamp_ = (await game_.mainPrizeTime()) - 10n;
 				postedEthBidPrice_ = await game_.getNextEthBidPriceAdvanced(bidTimeStamp_ - (await getLatestBlockTimestamp()));
+
+				// A non-first bid's premium-free base is the stored next-bid ladder value,
+				// and the premium this bid pays on top of it buys no raffle weight.
+				expectedBidRaffleWeight_ = await game_.nextEthBidPrice();
+				expect(postedEthBidPrice_).greaterThan(expectedBidRaffleWeight_);
+
 				await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(bidTimeStamp_),]);
 			} else {
 				postedEthBidPrice_ = await quoteAndPinNextBid_(game_);
+				expectedBidRaffleWeight_ = postedEthBidPrice_;
 			}
 			await waitForTransactionReceipt(
 				game_.connect(bidders_[bidIndex_]).bidWithEth(-1n, "", 0n, {value: postedEthBidPrice_,})
@@ -181,7 +191,7 @@ describe("CosmicSignatureGameV3-WeightedRaffle", function () {
 			expect(
 				(await game_.bidRaffleCumulativeWeights(roundNum_, BigInt(bidIndex_))) -
 				((bidIndex_ > 0) ? await game_.bidRaffleCumulativeWeights(roundNum_, BigInt(bidIndex_ - 1)) : 0n)
-			).equal(postedEthBidPrice_);
+			).equal(expectedBidRaffleWeight_);
 		}
 
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(await game_.mainPrizeTime()),]);

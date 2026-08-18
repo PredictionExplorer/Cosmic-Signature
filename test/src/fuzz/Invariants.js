@@ -95,6 +95,10 @@ async function runInvariants(ctx_) {
 	expect(await game_.nextEthBidPrice(), "nextEthBidPrice vs model").to.equal(model.nextEthBidPrice);
 	expect(await game_.ethDutchAuctionBeginningBidPrice(), "ethDutchAuctionBeginningBidPrice vs model").to.equal(model.ethDutchAuctionBeginningBidPrice);
 	expect(await game_.cstDutchAuctionBeginningTimeStamp(), "cstDutchAuctionBeginningTimeStamp vs model").to.equal(model.cstDutchAuctionBeginningTimeStamp);
+	// The stored CST price anchors must never absorb the V3 late bid price premium (Comment-202608271).
+	expect(await game_.cstDutchAuctionBeginningBidPrice(), "cstDutchAuctionBeginningBidPrice vs model").to.equal(model.cstDutchAuctionBeginningBidPrice);
+	expect(await game_.nextRoundFirstCstDutchAuctionBeginningBidPrice(), "nextRoundFirstCstDutchAuctionBeginningBidPrice vs model")
+		.to.equal(model.nextRoundFirstCstDutchAuctionBeginningBidPrice);
 	if (model.version >= 2) {
 		expect(await game_.cstDutchAuctionDuration(), "cstDutchAuctionDuration vs model").to.equal(model.cstDutchAuctionDuration);
 		expect(await game_.cstDutchAuctionDurationChangeDivisor(), "cstDutchAuctionDurationChangeDivisor vs model").to.equal(model.cstDutchAuctionDurationChangeDivisor);

@@ -77,7 +77,9 @@ abstract contract BiddingV3Core is
 		// #region
 
 		// Comment-202503162 relates and/or applies.
-		uint256 ethBidPrice_ = getNextEthBidPriceAdvanced(int256(0));
+		// Comment-202608271 applies.
+		uint256 ethBidPriceBase_ = _getNextEthBidPriceBase(int256(0));
+		uint256 ethBidPrice_ = _addRoundLateBidPricePremiumAmountIfNeeded(ethBidPriceBase_, int256(0));
 		uint256 paidEthPrice_ =
 			(randomWalkNftId_ < int256(0)) ?
 			ethBidPrice_ :
@@ -141,19 +143,21 @@ abstract contract BiddingV3Core is
 			// Comment-202608022 relates.
 			// #enable_asserts assert(bidCstRewardAmount_ == 0);
 
-			ethDutchAuctionBeginningBidPrice = ethBidPrice_ * CosmicSignatureConstants.ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
+			// Comment-202608271 applies.
+			ethDutchAuctionBeginningBidPrice = ethBidPriceBase_ * CosmicSignatureConstants.ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
 		} else if (bidCstRewardAmount_ > 0) {
 			_mintBidCstRewardAmount(bidCstRewardAmount_);
 		}
 
 		// Comment-202501061 applies.
-		nextEthBidPrice = CosmicSignatureHelpers.tryIncreaseValueExponentially(ethBidPrice_, ethBidPriceIncreaseDivisor) + 1;
+		// Comment-202608271 applies.
+		nextEthBidPrice = CosmicSignatureHelpers.tryIncreaseValueExponentially(ethBidPriceBase_, ethBidPriceIncreaseDivisor) + 1;
 
 		uint256 newCstBidPriceDeclineMultiplier_ = _tryIncreaseCstBidPriceDeclineMultiplier();
 		_bidCommon(message_);
 
 		// Comment-202608262 applies.
-		_appendBidRaffleWeight(ethBidPrice_);
+		_appendBidRaffleWeight(ethBidPriceBase_);
 
 		// Comment-202608122 applies.
 		_emitBidPlaced(int256(paidEthPrice_), -1, randomWalkNftId_, message_, bidCstRewardAmount_, newCstBidPriceDeclineMultiplier_);
@@ -182,8 +186,18 @@ abstract contract BiddingV3Core is
 
 	/// @dev In the original `BiddingV2Base`/`BiddingV3`, this is `public`; the external version lives in
 	/// `CosmicSignatureGameViewsModuleV3`. Comment-202608249 applies.
-	/// This merges the `BiddingV2Base` base price logic with the V3 late bid price premium.
+	/// This adds the V3 late bid price premium on top of the premium-free `_getNextEthBidPriceBase`.
 	function getNextEthBidPriceAdvanced(int256 currentTimeOffset_) internal view returns (uint256) {
+		return _addRoundLateBidPricePremiumAmountIfNeeded(_getNextEthBidPriceBase(currentTimeOffset_), currentTimeOffset_);
+	}
+
+	// #endregion
+	// #region `_getNextEthBidPriceBase`
+
+	/// @notice Calculates the premium-free ETH bid price: the `BiddingV2Base.getNextEthBidPriceAdvanced` logic
+	/// without the V3 late bid price premium.
+	/// Comment-202608271 applies: this is what every stored price update consumes.
+	function _getNextEthBidPriceBase(int256 currentTimeOffset_) internal view returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -220,7 +234,7 @@ abstract contract BiddingV3Core is
 				nextEthBidPrice_ = nextEthBidPrice;
 			}
 			// #enable_asserts assert(nextEthBidPrice_ > 0);
-			return _addRoundLateBidPricePremiumAmountIfNeeded(nextEthBidPrice_, currentTimeOffset_);
+			return nextEthBidPrice_;
 		}
 	}
 
@@ -295,7 +309,9 @@ abstract contract BiddingV3Core is
 		_checkBidCstRewardAmountMinLimit(bidCstRewardAmount_, bidCstRewardAmountMinLimit_);
 
 		// Comment-202503162 relates and/or applies.
-		uint256 paidPrice_ = getNextCstBidPriceAdvanced(int256(0));
+		// Comment-202608271 applies.
+		uint256 cstBidPriceBase_ = _getNextCstBidPriceBase(int256(0));
+		uint256 paidPrice_ = _addRoundLateBidPricePremiumAmountIfNeeded(cstBidPriceBase_, int256(0));
 
 		// Comment-202412045 applies.
 		if ( ! (paidPrice_ <= priceMaxLimit_) ) {
@@ -306,8 +322,9 @@ abstract contract BiddingV3Core is
 		biddersInfo[roundNum][_msgSender()].totalSpentCstAmount += paidPrice_;
 		cstDutchAuctionBeginningTimeStamp = block.timestamp;
 
+		// Comment-202608271 applies.
 		uint256 newCstDutchAuctionBeginningBidPrice_ =
-			Math.max(paidPrice_ * CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, cstDutchAuctionBeginningBidPriceMinLimit);
+			Math.max(cstBidPriceBase_ * CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, cstDutchAuctionBeginningBidPriceMinLimit);
 		cstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
 		if (lastCstBidderAddress == address(0)) {
 			// Comment-202501045 applies.
@@ -319,22 +336,24 @@ abstract contract BiddingV3Core is
 		uint256 newCstBidPriceDeclineMultiplier_ = _tryReduceCstBidPriceDeclineMultiplier();
 
 		// [Comment-202608262]
-		// Every bid's raffle weight equals the ETH bid price posted at the moment of the bid,
-		// as returned by `getNextEthBidPriceAdvanced(0)` evaluated before the bid extends `mainPrizeTime`
-		// (the late bid price premium depends on it):
-		//    * A plain ETH bid weighs exactly what it pays.
-		//    * An ETH + Random Walk NFT bid weighs the full undiscounted price: the 50% discount
+		// Every bid's raffle weight equals the premium-free ETH bid price base posted at the moment of the bid,
+		// as returned by `_getNextEthBidPriceBase(0)`:
+		//    * A plain ETH bid outside the late bid window weighs exactly what it pays.
+		//    * Inside the late bid window, a bid still weighs only the premium-free base: the late bid
+		//      price premium (Comment-202608271) is a pure penalty that buys no extra raffle odds,
+		//      so a maximum-premium bid pays ~5x per unit of raffle weight.
+		//    * An ETH + Random Walk NFT bid weighs the full undiscounted base: the 50% discount
 		//      (Comment-202412036) applies to the price only, which keeps the raffle perk of the discount
 		//      bounded at 2x odds per wei paid.
-		//    * A CST bid weighs the concurrent ETH bid price, which keeps CST bids raffle-eligible
-		//      without needing a CST/ETH exchange rate.
+		//    * A CST bid weighs the concurrent premium-free ETH bid price base, which keeps CST bids
+		//      raffle-eligible without needing a CST/ETH exchange rate.
 		//    * A swallowed ETH bid overpayment (Comment-202502052) does not increase the weight.
 		// The first bid in a bidding round is always ETH with a nonzero price (Comment-202501044,
-		// Comment-202605294), and `getNextEthBidPriceAdvanced` never returns a zero afterwards either,
+		// Comment-202605294), and `_getNextEthBidPriceBase` never returns a zero afterwards either,
 		// so every weight and therefore the round's total raffle weight is guaranteed to be a nonzero.
 		// Comment-202608261 applies.
 		// [/Comment-202608262]
-		uint256 bidRaffleWeight_ = getNextEthBidPriceAdvanced(int256(0));
+		uint256 bidRaffleWeight_ = _getNextEthBidPriceBase(int256(0));
 
 		_bidCommon(message_);
 		_appendBidRaffleWeight(bidRaffleWeight_);
@@ -382,7 +401,19 @@ abstract contract BiddingV3Core is
 	// #region `getNextCstBidPriceAdvanced`
 
 	/// @dev In the original `BiddingV3`, this is `public`. Comment-202608249 applies.
+	/// This adds the V3 late bid price premium on top of the premium-free `_getNextCstBidPriceBase`.
+	/// A zero base stays a zero (Comment-202607119), like it did before the split.
 	function getNextCstBidPriceAdvanced(int256 currentTimeOffset_) internal view returns (uint256) {
+		return _addRoundLateBidPricePremiumAmountIfNeeded(_getNextCstBidPriceBase(currentTimeOffset_), currentTimeOffset_);
+	}
+
+	// #endregion
+	// #region `_getNextCstBidPriceBase`
+
+	/// @notice Calculates the premium-free CST bid price: the V3 linear price decline
+	/// without the V3 late bid price premium.
+	/// Comment-202608271 applies: this is what every stored price update consumes.
+	function _getNextCstBidPriceBase(int256 currentTimeOffset_) internal view returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -399,7 +430,7 @@ abstract contract BiddingV3Core is
 			if (nextCstBidPrice_ <= int256(0)) {
 				return 0;
 			}
-			return _addRoundLateBidPricePremiumAmountIfNeeded(uint256(nextCstBidPrice_), currentTimeOffset_);
+			return uint256(nextCstBidPrice_);
 		}
 	}
 
@@ -488,6 +519,24 @@ abstract contract BiddingV3Core is
 	// #region `_addRoundLateBidPricePremiumAmountIfNeeded`
 
 	/// @param bidPrice_ As mentioned in Comment-202607119, if it's zero the result will be zero as well.
+	/// @dev
+	/// [Comment-202608271]
+	/// The late bid price premium is a one-time toll on the bid that pays it. It never ratchets stored price state:
+	/// every stored price update consumes the premium-free base price.
+	///    * `nextEthBidPrice` grows exponentially from the premium-free ETH bid price
+	///      returned by `_getNextEthBidPriceBase`.
+	///    * `cstDutchAuctionBeginningBidPrice`, and therefore `nextRoundFirstCstDutchAuctionBeginningBidPrice`,
+	///      doubles the premium-free CST bid price returned by `_getNextCstBidPriceBase`.
+	///    * `ethDutchAuctionBeginningBidPrice` doubles the first bid price of the round,
+	///      which never contains a premium anyway, because the premium requires a nonzero `lastBidderAddress`.
+	/// So as soon as a bid extends `mainPrizeTime` (which pushes the premium window at least
+	/// `mainPrizeTimeIncrement - roundLateBidDuration` into the future), all posted bid prices return to
+	/// what they would have been if the premium logic did not exist: a bidder who pays a premium
+	/// hurts only themselves, without raising the price ladder for further bids.
+	/// The premium survives the bid nowhere: even the bid raffle weight (Comment-202608262) uses the
+	/// premium-free base, so a late bid pays up to ~5x per unit of raffle odds. Only `BidPlaced`,
+	/// the `biddersInfo` spent totals, and the actual payment/burn record the premium-inclusive price.
+	/// [/Comment-202608271]
 	function _addRoundLateBidPricePremiumAmountIfNeeded(uint256 bidPrice_, int256 currentTimeOffset_) private view returns (uint256 adjustedBidPrice_) {
 		// #enable_smtchecker /*
 		unchecked
