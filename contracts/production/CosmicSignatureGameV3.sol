@@ -143,8 +143,12 @@ contract CosmicSignatureGameV3 is
 
 		// championDurations =
 		cstDutchAuctionBeginningBidPriceMinLimit = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT_V3;
-		cstBidPriceDeclineMultiplier = CosmicSignatureConstants.INITIAL_CST_BID_PRICE_DECLINE_MULTIPLIER;
-		cstBidPriceDeclineMultiplierChangeDivisor = CosmicSignatureConstants.DEFAULT_CST_BID_PRICE_DECLINE_MULTIPLIER_CHANGE_DIVISOR;
+
+		// [Comment-202608301]
+		// `cstDutchAuctionDuration` and `cstDutchAuctionDurationChangeDivisor` deliberately keep their live V2 values.
+		// In V3+, the CST Dutch auction duration behaves exactly like in V2: Comment-202606101 applies.
+		// [/Comment-202608301]
+
 		roundLateBidDurationDivisor = CosmicSignatureConstants.DEFAULT_ROUND_LATE_BID_DURATION_DIVISOR;
 		roundLateBidPricePremiumAmountBaseMultiplier = CosmicSignatureConstants.DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_BASE_MULTIPLIER;
 		roundLateBidPricePremiumAmountExponent = CosmicSignatureConstants.DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_EXPONENT;

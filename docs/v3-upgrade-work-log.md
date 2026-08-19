@@ -200,6 +200,34 @@ contract hardening and test-model updates. This log covers both; coordinate befo
   fork rehearsal deploy/verify 2 modules. The ABI and behavior baselines are UNCHANGED and both gates pass,
   proving the proxy's interface and behavior survived stages 2 and 3 byte for byte.
 
+- 2026-08-19: THE CST DUTCH AUCTION DURATION REVERT TO THE EXACT V2 BEHAVIOR (Comment-202606101,
+  Comment-202608301). Per the developer's requirement, the V3 CST Dutch auction duration behavior is now
+  IDENTICAL to V2. The V3 decline-multiplier design (a derived duration `ceil(beginningPrice / multiplier)`)
+  violated the required invariants: a CST bid placed past ~half the auction SHORTENED the auction (down to
+  ~a minute after a long bid-free wait, because the beginning price resets to 2x the decayed price), and a
+  main prize claim changed the reported duration with no bid at all. Reverted: `BiddingV3` again drifts the
+  stored `cstDutchAuctionDuration` (an ETH bid reduces it ~0.4%, a CST bid increases it ~0.4%, divisor 250;
+  nothing else changes it), prices with the V2 `beginningPrice * remaining / duration` formula (still wrapped
+  by the V3 late bid premium and still updating stored prices from the premium-free base per
+  Comment-202608271), and reports the stored duration from `getCstDutchAuctionDurations`. Removed:
+  `cstBidPriceDeclineMultiplier` + `cstBidPriceDeclineMultiplierChangeDivisor` (storage, getters, setters,
+  events, constants; the V3 gap is `- 6` now), the `NotImplemented` retirement of the V2 duration setters
+  (they are fully functional in V3 again; `NotImplemented` itself is gone), and the two multiplier
+  initializations in `reinitialize` (the live V2 duration values carry over, Comment-202608301).
+  `BidPlaced` field 8 is `cstDutchAuctionDuration` again, identical to V2 in name and meaning (topic0
+  unchanged). New `CosmicSignatureGameV3-CstDutchAuctionDuration.js` suite enforces the three invariants
+  (exact -0.4% on every ETH bid flavor, exact +0.4% on every CST bid flavor incl. a late bid at the 1 CST
+  price floor, no change from time warps / claims / round transitions / non-bid actions, ETH<->CST
+  losslessness, and a step-for-step V2-vs-V3 differential replay). The fuzz `GameModel`/`Invariants`/
+  `AdminActions`/`UpgradePhase` mirror the V2 rule in V3 (the duration setters are fuzzed on V3 now), a new
+  independent invariant asserts `getCstDutchAuctionDurations()[0] == cstDutchAuctionDuration()` straight from
+  the chain, and a new `cstDutchAuctionDurationWaitProbe` fuzz action warps hours-to-weeks-long bid-free
+  periods and asserts the duration is untouched. The ABI baseline was amended (7 members removed, the
+  `BidPlaced` parameter renamed) and the behavior baseline re-recorded; `LateBidPremium`/`Security` stretch
+  the auction via `setCstDutchAuctionDuration` instead of slowing the decline multiplier. The fork rehearsal
+  now asserts the duration values carry over live and the V2 setters work. `docs/v3-vs-v2-changes.md` and
+  `docs/v3-upgrade-review-2026-08.md` updated.
+
 ## Remaining items for humans
 
 - Decide the open `todo-0` design questions (see the review doc and the cleanup entry above).

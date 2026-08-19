@@ -30,10 +30,6 @@ const DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER =
 	(INITIAL_BID_CST_REWARD_AMOUNT_PER_MINUTE * INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND + 60n / 2n) / 60n;
 
 const DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT_V3 = INITIAL_BID_CST_REWARD_AMOUNT_PER_MINUTE;
-const INITIAL_CST_BID_PRICE_DECLINE_MULTIPLIER =
-	(DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER + INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND / 2n) /
-	(INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND);
-const DEFAULT_CST_BID_PRICE_DECLINE_MULTIPLIER_CHANGE_DIVISOR = 100n;
 const DEFAULT_MAIN_PRIZE_NUM_COSMIC_SIGNATURE_NFTS = 3n;
 const DEFAULT_MAIN_ETH_PRIZE_AMOUNT_PERCENTAGE_V3 = 20n;
 const DEFAULT_CHARITY_ETH_DONATION_AMOUNT_PERCENTAGE_V3 = 5n;
@@ -97,11 +93,11 @@ async function upgradeToV3(contracts_, upgradeOptions_ = {}, gameContractName_ =
 	contracts_.cosmicSignatureGameV3ImplementationAddress = cosmicSignatureGameV3ImplementationAddress_;
 }
 
-/** Asserts every parameter the V3 `reinitialize` sets, at its default. */
+/** Asserts every parameter the V3 `reinitialize` sets, at its default.
+Comment-202608301: `cstDutchAuctionDuration` and `cstDutchAuctionDurationChangeDivisor` are deliberately
+NOT re-initialized (they keep their live V2 values), so they are asserted by the carry-over checks instead. */
 async function assertDefaultV3Initialization(game_) {
 	expect(await game_.cstDutchAuctionBeginningBidPriceMinLimit()).equal(DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT_V3);
-	expect(await game_.cstBidPriceDeclineMultiplier()).equal(INITIAL_CST_BID_PRICE_DECLINE_MULTIPLIER);
-	expect(await game_.cstBidPriceDeclineMultiplierChangeDivisor()).equal(DEFAULT_CST_BID_PRICE_DECLINE_MULTIPLIER_CHANGE_DIVISOR);
 	expect(await game_.roundLateBidDurationDivisor()).equal(DEFAULT_ROUND_LATE_BID_DURATION_DIVISOR);
 	expect(await game_.roundLateBidPricePremiumAmountBaseMultiplier()).equal(DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_BASE_MULTIPLIER);
 	expect(await game_.roundLateBidPricePremiumAmountExponent()).equal(DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_EXPONENT);
@@ -144,32 +140,29 @@ function getV3BidCstRewardAmount(
 }
 
 /**
-JS mirror of the premium-free V3 CST bid price: a linear decline from the beginning bid price
-at `cstBidPriceDeclineMultiplier` CST Wei per second, floored at zero
-(`BiddingV3.getNextCstBidPriceAdvanced`).
+JS mirror of the premium-free CST bid price (`BiddingV3._getNextCstBidPriceBase`, which is
+the V2 `getNextCstBidPriceAdvanced` math): the price declines linearly from the beginning bid price
+to zero over the stored `cstDutchAuctionDuration`.
 @param {bigint} cstDutchAuctionBeginningBidPrice_
 @param {bigint} cstDutchAuctionElapsedDuration_ May be negative.
-@param {bigint} cstBidPriceDeclineMultiplier_
+@param {bigint} cstDutchAuctionDuration_
 */
-function getV3CstBidPrice(cstDutchAuctionBeginningBidPrice_, cstDutchAuctionElapsedDuration_, cstBidPriceDeclineMultiplier_) {
-	const price_ = cstDutchAuctionBeginningBidPrice_ - cstDutchAuctionElapsedDuration_ * cstBidPriceDeclineMultiplier_;
-	return (price_ <= 0n) ? 0n : price_;
+function getCstBidPriceBase(cstDutchAuctionBeginningBidPrice_, cstDutchAuctionElapsedDuration_, cstDutchAuctionDuration_) {
+	const cstDutchAuctionRemainingDuration_ = cstDutchAuctionDuration_ - cstDutchAuctionElapsedDuration_;
+	if (cstDutchAuctionRemainingDuration_ <= 0n) {
+		return 0n;
+	}
+	return cstDutchAuctionBeginningBidPrice_ * cstDutchAuctionRemainingDuration_ / cstDutchAuctionDuration_;
 }
 
-/**
-JS mirror of `BiddingV3._getCstDutchAuctionDuration`: the duration in which the CST bid price
-declines from the beginning bid price to zero.
-*/
-function getV3CstDutchAuctionDuration(cstDutchAuctionBeginningBidPrice_, cstBidPriceDeclineMultiplier_) {
-	return (cstDutchAuctionBeginningBidPrice_ + (cstBidPriceDeclineMultiplier_ - 1n)) / cstBidPriceDeclineMultiplier_;
-}
-
-/** JS mirror of `CosmicSignatureHelpers.tryIncreaseValueExponentially` (an ETH bid increases the decline multiplier). */
+/** JS mirror of `CosmicSignatureHelpers.tryIncreaseValueExponentially`
+(Comment-202606101: a CST bid increases the stored CST Dutch auction duration this way). */
 function tryIncreaseValueExponentially(value_, divisor_) {
 	return value_ + value_ / divisor_;
 }
 
-/** JS mirror of `CosmicSignatureHelpers.tryReduceValueExponentially` (a CST bid reduces the decline multiplier). */
+/** JS mirror of `CosmicSignatureHelpers.tryReduceValueExponentially`
+(Comment-202606101: an ETH bid reduces the stored CST Dutch auction duration this way). */
 function tryReduceValueExponentially(value_, divisor_) {
 	return (value_ + 1n) * divisor_ / (divisor_ + 1n);
 }
@@ -185,8 +178,8 @@ async function findTimeStampWithAffordableCstBidPrice(game_, maxPrice_, minTimeS
 	const latestTimeStamp_ = await getLatestBlockTimestamp();
 	const beginningTimeStamp_ = await game_.cstDutchAuctionBeginningTimeStamp();
 
-	// In V3, `getCstDutchAuctionDurations` derives the duration from the beginning bid price
-	// and `cstBidPriceDeclineMultiplier`.
+	// `getCstDutchAuctionDurations` returns the stored `cstDutchAuctionDuration` (Comment-202606101),
+	// over which the price declines to zero.
 	const auctionEndTimeStamp_ = beginningTimeStamp_ + (await game_.getCstDutchAuctionDurations())[0];
 
 	const numSteps_ = 128n;
@@ -248,8 +241,6 @@ module.exports = {
 	INITIAL_BID_CST_REWARD_AMOUNT_PER_MINUTE,
 	DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER,
 	DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT_V3,
-	INITIAL_CST_BID_PRICE_DECLINE_MULTIPLIER,
-	DEFAULT_CST_BID_PRICE_DECLINE_MULTIPLIER_CHANGE_DIVISOR,
 	DEFAULT_MAIN_PRIZE_NUM_COSMIC_SIGNATURE_NFTS,
 	DEFAULT_MAIN_ETH_PRIZE_AMOUNT_PERCENTAGE_V3,
 	DEFAULT_CHARITY_ETH_DONATION_AMOUNT_PERCENTAGE_V3,
@@ -262,8 +253,7 @@ module.exports = {
 	assertDefaultV3Initialization,
 	addRoundLateBidPricePremiumAmountIfNeeded,
 	getV3BidCstRewardAmount,
-	getV3CstBidPrice,
-	getV3CstDutchAuctionDuration,
+	getCstBidPriceBase,
 	tryIncreaseValueExponentially,
 	tryReduceValueExponentially,
 	findTimeStampWithAffordableCstBidPrice,

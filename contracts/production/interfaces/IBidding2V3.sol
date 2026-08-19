@@ -19,13 +19,10 @@ interface IBidding2V3 {
 	/// In V3+, this is minted to the previous bidder, not to the bidder who placed this bid.
 	/// This is zero on the first bid in a bidding round, because there is no previous bidder to reward.
 	/// Comment-202608022 relates.
-	/// @param cstBidPriceDeclineMultiplier Comment-202608181 applies.
+	/// @param cstDutchAuctionDuration Comment-202606101 applies.
+	/// Comment-202606099 relates.
 	/// This is the value after this bid's adjustment.
-	/// In the V2 version of this event, this parameter slot was `cstDutchAuctionDuration`;
-	/// the event signature and therefore its topic hash are unchanged, so off-chain code
-	/// must reinterpret this field after the V3 upgrade.
-	/// The `getCstDutchAuctionDurations` function still exists; in V3+ it derives the duration
-	/// from the auction beginning bid price and this multiplier.
+	/// This parameter is identical to its V2 counterpart, in both name and meaning.
 	/// @param mainPrizeTime Comment-202412152 applies.
 	event BidPlaced(
 		uint256 indexed roundNum,
@@ -35,7 +32,7 @@ interface IBidding2V3 {
 		int256 indexed randomWalkNftId,
 		string message,
 		uint256 bidCstRewardAmount,
-		uint256 cstBidPriceDeclineMultiplier,
+		uint256 cstDutchAuctionDuration,
 		uint256 mainPrizeTime
 	);
 }

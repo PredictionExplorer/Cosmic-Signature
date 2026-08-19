@@ -1,14 +1,14 @@
 {
 	"note": "Behavior baseline of the CosmicSignatureGameV3 monolith, recorded by test/tests-src/CosmicSignatureGameV3-BehaviorParity.js. Comment-202608242 applies.",
-	"commit": "9496fc3145d280cc8479d3f960650ec006569c71",
-	"generatedAt": "2026-08-14T07:21:33.009Z",
+	"commit": "736b3528c9261d2084b4236bc3740fdcee8b73cd",
+	"generatedAt": "2026-08-19T09:51:39.103Z",
 	"steps": [
 		{
 			"kind": "probe",
-			"label": "retired setter reverts NotImplemented",
+			"label": "non-owner cannot set the CST Dutch auction duration",
 			"outcome": {
 				"succeeded": false,
-				"revertData": "0xd6234725"
+				"revertData": "0x118cdaa700000000000000000000000070997970c51812dc3a010c7d01b50e0d17dc79c8"
 			}
 		},
 		{
@@ -145,8 +145,6 @@
 				"charityAddress": "charity-wallet",
 				"charityEthDonationAmountPercentage": "5",
 				"cstDutchAuctionDurationChangeDivisor": "250",
-				"cstBidPriceDeclineMultiplier": "16666666666666667",
-				"cstBidPriceDeclineMultiplierChangeDivisor": "100",
 				"roundLateBidDurationDivisor": "3000000",
 				"roundLateBidPricePremiumAmountBaseMultiplier": "29228998656",
 				"roundLateBidPricePremiumAmountExponent": "8",
@@ -162,7 +160,7 @@
 					"-9"
 				],
 				"getCstDutchAuctionDurations": [
-					"12000",
+					"43200",
 					"157766409"
 				],
 				"getMainEthPrizeAmount": "11200000000000",
@@ -254,8 +252,8 @@
 							"0"
 						],
 						[
-							"cstBidPriceDeclineMultiplier",
-							"16833333333333333"
+							"cstDutchAuctionDuration",
+							"43028"
 						],
 						[
 							"mainPrizeTime",
@@ -337,8 +335,8 @@
 							"495049504950495049"
 						],
 						[
-							"cstBidPriceDeclineMultiplier",
-							"17001666666666666"
+							"cstDutchAuctionDuration",
+							"42857"
 						],
 						[
 							"mainPrizeTime",
@@ -451,8 +449,8 @@
 							"511551155115511551"
 						],
 						[
-							"cstBidPriceDeclineMultiplier",
-							"17171683333333332"
+							"cstDutchAuctionDuration",
+							"42687"
 						],
 						[
 							"mainPrizeTime",
@@ -534,8 +532,8 @@
 							"643564356435643564"
 						],
 						[
-							"cstBidPriceDeclineMultiplier",
-							"17343400166666665"
+							"cstDutchAuctionDuration",
+							"42517"
 						],
 						[
 							"mainPrizeTime",
@@ -659,8 +657,8 @@
 							"495049504950495049"
 						],
 						[
-							"cstBidPriceDeclineMultiplier",
-							"17516834168333331"
+							"cstDutchAuctionDuration",
+							"42348"
 						],
 						[
 							"mainPrizeTime",
@@ -790,7 +788,7 @@
 				"ethBidPriceIncreaseDivisor": "100",
 				"ethBidRefundAmountInGasToSwallowMaxLimit": "6843",
 				"cstDutchAuctionBeginningTimeStamp": "2208988820",
-				"cstDutchAuctionDuration": "43200",
+				"cstDutchAuctionDuration": "42348",
 				"cstDutchAuctionBeginningBidPrice": "0",
 				"nextRoundFirstCstDutchAuctionBeginningBidPrice": "200000000000000000000",
 				"cstDutchAuctionBeginningBidPriceMinLimit": "1000000000000000000",
@@ -820,8 +818,6 @@
 				"charityAddress": "charity-wallet",
 				"charityEthDonationAmountPercentage": "5",
 				"cstDutchAuctionDurationChangeDivisor": "250",
-				"cstBidPriceDeclineMultiplier": "17516834168333331",
-				"cstBidPriceDeclineMultiplierChangeDivisor": "100",
 				"roundLateBidDurationDivisor": "3000000",
 				"roundLateBidPricePremiumAmountBaseMultiplier": "29228998656",
 				"roundLateBidPricePremiumAmountExponent": "8",
@@ -830,14 +826,14 @@
 				"owner": "owner",
 				"UPGRADE_INTERFACE_VERSION": "5.0.0",
 				"getNextEthBidPrice": "210202010020005",
-				"getNextCstBidPrice": "197530126382265000329",
+				"getNextCstBidPrice": "199334088977047322187",
 				"getBidCstRewardAmount": "181518151815181518",
 				"getEthDutchAuctionDurations": [
 					"174530",
 					"141"
 				],
 				"getCstDutchAuctionDurations": [
-					"11418",
+					"42348",
 					"141"
 				],
 				"getMainEthPrizeAmount": "22194838200400002",
@@ -933,8 +929,8 @@
 							"187293729372937293729"
 						],
 						[
-							"cstBidPriceDeclineMultiplier",
-							"17692002510016664"
+							"cstDutchAuctionDuration",
+							"42180"
 						],
 						[
 							"mainPrizeTime",
@@ -947,7 +943,7 @@
 		{
 			"kind": "transaction",
 			"label": "signer-4 places a CST bid",
-			"blockTimeStamp": "2209000360",
+			"blockTimeStamp": "2209029800",
 			"events": [
 				{
 					"emitter": "token",
@@ -955,15 +951,15 @@
 					"arguments": [
 						[
 							"from",
-							"zero-address"
-						],
-						[
-							"to",
 							"signer-4"
 						],
 						[
+							"to",
+							"zero-address"
+						],
+						[
 							"value",
-							"0"
+							"5689900426742532005"
 						]
 					]
 				},
@@ -981,7 +977,7 @@
 						],
 						[
 							"value",
-							"990099009900990099"
+							"486798679867986798679"
 						]
 					]
 				},
@@ -1003,7 +999,7 @@
 						],
 						[
 							"paidCstPrice",
-							"0"
+							"5689900426742532005"
 						],
 						[
 							"randomWalkNftId",
@@ -1015,11 +1011,11 @@
 						],
 						[
 							"bidCstRewardAmount",
-							"990099009900990099"
+							"486798679867986798679"
 						],
 						[
-							"cstBidPriceDeclineMultiplier",
-							"17516834168333331"
+							"cstDutchAuctionDuration",
+							"42348"
 						],
 						[
 							"mainPrizeTime",
@@ -1032,7 +1028,7 @@
 		{
 			"kind": "transaction",
 			"label": "signer-4 places a CST bid and donates an ERC-20 token",
-			"blockTimeStamp": "2209000420",
+			"blockTimeStamp": "2209029860",
 			"events": [
 				{
 					"emitter": "token",
@@ -1040,15 +1036,15 @@
 					"arguments": [
 						[
 							"from",
-							"zero-address"
-						],
-						[
-							"to",
 							"signer-4"
 						],
 						[
+							"to",
+							"zero-address"
+						],
+						[
 							"value",
-							"0"
+							"11363677587894974658"
 						]
 					]
 				},
@@ -1088,7 +1084,7 @@
 						],
 						[
 							"paidCstPrice",
-							"0"
+							"11363677587894974658"
 						],
 						[
 							"randomWalkNftId",
@@ -1103,8 +1099,8 @@
 							"990099009900990099"
 						],
 						[
-							"cstBidPriceDeclineMultiplier",
-							"17343400166666665"
+							"cstDutchAuctionDuration",
+							"42517"
 						],
 						[
 							"mainPrizeTime",
@@ -1175,7 +1171,7 @@
 		{
 			"kind": "transaction",
 			"label": "signer-4 places a CST bid and donates an NFT",
-			"blockTimeStamp": "2209000481",
+			"blockTimeStamp": "2209029921",
 			"events": [
 				{
 					"emitter": "token",
@@ -1183,15 +1179,15 @@
 					"arguments": [
 						[
 							"from",
-							"zero-address"
-						],
-						[
-							"to",
 							"signer-4"
 						],
 						[
+							"to",
+							"zero-address"
+						],
+						[
 							"value",
-							"0"
+							"22694747779554956562"
 						]
 					]
 				},
@@ -1231,7 +1227,7 @@
 						],
 						[
 							"paidCstPrice",
-							"0"
+							"22694747779554956562"
 						],
 						[
 							"randomWalkNftId",
@@ -1246,8 +1242,8 @@
 							"1006600660066006600"
 						],
 						[
-							"cstBidPriceDeclineMultiplier",
-							"17171683333333332"
+							"cstDutchAuctionDuration",
+							"42687"
 						],
 						[
 							"mainPrizeTime",
@@ -1322,7 +1318,7 @@
 			"label": "setter requiring an inactive round is rejected mid-round",
 			"outcome": {
 				"succeeded": false,
-				"revertData": "0xd0fd11df00000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000083aa7e940000000000000000000000000000000000000000000000000000000083aaac21000000000000000000000000000000000000000000000000000000000000002c5468652063757272656e742062696464696e6720726f756e6420697320616c7265616479206163746976652e0000000000000000000000000000000000000000"
+				"revertData": "0xd0fd11df00000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000083aa7e940000000000000000000000000000000000000000000000000000000083ab1f21000000000000000000000000000000000000000000000000000000000000002c5468652063757272656e742062696464696e6720726f756e6420697320616c7265616479206163746976652e0000000000000000000000000000000000000000"
 			}
 		},
 		{
@@ -1332,12 +1328,12 @@
 				"roundNum": "1",
 				"lastBidderAddress": "signer-4",
 				"lastCstBidderAddress": "signer-4",
-				"enduranceChampionAddress": "signer-4",
-				"enduranceChampionStartTimeStamp": "2208988950",
-				"enduranceChampionDuration": "11350",
-				"prevEnduranceChampionDuration": "39",
-				"chronoWarriorAddress": "signer-2",
-				"chronoWarriorDuration": "77",
+				"enduranceChampionAddress": "signer-1",
+				"enduranceChampionStartTimeStamp": "2209000300",
+				"enduranceChampionDuration": "29500",
+				"prevEnduranceChampionDuration": "11350",
+				"chronoWarriorAddress": "signer-4",
+				"chronoWarriorDuration": "22661",
 				"delayDurationBeforeRoundActivation": "1800",
 				"roundActivationTime": "2208988820",
 				"ethDutchAuctionDurationDivisor": "20833",
@@ -1346,10 +1342,10 @@
 				"nextEthBidPrice": "212304030120206",
 				"ethBidPriceIncreaseDivisor": "100",
 				"ethBidRefundAmountInGasToSwallowMaxLimit": "6843",
-				"cstDutchAuctionBeginningTimeStamp": "2209000481",
-				"cstDutchAuctionDuration": "43200",
-				"cstDutchAuctionBeginningBidPrice": "1000000000000000000",
-				"nextRoundFirstCstDutchAuctionBeginningBidPrice": "1000000000000000000",
+				"cstDutchAuctionBeginningTimeStamp": "2209029921",
+				"cstDutchAuctionDuration": "42687",
+				"cstDutchAuctionBeginningBidPrice": "45389495559109913124",
+				"nextRoundFirstCstDutchAuctionBeginningBidPrice": "11379800853485064010",
 				"cstDutchAuctionBeginningBidPriceMinLimit": "1000000000000000000",
 				"bidMessageLengthMaxLimit": "280",
 				"bidCstRewardAmountMultiplier": "60000000000000000000000000",
@@ -1377,8 +1373,6 @@
 				"charityAddress": "charity-wallet",
 				"charityEthDonationAmountPercentage": "5",
 				"cstDutchAuctionDurationChangeDivisor": "250",
-				"cstBidPriceDeclineMultiplier": "17171683333333332",
-				"cstBidPriceDeclineMultiplierChangeDivisor": "100",
 				"roundLateBidDurationDivisor": "3000000",
 				"roundLateBidPricePremiumAmountBaseMultiplier": "29228998656",
 				"roundLateBidPricePremiumAmountExponent": "8",
@@ -1387,14 +1381,14 @@
 				"owner": "owner",
 				"UPGRADE_INTERFACE_VERSION": "5.0.0",
 				"getNextEthBidPrice": "212304030120206",
-				"getNextCstBidPrice": "1000000000000000000",
+				"getNextCstBidPrice": "45389495559109913124",
 				"getBidCstRewardAmount": "0",
 				"getEthDutchAuctionDurations": [
 					"174530",
-					"11661"
+					"41101"
 				],
 				"getCstDutchAuctionDurations": [
-					"59",
+					"42687",
 					"0"
 				],
 				"getMainEthPrizeAmount": "22236878602404003",
@@ -1404,17 +1398,17 @@
 				"getCosmicSignatureNftStakingTotalEthRewardAmount": "5559219650601000",
 				"getMainPrizeTimeIncrement": "3636",
 				"getInitialDurationUntilMainPrize": "87263",
-				"getDurationUntilMainPrize": "104690",
-				"getDurationUntilMainPrizeRaw": "104690",
-				"getDurationUntilRoundActivation": "-11661",
-				"getDurationElapsedSinceRoundActivation": "11661",
+				"getDurationUntilMainPrize": "75250",
+				"getDurationUntilMainPrizeRaw": "75250",
+				"getDurationUntilRoundActivation": "-41101",
+				"getDurationElapsedSinceRoundActivation": "41101",
 				"getRoundLateBidDuration": "1212",
 				"getEthPlusRandomWalkNftBidPrice": "500000000000000000",
 				"tryGetCurrentChampions": [
+					"signer-1",
+					"29500",
 					"signer-4",
-					"11350",
-					"signer-4",
-					"11492"
+					"22661"
 				],
 				"getTotalNumBids(currentRound)": "9",
 				"championDurations(1)": [
@@ -1429,7 +1423,7 @@
 				"balance:prizes-wallet": "11999999999999",
 				"balance:charity-wallet": "7000000000000",
 				"balance:staking-wallet-cosmic-signature-nft": "0",
-				"totalSupply:token": "16292425742574257425740",
+				"totalSupply:token": "16738485997638150771095",
 				"totalSupply:nft": "13",
 				"balanceOf:token:marketing-wallet": "3000000000000000000000"
 			}
@@ -1439,7 +1433,7 @@
 			"label": "early claim by the last bidder is rejected",
 			"outcome": {
 				"succeeded": false,
-				"revertData": "0x8d31bb1500000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000083ac45130000000000000000000000000000000000000000000000000000000083aaac21000000000000000000000000000000000000000000000000000000000000001c4e6f7420656e6f7567682074696d652068617320656c61707365642e00000000"
+				"revertData": "0x8d31bb1500000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000083ac45130000000000000000000000000000000000000000000000000000000083ab1f21000000000000000000000000000000000000000000000000000000000000001c4e6f7420656e6f7567682074696d652068617320656c61707365642e00000000"
 			}
 		},
 		{
@@ -1447,7 +1441,7 @@
 			"label": "claim by a non-last-bidder before the timeout is rejected",
 			"outcome": {
 				"succeeded": false,
-				"revertData": "0xcd96628c000000000000000000000000000000000000000000000000000000000000008000000000000000000000000015d34aaf54267db7d7c367839aaf71a00a2c6a6500000000000000000000000070997970c51812dc3a010c7d01b50e0d17dc79c80000000000000000000000000000000000000000000000000000000000043bf200000000000000000000000000000000000000000000000000000000000000614f6e6c7920746865206c61737420626964646572206973207065726d697474656420746f20636c61696d207468652062696464696e6720726f756e64206d61696e207072697a65206265666f726520612074696d656f757420657870697265732e00000000000000000000000000000000000000000000000000000000000000"
+				"revertData": "0xcd96628c000000000000000000000000000000000000000000000000000000000000008000000000000000000000000015d34aaf54267db7d7c367839aaf71a00a2c6a6500000000000000000000000070997970c51812dc3a010c7d01b50e0d17dc79c8000000000000000000000000000000000000000000000000000000000003c8f200000000000000000000000000000000000000000000000000000000000000614f6e6c7920746865206c61737420626964646572206973207065726d697474656420746f20636c61696d207468652062696464696e6720726f756e64206d61696e207072697a65206265666f726520612074696d656f757420657870697265732e00000000000000000000000000000000000000000000000000000000000000"
 			}
 		},
 		{
@@ -2895,7 +2889,7 @@
 						],
 						[
 							"chronoWarriorAddress",
-							"signer-4"
+							"signer-1"
 						],
 						[
 							"ethPrizeAmount",
@@ -2985,8 +2979,8 @@
 				"lastBidderAddress": "zero-address",
 				"lastCstBidderAddress": "zero-address",
 				"enduranceChampionAddress": "zero-address",
-				"enduranceChampionStartTimeStamp": "2209000481",
-				"enduranceChampionDuration": "104790",
+				"enduranceChampionStartTimeStamp": "2209029921",
+				"enduranceChampionDuration": "75350",
 				"prevEnduranceChampionDuration": "0",
 				"chronoWarriorAddress": "zero-address",
 				"chronoWarriorDuration": "115792089237316195423570985008687907853269984665640564039457584007913129639935",
@@ -2998,10 +2992,10 @@
 				"nextEthBidPrice": "212304030120206",
 				"ethBidPriceIncreaseDivisor": "100",
 				"ethBidRefundAmountInGasToSwallowMaxLimit": "6843",
-				"cstDutchAuctionBeginningTimeStamp": "2209000481",
-				"cstDutchAuctionDuration": "43200",
-				"cstDutchAuctionBeginningBidPrice": "1000000000000000000",
-				"nextRoundFirstCstDutchAuctionBeginningBidPrice": "1000000000000000000",
+				"cstDutchAuctionBeginningTimeStamp": "2209029921",
+				"cstDutchAuctionDuration": "42687",
+				"cstDutchAuctionBeginningBidPrice": "45389495559109913124",
+				"nextRoundFirstCstDutchAuctionBeginningBidPrice": "11379800853485064010",
 				"cstDutchAuctionBeginningBidPriceMinLimit": "1000000000000000000",
 				"bidMessageLengthMaxLimit": "280",
 				"bidCstRewardAmountMultiplier": "60000000000000000000000000",
@@ -3029,8 +3023,6 @@
 				"charityAddress": "charity-wallet",
 				"charityEthDonationAmountPercentage": "5",
 				"cstDutchAuctionDurationChangeDivisor": "250",
-				"cstBidPriceDeclineMultiplier": "17171683333333332",
-				"cstBidPriceDeclineMultiplierChangeDivisor": "100",
 				"roundLateBidDurationDivisor": "3000000",
 				"roundLateBidPricePremiumAmountBaseMultiplier": "29228998656",
 				"roundLateBidPricePremiumAmountExponent": "8",
@@ -3046,8 +3038,8 @@
 					"-1800"
 				],
 				"getCstDutchAuctionDurations": [
-					"59",
-					"104790"
+					"42687",
+					"75350"
 				],
 				"getMainEthPrizeAmount": "12230283231322202",
 				"getCharityEthDonationAmount": "3057570807830550",
@@ -3070,8 +3062,8 @@
 				],
 				"getTotalNumBids(currentRound)": "0",
 				"championDurations(1)": [
-					"104790",
-					"93440"
+					"75350",
+					"47771"
 				],
 				"championDurations(2)": [
 					"0",
@@ -3081,7 +3073,7 @@
 				"balance:prizes-wallet": "22248878602404001",
 				"balance:charity-wallet": "5566219650601000",
 				"balance:staking-wallet-cosmic-signature-nft": "0",
-				"totalSupply:token": "33292425742574257425740",
+				"totalSupply:token": "33738485997638150771095",
 				"totalSupply:nft": "29",
 				"balanceOf:token:marketing-wallet": "6000000000000000000000"
 			}
@@ -3155,8 +3147,8 @@
 							"0"
 						],
 						[
-							"cstBidPriceDeclineMultiplier",
-							"17343400166666665"
+							"cstDutchAuctionDuration",
+							"42517"
 						],
 						[
 							"mainPrizeTime",
@@ -3174,8 +3166,8 @@
 				"lastBidderAddress": "signer-5",
 				"lastCstBidderAddress": "zero-address",
 				"enduranceChampionAddress": "zero-address",
-				"enduranceChampionStartTimeStamp": "2209000481",
-				"enduranceChampionDuration": "104790",
+				"enduranceChampionStartTimeStamp": "2209029921",
+				"enduranceChampionDuration": "75350",
 				"prevEnduranceChampionDuration": "0",
 				"chronoWarriorAddress": "zero-address",
 				"chronoWarriorDuration": "115792089237316195423570985008687907853269984665640564039457584007913129639935",
@@ -3188,9 +3180,9 @@
 				"ethBidPriceIncreaseDivisor": "100",
 				"ethBidRefundAmountInGasToSwallowMaxLimit": "6843",
 				"cstDutchAuctionBeginningTimeStamp": "2209105581",
-				"cstDutchAuctionDuration": "43200",
-				"cstDutchAuctionBeginningBidPrice": "1000000000000000000",
-				"nextRoundFirstCstDutchAuctionBeginningBidPrice": "1000000000000000000",
+				"cstDutchAuctionDuration": "42517",
+				"cstDutchAuctionBeginningBidPrice": "45389495559109913124",
+				"nextRoundFirstCstDutchAuctionBeginningBidPrice": "11379800853485064010",
 				"cstDutchAuctionBeginningBidPriceMinLimit": "1000000000000000000",
 				"bidMessageLengthMaxLimit": "280",
 				"bidCstRewardAmountMultiplier": "60000000000000000000000000",
@@ -3218,8 +3210,6 @@
 				"charityAddress": "charity-wallet",
 				"charityEthDonationAmountPercentage": "5",
 				"cstDutchAuctionDurationChangeDivisor": "250",
-				"cstBidPriceDeclineMultiplier": "17343400166666665",
-				"cstBidPriceDeclineMultiplierChangeDivisor": "100",
 				"roundLateBidDurationDivisor": "3000000",
 				"roundLateBidPricePremiumAmountBaseMultiplier": "29228998656",
 				"roundLateBidPricePremiumAmountExponent": "8",
@@ -3228,14 +3218,14 @@
 				"owner": "owner",
 				"UPGRADE_INTERFACE_VERSION": "5.0.0",
 				"getNextEthBidPrice": "404000000000001",
-				"getNextCstBidPrice": "1000000000000000000",
+				"getNextCstBidPrice": "11379800853485064010",
 				"getBidCstRewardAmount": "0",
 				"getEthDutchAuctionDurations": [
 					"176276",
 					"0"
 				],
 				"getCstDutchAuctionDurations": [
-					"58",
+					"42517",
 					"0"
 				],
 				"getMainEthPrizeAmount": "12310283231322202",
@@ -3259,8 +3249,8 @@
 				],
 				"getTotalNumBids(currentRound)": "1",
 				"championDurations(1)": [
-					"104790",
-					"93440"
+					"75350",
+					"47771"
 				],
 				"championDurations(2)": [
 					"0",
@@ -3270,7 +3260,7 @@
 				"balance:prizes-wallet": "22248878602404001",
 				"balance:charity-wallet": "5566219650601000",
 				"balance:staking-wallet-cosmic-signature-nft": "0",
-				"totalSupply:token": "33292425742574257425740",
+				"totalSupply:token": "33738485997638150771095",
 				"totalSupply:nft": "29",
 				"balanceOf:token:marketing-wallet": "6000000000000000000000"
 			}

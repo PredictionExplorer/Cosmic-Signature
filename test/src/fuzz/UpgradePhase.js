@@ -71,8 +71,9 @@ Getters that must survive the V2 -> V3 upgrade unchanged.
 The V3 `reinitialize` re-initializes `cstDutchAuctionBeginningBidPriceMinLimit` and
 `bidCstRewardAmountMultiplier`, and overwrites the five ETH prize percentages,
 so those values are excluded here and asserted by `assertDefaultV3Initialization` instead.
-The vestigial V2 parameters `cstDutchAuctionDuration` and `cstDutchAuctionDurationChangeDivisor`
-are NOT re-initialized: V3 simply stops using them, and their getters keep returning the stale V2 values.
+The V2 parameters `cstDutchAuctionDuration` and `cstDutchAuctionDurationChangeDivisor`
+are NOT re-initialized (Comment-202608301): they keep their live V2 values,
+and V3 keeps using them exactly like V2 did.
 */
 const OVERWRITTEN_GETTERS_ACROSS_V3 = new Set([
 	"cstDutchAuctionBeginningBidPriceMinLimit",
@@ -227,8 +228,6 @@ async function performUpgradeToV3(ctx_) {
 
 		// The new V3 getters do not exist on V2 yet.
 		await expectUnknownSelector(v2Game_, hre.ethers.id("roundLateBidDurationDivisor()").slice(0, 10));
-		await expectUnknownSelector(v2Game_, hre.ethers.id("cstBidPriceDeclineMultiplier()").slice(0, 10));
-		await expectUnknownSelector(v2Game_, hre.ethers.id("cstBidPriceDeclineMultiplierChangeDivisor()").slice(0, 10));
 		await expectUnknownSelector(v2Game_, hre.ethers.id("mainPrizeNumCosmicSignatureNfts()").slice(0, 10));
 		await expectUnknownSelector(v2Game_, hre.ethers.id("getRoundLateBidDuration()").slice(0, 10));
 	}

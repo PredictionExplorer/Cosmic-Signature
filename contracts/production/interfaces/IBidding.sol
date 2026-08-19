@@ -218,7 +218,6 @@ interface IBidding {
 	/// Calculates the current price that a bidder is required to pay to place a CST bid.
 	/// The price declines linearly over CST Dutch auction duration.
 	/// In V2+, it also slightly declines on each ETH bid, as mentioned in Comment-202606101.
-	/// todo-0 What about V3+?
 	/// [/Comment-202605271]
 	/// See also: `getNextCstBidPrice`.
 	/// @param currentTimeOffset_ .

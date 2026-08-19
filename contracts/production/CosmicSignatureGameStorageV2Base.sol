@@ -128,14 +128,15 @@ abstract contract CosmicSignatureGameStorageV2Base is ICosmicSignatureGameStorag
 
 	/// @notice
 	/// [Comment-202607293]
-	/// In V2 only.
+	/// In V2+.
 	/// [/Comment-202607293]
 	/// [Comment-202606101]
-	/// todo-0 Do parts of this comment apply to V3+?
 	/// How long CST Dutch auction lasts.
 	/// We reduce this on each ETH bid and increase on each CST bid,
 	/// which encourages bidders to place the same number of ETH and CST bids, which, in turn, increases the value of CST.
 	/// A consequence of the logic is that an ETH bid results in a small instant reduction of CST bid price, which is OK.
+	/// Nothing besides bids and the `setCstDutchAuctionDuration` configuration setter changes this,
+	/// so, in particular, the passage of time without bids never does.
 	/// We change this based on `cstDutchAuctionDurationChangeDivisor`.
 	/// The change formulas are described in Comment-202606059.
 	/// [/Comment-202606101]
@@ -143,9 +144,6 @@ abstract contract CosmicSignatureGameStorageV2Base is ICosmicSignatureGameStorag
 	/// Comment-202411172 applies.
 	/// @dev One might want to make this non-configurable. But when we increase `div` in the Comment-202606059 formula,
 	/// we also must increase `var` if `var < div`.
-	/// todo-0 The above does not apply to V3+, but maybe cross-ref.
-	/// todo-0 For that reason we don't need to include the value in the `BidPlaced` event.
-	/// todo-0 Actually the above todo is incorrect.
 	/// [Comment-202606057]
 	/// This occupies the same storage slot as `CosmicSignatureGameStorage.cstDutchAuctionDurationDivisor`.
 	/// [/Comment-202606057]
@@ -328,13 +326,9 @@ abstract contract CosmicSignatureGameStorageV2Base is ICosmicSignatureGameStorag
 	// #endregion
 	// #region Bidding V2
 
-	/// todo-0 V3+: Comment that `cstDutchAuctionDuration` and `cstDutchAuctionDurationChangeDivisor` not used.
-	/// todo-0 Replaced with `cstBidPriceDeclineMultiplier` and `cstBidPriceDeclineMultiplierChangeDivisor`.
-	/// todo-0 Comment and cross-ref.
 	/// @notice Comment-202607293 applies.
 	/// Comment-202606101 relates.
 	/// Comment-202411064 applies.
-	/// @dev Comment-202607301 relates.
 	uint256 public cstDutchAuctionDurationChangeDivisor;
 
 	// #endregion

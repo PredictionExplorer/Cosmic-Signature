@@ -2,7 +2,7 @@
 pragma solidity =0.8.34;
 
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
-import { ISystemManagementV2, SystemManagementV2 } from "./SystemManagementV2.sol";
+import { SystemManagementV2 } from "./SystemManagementV2.sol";
 import { CosmicSignatureGameStorageV3Base } from "./CosmicSignatureGameStorageV3Base.sol";
 import { ISystemEventsV3 } from "./interfaces/ISystemEventsV3.sol";
 import { ISystemManagementV3 } from "./interfaces/ISystemManagementV3.sol";
@@ -12,24 +12,6 @@ abstract contract SystemManagementV3 is
 	CosmicSignatureGameStorageV3Base,
 	ISystemEventsV3,
 	ISystemManagementV3 {
-	function setCstDutchAuctionDuration(uint256 /* newValue_ */) /* external */ public override (ISystemManagementV2, SystemManagementV2) virtual /* onlyOwner */ /* _onlyRoundIsInactive */ {
-		revert CosmicSignatureErrors.NotImplemented();
-	}
-
-	function setCstDutchAuctionDurationChangeDivisor(uint256 /* newValue_ */) /* external */ public override (ISystemManagementV2, SystemManagementV2) virtual /* onlyOwner */ /* _onlyRoundIsInactive */ {
-		revert CosmicSignatureErrors.NotImplemented();
-	}
-
-	function setCstBidPriceDeclineMultiplier(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive _providedValueIsNonZero(newValue_) {
-		cstBidPriceDeclineMultiplier = newValue_;
-		emit CstBidPriceDeclineMultiplierChanged(newValue_);
-	}
-
-	function setCstBidPriceDeclineMultiplierChangeDivisor(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive _providedValueIsNonZero(newValue_) {
-		cstBidPriceDeclineMultiplierChangeDivisor = newValue_;
-		emit CstBidPriceDeclineMultiplierChangeDivisorChanged(newValue_);
-	}
-
 	function setRoundLateBidDurationDivisor(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive _providedValueIsNonZero(newValue_) {
 		roundLateBidDurationDivisor = newValue_;
 		emit RoundLateBidDurationDivisorChanged(newValue_);
@@ -60,8 +42,7 @@ abstract contract SystemManagementV3 is
 	/// Because both this setter and `_authorizeUpgrade` require an inactive bidding round,
 	/// a round in which a bid has already been placed would be impossible to complete or repair,
 	/// so the Game would be bricked permanently.
-	/// A zero `roundLateBidDurationDivisor`, `cstBidPriceDeclineMultiplier`, or
-	/// `cstBidPriceDeclineMultiplierChangeDivisor` would make bid price calculations and/or bid placements
+	/// A zero `roundLateBidDurationDivisor` would make bid price calculations and/or bid placements
 	/// revert with `Panic(0x12)` until the value is repaired after the current bidding round completes.
 	/// A zero `roundLateBidPricePremiumAmountExponent` would make the premium equal the whole bid price,
 	/// effectively doubling it, which is likely not what the contract owner intends.

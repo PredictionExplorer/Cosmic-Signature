@@ -164,14 +164,17 @@ abstract contract BiddingV3 is
 		// Comment-202608271 applies.
 		nextEthBidPrice = CosmicSignatureHelpers.tryIncreaseValueExponentially(ethBidPriceBase_, ethBidPriceIncreaseDivisor) + 1;
 
-		uint256 newCstBidPriceDeclineMultiplier_ = _tryIncreaseCstBidPriceDeclineMultiplier();
+		// Comment-202606101 applies.
+		uint256 newCstDutchAuctionDuration_ = CosmicSignatureHelpers.tryReduceValueExponentially(cstDutchAuctionDuration, cstDutchAuctionDurationChangeDivisor);
+		cstDutchAuctionDuration = newCstDutchAuctionDuration_;
+
 		_bidCommon(/*bidType_,*/ message_);
 
 		// Comment-202608262 applies.
 		_appendBidRaffleWeight(ethBidPriceBase_);
 
 		// Comment-202608122 applies.
-		_emitBidPlaced(int256(paidEthPrice_), -1, randomWalkNftId_, message_, bidCstRewardAmount_, newCstBidPriceDeclineMultiplier_);
+		_emitBidPlaced(int256(paidEthPrice_), -1, randomWalkNftId_, message_, bidCstRewardAmount_, newCstDutchAuctionDuration_);
 
 		// #endregion
 		// #region
@@ -299,7 +302,10 @@ abstract contract BiddingV3 is
 			nextRoundFirstCstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
 		}
 		lastCstBidderAddress = _msgSender();
-		uint256 newCstBidPriceDeclineMultiplier_ = _tryReduceCstBidPriceDeclineMultiplier();
+
+		// Comment-202606101 applies.
+		uint256 newCstDutchAuctionDuration_ = CosmicSignatureHelpers.tryIncreaseValueExponentially(cstDutchAuctionDuration, cstDutchAuctionDurationChangeDivisor);
+		cstDutchAuctionDuration = newCstDutchAuctionDuration_;
 
 		// Comment-202608262 applies.
 		// The premium-free base is the V2 price: the same `super` call that `getNextEthBidPriceAdvanced` wraps.
@@ -309,7 +315,7 @@ abstract contract BiddingV3 is
 		_appendBidRaffleWeight(bidRaffleWeight_);
 
 		// Comment-202608122 applies.
-		_emitBidPlaced(-1, int256(paidPrice_), -1, message_, bidCstRewardAmount_, newCstBidPriceDeclineMultiplier_);
+		_emitBidPlaced(-1, int256(paidPrice_), -1, message_, bidCstRewardAmount_, newCstDutchAuctionDuration_);
 	}
 
 	// #endregion
@@ -342,7 +348,7 @@ abstract contract BiddingV3 is
 		int256 randomWalkNftId_,
 		string memory message_,
 		uint256 bidCstRewardAmount_,
-		uint256 newCstBidPriceDeclineMultiplier_
+		uint256 newCstDutchAuctionDuration_
 	) private {
 		emit BidPlaced(
 			roundNum,
@@ -352,7 +358,7 @@ abstract contract BiddingV3 is
 			randomWalkNftId_,
 			message_,
 			bidCstRewardAmount_,
-			newCstBidPriceDeclineMultiplier_,
+			newCstDutchAuctionDuration_,
 			mainPrizeTime
 		);
 	}
@@ -369,27 +375,44 @@ abstract contract BiddingV3 is
 	// #endregion
 	// #region `_getNextCstBidPriceBase`
 
-	/// @notice Calculates the premium-free CST bid price: the V3 linear price decline
-	/// without the V3 late bid price premium.
+	/// @notice Calculates the premium-free CST bid price: the V2 linear price decline
+	/// over `cstDutchAuctionDuration`, without the V3 late bid price premium.
+	/// This math is identical to the V2 `getNextCstBidPriceAdvanced`.
 	/// Comment-202608271 applies: this is what every stored price update consumes.
 	function _getNextCstBidPriceBase(int256 currentTimeOffset_) private view returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
 		{
-			// This can be negative.
+			// Comment-202608054 applies.
 			// Comment-202608052 applies.
-			int256 cstDutchAuctionElapsedDuration_ = int256(_getCstDutchAuctionElapsedDuration()) + currentTimeOffset_;
+			int256 cstDutchAuctionRemainingDuration_ = _getCstDutchAuctionRemainingDuration() - currentTimeOffset_;
+
+			if (cstDutchAuctionRemainingDuration_ <= int256(0)) {
+				return 0;
+			}
 
 			// Comment-202501307 relates and/or applies.
 			uint256 cstDutchAuctionBeginningBidPrice_ =
 				(lastCstBidderAddress == address(0)) ? nextRoundFirstCstDutchAuctionBeginningBidPrice : cstDutchAuctionBeginningBidPrice;
 
-			int256 nextCstBidPrice_ = int256(cstDutchAuctionBeginningBidPrice_) - cstDutchAuctionElapsedDuration_ * int256(cstBidPriceDeclineMultiplier);
-			if (nextCstBidPrice_ <= int256(0)) {
-				return 0;
-			}
-			return uint256(nextCstBidPrice_);
+			uint256 nextCstBidPrice_ = cstDutchAuctionBeginningBidPrice_ * uint256(cstDutchAuctionRemainingDuration_) / cstDutchAuctionDuration;
+			return nextCstBidPrice_;
+		}
+	}
+
+	// #endregion
+	// #region `_getCstDutchAuctionRemainingDuration`
+
+	/// @notice This math is identical to the V2 `_getCstDutchAuctionRemainingDuration`.
+	function _getCstDutchAuctionRemainingDuration() private view returns (int256) {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			uint256 cstDutchAuctionElapsedDuration_ = _getCstDutchAuctionElapsedDuration();
+			int256 cstDutchAuctionRemainingDuration_ = int256(cstDutchAuctionDuration) - int256(cstDutchAuctionElapsedDuration_);
+			return cstDutchAuctionRemainingDuration_;
 		}
 	}
 
@@ -435,82 +458,16 @@ abstract contract BiddingV3 is
 	}
 
 	// #endregion
-	// #region `_tryIncreaseCstBidPriceDeclineMultiplier`
-
-	function _tryIncreaseCstBidPriceDeclineMultiplier() private returns (uint256) {
-		// // #enable_smtchecker /*
-		// unchecked
-		// // #enable_smtchecker */
-		{
-			// // todo-0 Test what this equals.
-			// uint256 bidCstRewardAmountPerSecond_ = bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds;
-			// uint256 cstBidPriceDeclineEffectiveMultiplier_ = cstBidPriceDeclineMultiplier + bidCstRewardAmountPerSecond_;
-			// cstBidPriceDeclineEffectiveMultiplier_ = CosmicSignatureHelpers.tryIncreaseValueExponentially(cstBidPriceDeclineEffectiveMultiplier_, cstBidPriceDeclineMultiplierChangeDivisor);
-			// int256 newCstBidPriceDeclineMultiplier_ = int256(cstBidPriceDeclineEffectiveMultiplier_) - int256(bidCstRewardAmountPerSecond_);
-			// // #enable_asserts assert(newCstBidPriceDeclineMultiplier_ > int256(0));
-			// cstBidPriceDeclineMultiplier = uint256(newCstBidPriceDeclineMultiplier_);
-
-			uint256 newCstBidPriceDeclineMultiplier_ =
-				CosmicSignatureHelpers.tryIncreaseValueExponentially(cstBidPriceDeclineMultiplier, cstBidPriceDeclineMultiplierChangeDivisor);
-			cstBidPriceDeclineMultiplier = newCstBidPriceDeclineMultiplier_;
-			return newCstBidPriceDeclineMultiplier_;
-		}
-	}
-
-	// #endregion
-	// #region `_tryReduceCstBidPriceDeclineMultiplier`
-
-	function _tryReduceCstBidPriceDeclineMultiplier() private returns (uint256) {
-		// // #enable_smtchecker /*
-		// unchecked
-		// // #enable_smtchecker */
-		{
-			// // todo-0 Test what this equals.
-			// uint256 bidCstRewardAmountPerSecond_ = bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds;
-			// uint256 cstBidPriceDeclineEffectiveMultiplier_ = cstBidPriceDeclineMultiplier + bidCstRewardAmountPerSecond_;
-			// cstBidPriceDeclineEffectiveMultiplier_ = CosmicSignatureHelpers.tryReduceValueExponentially(cstBidPriceDeclineEffectiveMultiplier_, cstBidPriceDeclineMultiplierChangeDivisor);
-			// int256 newCstBidPriceDeclineMultiplier_ = int256(cstBidPriceDeclineEffectiveMultiplier_) - int256(bidCstRewardAmountPerSecond_);
-			// if (newCstBidPriceDeclineMultiplier_ <= int256(0)) {
-			// 	newCstBidPriceDeclineMultiplier_ = int256(1);
-			// }
-			// cstBidPriceDeclineMultiplier = uint256(newCstBidPriceDeclineMultiplier_);
-
-			uint256 newCstBidPriceDeclineMultiplier_ =
-				CosmicSignatureHelpers.tryReduceValueExponentially(cstBidPriceDeclineMultiplier, cstBidPriceDeclineMultiplierChangeDivisor);
-			cstBidPriceDeclineMultiplier = newCstBidPriceDeclineMultiplier_;
-			return newCstBidPriceDeclineMultiplier_;
-		}
-	}
-
-	// #endregion
 	// #region `getCstDutchAuctionDurations`
 
+	/// @notice This math is identical to the V2 `getCstDutchAuctionDurations`.
 	function getCstDutchAuctionDurations() external view override /* virtual */ returns (uint256, uint256) {
 		// // #enable_smtchecker /*
 		// unchecked
 		// // #enable_smtchecker */
 
-		uint256 cstDutchAuctionDuration_ = _getCstDutchAuctionDuration();
 		uint256 cstDutchAuctionElapsedDuration_ = _getCstDutchAuctionElapsedDuration();
-		return (cstDutchAuctionDuration_, cstDutchAuctionElapsedDuration_);
-	}
-
-	// #endregion
-	// #region `_getCstDutchAuctionDuration`
-
-	/// @notice Comment-202607293 relates.
-	function _getCstDutchAuctionDuration() private view returns (uint256) {
-		// #enable_smtchecker /*
-		unchecked
-		// #enable_smtchecker */
-		{
-			// Comment-202501307 relates and/or applies.
-			uint256 cstDutchAuctionBeginningBidPrice_ =
-				(lastCstBidderAddress == address(0)) ? nextRoundFirstCstDutchAuctionBeginningBidPrice : cstDutchAuctionBeginningBidPrice;
-
-			uint256 cstDutchAuctionDuration_ = (cstDutchAuctionBeginningBidPrice_ + (cstBidPriceDeclineMultiplier - 1)) / cstBidPriceDeclineMultiplier;
-			return cstDutchAuctionDuration_;
-		}
+		return (cstDutchAuctionDuration, cstDutchAuctionElapsedDuration_);
 	}
 
 	// #endregion

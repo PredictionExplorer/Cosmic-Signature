@@ -275,8 +275,6 @@ library CosmicSignatureErrors {
 
 	// error UnknownError(string errStr);
 
-	error NotImplemented(/* string errStr */);
-
 	/// @notice Thrown when an operation is not possible or allowed in the current contract state or at the current time.
 	/// @param errStr Description of the error.
 	/// @dev In .NET, `InvalidOperationException` serves the same purpose.

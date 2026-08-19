@@ -145,8 +145,8 @@ describe("CosmicSignatureGameV3-MainPrize", function () {
 				game_.connect(bidder2_).bidWithEth(-1n, "", 0n, {value: await game_.getNextEthBidPriceAdvanced(1n),})
 			);
 
-			// In even rounds, also place a free CST bid (the CST bid price linearly declines to zero,
-			// and in V3 `getCstDutchAuctionDurations` derives how long that takes),
+			// In even rounds, also place a free CST bid (the CST bid price linearly declines to zero
+			// over the stored `cstDutchAuctionDuration`, which `getCstDutchAuctionDurations` reports),
 			// covering both the with- and without-last-CST-bidder prize layouts.
 			const placeCstBid_ = roundIndex_ % 2 === 0;
 			if (placeCstBid_) {

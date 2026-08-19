@@ -50,10 +50,6 @@ const INITIAL_BID_CST_REWARD_AMOUNT_PER_MINUTE = 10n ** 18n;
 const DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER =
 	(INITIAL_BID_CST_REWARD_AMOUNT_PER_MINUTE * INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND + 60n / 2n) / 60n;
 const DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT_V3 = INITIAL_BID_CST_REWARD_AMOUNT_PER_MINUTE;
-const INITIAL_CST_BID_PRICE_DECLINE_MULTIPLIER =
-	(DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER + INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND / 2n) /
-	(INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND);
-const DEFAULT_CST_BID_PRICE_DECLINE_MULTIPLIER_CHANGE_DIVISOR = 100n;
 const INITIAL_ROUND_LATE_BID_DURATION = 20n * 60n;
 const DEFAULT_ROUND_LATE_BID_DURATION_DIVISOR =
 	(INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND + INITIAL_ROUND_LATE_BID_DURATION / 2n) / INITIAL_ROUND_LATE_BID_DURATION;
@@ -108,9 +104,10 @@ const OVERWRITTEN_GETTER_EXPECTED_NEW_VALUES = {
 };
 
 // New V3 getters with the expected `reinitialize` defaults.
+// Comment-202608301: `cstDutchAuctionDuration` and `cstDutchAuctionDurationChangeDivisor` are NOT here;
+// they keep their live V2 values (asserted through `CARRIED_OVER_GETTER_NAMES`),
+// and V3 keeps using them exactly like V2 did.
 const NEW_GETTER_EXPECTED_VALUES = {
-	cstBidPriceDeclineMultiplier: INITIAL_CST_BID_PRICE_DECLINE_MULTIPLIER,
-	cstBidPriceDeclineMultiplierChangeDivisor: DEFAULT_CST_BID_PRICE_DECLINE_MULTIPLIER_CHANGE_DIVISOR,
 	roundLateBidDurationDivisor: DEFAULT_ROUND_LATE_BID_DURATION_DIVISOR,
 	roundLateBidPricePremiumAmountBaseMultiplier: DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_BASE_MULTIPLIER,
 	roundLateBidPricePremiumAmountExponent: DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_EXPONENT,
@@ -352,16 +349,25 @@ async function main() {
 		"InvalidInitialization",
 		"A second reinitialize call reverts with InvalidInitialization."
 	);
-	await checkReverts(
-		cosmicSignatureGameV3Proxy_.connect(ownerSigner_).setCstDutchAuctionDuration(123n),
-		"NotImplemented",
-		"setCstDutchAuctionDuration reverts with NotImplemented."
-	);
-	await checkReverts(
-		cosmicSignatureGameV3Proxy_.connect(ownerSigner_).setCstDutchAuctionDurationChangeDivisor(123n),
-		"NotImplemented",
-		"setCstDutchAuctionDurationChangeDivisor reverts with NotImplemented."
-	);
+	{
+		// The V2 CST Dutch auction duration setters keep working in V3 (Comment-202606101).
+		// Setting each parameter to its own current value proves the setters are live
+		// without disturbing the rehearsed state.
+		const cstDutchAuctionDuration_ = await cosmicSignatureGameV3Proxy_.cstDutchAuctionDuration();
+		await (await cosmicSignatureGameV3Proxy_.connect(ownerSigner_).setCstDutchAuctionDuration(cstDutchAuctionDuration_)).wait();
+		check(
+			(await cosmicSignatureGameV3Proxy_.cstDutchAuctionDuration()) == cstDutchAuctionDuration_,
+			"setCstDutchAuctionDuration remains functional in V3.",
+			cstDutchAuctionDuration_
+		);
+		const cstDutchAuctionDurationChangeDivisor_ = await cosmicSignatureGameV3Proxy_.cstDutchAuctionDurationChangeDivisor();
+		await (await cosmicSignatureGameV3Proxy_.connect(ownerSigner_).setCstDutchAuctionDurationChangeDivisor(cstDutchAuctionDurationChangeDivisor_)).wait();
+		check(
+			(await cosmicSignatureGameV3Proxy_.cstDutchAuctionDurationChangeDivisor()) == cstDutchAuctionDurationChangeDivisor_,
+			"setCstDutchAuctionDurationChangeDivisor remains functional in V3.",
+			cstDutchAuctionDurationChangeDivisor_
+		);
+	}
 	await checkReverts(
 		cosmicSignatureGameV3Proxy_.connect(ownerSigner_).setMainPrizeNumCosmicSignatureNfts(0n),
 		"ZeroValue",

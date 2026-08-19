@@ -56,8 +56,8 @@ import { CosmicSignatureGameStorageV3 } from "./CosmicSignatureGameStorageV3.sol
 /// which harms nobody but the caller. `test/tests-src/CosmicSignatureGameV3-ModularEquality.js` covers this.
 /// [/Comment-202608247]
 ///
-/// This module serves every configuration setter (including the two retired V2 setters that revert
-/// with `NotImplemented`) and the ETH donation functions. The state variable getters it inherits from
+/// This module serves every configuration setter and the ETH donation functions.
+/// The state variable getters it inherits from
 /// the `public`-variable storage chassis also exist here, but they are unreachable through the proxy,
 /// because the implementation contract dispatches those selectors itself.
 /// [/Comment-202608245]
@@ -115,17 +115,6 @@ contract CosmicSignatureGameAdminModuleV3 is
 				return(0, returndatasize())
 			}
 		}
-	}
-
-	// #endregion
-	// #region Overrides Required By Solidity
-
-	function setCstDutchAuctionDuration(uint256 newValue_) /* external */ public override (SystemManagementV2, SystemManagementV3) /* virtual */ {
-		super.setCstDutchAuctionDuration(newValue_);
-	}
-
-	function setCstDutchAuctionDurationChangeDivisor(uint256 newValue_) /* external */ public override (SystemManagementV2, SystemManagementV3) /* virtual */ {
-		super.setCstDutchAuctionDurationChangeDivisor(newValue_);
 	}
 
 	// #endregion

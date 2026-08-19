@@ -30,8 +30,9 @@ async function snapshotCarriedState(game_) {
 		cstDutchAuctionBeginningTimeStamp: await game_.cstDutchAuctionBeginningTimeStamp(),
 
 		// The 2 repurposed V2 slots and the 1 appended V2 slot must survive the V3 upgrade too.
-		// V3 stops using `cstDutchAuctionDuration` and `cstDutchAuctionDurationChangeDivisor`,
-		// but does not re-initialize them, so their getters keep returning the stale V2 values.
+		// The V3 `reinitialize` deliberately does not touch `cstDutchAuctionDuration` and
+		// `cstDutchAuctionDurationChangeDivisor` (Comment-202608301): their live V2 values carry over,
+		// and V3 keeps using them exactly like V2 did.
 		// (`bidCstRewardAmountMultiplier` is NOT here: the V3 `reinitialize` re-initializes it,
 		// which `assertDefaultV3Initialization` verifies.)
 		cstDutchAuctionDuration: await game_.cstDutchAuctionDuration(),
@@ -105,13 +106,11 @@ describe("CosmicSignatureGameV3-StorageLayout", function () {
 		expect(await gameV2_.bidCstRewardAmountMultiplier()).equal(123_456_789n);
 		expect(await gameV2_.cstDutchAuctionBeginningBidPriceMinLimit()).not.equal(10n ** 18n);
 
-		// The 8 new V3 slots are taken from the gap region, so on V2 their getters must not even exist.
+		// The 6 new V3 slots are taken from the gap region, so on V2 their getters must not even exist.
 		const cosmicSignatureGameV3Factory_ =
 			await hre.ethers.getContractFactory("CosmicSignatureGameV3", contracts_.ownerSigner);
 		for (const newGetterName_ of [
 			"championDurations(uint256)",
-			"cstBidPriceDeclineMultiplier()",
-			"cstBidPriceDeclineMultiplierChangeDivisor()",
 			"roundLateBidDurationDivisor()",
 			"roundLateBidPricePremiumAmountBaseMultiplier()",
 			"roundLateBidPricePremiumAmountExponent()",

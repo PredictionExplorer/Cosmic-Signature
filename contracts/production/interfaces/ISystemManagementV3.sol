@@ -4,16 +4,6 @@ pragma solidity =0.8.34;
 import { ISystemManagementV2 } from "./ISystemManagementV2.sol";
 
 interface ISystemManagementV3 is ISystemManagementV2 {
-	/// @notice Sets `cstBidPriceDeclineMultiplier`.
-	/// Only the contract owner is permitted to call this method.
-	/// @param newValue_ The new value.
-	function setCstBidPriceDeclineMultiplier(uint256 newValue_) external;
-
-	/// @notice Sets `cstBidPriceDeclineMultiplierChangeDivisor`.
-	/// Only the contract owner is permitted to call this method.
-	/// @param newValue_ The new value.
-	function setCstBidPriceDeclineMultiplierChangeDivisor(uint256 newValue_) external;
-
 	/// @notice Sets `roundLateBidDurationDivisor`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.

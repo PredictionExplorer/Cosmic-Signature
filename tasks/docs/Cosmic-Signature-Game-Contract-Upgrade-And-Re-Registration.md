@@ -88,16 +88,15 @@ The problem is that the initially deployed `CosmicSignatureGame` ABI still exist
 
 - Calling a module directly at its own address (not through the proxy) is harmless; Comment-202608247 explains why, and the fork rehearsal checks it.
 
-- `reinitialize` (the `upgradeToAndCall` payload) sets the 6 new V3 parameters and overwrites 7 existing values: `cstDutchAuctionBeginningBidPriceMinLimit` (200 CST -> 1 CST), `bidCstRewardAmountMultiplier` (repurposed for the V3 linear bid CST reward), and the five ETH prize percentages (20% main, 5% charity, 5% bidder raffles, 5% CS NFT stakers, 15% Chrono Warrior). Those prize percentages total 50%, leaving the other 50% in the game as rollover. See `docs/v3-vs-v2-changes.md`.
+- `reinitialize` (the `upgradeToAndCall` payload) sets the 4 new V3 parameters and overwrites 7 existing values: `cstDutchAuctionBeginningBidPriceMinLimit` (200 CST -> 1 CST), `bidCstRewardAmountMultiplier` (repurposed for the V3 linear bid CST reward), and the five ETH prize percentages (20% main, 5% charity, 5% bidder raffles, 5% CS NFT stakers, 15% Chrono Warrior). Those prize percentages total 50%, leaving the other 50% in the game as rollover. It deliberately does not touch `cstDutchAuctionDuration` and `cstDutchAuctionDurationChangeDivisor`, whose live values keep driving the CST Dutch auction exactly like in V2 (Comment-202606101, Comment-202608301). See `docs/v3-vs-v2-changes.md`.
 
 - After the upgrade, notify the web site / indexer team:
 	- `MainPrizeClaimed` has a new signature (its topic0 hash changed).
-	- `BidPlaced` keeps its topic0, but the 7th data field is now the reward minted to the PREVIOUS bidder (0 on the first bid of a round), and the 8th is `cstBidPriceDeclineMultiplier` (was `cstDutchAuctionDuration`).
-	- `setCstDutchAuctionDuration` and `setCstDutchAuctionDurationChangeDivisor` now always revert with `NotImplemented`.
+	- `BidPlaced` keeps its topic0; the 7th data field is now the reward minted to the PREVIOUS bidder (0 on the first bid of a round). The 8th field remains `cstDutchAuctionDuration`, identical to V2.
 	- Bids can newly revert with `BidPlacedWithinCurrentSecond` (same-second throttle); frontends should not display a bid CST reward quote before the first bid of a round (the getter returns 0).
 	- Update any hardcoded prize copy to the 20%/5%/5%/5%/15% V3 allocation; the existing percentage getters expose the post-upgrade values and the raffle count remains 3.
 
-- Post-upgrade sanity reads (e.g. on ArbiScan): `mainPrizeNumCosmicSignatureNfts()` = 3, `cstBidPriceDeclineMultiplierChangeDivisor()` = 100, `roundLateBidPricePremiumAmountExponent()` = 8, `mainEthPrizeAmountPercentage()` = 20, `charityEthDonationAmountPercentage()` = 5, `raffleTotalEthPrizeAmountForBiddersPercentage()` = 5, `cosmicSignatureNftStakingTotalEthRewardAmountPercentage()` = 5, `chronoWarriorEthPrizeAmountPercentage()` = 15, `numRaffleEthPrizesForBidders()` = 3, and the ERC-1967 implementation slot points at the newly reported implementation address.
+- Post-upgrade sanity reads (e.g. on ArbiScan): `mainPrizeNumCosmicSignatureNfts()` = 3, `cstDutchAuctionDuration()` and `cstDutchAuctionDurationChangeDivisor()` unchanged from their pre-upgrade live values, `roundLateBidPricePremiumAmountExponent()` = 8, `mainEthPrizeAmountPercentage()` = 20, `charityEthDonationAmountPercentage()` = 5, `raffleTotalEthPrizeAmountForBiddersPercentage()` = 5, `cosmicSignatureNftStakingTotalEthRewardAmountPercentage()` = 5, `chronoWarriorEthPrizeAmountPercentage()` = 15, `numRaffleEthPrizesForBidders()` = 3, and the ERC-1967 implementation slot points at the newly reported implementation address.
 
 #### Afterwards
 

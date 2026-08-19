@@ -13,6 +13,7 @@ const {
 	assertDefaultV3Initialization,
 	deployV1CompleteRoundZeroAndUpgradeToV2AndV3,
 	upgradeToV3,
+	getCstBidPriceBase,
 } = require("../src/V3UpgradeTestHelpers.js");
 
 const UINT256_MODULUS = 1n << 256n;
@@ -229,7 +230,9 @@ describe("CosmicSignatureGameV3-Security", function () {
 		await waitForTransactionReceipt(
 			gameForOwner_.setRoundLateBidPricePremiumAmountExponent(exponent_)
 		);
-		await waitForTransactionReceipt(gameForOwner_.setCstBidPriceDeclineMultiplier(1n));
+		// Stretch the CST Dutch auction so the CST bid price is still a large nonzero at `mainPrizeTime`
+		// (the premium sample point below), despite ~24 hours of decline.
+		await waitForTransactionReceipt(gameForOwner_.setCstDutchAuctionDuration(100n * 86_400n));
 		await activateCurrentRound(game_, contracts_.ownerSigner);
 
 		await bidWithEthAt(game_, contracts_.signers[1], (await getLatestBlockTimestamp()) + 10n);
@@ -264,9 +267,7 @@ describe("CosmicSignatureGameV3-Security", function () {
 		const cstElapsedDuration_ =
 			mainPrizeTime_ - await game_.cstDutchAuctionBeginningTimeStamp();
 		const cstBasePrice_ =
-			(cstBeginningPrice_ > cstElapsedDuration_) ?
-			(cstBeginningPrice_ - cstElapsedDuration_) :
-			0n;
+			getCstBidPriceBase(cstBeginningPrice_, cstElapsedDuration_, await game_.cstDutchAuctionDuration());
 		expect(cstBasePrice_).greaterThan(0n);
 		const expectedCstPrice_ = getWrappedLateBidPrice(
 			cstBasePrice_,

@@ -86,11 +86,9 @@ describe("CosmicSignatureGameV3-GuardsAndMisconfig", function () {
 		// would be impossible to complete or repair, permanently bricking the game. So the setter rejects a zero.
 		await expect(gameForOwner_.setMainPrizeNumCosmicSignatureNfts(0n)).revertedWithCustomError(game_, "ZeroValue");
 
-		// A zero in these would make bid pricing and/or bid placement panic with a division by zero
+		// A zero here would make bid pricing and/or bid placement panic with a division by zero
 		// until the round completes and the owner repairs the value.
 		await expect(gameForOwner_.setRoundLateBidDurationDivisor(0n)).revertedWithCustomError(game_, "ZeroValue");
-		await expect(gameForOwner_.setCstBidPriceDeclineMultiplier(0n)).revertedWithCustomError(game_, "ZeroValue");
-		await expect(gameForOwner_.setCstBidPriceDeclineMultiplierChangeDivisor(0n)).revertedWithCustomError(game_, "ZeroValue");
 
 		// A zero exponent would double every late bid price rather than disable the premium.
 		await expect(gameForOwner_.setRoundLateBidPricePremiumAmountExponent(0n)).revertedWithCustomError(game_, "ZeroValue");
@@ -114,18 +112,29 @@ describe("CosmicSignatureGameV3-GuardsAndMisconfig", function () {
 		await waitForTransactionReceipt(game_.connect(bidder_).claimMainPrize());
 	});
 
-	it("the V2 CST Dutch auction duration setters revert with NotImplemented in V3", async function () {
+	it("the V2 CST Dutch auction duration setters remain fully functional in V3", async function () {
 		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3(2n);
 		const game_ = contracts_.cosmicSignatureGameV3Proxy;
 		const gameForOwner_ = game_.connect(contracts_.ownerSigner);
 
-		// V3 does not use `cstDutchAuctionDuration` and `cstDutchAuctionDurationChangeDivisor`,
-		// so their setters revert, even for the owner while the round is inactive.
-		await expect(gameForOwner_.setCstDutchAuctionDuration(12n * 60n * 60n)).revertedWithCustomError(game_, "NotImplemented");
-		await expect(gameForOwner_.setCstDutchAuctionDurationChangeDivisor(250n)).revertedWithCustomError(game_, "NotImplemented");
-
-		// The getters still exist and keep returning the stale values V2 left in the storage slots.
+		// The V3 `reinitialize` deliberately does not touch `cstDutchAuctionDuration` and
+		// `cstDutchAuctionDurationChangeDivisor` (Comment-202608301): the live V2 values carry over
+		// (no bids were placed on V2 here, so they still hold the V2 initialization values).
 		expect(await game_.cstDutchAuctionDuration()).equal(12n * 60n * 60n);
 		expect(await game_.cstDutchAuctionDurationChangeDivisor()).equal(250n);
+
+		// The V2 setters keep working in V3 exactly like in V2, emitting the V2 events.
+		await expect(gameForOwner_.setCstDutchAuctionDuration(11n * 60n * 60n))
+			.emit(game_, "CstDutchAuctionDurationChanged").withArgs(11n * 60n * 60n);
+		expect(await game_.cstDutchAuctionDuration()).equal(11n * 60n * 60n);
+		await expect(gameForOwner_.setCstDutchAuctionDurationChangeDivisor(300n))
+			.emit(game_, "CstDutchAuctionDurationChangeDivisorChanged").withArgs(300n);
+		expect(await game_.cstDutchAuctionDurationChangeDivisor()).equal(300n);
+
+		// They remain owner-only.
+		await expect(game_.connect(contracts_.signers[1]).setCstDutchAuctionDuration(1n))
+			.revertedWithCustomError(game_, "OwnableUnauthorizedAccount");
+		await expect(game_.connect(contracts_.signers[1]).setCstDutchAuctionDurationChangeDivisor(1n))
+			.revertedWithCustomError(game_, "OwnableUnauthorizedAccount");
 	});
 });

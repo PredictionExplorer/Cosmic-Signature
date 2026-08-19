@@ -1,5 +1,5 @@
 {
-	"note": "Full external ABI of the monolithic CosmicSignatureGameV3 implementation, recorded before the modular delegatecall restructuring. The combined ABI of the modular build (implementation + modules, chain-precedence deduplicated) must remain selector-for-selector identical to this. See test/tests-src/CosmicSignatureGameV3-ModularEquality.js. Amended for the V3 weighted bidder raffle (Comment-202608261): added the bidRaffleCumulativeWeights getter.",
+	"note": "Full external ABI of the monolithic CosmicSignatureGameV3 implementation, recorded before the modular delegatecall restructuring. The combined ABI of the modular build (implementation + modules, chain-precedence deduplicated) must remain selector-for-selector identical to this. See test/tests-src/CosmicSignatureGameV3-ModularEquality.js. Amended for the V3 weighted bidder raffle (Comment-202608261): added the bidRaffleCumulativeWeights getter. Amended for the CST Dutch auction duration revert to the exact V2 behavior (Comment-202606101): removed the cstBidPriceDeclineMultiplier getters, setters, and events, and the NotImplemented error (the previously retired V2 duration setters are live again, with unchanged signatures); renamed the BidPlaced 8th parameter back to cstDutchAuctionDuration (the event topic hash is unchanged).",
 	"commit": "9496fc3145d280cc8479d3f960650ec006569c71",
 	"generatedAt": "2026-08-14T07:08:58.271Z",
 	"deployedBytecodeSize": 24422,
@@ -208,11 +208,6 @@
 				}
 			],
 			"name": "NoBidsPlacedInCurrentRound",
-			"type": "error"
-		},
-		{
-			"inputs": [],
-			"name": "NotImplemented",
 			"type": "error"
 		},
 		{
@@ -451,7 +446,7 @@
 				{
 					"indexed": false,
 					"internalType": "uint256",
-					"name": "cstBidPriceDeclineMultiplier",
+					"name": "cstDutchAuctionDuration",
 					"type": "uint256"
 				},
 				{
@@ -583,32 +578,6 @@
 				}
 			],
 			"name": "CosmicSignatureTokenAddressChanged",
-			"type": "event"
-		},
-		{
-			"anonymous": false,
-			"inputs": [
-				{
-					"indexed": false,
-					"internalType": "uint256",
-					"name": "newValue",
-					"type": "uint256"
-				}
-			],
-			"name": "CstBidPriceDeclineMultiplierChangeDivisorChanged",
-			"type": "event"
-		},
-		{
-			"anonymous": false,
-			"inputs": [
-				{
-					"indexed": false,
-					"internalType": "uint256",
-					"name": "newValue",
-					"type": "uint256"
-				}
-			],
-			"name": "CstBidPriceDeclineMultiplierChanged",
 			"type": "event"
 		},
 		{
@@ -1706,32 +1675,6 @@
 		{
 			"inputs": [],
 			"name": "cosmicSignatureNftStakingTotalEthRewardAmountPercentage",
-			"outputs": [
-				{
-					"internalType": "uint256",
-					"name": "",
-					"type": "uint256"
-				}
-			],
-			"stateMutability": "view",
-			"type": "function"
-		},
-		{
-			"inputs": [],
-			"name": "cstBidPriceDeclineMultiplier",
-			"outputs": [
-				{
-					"internalType": "uint256",
-					"name": "",
-					"type": "uint256"
-				}
-			],
-			"stateMutability": "view",
-			"type": "function"
-		},
-		{
-			"inputs": [],
-			"name": "cstBidPriceDeclineMultiplierChangeDivisor",
 			"outputs": [
 				{
 					"internalType": "uint256",
@@ -2855,32 +2798,6 @@
 				}
 			],
 			"name": "setCosmicSignatureToken",
-			"outputs": [],
-			"stateMutability": "nonpayable",
-			"type": "function"
-		},
-		{
-			"inputs": [
-				{
-					"internalType": "uint256",
-					"name": "newValue_",
-					"type": "uint256"
-				}
-			],
-			"name": "setCstBidPriceDeclineMultiplier",
-			"outputs": [],
-			"stateMutability": "nonpayable",
-			"type": "function"
-		},
-		{
-			"inputs": [
-				{
-					"internalType": "uint256",
-					"name": "newValue_",
-					"type": "uint256"
-				}
-			],
-			"name": "setCstBidPriceDeclineMultiplierChangeDivisor",
 			"outputs": [],
 			"stateMutability": "nonpayable",
 			"type": "function"

@@ -44,8 +44,8 @@ class GameModel {
 		this.ethBidPriceIncreaseDivisor = 0n;
 		this.ethBidRefundAmountInGasToSwallowMaxLimit = 0n;
 		this.cstDutchAuctionDurationDivisor = 0n; // V1 only
-		this.cstDutchAuctionDuration = 0n; // V2 only (stored duration)
-		this.cstDutchAuctionDurationChangeDivisor = 0n; // V2 only
+		this.cstDutchAuctionDuration = 0n; // V2+ (stored duration)
+		this.cstDutchAuctionDurationChangeDivisor = 0n; // V2+
 		this.cstDutchAuctionBeginningBidPriceMinLimit = 0n;
 		this.bidMessageLengthMaxLimit = 0n;
 		this.bidCstRewardAmount = 0n; // V1 only
@@ -66,8 +66,6 @@ class GameModel {
 		this.roundLateBidDurationDivisor = 0n; // V3 only
 		this.roundLateBidPricePremiumAmountBaseMultiplier = 0n; // V3 only
 		this.roundLateBidPricePremiumAmountExponent = 0n; // V3 only
-		this.cstBidPriceDeclineMultiplier = 0n; // V3 only
-		this.cstBidPriceDeclineMultiplierChangeDivisor = 0n; // V3 only
 		this.mainPrizeNumCosmicSignatureNfts = 0n; // V3 only
 		/** @type {string} */
 		this.charityAddress = "";
@@ -143,8 +141,6 @@ class GameModel {
 			this.roundLateBidDurationDivisor = await game_.roundLateBidDurationDivisor();
 			this.roundLateBidPricePremiumAmountBaseMultiplier = await game_.roundLateBidPricePremiumAmountBaseMultiplier();
 			this.roundLateBidPricePremiumAmountExponent = await game_.roundLateBidPricePremiumAmountExponent();
-			this.cstBidPriceDeclineMultiplier = await game_.cstBidPriceDeclineMultiplier();
-			this.cstBidPriceDeclineMultiplierChangeDivisor = await game_.cstBidPriceDeclineMultiplierChangeDivisor();
 			this.mainPrizeNumCosmicSignatureNfts = await game_.mainPrizeNumCosmicSignatureNfts();
 		}
 		this.cstDutchAuctionBeginningBidPriceMinLimit = await game_.cstDutchAuctionBeginningBidPriceMinLimit();
@@ -375,21 +371,13 @@ class GameModel {
 	}
 
 	/**
-	CST Dutch auction total duration (V1: derived from `cstDutchAuctionDurationDivisor`; V2: stored;
-	V3: derived from the beginning bid price and `cstBidPriceDeclineMultiplier`,
-	mirroring `BiddingV3._getCstDutchAuctionDuration`).
+	CST Dutch auction total duration (V1: derived from `cstDutchAuctionDurationDivisor`;
+	V2+: the stored `cstDutchAuctionDuration`, which only bids and the configuration setter change --
+	Comment-202606101).
 	*/
 	getCstDutchAuctionDuration() {
 		if (this.isV1Like()) {
 			return this.mainPrizeTimeIncrementInMicroSeconds / this.cstDutchAuctionDurationDivisor;
-		}
-		if (this.version >= 3) {
-			const beginningPrice_ =
-				(this.lastCstBidderAddress === hre.ethers.ZeroAddress) ?
-				this.nextRoundFirstCstDutchAuctionBeginningBidPrice :
-				this.cstDutchAuctionBeginningBidPrice;
-			// Contract body is `unchecked`.
-			return u256(beginningPrice_ + (this.cstBidPriceDeclineMultiplier - 1n)) / this.cstBidPriceDeclineMultiplier;
 		}
 		return this.cstDutchAuctionDuration;
 	}
@@ -404,8 +392,8 @@ class GameModel {
 
 	/**
 	Mirrors the premium-free CST bid price evaluated at block timestamp `ts_`:
-	V1/V2 remaining-duration-proportional formula, or the V3 linear price decline
-	(`BiddingV3.getNextCstBidPriceAdvanced`).
+	the remaining-duration-proportional formula, identical in every version
+	(V3's `_getNextCstBidPriceBase` is the V2 `getNextCstBidPriceAdvanced` math).
 	*/
 	getNextCstBidPriceBase(ts_) {
 		const beginningPrice_ =
@@ -413,11 +401,6 @@ class GameModel {
 			this.nextRoundFirstCstDutchAuctionBeginningBidPrice :
 			this.cstDutchAuctionBeginningBidPrice;
 		const elapsed_ = ts_ - this.cstDutchAuctionBeginningTimeStamp;
-		if (this.version >= 3) {
-			// Signed math, exactly like the contract (which converts to `int256` in an `unchecked` body).
-			const price_ = beginningPrice_ - elapsed_ * this.cstBidPriceDeclineMultiplier;
-			return (price_ <= 0n) ? 0n : price_;
-		}
 		const duration_ = this.getCstDutchAuctionDuration();
 		const remaining_ = duration_ - elapsed_;
 		if (remaining_ <= 0n) {
@@ -673,13 +656,8 @@ class GameModel {
 		// Comment-202608271: the exponential next-bid price ladder grows from the premium-free base.
 		this.nextEthBidPrice = plan_.ethBidPriceBase + plan_.ethBidPriceBase / this.ethBidPriceIncreaseDivisor + 1n;
 		let newCstDutchAuctionDuration_ = null;
-		let newCstBidPriceDeclineMultiplier_ = null;
-		if (this.version >= 3) {
-			// `_tryIncreaseCstBidPriceDeclineMultiplier`.
-			newCstBidPriceDeclineMultiplier_ =
-				this.cstBidPriceDeclineMultiplier + this.cstBidPriceDeclineMultiplier / this.cstBidPriceDeclineMultiplierChangeDivisor;
-			this.cstBidPriceDeclineMultiplier = newCstBidPriceDeclineMultiplier_;
-		} else if (this.version >= 2) {
+		if (this.version >= 2) {
+			// Comment-202606101: an ETH bid reduces the stored CST Dutch auction duration (V2 and V3 alike).
 			newCstDutchAuctionDuration_ =
 				(this.cstDutchAuctionDuration + 1n) * this.cstDutchAuctionDurationChangeDivisor / (this.cstDutchAuctionDurationChangeDivisor + 1n);
 			this.cstDutchAuctionDuration = newCstDutchAuctionDuration_;
@@ -692,7 +670,6 @@ class GameModel {
 		return {
 			...plan_,
 			newCstDutchAuctionDuration: newCstDutchAuctionDuration_,
-			newCstBidPriceDeclineMultiplier: newCstBidPriceDeclineMultiplier_,
 			mainPrizeTime: this.mainPrizeTime,
 			bidRaffleCumulativeWeight: this._currentRound().bidRaffleCumulativeWeights.at(-1) ?? null,
 		};
@@ -725,13 +702,8 @@ class GameModel {
 		}
 		this.lastCstBidderAddress = bidderAddress_.toLowerCase();
 		let newCstDutchAuctionDuration_ = null;
-		let newCstBidPriceDeclineMultiplier_ = null;
-		if (this.version >= 3) {
-			// `_tryReduceCstBidPriceDeclineMultiplier`.
-			newCstBidPriceDeclineMultiplier_ =
-				(this.cstBidPriceDeclineMultiplier + 1n) * this.cstBidPriceDeclineMultiplierChangeDivisor / (this.cstBidPriceDeclineMultiplierChangeDivisor + 1n);
-			this.cstBidPriceDeclineMultiplier = newCstBidPriceDeclineMultiplier_;
-		} else if (this.version >= 2) {
+		if (this.version >= 2) {
+			// Comment-202606101: a CST bid increases the stored CST Dutch auction duration (V2 and V3 alike).
 			newCstDutchAuctionDuration_ = this.cstDutchAuctionDuration + this.cstDutchAuctionDuration / this.cstDutchAuctionDurationChangeDivisor;
 			this.cstDutchAuctionDuration = newCstDutchAuctionDuration_;
 		}
@@ -747,7 +719,6 @@ class GameModel {
 			bidCstRewardAmount: reward_,
 			bidCstRewardSplit: rewardSplit_,
 			newCstDutchAuctionDuration: newCstDutchAuctionDuration_,
-			newCstBidPriceDeclineMultiplier: newCstBidPriceDeclineMultiplier_,
 			mainPrizeTime: this.mainPrizeTime,
 			bidRaffleCumulativeWeight: this._currentRound().bidRaffleCumulativeWeights.at(-1) ?? null,
 		};
@@ -899,11 +870,9 @@ class GameModel {
 	/** Applies the V3 `reinitialize` state changes (run as the upgrade call). */
 	applyUpgradeToV3() {
 		this.version = 3;
-		// Note: `cstDutchAuctionDuration` and `cstDutchAuctionDurationChangeDivisor` are NOT re-initialized;
-		// V3 simply stops using them, and their getters keep returning the stale V2 values.
+		// Comment-202608301: `cstDutchAuctionDuration` and `cstDutchAuctionDurationChangeDivisor` are NOT
+		// re-initialized; they keep their live V2 values, and V3 keeps using them exactly like V2 did.
 		this.cstDutchAuctionBeginningBidPriceMinLimit = c.DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT_V3;
-		this.cstBidPriceDeclineMultiplier = c.INITIAL_CST_BID_PRICE_DECLINE_MULTIPLIER;
-		this.cstBidPriceDeclineMultiplierChangeDivisor = c.DEFAULT_CST_BID_PRICE_DECLINE_MULTIPLIER_CHANGE_DIVISOR;
 		this.roundLateBidDurationDivisor = c.DEFAULT_ROUND_LATE_BID_DURATION_DIVISOR;
 		this.roundLateBidPricePremiumAmountBaseMultiplier = c.DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_BASE_MULTIPLIER;
 		this.roundLateBidPricePremiumAmountExponent = c.DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_EXPONENT;

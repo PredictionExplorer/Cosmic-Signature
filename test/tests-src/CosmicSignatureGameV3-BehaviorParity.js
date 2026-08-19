@@ -273,8 +273,8 @@ async function runScenario() {
 	// #region Post-upgrade guard probes.
 
 	await recorder_.recordProbe(
-		"retired setter reverts NotImplemented",
-		game_.connect(ownerSigner_).setCstDutchAuctionDuration.staticCall(123n)
+		"non-owner cannot set the CST Dutch auction duration",
+		game_.connect(signer1_).setCstDutchAuctionDuration.staticCall(123n)
 	);
 	await recorder_.recordProbe(
 		"zero value rejected by V3 setter",
@@ -362,15 +362,16 @@ async function runScenario() {
 	// #endregion
 	// #region CST bids.
 
-	// A long pause lets the previous bidder accrue a large CST reward on the next ETH bid,
-	// and lets the CST bid price decline into an affordable range.
+	// A long pause lets the previous bidder accrue a large CST reward on the next ETH bid.
 	await executeAt_(11500n, "signer-1 places an ETH bid after a long pause", () => (game_.connect(signer1_).bidWithEth(-1n, "big reward incoming", 0n, {value: 10n ** 18n, gasPrice: pinnedGasPrice,})));
 
-	// `signer-4` (outbid above) just received a large accrued CST reward, so it places all three CST bids.
+	// `signer-4` (outbid above) received a large accrued CST reward, so it places all three CST bids
+	// deep into the ~12-hour CST Dutch auction (Comment-202606101), where the declined price
+	// (and the doubled reset prices of the follow-up bids) stay within that reward.
 	// A consecutive CST bid by the same bidder also mints the accrued reward to that same bidder.
-	await executeAt_(11560n, "signer-4 places a CST bid", () => (game_.connect(signer4_).bidWithCst(10n ** 30n, "cst bid 1", 0n, {gasPrice: pinnedGasPrice,})));
-	await executeAt_(11620n, "signer-4 places a CST bid and donates an ERC-20 token", () => (game_.connect(signer4_).bidWithCstAndDonateToken(10n ** 30n, "cst bid 2", 0n, mockErc20_, 500n, {gasPrice: pinnedGasPrice,})));
-	await executeAt_(11680n, "signer-4 places a CST bid and donates an NFT", async () => {
+	await executeAt_(41000n, "signer-4 places a CST bid", () => (game_.connect(signer4_).bidWithCst(10n ** 30n, "cst bid 1", 0n, {gasPrice: pinnedGasPrice,})));
+	await executeAt_(41060n, "signer-4 places a CST bid and donates an ERC-20 token", () => (game_.connect(signer4_).bidWithCstAndDonateToken(10n ** 30n, "cst bid 2", 0n, mockErc20_, 500n, {gasPrice: pinnedGasPrice,})));
+	await executeAt_(41120n, "signer-4 places a CST bid and donates an NFT", async () => {
 		const mockNftId2_ = await mockErc721_.connect(signer4_).mint.staticCall(signer4_.address);
 		await waitForTransactionReceipt(mockErc721_.connect(signer4_).mint(signer4_.address, {gasPrice: pinnedGasPrice,}));
 		return game_.connect(signer4_).bidWithCstAndDonateNft(10n ** 30n, "cst bid 3", 0n, mockErc721_, mockNftId2_, {gasPrice: pinnedGasPrice,});
@@ -396,7 +397,7 @@ async function runScenario() {
 
 	{
 		const mainPrizeTime_ = await game_.mainPrizeTime();
-		expect(mainPrizeTime_).greaterThan(anchorTimeStamp + 11680n);
+		expect(mainPrizeTime_).greaterThan(anchorTimeStamp + 41120n);
 
 		await recorder_.recordProbe(
 			"early claim by the last bidder is rejected",
@@ -452,7 +453,6 @@ async function snapshotGameState_(recorder_, label_, contracts_, game_) {
 		"token", "randomWalkNft", "nft", "prizesWallet", "stakingWalletRandomWalkNft", "stakingWalletCosmicSignatureNft",
 		"marketingWallet", "marketingWalletCstContributionAmount", "charityAddress", "charityEthDonationAmountPercentage",
 		"cstDutchAuctionDurationChangeDivisor",
-		"cstBidPriceDeclineMultiplier", "cstBidPriceDeclineMultiplierChangeDivisor",
 		"roundLateBidDurationDivisor", "roundLateBidPricePremiumAmountBaseMultiplier", "roundLateBidPricePremiumAmountExponent",
 		"mainPrizeNumCosmicSignatureNfts",
 		"numEthDonationWithInfoRecords",

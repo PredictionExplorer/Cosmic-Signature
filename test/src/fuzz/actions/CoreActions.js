@@ -91,6 +91,36 @@ const biddingActions = [
 		isApplicable: (ctx_) => ctx_.model.lastBidderAddress !== hre.ethers.ZeroAddress,
 		run: (ctx_, actor_) => executeCstBid(ctx_, actor_, { flavor: "donateNft", maxLimitMode: "max" }),
 	},
+	{
+		// Directly fuzzes the Comment-202606101 "no bid => no change" rule: the CST Dutch auction duration
+		// is only ever changed by bids (and by `setCstDutchAuctionDuration`), so an arbitrarily long
+		// bid-free wait must leave it untouched, while the elapsed duration advances by exactly the wait.
+		// This is a pure time warp (an empty block), so neither the model nor the ledger change.
+		name: "cstDutchAuctionDurationWaitProbe",
+		weight: 2,
+		infra: true,
+		run: async (ctx_) => {
+			const { engine, model } = ctx_;
+			const game_ = ctx_.game.contract;
+			const [durationBefore_, elapsedBefore_] = await game_.getCstDutchAuctionDurations();
+			const waitDuration_ =
+				engine.chancePercent(20) ?
+				engine.randomBigIntRange(3n * 86_400n, 21n * 86_400n) : // weeks-long dead period
+				engine.randomBigIntRange(3_600n, 3n * 86_400n); // hours-to-days-long dead period
+			const tsBefore_ = engine.lastTs;
+			const tsAfter_ = await engine.mineAt(tsBefore_ + waitDuration_);
+			const [durationAfter_, elapsedAfter_] = await game_.getCstDutchAuctionDurations();
+			expect(durationAfter_, "the CST Dutch auction duration changed with no bids placed").to.equal(durationBefore_);
+			expect(elapsedAfter_ - elapsedBefore_, "the CST Dutch auction elapsed duration must advance by exactly the wait")
+				.to.equal(tsAfter_ - tsBefore_);
+			if (model.version >= 2) {
+				expect(durationAfter_, "the reported CST Dutch auction duration must be the stored `cstDutchAuctionDuration`")
+					.to.equal(await game_.cstDutchAuctionDuration());
+			}
+			expect(durationAfter_, "the CST Dutch auction duration drifted from the model").to.equal(model.getCstDutchAuctionDuration());
+			return "ok";
+		},
+	},
 ];
 
 // #endregion

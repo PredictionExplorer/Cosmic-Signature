@@ -23,27 +23,6 @@ abstract contract CosmicSignatureGameStorageV3Base is
 	// #endregion
 	// #region Bidding V3
 
-	/// @notice In V3+, the CST bid price declines by this many CST Wei per second
-	/// since the beginning of the CST Dutch auction.
-	/// [Comment-202608181]
-	/// We increase this on each ETH bid and reduce on each CST bid, based on `cstBidPriceDeclineMultiplierChangeDivisor`,
-	/// using the Comment-202606059 formulas.
-	/// Like the V2 `cstDutchAuctionDuration` drift described in Comment-202606101 (whose change directions are
-	/// the opposite, since a faster price decline acts like a shorter auction duration), this encourages bidders
-	/// to place the same number of ETH and CST bids, which, in turn, increases the value of CST.
-	/// Unlike in V2, the CST bid price decline speed is independent from the bid CST reward.
-	/// [/Comment-202608181]
-	/// Comment-202411064 applies.
-	/// Comment-202411172 applies.
-	/// @dev The dev comment near `cstDutchAuctionDuration` about possibly not making it configurable applies here too.
-	uint256 public cstBidPriceDeclineMultiplier;
-
-	/// @notice In V3+, we change `cstBidPriceDeclineMultiplier` based on this.
-	/// Comment-202608181 applies.
-	/// Comment-202411064 applies.
-	/// @dev Comment-202607301 relates and/or applies.
-	uint256 public cstBidPriceDeclineMultiplierChangeDivisor;
-
 	/// @notice This controls the duration before `mainPrizeTime` during which a bid price is to be increased.
 	/// The increase/premium accelerates exponentially as the current time approaches `mainPrizeTime`.
 	/// Comment-202501025 applies.

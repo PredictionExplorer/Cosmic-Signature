@@ -111,8 +111,6 @@ async function runInvariants(ctx_) {
 		expect(await game_.roundLateBidDurationDivisor(), "roundLateBidDurationDivisor vs model").to.equal(model.roundLateBidDurationDivisor);
 		expect(await game_.roundLateBidPricePremiumAmountBaseMultiplier(), "roundLateBidPricePremiumAmountBaseMultiplier vs model").to.equal(model.roundLateBidPricePremiumAmountBaseMultiplier);
 		expect(await game_.roundLateBidPricePremiumAmountExponent(), "roundLateBidPricePremiumAmountExponent vs model").to.equal(model.roundLateBidPricePremiumAmountExponent);
-		expect(await game_.cstBidPriceDeclineMultiplier(), "cstBidPriceDeclineMultiplier vs model").to.equal(model.cstBidPriceDeclineMultiplier);
-		expect(await game_.cstBidPriceDeclineMultiplierChangeDivisor(), "cstBidPriceDeclineMultiplierChangeDivisor vs model").to.equal(model.cstBidPriceDeclineMultiplierChangeDivisor);
 		expect(await game_.mainPrizeNumCosmicSignatureNfts(), "mainPrizeNumCosmicSignatureNfts vs model").to.equal(model.mainPrizeNumCosmicSignatureNfts);
 		expect(await game_.getRoundLateBidDuration(), "getRoundLateBidDuration vs model").to.equal(model.getRoundLateBidDuration());
 
@@ -316,6 +314,17 @@ async function runInvariants(ctx_) {
 		expect(await contracts.cosmicSignatureToken.totalSupply(), "CST minted - burned == chain totalSupply").to.equal(ledger.cstTotalMinted - ledger.cstTotalBurned);
 	}
 
+	// 4. The CST Dutch auction duration reported by `getCstDutchAuctionDurations` is exactly the stored
+	//    `cstDutchAuctionDuration` variable (V2+). Only bids and `setCstDutchAuctionDuration` write that
+	//    variable (Comment-202606101), so in particular the passage of time, main prize claims, and
+	//    round transitions can never move it. Both values are read straight from the chain, so a model
+	//    bug cannot hide a violation.
+	if (model.version >= 2) {
+		const [reportedCstDutchAuctionDuration_, ] = await game_.getCstDutchAuctionDurations();
+		expect(reportedCstDutchAuctionDuration_, "getCstDutchAuctionDurations()[0] must equal the stored cstDutchAuctionDuration")
+			.to.equal(await game_.cstDutchAuctionDuration());
+	}
+
 	// #endregion
 
 	++ ctx_.invariantRunCount;
@@ -389,6 +398,7 @@ function assertCoverageFloors(statsMap_, profile_) {
 		"bidWithEth", "bidWithEthExactPrice", "bidWithEthSwallow", "bidWithEthRefund",
 		"bidWithEthPlusRandomWalkNft", "bidWithEthReceive", "bidWithEthAndDonateToken", "bidWithEthAndDonateNft",
 		"bidWithCst", "bidWithCstExactLimit", "bidWithCstAndDonateToken", "bidWithCstAndDonateNft",
+		"cstDutchAuctionDurationWaitProbe",
 		"claimMainPrize",
 		"stakeCosmicSignatureNft", "unstakeCosmicSignatureNft", "stakeManyCosmicSignatureNft",
 		"stakeRandomWalkNft", "unstakeRandomWalkNft",

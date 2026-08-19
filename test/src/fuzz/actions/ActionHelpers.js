@@ -290,11 +290,9 @@ async function executeEthBid(ctx_, actor_, options_) {
 		expect(bidPlaced_.args.message).to.equal(message_);
 	}
 	expect(bidPlaced_.args.mainPrizeTime).to.equal(model.mainPrizeTime);
-	if (model.version >= 3) {
+	if (model.version >= 2) {
 		expect(bidPlaced_.args.bidCstRewardAmount).to.equal(expectations_.bidCstRewardAmount);
-		expect(bidPlaced_.args.cstBidPriceDeclineMultiplier).to.equal(expectations_.newCstBidPriceDeclineMultiplier);
-	} else if (model.version >= 2) {
-		expect(bidPlaced_.args.bidCstRewardAmount).to.equal(expectations_.bidCstRewardAmount);
+		// Comment-202606101: in V2+, an ETH bid reduces the stored CST Dutch auction duration by ~0.4%.
 		expect(bidPlaced_.args.cstDutchAuctionDuration).to.equal(expectations_.newCstDutchAuctionDuration);
 	}
 
@@ -428,11 +426,9 @@ async function executeCstBid(ctx_, actor_, options_) {
 	expect(bidPlaced_.args.paidCstPrice).to.equal(price_);
 	expect(bidPlaced_.args.randomWalkNftId).to.equal(-1n);
 	expect(bidPlaced_.args.mainPrizeTime).to.equal(model.mainPrizeTime);
-	if (model.version >= 3) {
+	if (model.version >= 2) {
 		expect(bidPlaced_.args.bidCstRewardAmount).to.equal(expectations_.bidCstRewardAmount);
-		expect(bidPlaced_.args.cstBidPriceDeclineMultiplier).to.equal(expectations_.newCstBidPriceDeclineMultiplier);
-	} else if (model.version >= 2) {
-		expect(bidPlaced_.args.bidCstRewardAmount).to.equal(expectations_.bidCstRewardAmount);
+		// Comment-202606101: in V2+, a CST bid increases the stored CST Dutch auction duration by ~0.4%.
 		expect(bidPlaced_.args.cstDutchAuctionDuration).to.equal(expectations_.newCstDutchAuctionDuration);
 	}
 
