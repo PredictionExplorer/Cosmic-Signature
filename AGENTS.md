@@ -1,5 +1,9 @@
 #
 
+## About
+
+- I tried to phrase these recommendations to not be too eager. In other words, their goal is not to force any actions the prompt didn't request. Only use these recommendations to steer those requested. But if you feel something else should be done, even if not explicitly requested, feel free to propose it.
+
 ## Workspace
 
 - This is a Hardhat 2 + Ethers.JS + Mocha project. Therefore, it not necessarily makes sense for you to access certain folders or files, such as `cache/`. Note that some paths are customized in `hardhat.config.js`.
@@ -27,7 +31,7 @@
 
 ## Naming Conventions
 
-- In the code, name things descriptively and verbosely. This also applies to file names. Do not force names to be short. Prefer to not shorten words, except for the following: `Prev`, `Param`, `Arg`, `Char`, `Min`, `Max`, `Temp`, `Num`. Also use commonly used abbreviations, such as `Json`, `Rpc`, `Url`, `Evm`, `Abi`, `Nft`.
+- In the code, name things descriptively and verbosely. This also applies to file names. Do not force names to be short. Prefer to not shorten words, except for the following: `Prev`, `Param`, `Arg`, `Char`, `Min`, `Max`, `Temp`, `Num`, `hre`. Also use commonly used abbreviations, such as `Json`, `Rpc`, `Url`, `Evm`, `Abi`, `Nft`, `SmtChecker`.
 - A function parameter or local variable name shall end with `_`. But some files do not comply with this instruction. Keep them as is and write new code in them in the same consistent style.
 
 ## Solidity
@@ -76,7 +80,7 @@ assert(x > y);
 // Do this and that.
 // [/ToDo-AI-202512308-1]
 
-// todo-ai-0 Do this and that ASAP.
+// ToDo-AI-0 Do this and that ASAP.
 ```
 
 ```bash
@@ -90,4 +94,4 @@ assert(x > y);
 ## Uncategorized
 
 - Prefer using only ASCII chars. For example, do not use `—`; use `--` instead. But if a file already contains some non-ASCII chars keep using them consistently.
-- Some files do not comply with these instructions, and that's OK. Do not proactively improve existing code/text that's not broken. However, if you notice that a `.sol` file can be improved don't hesitate to recommend doing so. But avoid recommending improving files under the `contracts/tests` folder or anything listed in [docs/contract-improvement-ideas-not-to-implement-in-existing-code.md](docs/contract-improvement-ideas-not-to-implement-in-existing-code.md). That said, given that some contracts have already been deployed, it's too late to improve them, but at least issue-comments should be written in those about what it would be nice to improve.
+- Some files do not comply with these instructions, and that's OK. Do not proactively improve existing code/text that's not broken. However, if you notice that a `.sol` file can be improved don't hesitate to propose doing so. But avoid proposing improving files under the `contracts/tests` folder or anything listed in [docs/contract-improvement-ideas-not-to-implement-in-existing-code.md](docs/contract-improvement-ideas-not-to-implement-in-existing-code.md). That said, given that some contracts have already been deployed, it's too late to improve them, but at least issue-comments should be written in those about what it would be nice to improve.
