@@ -2,8 +2,8 @@
 
 ## About
 
-- This document is referenced in [AGENTS.md](../AGENTS.md).
-- This document lists `.sol` file improvement ideas that the AI should not recommend implementing in existing code. But none of this applies to new code. But even when writing new code, the AI shall ask my permission to implement these features.
+- This document is referenced in [../AGENTS.md](../AGENTS.md).
+- This document lists `.sol` file improvement ideas that the AI should not propose implementing in existing code. But it's OK to propose implementing these in new code. But even then ask for my approval to implement any of these.
 
 ## The Ideas
 
