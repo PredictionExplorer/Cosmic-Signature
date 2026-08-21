@@ -16,10 +16,10 @@
 
 ## Coding Guidelines
 
-- Keep the code simple. Avoid unnecessary overengineering. The software shall work correct and securely, but only if certain requirements are met and under realistically possible conditions. Deliberate non-critical tradeoffs are acceptable when their implications are understood and documented with issue-comments. Describe an issue with a comment like this:
+- Keep the code simple and avoid unnecessary overengineering. The software shall work correctly and securely for all stated requirements and all realistically possible inputs and reachable states. Do not add complexity solely to handle impossible states or unnecessary to support use cases. Collaborate with me on choosing the most appropriate tradeoffs. A tradeoff might need to be documented with an issue-comment like this:
 
 ```solidity
-// Issue. Explaination what's imperfect.
+// Issue. Explain some of the following: assumptions; what missing logic is unnecessary; what are the implications; etc.
 // The issue description can occupy multiple lines.
 ```
 
