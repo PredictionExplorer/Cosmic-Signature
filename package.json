@@ -1,7 +1,9 @@
 {
 	"name": "Cosmic-Signature",
 	"scripts": {
-		"hardhat-test-quick": "cd test/runners && LONG_TEST_MODE_CODE=1 ./test-1.bash -b"
+		"hardhat-test-quick": "cd test/runners && LONG_TEST_MODE_CODE=1 ./test-1.bash -b",
+		"hardhat-test-medium": "cd test/runners && LONG_TEST_MODE_CODE=2 ./test-1.bash -b",
+		"hardhat-test-full": "cd test/runners && ./test-1.bash -b"
 	},
 	"devDependencies": {
 		"@arbitrum/nitro-contracts": "~3.2.0",

@@ -95,8 +95,8 @@ Todos like the above can be written in any file. Just use the comment syntax app
 
 ## Running Hardhat Tests
 
-- To run Hardhat tests in quick mode, from `package.json`, run the `hardhat-test-quick` script.
-- When asked, run the tests in full mode that increases the probability to detect bugs: use the same command line as in the `hardhat-test-quick` script, but without setting the `LONG_TEST_MODE_CODE` variable.
+- To run Hardhat tests, from `package.json`, run the `hardhat-test-quick` script.
+- When asked, run the `hardhat-test-full` script, which is more likely to detect bugs, but takes longer.
 
 ## Uncategorized
 
