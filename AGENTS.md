@@ -17,7 +17,7 @@
 ## Coding Guidelines
 
 - Write strict code. That applies to everything, including JavaScript, shell scripts. But some of existing code is not fully strict; do not improve it.
-- Keep the code simple. Avoid unnecessary overengineering. The software shall work correct and securely, but only under realistically possible conditions. Deliberate non-critical tradeoffs are acceptable when their implications are understood and documented with issue-comments. Describe an issue with a comment like this:
+- Keep the code simple. Avoid unnecessary overengineering. The software shall work correct and securely, but only if certain requirements are met and under realistically possible conditions. Deliberate non-critical tradeoffs are acceptable when their implications are understood and documented with issue-comments. Describe an issue with a comment like this:
 
 ```solidity
 // Issue. Explaination what's imperfect.
@@ -57,7 +57,6 @@ assert(x > y);
 
 - When improving existing Solidity code, do not make improvements listed in [docs/contract-improvement-ideas-not-to-implement-in-existing-code.md](docs/contract-improvement-ideas-not-to-implement-in-existing-code.md).
 
-
 ## Scripts
 
 - Each JavaScript or Bash script that is intended to be executed (not a library) shall define and invoke a `main` function.
@@ -85,12 +84,13 @@ assert(x > y);
 // ToDo-AI-0 Do this and that ASAP.
 ```
 
+Todos like the above can be written in any file. Just use the comment syntax appropriate for the given file type. For example:
+
 ```bash
-# A todo like the above can be written in any file.
-# Just use the comment syntax appropriate for the given file type.
+# ToDo-AI-0 Do this and that ASAP.
 ```
 
-- Only do AI todos if requested to do so in the prompt. Delete the todos that you have done.
+- Do AI todos only if requested to do so in the prompt. Delete the todos that you have done.
 - Don't do human todos. Only use them as context. For example, if the prompt says to develop tests and a human todo says to confirm a certain relevant behavior, consider proposing a test for that case.
 - When writing a comment (or a todo), insert it before relevant lines of code. Insert empty lines before the comment and after the last relevant line of code. When deleting a comment, delete the no longer needed empty lines, but be sure to not delete those needed for other comments.
 
