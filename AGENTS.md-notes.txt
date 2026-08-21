@@ -1,0 +1,19 @@
+I wanted to add the first bullet under the `Coding Guidelines` section:
+
+- Write strict code. That applies to everything, including JavaScript, shell scripts. But some of existing code is not fully strict; do not improve it.
+
+But ChatGPT chriticized my wording:
+
+<Quote>
+9. Define what “strict code” means
+
+“Write strict code” is a useful objective but not a deterministic instruction. It could mean JavaScript strict mode, all TypeScript strictness flags, fail-fast shell behavior, runtime validation, no implicit coercion, or treating every linter warning as an error.
+
+The project's actual JavaScript configuration illustrates the ambiguity: it enables "strict": true while deliberately disabling noImplicitAny and strictNullChecks, and enabling several other targeted checks. Thus, “strict” clearly does not mean “turn on every possible strictness switch.”
+
+I would describe outcomes instead:
+
+- Write defensive code: validate important assumptions, reject invalid inputs, avoid silent failure and unintended coercion, and preserve the repository's existing strict-mode, type-checking, and linting conventions. Do not enable additional project-wide strictness settings unless the task calls for it.
+
+This is less likely to provoke unrelated configuration changes or blanket set -e additions to shell scripts whose control flow was not designed for them.
+</Quote>

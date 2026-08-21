@@ -16,7 +16,6 @@
 
 ## Coding Guidelines
 
-- Write strict code. That applies to everything, including JavaScript, shell scripts. But some of existing code is not fully strict; do not improve it.
 - Keep the code simple. Avoid unnecessary overengineering. The software shall work correct and securely, but only if certain requirements are met and under realistically possible conditions. Deliberate non-critical tradeoffs are acceptable when their implications are understood and documented with issue-comments. Describe an issue with a comment like this:
 
 ```solidity
@@ -98,4 +97,4 @@ Todos like the above can be written in any file. Just use the comment syntax app
 
 - Prefer using only ASCII chars. For example, do not use `—`; use `--` instead. But if the surrounding text intentionally uses non-ASCII chars, keep using them consistently.
 - Some files do not comply with these instructions, and that's OK. Do not proactively improve existing code/text that's not broken.
-- Use these instructions to guide requested work, not to expand its scope. You may propose additional improvements, but do not implement them without approval.
+- Use these instructions to guide requested work. If you believe that its scope should be expand, ask for my approval.
