@@ -93,6 +93,11 @@ Todos like the above can be written in any file. Just use the comment syntax app
 - Don't do human todos. Only use them as context. For example, if the prompt says to develop tests and a human todo says to confirm a certain relevant behavior, consider proposing a test for that case.
 - When writing a comment (or a todo), insert it before relevant lines of code. Insert empty lines before the comment and after the last relevant line of code. When deleting a comment, delete the no longer needed empty lines, but be sure to not delete those needed for other comments.
 
+## Running Hardhat Tests
+
+- To run Hardhat tests in quick mode, from `package.json`, run the `hardhat-test-quick` script.
+- When asked, run the tests in full mode that increases the probability to detect bugs: use the same command line as in the `hardhat-test-quick` script, but without setting the `LONG_TEST_MODE_CODE` variable.
+
 ## Uncategorized
 
 - Prefer using only ASCII chars. For example, do not use `—`; use `--` instead. But if the surrounding text intentionally uses non-ASCII chars, keep using them consistently.

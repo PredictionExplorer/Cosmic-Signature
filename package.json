@@ -1,5 +1,8 @@
 {
 	"name": "Cosmic-Signature",
+	"scripts": {
+		"hardhat-test-quick": "cd test/runners && LONG_TEST_MODE_CODE=1 ./test-1.bash -b"
+	},
 	"devDependencies": {
 		"@arbitrum/nitro-contracts": "~3.2.0",
 		"@eslint/js": "^9.39.2",

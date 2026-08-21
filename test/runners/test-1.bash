@@ -24,7 +24,12 @@
 			'npx' 'hardhat' 'test'
 
 			if [ $? -ne 0 ]; then
-				read '-r' '-n' '1' '-s' '-p' 'Error. Hardhat Test failed. We will skip any remaining tests. Press any key to finish.'
+				if [[ "${4}" == '-b' ]] ; then
+					echo 'Error. Hardhat Test failed. We will skip any remaining tests.'
+				else
+					read '-r' '-n' '1' '-s' '-p' 'Error. Hardhat Test failed. We will skip any remaining tests. Press any key to finish.'
+					echo 1>&2
+				fi
 				OutcomeCode=2
 			fi
 		fi
@@ -33,7 +38,12 @@
 	if [ ${OutcomeCode} -lt 2 ]; then
 		cd '--' '../..'
 		if [ $? -ne 0 ]; then
-			read '-r' '-n' '1' '-s' '-p' 'Error 202409026. Press any key to finish.'
+			if [[ "${1}" == '-b' ]] ; then
+				echo 'Error 202409026.'
+			else
+				read '-r' '-n' '1' '-s' '-p' 'Error 202409026. Press any key to finish.'
+				echo 1>&2
+			fi
 			OutcomeCode=2
 		fi
 	fi
@@ -44,17 +54,19 @@
 
 	# Preprocessor, asserts, no SMTChecker.
 	# Running in this mode first because we enable Hardhat console in this mode.
-	SafeTryHardhatTest 'true' 'true' '0'
-
+	SafeTryHardhatTest 'true' 'true' '0' "${1}"
+	
 	# Preprocessor, asserts, preprocess for SMTChecker, don't run SMTChecker.
-	SafeTryHardhatTest 'true' 'true' '1'
+	SafeTryHardhatTest 'true' 'true' '1' "${1}"
 
 	# Preprocessor, no asserts, no SMTChecker.
 	# This combination of arguments generates a warning near Comment-202409025.
-	SafeTryHardhatTest 'true' 'false' '0'
+	SafeTryHardhatTest 'true' 'false' '0' "${1}"
 
 	# No preprocessor.
 	# Comment-202408155 relates and/or applies.
 	# Comment-202410099 relates and/or applies.
-	SafeTryHardhatTest 'false' 'false' '0'
+	SafeTryHardhatTest 'false' 'false' '0' "${1}"
+
+	exit "${OutcomeCode}"
 )
