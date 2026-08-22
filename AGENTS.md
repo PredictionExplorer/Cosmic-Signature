@@ -20,18 +20,23 @@
 
 ## Coding Guidelines
 
-- Keep the code simple and avoid unnecessary overengineering. The software shall work correctly and securely for all stated requirements and all realistically possible inputs and reachable states. In some cases, it's safe to assume that inputs cannot be incorrect or malicious. Do not add complexity solely to handle impossible states or unnecessary to support use cases. Collaborate with me on choosing the most appropriate tradeoffs. We can choose a simple solution that is possible to improve, but we can prefer it, to reduce the complexity. We can nickname the fact that we chose a less than ideal solution an "issue".
-- An non-obvious issue shall be documented with an issue-comment like this:
+- Keep the code simple and avoid unnecessary overengineering. The software shall work correctly and securely for all stated requirements and all realistically possible inputs and reachable states. Do not add complexity solely to handle impossible states or use cases that do not need to be supported.
+- Do not autonomously introduce a material correctness, security, compatibility, or trust-assumption tradeoff. Identify the available options and their implications and let me choose the most appropriate options.
+- Do not introduce a new assumption that an input cannot be invalid or malicious unless the assumption follows from an enforced invariant or I approve it.
+- With my approval, a simpler solution that can be improved later may be preferred over a more complex ideal solution, provided it satisfies the approved correctness and security requirements.
+- An "issue" is a known, currently accepted imperfection, omission, assumption, or workaround in an approved solution.
+- An example of an issue is a workaround for a buggy or poorly designed third-party library.
+- A non-obvious issue shall be documented with an issue-comment like this:
 
 ```solidity
-// Issue. Explain some of the following: assumptions; what missing logic is unnecessary; what are the implications; why it is currently acceptable; etc.
-// The issue description can occupy multiple lines.
-// ToDo-3 Possibly write a todo describing trigger conditions that would require revisiting the issue.
+// Issue. (Explain some of the following: what have we worked-around; the assumptions;
+// what logic was omitted and why it's unnecessary; the implications;
+// why the issue is currently acceptable; etc.)
+// (The issue description can occupy multiple lines.)
 ```
 
-- Another example of an issue is if we implement a workaround to get a buggy or poorly designed third-party library working.
-- If an issue has concrete foreseeable trigger conditions that would require revisiting it, add a nearby `ToDo-3` stating the trigger conditions.
-- Some issues are obvious and/or frequent. They either need a comment without the `Issue` keyword or don't need a comment at all. For example, it's not necessarily needed to write near every unchecked math operator that we assume that it will not overflow. And when we do write that, we typically don't need the `Issue` keyword, except when the operands can be very big.
+- If an issue has concrete foreseeable trigger conditions that would require revisiting it, delail this in a `ToDo-3` after the issue comment.
+- Some issues are obvious and/or frequent. They either need a comment without the `Issue` keyword or don't need a comment at all. For example, it is unnecessary to state near every unchecked arithmetic operation that it is assumed not to overflow. Such a comment or issue-comment can be appropriate when the absence of overflow is non-obvious because the operands may be large.
 
 ## Naming Conventions
 
@@ -61,7 +66,7 @@ console.log(x, y);
 assert(x > y);
 ```
 
-- Before proposing improvements to existing Solidity code, review `docs/contract-improvement-ideas-not-to-propose-in-existing-code.md`. Do not propose the listed ideas in existing code.
+- Before proposing improvements to existing Solidity code, review `docs/contract-improvement-ideas-not-to-propose-in-existing-code.md`. Do not propose the listed ideas in existing code. This restriction applies to unsolicited improvements. It does not prohibit reporting issues discovered while performing a code review.
 
 ## Scripts
 
@@ -75,37 +80,21 @@ assert(x > y);
 - That said, it can be helpful for me if you explain things in detail in verbose temporary to-be-deleted comments. Format them as follows:
 
 ```solidity
-// TEMP: Details about what you did
-// TEMP: and why you did it.
+// DEL: (Provide details about what you did
+// DEL: and why you did it.)
 ```
 
-- Review `docs/numbered-comments.md`. Feel free to write numbered comments/todos.
+- Review `docs/numbered-comments.md`. Prefer writing numbered comments and numbered AI and human todos when they offer an advantage over their non-numbered counterparts.
 - Before creating a new numbered comment or todo ID, search all repository files and confirm that the ID is unused. When linking another location to an existing numbered comment or todo, intentionally reuse its existing ID.
-- `docs/numbered-comments.md` describes todos to be done by humans. Use the following similar syntax for todos to be done by the AI.
-
-```solidity
-// [ToDo-AI-202512308-1]
-// Do this and that.
-// [/ToDo-AI-202512308-1]
-
-// ToDo-AI-0 Do this and that ASAP.
-```
-
-Todos like the above can be written in any file. Just use the comment syntax appropriate for the given file type. For example:
-
-```bash
-# ToDo-AI-0 Do this and that ASAP.
-```
-
-- Do AI todos only if requested to do so in the prompt. Delete every todo that you have completed.
-- Don't do human todos. Only use them as context. For example, if the prompt says to develop tests and a human todo says to confirm a certain relevant behavior, consider proposing a test for that case.
-- When deleting a numbered comment or numbered todo (AI or human), search for every occurrence of its ID and remove or update all affected references consistently.
-- When writing a comment (or a todo), insert it before relevant lines of code. Insert empty lines before the comment and after the last relevant line of code. When deleting a comment, delete the no longer needed empty lines, but be sure to not delete those needed for other comments.
+- Perform AI or human todos only if requested to do so in the prompt. Delete every todo that you have completed.
+- If you are not to perform a human todo, use it as context. For example, if the prompt says to develop tests and a human todo says to confirm a certain relevant behavior, consider proposing a test for that case.
+- When deleting a numbered comment or numbered todo (AI or human), find and delete all its references.
+- When writing an explanatory comment or todo associated with code, place it before relevant lines. Insert an empty line before the comment and after the last relevant line of code when the surrounding structure permits it. When deleting a comment, delete the no longer needed empty lines, but be sure to not delete those needed for other comments.
 
 ## Running Hardhat Tests
 
-- To run Hardhat tests, from `package.json`, run the `hardhat-test-quick` script.
-- When asked, run the `hardhat-test-full` script, which is more likely to detect bugs, but takes longer.
+- Unless the prompt says not to run Hardhat tests, after completing an approved batch of Solidity contract or test changes, run `npm run hardhat-test-quick` from the repository root.
+- Run `npm run hardhat-test-medium` or `npm run hardhat-test-full` instead only when the prompt explicitly requests to do so.
 
 ## Uncategorized
 
