@@ -2,8 +2,8 @@
 
 ## About
 
-- This document is referenced in [../AGENTS.md](../AGENTS.md). See that document for details.
+- This document is referenced in `../AGENTS.md`. See details there.
 
-## The Ideas
+## Ideas
 
 - In a configurable parameter setter, add or improve argument validation logic.

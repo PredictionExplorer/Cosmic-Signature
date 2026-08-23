@@ -46,17 +46,11 @@ Similarly, ToDos can be written in the same format:
 // [ToDo-202512308-1]
 // Do this and that.
 // [/ToDo-202512308-1]
-```
 
-```ts
 // ToDo-202512308-1 applies.
-```
 
-```ts
 // ToDo-202512308-1 relates.
-```
 
-```ts
 // ToDo-202512308-1 relates and/or applies.
 ```
 
@@ -98,27 +92,29 @@ All unprefixed `ToDo` forms above are human todos. Use the following similar syn
 
 Use the comment syntax appropriate for the file type. For example:
 
-```bash
-# [ToDo-AI-202608225-2]
-# Do this and that.
-# [/ToDo-AI-202608225-2]
+```md
+<!--
+[ToDo-AI-202608225-2]
+Do this and that.
+[/ToDo-AI-202608225-2]
+-->
 
-# ToDo-AI-202608225-2 applies.
+<!-- ToDo-AI-202608225-2 applies. -->
 
-# ToDo-AI-202608225-2 relates.
+<!-- ToDo-AI-202608225-2 relates. -->
 
-# ToDo-AI-202608225-2 relates and/or applies.
+<!-- ToDo-AI-202608225-2 relates and/or applies. -->
 
-# ToDo-AI-3 Do this and that.
+<!-- ToDo-AI-3 Do this and that. -->
 ```
 
 #### Generating a New Unique ID
 
 Use the following logic to generate a unique ID for a new numbered comment or numbered todo (or for any other purpose).
 
-- Generating the first unique ID. This assumes you have not yet saved a date from which to generate a unique ID.
+- Generating the first unique ID. Do this if you have not yet saved the last generated unique ID.
 
-  - Obtain the current local date and save it to a variable.
+  - Initialize a date variable from the current local date.
 
   - Loop.
 
@@ -134,34 +130,34 @@ Use the following logic to generate a unique ID for a new numbered comment or nu
 
   - End of loop.
 
-  - Generate a unique ID from the found date using format `YYYYMMDDN`, where the `N` is an additional digit to be initialized with 1.\
+  - Generate a unique ID from the found date using format `YYYYMMDDN`, where `N` is an additional digit to be initialized with 1.\
     For example, if the found date is Jan 2nd 2027, the unique ID will be 202701021.
 
-  - Save the last used date and additional digit to some kind of storage.
+  - Save the generated unique ID to some kind of storage.
 
 - End.
 
-- Generating a subsequent (not the first) unique ID. Assuming you have previously saved a date and an additional digit.
+- Generating a subsequent (not the first) unique ID. Do this if you have previously saved the last generated unique ID.
+
+  - Load the previously saved unique ID and parse it to extract the date and the additional digit.
+
+  - If the current local date is greater than the extracted one, replace the extracted date with the current local date and reset the additional digit to 0.
 
   - Loop.
 
-    - If the current date is greater than the saved one, use the current date together with resetting the additional digit to 1.\
-      (It might be possible to optimize this logic by evaluating the current date only on the first iteration of the loop.)
-  
-    - Otherwise, if the previous used additional digit was less than 9, increment it.
-  
-    - Otherwise, increment the saved date by 1 day and reset the additional digit to 1.
-  
-    - Generate a unique ID from the selected date and the additional digit using the same format.
-  
-    - Save the last used date and additional digit to some kind of storage.\
-      (It might be possible to optimize this logic by performing this save only after breaking the loop.)
+    - If the additional digit is less than 9, increment it.
+
+    - Else, increment the date by 1 day and reset the additional digit to 1.
+
+    - Generate a unique ID from the date and additional digit using the same format.
 
     - Perform a global search across workspace files for the generated unique ID, not whole word.
 
     - If not found, break the loop.
 
   - End of loop.
+
+  - Save the generated unique ID to some kind of storage.
 
 - End.
 
