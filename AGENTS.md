@@ -25,7 +25,7 @@
 - Do not autonomously introduce a material tradeoff involving correctness, security, compatibility, or trust assumptions. Identify the available options and their implications, and let me choose among them.
 - Do not assume that an input is valid or non-malicious unless that assumption follows from an enforced invariant or I approve it.
 - With my approval, a simpler solution that can be improved later may be preferred over a more complex ideal solution, provided it satisfies the approved correctness and security requirements.
-- An "issue" is a concrete, understood, and currently accepted concern or undesirable aspect of an implementation or design, such as an imperfection, code smell, inefficiency, fragility, coupling, omission, assumption, workaround, latent risk, or reliance on behavior that future changes could invalidate.
+- An "issue" is a concrete, understood, and currently accepted concern or undesirable aspect of an implementation or design, such as an imperfection, code smell, inefficiency, fragility, coupling, omission, assumption, workaround, latent risk, reliance on behavior that future changes could invalidate, maintainability problem, inconsistency, non-ideal behavior.
 - Unlike a todo, an issue records something we do not currently plan to change. It is accepted because the current solution is adequate, improving it is not presently worth the added complexity, cost, or risk, or a change elsewhere -- including in an external dependency -- must happen first.
 - A non-obvious issue shall be documented with an issue-comment like this:
 

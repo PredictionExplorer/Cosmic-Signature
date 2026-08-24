@@ -10,11 +10,11 @@ We use numbered comments, for example:
 // [/Comment-202608222]
 ```
 
-This notation resembles an XML element. In this example, `Comment-202608222` essntially acts as a tag for the comment's text. The number 202608222 is the comment's ID.
+This notation resembles an XML element. In this example, `Comment-202608222` is the numbered comment tag, and `202608222` is its ID.
 
-A numbered comment tag can be used to link related locations within source code and other text files with each other, as well as to avoid writing the same comment text in multiple locations. To link related locations, use the same numbered comment tag at each location. To find all linked locations, globally search for that tag or just its ID.
+A numbered comment tag can link related locations in source code and other text files and can avoid duplicating the same comment text. To link related locations, use the same numbered comment tag at each location. To find all linked locations, globally search for that tag or just its ID.
 
-If a numbered comment text is empty, we can use the self-closing form:
+If the text of a numbered comment is empty, we can use the self-closing form:
 
 ```ts
 // [Comment-202512307/]
@@ -69,7 +69,7 @@ We use the following priorities:
 - `0`: to do immediately.
 - `1`: to do soon, before the next release.
 - `2`: to do later, possibly after the next release.
-- `3`: to do some day, low priority.
+- `3`: to do someday, low priority.
 - `4`: rarely used for a not-any-time-soon todo, such as doing something about a timestamp overflow in 100 years.
 - `9`: a todo in (1) commented code; (2) legacy docs that are no longer correct. These todos are to be done if we decide to uncomment the code or revive the docs.
 
@@ -120,17 +120,17 @@ Do this and that.
 #### ID Namespace
 
 An ID is the 9-digit numeric value in the format `YYYYMMDDN`, where `YYYYMMDD` is a date and `N` is a sequence digit from `1` through `9`.\
-For example, if the date is September 15, 2025 and the sequence digit is 7, the ID will be 202509157.
+For example, if the date is September 15, 2025, and the sequence digit is 7, the ID will be 202509157.
 
-We generate a unique ID for each new numbered comment or numbered todo, or for any other need. All generated IDs share one project-wide namespace, regardless of purpose. One ID identifies one logical item or purpose; declarations and references to that same item intentionally reuse it.
+Generate a new ID for each new logical numbered comment or numbered todo and for any other purpose that requires an ID. All generated IDs share one project-wide namespace, regardless of purpose. Each ID is assigned to exactly one logical item or purpose. For a numbered item, it is also assigned to exactly one tag family: `Comment`, `ToDo`, or `ToDo-AI`. Declarations and references to that same item or purpose intentionally reuse the same ID.
 
-#### Generating a Unique ID
+#### Generating a New ID
 
-Use the following logic to generate a unique ID.
+Use the following logic to generate a new ID. If any of these steps fails, request my assistance and pause.
 
 - Begin.
 
-  - Load the previously saved ID from the `../project-state/last-id-number.txt` file and parse it to extract the date and the sequence digit.
+  - Load the previously saved ID from the repository-root file `project-state/last-generated-id-number.txt` and parse it to extract the date and the sequence digit.
 
   - If the current local date is greater than the extracted one, replace the extracted date with the current local date and reset the sequence digit to 1.
 
@@ -140,7 +140,7 @@ Use the following logic to generate a unique ID.
 
   - Generate an ID from the date and sequence digit.
   
-  - Save the generated ID to the same file.
+  - Save the new ID to the same file before using it.
 
 - End.
 
