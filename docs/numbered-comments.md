@@ -2,7 +2,7 @@
 
 #### Introduction
 
-When reviewing project files, you are going to come across comments like this:
+We use numbered comments, for example:
 
 ```ts
 // [Comment-202608222]
@@ -10,9 +10,11 @@ When reviewing project files, you are going to come across comments like this:
 // [/Comment-202608222]
 ```
 
-The purpose of such an XML-like notation is to link related locations within source code and other text files with each other, as well as to avoid writing the same comment in multiple locations. To link different locations in text with each other, we mention a comment with the same number in all those locations. To find all linked locations, perform global search for the given number.
+This notation resembles an XML element. In this example, `Comment-202608222` essntially acts as a tag for the comment's text. The number 202608222 is the comment's ID.
 
-When we need a comment/label to reference in other comments and don't need to write any text in it, we can use the self-closing form:
+A numbered comment tag can be used to link related locations within source code and other text files with each other, as well as to avoid writing the same comment text in multiple locations. To link related locations, use the same numbered comment tag at each location. To find all linked locations, globally search for that tag or just its ID.
+
+If a numbered comment text is empty, we can use the self-closing form:
 
 ```ts
 // [Comment-202512307/]
@@ -30,7 +32,7 @@ It means that the same text would otherwise need to be written at the given loca
 // Comment-202608222 relates.
 ```
 
-It means that the given comment is in some way relevant at the given location. It implies that it's clear in what way it's relevant. If the relationship is not clear, write a more descriptive reference comment.
+It means that the given comment is in some way relevant at the given location. It implies that it's clear in what way it's relevant. If the relationship is not clear, write a more descriptive reference-comment.
 
 ```ts
 // Comment-202608222 relates and/or applies.
@@ -40,7 +42,7 @@ It means that the given comment applies in part and relates in another part.
 
 #### Numbered ToDos
 
-Similarly, ToDos can be written in the same format:
+Similarly, numbered todos use paired opening and closing tags and the same reference forms:
 
 ```ts
 // [ToDo-202512308-1]
@@ -54,12 +56,15 @@ Similarly, ToDos can be written in the same format:
 // ToDo-202512308-1 relates and/or applies.
 ```
 
-Note that the todo self-closing form such as `[ToDo-202608233/]` is not used because it makes no sense for todo description to be empty.
+Numbered ToDos do not use a self-closing form, such as `[ToDo-202608233-1/]`, because every ToDo must state what is to be done.
+
+When deleting a numbered comment or a numbered todo, find and delete all its references.
 
 #### ToDo Priorities
 
-The final hyphen-separated number, `1` in this example, is the ToDo priority. It is not part of the unique ID.\
-We recommend using the following priorities:
+The final hyphen-separated number, `1` in this example, is the ToDo priority. It is not part of the todo ID.
+
+We use the following priorities:
 
 - `0`: to do immediately.
 - `1`: to do soon, before the next release.
@@ -67,6 +72,8 @@ We recommend using the following priorities:
 - `3`: to do some day, low priority.
 - `4`: rarely used for a not-any-time-soon todo, such as doing something about a timestamp overflow in 100 years.
 - `9`: a todo in (1) commented code; (2) legacy docs that are no longer correct. These todos are to be done if we decide to uncomment the code or revive the docs.
+
+When changing the priority of a numbered todo, update the priority suffix in every occurrence of its tag.
 
 We use the same priorities for non-numbered todos as well, for example:
 
@@ -92,7 +99,7 @@ The `ToDo` forms above are human todos. Use `ToDo-AI` for todos to be done by an
 // ToDo-AI-0 Do this and that ASAP.
 ```
 
-Use the comment syntax appropriate for the file type. For example:
+Use the comment syntax appropriate for the file type for all numbered comments, numbered todos, and their references. For example:
 
 ```md
 <!--
@@ -110,63 +117,33 @@ Do this and that.
 <!-- ToDo-AI-3 Do this and that. -->
 ```
 
-#### Unique ID Namespace
+#### ID Namespace
 
-A unique ID is the 9-digit numeric value `YYYYMMDDN`, where `YYYYMMDD` is a date and `N` is a sequence digit from `1` through `9`. It identifies one logical item or purpose and is unique across all such uses in the workspace. Numbered comments, human todos, AI todos, and other uses of these IDs share the same namespace. Declarations and references to the same logical item intentionally reuse its ID. A todo priority suffix, such as `-1`, is not part of the unique ID.
+An ID is the 9-digit numeric value in the format `YYYYMMDDN`, where `YYYYMMDD` is a date and `N` is a sequence digit from `1` through `9`.\
+For example, if the date is September 15, 2025 and the sequence digit is 7, the ID will be 202509157.
 
-#### Generating a New Unique ID
+We generate a unique ID for each new numbered comment or numbered todo, or for any other need. All generated IDs share one project-wide namespace, regardless of purpose. One ID identifies one logical item or purpose; declarations and references to that same item intentionally reuse it.
 
-Use the following logic to generate a unique ID for a new numbered comment or numbered todo (or for any other purpose).
+#### Generating a Unique ID
 
-- Generating the first unique ID. Do this if you have not yet saved the last generated unique ID.
+Use the following logic to generate a unique ID.
 
-  - Initialize a date variable from the current local date.
+- Begin.
 
-  - Loop.
+  - Load the previously saved ID from the `../project-state/last-id-number.txt` file and parse it to extract the date and the sequence digit.
 
-    - Generate a number from the date in the format `YYYYMMDD`.\
-      For example, on December 31, 2026, the number will be 20261231.
+  - If the current local date is greater than the extracted one, replace the extracted date with the current local date and reset the sequence digit to 1.
 
-    - Perform a global search across workspace files for the generated number, not whole word.
+  - Else if the sequence digit is less than 9, increment it.
 
-    - If not found, break the loop.
+  - Else, increment the date by 1 day and reset the sequence digit to 1.
 
-    - Increment the date by 1 day.\
-      For example, after December 31, 2026, the next date will be January 1, 2027.
-
-  - End of loop.
-
-  - Generate a unique ID from the found date using format `YYYYMMDDN`, where `N` is a sequence digit to be initialized with 1.\
-    For example, if the found date is January 2, 2027, the unique ID will be 202701021.
-
-  - Save the generated unique ID to some kind of storage. Ideally, the storage should be shared by all AI agent sessions. Even better, it should live on a server and be usable by all team members.
-
-- End.
-
-- Generating a subsequent (not the first) unique ID. Do this if you have previously saved the last generated unique ID.
-
-  - Load the previously saved unique ID and parse it to extract the date and the sequence digit.
-
-  - If the current local date is greater than the extracted one, replace the extracted date with the current local date and reset the sequence digit to 0.
-
-  - Loop.
-
-    - If the sequence digit is less than 9, increment it.
-
-    - Else, increment the date by 1 day and reset the sequence digit to 1.
-
-    - Generate a unique ID from the date and sequence digit using the same format.
-
-    - Perform a global search across workspace files for the generated unique ID, not whole word.
-
-    - If not found, break the loop.
-
-  - End of loop.
-
-  - Save the generated unique ID to the same storage.
+  - Generate an ID from the date and sequence digit.
+  
+  - Save the generated ID to the same file.
 
 - End.
 
 #### Notes
 
-- Most numbered comments and todos are located in source code files, but some can be located in files of other types, such as `.md` and `.txt`.
+- Most numbered comments and numbered todos are located in source code files, but some can be located in files of other types, such as `.md` and `.txt`.

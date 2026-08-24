@@ -3,6 +3,7 @@
 ## Scope
 
 - Use these instructions to guide requested work. If you believe the requested work's scope should be expanded, propose the additional work and wait for my approval before implementing it.
+- Some files do not comply with these instructions, and that's OK. Do not propose bringing existing non-broken code/text into compliance unless requested to do so in the prompt.
 
 ## Workspace
 
@@ -24,8 +25,8 @@
 - Do not autonomously introduce a material tradeoff involving correctness, security, compatibility, or trust assumptions. Identify the available options and their implications, and let me choose among them.
 - Do not assume that an input is valid or non-malicious unless that assumption follows from an enforced invariant or I approve it.
 - With my approval, a simpler solution that can be improved later may be preferred over a more complex ideal solution, provided it satisfies the approved correctness and security requirements.
-- An "issue" is a concrete, understood, and currently accepted undesirable aspect of an implementation or design, such as an imperfection, code smell, inefficiency, fragility, omission, assumption, workaround, or dependency that future changes could invalidate.
-- Unlike a todo, an issue records something we do not currently plan to change. It is accepted because the current solution is adequate, improving it is not presently worth the added complexity, cost, or risk, or an external dependency must change first.
+- An "issue" is a concrete, understood, and currently accepted concern or undesirable aspect of an implementation or design, such as an imperfection, code smell, inefficiency, fragility, coupling, omission, assumption, workaround, latent risk, or reliance on behavior that future changes could invalidate.
+- Unlike a todo, an issue records something we do not currently plan to change. It is accepted because the current solution is adequate, improving it is not presently worth the added complexity, cost, or risk, or a change elsewhere -- including in an external dependency -- must happen first.
 - A non-obvious issue shall be documented with an issue-comment like this:
 
 ```solidity
@@ -76,7 +77,7 @@ assert(x > y);
 
 - Maintain commented-out code when practical. When refactoring active code, update analogous commented-out code too. If commented-out code is already stale or cannot be updated without broader work, add a `ToDo-9` describing what must be done after it is uncommented.
 - Some conditionally compiled alternatives are mutually exclusive. Keep each reachable compilation variant correct; mutually exclusive alternatives do not need to be valid simultaneously in one compilation.
-- Comments and docs should be brief. Write comments only about non-obvious intricacies. For example, explain dependencies of logic in different parts of the codebase. Consider writing numbered comments/todos to link dependent parts of the codebase.
+- Comments and docs should be brief. Write comments only about non-obvious intricacies. For example, explain dependencies of logic in different parts of the codebase. Consider using numbered comments/todos to link dependent parts of the codebase.
 - That said, it can be helpful for me if you explain things in detail in verbose temporary to-be-deleted comments. Format them as follows:
 
 ```solidity
@@ -85,11 +86,8 @@ assert(x > y);
 ```
 
 - Review `docs/numbered-comments.md`. Prefer writing numbered comments and numbered todos, whether human or AI, when they offer an advantage over their non-numbered counterparts.
-- When creating a new numbered comment or numbered todo, generate a workspace-unique ID as specified in `docs/numbered-comments.md`. When linking another location to an existing numbered comment or numbered todo, intentionally reuse its existing ID.
 - Perform AI or human todos only if requested to do so in the prompt. Delete every todo that you have completed.
 - If you are not to perform a human todo, use it as context. For example, if the prompt says to develop tests and a human todo says to confirm a certain relevant behavior, consider proposing a test for that case.
-- When changing the priority of a numbered todo, update the priority suffix in all its references.
-- When deleting a numbered comment or numbered todo (AI or human), find and delete all its references.
 - When an explanatory comment or todo occupies one or more separate lines and is associated with code, place it before the relevant lines. Insert an empty line before the comment and after the last relevant line of code when the surrounding structure permits it. When deleting a comment, delete any empty lines that are no longer needed, but be sure not to delete empty lines needed for other comments.
 
 ## Running Hardhat Tests
@@ -100,4 +98,3 @@ assert(x > y);
 ## Uncategorized
 
 - Prefer using only ASCII chars. For example, do not use `—`; use `--` instead. But if the surrounding text intentionally uses non-ASCII chars, keep using them consistently.
-- Some files do not comply with these instructions, and that's OK. Do not proactively improve existing code/text that's not broken.
