@@ -21,22 +21,22 @@
 ## Coding Guidelines
 
 - Keep the code simple and avoid unnecessary overengineering. The software shall work correctly and securely for all stated requirements and all realistically possible inputs and reachable states. Do not add complexity solely to handle impossible states or use cases that do not need to be supported.
-- Do not autonomously introduce a material tradeoff involving correctness, security, compatibility, or trust assumptions. Identify the available options and their implications and let me choose the most appropriate options.
+- Do not autonomously introduce a material tradeoff involving correctness, security, compatibility, or trust assumptions. Identify the available options and their implications, and let me choose among them.
 - Do not assume that an input is valid or non-malicious unless that assumption follows from an enforced invariant or I approve it.
 - With my approval, a simpler solution that can be improved later may be preferred over a more complex ideal solution, provided it satisfies the approved correctness and security requirements.
-- An "issue" is a known, currently accepted imperfection, omission, assumption, or workaround in an approved solution.
-- An example of an issue is a workaround for a buggy or poorly designed third-party library.
+- An "issue" is a concrete, understood, and currently accepted undesirable aspect of an implementation or design, such as an imperfection, code smell, inefficiency, fragility, omission, assumption, workaround, or dependency that future changes could invalidate.
+- Unlike a todo, an issue records something we do not currently plan to change. It is accepted because the current solution is adequate, improving it is not presently worth the added complexity, cost, or risk, or an external dependency must change first.
 - A non-obvious issue shall be documented with an issue-comment like this:
 
 ```solidity
-// Issue. (Explain some of the following: what workaround was implemented; the assumptions;
-// what logic was omitted and why it's unnecessary; the implications;
-// why the issue is currently acceptable; etc.)
+// Issue. (Explain some of the following: what is undesirable or fragile;
+// the relevant assumptions or dependencies; any workaround or omitted logic;
+// the implications; why the issue is currently accepted rather than made a todo; etc.)
 // (The issue description can occupy multiple lines.)
 ```
 
 - If an issue has concrete, foreseeable trigger conditions that would require revisiting it, detail those conditions in a `ToDo-3` after the issue-comment.
-- Some issues are obvious and/or frequent. They either need a comment without the `Issue` keyword or don't need a comment at all. For example, it is unnecessary to state near every unchecked arithmetic operation that it is assumed not to overflow. Such a comment or issue-comment can be appropriate when the absence of overflow is non-obvious because the operands may be large.
+- Obvious or frequent issues do not require an issue-comment. Add an ordinary comment only when it provides useful non-obvious context. For example, it is unnecessary to state near every unchecked arithmetic operation that it is assumed not to overflow. Such a comment or issue-comment can be appropriate when the absence of overflow is non-obvious because the operands may be large.
 
 ## Naming Conventions
 
@@ -66,7 +66,7 @@ console.log(x, y);
 assert(x > y);
 ```
 
-- Before proposing improvements to existing Solidity code, review `docs/contract-improvement-ideas-not-to-propose-in-existing-code.md`. You should not unsolicitedly propose the listed Solidity improvement ideas for existing code unless explicitly requested. You may propose them for new code, but you shall not implement them without approval in the prompt or an approved plan. This restriction does not prohibit reporting concrete defects or risks discovered during a requested code review.
+- Before proposing improvements to existing Solidity code, review `docs/contract-improvement-ideas-not-to-propose-in-existing-code.md`. Do not propose the listed Solidity improvement ideas for existing code unless explicitly requested. You may propose them for new code, but do not implement them without approval in the prompt or an approved plan. This restriction does not prohibit reporting concrete defects or risks discovered during a requested code review.
 
 ## Scripts
 
@@ -84,10 +84,11 @@ assert(x > y);
 // DEL: and why you did it.)
 ```
 
-- Review `docs/numbered-comments.md`. Prefer writing numbered comments and numbered AI and human todos when they offer an advantage over their non-numbered counterparts.
-- When creating a new numbered comment or numbered todo ID, make sure it does not exist across the repository files. How to do it, is specified in `docs/numbered-comments.md`. When linking another location to an existing numbered comment or numbered todo, intentionally reuse its existing ID.
+- Review `docs/numbered-comments.md`. Prefer writing numbered comments and numbered todos, whether human or AI, when they offer an advantage over their non-numbered counterparts.
+- When creating a new numbered comment or numbered todo, generate a workspace-unique ID as specified in `docs/numbered-comments.md`. When linking another location to an existing numbered comment or numbered todo, intentionally reuse its existing ID.
 - Perform AI or human todos only if requested to do so in the prompt. Delete every todo that you have completed.
 - If you are not to perform a human todo, use it as context. For example, if the prompt says to develop tests and a human todo says to confirm a certain relevant behavior, consider proposing a test for that case.
+- When changing the priority of a numbered todo, update the priority suffix in all its references.
 - When deleting a numbered comment or numbered todo (AI or human), find and delete all its references.
 - When an explanatory comment or todo occupies one or more separate lines and is associated with code, place it before the relevant lines. Insert an empty line before the comment and after the last relevant line of code when the surrounding structure permits it. When deleting a comment, delete any empty lines that are no longer needed, but be sure not to delete empty lines needed for other comments.
 

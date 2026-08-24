@@ -2,7 +2,7 @@
 
 ## About
 
-- This document is referenced in `../AGENTS.md`. See details there.
+- Applicability and approval rules for this list are defined in `../AGENTS.md`.
 
 ## Ideas
 
