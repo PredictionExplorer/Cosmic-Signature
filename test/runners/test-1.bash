@@ -25,7 +25,7 @@
 
 			if [ $? -ne 0 ]; then
 				if [[ "${1}" == '-b' ]] ; then
-					echo 'Error. Hardhat Test failed. We will skip any remaining tests.'
+					echo 'Error. Hardhat Test failed. We will skip any remaining tests.' 1>&2
 				else
 					read '-r' '-n' '1' '-s' '-p' 'Error. Hardhat Test failed. We will skip any remaining tests. Press any key to finish.'
 					echo 1>&2
@@ -39,7 +39,7 @@
 		cd '--' '../..'
 		if [ $? -ne 0 ]; then
 			if [[ "${1}" == '-b' ]] ; then
-				echo 'Error 202409026.'
+				echo 'Error 202409026.' 1>&2
 			else
 				read '-r' '-n' '1' '-s' '-p' 'Error 202409026. Press any key to finish.'
 				echo 1>&2
