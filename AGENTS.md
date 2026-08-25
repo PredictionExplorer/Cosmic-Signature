@@ -25,15 +25,14 @@
 - Do not autonomously introduce a material tradeoff involving correctness, security, compatibility, or trust assumptions. Identify the available options and their implications, and let me choose among them.
 - Do not assume that an input is valid or non-malicious unless that assumption follows from an enforced invariant or I approve it.
 - With my approval, a simpler solution that can be improved later may be preferred over a more complex ideal solution, provided it satisfies the approved correctness and security requirements.
-- An "issue" is a concrete, understood, and currently accepted concern or undesirable aspect of an implementation or design, such as an imperfection, code smell, inefficiency, fragility, coupling, omission, assumption, workaround, latent risk, reliance on behavior that future changes could invalidate, maintainability problem, inconsistency, non-ideal behavior.
+- An "issue" is a concrete, understood, and currently accepted concern or undesirable aspect of an implementation or design. Examples include non-ideal behavior, inconsistencies, inefficiencies, code smells, maintainability problems, fragility, coupling, omissions, assumptions, workarounds, latent risks, reliance on behavior that future changes could invalidate, and other imperfections.
 - Unlike a todo, an issue records something we do not currently plan to change. It is accepted because the current solution is adequate, improving it is not presently worth the added complexity, cost, or risk, or a change elsewhere -- including in an external dependency -- must happen first.
 - A non-obvious issue shall be documented with an issue-comment like this:
 
 ```solidity
-// Issue. (Explain some of the following: what is undesirable or fragile;
-// the relevant assumptions or dependencies; any workaround or omitted logic;
-// the implications; why the issue is currently accepted rather than made a todo; etc.)
-// (The issue description can occupy multiple lines.)
+// Issue. (Briefly explain what is undesirable and its implications.
+// As relevant, mention assumptions, dependencies, workarounds, omissions, or why the issue
+// is currently accepted rather than made a todo.)
 ```
 
 - If an issue has concrete, foreseeable trigger conditions that would require revisiting it, detail those conditions in a `ToDo-3` after the issue-comment.

@@ -62,7 +62,7 @@ When deleting a numbered comment or a numbered todo, find and delete all its ref
 
 #### ToDo Priorities
 
-The final hyphen-separated number, `1` in this example, is the ToDo priority. It is not part of the todo ID.
+The final hyphen-separated number, `1` in this example, is the ToDo priority. It is not part of the ID.
 
 We use the following priorities:
 
@@ -99,30 +99,12 @@ The `ToDo` forms above are human todos. Use `ToDo-AI` for todos to be done by an
 // ToDo-AI-0 Do this and that ASAP.
 ```
 
-Use the comment syntax appropriate for the file type for all numbered comments, numbered todos, and their references. For example:
-
-```md
-<!--
-[ToDo-AI-202608225-2]
-Do this and that.
-[/ToDo-AI-202608225-2]
--->
-
-<!-- ToDo-AI-202608225-2 applies. -->
-
-<!-- ToDo-AI-202608225-2 relates. -->
-
-<!-- ToDo-AI-202608225-2 relates and/or applies. -->
-
-<!-- ToDo-AI-3 Do this and that. -->
-```
-
 #### ID Namespace
 
 An ID is the 9-digit numeric value in the format `YYYYMMDDN`, where `YYYYMMDD` is a date and `N` is a sequence digit from `1` through `9`.\
 For example, if the date is September 15, 2025, and the sequence digit is 7, the ID will be 202509157.
 
-Generate a new ID for each new logical numbered comment or numbered todo and for any other purpose that requires an ID. All generated IDs share one project-wide namespace, regardless of purpose. Each ID is assigned to exactly one logical item or purpose. For a numbered item, it is also assigned to exactly one tag family: `Comment`, `ToDo`, or `ToDo-AI`. Declarations and references to that same item or purpose intentionally reuse the same ID.
+Generate a new ID for each new logical numbered comment or numbered todo and for any other purpose that requires an ID. All generated IDs share one project-wide namespace, regardless of purpose. Each ID is assigned to exactly one logical item or purpose. All uses associated with that same item or purpose intentionally reuse the same ID. For a numbered item, the ID is also assigned to exactly one tag family: `Comment`, `ToDo`, or `ToDo-AI`.
 
 #### Generating a New ID
 
@@ -146,4 +128,20 @@ Use the following logic to generate a new ID. If any of these steps fails, reque
 
 #### Notes
 
-- Most numbered comments and numbered todos are located in source code files, but some can be located in files of other types, such as `.md` and `.txt`.
+- Most numbered comments and numbered todos are located in source code files, but some can be located in files of other types, such as `.md` and `.txt`. Use the comment syntax appropriate for the file type. For example:
+
+```md
+<!--
+[ToDo-AI-202608225-2]
+Do this and that.
+[/ToDo-AI-202608225-2]
+-->
+
+<!-- ToDo-AI-202608225-2 applies. -->
+
+<!-- ToDo-AI-202608225-2 relates. -->
+
+<!-- ToDo-AI-202608225-2 relates and/or applies. -->
+
+<!-- ToDo-AI-3 Do this and that. -->
+```
