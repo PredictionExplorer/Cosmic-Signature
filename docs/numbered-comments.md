@@ -128,7 +128,7 @@ Use the following logic to generate a new ID. If any of these steps fails, reque
 
 #### Notes
 
-- Most numbered comments and numbered todos are located in source code files, but some can be located in files of other types, such as `.md` and `.txt`. Use the comment syntax appropriate for the file type. For example:
+- Most numbered comments and numbered todos are located in source code files, but some can be located in files of other types, such as `.md` and `.txt`. In file formats that support comments, use the appropriate comment syntax. For example:
 
 ```md
 <!--
