@@ -40,7 +40,7 @@
 
 ## Naming Conventions
 
-- In the code, name things descriptively and verbosely. This also applies to file names. Do not force names to be short. Prefer not to shorten words, except for the following: `Prev`, `Param`, `Arg`, `Char`, `Min`, `Max`, `Temp`, `Num`, `hre`. Also use commonly used abbreviations, such as `Json`, `Rpc`, `Url`, `Evm`, `Abi`, `Nft`, `SmtChecker`.
+- In the code, name things descriptively and verbosely. This also applies to file names. Do not force names to be short. Prefer not to shorten words, except for the following: `Prev`, `Param`, `Arg`, `Char`, `Min`, `Max`, `Temp`, `Id`, `Num`, `hre`. Also use commonly used abbreviations, such as `Json`, `Rpc`, `Url`, `Evm`, `Abi`, `Nft`, `SmtChecker`.
 - A function parameter or local variable name shall end with `_`. But some files do not comply with this instruction. Keep them as is and write new code in them in the same consistent style.
 
 ## Solidity
@@ -96,4 +96,4 @@ assert(x > y);
 
 ## Uncategorized
 
-- Prefer using only ASCII chars. For example, do not use `—`; use `--` instead. But if the surrounding text intentionally uses non-ASCII chars, keep using them consistently.
+- Prefer using only ASCII chars. For example, instead of `—`, use `--`. But if the surrounding text intentionally uses non-ASCII chars, keep using them consistently.

@@ -58,8 +58,6 @@ Similarly, numbered todos use paired opening and closing tags and the same refer
 
 Numbered ToDos do not use a self-closing form, such as `[ToDo-202608233-1/]`, because every ToDo must state what is to be done.
 
-When deleting a numbered comment or a numbered todo, find and delete all its references.
-
 #### ToDo Priorities
 
 The final hyphen-separated number, `1` in this example, is the ToDo priority. It is not part of the ID.
@@ -72,8 +70,6 @@ We use the following priorities:
 - `3`: to do someday, low priority.
 - `4`: rarely used for a not-any-time-soon todo, such as doing something about a timestamp overflow in 100 years.
 - `9`: a todo in (1) commented code; (2) legacy docs that are no longer correct. These todos are to be done if we decide to uncomment the code or revive the docs.
-
-When changing the priority of a numbered todo, update the priority suffix in every occurrence of its tag.
 
 We use the same priorities for non-numbered todos as well, for example:
 
@@ -101,7 +97,7 @@ The `ToDo` forms above are human todos. Use `ToDo-AI` for todos to be done by an
 
 #### ID Namespace
 
-An ID is the 9-digit numeric value in the format `YYYYMMDDN`, where `YYYYMMDD` is a date and `N` is a sequence digit from `1` through `9`.\
+An ID is a 9-digit numeric value in the format `YYYYMMDDN`, where `YYYYMMDD` is a date and `N` is a sequence digit from `1` through `9`.\
 For example, if the date is September 15, 2025, and the sequence digit is 7, the ID will be 202509157.
 
 Generate a new ID for each new logical numbered comment or numbered todo and for any other purpose that requires an ID. All generated IDs share one project-wide namespace, regardless of purpose. Each ID is assigned to exactly one logical item or purpose. All uses associated with that same item or purpose intentionally reuse the same ID. For a numbered item, the ID is also assigned to exactly one tag family: `Comment`, `ToDo`, or `ToDo-AI`.
@@ -112,7 +108,7 @@ Use the following logic to generate a new ID. If any of these steps fails, reque
 
 - Begin.
 
-  - Load the previously saved ID from the repository-root file `project-state/last-generated-id-number.txt` and parse it to extract the date and the sequence digit.
+  - Load the previously saved ID from the workspace-root file `project-state/last-generated-id-number.txt` and parse it to extract the date and the sequence digit.
 
   - If the current local date is greater than the extracted one, replace the extracted date with the current local date and reset the sequence digit to 1.
 
@@ -145,3 +141,7 @@ Do this and that.
 
 <!-- ToDo-AI-3 Do this and that. -->
 ```
+
+- When changing the priority of a numbered todo, update the priority suffix in every occurrence of its tag.
+
+- When deleting a numbered comment or a numbered todo, find and delete all its references.
