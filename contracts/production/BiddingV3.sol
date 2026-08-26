@@ -544,7 +544,7 @@ abstract contract BiddingV3 is
 			// Comment-202607263 applies.
 			// todo-0 Same todos as in `_mintBidCstRewardAmount`.
 			// todo-0 Even if they try running this on the very first bid in the current bidding round?
-			// todo-0 Reference Comment-202607164 ? If no need to reference it, it does not need to e numbered.
+			// todo-0 Reference Comment-202607164 ? If no need to reference it, it does not need to be numbered.
 			// #enable_asserts assert(bidCstRewardAmount_ > 0);
 
 			ICosmicSignatureToken.MintOrBurnSpec[] memory mintAndBurnSpecs_ = new ICosmicSignatureToken.MintOrBurnSpec[](2);
