@@ -55,7 +55,7 @@ abstract contract CosmicSignatureGameStorageV3Base is
 	// todo-ai-0 Delete this garbage now.
 	// todo-ai-0 Maybe delete Comment-202607161 as well. I have deleted references to it in Solidity code.
 	// todo-ai-0 Rememeber that when a numbered comment gets deleted, all mentionings of it in all files, including tests and docs,
-	// todo-ai-0 must be deleted as well.
+	// todo-ai-0 must be deleted as well. (I have now added this rule to `AGENTS.md` and/or `numbered-comments.md`.)
 	// todo-ai-0 If necessary, move the comment or some still valid parts of it elsewhere.
 	// todo-ai-0 Generally, avoid writing verbose comments because they are hard to read and maintain.
 	// todo-ai-0 Commnets themselves result a lot of complexity,
