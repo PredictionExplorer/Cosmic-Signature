@@ -95,12 +95,14 @@ The `ToDo` forms above are human todos. Use `ToDo-AI` for todos to be done by an
 // ToDo-AI-0 Do this and that ASAP.
 ```
 
+We collectively refer to numbered comments and numbered todos, whether human or AI, as numbered items.
+
 #### ID Namespace
 
 An ID is a 9-digit numeric value in the format `YYYYMMDDN`, where `YYYYMMDD` is a date and `N` is a sequence digit from `1` through `9`.\
 For example, if the date is September 15, 2025, and the sequence digit is 7, the ID will be 202509157.
 
-Generate a new ID for each new logical numbered comment or numbered todo and for any other purpose that requires an ID. All generated IDs share one project-wide namespace, regardless of purpose. Each ID is assigned to exactly one logical item or purpose. All uses associated with that same item or purpose intentionally reuse the same ID. For a numbered item, the ID is also assigned to exactly one tag family: `Comment`, `ToDo`, or `ToDo-AI`.
+Generate a new ID for each new logical numbered comment, numbered todo, or any other purpose that requires an ID. All generated IDs share one project-wide namespace, regardless of purpose. Each ID is assigned to exactly one logical item or purpose. All uses associated with that same item or purpose intentionally reuse the same ID. For a numbered item, the ID is also assigned to exactly one tag family: `Comment`, `ToDo`, or `ToDo-AI`.
 
 #### Generating a New ID
 
@@ -124,7 +126,7 @@ Use the following logic to generate a new ID. If any of these steps fails, reque
 
 #### Notes
 
-- Most numbered comments and numbered todos are located in source code files, but some can be located in files of other types, such as `.md` and `.txt`. In file formats that support comments, use the appropriate comment syntax. For example:
+- Most numbered items are located in source code files, but some can be located in files of other types, such as `.md` or `.txt`. In file formats that support comments, use the appropriate comment syntax. For example:
 
 ```md
 <!--
@@ -144,12 +146,16 @@ Do this and that.
 
 - When changing the priority of a numbered todo, update the priority suffix in every occurrence of its tag.
 
-- When deleting a numbered comment or a numbered todo, find and delete all its references.
-
-- When deleting a numbered comment or a numbered todo reference, if it's the only existing reference, ask for my permission to delete the numbered item opening and closing tags, thereby making the item non-numbered.
-
 - When deleting a numbered item or only its opening and closing tags, if its text states that the numbered item is referenced somewhere outside the workspace, ask for my permission to proceed.
 
+- When deleting a numbered item, find and delete all its references.
+
+- When deleting a numbered item reference, if it's the only existing reference, ask for my permission to also delete the numbered item opening and closing tags, thereby making it non-numbered.
+
 - When deleting one or more files:
+  - If a numbeed item exists in a file to be deleted:
+    - If its references exist in files not to be deleted:
+      - If some of the references state that the given numbered item "applies", ask for my permission to swap one of those reference with the given numbered item. In addition, if there are multiple references like that, ask me to choose one of them. <!-- todo-0 After the AI makes this or some other edits, some other instruction conditions can become true. Test how the AI handles these cases. -->
+      - Else, act as when deleting the numbered item, but ask for my permission to proceed.
+    - Else, act as when deleting the numbered item.
   - If a numbered item exists in a file not to be deleted and its references exist in files to be deleted, act as when deleting the references.
-  - If a numbeed item exists in a file to be deleted, act as when deleting the numbered item. In addition, if its references exist in files not to be deleted, ask for my permission to proceed.
