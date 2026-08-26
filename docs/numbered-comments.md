@@ -145,3 +145,11 @@ Do this and that.
 - When changing the priority of a numbered todo, update the priority suffix in every occurrence of its tag.
 
 - When deleting a numbered comment or a numbered todo, find and delete all its references.
+
+- When deleting a numbered comment or a numbered todo reference, if it's the only existing reference, ask for my permission to delete the numbered item opening and closing tags, thereby making the item non-numbered.
+
+- When deleting a numbered item or only its opening and closing tags, if its text states that the numbered item is referenced somewhere outside the workspace, ask for my permission to proceed.
+
+- When deleting one or more files:
+  - If a numbered item exists in a file not to be deleted and its references exist in files to be deleted, act as when deleting the references.
+  - If a numbeed item exists in a file to be deleted, act as when deleting the numbered item. In addition, if its references exist in files not to be deleted, ask for my permission to proceed.
