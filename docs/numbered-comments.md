@@ -46,7 +46,7 @@ It means that the given comment applies in part and relates in another part.
 
 #### Numbered ToDos
 
-The same defining-occurrence and reference rules apply to numbered todos. Numbered todos use paired opening and closing tags and the same reference forms:
+The same defining-occurrence and reference rules apply to numbered todos. For example:
 
 ```ts
 // [ToDo-202512308-1]
@@ -133,11 +133,6 @@ Use the following logic to generate a new ID. If any of these steps fails, reque
 - End.
 
 #### Instructions
-
-<!--
-The following instruction does not exist. Because I deliberately want an additional confirmation for these destructive operations.
-- Whenever these instructions require permission, ask for it unless it was already explicitly granted in the prompt or the approved plan.
--->
 
 - Before making any change covered by these instructions, build the planned change set. Starting with the requested changes, repeatedly apply these instructions to the projected state and add each consequential change once until no new consequence appears.
 
