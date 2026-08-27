@@ -134,9 +134,14 @@ Use the following logic to generate a new ID. If any of these steps fails, reque
 
 #### Instructions
 
-- Before editing, determine the complete planned change set. Starting with the requested changes, repeatedly apply these instructions to the projected state and add each consequential change once until no new consequence appears.
+<!--
+The following instruction does not exist. Because I deliberately want an additional confirmation for these destructive operations.
+- Whenever these instructions require permission, ask for it unless it was already explicitly granted in the prompt or the approved plan.
+-->
 
-- Ask all currently determinable permission and choice questions before editing. If an answer changes the projected state, re-evaluate it. Modify files only after all required questions have been resolved, then apply the approved changes in one batch.
+- Before making any change covered by these instructions, build the planned change set. Starting with the requested changes, repeatedly apply these instructions to the projected state and add each consequential change once until no new consequence appears.
+
+- Ask all currently determinable permission and choice questions before applying the planned change set. If an answer changes the projected state, re-evaluate the planned change set. Modify files only after all required questions have been resolved, then apply the approved changes in one batch.
 
 - Before changing any part of a numbered item's tag, deleting its defining occurrence, or deleting only its defining tag or tags, ask for permission if the item's text states that it is referenced outside the workspace.
 
@@ -144,12 +149,10 @@ Use the following logic to generate a new ID. If any of these steps fails, reque
 
 - If the projected change would delete a numbered item's defining occurrence or only its defining tag or tags while leaving any references, include deletion of all those references in the planned change set, but first ask for permission.
 
-- If the projected change would delete all references to a numbered item while its defining occurrence would otherwise remain, ask for permission to delete its defining tag or tags too. Retain any text between paired tags. Deleting a self-closing defining tag deletes the empty numbered item.
+- If the projected change would delete all references to a numbered item while its defining occurrence would otherwise remain, ask for permission to delete its defining tag or tags too, retaining any text between paired tags.
 
 - When planning to delete one or more files:
-
-  - For each numbered item whose defining occurrence is in a file to be deleted, if one or more references in files to be retained use the exact `applies` form, ask for permission to swap the defining occurrence with one such reference. Swapping means that the selected retained location becomes the defining occurrence and the old defining location becomes an `applies` reference. If multiple eligible references exist, ask me which one to use.
-
+  - For each numbered item whose defining occurrence is in a file to be deleted, if one or more references in files to be retained use the exact `applies` form, ask for permission to swap the defining occurrence with one such reference. For purposes of the projected state, swapping means that the selected retained location becomes the defining occurrence and the old defining location becomes an `applies` reference. If multiple eligible references exist, ask me which one to use.
   - After incorporating any approved swaps into the projected state, treat every numbered-item defining occurrence and reference in a file to be deleted as planned for deletion, and apply all other instructions to those planned deletions.
 
 #### Notes
