@@ -10,7 +10,7 @@ We use numbered comments, for example:
 // [/Comment-202608222]
 ```
 
-This notation resembles an XML element. It consists of paired opening and closing tags and text between them. In this example, `Comment-202608222` is the numbered comment tag, and `202608222` is its ID. The tag is treated as case-insensitive.
+This notation resembles an XML element. It consists of paired opening and closing tags and text between them. In this example, `Comment-202608222` is the numbered comment tag, and `202608222` is its ID.
 
 A numbered comment with no text can be formatted as a self-closing tag, for example:
 
@@ -87,12 +87,14 @@ We use the same priorities for non-numbered todos as well, for example:
 
 #### AI ToDos
 
-The `ToDo` forms above are human todos. Use `ToDo-AI` for todos to be done by an artificial intelligence agent. The same priorities and reference forms apply.
+The `ToDo` forms above are human todos. For AI todos, replace `ToDo` with `ToDo-AI`. For example:
 
 ```ts
 // [ToDo-AI-202608224-1]
 // Do this and that.
 // [/ToDo-AI-202608224-1]
+
+// [ToDo-AI-202608275-1/]
 
 // ToDo-AI-202608224-1 applies.
 
@@ -151,6 +153,8 @@ Use the following logic to generate a new ID. If any of these steps fails, reque
   - After incorporating any approved swaps into the projected state, treat every numbered-item defining occurrence and reference in a file to be deleted as planned for deletion, and apply all other instructions to those planned deletions.
 
 #### Notes
+
+- The keywords `Comment`, `ToDo`, and `ToDo-AI` in the forms described in this document are case-insensitive.
 
 - Most numbered items are located in source code files, but some can be located in files of other types, such as `.md` or `.txt`. In file formats that support comments, use the appropriate comment syntax. For example:
 
