@@ -10,23 +10,27 @@ We use numbered comments, for example:
 // [/Comment-202608222]
 ```
 
-This notation resembles an XML element. In this example, `Comment-202608222` is the numbered comment tag, and `202608222` is its ID.
+This notation resembles an XML element. It consists of paired opening and closing tags and text between them. In this example, `Comment-202608222` is the numbered comment tag, and `202608222` is its ID. The tag is treated as case insensitive.
 
-A numbered comment tag can link related locations in source code and other text files and can avoid duplicating the same comment text. To link related locations, use the same numbered comment tag at each location. To find all linked locations, globally search for that tag or just its ID.
-
-If the text of a numbered comment is empty, we can use the self-closing form:
+A numbered comment with no text can be formatted as a self-closing tag, for example:
 
 ```ts
 // [Comment-202512307/]
 ```
 
+Each numbered comment has exactly one XML-element-like defining occurrence. All other occurrences of the numbered comment's tag are references.
+
+A numbered comment tag can link related locations in source code and other text files and can avoid duplicating the same comment text. To link related locations, use the same numbered comment tag at each location. To find all linked locations, globally search for that tag or just its ID.
+
 #### Frequently Used Phrases
+
+The following are examples of numbered comment references.
 
 ```ts
 // Comment-202608222 applies.
 ```
 
-It means that the same text would otherwise need to be written at the given location as well.
+It means a copy of the same numbered comment. In other words, the same numbered comment is inherited at the given location.
 
 ```ts
 // Comment-202608222 relates.
@@ -102,7 +106,7 @@ We collectively refer to numbered comments and numbered todos, whether human or 
 An ID is a 9-digit numeric value in the format `YYYYMMDDN`, where `YYYYMMDD` is a date and `N` is a sequence digit from `1` through `9`.\
 For example, if the date is September 15, 2025, and the sequence digit is 7, the ID will be 202509157.
 
-Generate a new ID for each new logical numbered comment, numbered todo, or any other purpose that requires an ID. All generated IDs share one project-wide namespace, regardless of purpose. Each ID is assigned to exactly one logical item or purpose. All uses associated with that same item or purpose intentionally reuse the same ID. For a numbered item, the ID is also assigned to exactly one tag family: `Comment`, `ToDo`, or `ToDo-AI`.
+Generate a new ID for each new numbered item or for any other purpose that requires one. All generated IDs share one project-wide namespace, regardless of purpose. Each ID is assigned to exactly one logical item or purpose. All uses associated with that same item or purpose intentionally reuse the same ID. For a numbered item, the ID is also assigned to exactly one tag family: `Comment`, `ToDo`, or `ToDo-AI`.
 
 #### Generating a New ID
 
@@ -124,6 +128,26 @@ Use the following logic to generate a new ID. If any of these steps fails, reque
 
 - End.
 
+#### Instructions
+
+- Before making any change these instructions cover, re-evaluate all these instructions against the current state.
+
+- Before changing any part of a numbered item's tag or deleting the item or its defining tags, if its text states that it is referenced outside the workspace, ask for permission to proceed.
+
+- When changing any part of a numbered item's tag, update all occurrences of the tag.
+
+- When deleting a numbered item or only its defining tags, if any of its references exist, delete them as well, but first ask for permission to proceed.
+
+- When deleting a numbered item's all existing references, ask for permission to delete the item's defining tags (while retaining its text). Note that the item can have either a pair of tags or a single self-closing tag.
+
+- When deleting one or more files:
+  - If a numbered item exists in a file to be deleted:
+    - If its references exist in files not to be deleted:
+      - If some of the references state that the given numbered item `applies`, ask for my permission to swap one of those references with the given numbered item. In addition, if there are multiple references like that, ask me to choose one of them.
+      - Else, act as when deleting the numbered item.
+    - Else, act as when deleting the numbered item.
+  - If a numbered item exists in a file not to be deleted and its references exist in files to be deleted, act as when deleting the references.
+
 #### Notes
 
 - Most numbered items are located in source code files, but some can be located in files of other types, such as `.md` or `.txt`. In file formats that support comments, use the appropriate comment syntax. For example:
@@ -143,19 +167,3 @@ Do this and that.
 
 <!-- ToDo-AI-3 Do this and that. -->
 ```
-
-- When changing the priority of a numbered todo, update the priority suffix in every occurrence of its tag.
-
-- When deleting a numbered item or only its opening and closing tags, if its text states that the numbered item is referenced somewhere outside the workspace, ask for my permission to proceed.
-
-- When deleting a numbered item, find and delete all its references.
-
-- When deleting a numbered item reference, if it's the only existing reference, ask for my permission to also delete the numbered item opening and closing tags, thereby making it non-numbered.
-
-- When deleting one or more files:
-  - If a numbeed item exists in a file to be deleted:
-    - If its references exist in files not to be deleted:
-      - If some of the references state that the given numbered item "applies", ask for my permission to swap one of those reference with the given numbered item. In addition, if there are multiple references like that, ask me to choose one of them. <!-- todo-0 After the AI makes this or some other edits, some other instruction conditions can become true. Test how the AI handles these cases. -->
-      - Else, act as when deleting the numbered item, but ask for my permission to proceed.
-    - Else, act as when deleting the numbered item.
-  - If a numbered item exists in a file not to be deleted and its references exist in files to be deleted, act as when deleting the references.

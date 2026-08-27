@@ -84,7 +84,7 @@ assert(x > y);
 // DEL: and why you did it.)
 ```
 
-- Review `docs/numbered-comments.md`. Prefer writing numbered items when they offer an advantage over their non-numbered counterparts. Consider using numbered items to link dependent or similar parts of the codebase. While similar pieces of code are not necessarily dependent, if one of them needs a refactoring, so can be the others. Therefore, a numbered comment stating that similar logic, data structure, etc. exists in multiple places can help to find where to perform the refactoring.
+- Review `docs/numbered-comments.md`. Prefer writing numbered items when they offer an advantage over their non-numbered counterparts. Consider using numbered items to link dependent or similar parts of the codebase. Similar code is not necessarily dependent, but when one occurrence requires refactoring, other occurrences may require the same change. A numbered comment identifying repeated logic or data structures can help locate all affected places.
 - Perform AI or human todos only if requested to do so in the prompt. Delete every todo that you have completed.
 - If you are not to perform a human todo, use it as context. For example, if the prompt says to develop tests and a human todo says to confirm a certain relevant behavior, consider proposing a test for that case.
 - When an explanatory comment or todo occupies one or more separate lines and is associated with code, place it before the relevant lines. Insert an empty line before the comment and after the last relevant line of code when the surrounding structure permits it. When deleting a comment, delete any empty lines that are no longer needed, but be sure not to delete empty lines needed for other comments.
