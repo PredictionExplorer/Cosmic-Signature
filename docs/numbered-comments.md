@@ -10,7 +10,7 @@ We use numbered comments, for example:
 // [/Comment-202608222]
 ```
 
-This notation resembles an XML element. It consists of paired opening and closing tags and text between them. In this example, `Comment-202608222` is the numbered comment tag, and `202608222` is its ID. The tag is treated as case insensitive.
+This notation resembles an XML element. It consists of paired opening and closing tags and text between them. In this example, `Comment-202608222` is the numbered comment tag, and `202608222` is its ID. The tag is treated as case-insensitive.
 
 A numbered comment with no text can be formatted as a self-closing tag, for example:
 
@@ -46,7 +46,7 @@ It means that the given comment applies in part and relates in another part.
 
 #### Numbered ToDos
 
-Similarly, numbered todos use paired opening and closing tags and the same reference forms:
+The same defining-occurrence and reference rules apply to numbered todos. Numbered todos use paired opening and closing tags and the same reference forms:
 
 ```ts
 // [ToDo-202512308-1]
@@ -60,7 +60,11 @@ Similarly, numbered todos use paired opening and closing tags and the same refer
 // ToDo-202512308-1 relates and/or applies.
 ```
 
-Numbered ToDos do not use a self-closing form, such as `[ToDo-202608233-1/]`, because every ToDo must state what is to be done.
+Numbered ToDos rarely use a self-closing form, because a typical ToDo must state what is to be done.
+
+```ts
+// [ToDo-202608233-1/]
+```
 
 #### ToDo Priorities
 
@@ -130,23 +134,23 @@ Use the following logic to generate a new ID. If any of these steps fails, reque
 
 #### Instructions
 
-- Before making any change these instructions cover, re-evaluate all these instructions against the current state.
+- Before editing, determine the complete planned change set. Starting with the requested changes, repeatedly apply these instructions to the projected state and add each consequential change once until no new consequence appears.
 
-- Before changing any part of a numbered item's tag or deleting the item or its defining tags, if its text states that it is referenced outside the workspace, ask for permission to proceed.
+- Ask all currently determinable permission and choice questions before editing. If an answer changes the projected state, re-evaluate it. Modify files only after all required questions have been resolved, then apply the approved changes in one batch.
 
-- When changing any part of a numbered item's tag, update all occurrences of the tag.
+- Before changing any part of a numbered item's tag, deleting its defining occurrence, or deleting only its defining tag or tags, ask for permission if the item's text states that it is referenced outside the workspace.
 
-- When deleting a numbered item or only its defining tags, if any of its references exist, delete them as well, but first ask for permission to proceed.
+- If the projected change modifies any part of a numbered item's tag, update every occurrence of that tag.
 
-- When deleting a numbered item's all existing references, ask for permission to delete the item's defining tags (while retaining its text). Note that the item can have either a pair of tags or a single self-closing tag.
+- If the projected change would delete a numbered item's defining occurrence or only its defining tag or tags while leaving any references, include deletion of all those references in the planned change set, but first ask for permission.
 
-- When deleting one or more files:
-  - If a numbered item exists in a file to be deleted:
-    - If its references exist in files not to be deleted:
-      - If some of the references state that the given numbered item `applies`, ask for my permission to swap one of those references with the given numbered item. In addition, if there are multiple references like that, ask me to choose one of them.
-      - Else, act as when deleting the numbered item.
-    - Else, act as when deleting the numbered item.
-  - If a numbered item exists in a file not to be deleted and its references exist in files to be deleted, act as when deleting the references.
+- If the projected change would delete all references to a numbered item while its defining occurrence would otherwise remain, ask for permission to delete its defining tag or tags too. Retain any text between paired tags. Deleting a self-closing defining tag deletes the empty numbered item.
+
+- When planning to delete one or more files:
+
+  - For each numbered item whose defining occurrence is in a file to be deleted, if one or more references in files to be retained use the exact `applies` form, ask for permission to swap the defining occurrence with one such reference. Swapping means that the selected retained location becomes the defining occurrence and the old defining location becomes an `applies` reference. If multiple eligible references exist, ask me which one to use.
+
+  - After incorporating any approved swaps into the projected state, treat every numbered-item defining occurrence and reference in a file to be deleted as planned for deletion, and apply all other instructions to those planned deletions.
 
 #### Notes
 
