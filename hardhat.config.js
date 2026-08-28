@@ -273,19 +273,19 @@ const hardhatUserConfig = {
 	solidity: {
 		version: solidityVersion,
 		settings: {
-			// [Comment-202408026]
-			// By default, this is "paris".
-			// See https://v2.hardhat.org/hardhat-runner/docs/config#default-evm-version
-			// But we want this to be the latest Arbitrum-compatible.
-			// [/Comment-202408026]
-			evmVersion: "osaka",
-
 			// [Comment-202408025]
 			// See https://v2.hardhat.org/hardhat-runner/docs/reference/solidity-support
 			// [/Comment-202408025]
 			// Is this going to become `true` by default in a future Solidity version?
 			// As of the 0.8.34, this is `false` by default.
 			viaIR: true,
+
+			// [Comment-202408026]
+			// By default, this is "paris".
+			// See https://v2.hardhat.org/hardhat-runner/docs/config#default-evm-version
+			// But we want this to be the latest Arbitrum-compatible.
+			// [/Comment-202408026]
+			evmVersion: "osaka",
 
 			// Comment-202408025 applies.
 			optimizer: {
@@ -300,12 +300,22 @@ const hardhatUserConfig = {
 				// 	yulDetails: {
 				// 		// Hardhat docs at https://v2.hardhat.org/hardhat-runner/docs/reference/solidity-support says that
 				// 		// this setting makes Hardhat "work as well as possible".
-				// 		// Issue. But it appears to increase contract binary size and, possibly, gas use.
+				// 		// Issue. But it appears to increase contract bytecode size and, possibly, gas use.
 				// 		// So we not necessarily need this.
 				// 		// Although it could make sense to enable this if Hardhat Preprocessor is enabled.
 				// 		optimizerSteps: "u",
 				// 	},
 				// },
+			},
+
+			metadata: {
+				// This reduces contract bytecode size a little.
+				// This does not make it impossible to verify contracts on EtherScan or ArbiScan.
+				// But this does make it impossible to verify contracts on Sourcify (which we don't need to).
+				appendCBOR: false,
+
+				// // This does not affect contract bytecode size.
+				// bytecodeHash: "none",
 			},
 
 			// // This appears to be a legacy setting.
