@@ -70,7 +70,7 @@ async function bidWithCstAt(game_, bidderSigner_, timeStamp_) {
 
 // #endregion
 
-describe("CosmicSignatureGameV3-CstReward", function () {
+describe("CosmicSignatureGameV3-BidCstReward", function () {
 	it("reinitialize sets bidCstRewardAmountPerMinute to 1 CST per minute", async function () {
 		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3(2n);
 		const game_ = contracts_.cosmicSignatureGameV3Proxy;

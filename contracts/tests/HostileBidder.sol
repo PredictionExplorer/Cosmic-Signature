@@ -12,8 +12,7 @@ import { CosmicSignatureGameV3 } from "../production/CosmicSignatureGameV3.sol";
 /// and `CosmicSignatureToken` minting performs no call into the recipient.
 /// todo-ai-0 Even if the game transferred CST, the attack would not succeed either, right?
 /// todo-ai-0 So improve this comment. Try to keep comments short.
-/// todo-ai-0 I would rename this contract to `HostileBidder`.
-contract CstRewardBlockingBidder {
+contract HostileBidder {
 	CosmicSignatureGameV3 public immutable game;
 
 	/// @notice
@@ -51,7 +50,7 @@ contract CstRewardBlockingBidder {
 	function _takeHostileActionIfNeeded() private {
 		uint256 hostilityModeCode_ = hostilityModeCode;
 		if (hostilityModeCode_ == 1) {
-			revert ("CstRewardBlockingBidder rejects everything.");
+			revert ("HostileBidder rejects everything.");
 		} else if (hostilityModeCode_ == 2) {
 			assert(false);
 		} else if (hostilityModeCode_ == 3) {

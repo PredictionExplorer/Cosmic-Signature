@@ -106,6 +106,8 @@ describe("CosmicSignatureGameV2-StorageLayout", function () {
 
 		await expectUnknownSelector(gameV2_, hre.ethers.id("cstDutchAuctionDurationDivisor()").slice(0, 10));
 		await expectUnknownSelector(gameV2_, hre.ethers.id("bidCstRewardAmount()").slice(0, 10));
+
+		// This is a legacy varible that existed in the initially deployed V1.
 		await expectUnknownSelector(gameV2_, hre.ethers.id("cstRewardAmountForBidding()").slice(0, 10));
 	});
 });

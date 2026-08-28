@@ -368,8 +368,8 @@ async function executeCstBid(ctx_, actor_, options_) {
 		default: priceMaxLimit_ = price_ + engine.randomBigIntRange(0n, price_ + 1n); break;
 	}
 	const message_ = engine.randomMessage(Math.min(Number(model.bidMessageLengthMaxLimit), 120));
-	const expectedCstReward_ = model.getBidCstRewardAmount(ts_);
-	const minReward_ = (model.version >= 2 && engine.chancePercent(30)) ? expectedCstReward_ : 0n;
+	const expectedBidCstReward_ = model.getBidCstRewardAmount(ts_);
+	const minReward_ = (model.version >= 2 && engine.chancePercent(30)) ? expectedBidCstReward_ : 0n;
 
 	const gameContract_ = ctx_.game.connect(actor_.signer).contract;
 	const buildTx_ = (overrides_) => {
@@ -404,7 +404,7 @@ async function executeCstBid(ctx_, actor_, options_) {
 
 	const expectations_ = model.applyCstBid(actor_.address, ts_);
 	expect(expectations_.paidPrice, "CST bid: planned price changed").to.equal(price_);
-	expect(expectations_.bidCstRewardAmount).to.equal(expectedCstReward_);
+	expect(expectations_.bidCstRewardAmount).to.equal(expectedBidCstReward_);
 
 	const bidPlaced_ = engine.singleEvent(receipt_, ctx_.game.contract, "BidPlaced", "CST bid");
 	expect(bidPlaced_.args.roundNum).to.equal(roundNumBefore_);

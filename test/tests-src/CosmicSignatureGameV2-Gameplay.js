@@ -69,11 +69,11 @@ describe("CosmicSignatureGameV2-Gameplay", function () {
 		let bidder_ = contracts_.signers[2];
 		// The first ETH bid price decays with block time; coverage instrumentation can make the tx mine one second later.
 		let ethPrice_ = await game_.getNextEthBidPriceAdvanced(1n);
-		let expectedCstReward_ = await game_.getBidCstRewardAmountAdvanced(1n);
+		let expectedBidCstReward_ = await game_.getBidCstRewardAmountAdvanced(1n);
 		let receipt_ = await waitForTransactionReceipt(
 			game_.connect(bidder_).bidWithEth(-1n, "v2 eth", 0n, { value: ethPrice_ })
 		);
-		await assertV2BidPlaced(receipt_, game_, bidder_, BigInt(ethPrice_), -1n, -1n, expectedCstReward_);
+		await assertV2BidPlaced(receipt_, game_, bidder_, BigInt(ethPrice_), -1n, -1n, expectedBidCstReward_);
 		{
 			const spent_ = await game_.getBidderTotalSpentAmounts(await game_.roundNum(), bidder_.address);
 			expect(spent_[0]).greaterThan(0n);
@@ -83,16 +83,16 @@ describe("CosmicSignatureGameV2-Gameplay", function () {
 		await mineAtOrAfter((await getLatestBlockTimestamp()) + 60n);
 		bidder_ = contracts_.signers[3];
 		ethPrice_ = await game_.getNextEthBidPrice();
-		expectedCstReward_ = await game_.getBidCstRewardAmountAdvanced(1n);
+		expectedBidCstReward_ = await game_.getBidCstRewardAmountAdvanced(1n);
 		receipt_ = await waitForTransactionReceipt(
 			bidder_.sendTransaction({ to: contracts_.cosmicSignatureGameProxyAddress, value: ethPrice_ })
 		);
-		await assertV2BidPlaced(receipt_, game_, bidder_, BigInt(ethPrice_), -1n, -1n, expectedCstReward_);
+		await assertV2BidPlaced(receipt_, game_, bidder_, BigInt(ethPrice_), -1n, -1n, expectedBidCstReward_);
 
 		await mineAtOrAfter((await getLatestBlockTimestamp()) + 60n);
 		bidder_ = contracts_.signers[4];
 		ethPrice_ = await game_.getNextEthBidPrice();
-		expectedCstReward_ = await game_.getBidCstRewardAmountAdvanced(1n);
+		expectedBidCstReward_ = await game_.getBidCstRewardAmountAdvanced(1n);
 		receipt_ = await waitForTransactionReceipt(
 			game_.connect(bidder_).bidWithEthAndDonateToken(
 				-1n,
@@ -103,14 +103,14 @@ describe("CosmicSignatureGameV2-Gameplay", function () {
 				{ value: ethPrice_ }
 			)
 		);
-		await assertV2BidPlaced(receipt_, game_, bidder_, BigInt(ethPrice_), -1n, -1n, expectedCstReward_);
+		await assertV2BidPlaced(receipt_, game_, bidder_, BigInt(ethPrice_), -1n, -1n, expectedBidCstReward_);
 
 		await mineAtOrAfter((await getLatestBlockTimestamp()) + 60n);
 		bidder_ = contracts_.signers[5];
 		const donatedNft1_ = await mocks_.erc721_.mint.staticCall(bidder_.address);
 		await waitForTransactionReceipt(mocks_.erc721_.mint(bidder_.address));
 		ethPrice_ = await game_.getNextEthBidPrice();
-		expectedCstReward_ = await game_.getBidCstRewardAmountAdvanced(1n);
+		expectedBidCstReward_ = await game_.getBidCstRewardAmountAdvanced(1n);
 		receipt_ = await waitForTransactionReceipt(
 			game_.connect(bidder_).bidWithEthAndDonateNft(
 				-1n,
@@ -121,7 +121,7 @@ describe("CosmicSignatureGameV2-Gameplay", function () {
 				{ value: ethPrice_ }
 			)
 		);
-		await assertV2BidPlaced(receipt_, game_, bidder_, BigInt(ethPrice_), -1n, -1n, expectedCstReward_);
+		await assertV2BidPlaced(receipt_, game_, bidder_, BigInt(ethPrice_), -1n, -1n, expectedBidCstReward_);
 
 		await expect(
 			game_.connect(contracts_.signers[6]).bidWithEth(-1n, "min too high", hre.ethers.MaxUint256, { value: 0n })
@@ -134,11 +134,11 @@ describe("CosmicSignatureGameV2-Gameplay", function () {
 		const randomWalkNftId_ = (await contracts_.randomWalkNft.totalSupply()) - 1n;
 		ethPrice_ = await game_.getNextEthBidPrice();
 		const ethPlusRandomWalkNftPrice_ = await game_.getEthPlusRandomWalkNftBidPrice(ethPrice_);
-		expectedCstReward_ = await game_.getBidCstRewardAmountAdvanced(1n);
+		expectedBidCstReward_ = await game_.getBidCstRewardAmountAdvanced(1n);
 		receipt_ = await waitForTransactionReceipt(
 			game_.connect(bidder_).bidWithEth(randomWalkNftId_, "v2 rw", 0n, { value: ethPlusRandomWalkNftPrice_ })
 		);
-		await assertV2BidPlaced(receipt_, game_, bidder_, BigInt(ethPlusRandomWalkNftPrice_), -1n, randomWalkNftId_, expectedCstReward_);
+		await assertV2BidPlaced(receipt_, game_, bidder_, BigInt(ethPlusRandomWalkNftPrice_), -1n, randomWalkNftId_, expectedBidCstReward_);
 		ethPrice_ = await game_.getNextEthBidPrice();
 		await expect(
 			game_.connect(bidder_).bidWithEth(
@@ -152,17 +152,17 @@ describe("CosmicSignatureGameV2-Gameplay", function () {
 		await mineAtOrAfter((await getLatestBlockTimestamp()) + 24n * 60n * 60n);
 		bidder_ = contracts_.signers[2];
 		let cstPrice_ = await game_.getNextCstBidPrice();
-		expectedCstReward_ = await game_.getBidCstRewardAmountAdvanced(1n);
-		// console.info("%s", `202606251 ${hre.ethers.formatEther(expectedCstReward_)}`);
+		expectedBidCstReward_ = await game_.getBidCstRewardAmountAdvanced(1n);
+		// console.info("%s", `202606251 ${hre.ethers.formatEther(expectedBidCstReward_)}`);
 		receipt_ = await waitForTransactionReceipt(
 			game_.connect(bidder_).bidWithCst(hre.ethers.MaxUint256, "v2 cst", 0n)
 		);
-		await assertV2BidPlaced(receipt_, game_, bidder_, -1n, BigInt(cstPrice_), -1n, expectedCstReward_);
+		await assertV2BidPlaced(receipt_, game_, bidder_, -1n, BigInt(cstPrice_), -1n, expectedBidCstReward_);
 
 		await mineAtOrAfter((await getLatestBlockTimestamp()) + (await game_.cstDutchAuctionDuration()) + 1n);
 		bidder_ = contracts_.signers[2];
 		cstPrice_ = await game_.getNextCstBidPrice();
-		expectedCstReward_ = await game_.getBidCstRewardAmountAdvanced(1n);
+		expectedBidCstReward_ = await game_.getBidCstRewardAmountAdvanced(1n);
 		receipt_ = await waitForTransactionReceipt(
 			game_.connect(bidder_).bidWithCstAndDonateToken(
 				hre.ethers.MaxUint256,
@@ -172,14 +172,14 @@ describe("CosmicSignatureGameV2-Gameplay", function () {
 				222n
 			)
 		);
-		await assertV2BidPlaced(receipt_, game_, bidder_, -1n, BigInt(cstPrice_), -1n, expectedCstReward_);
+		await assertV2BidPlaced(receipt_, game_, bidder_, -1n, BigInt(cstPrice_), -1n, expectedBidCstReward_);
 
 		await mineAtOrAfter((await getLatestBlockTimestamp()) + (await game_.cstDutchAuctionDuration()) + 1n);
 		bidder_ = contracts_.signers[2];
 		const donatedNft2_ = await mocks_.erc721_.mint.staticCall(bidder_.address);
 		await waitForTransactionReceipt(mocks_.erc721_.mint(bidder_.address));
 		cstPrice_ = await game_.getNextCstBidPrice();
-		expectedCstReward_ = await game_.getBidCstRewardAmountAdvanced(1n);
+		expectedBidCstReward_ = await game_.getBidCstRewardAmountAdvanced(1n);
 		receipt_ = await waitForTransactionReceipt(
 			game_.connect(bidder_).bidWithCstAndDonateNft(
 				hre.ethers.MaxUint256,
@@ -189,7 +189,7 @@ describe("CosmicSignatureGameV2-Gameplay", function () {
 				donatedNft2_
 			)
 		);
-		await assertV2BidPlaced(receipt_, game_, bidder_, -1n, BigInt(cstPrice_), -1n, expectedCstReward_);
+		await assertV2BidPlaced(receipt_, game_, bidder_, -1n, BigInt(cstPrice_), -1n, expectedBidCstReward_);
 		expect(await game_.getBidCstRewardAmount()).equal(0n);
 		expect(await game_.getBidCstRewardAmountAdvanced(0n)).equal(0n);
 
