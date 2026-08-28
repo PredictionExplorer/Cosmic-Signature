@@ -8,7 +8,6 @@ import { CosmicSignatureGameV3 } from "../production/CosmicSignatureGameV3.sol";
 /// @notice This contract attempts the attack discussed in Comment-202607163: it places a bid
 /// and then behaves as hostile as possible towards any incoming call, attempting to make it impossible to pay
 /// the bid CST reward to the last bidder. If that could succeed, nobody would be able to place further bids.
-/// The attack cannot succeed because `CosmicSignatureToken` performs no call into the token recipient.
 contract HostileBidder {
 	CosmicSignatureGameV3 public immutable game;
 
