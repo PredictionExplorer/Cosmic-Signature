@@ -44,7 +44,7 @@ abstract contract Bidding is
 	
 	/// @dev
 	/// [Comment-202508184]
-	/// Observable universe entities accessed here:
+	/// Symbols Accessed Here:
 	///    `onlyOwner`.
 	///    // `CosmicSignatureErrors.EthDutchAuctionEndingBidPriceHalvingError`.
 	///    `CosmicSignatureErrors.InvalidOperationInCurrentState`.

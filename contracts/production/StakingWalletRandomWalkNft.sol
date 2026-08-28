@@ -60,7 +60,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	/// @notice Constructor.
 	/// @param randomWalkNft_ The `RandomWalkNFT` contract address.
 	/// @dev
-	/// Observable universe entities accessed here:
+	/// Symbols Accessed Here:
 	///    Inherited `constructor`s.
 	///    `_providedAddressIsNonZero`.
 	///    `randomWalkNft`.
@@ -72,7 +72,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	// #region `_stake`
 
 	/// @dev
-	/// Observable universe entities accessed here:
+	/// Symbols Accessed Here:
 	///    `msg.sender`.
 	///    `numStakedNfts`.
 	///    `actionCounter`.
@@ -116,7 +116,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	// #region `unstake`
 
 	/// @dev
-	/// Observable universe entities accessed here:
+	/// Symbols Accessed Here:
 	///    `msg.sender`.
 	///    `CosmicSignatureErrors.NftStakeActionInvalidId`.
 	///    `CosmicSignatureErrors.NftStakeActionAccessDenied`.
@@ -181,7 +181,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	// #region `unstakeMany`
 
 	/// @dev
-	/// Observable universe entities accessed here:
+	/// Symbols Accessed Here:
 	///    `unstake`.
 	function unstakeMany(uint256[] calldata stakeActionIds_) external override {
 		for (uint256 stakeActionIdIndex_ = stakeActionIds_.length; stakeActionIdIndex_ > 0; ) {
@@ -194,7 +194,7 @@ contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRando
 	// #region `pickRandomStakerAddressesIfPossible`
 
 	/// @dev
-	/// Observable universe entities accessed here:
+	/// Symbols Accessed Here:
 	///    `RandomNumberHelpers.generateRandomNumber`.
 	///    `numStakedNfts`.
 	///    `StakeAction`.

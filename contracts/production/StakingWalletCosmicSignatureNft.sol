@@ -61,7 +61,7 @@ contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, S
 	/// @param nft_ The `CosmicSignatureNft` contract address.
 	/// @param game_ The `CosmicSignatureGame` contract address.
 	/// @dev
-	/// Observable universe entities accessed here:
+	/// Symbols Accessed Here:
 	///    Inherited `constructor`s.
 	///    `_msgSender`.
 	///    `_providedAddressIsNonZero`.
@@ -98,7 +98,7 @@ contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, S
 	// #region `stake`
 
 	/// @dev
-	/// Observable universe entities accessed here:
+	/// Symbols Accessed Here:
 	///    `nonReentrant`.
 	///    `_stake`.
 	function stake(uint256 nftId_) external override (IStakingWalletNftBase, StakingWalletNftBase) nonReentrant {
@@ -109,7 +109,7 @@ contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, S
 	// #region `_stake`
 
 	/// @dev
-	/// Observable universe entities accessed here:
+	/// Symbols Accessed Here:
 	///    `_msgSender`.
 	///    `numStakedNfts`.
 	///    `actionCounter`.
@@ -144,7 +144,7 @@ contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, S
 	// #region `stakeMany`
 
 	/// @dev
-	/// Observable universe entities accessed here:
+	/// Symbols Accessed Here:
 	///    `nonReentrant`.
 	///    `_stakeMany`.
 	function stakeMany(uint256[] calldata nftIds_) external override (IStakingWalletNftBase, StakingWalletNftBase) nonReentrant {
@@ -155,7 +155,7 @@ contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, S
 	// #region `unstake`
 
 	/// @dev
-	/// Observable universe entities accessed here:
+	/// Symbols Accessed Here:
 	///    `nonReentrant`.
 	///    `_unstake`.
 	///    `_payReward`.
@@ -170,7 +170,7 @@ contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, S
 	// #region `unstakeMany`
 
 	/// @dev
-	/// Observable universe entities accessed here:
+	/// Symbols Accessed Here:
 	///    `nonReentrant`.
 	///    `_unstake`.
 	///    `_payReward`.
@@ -195,7 +195,7 @@ contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, S
 	/// It can potentially be zero.
 	/// The caller is required to pay it to the staker.
 	/// @dev
-	/// Observable universe entities accessed here:
+	/// Symbols Accessed Here:
 	///    `CosmicSignatureErrors.NftStakeActionInvalidId`.
 	///    `CosmicSignatureErrors.NftStakeActionAccessDenied`.
 	///    `_msgSender`.
@@ -243,7 +243,7 @@ contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, S
 	/// @param rewardAmount_ The ETH amount to transfer.
 	/// It's OK if it's zero.
 	/// @dev
-	/// Observable universe entities accessed here:
+	/// Symbols Accessed Here:
 	///    `address.call`.
 	///    `CosmicSignatureErrors.FundTransferFailed`.
 	///    `_msgSender`.
@@ -260,7 +260,7 @@ contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, S
 	// #region `deposit`
 
 	/// @dev
-	/// Observable universe entities accessed here:
+	/// Symbols Accessed Here:
 	///    `msg.value`.
 	///    `nonReentrant`.
 	///    `numStakedNfts`.
@@ -290,7 +290,7 @@ contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, S
 	// #region `tryPerformMaintenance`
 
 	/// @dev
-	/// Observable universe entities accessed here:
+	/// Symbols Accessed Here:
 	///    `address.balance`.
 	///    `address.call`.
 	///    `nonReentrant`.

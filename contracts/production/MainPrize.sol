@@ -40,7 +40,7 @@ abstract contract MainPrize is
 	/// Comment-202411078 relates and/or applies.
 	///
 	/// [Comment-202605308]
-	/// Observable universe entities accessed by `claimMainPrize`, `_distributePrizes`, `_prepareNextRound`.
+	/// Symbols Accessed by `claimMainPrize`, `_distributePrizes`, `_prepareNextRound`:
 	///    `OpenZeppelinPanic`.
 	///    `nonReentrant`.
 	///    `_msgSender`.

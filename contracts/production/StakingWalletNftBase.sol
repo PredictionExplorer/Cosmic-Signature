@@ -38,7 +38,7 @@ abstract contract StakingWalletNftBase is AddressValidator, IStakingWalletNftBas
 
 	/// @notice Constructor.
 	/// @dev
-	/// Observable universe entities accessed here:
+	/// Symbols Accessed Here:
 	///    Inherited `constructor`s.
 	constructor() {
 		// Doing nothing.
@@ -48,7 +48,7 @@ abstract contract StakingWalletNftBase is AddressValidator, IStakingWalletNftBas
 	// #region `stake`
 
 	/// @dev
-	/// Observable universe entities accessed here:
+	/// Symbols Accessed Here:
 	///    `_stake`.
 	function stake(uint256 nftId_) external override virtual {
 		_stake(nftId_);
@@ -58,7 +58,7 @@ abstract contract StakingWalletNftBase is AddressValidator, IStakingWalletNftBas
 	// #region `_stake`
 
 	/// @dev
-	/// Observable universe entities accessed here:
+	/// Symbols Accessed Here:
 	///    `CosmicSignatureErrors.NftHasAlreadyBeenStaked`.
 	///    `usedNfts`.
 	function _stake(uint256 nftId_) internal virtual {
@@ -73,7 +73,7 @@ abstract contract StakingWalletNftBase is AddressValidator, IStakingWalletNftBas
 	// #region `stakeMany`
 
 	/// @dev
-	/// Observable universe entities accessed here:
+	/// Symbols Accessed Here:
 	///    `_stakeMany`.
 	function stakeMany(uint256[] calldata nftIds_) external override virtual {
 		_stakeMany(nftIds_);
@@ -83,7 +83,7 @@ abstract contract StakingWalletNftBase is AddressValidator, IStakingWalletNftBas
 	// #region `_stakeMany`
 
 	/// @dev
-	/// Observable universe entities accessed here:
+	/// Symbols Accessed Here:
 	///    `_stake`.
 	function _stakeMany(uint256[] calldata nftIds_) internal {
 		for (uint256 nftIdIndex_ = nftIds_.length; nftIdIndex_ > 0; ) {
