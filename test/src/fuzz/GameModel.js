@@ -227,7 +227,7 @@ class GameModel {
 	}
 
 	/**
-	Whether the active code uses V1 mechanics (fixed CST reward, divisor-based CST Dutch auction,
+	Whether the active code uses V1 mechanics (fixed bid CST reward, divisor-based CST Dutch auction,
 	`mainPrizeTime` clamped to `block.timestamp`).
 	*/
 	isV1Like() {

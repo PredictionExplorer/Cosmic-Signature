@@ -35,7 +35,7 @@ async function assertV2BidPlaced(receipt_, game_, bidder_, expectedEthPrice_, ex
 	expect(parsed_.args.randomWalkNftId).equal(expectedRandomWalkNftId_);
 	expect(
 		parsed_.args.bidCstRewardAmount,
-		"expected CST reward assumes the bid transaction mines one second after the pre-bid view"
+		"expected bid CST reward assumes the bid transaction mines one second after the pre-bid view"
 	).equal(expectedBidCstRewardAmount_);
 	expect(parsed_.args.cstDutchAuctionDuration).equal(await game_.cstDutchAuctionDuration());
 	expect(parsed_.args.mainPrizeTime).equal(await game_.mainPrizeTime());
