@@ -523,6 +523,7 @@ abstract contract BiddingV3 is
 		// #enable_asserts assert(lastBidderAddress != address(0));
 
 		// [Comment-202607163]
+		// todo-0 Revisit this comment. Review where it's referenced.
 		// The bid CST reward is minted, rather than transferred. `CosmicSignatureToken` minting performs no call
 		// into the recipient, so a hostile last bidder contract that reverts on any incoming call or token callback
 		// cannot prevent this minting from succeeding, and therefore cannot block further bids.
