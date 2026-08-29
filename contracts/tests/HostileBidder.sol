@@ -51,8 +51,7 @@ contract HostileBidder {
 			assert(false);
 		} else if (hostilityModeCode_ == 3) {
 			// Burning all remaining gas.
-			uint256 uselessValue_ = block.timestamp;
-			for (;;) {
+			for (uint256 uselessValue_ = block.timestamp; ; ) {
 				uselessValue_ = CryptographyHelpers.calculateHashSumOf(uselessValue_);
 			}
 		} else if (hostilityModeCode_ == 4) {
