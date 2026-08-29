@@ -28,7 +28,7 @@ library ArbitrumHelpers {
 				} else {
 					isSuccess_ = false;
 				}
-			}		
+			}
 		}
 		if ( ! isSuccess_ ) {
 			emit CosmicSignatureEvents.ArbitrumError("ArbSys.arbBlockNumber call failed.");
@@ -49,7 +49,7 @@ library ArbitrumHelpers {
 				} else {
 					isSuccess_ = false;
 				}
-			}		
+			}
 		}
 		if ( ! isSuccess_ ) {
 			emit CosmicSignatureEvents.ArbitrumError("ArbSys.arbBlockHash call failed.");
@@ -75,7 +75,7 @@ library ArbitrumHelpers {
 				} else {
 					isSuccess_ = false;
 				}
-			}		
+			}
 		}
 		if ( ! isSuccess_ ) {
 			emit CosmicSignatureEvents.ArbitrumError("ArbGasInfo.getGasBacklog call failed.");
@@ -97,7 +97,7 @@ library ArbitrumHelpers {
 				} else {
 					isSuccess_ = false;
 				}
-			}		
+			}
 		}
 		if ( ! isSuccess_ ) {
 			emit CosmicSignatureEvents.ArbitrumError("ArbGasInfo.getL1PricingUnitsSinceUpdate call failed.");
