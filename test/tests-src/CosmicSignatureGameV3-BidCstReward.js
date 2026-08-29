@@ -1,5 +1,3 @@
-// todo-ai-0 Rename this file to `CosmicSignatureGameV3-BidCstReward.js`.
-
 "use strict";
 
 // Tests `BiddingV3`'s linear bid CST reward and its 90/10 split (Comment-202607161):
