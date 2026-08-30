@@ -205,10 +205,12 @@ abstract contract BiddingV3 is
 
 		// Comment-202501045 applies.
 
+		// [Comment-202609011]
 		// Comment-202608022 applies.
 		// But there is a special case when somone is trying to place a CST bid before the first ETH one.
 		// According to Comment-202501045, in that case the behavior is allowed to be undefined.
-		// But even then, this cannot be zero.
+		// But even then, it appears that this cannot be zero.
+		// [/Comment-202609011]
 		uint256 bidCstRewardAmount_ = getBidCstRewardAmountAdvanced(int256(0));
 		// #enable_asserts assert(bidCstRewardAmount_ > 0);
 
@@ -335,6 +337,7 @@ abstract contract BiddingV3 is
 		// unchecked
 		// // #enable_smtchecker */
 		{
+			// // todo-0 I forgot what exactly was wrong with this logic? Maybe leave it commented and write a comment.
 			// // todo-0 Test what this equals.
 			// uint256 bidCstRewardAmountPerSecond_ = bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds;
 			// uint256 cstBidPriceDeclineEffectiveMultiplier_ = cstBidPriceDeclineMultiplier + bidCstRewardAmountPerSecond_;
@@ -358,6 +361,7 @@ abstract contract BiddingV3 is
 		// unchecked
 		// // #enable_smtchecker */
 		{
+			// // todo-0 I forgot what exactly was wrong with this logic? Maybe leave it commented and write a comment.
 			// // todo-0 Test what this equals.
 			// uint256 bidCstRewardAmountPerSecond_ = bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds;
 			// uint256 cstBidPriceDeclineEffectiveMultiplier_ = cstBidPriceDeclineMultiplier + bidCstRewardAmountPerSecond_;
@@ -391,7 +395,6 @@ abstract contract BiddingV3 is
 	// #endregion
 	// #region `_getCstDutchAuctionDuration`
 
-	/// @notice Comment-202607293 relates.
 	function _getCstDutchAuctionDuration() private view returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
@@ -486,6 +489,7 @@ abstract contract BiddingV3 is
 			// Comment-202501022 applies.
 			// And that's OK, because there is no bid CST reward for the first bid in a bidding round.
 			// todo-0 Tell Nick to not show bid CST reward until someone places the first bid in the current round.
+			// todo-0 Review an AI generated doc about changes and think what to tell Nick.
 			uint256 lastBidTimeStampCopy_ = biddersInfo[roundNum][lastBidderAddress].lastBidTimeStamp;
 
 			int256 elapsedDuration_ = int256(block.timestamp) + currentTimeOffset_ - int256(lastBidTimeStampCopy_);
@@ -502,34 +506,25 @@ abstract contract BiddingV3 is
 	// #endregion
 	// #region `_mintBidCstRewardAmount`
 
-	/// todo-0 Base method comment says that `bidCstRewardAmount_ may be zero.
-	/// todo-0 (But this is now not virtual.)
-	/// todo-0 But here it cannot be because we enforce at least 1 second since the previous bid and do not pay any reward to the first bidder.
-	/// todo-0 Cross-ref with where we enforce that.
-	/// todo-0 Also reference Comment-202608022.
+	/// @param bidCstRewardAmount_ The CST amount to mint.
+	/// Comment-202608022 applies.
 	function _mintBidCstRewardAmount(uint256 bidCstRewardAmount_) private {
 		// // #enable_smtchecker /*
 		// unchecked
 		// // #enable_smtchecker */
 
+		// Comment-202608022 applies.
 		// [Comment-202607263]
 		// If this wasn't guaranteed it would make sense to check this before minting.
 		// [/Comment-202607263]
-		// todo-0 Is this really correct? Cross-ref with any other logic?
-		// todo-0 Cross-ref with where we force no more than 1 bid within each second and not paying bid CST reward on the first bid.
 		// #enable_asserts assert(bidCstRewardAmount_ > 0);
 
-		// todo-0 Is this really correct? Cross-ref with any other logic?
 		// #enable_asserts assert(lastBidderAddress != address(0));
 
 		// [Comment-202607163]
-		// todo-0 Revisit this comment. Review where it's referenced.
-		// The bid CST reward is minted, rather than transferred. `CosmicSignatureToken` minting performs no call
-		// into the recipient, so a hostile last bidder contract that reverts on any incoming call or token callback
+		// `CosmicSignatureToken` performs no call into the token recipient,
+		// so a hostile last bidder contract that reverts on any incoming call or token callback
 		// cannot prevent this minting from succeeding, and therefore cannot block further bids.
-		// todo-ai-0 A hostile actor can't block a CST transfer either, right?
-		// todo-ai-0 So would it be better to rephrase this and any other related comments
-		// todo-ai-0 to clarify that `CosmicSignatureToken` does not make any callbacks, without specifying whether it's mint or transfer.
 		// [/Comment-202607163]
 		token.mint(lastBidderAddress, bidCstRewardAmount_);
 	}
@@ -537,15 +532,16 @@ abstract contract BiddingV3 is
 	// #endregion
 	// #region `_burnCstBidPriceAndMintBidCstRewardAmount`
 
+	/// @param cstBidPrice_ The CST amount to burn. May be zero, but unlikely is.
+	/// @param bidCstRewardAmount_ The CST amount to mint.
+	/// Comment-202609011 applies.
 	function _burnCstBidPriceAndMintBidCstRewardAmount(uint256 cstBidPrice_, uint256 bidCstRewardAmount_) private {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
 		{
+			// Comment-202609011 applies.
 			// Comment-202607263 applies.
-			// todo-0 Same todos as in `_mintBidCstRewardAmount`.
-			// todo-0 Even if they try running this on the very first bid in the current bidding round?
-			// todo-0 Reference Comment-202607164 ? If no need to reference it, it does not need to be numbered.
 			// #enable_asserts assert(bidCstRewardAmount_ > 0);
 
 			ICosmicSignatureToken.MintOrBurnSpec[] memory mintAndBurnSpecs_ = new ICosmicSignatureToken.MintOrBurnSpec[](2);
@@ -555,10 +551,7 @@ abstract contract BiddingV3 is
 			// Comment-202606074 relates and/or applies.
 			mintAndBurnSpecs_[0].value = ( - int256(cstBidPrice_) );
 
-			// [Comment-202607164]
-			// It's not guaranteed that this is a nonzero.
-			// Comment-202501045 relates and/or applies.
-			// [/Comment-202607164]
+			// It's not guaranteed that this is a nonzero, because the validation discussed in Comment-202501045 has not happened yet.
 			// Comment-202607163 applies.
 			mintAndBurnSpecs_[1].account = lastBidderAddress;
 

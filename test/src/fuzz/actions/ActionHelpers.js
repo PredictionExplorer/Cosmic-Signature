@@ -265,7 +265,7 @@ async function executeEthBid(ctx_, actor_, options_) {
 	};
 
 	// Snapshot the CST balances before sending (the engine applies the receipt to the ledger inside `execTx`).
-	// In V3+, the bidder being outbid gets its bid CST reward share minted too (Comment-202607161).
+	// In V3+, the bidder being outbid gets bid CST reward.
 	const cstBefore_ = ledger.cstBalanceOf(actor_.address);
 	const snipedBidderAddress_ = (model.lastBidderAddress === hre.ethers.ZeroAddress) ? null : model.lastBidderAddress;
 	const snipedBidderCstBefore_ = (snipedBidderAddress_ === null) ? 0n : ledger.cstBalanceOf(snipedBidderAddress_);
@@ -394,7 +394,7 @@ async function executeCstBid(ctx_, actor_, options_) {
 	};
 
 	// Snapshot the CST balances before sending (the engine applies the receipt to the ledger inside `execTx`).
-	// In V3+, the bidder being outbid gets its bid CST reward share minted too (Comment-202607161).
+	// In V3+, the bidder being outbid gets bid CST reward.
 	const cstBefore_ = ledger.cstBalanceOf(actor_.address);
 	const snipedBidderAddress_ = (model.lastBidderAddress === hre.ethers.ZeroAddress) ? null : model.lastBidderAddress;
 	const snipedBidderCstBefore_ = (snipedBidderAddress_ === null) ? 0n : ledger.cstBalanceOf(snipedBidderAddress_);

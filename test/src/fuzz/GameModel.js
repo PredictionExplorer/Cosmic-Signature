@@ -379,6 +379,7 @@ class GameModel {
 	/**
 	Mirrors `getBidCstRewardAmountAdvanced(0)` evaluated at block timestamp `ts_`:
 	V2's sqrt formula, or V3's linear formula (Comment-202607161).
+	todo-ai-0 I have now deleted Comment-202607161. Don't mention it. Rewrite other related things.
 	*/
 	getBidCstRewardAmount(ts_) {
 		if (this.isV1Like()) {
@@ -404,6 +405,7 @@ class GameModel {
 	/**
 	Mirrors the V3 bid CST reward minting split (Comment-202607161), evaluated BEFORE `_bidCommon`
 	updates `lastBidderAddress`. On V1/V2 the entire reward is minted to the bidder.
+	todo-ai-0 I have now deleted Comment-202607161. Don't mention it. Rewrite other related things.
 	@param {bigint} totalRewardAmount_ The total reward, as returned by `getBidCstRewardAmount`.
 	@returns {{lastBidderAddress: string | null, lastBidderAmount: bigint, newBidderAmount: bigint}}
 	`lastBidderAddress` is `null` if no share is minted to a previous bidder.

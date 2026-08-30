@@ -49,7 +49,7 @@ interface ISystemManagementV2 {
 	/// @notice Sets `cstDutchAuctionDuration`.
 	/// Only the contract owner is permitted to call this method.
 	/// [Comment-202608014]
-	/// This is implemented only in V2. This unconditionally reverts in V3+.
+	/// Because of Comment-202608317, this is implemented only in V2. This unconditionally reverts in V3+.
 	/// Issue. Ideally, this should not even exist in V3+.
 	/// [/Comment-202608014]
 	/// @param newValue_ The new value.

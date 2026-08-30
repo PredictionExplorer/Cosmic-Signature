@@ -56,7 +56,7 @@ interface IBidding {
 	/// Comments there apply.
 	/// [/Comment-202503147]
 	/// See also: `ICosmicSignatureGame.fallback`, `IEthDonations.donateEth`.
-	/// todo-0 Maybe eliminate this, to reduce contract size. Then declare the `message_` param `calldata`.
+	/// todo-0 ??? Maybe eliminate this, to reduce contract size. Then declare the `message_` param `calldata`.
 	receive() external payable;
 
 	/// @notice
@@ -217,8 +217,7 @@ interface IBidding {
 	/// [Comment-202605271]
 	/// Calculates the current price that a bidder is required to pay to place a CST bid.
 	/// The price declines linearly over CST Dutch auction duration.
-	/// In V2+, it also slightly declines on each ETH bid, as mentioned in Comment-202606101.
-	/// todo-0 What about V3+?
+	/// In V2+, it also slightly declines on each ETH bid, as mentioned in Comment-202608312.
 	/// [/Comment-202605271]
 	/// See also: `getNextCstBidPrice`.
 	/// @param currentTimeOffset_ .

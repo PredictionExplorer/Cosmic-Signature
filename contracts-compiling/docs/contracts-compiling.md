@@ -29,11 +29,11 @@ With that note out of the way, here are a few words about explicitly compiling t
    ```   
    For more info on solc setup and about other solc setup options see Comment-202409011.
 
-#### Environment Varibles
+#### Environment Variables
 
 We recommend that prior to initializing Hardhat the `HARDHAT_MODE_CODE` environment variable was set. Our scripts already do it, so you rarely if ever need to. See Comment-202510221 for details.
 
-Other environment varibles are listed further.
+Other environment variables are listed further.
 
 #### Compilation Commands
 

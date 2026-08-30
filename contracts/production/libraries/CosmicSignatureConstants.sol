@@ -161,7 +161,6 @@ library CosmicSignatureConstants {
 	/// @notice In V3+, default `CosmicSignatureGameStorageV2Base.bidCstRewardAmountMultiplier`.
 	/// See also: `DEFAULT_BID_CST_REWARD_AMOUNT_RADICAND_MULTIPLIER`.
 	/// todo-0 Make sure this produces the correct result, close to 1/60 CST per second.
-	/// todo-ai-0 ToDos like the above are for a human. You should pay attention to them, but do not delete them.
 	uint256 internal constant DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER = (INITIAL_BID_CST_REWARD_AMOUNT_PER_MINUTE * INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND + (1 minutes) / 2) / (1 minutes);
 
 	// #endregion

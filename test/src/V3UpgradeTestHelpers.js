@@ -73,6 +73,7 @@ function getV3BidCstRewardAmount(elapsedDuration_, bidCstRewardAmountPerMinute_ 
 
 /**
 JS mirror of the V3 bid CST reward 90/10 split (Comment-202607161).
+todo-ai-0 I have now deleted Comment-202607161. Don't mention it. Rewrite other related things.
 @param {bigint} bidCstRewardAmount_ The total reward.
 @returns {{lastBidderAmount: bigint, newBidderAmount: bigint}}
 */

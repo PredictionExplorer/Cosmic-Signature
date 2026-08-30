@@ -3,6 +3,7 @@
 // Tests `BiddingV3`'s linear bid CST reward and its 90/10 split (Comment-202607161):
 // the reward accrues at `bidCstRewardAmountPerMinute` (default 1 CST per minute) since the last bid,
 // and when someone places a bid, 90% of it is minted to the bidder being outbid and 10% to the new bidder.
+// todo-ai-0 I have now deleted Comment-202607161. Don't mention it. Rewrite other related things.
 
 const { describe, it } = require("mocha");
 const { expect } = require("chai");
@@ -427,6 +428,7 @@ describe("CosmicSignatureGameV3-BidCstReward", function () {
 
 		// Comment-202607161: the sniped bidder share `Transfer` (a zero-value mint) is emitted after
 		// the new bidder one, because `mintMany` iterates the specs in the reverse order.
+		// todo-ai-0 I have now deleted Comment-202607161. Don't mention it. Rewrite other related things.
 		const transfers_ = findParsedEvents(receipt_, token_, "Transfer");
 		expect(transfers_.length).equal(2);
 		expect(transfers_[0].args.to).equal(bidder2_.address);

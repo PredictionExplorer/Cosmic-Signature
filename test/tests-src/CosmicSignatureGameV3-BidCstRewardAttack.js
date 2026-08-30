@@ -1,9 +1,6 @@
 "use strict";
 
-// Proves that the attack discussed in Comment-202607163 is impossible: a bidder contract that cannot
-// (or refuses to) receive anything cannot block the last bidder bid CST reward share minting,
-// and therefore cannot prevent other people from bidding, nor prevent the bidding round from completing.
-// The reward is minted, not transferred, and `CosmicSignatureToken` minting performs no call into the recipient.
+// Proves that the attack discussed in Comment-202607163 is impossible.
 
 const { describe, it } = require("mocha");
 const { expect } = require("chai");

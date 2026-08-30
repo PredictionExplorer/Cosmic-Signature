@@ -17,7 +17,7 @@ interface IBidding1V2 {
 	/// @notice Comment-202605253 applies.
 	/// Comment-202503147 applies.
 	/// See also: `ICosmicSignatureGameV2.fallback`, `IEthDonations.donateEth`.
-	/// todo-0 Maybe eliminate this, to reduce contract size. Then declare the `message_` param `calldata`.
+	/// todo-0 ??? Maybe eliminate this, to reduce contract size. Then declare the `message_` param `calldata`.
 	receive() external payable;
 
 	/// @notice Comment-202605252 applies.

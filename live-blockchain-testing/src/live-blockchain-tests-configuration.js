@@ -104,7 +104,7 @@ const configuration =
 					ethDutchAuctionDuration: 18n,
 					// cstDutchAuctionDurationDivisor: ???,
 
-					// In V2, given Comment-202606101 and Comment-202606059 that it references,
+					// In V2, given Comment-202606101 and Comment-202606059,
 					// this must be no lesser than `cstDutchAuctionDurationChangeDivisor`.
 					// A smaller value will not change automatically.
 					// That said, this test is used only for V1, so there is no problem.

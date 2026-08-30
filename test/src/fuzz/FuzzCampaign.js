@@ -698,6 +698,7 @@ class FuzzCampaign {
 			this.ledger.addEth(this.game.address, expectations_.netEthPaid);
 
 			// In V3+, the reward is split between the new bidder and the bidder being outbid (Comment-202607161).
+			// todo-ai-0 I have now deleted Comment-202607161. Don't mention it. Rewrite other related things.
 			// The outbid bidder's share is only tracked here if they are among the burst actors
 			// (the ledger, which is receipt-driven, stays exact either way).
 			const rewardSplit_ = expectations_.bidCstRewardSplit;
