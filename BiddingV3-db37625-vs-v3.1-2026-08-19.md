@@ -1,4 +1,4 @@
-todo-0 Delete this soon.
+todo-0 Eventually delete this file.
 
 # `BiddingV3` comparison: `db37625` vs. `v3.1-2026-08-19`
 

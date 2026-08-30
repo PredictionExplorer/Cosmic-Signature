@@ -729,7 +729,7 @@ abstract contract Bidding is
 
 			// [Comment-202501044]
 			// It appears to be more efficient to validate this here than to validate `lastBidderAddress` near Comment-202501045.
-			// This logic assumes that ETH bid price is guaranteed to be a nonzero, as specified in Comment-202503162.
+			// This logic relies on the assumption that ETH bid price is guaranteed to be a nonzero, as specified in Comment-202503162.
 			// [/Comment-202501044]
 			require(msg.value > 0, CosmicSignatureErrors.WrongBidType("The first bid in a bidding round shall be ETH."));
 

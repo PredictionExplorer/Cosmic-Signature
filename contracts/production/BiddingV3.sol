@@ -39,7 +39,7 @@ abstract contract BiddingV3 is
 		uint256 bidCstRewardAmount_ = 0;
 		if (lastBidderAddress != address(0)) {
 			// [Comment-202608022]
-			// This cannot be zero, because we called `_onlyIfNoBidPlacedWithinCurrentSecond`.
+			// Provided our configuration is correct, this cannot be zero, because we called `_onlyIfNoBidPlacedWithinCurrentSecond`.
 			// [/Comment-202608022]
 			bidCstRewardAmount_ = getBidCstRewardAmountAdvanced(int256(0));
 			// #enable_asserts assert(bidCstRewardAmount_ > 0);
@@ -551,7 +551,11 @@ abstract contract BiddingV3 is
 			// Comment-202606074 relates and/or applies.
 			mintAndBurnSpecs_[0].value = ( - int256(cstBidPrice_) );
 
-			// It's not guaranteed that this is a nonzero, because the validation discussed in Comment-202501045 has not happened yet.
+			// It's not guaranteed that this is a nonzero, because the validation near Comment-202501044
+			// discussed in Comment-202501045 has not occurred yet.
+			// Issue. The CST mint can succeed only if this is a nonzero, and so it's unnecessary
+			// to evaluate it again near Comment-202605292. One consequence is that under no conditions
+			// we can revert with `CosmicSignatureErrors.WrongBidType` near Comment-202501044.
 			// Comment-202607163 applies.
 			mintAndBurnSpecs_[1].account = lastBidderAddress;
 
