@@ -7,7 +7,12 @@
 (
 	cd '--' '../..'
 	if [ $? -ne 0 ]; then
-		read '-r' '-n' '1' '-s' '-p' 'Error 202505288. Press any key to finish.'
+		if [[ "${1}" == '-b' ]] ; then
+			echo 'Error 202505288.' 1>&2
+		else
+			read '-r' '-n' '1' '-s' '-p' 'Error 202505288. Press any key to finish.'
+			echo 1>&2
+		fi
 	else
 		# # Hardhat docs recommends setting this environment variable.
 		# # Although it doesn't necessarily make a difference for our setup, so let's not set it until something starts failing.
@@ -26,7 +31,12 @@
 		'npx' 'hardhat' 'coverage'
 
 		if [ $? -ne 0 ]; then
-			read '-r' '-n' '1' '-s' '-p' 'Error. Hardhat Coverage failed. Press any key to finish.'
+			if [[ "${1}" == '-b' ]] ; then
+				echo 'Error. Hardhat Coverage failed.' 1>&2
+			else
+				read '-r' '-n' '1' '-s' '-p' 'Error. Hardhat Coverage failed. Press any key to finish.'
+				echo 1>&2
+			fi
 		fi
 	fi
 )
