@@ -96,5 +96,5 @@ assert(x > y);
 
 ## Uncategorized
 
-- Minimize model usage by skipping actions that do not affect the end result.
 - Prefer using only ASCII chars. For example, instead of `—`, use `--`. But if the surrounding text intentionally uses non-ASCII chars, keep using them consistently.
+- Minimize model usage by skipping actions that do not affect the end result.
