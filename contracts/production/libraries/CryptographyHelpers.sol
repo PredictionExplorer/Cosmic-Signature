@@ -13,9 +13,13 @@ library CryptographyHelpers {
 		// hashSum_ = uint256(keccak256(abi.encodePacked(value_)));
 
 		// This is more efficient.
-		assembly {
-			mstore(0x00, value_)
-			hashSum_ := keccak256(0x00, 0x20)
-		}		
+		{
+			// Comment-202609025 relates and/or applies.
+			assembly ("memory-safe") {
+
+				mstore(0x00, value_)
+				hashSum_ := keccak256(0x00, 0x20)
+			}
+		}
 	}
 }

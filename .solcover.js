@@ -32,8 +32,12 @@
 module.exports = {
 	skipFiles: ["tests/", "upgrade-prototype/",],
 
-	// // It appears that we don't need this unless the compilation fails.
-	// configureYulOptimizer: true,
+	// [Comment-202609025]
+	// It appears that we don't need this unless Solidity compilation fails.
+	// Actually, I had to add this to fix a "stack too deep" compile error.
+	// I also had to supplement some `assembly` keywords with `("memory-safe")`.
+	// [/Comment-202609025]
+	configureYulOptimizer: true,
 
 	istanbulReporter: ["html", /*"text",*/],
 	mocha: {
