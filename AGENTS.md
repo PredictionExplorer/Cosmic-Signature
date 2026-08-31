@@ -96,4 +96,5 @@ assert(x > y);
 
 ## Uncategorized
 
+- Minimize LLM usage while a command is running.
 - Prefer using only ASCII chars. For example, instead of `—`, use `--`. But if the surrounding text intentionally uses non-ASCII chars, keep using them consistently.
