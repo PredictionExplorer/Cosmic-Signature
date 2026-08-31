@@ -51,8 +51,8 @@ async function completeRoundZero(contracts_, bidderIndex_ = 1) {
 	return { bidder_, receipt_, mainPrizeTime_ };
 }
 
-async function deployV1CompleteRoundZeroAndUpgradeToV2(roundActivationTime_ = 2n) {
-	const contracts_ = await loadFixtureDeployContractsForTesting(roundActivationTime_);
+async function deployV1CompleteRoundZeroAndUpgradeToV2() {
+	const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 	await completeRoundZero(contracts_);
 	await upgradeToV2(contracts_);
 	return contracts_;

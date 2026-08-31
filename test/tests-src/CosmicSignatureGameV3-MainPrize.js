@@ -19,24 +19,15 @@ const {
 
 describe("CosmicSignatureGameV3-MainPrize", function () {
 	it("mints mainPrizeNumCosmicSignatureNfts sequential NFTs to the beneficiary, for various configured counts", async function () {
-		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3(2n);
+		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3();
 		const game_ = contracts_.cosmicSignatureGameV3Proxy;
 		const gameForOwner_ = game_.connect(contracts_.ownerSigner);
 		expect(await game_.mainPrizeNumCosmicSignatureNfts()).equal(DEFAULT_MAIN_PRIZE_NUM_COSMIC_SIGNATURE_NFTS);
 
-		// Round 1 runs with the default count; further rounds exercise the edge and random counts,
-		// including 1 (the V2-equivalent behavior).
-		const mainPrizeNumCosmicSignatureNftsValues_ = [
-			DEFAULT_MAIN_PRIZE_NUM_COSMIC_SIGNATURE_NFTS,
-			1n,
-			5n,
-			1n + generateRandomUInt256() % 5n,
-		];
+		for ( let roundIndex_ = 0; roundIndex_ < 3; ++ roundIndex_ ) {
+			const mainPrizeNumCosmicSignatureNfts_ = 1n + (generateRandomUInt256() % 6n) % 5n;
 
-		for (let roundIndex_ = 0; roundIndex_ < mainPrizeNumCosmicSignatureNftsValues_.length; ++ roundIndex_) {
-			const mainPrizeNumCosmicSignatureNfts_ = mainPrizeNumCosmicSignatureNftsValues_[roundIndex_];
-
-			// The round is inactive right after the previous claim; configure the count and activate.
+			// The round is inactive right after the previous claim; configure the NFT count and activate.
 			if (mainPrizeNumCosmicSignatureNfts_ !== await game_.mainPrizeNumCosmicSignatureNfts()) {
 				await waitForTransactionReceipt(gameForOwner_.setMainPrizeNumCosmicSignatureNfts(mainPrizeNumCosmicSignatureNfts_));
 			}
@@ -52,12 +43,13 @@ describe("CosmicSignatureGameV3-MainPrize", function () {
 				game_.connect(bidder2_).bidWithEth(-1n, "", 0n, {value: await game_.getNextEthBidPriceAdvanced(1n),})
 			);
 
-			// In even rounds, also place a free CST bid (the CST Dutch auction price falls to zero at its end),
+			// In even rounds, also place a free CST bid (the CST bid price linearly declines to zero,
+			// and in V3 `getCstDutchAuctionDurations` derives how long that takes),
 			// covering both the with- and without-last-CST-bidder prize layouts.
 			const placeCstBid_ = roundIndex_ % 2 === 0;
 			if (placeCstBid_) {
 				const cstDutchAuctionEndTime_ =
-					(await game_.cstDutchAuctionBeginningTimeStamp()) + (await game_.cstDutchAuctionDuration());
+					(await game_.cstDutchAuctionBeginningTimeStamp()) + (await game_.getCstDutchAuctionDurations())[0];
 				if (cstDutchAuctionEndTime_ + 1n > await getLatestBlockTimestamp()) {
 					await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(cstDutchAuctionEndTime_ + 1n),]);
 				}
@@ -123,6 +115,13 @@ describe("CosmicSignatureGameV3-MainPrize", function () {
 				.greaterThanOrEqual(beneficiaryNftBalanceBefore_ + mainPrizeNumCosmicSignatureNfts_);
 
 			// #endregion
+
+			// `BidStatisticsV3._saveChampionDurations` persists the round-final values before
+			// `_prepareNextRound` clears the champion addresses and resets the Chrono-Warrior duration.
+			const championDurations_ = await game_.championDurations(roundNum_);
+			expect(championDurations_.enduranceChampion).equal(await game_.enduranceChampionDuration());
+			expect(championDurations_.enduranceChampion).greaterThan(0n);
+			expect(championDurations_.chronoWarrior).greaterThan(0n);
 
 			expect(await game_.roundNum()).equal(roundNum_ + 1n);
 		}

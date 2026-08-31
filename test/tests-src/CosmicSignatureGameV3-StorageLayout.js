@@ -29,14 +29,16 @@ async function snapshotCarriedState(game_) {
 		ethBidRefundAmountInGasToSwallowMaxLimit: await game_.ethBidRefundAmountInGasToSwallowMaxLimit(),
 		cstDutchAuctionBeginningTimeStamp: await game_.cstDutchAuctionBeginningTimeStamp(),
 
-		// V2 slots (including the 2 repurposed ones and the 1 appended one) must survive the V3 upgrade too.
+		// The 2 repurposed V2 slots and the 1 appended V2 slot must survive the V3 upgrade too.
+		// V3 stops using `cstDutchAuctionDuration` and `cstDutchAuctionDurationChangeDivisor`,
+		// but does not re-initialize them, so their getters keep returning the stale V2 values.
+		// (`bidCstRewardAmountMultiplier` is NOT here: the V3 `reinitialize` re-initializes it,
+		// which `assertDefaultV3Initialization` verifies.)
 		cstDutchAuctionDuration: await game_.cstDutchAuctionDuration(),
 		cstDutchAuctionDurationChangeDivisor: await game_.cstDutchAuctionDurationChangeDivisor(),
-		bidCstRewardAmountMultiplier: await game_.bidCstRewardAmountMultiplier(),
 
 		cstDutchAuctionBeginningBidPrice: await game_.cstDutchAuctionBeginningBidPrice(),
 		nextRoundFirstCstDutchAuctionBeginningBidPrice: await game_.nextRoundFirstCstDutchAuctionBeginningBidPrice(),
-		cstDutchAuctionBeginningBidPriceMinLimit: await game_.cstDutchAuctionBeginningBidPriceMinLimit(),
 		bidMessageLengthMaxLimit: await game_.bidMessageLengthMaxLimit(),
 		cstPrizeAmount: await game_.cstPrizeAmount(),
 		chronoWarriorEthPrizeAmountPercentage: await game_.chronoWarriorEthPrizeAmountPercentage(),
@@ -94,14 +96,20 @@ describe("CosmicSignatureGameV3-StorageLayout", function () {
 
 		const carriedState_ = await snapshotCarriedState(gameV2_);
 
-		// The 5 new V3 slots are taken from the gap region, so on V2 their getters must not even exist.
+		// The V3 `reinitialize` re-initializes these two, overwriting the V2 values that were just configured.
+		expect(await gameV2_.bidCstRewardAmountMultiplier()).equal(123_456_789n);
+		expect(await gameV2_.cstDutchAuctionBeginningBidPriceMinLimit()).not.equal(10n ** 18n);
+
+		// The 7 new V3 slots are taken from the gap region, so on V2 their getters must not even exist.
 		const cosmicSignatureGameV3Factory_ =
 			await hre.ethers.getContractFactory("CosmicSignatureGameV3", contracts_.ownerSigner);
 		for (const newGetterName_ of [
+			"championDurations(uint256)",
+			"cstBidPriceDeclineMultiplier()",
+			"cstBidPriceDeclineMultiplierChangeDivisor()",
 			"roundLateBidDurationDivisor()",
 			"roundLateBidPricePremiumAmountBaseMultiplier()",
 			"roundLateBidPricePremiumAmountExponent()",
-			"bidCstRewardAmountPerMinute()",
 			"mainPrizeNumCosmicSignatureNfts()",
 		]) {
 			await expect(

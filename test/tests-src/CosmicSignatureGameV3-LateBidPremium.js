@@ -40,9 +40,16 @@ describe("CosmicSignatureGameV3-LateBidPremium", function () {
 	it("adds an exponentially growing, capped premium to ETH and CST bid prices near mainPrizeTime", async function () {
 		// #region Setup: V1 -> V2 -> V3, then activate the round.
 
-		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3(2n);
+		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3();
 		const game_ = contracts_.cosmicSignatureGameV3Proxy;
 		const bidder_ = contracts_.signers[1];
+
+		// Slow the CST price decline down (the round is inactive right after the upgrade, so the owner can),
+		// so that the 200 CST beginning bid price carried over from V1 declines to zero only after ~55 hours.
+		// That makes the CST bid price still nonzero within the late bid premium window,
+		// which opens ~24 hours into the round, so the CST premium section below can sample nonzero prices.
+		await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setCstBidPriceDeclineMultiplier(10n ** 15n));
+
 		await activateCurrentRound(game_, contracts_.ownerSigner);
 
 		// #endregion
@@ -200,32 +207,29 @@ describe("CosmicSignatureGameV3-LateBidPremium", function () {
 		}
 
 		// #endregion
-		// #region CST premium curve: exact mirror on top of the CST Dutch auction price.
+		// #region CST premium curve: exact mirror on top of the V3 linear CST price decline.
 
 		{
-			// Restart the CST Dutch auction close to `mainPrizeTime` (a free CST bid once the previous
-			// auction has fully decayed to zero), so the new auction's nonzero price range overlaps the
-			// premium window.
-			{
-				const cstDutchAuctionEndTime_ =
-					(await game_.cstDutchAuctionBeginningTimeStamp()) + (await game_.cstDutchAuctionDuration());
-				/** @type {bigint} */
-				const mainPrizeTime_ = await game_.mainPrizeTime();
-				const cstBidTs_ =
-					(cstDutchAuctionEndTime_ > mainPrizeTime_ - 30n * 60n) ? cstDutchAuctionEndTime_ + 1n : mainPrizeTime_ - 30n * 60n;
-				expect(await game_.getNextCstBidPriceAdvanced(cstBidTs_ - await getLatestBlockTimestamp())).equal(0n);
-				await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(cstBidTs_),]);
-				await waitForTransactionReceipt(game_.connect(bidder_).bidWithCst((1n << 255n), "", 0n));
-			}
-
+			// No CST bid has been placed in this round, so the CST price declines from
+			// `nextRoundFirstCstDutchAuctionBeginningBidPrice` (200 CST carried over from V1's initialization)
+			// since the first bid of the round. With the slowed-down decline rate configured above,
+			// that decline covers the whole premium window with nonzero prices.
+			expect(await game_.lastCstBidderAddress()).equal(hre.ethers.ZeroAddress);
 			const cstDutchAuctionBeginningTimeStamp_ = await game_.cstDutchAuctionBeginningTimeStamp();
-			const cstDutchAuctionBeginningBidPrice_ = await game_.cstDutchAuctionBeginningBidPrice();
-			const cstDutchAuctionDuration_ = await game_.cstDutchAuctionDuration();
+			const cstDutchAuctionBeginningBidPrice_ = await game_.nextRoundFirstCstDutchAuctionBeginningBidPrice();
+			const cstBidPriceDeclineMultiplier_ = await game_.cstBidPriceDeclineMultiplier();
 			/** @type {bigint} */
 			const mainPrizeTime_ = await game_.mainPrizeTime();
 			const ts_ = await getLatestBlockTimestamp();
 			expect(mainPrizeTime_ - roundLateBidDuration_).greaterThan(ts_);
-			expect(cstDutchAuctionBeginningTimeStamp_ + cstDutchAuctionDuration_).greaterThan(mainPrizeTime_);
+
+			// The decline must overlap the whole premium window, and its derived duration getter must agree.
+			{
+				const cstDutchAuctionDerivedDuration_ =
+					(cstDutchAuctionBeginningBidPrice_ + (cstBidPriceDeclineMultiplier_ - 1n)) / cstBidPriceDeclineMultiplier_;
+				expect(cstDutchAuctionBeginningTimeStamp_ + cstDutchAuctionDerivedDuration_).greaterThan(mainPrizeTime_ + 60n);
+				expect((await game_.getCstDutchAuctionDurations())[0]).equal(cstDutchAuctionDerivedDuration_);
+			}
 
 			for (const durationUntilMainPrize_ of [
 				roundLateBidDuration_ + 60n,
@@ -237,10 +241,12 @@ describe("CosmicSignatureGameV3-LateBidPremium", function () {
 				-60n,
 			]) {
 				const sampleTs_ = mainPrizeTime_ - durationUntilMainPrize_;
-				const cstDutchAuctionRemainingDuration_ = cstDutchAuctionDuration_ - (sampleTs_ - cstDutchAuctionBeginningTimeStamp_);
-				expect(cstDutchAuctionRemainingDuration_).greaterThan(0n);
-				const cstBidPriceBase_ = cstDutchAuctionBeginningBidPrice_ * cstDutchAuctionRemainingDuration_ / cstDutchAuctionDuration_;
+
+				// The V3 premium-free CST bid price declines linearly at `cstBidPriceDeclineMultiplier` per second.
+				const cstBidPriceBase_ =
+					cstDutchAuctionBeginningBidPrice_ - (sampleTs_ - cstDutchAuctionBeginningTimeStamp_) * cstBidPriceDeclineMultiplier_;
 				expect(cstBidPriceBase_).greaterThan(0n);
+
 				const adjustedCstPrice_ = addRoundLateBidPricePremiumAmountIfNeeded(
 					cstBidPriceBase_,
 					durationUntilMainPrize_,

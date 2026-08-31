@@ -8,6 +8,7 @@ const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTest
 const {
 	activateCurrentRound,
 	completeRoundZero,
+	getLatestBlockTimestamp,
 	upgradeToV2,
 } = require("../src/V2UpgradeTestHelpers.js");
 const {
@@ -74,8 +75,43 @@ describe("CosmicSignatureGameV3-GuardsAndMisconfig", function () {
 		}
 	});
 
+	it("a first V3 CST bid reaches token minting before inactive-round and wrong-bid-type guards", async function () {
+		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3();
+		const game_ = contracts_.cosmicSignatureGameV3Proxy;
+		const token_ = contracts_.cosmicSignatureToken;
+		const bidder_ = contracts_.signers[2];
+
+		// Keep the round inactive while advancing past the derived end of the CST Dutch auction.
+		// At that point the zero CST price cannot mask the attempted reward mint to `address(0)`.
+		let latestTimeStamp_ = await getLatestBlockTimestamp();
+		const cstDutchAuctionEndTimeStamp_ =
+			(await game_.cstDutchAuctionBeginningTimeStamp()) + (await game_.getCstDutchAuctionDurations())[0];
+		let bidTimeStamp_ = (cstDutchAuctionEndTimeStamp_ > latestTimeStamp_) ? cstDutchAuctionEndTimeStamp_ : latestTimeStamp_ + 1n;
+		await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setRoundActivationTime(bidTimeStamp_ + 1_000n));
+		latestTimeStamp_ = await getLatestBlockTimestamp();
+		if (bidTimeStamp_ <= latestTimeStamp_) {
+			bidTimeStamp_ = latestTimeStamp_ + 1n;
+		}
+
+		const currentTimeOffset_ = bidTimeStamp_ - latestTimeStamp_;
+		expect(await game_.getNextCstBidPriceAdvanced(currentTimeOffset_)).equal(0n);
+		expect(await game_.getBidCstRewardAmountAdvanced(currentTimeOffset_)).greaterThan(0n);
+		expect(await game_.getDurationUntilRoundActivation()).greaterThan(0n);
+		const totalSupplyBefore_ = await token_.totalSupply();
+
+		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(bidTimeStamp_),]);
+		await expect(game_.connect(bidder_).bidWithCst(hre.ethers.MaxUint256, "", 0n))
+			.revertedWithCustomError(token_, "ERC20InvalidReceiver")
+			.withArgs(hre.ethers.ZeroAddress);
+
+		// The token error wins over both `RoundIsInactive` and `WrongBidType`, and all interim work rolls back.
+		expect(await game_.lastBidderAddress()).equal(hre.ethers.ZeroAddress);
+		expect(await game_.getTotalNumBids(await game_.roundNum())).equal(0n);
+		expect(await token_.totalSupply()).equal(totalSupplyBefore_);
+	});
+
 	it("documents that mainPrizeNumCosmicSignatureNfts = 0 owner misconfiguration bricks claimMainPrize", async function () {
-		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3(2n);
+		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3();
 		const game_ = contracts_.cosmicSignatureGameV3Proxy;
 		await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setMainPrizeNumCosmicSignatureNfts(0n));
 		await activateCurrentRound(game_, contracts_.ownerSigner);
@@ -98,7 +134,7 @@ describe("CosmicSignatureGameV3-GuardsAndMisconfig", function () {
 	});
 
 	it("documents that roundLateBidDurationDivisor = 0 owner misconfiguration freezes bidding until the claim", async function () {
-		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3(2n);
+		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3();
 		const game_ = contracts_.cosmicSignatureGameV3Proxy;
 		await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setRoundLateBidDurationDivisor(0n));
 		await activateCurrentRound(game_, contracts_.ownerSigner);

@@ -35,7 +35,7 @@ describe("CosmicSignatureGameV2-GuardsAndMisconfig", function () {
 	});
 
 	it("covers V2 pre-bid round-state and bidding guard paths", async function () {
-		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2(2n);
+		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2();
 		const game_ = contracts_.cosmicSignatureGameV2Proxy;
 
 		expect(await game_.getDurationUntilRoundActivation()).greaterThan(0n);
@@ -59,11 +59,35 @@ describe("CosmicSignatureGameV2-GuardsAndMisconfig", function () {
 		await waitForTransactionReceipt(game_.connect(bidder_).bidWithEth(-1n, "first eth", 0n, { value: ethPrice_ }));
 		await expect(game_.connect(contracts_.ownerSigner).halveEthDutchAuctionEndingBidPrice())
 			.revertedWithCustomError(game_, "BidHasBeenPlacedInCurrentRound");
+
+		const cstBidPrice_ = await game_.getNextCstBidPriceAdvanced(1n);
+		expect(cstBidPrice_).greaterThan(0n);
+		await expect(game_.connect(contracts_.signers[3]).bidWithCst(cstBidPrice_ - 1n, "price limit", 0n))
+			.revertedWithCustomError(game_, "InsufficientReceivedBidAmount");
 		expect(await game_.getDurationUntilMainPrize()).greaterThan(0n);
 	});
 
+	it("halves the V2 ETH Dutch auction ending price after the auction has elapsed", async function () {
+		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2();
+		const game_ = contracts_.cosmicSignatureGameV2Proxy;
+		const endingBidPriceDivisorBefore_ = await game_.ethDutchAuctionEndingBidPriceDivisor();
+		const durationDivisorBefore_ = await game_.ethDutchAuctionDurationDivisor();
+		const [ethDutchAuctionDuration_,] = await game_.getEthDutchAuctionDurations();
+		const halveTimeStamp_ = (await game_.roundActivationTime()) + ethDutchAuctionDuration_ + 1n;
+		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(halveTimeStamp_),]);
+
+		await expect(game_.connect(contracts_.ownerSigner).halveEthDutchAuctionEndingBidPrice())
+			.emit(game_, "EthDutchAuctionEndingBidPriceDivisorChanged")
+			.withArgs(endingBidPriceDivisorBefore_ * 2n);
+
+		expect(await game_.ethDutchAuctionEndingBidPriceDivisor()).equal(endingBidPriceDivisorBefore_ * 2n);
+		const durationDivisorAfter_ = await game_.ethDutchAuctionDurationDivisor();
+		expect(durationDivisorAfter_).greaterThan(0n);
+		expect(durationDivisorAfter_).lessThanOrEqual(durationDivisorBefore_);
+	});
+
 	it("documents zero CST duration owner misconfiguration", async function () {
-		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2(2n);
+		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2();
 		const game_ = contracts_.cosmicSignatureGameV2Proxy;
 		await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setCstDutchAuctionDuration(0n));
 		await activateCurrentRound(game_, contracts_.ownerSigner);
@@ -74,7 +98,7 @@ describe("CosmicSignatureGameV2-GuardsAndMisconfig", function () {
 
 	// // This tests Comment-202607016.
 	// it("raises the V2 next-round first CST price when the owner raises the CST minimum", async function () {
-	// 	const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2(2n);
+	// 	const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2();
 	// 	const game_ = contracts_.cosmicSignatureGameV2Proxy;
 	// 	const newMinLimit_ = 300n * 10n ** 18n;
 	// 	await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setCstDutchAuctionBeginningBidPriceMinLimit(newMinLimit_));
@@ -89,7 +113,7 @@ describe("CosmicSignatureGameV2-GuardsAndMisconfig", function () {
 	// });
 
 	it("documents zero CST duration change divisor owner misconfiguration", async function () {
-		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2(2n);
+		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2();
 		const game_ = contracts_.cosmicSignatureGameV2Proxy;
 		await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setCstDutchAuctionDurationChangeDivisor(0n));
 		await activateCurrentRound(game_, contracts_.ownerSigner);
@@ -106,7 +130,7 @@ describe("CosmicSignatureGameV2-GuardsAndMisconfig", function () {
 	});
 
 	it("documents changeDivisor greater than duration as a no-op reduction boundary", async function () {
-		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2(2n);
+		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2();
 		const game_ = contracts_.cosmicSignatureGameV2Proxy;
 		await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setCstDutchAuctionDuration(10n));
 		await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setCstDutchAuctionDurationChangeDivisor(100n));

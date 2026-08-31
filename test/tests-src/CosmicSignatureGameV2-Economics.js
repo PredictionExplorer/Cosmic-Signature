@@ -22,7 +22,7 @@ async function placeEthBid(game_, bidder_) {
 
 describe("CosmicSignatureGameV2-Economics", function () {
 	it("documents zero-price CST bids minting only the computed reward", async function () {
-		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2(2n);
+		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2();
 		const game_ = contracts_.cosmicSignatureGameV2Proxy;
 		await activateCurrentRound(game_, contracts_.ownerSigner);
 
@@ -49,7 +49,7 @@ describe("CosmicSignatureGameV2-Economics", function () {
 	});
 
 	it("documents zero-reward CST bids burning only the paid price", async function () {
-		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2(2n);
+		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2();
 		const game_ = contracts_.cosmicSignatureGameV2Proxy;
 
 		await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setBidCstRewardAmountMultiplier(0n));
@@ -77,7 +77,7 @@ describe("CosmicSignatureGameV2-Economics", function () {
 	});
 
 	it("ETH bids can abruptly reduce the current CST bid price to zero near the duration boundary", async function () {
-		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2(2n);
+		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2();
 		const game_ = contracts_.cosmicSignatureGameV2Proxy;
 		await activateCurrentRound(game_, contracts_.ownerSigner);
 
@@ -100,7 +100,7 @@ describe("CosmicSignatureGameV2-Economics", function () {
 	});
 
 	it("cstDutchAuctionDuration drifts down on ETH bids and up on CST bids", async function () {
-		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2(2n);
+		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2();
 		const game_ = contracts_.cosmicSignatureGameV2Proxy;
 		await activateCurrentRound(game_, contracts_.ownerSigner);
 

@@ -290,21 +290,25 @@ async function executeEthBid(ctx_, actor_, options_) {
 		expect(bidPlaced_.args.message).to.equal(message_);
 	}
 	expect(bidPlaced_.args.mainPrizeTime).to.equal(model.mainPrizeTime);
-	if (model.version >= 2) {
+	if (model.version >= 3) {
+		expect(bidPlaced_.args.bidCstRewardAmount).to.equal(expectations_.bidCstRewardAmount);
+		expect(bidPlaced_.args.cstBidPriceDeclineMultiplier).to.equal(expectations_.newCstBidPriceDeclineMultiplier);
+	} else if (model.version >= 2) {
 		expect(bidPlaced_.args.bidCstRewardAmount).to.equal(expectations_.bidCstRewardAmount);
 		expect(bidPlaced_.args.cstDutchAuctionDuration).to.equal(expectations_.newCstDutchAuctionDuration);
 	}
 
 	{
+		// In V3+, the whole reward goes to the bidder being outbid; before V3 it goes to the new bidder.
 		const rewardSplit_ = expectations_.bidCstRewardSplit;
 		let expectedActorCstChange_ = rewardSplit_.newBidderAmount;
 		if (rewardSplit_.lastBidderAddress === actor_.addressLower) {
-			// A self-snipe: the actor receives both shares.
+			// A self-outbid: the actor receives the previous bidder's reward.
 			expectedActorCstChange_ += rewardSplit_.lastBidderAmount;
 		} else if (rewardSplit_.lastBidderAddress !== null) {
 			expect(
 				ledger.cstBalanceOf(rewardSplit_.lastBidderAddress) - snipedBidderCstBefore_,
-				"ETH bid: sniped bidder CST reward share mismatch"
+				"ETH bid: outbid bidder CST reward mismatch"
 			).to.equal(rewardSplit_.lastBidderAmount);
 		}
 		expect(ledger.cstBalanceOf(actor_.address) - cstBefore_, "ETH bid: CST reward mismatch").to.equal(expectedActorCstChange_);
@@ -413,21 +417,25 @@ async function executeCstBid(ctx_, actor_, options_) {
 	expect(bidPlaced_.args.paidCstPrice).to.equal(price_);
 	expect(bidPlaced_.args.randomWalkNftId).to.equal(-1n);
 	expect(bidPlaced_.args.mainPrizeTime).to.equal(model.mainPrizeTime);
-	if (model.version >= 2) {
+	if (model.version >= 3) {
+		expect(bidPlaced_.args.bidCstRewardAmount).to.equal(expectations_.bidCstRewardAmount);
+		expect(bidPlaced_.args.cstBidPriceDeclineMultiplier).to.equal(expectations_.newCstBidPriceDeclineMultiplier);
+	} else if (model.version >= 2) {
 		expect(bidPlaced_.args.bidCstRewardAmount).to.equal(expectations_.bidCstRewardAmount);
 		expect(bidPlaced_.args.cstDutchAuctionDuration).to.equal(expectations_.newCstDutchAuctionDuration);
 	}
 
 	{
+		// In V3+, the whole reward goes to the bidder being outbid; before V3 it goes to the new bidder.
 		const rewardSplit_ = expectations_.bidCstRewardSplit;
 		let expectedActorCstChange_ = rewardSplit_.newBidderAmount - price_;
 		if (rewardSplit_.lastBidderAddress === actor_.addressLower) {
-			// A self-snipe: the actor receives both shares.
+			// A self-outbid: the actor receives the previous bidder's reward.
 			expectedActorCstChange_ += rewardSplit_.lastBidderAmount;
 		} else if (rewardSplit_.lastBidderAddress !== null) {
 			expect(
 				ledger.cstBalanceOf(rewardSplit_.lastBidderAddress) - snipedBidderCstBefore_,
-				"CST bid: sniped bidder CST reward share mismatch"
+				"CST bid: outbid bidder CST reward mismatch"
 			).to.equal(rewardSplit_.lastBidderAmount);
 		}
 		expect(ledger.cstBalanceOf(actor_.address) - cstBefore_, "CST bid: net CST delta mismatch")

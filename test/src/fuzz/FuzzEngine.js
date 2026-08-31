@@ -518,7 +518,13 @@ class FuzzEngine {
 			return "skip";
 		}
 		++ entry_.attempted;
-		const traceRecord_ = { action: action_.name, actor: actor_?.label ?? null, lastTs: this.lastTs };
+		const traceRecord_ = {
+			action: action_.name,
+			actor: actor_?.label ?? null,
+			version: ctx_.model?.version ?? null,
+			roundNum: ctx_.model?.roundNum ?? null,
+			lastTs: this.lastTs,
+		};
 		let outcome_;
 		try {
 			outcome_ = await action_.run(ctx_, actor_);

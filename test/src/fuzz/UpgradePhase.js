@@ -66,12 +66,14 @@ const CARRIED_OVER_GETTERS = [
 	"charityEthDonationAmountPercentage",
 ];
 
-/** V2 getters (on top of `CARRIED_OVER_GETTERS`) that must survive the V2 -> V3 upgrade unchanged. */
-const CARRIED_OVER_GETTERS_V2 = [
-	...CARRIED_OVER_GETTERS,
+/**
+Getters that must survive the V2 -> V3 upgrade unchanged. V3 reinitializes the CST beginning-price
+minimum and reward multiplier, while leaving the vestigial V2 duration fields untouched.
+*/
+const CARRIED_OVER_GETTERS_ACROSS_V3 = [
+	...CARRIED_OVER_GETTERS.filter((getterName_) => getterName_ !== "cstDutchAuctionBeginningBidPriceMinLimit"),
 	"cstDutchAuctionDuration",
 	"cstDutchAuctionDurationChangeDivisor",
-	"bidCstRewardAmountMultiplier",
 ];
 
 /** Reads all the given getters into a plain object (values stringified for diffing). */
@@ -196,7 +198,7 @@ async function performUpgradeToV3(ctx_) {
 	model.roundActivationTime = freezeActivation_;
 
 	// 2. Snapshot the carried-over state (V1 getters + the V2 parameters).
-	const before_ = await snapshotCarriedOverState(v2Game_, CARRIED_OVER_GETTERS_V2);
+	const before_ = await snapshotCarriedOverState(v2Game_, CARRIED_OVER_GETTERS_ACROSS_V3);
 	const gameEthBefore_ = await engine.provider.getBalance(contracts.cosmicSignatureGameProxyAddress);
 
 	// 3. Upgrade negative probes (must fail) before the real upgrade.
@@ -213,7 +215,8 @@ async function performUpgradeToV3(ctx_) {
 
 		// The new V3 getters do not exist on V2 yet.
 		await expectUnknownSelector(v2Game_, hre.ethers.id("roundLateBidDurationDivisor()").slice(0, 10));
-		await expectUnknownSelector(v2Game_, hre.ethers.id("bidCstRewardAmountPerMinute()").slice(0, 10));
+		await expectUnknownSelector(v2Game_, hre.ethers.id("cstBidPriceDeclineMultiplier()").slice(0, 10));
+		await expectUnknownSelector(v2Game_, hre.ethers.id("cstBidPriceDeclineMultiplierChangeDivisor()").slice(0, 10));
 		await expectUnknownSelector(v2Game_, hre.ethers.id("mainPrizeNumCosmicSignatureNfts()").slice(0, 10));
 		await expectUnknownSelector(v2Game_, hre.ethers.id("getRoundLateBidDuration()").slice(0, 10));
 	}
@@ -229,9 +232,9 @@ async function performUpgradeToV3(ctx_) {
 	const newImplementation_ = await hre.upgrades.erc1967.getImplementationAddress(contracts.cosmicSignatureGameProxyAddress);
 	expect(newImplementation_, "implementation address must change after the V3 upgrade").to.not.equal(prevImplementation_);
 
-	// 5. Carried-over state (including the V2 parameters) must be unchanged.
-	const after_ = await snapshotCarriedOverState(v3Proxy_, CARRIED_OVER_GETTERS_V2);
-	for (const getter_ of CARRIED_OVER_GETTERS_V2) {
+	// 5. Carried-over state (including the vestigial V2 parameters) must be unchanged.
+	const after_ = await snapshotCarriedOverState(v3Proxy_, CARRIED_OVER_GETTERS_ACROSS_V3);
+	for (const getter_ of CARRIED_OVER_GETTERS_ACROSS_V3) {
 		expect(after_[getter_], `carried-over state '${getter_}' changed across the V3 upgrade`).to.equal(before_[getter_]);
 	}
 	expect(await engine.provider.getBalance(contracts.cosmicSignatureGameProxyAddress), "game ETH balance changed across the V3 upgrade").to.equal(gameEthBefore_);
@@ -453,7 +456,7 @@ async function upgradeAuthProbe(ctx_, actor_) {
 
 module.exports = {
 	CARRIED_OVER_GETTERS,
-	CARRIED_OVER_GETTERS_V2,
+	CARRIED_OVER_GETTERS_ACROSS_V3,
 	snapshotCarriedOverState,
 	performUpgradeToV2,
 	performUpgradeToV3,

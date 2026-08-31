@@ -570,7 +570,7 @@ describe("Bidding", function () {
 	// 	}
 	// 	
 	// 	{
-	// 		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2(2n);
+	// 		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2();
 	// 		const game_ = contracts_.cosmicSignatureGameV2Proxy;
 	// 		await activateCurrentRound(game_, contracts_.ownerSigner);
 	// 		await assertZeroGasPriceRefundIsSwallowed_(contracts_, game_, 2n);

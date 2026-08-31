@@ -52,7 +52,7 @@ describe("PrizesWallet-2", function () {
 	// Comment-202606264 relates.
 	it("Swapping to a fresh PrizesWallet after the V2 or V3 upgrade", async function () {
 		for ( let contractVersionNumber_ = 2; contractVersionNumber_ <= 3; ++ contractVersionNumber_ ) {
-			const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2(2n);
+			const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2();
 			if (contractVersionNumber_ >= 3) {
 				await upgradeToV3(contracts_);
 			}

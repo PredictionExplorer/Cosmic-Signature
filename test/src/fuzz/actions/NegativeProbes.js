@@ -181,7 +181,9 @@ const negativeProbes = [
 				signer: actor_.signer,
 				ts: ts_,
 				buildTx: (overrides_) => ctx_.game.connect(actor_.signer).bidWithCst((1n << 256n) - 1n, "", 0n, overrides_),
-				expected: "WrongBidType",
+				// V3 reaches reward minting before `_bidCommon` can reject the bid type, so minting
+				// the reward to the zero last-bidder address fails first.
+				expected: (ctx_.model.version >= 3) ? "ERC20InvalidReceiver" : "WrongBidType",
 			});
 		},
 	},

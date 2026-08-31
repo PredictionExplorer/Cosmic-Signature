@@ -152,7 +152,7 @@ describe("BidStatistics", function () {
 	});
 
 	it("V2 current champion projection keeps an existing Chrono-Warrior when a smaller handoff is projected", async function () {
-		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2(2n);
+		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2();
 		const game_ = contracts_.cosmicSignatureGameV2Proxy;
 		await activateCurrentRound(game_, contracts_.ownerSigner);
 		await mineAtOrAfter(await game_.roundActivationTime());

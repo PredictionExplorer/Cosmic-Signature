@@ -43,7 +43,7 @@ async function assertV2BidPlaced(receipt_, game_, bidder_, expectedEthPrice_, ex
 
 describe("CosmicSignatureGameV2-Gameplay", function () {
 	it("executes all V2 bid entry points and completes a V2 round", async function () {
-		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2(2n);
+		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2();
 		const game_ = contracts_.cosmicSignatureGameV2Proxy;
 		await assertDefaultV2Initialization(game_);
 		expect(await game_.numEthDonationWithInfoRecords()).equal(0n);

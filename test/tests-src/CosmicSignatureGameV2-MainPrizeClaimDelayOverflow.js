@@ -24,7 +24,7 @@ const {
 // Deploys V1, completes round 0, upgrades to V2, activates round 1, and places one ETH bid so the bidder is the
 // last bidder (the round's prospective main prize winner). Returns the V2 proxy and the relevant signers.
 async function setUpActiveV2RoundWithOneBid() {
-	const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2(2n);
+	const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2();
 	const game_ = contracts_.cosmicSignatureGameV2Proxy;
 	await activateCurrentRound(game_, contracts_.ownerSigner);
 
@@ -121,7 +121,7 @@ describe("CosmicSignatureGameV2-MainPrizeClaimDelayOverflow", function () {
 	});
 
 	it("still reverts the claim with a division-by-zero panic when mainPrizeTimeIncrementIncreaseDivisor is zero (unchecked does not mask 0x12)", async function () {
-		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2(2n);
+		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2();
 		const game_ = contracts_.cosmicSignatureGameV2Proxy;
 
 		// The divisor setter is guarded by `_onlyRoundIsInactive`, so it must be set before the round activates.

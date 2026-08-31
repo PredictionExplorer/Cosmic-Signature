@@ -12,7 +12,7 @@ const {
 
 describe("CosmicSignatureGameV2-LateClaim", function () {
 	it("allows a late bidder to bid and immediately claim when mainPrizeTime remains in the past", async function () {
-		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2(2n);
+		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2();
 		const game_ = contracts_.cosmicSignatureGameV2Proxy;
 		await activateCurrentRound(game_, contracts_.ownerSigner);
 
@@ -38,7 +38,7 @@ describe("CosmicSignatureGameV2-LateClaim", function () {
 	});
 
 	it("preserves timeout claiming for non-last bidders", async function () {
-		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2(2n);
+		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2();
 		const game_ = contracts_.cosmicSignatureGameV2Proxy;
 		await activateCurrentRound(game_, contracts_.ownerSigner);
 

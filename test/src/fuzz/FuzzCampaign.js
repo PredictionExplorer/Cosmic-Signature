@@ -689,17 +689,21 @@ class FuzzCampaign {
 			}
 		}
 		const results_ = await this.engine.execBurst(ts_, items_);
-		// Apply the model/ledger for each bid in submission order (all should succeed).
+		// Apply the model/ledger for each bid in submission order. In V3+, only the first bid
+		// in the block succeeds because all of them share one timestamp.
 		for (let index_ = 0; index_ < results_.length; ++ index_) {
-			expect(results_[index_].status, "burst bid must succeed").to.equal(1);
 			const plan_ = plans_[index_];
+			if (this.model.version >= 3 && index_ > 0) {
+				expect(results_[index_].status, "V3+ burst bid within the same second must revert").to.equal(0);
+				continue;
+			}
+			expect(results_[index_].status, "burst bid must succeed").to.equal(1);
 			const expectations_ = this.model.applyEthBid(plan_.actor.address, ts_, plan_.value, plan_.gasPrice, null);
 			this.ledger.addEth(plan_.actor.address, -expectations_.netEthPaid);
 			this.ledger.addEth(this.game.address, expectations_.netEthPaid);
 
-			// In V3+, the reward is split between the new bidder and the bidder being outbid (Comment-202607161).
-			// todo-ai-0 I have now deleted Comment-202607161. Don't mention it. Rewrite other related things.
-			// The outbid bidder's share is only tracked here if they are among the burst actors
+			// In V3+, the whole reward goes to the bidder being outbid. That bidder's amount
+			// is tracked here only if they are among the burst actors
 			// (the ledger, which is receipt-driven, stays exact either way).
 			const rewardSplit_ = expectations_.bidCstRewardSplit;
 			expectedRewardByActor_.set(plan_.actor.addressLower, expectedRewardByActor_.get(plan_.actor.addressLower) + rewardSplit_.newBidderAmount);
