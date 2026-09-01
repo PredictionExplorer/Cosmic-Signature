@@ -8,6 +8,7 @@ const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTest
 const {
 	activateCurrentRound,
 	completeRoundZero,
+	deployV1CompleteRoundZeroAndUpgradeToV2,
 	getLatestBlockTimestamp,
 	upgradeToV2,
 } = require("../src/V2UpgradeTestHelpers.js");
@@ -16,6 +17,17 @@ const {
 	deployV1CompleteRoundZeroAndUpgradeToV2AndV3,
 	upgradeToV3,
 } = require("../src/V3UpgradeTestHelpers.js");
+
+async function expectReinitializeUnavailable(game_, signer_) {
+	const expectation_ = expect(game_.connect(signer_).reinitialize());
+	if (ENABLE_ASSERTS) {
+		// `_onlyIfPrevVersionWasInitialized` executes before `reinitializer(3)`. On a replay,
+		// the initialized version is 3 rather than the expected 2, so the assertion fires first.
+		await expectation_.revertedWithPanic(0x01n);
+	} else {
+		await expectation_.revertedWithCustomError(game_, "InvalidInitialization");
+	}
+}
 
 describe("CosmicSignatureGameV3-GuardsAndMisconfig", function () {
 	it("documents that roundNum > 0 is assert-only in reinitialize, through the whole V1 -> V2 -> V3 chain", async function () {
@@ -73,6 +85,30 @@ describe("CosmicSignatureGameV3-GuardsAndMisconfig", function () {
 			await assertDefaultV3Initialization(gameV3_);
 			expect(await gameV3_.cstDutchAuctionDuration()).equal(rawCstDutchAuctionDurationSlotValue_);
 		}
+	});
+
+	it("an atomic V3 upgrade makes reinitialize unavailable to the owner and non-owner", async function () {
+		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3();
+		const game_ = contracts_.cosmicSignatureGameV3Proxy;
+
+		await expectReinitializeUnavailable(game_, contracts_.signers[9]);
+		await expectReinitializeUnavailable(game_, contracts_.ownerSigner);
+	});
+
+	it("a deliberately bare V3 upgrade leaves one permissionless reinitialize call by design", async function () {
+		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2();
+
+		// This deliberately omits the atomic `reinitialize` call used by the production upgrade task.
+		// The resulting one-call initialization opportunity is an intentional property of the design.
+		await upgradeToV3(contracts_, { call: undefined });
+		const game_ = contracts_.cosmicSignatureGameV3Proxy;
+		expect(await game_.mainPrizeNumCosmicSignatureNfts()).equal(0n);
+
+		await waitForTransactionReceipt(game_.connect(contracts_.signers[9]).reinitialize());
+		await assertDefaultV3Initialization(game_);
+
+		// `reinitializer(3)` makes the call one-shot regardless of which account invokes it.
+		await expectReinitializeUnavailable(game_, contracts_.ownerSigner);
 	});
 
 	it("a first V3 CST bid reaches token minting before inactive-round and wrong-bid-type guards", async function () {

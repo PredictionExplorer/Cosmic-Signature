@@ -7,15 +7,55 @@
 const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
-const { waitForTransactionReceipt } = require("../../src/Helpers.js");
+const { ENABLE_SMTCHECKER, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const {
 	getLatestBlockTimestamp,
 	activateCurrentRound,
 } = require("../src/V2UpgradeTestHelpers.js");
 const {
+	ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_RESOLUTION_EXPONENT,
 	deployV1CompleteRoundZeroAndUpgradeToV2AndV3,
 	addRoundLateBidPricePremiumAmountIfNeeded,
 } = require("../src/V3UpgradeTestHelpers.js");
+
+const UINT256_MODULUS = 1n << 256n;
+const UINT256_MAX = UINT256_MODULUS - 1n;
+
+function asUint256(value_) {
+	return BigInt.asUintN(256, value_);
+}
+
+function powMod256(base_, exponent_) {
+	let result_ = 1n;
+	let factor_ = asUint256(base_);
+	for (let exponentCopy_ = exponent_; exponentCopy_ > 0n; exponentCopy_ >>= 1n) {
+		if ((exponentCopy_ & 1n) !== 0n) {
+			result_ = asUint256(result_ * factor_);
+		}
+		factor_ = asUint256(factor_ * factor_);
+	}
+	return result_;
+}
+
+// Mirrors the production `unchecked` arithmetic at `mainPrizeTime`.
+function getWrappedLateBidPrice(
+	bidPrice_,
+	roundLateBidDuration_,
+	mainPrizeTimeIncrementInMicroSeconds_,
+	baseMultiplier_,
+	exponent_
+) {
+	const scaledBase_ =
+		asUint256(roundLateBidDuration_ * baseMultiplier_) /
+		mainPrizeTimeIncrementInMicroSeconds_;
+	const poweredBase_ = powMod256(scaledBase_, exponent_);
+	const numerator_ = asUint256(poweredBase_ * bidPrice_);
+	const shiftAmount_ = asUint256(
+		exponent_ * ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_RESOLUTION_EXPONENT
+	);
+	const premiumAmount_ = (shiftAmount_ >= 256n) ? 0n : (numerator_ >> shiftAmount_);
+	return asUint256(bidPrice_ + premiumAmount_);
+}
 
 /**
 JS mirror of the V2 ETH Dutch auction price at a given elapsed-since-activation duration.
@@ -267,5 +307,70 @@ describe("CosmicSignatureGameV3-LateBidPremium", function () {
 		}
 
 		// #endregion
+	});
+
+	it("handles extreme premium parameters with checked SMTChecker or wrapping production arithmetic", async function () {
+		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3();
+		const game_ = contracts_.cosmicSignatureGameV3Proxy;
+		const gameForOwner_ = game_.connect(contracts_.ownerSigner);
+
+		// These owner-controlled values intentionally exercise the production formula's unchecked arithmetic.
+		const baseMultiplier_ = UINT256_MAX;
+		const exponent_ = 2n;
+		await waitForTransactionReceipt(
+			gameForOwner_.setRoundLateBidPricePremiumAmountBaseMultiplier(baseMultiplier_)
+		);
+		await waitForTransactionReceipt(
+			gameForOwner_.setRoundLateBidPricePremiumAmountExponent(exponent_)
+		);
+		await waitForTransactionReceipt(gameForOwner_.setCstBidPriceDeclineMultiplier(1n));
+		await activateCurrentRound(game_, contracts_.ownerSigner);
+
+		const firstBidTimeStamp_ = (await getLatestBlockTimestamp()) + 10n;
+		const firstBidPrice_ = await game_.getNextEthBidPriceAdvanced(10n);
+		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(firstBidTimeStamp_),]);
+		await waitForTransactionReceipt(
+			game_.connect(contracts_.signers[1]).bidWithEth(-1n, "", 0n, { value: firstBidPrice_ })
+		);
+
+		const latestTimeStamp_ = await getLatestBlockTimestamp();
+		const mainPrizeTime_ = await game_.mainPrizeTime();
+		const currentTimeOffset_ = mainPrizeTime_ - latestTimeStamp_;
+		const roundLateBidDuration_ = await game_.getRoundLateBidDuration();
+		const mainPrizeTimeIncrement_ = await game_.mainPrizeTimeIncrementInMicroSeconds();
+		expect(roundLateBidDuration_ * baseMultiplier_).greaterThan(UINT256_MAX);
+		if (ENABLE_SMTCHECKER > 0) {
+			// SMTChecker builds comment out the `unchecked` markers so overflows remain visible
+			// to the checker. Both price entrypoints therefore panic instead of wrapping.
+			await expect(game_.getNextEthBidPriceAdvanced(currentTimeOffset_)).revertedWithPanic(0x11);
+			await expect(game_.getNextCstBidPriceAdvanced(currentTimeOffset_)).revertedWithPanic(0x11);
+			return;
+		}
+
+		const ethBasePrice_ = await game_.nextEthBidPrice();
+		const expectedEthPrice_ = getWrappedLateBidPrice(
+			ethBasePrice_,
+			roundLateBidDuration_,
+			mainPrizeTimeIncrement_,
+			baseMultiplier_,
+			exponent_
+		);
+		expect(await game_.getNextEthBidPriceAdvanced(currentTimeOffset_)).equal(expectedEthPrice_);
+
+		const cstBeginningPrice_ = await game_.nextRoundFirstCstDutchAuctionBeginningBidPrice();
+		const cstElapsedDuration_ = mainPrizeTime_ - await game_.cstDutchAuctionBeginningTimeStamp();
+		const cstBasePrice_ =
+			(cstBeginningPrice_ > cstElapsedDuration_) ?
+				(cstBeginningPrice_ - cstElapsedDuration_) :
+				0n;
+		expect(cstBasePrice_).greaterThan(0n);
+		const expectedCstPrice_ = getWrappedLateBidPrice(
+			cstBasePrice_,
+			roundLateBidDuration_,
+			mainPrizeTimeIncrement_,
+			baseMultiplier_,
+			exponent_
+		);
+		expect(await game_.getNextCstBidPriceAdvanced(currentTimeOffset_)).equal(expectedCstPrice_);
 	});
 });

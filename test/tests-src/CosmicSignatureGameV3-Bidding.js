@@ -118,4 +118,45 @@ describe("CosmicSignatureGameV3-Bidding", function () {
 			).revertedWithCustomError(game_, "BidPlacedWithinCurrentSecond");
 		}
 	});
+
+	it("applies the same-second throttle to the receive() ETH-bid entrypoint", async function () {
+		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3();
+		const game_ = contracts_.cosmicSignatureGameV3Proxy;
+		await activateCurrentRound(game_, contracts_.ownerSigner);
+
+		const bidder1_ = contracts_.signers[1];
+		const bidder2_ = contracts_.signers[2];
+		const timeStamp_ = (await getLatestBlockTimestamp()) + 100n;
+		const bidPrice_ = await game_.getNextEthBidPriceAdvanced(100n);
+		let transactionResponses_;
+		try {
+			await hre.ethers.provider.send("evm_setAutomine", [false,]);
+			await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(timeStamp_),]);
+			transactionResponses_ = [
+				await bidder1_.sendTransaction({ to: await game_.getAddress(), value: bidPrice_ * 2n }),
+				await bidder2_.sendTransaction({ to: await game_.getAddress(), value: bidPrice_ * 3n }),
+			];
+			await hre.ethers.provider.send("evm_mine");
+		} finally {
+			await hre.ethers.provider.send("evm_setAutomine", [true,]);
+		}
+
+		const receipts_ = await Promise.all(
+			transactionResponses_.map(transactionResponse_ =>
+				hre.ethers.provider.getTransactionReceipt(transactionResponse_.hash)
+			)
+		);
+		expect(receipts_[0].blockNumber).equal(receipts_[1].blockNumber);
+		expect(receipts_.map(receipt_ => receipt_.status).sort()).deep.equal([0, 1]);
+
+		// A receipt exposes only success or reversal. Replay the call against the resulting state
+		// to verify the reversal reason from the raw-receive entrypoint.
+		await expect(
+			hre.ethers.provider.call({
+				from: bidder2_.address,
+				to: await game_.getAddress(),
+				value: bidPrice_ * 3n,
+			})
+		).revertedWithCustomError(game_, "BidPlacedWithinCurrentSecond");
+	});
 });
