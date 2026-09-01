@@ -56,6 +56,8 @@ Make sure `deployerPrivateKey_<network-name>` matches the current contract owner
 
 - See respective section in `Cosmic-Signature-Contracts-Deployment-And-Registration.md`.
 
+- The upgrade transaction will revert unless the current bidding round is inactive.
+
 - You might want to test the initial deployment of all contracts and then upgrading the game contract to `CosmicSignatureGameV2`, `CosmicSignatureGameV3`, ..., and then to `CosmicSignatureGameOpenBid`. This is just for a test. It would be incorrect to do it in the production, even if `CosmicSignatureGameOpenBid` was a real useful contract. See Comment-202606084 and Comment-202606126 for details.\
 OpenZeppelin would actually disallow the upgrade from V2+ to `CosmicSignatureGameOpenBid`. Storage check would fail. Therefore, in `upgrade-cosmic-signature-game-config-<network-name>-CosmicSignatureGameOpenBid.json` you must temporarily set `unsafeSkipStorageCheck` to `true`.
 
