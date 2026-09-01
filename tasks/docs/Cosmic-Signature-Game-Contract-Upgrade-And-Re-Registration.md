@@ -56,7 +56,7 @@ Make sure `deployerPrivateKey_<network-name>` matches the current contract owner
 
 - See respective section in `Cosmic-Signature-Contracts-Deployment-And-Registration.md`.
 
-- The upgrade transaction will revert unless the current bidding round is inactive.
+- The upgrade transaction will revert unless the current bidding round is inactive. To increase the inactivity duration, while the current bidding round is active, increase `delayDurationBeforeRoundActivation`, and while the current bidding round is inactive, increase `roundActivationTime` by callling respective setters.
 
 - You might want to test the initial deployment of all contracts and then upgrading the game contract to `CosmicSignatureGameV2`, `CosmicSignatureGameV3`, ..., and then to `CosmicSignatureGameOpenBid`. This is just for a test. It would be incorrect to upgrade to `CosmicSignatureGameOpenBid` after an arbitrary version in the production, even if it was a real useful contract. See Comment-202606084 and Comment-202606126 for details.\
 OpenZeppelin would actually disallow the upgrade from V2+ to `CosmicSignatureGameOpenBid`. Storage check would fail. Therefore, in `upgrade-cosmic-signature-game-config-<network-name>-CosmicSignatureGameOpenBid.json` you must temporarily set `unsafeSkipStorageCheck` to `true`.
@@ -67,6 +67,10 @@ OpenZeppelin would actually disallow the upgrade from V2+ to `CosmicSignatureGam
 The problem is that the initially deployed `CosmicSignatureGame` ABI still exists in the tracking info stored in `.openzeppelin`. Therefore, when upgrading to V2 in the production, OpenZeppelin's upgradeable contract validation logic will complain. To silence it, before upgrading, in `../config/upgrade-cosmic-signature-game-config-arbitrumOne-CosmicSignatureGameV2.json`, temporarily set `unsafeAllowRenames` and `unsafeSkipStorageCheck` to `true`.
 
 #### Afterwards
+
+- If necessary, restore `delayDurationBeforeRoundActivation`.
+
+- Review what variables the new contract's `reinitialize` method modified and confirm on ArbiScan that the variables have the expected values.
 
 - Revert any temporary edits you made in files.
 
