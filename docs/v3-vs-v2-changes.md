@@ -1,3 +1,5 @@
+<!-- todo-0 This doc is currently stale. Update it later. -->
+
 # CosmicSignatureGame V3 vs V2 Changes
 
 This document compares `CosmicSignatureGameV3` (the version to upgrade the proxy to next) with `CosmicSignatureGameV2` (the version currently live on Arbitrum One). It is the reference for auditors, for the frontend/backend/indexer teams, and for the upgrade operator.
