@@ -169,11 +169,21 @@ library CosmicSignatureConstants {
 	/// @notice Default `cstPrizeAmount`.
 	uint256 internal constant DEFAULT_CST_PRIZE_AMOUNT = 1_000 ether;
 
-	/// @notice Default `chronoWarriorEthPrizeAmountPercentage`.
+	/// @notice In V2-, default `chronoWarriorEthPrizeAmountPercentage`.
+	/// See also: `DEFAULT_CHRONO_WARRIOR_ETH_PRIZE_AMOUNT_PERCENTAGE_V3`.
 	uint256 internal constant DEFAULT_CHRONO_WARRIOR_ETH_PRIZE_AMOUNT_PERCENTAGE = 8;
 
-	/// @notice Default `raffleTotalEthPrizeAmountForBiddersPercentage`.
+	/// @notice In V3+, default `chronoWarriorEthPrizeAmountPercentage`.
+	/// See also: `DEFAULT_CHRONO_WARRIOR_ETH_PRIZE_AMOUNT_PERCENTAGE`.
+	uint256 internal constant DEFAULT_CHRONO_WARRIOR_ETH_PRIZE_AMOUNT_PERCENTAGE_V3 = 15;
+
+	/// @notice In V2-, default `raffleTotalEthPrizeAmountForBiddersPercentage`.
+	/// See also: `DEFAULT_RAFFLE_TOTAL_ETH_PRIZE_AMOUNT_FOR_BIDDERS_PERCENTAGE_V3`.
 	uint256 internal constant DEFAULT_RAFFLE_TOTAL_ETH_PRIZE_AMOUNT_FOR_BIDDERS_PERCENTAGE = 4;
+
+	/// @notice In V3+, default `raffleTotalEthPrizeAmountForBiddersPercentage`.
+	/// See also: `DEFAULT_RAFFLE_TOTAL_ETH_PRIZE_AMOUNT_FOR_BIDDERS_PERCENTAGE`.
+	uint256 internal constant DEFAULT_RAFFLE_TOTAL_ETH_PRIZE_AMOUNT_FOR_BIDDERS_PERCENTAGE_V3 = 5;
 
 	/// @notice Default `numRaffleEthPrizesForBidders`.
 	uint256 internal constant DEFAULT_NUM_RAFFLE_ETH_PRIZES_FOR_BIDDERS = 3;
@@ -184,8 +194,13 @@ library CosmicSignatureConstants {
 	/// @notice Default `numRaffleCosmicSignatureNftsForRandomWalkNftStakers`.
 	uint256 internal constant DEFAULT_NUM_RAFFLE_COSMIC_SIGNATURE_NFTS_FOR_RANDOMWALK_NFT_STAKERS = 10;
 
-	/// @notice Default `cosmicSignatureNftStakingTotalEthRewardAmountPercentage`.
+	/// @notice In V2-, default `cosmicSignatureNftStakingTotalEthRewardAmountPercentage`.
+	/// See also: `DEFAULT_COSMIC_SIGNATURE_NFT_STAKING_TOTAL_ETH_REWARD_AMOUNT_PERCENTAGE_V3`.
 	uint256 internal constant DEFAULT_COSMIC_SIGNATURE_NFT_STAKING_TOTAL_ETH_REWARD_AMOUNT_PERCENTAGE = 6;
+
+	/// @notice In V3+, default `cosmicSignatureNftStakingTotalEthRewardAmountPercentage`.
+	/// See also: `DEFAULT_COSMIC_SIGNATURE_NFT_STAKING_TOTAL_ETH_REWARD_AMOUNT_PERCENTAGE`.
+	uint256 internal constant DEFAULT_COSMIC_SIGNATURE_NFT_STAKING_TOTAL_ETH_REWARD_AMOUNT_PERCENTAGE_V3 = 5;
 
 	// #endregion
 	// #region Main Prize
@@ -208,8 +223,13 @@ library CosmicSignatureConstants {
 	/// See also: `DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE`, `DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES`.
 	uint256 internal constant DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2 = 2 days;
 
-	/// @notice Default `mainEthPrizeAmountPercentage`.
+	/// @notice In V2-, default `mainEthPrizeAmountPercentage`.
+	/// See also: `DEFAULT_MAIN_ETH_PRIZE_AMOUNT_PERCENTAGE_V3`.
 	uint256 internal constant DEFAULT_MAIN_ETH_PRIZE_AMOUNT_PERCENTAGE = 25;
+
+	/// @notice In V3+, default `mainEthPrizeAmountPercentage`.
+	/// See also: `DEFAULT_MAIN_ETH_PRIZE_AMOUNT_PERCENTAGE`.
+	uint256 internal constant DEFAULT_MAIN_ETH_PRIZE_AMOUNT_PERCENTAGE_V3 = 20;
 
 	/// @notice In V3+, default `CosmicSignatureGameStorageV3Base.mainPrizeNumCosmicSignatureNfts`.
 	uint256 internal constant DEFAULT_MAIN_PRIZE_NUM_COSMIC_SIGNATURE_NFTS = 3;
@@ -259,8 +279,13 @@ library CosmicSignatureConstants {
 	// #endregion
 	// #region Charity
 
-	/// @notice Default `charityEthDonationAmountPercentage`.
+	/// @notice In V2-, default `charityEthDonationAmountPercentage`.
+	/// See also: `DEFAULT_CHARITY_ETH_DONATION_AMOUNT_PERCENTAGE_V3`.
 	uint256 internal constant DEFAULT_CHARITY_ETH_DONATION_AMOUNT_PERCENTAGE = 7;
+
+	/// @notice In V3+, default `charityEthDonationAmountPercentage`.
+	/// See also: `DEFAULT_CHARITY_ETH_DONATION_AMOUNT_PERCENTAGE`.
+	uint256 internal constant DEFAULT_CHARITY_ETH_DONATION_AMOUNT_PERCENTAGE_V3 = 5;
 
 	// #endregion
 	// #region DAO

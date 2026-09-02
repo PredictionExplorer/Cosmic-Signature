@@ -41,18 +41,14 @@ async function snapshotCarriedState(game_) {
 		nextRoundFirstCstDutchAuctionBeginningBidPrice: await game_.nextRoundFirstCstDutchAuctionBeginningBidPrice(),
 		bidMessageLengthMaxLimit: await game_.bidMessageLengthMaxLimit(),
 		cstPrizeAmount: await game_.cstPrizeAmount(),
-		chronoWarriorEthPrizeAmountPercentage: await game_.chronoWarriorEthPrizeAmountPercentage(),
-		raffleTotalEthPrizeAmountForBiddersPercentage: await game_.raffleTotalEthPrizeAmountForBiddersPercentage(),
 		numRaffleEthPrizesForBidders: await game_.numRaffleEthPrizesForBidders(),
 		numRaffleCosmicSignatureNftsForBidders: await game_.numRaffleCosmicSignatureNftsForBidders(),
 		numRaffleCosmicSignatureNftsForRandomWalkNftStakers: await game_.numRaffleCosmicSignatureNftsForRandomWalkNftStakers(),
-		cosmicSignatureNftStakingTotalEthRewardAmountPercentage: await game_.cosmicSignatureNftStakingTotalEthRewardAmountPercentage(),
 		initialDurationUntilMainPrizeDivisor: await game_.initialDurationUntilMainPrizeDivisor(),
 		mainPrizeTime: await game_.mainPrizeTime(),
 		mainPrizeTimeIncrementInMicroSeconds: await game_.mainPrizeTimeIncrementInMicroSeconds(),
 		mainPrizeTimeIncrementIncreaseDivisor: await game_.mainPrizeTimeIncrementIncreaseDivisor(),
 		timeoutDurationToClaimMainPrize: await game_.timeoutDurationToClaimMainPrize(),
-		mainEthPrizeAmountPercentage: await game_.mainEthPrizeAmountPercentage(),
 		token: await game_.token(),
 		randomWalkNft: await game_.randomWalkNft(),
 		nft: await game_.nft(),
@@ -62,7 +58,6 @@ async function snapshotCarriedState(game_) {
 		marketingWallet: await game_.marketingWallet(),
 		marketingWalletCstContributionAmount: await game_.marketingWalletCstContributionAmount(),
 		charityAddress: await game_.charityAddress(),
-		charityEthDonationAmountPercentage: await game_.charityEthDonationAmountPercentage(),
 		lastBidderAddress: await game_.lastBidderAddress(),
 		lastCstBidderAddress: await game_.lastCstBidderAddress(),
 		enduranceChampionAddress: await game_.enduranceChampionAddress(),
@@ -77,7 +72,7 @@ async function assertCarriedStateUnchanged(game_, snapshot_) {
 }
 
 describe("CosmicSignatureGameV3-StorageLayout", function () {
-	it("preserves carried V1/V2 state and appends only the documented new slots", async function () {
+	it("preserves carried V1/V2 state and applies only the documented overwrites", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 		await completeRoundZero(contracts_);
 		await upgradeToV2(contracts_);
@@ -93,10 +88,20 @@ describe("CosmicSignatureGameV3-StorageLayout", function () {
 		await waitForTransactionReceipt(gameV2_.setCstDutchAuctionDuration(11n * 60n * 60n));
 		await waitForTransactionReceipt(gameV2_.setCstDutchAuctionDurationChangeDivisor(234n));
 		await waitForTransactionReceipt(gameV2_.setBidCstRewardAmountMultiplier(123_456_789n));
+		await waitForTransactionReceipt(gameV2_.setMainEthPrizeAmountPercentage(31n));
+		await waitForTransactionReceipt(gameV2_.setCharityEthDonationAmountPercentage(9n));
+		await waitForTransactionReceipt(gameV2_.setRaffleTotalEthPrizeAmountForBiddersPercentage(7n));
+		await waitForTransactionReceipt(gameV2_.setCosmicSignatureNftStakingTotalEthRewardAmountPercentage(11n));
+		await waitForTransactionReceipt(gameV2_.setChronoWarriorEthPrizeAmountPercentage(13n));
+		expect(await gameV2_.mainEthPrizeAmountPercentage()).equal(31n);
+		expect(await gameV2_.charityEthDonationAmountPercentage()).equal(9n);
+		expect(await gameV2_.raffleTotalEthPrizeAmountForBiddersPercentage()).equal(7n);
+		expect(await gameV2_.cosmicSignatureNftStakingTotalEthRewardAmountPercentage()).equal(11n);
+		expect(await gameV2_.chronoWarriorEthPrizeAmountPercentage()).equal(13n);
 
 		const carriedState_ = await snapshotCarriedState(gameV2_);
 
-		// The V3 `reinitialize` re-initializes these two, overwriting the V2 values that were just configured.
+		// The V3 `reinitialize` overwrites these values and the five prize percentages configured above.
 		expect(await gameV2_.bidCstRewardAmountMultiplier()).equal(123_456_789n);
 		expect(await gameV2_.cstDutchAuctionBeginningBidPriceMinLimit()).not.equal(10n ** 18n);
 

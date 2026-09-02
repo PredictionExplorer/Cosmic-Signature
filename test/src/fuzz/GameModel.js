@@ -853,6 +853,11 @@ class GameModel {
 		this.roundLateBidPricePremiumAmountExponent = c.DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_EXPONENT;
 		this.bidCstRewardAmountMultiplier = c.DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER;
 		this.mainPrizeNumCosmicSignatureNfts = c.DEFAULT_MAIN_PRIZE_NUM_COSMIC_SIGNATURE_NFTS;
+		this.mainEthPrizeAmountPercentage = c.DEFAULT_MAIN_ETH_PRIZE_AMOUNT_PERCENTAGE_V3;
+		this.charityEthDonationAmountPercentage = c.DEFAULT_CHARITY_ETH_DONATION_AMOUNT_PERCENTAGE_V3;
+		this.raffleTotalEthPrizeAmountForBiddersPercentage = c.DEFAULT_RAFFLE_TOTAL_ETH_PRIZE_AMOUNT_FOR_BIDDERS_PERCENTAGE_V3;
+		this.cosmicSignatureNftStakingTotalEthRewardAmountPercentage = c.DEFAULT_COSMIC_SIGNATURE_NFT_STAKING_TOTAL_ETH_REWARD_AMOUNT_PERCENTAGE_V3;
+		this.chronoWarriorEthPrizeAmountPercentage = c.DEFAULT_CHRONO_WARRIOR_ETH_PRIZE_AMOUNT_PERCENTAGE_V3;
 	}
 
 	// #endregion

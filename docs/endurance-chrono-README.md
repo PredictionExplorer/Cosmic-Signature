@@ -63,11 +63,11 @@ These roles are maintained in `BidStatistics`:
 
 #### Example 2: Prize Distribution
 **Scenario**: Round ends with 10 ETH contract balance, 50 total bids
-- Main Prize (25%): 2.5 ETH → Last Bidder
-- Chrono-Warrior (8%): 0.8 ETH → longest EC streak holder
-- Bidder Raffles (4% ÷ 3): 0.133 ETH each → 3 random bidders
-- COSMIC Staking (6%): 0.6 ETH → distributed to all COSMIC stakers
-- Charity (7%): 0.7 ETH → Charity Wallet
+- Main Prize (20%): 2 ETH → Last Bidder
+- Charity (5%): 0.5 ETH → Charity Wallet
+- Bidder Raffles (5% ÷ 3): ≈0.167 ETH each (0.5 ETH total) → 3 random bidders
+- COSMIC Staking (5%): 0.5 ETH → distributed to all COSMIC stakers
+- Chrono-Warrior (15%): 1.5 ETH → longest EC streak holder
 - Remaining (50%): 5 ETH → stays for the next round
 
 **CST rewards**:

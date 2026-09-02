@@ -33,6 +33,12 @@ const INITIAL_CST_BID_PRICE_DECLINE_MULTIPLIER =
 	(INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND);
 const DEFAULT_CST_BID_PRICE_DECLINE_MULTIPLIER_CHANGE_DIVISOR = 100n;
 const DEFAULT_MAIN_PRIZE_NUM_COSMIC_SIGNATURE_NFTS = 3n;
+const DEFAULT_MAIN_ETH_PRIZE_AMOUNT_PERCENTAGE_V3 = 20n;
+const DEFAULT_CHARITY_ETH_DONATION_AMOUNT_PERCENTAGE_V3 = 5n;
+const DEFAULT_RAFFLE_TOTAL_ETH_PRIZE_AMOUNT_FOR_BIDDERS_PERCENTAGE_V3 = 5n;
+const DEFAULT_COSMIC_SIGNATURE_NFT_STAKING_TOTAL_ETH_REWARD_AMOUNT_PERCENTAGE_V3 = 5n;
+const DEFAULT_CHRONO_WARRIOR_ETH_PRIZE_AMOUNT_PERCENTAGE_V3 = 15n;
+const DEFAULT_PAID_ETH_PRIZE_AMOUNT_PERCENTAGE_V3 = 50n;
 
 // #endregion
 
@@ -76,6 +82,18 @@ async function assertDefaultV3Initialization(game_) {
 	expect(await game_.roundLateBidPricePremiumAmountExponent()).equal(DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_EXPONENT);
 	expect(await game_.bidCstRewardAmountMultiplier()).equal(DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER);
 	expect(await game_.mainPrizeNumCosmicSignatureNfts()).equal(DEFAULT_MAIN_PRIZE_NUM_COSMIC_SIGNATURE_NFTS);
+	expect(await game_.mainEthPrizeAmountPercentage()).equal(DEFAULT_MAIN_ETH_PRIZE_AMOUNT_PERCENTAGE_V3);
+	expect(await game_.charityEthDonationAmountPercentage()).equal(DEFAULT_CHARITY_ETH_DONATION_AMOUNT_PERCENTAGE_V3);
+	expect(await game_.raffleTotalEthPrizeAmountForBiddersPercentage()).equal(DEFAULT_RAFFLE_TOTAL_ETH_PRIZE_AMOUNT_FOR_BIDDERS_PERCENTAGE_V3);
+	expect(await game_.cosmicSignatureNftStakingTotalEthRewardAmountPercentage()).equal(DEFAULT_COSMIC_SIGNATURE_NFT_STAKING_TOTAL_ETH_REWARD_AMOUNT_PERCENTAGE_V3);
+	expect(await game_.chronoWarriorEthPrizeAmountPercentage()).equal(DEFAULT_CHRONO_WARRIOR_ETH_PRIZE_AMOUNT_PERCENTAGE_V3);
+	expect(
+		(await game_.mainEthPrizeAmountPercentage()) +
+		(await game_.charityEthDonationAmountPercentage()) +
+		(await game_.raffleTotalEthPrizeAmountForBiddersPercentage()) +
+		(await game_.cosmicSignatureNftStakingTotalEthRewardAmountPercentage()) +
+		(await game_.chronoWarriorEthPrizeAmountPercentage())
+	).equal(DEFAULT_PAID_ETH_PRIZE_AMOUNT_PERCENTAGE_V3);
 }
 
 /**
@@ -190,6 +208,12 @@ module.exports = {
 	INITIAL_CST_BID_PRICE_DECLINE_MULTIPLIER,
 	DEFAULT_CST_BID_PRICE_DECLINE_MULTIPLIER_CHANGE_DIVISOR,
 	DEFAULT_MAIN_PRIZE_NUM_COSMIC_SIGNATURE_NFTS,
+	DEFAULT_MAIN_ETH_PRIZE_AMOUNT_PERCENTAGE_V3,
+	DEFAULT_CHARITY_ETH_DONATION_AMOUNT_PERCENTAGE_V3,
+	DEFAULT_RAFFLE_TOTAL_ETH_PRIZE_AMOUNT_FOR_BIDDERS_PERCENTAGE_V3,
+	DEFAULT_COSMIC_SIGNATURE_NFT_STAKING_TOTAL_ETH_REWARD_AMOUNT_PERCENTAGE_V3,
+	DEFAULT_CHRONO_WARRIOR_ETH_PRIZE_AMOUNT_PERCENTAGE_V3,
+	DEFAULT_PAID_ETH_PRIZE_AMOUNT_PERCENTAGE_V3,
 	deployV1CompleteRoundZeroAndUpgradeToV2AndV3,
 	upgradeToV3,
 	assertDefaultV3Initialization,

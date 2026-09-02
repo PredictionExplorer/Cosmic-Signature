@@ -68,10 +68,19 @@ const CARRIED_OVER_GETTERS = [
 
 /**
 Getters that must survive the V2 -> V3 upgrade unchanged. V3 reinitializes the CST beginning-price
-minimum and reward multiplier, while leaving the vestigial V2 duration fields untouched.
+minimum and reward multiplier and overwrites the five ETH prize percentages, while leaving the
+vestigial V2 duration fields untouched.
 */
+const OVERWRITTEN_GETTERS_ACROSS_V3 = new Set([
+	"cstDutchAuctionBeginningBidPriceMinLimit",
+	"chronoWarriorEthPrizeAmountPercentage",
+	"raffleTotalEthPrizeAmountForBiddersPercentage",
+	"cosmicSignatureNftStakingTotalEthRewardAmountPercentage",
+	"mainEthPrizeAmountPercentage",
+	"charityEthDonationAmountPercentage",
+]);
 const CARRIED_OVER_GETTERS_ACROSS_V3 = [
-	...CARRIED_OVER_GETTERS.filter((getterName_) => getterName_ !== "cstDutchAuctionBeginningBidPriceMinLimit"),
+	...CARRIED_OVER_GETTERS.filter((getterName_) => ( ! OVERWRITTEN_GETTERS_ACROSS_V3.has(getterName_))),
 	"cstDutchAuctionDuration",
 	"cstDutchAuctionDurationChangeDivisor",
 ];
@@ -232,7 +241,7 @@ async function performUpgradeToV3(ctx_) {
 	const newImplementation_ = await hre.upgrades.erc1967.getImplementationAddress(contracts.cosmicSignatureGameProxyAddress);
 	expect(newImplementation_, "implementation address must change after the V3 upgrade").to.not.equal(prevImplementation_);
 
-	// 5. Carried-over state (including the vestigial V2 parameters) must be unchanged.
+	// 5. Remaining carried-over state (including the vestigial V2 parameters) must be unchanged.
 	const after_ = await snapshotCarriedOverState(v3Proxy_, CARRIED_OVER_GETTERS_ACROSS_V3);
 	for (const getter_ of CARRIED_OVER_GETTERS_ACROSS_V3) {
 		expect(after_[getter_], `carried-over state '${getter_}' changed across the V3 upgrade`).to.equal(before_[getter_]);
