@@ -11,7 +11,6 @@ import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { CosmicSignatureHelpers } from "./libraries/CosmicSignatureHelpers.sol";
-import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 import { IBidding1V2 } from "./interfaces/IBidding1V2.sol";
 import { BiddingV2Base } from "./BiddingV2Base.sol";
 import { IBiddingV2 } from "./interfaces/IBiddingV2.sol";
@@ -129,7 +128,7 @@ abstract contract BiddingV2 is
 
 		uint256 newCstDutchAuctionDuration_ = CosmicSignatureHelpers.tryReduceValueExponentially(cstDutchAuctionDuration, cstDutchAuctionDurationChangeDivisor);
 		cstDutchAuctionDuration = newCstDutchAuctionDuration_;
-		_mintBidCstRewardAmountIfNeeded(bidCstRewardAmount_);
+		_mintBidCstRewardAmountIfNeeded(_msgSender(), bidCstRewardAmount_);
 		_bidCommon(/*bidType_,*/ message_);
 		emit BidPlaced(
 			roundNum,
@@ -195,7 +194,7 @@ abstract contract BiddingV2 is
 			revert CosmicSignatureErrors.InsufficientReceivedBidAmount("The current CST bid price is greater than the maximum you allowed.", paidPrice_, priceMaxLimit_);
 		}
 
-		_burnCstBidPriceAndMintBidCstRewardAmountIfNeeded(paidPrice_, bidCstRewardAmount_);
+		_burnCstBidPriceAndMintBidCstRewardAmountIfNeeded(_msgSender(), paidPrice_, bidCstRewardAmount_);
 		biddersInfo[roundNum][_msgSender()].totalSpentCstAmount += paidPrice_;
 		cstDutchAuctionBeginningTimeStamp = block.timestamp;
 		uint256 newCstDutchAuctionBeginningBidPrice_ =
@@ -299,48 +298,6 @@ abstract contract BiddingV2 is
 				bidCstRewardAmount_ = Math.sqrt(radicand_);
 			}
 			return bidCstRewardAmount_;
-		}
-	}
-
-	// #endregion
-	// #region `_mintBidCstRewardAmountIfNeeded`
-
-	/// @param bidCstRewardAmount_ The CST amount to mint. May be zero.
-	function _mintBidCstRewardAmountIfNeeded(uint256 bidCstRewardAmount_) private {
-		// // #enable_smtchecker /*
-		// unchecked
-		// // #enable_smtchecker */
-
-		if (bidCstRewardAmount_ > 0) {
-			token.mint(_msgSender(), bidCstRewardAmount_);
-		}
-	}
-
-	// #endregion
-	// #region `_burnCstBidPriceAndMintBidCstRewardAmountIfNeeded`
-
-	/// @param cstBidPrice_ The CST amount to burn. May be zero, but unlikely is.
-	/// @param bidCstRewardAmount_ The CST amount to mint. May be zero.
-	function _burnCstBidPriceAndMintBidCstRewardAmountIfNeeded(uint256 cstBidPrice_, uint256 bidCstRewardAmount_) private {
-		// #enable_smtchecker /*
-		unchecked
-		// #enable_smtchecker */
-		{
-			if (bidCstRewardAmount_ > 0) {
-				ICosmicSignatureToken.MintOrBurnSpec[] memory mintAndBurnSpecs_ = new ICosmicSignatureToken.MintOrBurnSpec[](2);
-				mintAndBurnSpecs_[0].account = _msgSender();
-
-				// Comment-202409177 applies.
-				// Comment-202606074 relates and/or applies.
-				mintAndBurnSpecs_[0].value = ( - int256(cstBidPrice_) );
-
-				mintAndBurnSpecs_[1].account = _msgSender();
-				mintAndBurnSpecs_[1].value = int256(bidCstRewardAmount_);
-				token.mintAndBurnMany(mintAndBurnSpecs_);
-			} else {
-				// There is no Comment-202606074 issue here.
-				token.burn(_msgSender(), cstBidPrice_);
-			}
 		}
 	}
 

@@ -13,6 +13,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
+import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 import { CosmicSignatureGameStorageV2Base } from "./CosmicSignatureGameStorageV2Base.sol";
 import { BiddingCommonV2 } from "./BiddingCommonV2.sol";
 import { MainPrizeCommonV2 } from "./MainPrizeCommonV2.sol";
@@ -326,6 +327,62 @@ abstract contract BiddingV2Base is
 	// #region `getBidCstRewardAmountAdvanced`
 
 	function getBidCstRewardAmountAdvanced(int256 currentTimeOffset_) public view override virtual returns (uint256);
+
+	// #endregion
+	// #region `_mintBidCstRewardAmountIfNeeded`
+
+	/// @param bidCstRewardRecipientAddress_ The address to mint the bid CST reward to.
+	/// @param bidCstRewardAmount_ The CST amount to mint. May be zero.
+	function _mintBidCstRewardAmountIfNeeded(address bidCstRewardRecipientAddress_, uint256 bidCstRewardAmount_) internal {
+		if (bidCstRewardAmount_ > 0) {
+			// [Comment-202607163]
+			// `CosmicSignatureToken` performs no call into the token recipient,
+			// so a hostile last bidder contract that reverts on any incoming call or token callback
+			// cannot prevent this minting from succeeding, and therefore cannot block further bids.
+			// [/Comment-202607163]
+			token.mint(bidCstRewardRecipientAddress_, bidCstRewardAmount_);
+		}
+	}
+
+	// #endregion
+	// #region `_burnCstBidPriceAndMintBidCstRewardAmountIfNeeded`
+
+	/// @param bidCstRewardRecipientAddress_ The address to mint the bid CST reward to.
+	/// [Comment-202609074]
+	/// This is not guaranteed to be nonzero because `BiddingV3._bidWithCst` passes `lastBidderAddress`
+	/// before the validation near Comment-202501044, discussed in Comment-202501045, can revert.
+	/// [/Comment-202609074]
+	/// @param cstBidPrice_ The CST amount to burn. May be zero, but unlikely is.
+	/// @param bidCstRewardAmount_ The CST amount to mint. May be zero.
+	function _burnCstBidPriceAndMintBidCstRewardAmountIfNeeded(
+		address bidCstRewardRecipientAddress_,
+		uint256 cstBidPrice_,
+		uint256 bidCstRewardAmount_
+	) internal {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			if (bidCstRewardAmount_ > 0) {
+				ICosmicSignatureToken.MintOrBurnSpec[] memory mintAndBurnSpecs_ = new ICosmicSignatureToken.MintOrBurnSpec[](2);
+				mintAndBurnSpecs_[0].account = _msgSender();
+
+				// Comment-202409177 applies.
+				// Comment-202606074 relates and/or applies.
+				mintAndBurnSpecs_[0].value = ( - int256(cstBidPrice_) );
+
+				// Comment-202609074 applies.
+				// Comment-202607163 applies.
+				mintAndBurnSpecs_[1].account = bidCstRewardRecipientAddress_;
+
+				mintAndBurnSpecs_[1].value = int256(bidCstRewardAmount_);
+				token.mintAndBurnMany(mintAndBurnSpecs_);
+			} else {
+				// There is no Comment-202606074 issue here.
+				token.burn(_msgSender(), cstBidPrice_);
+			}
+		}
+	}
 
 	// #endregion
 	// #region `_bidCommon`

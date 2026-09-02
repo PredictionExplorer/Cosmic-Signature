@@ -689,14 +689,9 @@ class FuzzCampaign {
 			}
 		}
 		const results_ = await this.engine.execBurst(ts_, items_);
-		// Apply the model/ledger for each bid in submission order. In V3+, only the first bid
-		// in the block succeeds because all of them share one timestamp.
+		// Apply the model/ledger for each bid in submission order.
 		for (let index_ = 0; index_ < results_.length; ++ index_) {
 			const plan_ = plans_[index_];
-			if (this.model.version >= 3 && index_ > 0) {
-				expect(results_[index_].status, "V3+ burst bid within the same second must revert").to.equal(0);
-				continue;
-			}
 			expect(results_[index_].status, "burst bid must succeed").to.equal(1);
 			const expectations_ = this.model.applyEthBid(plan_.actor.address, ts_, plan_.value, plan_.gasPrice, null);
 			this.ledger.addEth(plan_.actor.address, -expectations_.netEthPaid);

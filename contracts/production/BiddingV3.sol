@@ -11,7 +11,6 @@ import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { CosmicSignatureHelpers } from "./libraries/CosmicSignatureHelpers.sol";
-import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 import { IBidding1V2 } from "./interfaces/IBidding1V2.sol";
 import { BiddingV2Base } from "./BiddingV2Base.sol";
 import { CosmicSignatureGameStorageV3Base } from "./CosmicSignatureGameStorageV3Base.sol";
@@ -27,8 +26,7 @@ abstract contract BiddingV3 is
 	IBiddingV3 {
 	// #region `_bidWithEth`
 
-	/// @dev Comment-202412045 applies to `_onlyIfNoBidPlacedWithinCurrentSecond`.
-	function _bidWithEth(int256 randomWalkNftId_, string memory message_, uint256 bidCstRewardAmountMinLimit_) internal override /* virtual */ /* nonReentrant() */ /* _onlyRoundIsActive() */ _onlyIfNoBidPlacedWithinCurrentSecond() {
+	function _bidWithEth(int256 randomWalkNftId_, string memory message_, uint256 bidCstRewardAmountMinLimit_) internal override /* virtual */ /* nonReentrant() */ /* _onlyRoundIsActive() */ {
 		// #region //
 
 		// BidType bidType_;
@@ -38,11 +36,7 @@ abstract contract BiddingV3 is
 
 		uint256 bidCstRewardAmount_ = 0;
 		if (lastBidderAddress != address(0)) {
-			// [Comment-202608022]
-			// Provided our configuration is correct, this cannot be zero, because we called `_onlyIfNoBidPlacedWithinCurrentSecond`.
-			// [/Comment-202608022]
 			bidCstRewardAmount_ = getBidCstRewardAmountAdvanced(int256(0));
-			// #enable_asserts assert(bidCstRewardAmount_ > 0);
 
 			// Comment-202412045 applies.
 			if ( ! (bidCstRewardAmount_ >= bidCstRewardAmountMinLimit_) ) {
@@ -130,14 +124,10 @@ abstract contract BiddingV3 is
 		// #region
 
 		biddersInfo[roundNum][_msgSender()].totalSpentEthAmount += paidEthPrice_;
-
-		// Comment-202608022 relates and/or applies.
-		// #enable_asserts assert((bidCstRewardAmount_ == 0) == (lastBidderAddress == address(0)));
-
-		if (bidCstRewardAmount_ == 0) {
+		if (lastBidderAddress == address(0)) {
 			ethDutchAuctionBeginningBidPrice = ethBidPrice_ * CosmicSignatureConstants.ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
 		} else {
-			_mintBidCstRewardAmount(bidCstRewardAmount_);
+			_mintBidCstRewardAmountIfNeeded(lastBidderAddress, bidCstRewardAmount_);
 		}
 
 		// Comment-202501061 applies.
@@ -198,21 +188,14 @@ abstract contract BiddingV3 is
 	// #endregion
 	// #region `_bidWithCst`
 
-	/// @dev Comment-202412045 applies to `_onlyIfNoBidPlacedWithinCurrentSecond`.
-	function _bidWithCst(uint256 priceMaxLimit_, string memory message_, uint256 bidCstRewardAmountMinLimit_) internal override /* virtual */ /* nonReentrant() */ /* _onlyRoundIsActive() */ _onlyIfNoBidPlacedWithinCurrentSecond() {
+	function _bidWithCst(uint256 priceMaxLimit_, string memory message_, uint256 bidCstRewardAmountMinLimit_) internal override /* virtual */ /* nonReentrant() */ /* _onlyRoundIsActive() */ {
 		// Comment-202412251 applies.
 		// #enable_asserts assert(_msgSender() != marketingWallet);
 
 		// Comment-202501045 applies.
 
-		// [Comment-202609011]
-		// Comment-202608022 applies.
-		// But there is a special case when somone is trying to place a CST bid before the first ETH one.
-		// According to Comment-202501045, in that case the behavior is allowed to be undefined.
-		// But even then, it appears that this cannot be zero.
-		// [/Comment-202609011]
+		// This can be zero.
 		uint256 bidCstRewardAmount_ = getBidCstRewardAmountAdvanced(int256(0));
-		// #enable_asserts assert(bidCstRewardAmount_ > 0);
 
 		// Comment-202412045 applies.
 		if ( ! (bidCstRewardAmount_ >= bidCstRewardAmountMinLimit_) ) {
@@ -227,7 +210,9 @@ abstract contract BiddingV3 is
 			revert CosmicSignatureErrors.InsufficientReceivedBidAmount("The current CST bid price is greater than the maximum you allowed.", paidPrice_, priceMaxLimit_);
 		}
 
-		_burnCstBidPriceAndMintBidCstRewardAmount(paidPrice_, bidCstRewardAmount_);
+		// Comment-202609074 applies to `lastBidderAddress`.
+		_burnCstBidPriceAndMintBidCstRewardAmountIfNeeded(lastBidderAddress, paidPrice_, bidCstRewardAmount_);
+
 		biddersInfo[roundNum][_msgSender()].totalSpentCstAmount += paidPrice_;
 		cstDutchAuctionBeginningTimeStamp = block.timestamp;
 
@@ -305,27 +290,6 @@ abstract contract BiddingV3 is
 				return 0;
 			}
 			return _addRoundLateBidPricePremiumAmountIfNeeded(uint256(nextCstBidPrice_), currentTimeOffset_);
-		}
-	}
-
-	// #endregion
-	// #region `_onlyIfNoBidPlacedWithinCurrentSecond`
-
-	modifier _onlyIfNoBidPlacedWithinCurrentSecond() {
-		_checkIfNoBidPlacedWithinCurrentSecond();
-		_;
-	}
-
-	// #endregion
-	// #region `_checkIfNoBidPlacedWithinCurrentSecond`
-
-	/// @notice This restriction makes life of bots a little more difficult, while manual bidders rarely run into it.
-	function _checkIfNoBidPlacedWithinCurrentSecond() private view {
-		// It's OK if `lastBidderAddress` is zero.
-		uint256 lastBidTimeStampCopy_ = biddersInfo[roundNum][lastBidderAddress].lastBidTimeStamp;
-
-		if ( ! (block.timestamp != lastBidTimeStampCopy_) ) {
-			revert CosmicSignatureErrors.BidPlacedWithinCurrentSecond();
 		}
 	}
 
@@ -500,67 +464,6 @@ abstract contract BiddingV3 is
 				bidCstRewardAmount_ = uint256(elapsedDuration_) * bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds;
 			}
 			return bidCstRewardAmount_;
-		}
-	}
-
-	// #endregion
-	// #region `_mintBidCstRewardAmount`
-
-	/// @param bidCstRewardAmount_ The CST amount to mint.
-	/// Comment-202608022 applies.
-	function _mintBidCstRewardAmount(uint256 bidCstRewardAmount_) private {
-		// // #enable_smtchecker /*
-		// unchecked
-		// // #enable_smtchecker */
-
-		// Comment-202608022 applies.
-		// [Comment-202607263]
-		// If this wasn't guaranteed it would make sense to check this before minting.
-		// [/Comment-202607263]
-		// #enable_asserts assert(bidCstRewardAmount_ > 0);
-
-		// #enable_asserts assert(lastBidderAddress != address(0));
-
-		// [Comment-202607163]
-		// `CosmicSignatureToken` performs no call into the token recipient,
-		// so a hostile last bidder contract that reverts on any incoming call or token callback
-		// cannot prevent this minting from succeeding, and therefore cannot block further bids.
-		// [/Comment-202607163]
-		token.mint(lastBidderAddress, bidCstRewardAmount_);
-	}
-
-	// #endregion
-	// #region `_burnCstBidPriceAndMintBidCstRewardAmount`
-
-	/// @param cstBidPrice_ The CST amount to burn. May be zero, but unlikely is.
-	/// @param bidCstRewardAmount_ The CST amount to mint.
-	/// Comment-202609011 applies.
-	function _burnCstBidPriceAndMintBidCstRewardAmount(uint256 cstBidPrice_, uint256 bidCstRewardAmount_) private {
-		// #enable_smtchecker /*
-		unchecked
-		// #enable_smtchecker */
-		{
-			// Comment-202609011 applies.
-			// Comment-202607263 applies.
-			// #enable_asserts assert(bidCstRewardAmount_ > 0);
-
-			ICosmicSignatureToken.MintOrBurnSpec[] memory mintAndBurnSpecs_ = new ICosmicSignatureToken.MintOrBurnSpec[](2);
-			mintAndBurnSpecs_[0].account = _msgSender();
-
-			// Comment-202409177 applies.
-			// Comment-202606074 relates and/or applies.
-			mintAndBurnSpecs_[0].value = ( - int256(cstBidPrice_) );
-
-			// It's not guaranteed that this is a nonzero, because the validation near Comment-202501044
-			// discussed in Comment-202501045 has not occurred yet.
-			// Issue. The CST mint can succeed only if this is a nonzero, and so it's unnecessary
-			// to evaluate it again near Comment-202605292. One consequence is that under no conditions
-			// we can revert with `CosmicSignatureErrors.WrongBidType` near Comment-202501044.
-			// Comment-202607163 applies.
-			mintAndBurnSpecs_[1].account = lastBidderAddress;
-
-			mintAndBurnSpecs_[1].value = int256(bidCstRewardAmount_);
-			token.mintAndBurnMany(mintAndBurnSpecs_);
 		}
 	}
 

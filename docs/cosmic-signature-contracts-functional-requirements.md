@@ -246,8 +246,6 @@ A user also can force-send ETH to the Game contract by `selfdestruct`ing a contr
 
 - If the current bidding round is inactive: revert.
 
-- V3+: If a bid was placed within the current second: revert.
-
 - V2+: If the provided bid CST reward min limit is greater than the current bid CST reward: revert.\
   But in V3+ don't check this if there were no bids in the current round yet.
 
@@ -288,8 +286,6 @@ A user also can force-send ETH to the Game contract by `selfdestruct`ing a contr
 - If the provided message is too long: revert.
 
 - If no bid placed in the current bidding round yet: revert. (An ETH bid shall happen first. So provided it happened, we know that the current bidding round is active, therefore it's unnecessary to check that.)
-
-- V3+: If a bid was placed within the current second: revert.
 
 - V2+: If the provided bid CST reward min limit is greater than the current bid CST reward: revert.
 

@@ -3,13 +3,12 @@
 // Tests `BiddingV3`'s linear bid CST reward:
 // the reward accrues at `bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds` CST Wei
 // per second since the last bid, and when someone places a bid, the WHOLE reward is minted to the bidder
-// being outbid (`lastBidderAddress`). Nothing is minted on the first bid in a bidding round,
-// and no more than 1 bid per second is permitted (`BidPlacedWithinCurrentSecond`).
+// being outbid (`lastBidderAddress`). Nothing is minted on the first bid in a bidding round.
 
 const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
-const { ENABLE_ASSERTS, generateRandomUInt256, waitForTransactionReceipt } = require("../../src/Helpers.js");
+const { generateRandomUInt256, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const {
 	getLatestBlockTimestamp,
 	blockTimestampOfReceipt,
@@ -359,30 +358,6 @@ describe("CosmicSignatureGameV3-BidCstReward", function () {
 			const totalRewardAmount_ = getV3BidCstRewardAmount(120n, newMultiplier_, mainPrizeTimeIncrementInMicroSeconds_);
 			expect(await token_.balanceOf(bidder1_.address) - bidder1CstBalanceBefore_).equal(totalRewardAmount_);
 		}
-	});
-
-	it("a nonzero multiplier whose reward rounds to zero is rejected by an assertion", async function () {
-		// This case is not supported. In other words, the behavior is undefined.
-		// Therefore we test only the assert failure.
-		if ( ! ENABLE_ASSERTS ) {
-			return;
-		}
-
-		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3();
-		const game_ = contracts_.cosmicSignatureGameV3Proxy;
-		const bidder1_ = contracts_.signers[1];
-		const bidder2_ = contracts_.signers[2];
-
-		// A one-Wei multiplier is nonzero, but all practical short-duration rewards round down to zero.
-		await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setBidCstRewardAmountMultiplier(1n));
-		await activateCurrentRound(game_, contracts_.ownerSigner);
-		await bidWithEthAt(game_, bidder1_, (await getLatestBlockTimestamp()) + 10n);
-
-		const bidTimeStamp_ = (await getLatestBlockTimestamp()) + 1n;
-		const ethBidPrice_ = await game_.getNextEthBidPriceAdvanced(1n);
-		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(bidTimeStamp_),]);
-		await expect(game_.connect(bidder2_).bidWithEth(-1n, "", 0n, {value: ethBidPrice_,}))
-			.revertedWithPanic(0x1);
 	});
 
 	it("randomized campaign: exact CST accounting across many random bids and reward multipliers", async function () {

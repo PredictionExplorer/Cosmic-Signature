@@ -444,18 +444,6 @@ class GameModel {
 		return { lastBidderAddress: this.lastBidderAddress, lastBidderAmount: totalRewardAmount_, newBidderAmount: 0n };
 	}
 
-	/** Mirrors V3 `_checkIfNoBidPlacedWithinCurrentSecond`. */
-	isBidPlacedWithinCurrentSecond(ts_) {
-		if (this.version < 3) {
-			return false;
-		}
-		const lastBidTimeStamp_ =
-			(this.lastBidderAddress === hre.ethers.ZeroAddress) ?
-			0n :
-			this.getBidderInfo(this.roundNum, this.lastBidderAddress).lastBidTimeStamp;
-		return ts_ === lastBidTimeStamp_;
-	}
-
 	/**
 	Mirrors `tryGetCurrentChampions` evaluated at block timestamp `ts_`.
 	@returns {{enduranceChampionAddress: string, enduranceChampionDuration: bigint, chronoWarriorAddress: string, chronoWarriorDuration: bigint}}
@@ -622,16 +610,11 @@ class GameModel {
 	applyEthBid(bidderAddress_, ts_, msgValue_, gasPrice_, randomWalkNftId_) {
 		const plan_ = this.planEthBid(ts_, msgValue_, gasPrice_, randomWalkNftId_);
 		expect(plan_.insufficient, "model: applying an insufficient ETH bid").to.equal(false);
-		expect(this.isBidPlacedWithinCurrentSecond(ts_), "model: applying an ETH bid within the current second").to.equal(false);
 		if (randomWalkNftId_ !== null) {
 			this.usedRandomWalkNfts.add(randomWalkNftId_.toString());
 		}
 		this._bidderInfoForUpdate(bidderAddress_).totalSpentEthAmount += plan_.paidEthPrice;
-		if (
-			(this.version >= 3) ?
-			(plan_.bidCstRewardAmount === 0n) :
-			(this.lastBidderAddress === hre.ethers.ZeroAddress)
-		) {
+		if (this.lastBidderAddress === hre.ethers.ZeroAddress) {
 			this.ethDutchAuctionBeginningBidPrice = plan_.ethBidPrice * c.ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
 		}
 		this.nextEthBidPrice = plan_.ethBidPrice + plan_.ethBidPrice / this.ethBidPriceIncreaseDivisor + 1n;
@@ -664,7 +647,6 @@ class GameModel {
 			this.version < 3 || this.lastBidderAddress !== hre.ethers.ZeroAddress,
 			"model: applying a first-in-round CST bid"
 		).to.equal(true);
-		expect(this.isBidPlacedWithinCurrentSecond(ts_), "model: applying a CST bid within the current second").to.equal(false);
 		const paidPrice_ = this.getNextCstBidPrice(ts_);
 		const reward_ = this.getBidCstRewardAmount(ts_);
 		const rewardSplit_ = this.getBidCstRewardSplit(reward_);

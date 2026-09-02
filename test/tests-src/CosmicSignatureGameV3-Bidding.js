@@ -5,11 +5,12 @@
 const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
-const { waitForTransactionReceipt } = require("../../src/Helpers.js");
+const { generateRandomUInt32, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const {
 	getLatestBlockTimestamp,
 	blockTimestampOfReceipt,
 	activateCurrentRound,
+	findParsedEvent,
 } = require("../src/V2UpgradeTestHelpers.js");
 const {
 	DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER,
@@ -29,61 +30,68 @@ async function bidWithEthAt(game_, bidderSigner_, timeStamp_) {
 }
 
 describe("CosmicSignatureGameV3-Bidding", function () {
-	it("allows only 1 bid per block for all ETH and CST bid combinations", async function () {
+	it("allows random combinations of ETH, receive(), and CST bids within one block", async function () {
 		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3();
 		const game_ = contracts_.cosmicSignatureGameV3Proxy;
 		const token_ = contracts_.cosmicSignatureToken;
 
-		// Make two bidders rich enough in CST that either transaction in every pair can succeed if
-		// it happens to execute first.
+		// Make all three bidders rich enough in CST for even the worst-case random sequence of 30 CST bids,
+		// whose auction beginning price can double after each bid.
 		await waitForTransactionReceipt(
 			game_.connect(contracts_.ownerSigner).setBidCstRewardAmountMultiplier(
-				6_000n * DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER
+				600_000_000_000n * DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER
 			)
 		);
 		await activateCurrentRound(game_, contracts_.ownerSigner);
 		const bidder1_ = contracts_.signers[1];
 		const bidder2_ = contracts_.signers[2];
+		const bidder3_ = contracts_.signers[3];
 		await bidWithEthAt(game_, bidder1_, (await getLatestBlockTimestamp()) + 10n);
 		await bidWithEthAt(game_, bidder2_, (await getLatestBlockTimestamp()) + 100n);
-
-		// This bid is needed to mint bid CST reward to the previous bidder.
+		await bidWithEthAt(game_, bidder3_, (await getLatestBlockTimestamp()) + 100n);
 		await bidWithEthAt(game_, bidder1_, (await getLatestBlockTimestamp()) + 100n);
 
 		expect(await token_.balanceOf(bidder1_.address)).greaterThan(0n);
 		expect(await token_.balanceOf(bidder2_.address)).greaterThan(0n);
+		expect(await token_.balanceOf(bidder3_.address)).greaterThan(0n);
+		const ethDutchAuctionBeginningBidPrice_ = await game_.ethDutchAuctionBeginningBidPrice();
+		const gameAddress_ = await game_.getAddress();
+		const bidders_ = [bidder1_, bidder2_, bidder3_];
+		const bidTypes_ = ["ETH", "receive", "CST"];
 
 		// [Comment-202609061]
 		// Transactions submitted by different accounts do not inherently have a deterministic execution
-		// order. The local Hardhat configuration currently uses FIFO ordering, but this test does not rely
-		// on which transaction succeeds. The ETH+ETH and CST+CST pairs guarantee coverage of each bid
-		// method's same-second reversal regardless of ordering; the mixed pairs exercise both queued orders.
+		// order. Each transaction is therefore funded for any execution order, and the assertions below
+		// do not depend on which randomly selected bid executes first.
 		// [/Comment-202609061]
-		const bidTypePairs_ = [
-			["ETH", "ETH"],
-			["ETH", "CST"],
-			["CST", "ETH"],
-			["CST", "CST"],
-		];
-
-		for (const bidTypePair_ of bidTypePairs_) {
+		for (let iterationIndex_ = 0; iterationIndex_ < 10; ++ iterationIndex_) {
+			const bidTypeCombination_ = bidders_.map(() => bidTypes_[generateRandomUInt32() % bidTypes_.length]);
 			const timeStamp_ = (await getLatestBlockTimestamp()) + 100n;
 			const ethBidPrice_ = await game_.getNextEthBidPriceAdvanced(100n);
-			const submitBid_ = (bidType_, bidder_, ethBidValue_) =>
-				(bidType_ === "ETH") ?
-					game_.connect(bidder_).bidWithEth(-1n, "", 0n, { value: ethBidValue_, }) :
-					game_.connect(bidder_).bidWithCst(hre.ethers.MaxUint256, "", 0n);
+			const ethBidValue_ = ethBidPrice_ * 10n;
+			const submitBid_ = (bidType_, bidder_) => {
+				switch (bidType_) {
+					case "ETH":
+						return game_.connect(bidder_).bidWithEth(-1n, "", 0n, { value: ethBidValue_, });
+					case "receive":
+						return bidder_.sendTransaction({ to: gameAddress_, value: ethBidValue_, });
+					case "CST":
+						return game_.connect(bidder_).bidWithCst(hre.ethers.MaxUint256, "", 0n);
+					default:
+						throw new Error(`Unexpected bid type: ${bidType_}`);
+				}
+			};
 
 			let transactionResponses_;
 			try {
 				await hre.ethers.provider.send("evm_setAutomine", [false,]);
 				await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(timeStamp_),]);
 
-				// Comment-202609061 applies to this pair.
-				transactionResponses_ = [
-					await submitBid_(bidTypePair_[0], bidder1_, ethBidPrice_ * 2n),
-					await submitBid_(bidTypePair_[1], bidder2_, ethBidPrice_ * 3n),
-				];
+				// Comment-202609061 applies to this combination.
+				transactionResponses_ = [];
+				for (let bidderIndex_ = 0; bidderIndex_ < bidders_.length; ++ bidderIndex_) {
+					transactionResponses_.push(await submitBid_(bidTypeCombination_[bidderIndex_], bidders_[bidderIndex_]));
+				}
 
 				await hre.ethers.provider.send("evm_mine");
 			} finally {
@@ -95,68 +103,14 @@ describe("CosmicSignatureGameV3-Bidding", function () {
 					hre.ethers.provider.getTransactionReceipt(transactionResponse_.hash)
 				)
 			);
-			const pairDescription_ = bidTypePair_.join("+");
-			expect(receipts_[0].blockNumber, pairDescription_).equal(receipts_[1].blockNumber);
-			expect(receipts_.map(receipt_ => receipt_.status).sort(), pairDescription_).deep.equal([0, 1]);
-
-			// Both methods must report the same reason when called against the completed pair's block.
-			await expect(
-				game_.connect(bidder1_).bidWithEth.staticCall(
-					-1n,
-					"",
-					0n,
-					{ value: ethBidPrice_ * 2n, blockTag: receipts_[0].blockNumber, }
-				)
-			).revertedWithCustomError(game_, "BidPlacedWithinCurrentSecond");
-			await expect(
-				game_.connect(bidder2_).bidWithCst.staticCall(
-					hre.ethers.MaxUint256,
-					"",
-					0n,
-					{ blockTag: receipts_[0].blockNumber, }
-				)
-			).revertedWithCustomError(game_, "BidPlacedWithinCurrentSecond");
+			const combinationDescription_ = bidTypeCombination_.join("+");
+			expect(new Set(receipts_.map(receipt_ => receipt_.blockNumber)).size, combinationDescription_).equal(1);
+			expect(receipts_.map(receipt_ => receipt_.status), combinationDescription_).deep.equal([1, 1, 1]);
+			const bidCstRewardAmounts_ =
+				receipts_.map(receipt_ => findParsedEvent(receipt_, game_, "BidPlaced").args.bidCstRewardAmount);
+			expect(bidCstRewardAmounts_.filter(value_ => value_ === 0n).length, combinationDescription_).equal(2);
+			expect(bidCstRewardAmounts_.filter(value_ => value_ > 0n).length, combinationDescription_).equal(1);
+			expect(await game_.ethDutchAuctionBeginningBidPrice(), combinationDescription_).equal(ethDutchAuctionBeginningBidPrice_);
 		}
-	});
-
-	it("applies the same-second throttle to the receive() ETH-bid entrypoint", async function () {
-		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3();
-		const game_ = contracts_.cosmicSignatureGameV3Proxy;
-		await activateCurrentRound(game_, contracts_.ownerSigner);
-
-		const bidder1_ = contracts_.signers[1];
-		const bidder2_ = contracts_.signers[2];
-		const timeStamp_ = (await getLatestBlockTimestamp()) + 100n;
-		const bidPrice_ = await game_.getNextEthBidPriceAdvanced(100n);
-		let transactionResponses_;
-		try {
-			await hre.ethers.provider.send("evm_setAutomine", [false,]);
-			await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(timeStamp_),]);
-			transactionResponses_ = [
-				await bidder1_.sendTransaction({ to: await game_.getAddress(), value: bidPrice_ * 2n }),
-				await bidder2_.sendTransaction({ to: await game_.getAddress(), value: bidPrice_ * 3n }),
-			];
-			await hre.ethers.provider.send("evm_mine");
-		} finally {
-			await hre.ethers.provider.send("evm_setAutomine", [true,]);
-		}
-
-		const receipts_ = await Promise.all(
-			transactionResponses_.map(transactionResponse_ =>
-				hre.ethers.provider.getTransactionReceipt(transactionResponse_.hash)
-			)
-		);
-		expect(receipts_[0].blockNumber).equal(receipts_[1].blockNumber);
-		expect(receipts_.map(receipt_ => receipt_.status).sort()).deep.equal([0, 1]);
-
-		// A receipt exposes only success or reversal. Replay the call against the resulting state
-		// to verify the reversal reason from the raw-receive entrypoint.
-		await expect(
-			hre.ethers.provider.call({
-				from: bidder2_.address,
-				to: await game_.getAddress(),
-				value: bidPrice_ * 3n,
-			})
-		).revertedWithCustomError(game_, "BidPlacedWithinCurrentSecond");
 	});
 });

@@ -50,9 +50,6 @@ library CosmicSignatureErrors {
 	// /// @param errStr Description of the error.
 	// error EthDutchAuctionEndingBidPriceHalvingError(string errStr);
 
-	/// @notice Thrown when someone attempts to place a bid within the same second as the previous bid.
-	error BidPlacedWithinCurrentSecond(/* string errStr */);
-
 	/// @notice Thrown when someone attempts to place a bid of a type that is not currently allowed.
 	/// @param errStr Description of the error.
 	error WrongBidType(string errStr);

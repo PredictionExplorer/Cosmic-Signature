@@ -16,7 +16,7 @@ interface IBidding2V3 {
 	/// A negative value indicates that no Random Walk NFT was used.
 	/// @param message Comment-202503155 applies.
 	/// @param bidCstRewardAmount Comment-202607273 applies.
-	/// It's zero on the first bid in a round. Comment-202608022 applies on subsequent bids.
+	/// It's zero on the first bid in a round or on a bid placed within the same second as the previous bid.
 	/// @param cstBidPriceDeclineMultiplier Comment-202608181 applies.
 	/// Comment-202608319 relates.
 	/// todo-0 Tell Nick that this replaced `cstDutchAuctionDuration` param.
