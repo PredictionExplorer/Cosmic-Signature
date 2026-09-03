@@ -36,6 +36,7 @@ abstract contract BiddingV3 is
 
 		uint256 bidCstRewardAmount_ = 0;
 		if (lastBidderAddress != address(0)) {
+			// This can be zero.
 			bidCstRewardAmount_ = getBidCstRewardAmountAdvanced(int256(0));
 
 			// Comment-202412045 applies.
