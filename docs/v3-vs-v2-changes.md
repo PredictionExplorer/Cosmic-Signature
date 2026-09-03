@@ -1,4 +1,4 @@
-<!-- todo-0 This doc is currently stale. Update it later. -->
+todo-0 This doc is currently stale. Update it later.
 
 # CosmicSignatureGame V3 vs V2 Changes
 
