@@ -44,6 +44,8 @@ contract CosmicSignatureGameV3 is
 	function reinitialize() external override /*virtual*/ /*onlyOwner*/ _onlyNonFirstRound() _onlyIfPrevVersionWasInitialized() reinitializer(uint64(_CONTRACT_VERSION_NUMBER)) {
 		// // #enable_asserts // #disable_smtchecker console.log("CosmicSignatureGameV3.reinitialize");
 
+		// todo-0 Remember to list all new variables here, at least commented.
+
 		// championDurations =
 		cstDutchAuctionBeginningBidPriceMinLimit = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT_V3;
 		cstBidPriceDeclineMultiplier = CosmicSignatureConstants.INITIAL_CST_BID_PRICE_DECLINE_MULTIPLIER;

@@ -52,10 +52,11 @@ abstract contract MainPrize is
 	///    `RandomNumberHelpers` methods.
 	///    `ICosmicSignatureToken.MintSpec`.
 	///    `IPrizesWallet.EthDeposit`.
-	///    `BidderAddresses`.
+	///     todo-0 What about `BidInfo`? V3+ only?
+	///    `BidsInfo`.
 	///    `lastBidderAddress`.
 	///    `lastCstBidderAddress`.
-	///    `bidderAddresses`.
+	///    `bidsInfo`.
 	///    `enduranceChampionAddress`.
 	///    // `enduranceChampionStartTimeStamp`
 	///    // `enduranceChampionDuration`
@@ -167,7 +168,7 @@ abstract contract MainPrize is
 		// [/Comment-202605312]
 		randomNumberSeedWrapper_.value = RandomNumberHelpers.generateRandomNumberSeed();
 
-		BidderAddresses storage bidderAddressesReference_ = bidderAddresses[roundNum];
+		BidsInfo storage bidsInfoReference_ = bidsInfo[roundNum];
 		uint256 timeoutTimeToWithdrawSecondaryPrizes_;
 
 		// [Comment-202501161]
@@ -250,7 +251,7 @@ abstract contract MainPrize is
 						-- ethDepositIndex_;
 						IPrizesWallet.EthDeposit memory ethDepositReference_ = ethDeposits_[ethDepositIndex_];
 						uint256 randomNumber_ = RandomNumberHelpers.generateRandomNumber(randomNumberSeedWrapper_);
-						address raffleWinnerAddress_ = bidderAddressesReference_.items[randomNumber_ % bidderAddressesReference_.numItems];
+						address raffleWinnerAddress_ = bidsInfoReference_.items[randomNumber_ % bidsInfoReference_.numItems].bidderAddress;
 						// #enable_asserts assert(raffleWinnerAddress_ != address(0));
 						ethDepositReference_.prizeWinnerAddress = raffleWinnerAddress_;
 						ethDepositReference_.amount = raffleEthPrizeAmountForBidder_;
@@ -437,7 +438,7 @@ abstract contract MainPrize is
 				// #enable_asserts assert(numRaffleCosmicSignatureNftsForBidders > 0);
 				for (uint256 raffleWinnerIndex_ = numRaffleCosmicSignatureNftsForBidders; ; ) {
 					uint256 randomNumber_ = RandomNumberHelpers.generateRandomNumber(randomNumberSeedWrapper_);
-					address raffleWinnerAddress_ = bidderAddressesReference_.items[randomNumber_ % bidderAddressesReference_.numItems];
+					address raffleWinnerAddress_ = bidsInfoReference_.items[randomNumber_ % bidsInfoReference_.numItems].bidderAddress;
 					// #enable_asserts assert(raffleWinnerAddress_ != address(0));
 					-- cosmicSignatureTokenMintSpecIndex_;
 					ICosmicSignatureToken.MintSpec memory cosmicSignatureTokenMintSpec_ = cosmicSignatureTokenMintSpecs_[cosmicSignatureTokenMintSpecIndex_];
@@ -717,8 +718,6 @@ abstract contract MainPrize is
 
 		prevEnduranceChampionDuration = 0;
 		chronoWarriorAddress = address(0);
-		// todo-0 Given that V3+ enforces no multiple bids within a second, is it still important to reset this to -1? Would resetting to zero be adequate?
-		// todo-0 At least comment everywhere we assign -1 and where we enforce that.
 		chronoWarriorDuration = uint256(int256(-1));
 		++ roundNum;
 

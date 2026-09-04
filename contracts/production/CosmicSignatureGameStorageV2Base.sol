@@ -44,7 +44,9 @@ abstract contract CosmicSignatureGameStorageV2Base is ICosmicSignatureGameStorag
 
 	/// @dev Comment-202411098 applies.
 	/// Comment-202502044 relates.
-	mapping(uint256 roundNum => BidderAddresses) public bidderAddresses;
+	/// // Comment-202607169 applies.
+	/// // @custom:oz-renamed-from bidderAddresses
+	mapping(uint256 roundNum => BidsInfo) public bidsInfo;
 
 	/// @dev Comment-202411098 applies.
 	mapping(uint256 roundNum => mapping(address bidderAddress => BidderInfo)) public biddersInfo;
@@ -146,11 +148,8 @@ abstract contract CosmicSignatureGameStorageV2Base is ICosmicSignatureGameStorag
 	/// This occupies the same storage slot as `CosmicSignatureGameStorage.cstDutchAuctionDurationDivisor`.
 	/// [/Comment-202606057]
 	/// [Comment-202607169]
-	/// Issue. This variable is reused for further versions of the contract,
-	/// where the `custom:oz-renamed-from` decoration is no longer correct.
+	/// Issue. This variable is reused for further versions of the contract, where it is no longer renamed.
 	/// But OpenZeppelin's upgradeable contract validator does not complain.
-	/// todo-0 ??? Maybe remove these decorations. But make sure doing so does not break tests.
-	/// todo-0 Maybe make the above todo a todo-3 or an issue.
 	/// [/Comment-202607169]
 	/// @custom:oz-renamed-from cstDutchAuctionDurationDivisor
 	uint256 public cstDutchAuctionDuration;
@@ -187,6 +186,7 @@ abstract contract CosmicSignatureGameStorageV2Base is ICosmicSignatureGameStorag
 	/// This occupies the same storage slot as `CosmicSignatureGameStorage.bidCstRewardAmount`.
 	/// [/Comment-202606053]
 	/// Comment-202607169 applies.
+	/// // @custom:oz-renamed-from cstRewardAmountForBidding
 	/// @custom:oz-renamed-from bidCstRewardAmount
 	uint256 public bidCstRewardAmountMultiplier;
 

@@ -34,10 +34,19 @@ interface ICosmicSignatureGameStorage {
 	// 	CST
 	// }
 
-	/// @notice Contains each bid's bidder address.
-	struct BidderAddresses {
+	/// @notice Details about a bid.
+	struct BidInfo {
+		/// @notice Who placed the bid.
+		address bidderAddress;
+
+		/// @notice This is populated in V3+.
+		uint256 raffleCumulativeWeight;
+	}
+
+	/// @notice Details about all bids in one bidding round.
+	struct BidsInfo {
 		uint256 numItems;
-		mapping(uint256 bidNum => address bidderAddress) items;
+		mapping(uint256 bidNum => BidInfo) items;
 	}
 
 	/// @notice Details about a bidder.

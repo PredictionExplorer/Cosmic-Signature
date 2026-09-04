@@ -122,7 +122,7 @@ describe("MainPrize", function () {
 		roundNum_ = await contracts_.cosmicSignatureGameProxy.roundNum();
 		expect(roundNum_).equal(2n);
 		expect(await contracts_.cosmicSignatureGameProxy.getTotalNumBids(roundNum_)).equal(1n);
-		expect(await contracts_.cosmicSignatureGameProxy.getBidderAddressAt(roundNum_, 0n)).equal(contracts_.signers[1].address);
+		expect(await contracts_.cosmicSignatureGameProxy.getBidInfoAt(roundNum_, 0n)).deep.equal([contracts_.signers[1].address, 0n,]);
 		durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrizeRaw();
 		expect(await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrize()).equal(durationUntilMainPrize_);
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_) - await makeNextBlockTimeDeterministic(),]);

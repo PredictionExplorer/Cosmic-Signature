@@ -64,7 +64,9 @@ OpenZeppelin would actually disallow the upgrade from V2+ to `CosmicSignatureGam
 - When developing V2, I made 2 changes in V1's `CosmicSignatureGameStorage`.\
 (1) I renamed `cstRewardAmountForBidding` to `bidCstRewardAmount` (which I further renamed in V2).\
 (2) I reduced `__gap_persistent` length a few orders of magnitude, because OpenZeppelin's upgradeable contract validation logic executed by `upgradeProxy` was crashing due to an overflow. But storage layout remains compatible because the given storage variable is the last. Testing with `CosmicSignatureGameOpenBid` has not run into this case because it added a storage variable after the gap (which is actually a violation of Comment-202412148).\
-The problem is that the initially deployed `CosmicSignatureGame` ABI still exists in the tracking info stored in `.openzeppelin`. Therefore, when upgrading to V2 in the production, OpenZeppelin's upgradeable contract validation logic will complain. To silence it, before upgrading, in `../config/upgrade-cosmic-signature-game-config-arbitrumOne-CosmicSignatureGameV2.json`, temporarily set `unsafeAllowRenames` and `unsafeSkipStorageCheck` to `true`.
+The problem is that the initially deployed `CosmicSignatureGame` ABI still exists in the tracking info stored in `.openzeppelin`. Therefore, when upgrading to V2 in the production, OpenZeppelin's upgradeable contract validation logic will complain. To silence it, before upgrading, make temporary edits as follows. In `../config/upgrade-cosmic-signature-game-config-arbitrumOne-CosmicSignatureGameV2.json`, temporarily set `unsafeSkipStorageCheck` to `true`. In `CosmicSignatureGameStorageV2Base`, near `bidCstRewardAmountMultiplier`, comment out `@custom:oz-renamed-from` and uncomment another that specifies `cstRewardAmountForBidding`.
+
+- When developing V3, I made some incompatible changes in V2. Therefore, when deploying V3 on top of the initially deployed V2, in `CosmicSignatureGameStorageV2Base`, near `bidsInfo`, temporarily uncomment `@custom:oz-renamed-from bidderAddresses`.
 
 #### Afterwards
 

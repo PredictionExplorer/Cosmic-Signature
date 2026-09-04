@@ -44,7 +44,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [/Comment-202605182]
 	/// @dev
 	/// [Comment-202502044]
-	/// Issue. This is the same as the last `bidderAddresses` item. So it could make sense to eliminate this variable.
+	/// Issue. This is the same as the last `bidsInfo` item. So it could make sense to eliminate this variable.
 	/// But let's leave it alone.
 	/// [/Comment-202502044]
 	address public lastBidderAddress;
@@ -58,12 +58,13 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	/// @dev
 	/// [Comment-202411098]
+	/// todo-0 Maybe delete this and/or some other similar comments and/or make them non-issues.
 	/// Issue. One might want to not save info about past bidding rounds.
 	/// But the project founders consider using this info for other purposes.
 	/// Comment-202502045 relates.
 	/// [/Comment-202411098]
 	/// Comment-202502044 relates.
-	mapping(uint256 roundNum => BidderAddresses) public bidderAddresses;
+	mapping(uint256 roundNum => BidsInfo) public bidsInfo;
 
 	/// @dev Comment-202411098 applies.
 	mapping(uint256 roundNum => mapping(address bidderAddress => BidderInfo)) public biddersInfo;

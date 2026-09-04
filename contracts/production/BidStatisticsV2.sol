@@ -18,17 +18,16 @@ abstract contract BidStatisticsV2 is
 	// #region `getTotalNumBids`
 
 	function getTotalNumBids(uint256 roundNum_) external view override returns (uint256) {
-		BidderAddresses storage bidderAddressesReference_ = bidderAddresses[roundNum_];
-		uint256 totalNumBids_ = bidderAddressesReference_.numItems;
+		BidsInfo storage bidsInfoReference_ = bidsInfo[roundNum_];
+		uint256 totalNumBids_ = bidsInfoReference_.numItems;
 		return totalNumBids_;
 	}
 
 	// #endregion
-	// #region `getBidderAddressAt`
+	// #region `getBidInfoAt`
 
-	function getBidderAddressAt(uint256 roundNum_, uint256 bidIndex_) external view override returns (address) {
-		address bidderAddress_ = bidderAddresses[roundNum_].items[bidIndex_];
-		return bidderAddress_;
+	function getBidInfoAt(uint256 roundNum_, uint256 bidIndex_) external view override returns (BidInfo memory) {
+		return bidsInfo[roundNum_].items[bidIndex_];
 	}
 
 	// #endregion

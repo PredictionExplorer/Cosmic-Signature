@@ -52,7 +52,7 @@ async function createCosmicSignatureGameProxySimulator(
 		Comment-202411098 relates.
 		[/Comment-202504102]
 		*/
-		bidderAddresses: [],
+		bidsInfo: [],
 
 		/**
 		1 item per bidder.
@@ -282,16 +282,16 @@ async function createCosmicSignatureGameProxySimulator(
 		// #region `getTotalNumBids`
 
 		getTotalNumBids: function() {
-			return BigInt(this.bidderAddresses.length);
+			return BigInt(this.bidsInfo.length);
 		},
 
 		// #endregion
-		// #region `getBidderAddressAt`
+		// #region `getBidInfoAt`
 
-		getBidderAddressAt: function(bidIndex_) {
+		getBidInfoAt: function(bidIndex_) {
 			expect(typeof bidIndex_).equal("bigint");
-			const bidderAddress_ = this.bidderAddresses[Number(bidIndex_)];
-			return bidderAddress_;
+			const bidInfo_ = this.bidsInfo[Number(bidIndex_)];
+			return bidInfo_;
 		},
 
 		// #endregion
@@ -574,7 +574,7 @@ async function createCosmicSignatureGameProxySimulator(
 				this._extendMainPrizeTime(transactionBlock_);
 			}
 			this.lastBidderAddress = bidderAddress_;
-			this.bidderAddresses.push(bidderAddress_);
+			this.bidsInfo.push([bidderAddress_, 0n,]);
 			this.biddersInfo[bidderAddress_].lastBidTimeStamp = BigInt(transactionBlock_.timestamp);
 			assertEvent(
 				transactionReceipt_.logs[eventIndexWrapper_.value],
@@ -750,7 +750,7 @@ async function createCosmicSignatureGameProxySimulator(
 			this._updateChampionsIfNeeded(transactionBlock_);
 			this._extendMainPrizeTime(transactionBlock_);
 			this.lastBidderAddress = bidderAddress_;
-			this.bidderAddresses.push(bidderAddress_);
+			this.bidsInfo.push([bidderAddress_, 0n,]);
 			this.biddersInfo[bidderAddress_].lastBidTimeStamp = BigInt(transactionBlock_.timestamp);
 			assertEvent(
 				transactionReceipt_.logs[eventIndexWrapper_.value],
@@ -974,7 +974,7 @@ async function createCosmicSignatureGameProxySimulator(
 							// Comment-202504265 applies.
 							const blockchainBasedRandomNumber_ = generateRandomUInt256FromSeedWrapper(blockchainBasedRandomNumberSeedWrapper_);
 
-							const raffleWinnerAddress_ = this.bidderAddresses[Number(blockchainBasedRandomNumber_ % this.getTotalNumBids())];
+							const raffleWinnerAddress_ = this.bidsInfo[Number(blockchainBasedRandomNumber_ % this.getTotalNumBids())][0];
 							-- ethDepositIndex_;
 							ethDeposits_[ethDepositIndex_] = {prizeWinnerAddress: raffleWinnerAddress_, amount: raffleEthPrizeAmountForBidder_,};
 							assertEvent(
@@ -1071,7 +1071,7 @@ async function createCosmicSignatureGameProxySimulator(
 						// Comment-202504265 applies.
 						const blockchainBasedRandomNumber_ = generateRandomUInt256FromSeedWrapper(blockchainBasedRandomNumberSeedWrapper_);
 
-						const raffleWinnerAddress_ = this.bidderAddresses[Number(blockchainBasedRandomNumber_ % this.getTotalNumBids())];
+						const raffleWinnerAddress_ = this.bidsInfo[Number(blockchainBasedRandomNumber_ % this.getTotalNumBids())][0];
 						-- cosmicSignatureTokenMintSpecIndex_;
 						cosmicSignatureTokenMintSpecs_[cosmicSignatureTokenMintSpecIndex_] = {account: raffleWinnerAddress_, value: this.cstPrizeAmount,};
 						cosmicSignatureNftOwnerAddresses_[cosmicSignatureTokenMintSpecIndex_] = raffleWinnerAddress_;
@@ -1248,7 +1248,7 @@ async function createCosmicSignatureGameProxySimulator(
 		_prepareNextRound: /*async*/ function(transactionBlock_, contracts_, transactionReceipt_, eventIndexWrapper_) {
 			this.lastBidderAddress = hre.ethers.ZeroAddress;
 			this.lastCstBidderAddress = hre.ethers.ZeroAddress;
-			this.bidderAddresses.length = 0;
+			this.bidsInfo.length = 0;
 			this.resetBiddersInfo(contracts_);
 			this.enduranceChampionAddress = hre.ethers.ZeroAddress;
 			this.prevEnduranceChampionDuration = 0n;
@@ -1427,9 +1427,9 @@ async function assertCosmicSignatureGameProxySimulatorOfRandomBidIfPossible(cosm
 // #region `assertCosmicSignatureGameProxySimulatorOfBid`
 
 async function assertCosmicSignatureGameProxySimulatorOfBid(cosmicSignatureGameProxySimulator_, contracts_, bidIndex_) {
-	const bidderAddressFromContract_ = await contracts_.cosmicSignatureGameProxy.getBidderAddressAt(cosmicSignatureGameProxySimulator_.roundNum, bidIndex_);
-	const bidderAddressFromContractSimulator_ = cosmicSignatureGameProxySimulator_.getBidderAddressAt(bidIndex_);
-	expect(bidderAddressFromContract_).equal(bidderAddressFromContractSimulator_);
+	const bidInfoFromContract_ = await contracts_.cosmicSignatureGameProxy.getBidInfoAt(cosmicSignatureGameProxySimulator_.roundNum, bidIndex_);
+	const bidInfoFromContractSimulator_ = cosmicSignatureGameProxySimulator_.getBidInfoAt(bidIndex_);
+	expect(bidInfoFromContract_).deep.equal(bidInfoFromContractSimulator_);
 }
 
 // #endregion
