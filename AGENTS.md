@@ -84,6 +84,7 @@ assert(x > y);
 // DEL: and why you did it.)
 ```
 
+- Do not quietly delete things! If you delete code, even if it's commented and/or appears to be unnecessary, a comment, or a part of a document, write a `DEL:`-comment about that. This also applies to the case when you have moved code or whatever to a different location: explain in a `DEL:`-comment at the old location.
 - Review `docs/numbered-comments.md`. Prefer writing numbered items when they offer an advantage over their non-numbered counterparts. Consider using numbered items to link dependent or similar parts of the codebase. Similar code is not necessarily dependent, but when one occurrence requires refactoring, other occurrences may require the same change. A numbered comment identifying repeated logic or data structures can help locate all affected places.
 - Perform AI or human todos only if requested to do so in the prompt. Delete every todo that you have completed.
 - If you are not to perform a human todo, use it as context. For example, if the prompt says to develop tests and a human todo says to confirm a certain relevant behavior, consider proposing a test for that case.
