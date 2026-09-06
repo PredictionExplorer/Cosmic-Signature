@@ -15,6 +15,7 @@ import { ICosmicSignatureGameStorage } from "../interfaces/ICosmicSignatureGameS
 /// @author The Cosmic Signature Development Team.
 /// @notice
 /// [Comment-202609098]
+/// In V2-, every bid was one raffle ticket of an equal weight, regardless of the bid price paid.
 /// In V3+, each bid's raffle weight is the posted ETH bid price at the time of the bid.
 /// This is the undiscounted price for an ETH + Random Walk NFT bid and the concurrent price for a CST bid.
 /// [/Comment-202609098]
