@@ -74,20 +74,21 @@ assert(x > y);
 
 ## Comments and ToDos
 
-- Maintain commented-out code when practical. When refactoring active code, update analogous commented-out code too. If commented-out code is already stale or cannot be updated without broader work, add a `ToDo-9` describing what must be done after it is uncommented.
-- Some conditionally compiled alternatives are mutually exclusive. Keep each reachable compilation variant correct; mutually exclusive alternatives do not need to be valid simultaneously in one compilation.
-- Comments and docs should be brief. Write comments only about non-obvious intricacies. For example, explain dependencies of logic in different parts of the codebase.
-- That said, it can be helpful for me if you explain things in detail in verbose temporary to-be-deleted comments. Format them as follows:
+- Review `docs/numbered-comments.md`. It contains some instructions for you. Prefer writing numbered items when they offer an advantage over their non-numbered counterparts. Consider using numbered items to link dependent or similar parts of the codebase. Similar code is not necessarily dependent, but when one occurrence requires refactoring, others may require the same change. A numbered comment identifying repeated logic or data structures can help locate all affected places.
+- Perform AI or human todos only if requested to do so in the prompt. Delete every todo that you have completed.
+- If you are not to perform a todo, use it as context. For example, if the prompt says to develop tests and a todo says to confirm a certain relevant behavior, consider proposing a test for that case.
+- Comments and docs should be brief.
+- Explain non-obvious intricacies in comments. For example, explain dependencies of logic in different parts of the codebase.
+- That said, when performing a refactoring, it can be helpful for me if you explain non-obvious intricacies related to the refactoring in detail in verbose temporary to-be-deleted comments. Format them as follows:
 
 ```solidity
 // DEL: (Provide details about what you did
 // DEL: and why you did it.)
 ```
 
-- Do not quietly delete things! If you delete code, even if it's commented and/or appears to be unnecessary, a comment, or a part of a document, write a `DEL:`-comment about that. This also applies to the case when you have moved code or whatever to a different location: explain in a `DEL:`-comment at the old location. You can link the locations with a numbered comment.
-- Review `docs/numbered-comments.md`. Prefer writing numbered items when they offer an advantage over their non-numbered counterparts. Consider using numbered items to link dependent or similar parts of the codebase. Similar code is not necessarily dependent, but when one occurrence requires refactoring, other occurrences may require the same change. A numbered comment identifying repeated logic or data structures can help locate all affected places.
-- Perform AI or human todos only if requested to do so in the prompt. Delete every todo that you have completed.
-- If you are not to perform a human todo, use it as context. For example, if the prompt says to develop tests and a human todo says to confirm a certain relevant behavior, consider proposing a test for that case.
+  For exampple, when you move code or text to a different location while also deleting parts of it, write a `DEL:`-comment at the old location about what you deleted. You can link the locations with a numbered comment. (It's OK to waste an ID in a `DEL:`-comment.)
+- Maintain commented-out code when practical. When refactoring active code, update analogous commented-out code too. If commented-out code is already stale or cannot be updated without broader work, add a `ToDo-9` describing what must be done after it is uncommented.
+- Some conditionally compiled alternatives are mutually exclusive. Keep each reachable compilation variant correct; mutually exclusive alternatives do not need to be valid simultaneously in one compilation.
 - When an explanatory comment or todo occupies one or more separate lines and is associated with code, place it before the relevant lines. Insert an empty line before the comment and after the last relevant line of code when the surrounding structure permits it. When deleting a comment, delete any empty lines that are no longer needed, but be sure not to delete empty lines needed for other comments.
 
 ## Running Hardhat Tests
