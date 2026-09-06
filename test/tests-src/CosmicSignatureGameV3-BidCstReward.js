@@ -368,6 +368,7 @@ describe("CosmicSignatureGameV3-BidCstReward", function () {
 		// A tiny xorshift PRNG. The seed is logged so that a failure can be investigated.
 		let randomState_ = generateRandomUInt256() & ((1n << 64n) - 1n);
 		if (randomState_ === 0n) {
+			// Issue. This logic kinda smells. I would instead keep generating random numbers until a nonzero is generated.
 			randomState_ = 0x9e3779b97f4a7c15n;
 		}
 		console.info("%s", `Random seed: 0x${randomState_.toString(16)}`);

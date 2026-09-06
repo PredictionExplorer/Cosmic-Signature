@@ -7,7 +7,7 @@ const { anyUint } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { generateRandomUInt256, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { setRoundActivationTimeIfNeeded } = require("../../src/ContractDeploymentHelpers.js");
-const { loadFixtureDeployContractsForTesting, deployContractsForTestingAdvanced, makeNextBlockTimeDeterministic } = require("../../src/ContractTestingHelpers.js");
+const { loadFixtureDeployContractsForTesting, makeNextBlockTimeDeterministic } = require("../../src/ContractTestingHelpers.js");
 
 describe("MainPrize", function () {
 	it("Test 1", async function () {
@@ -268,7 +268,7 @@ describe("MainPrize", function () {
 
 	// Issue. This test doesn't test some prizes.
 	it("Prize amounts", async function () {
-		const contracts_ = await deployContractsForTestingAdvanced("SpecialCosmicSignatureGame");
+		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 
 		// [Comment-202506033]
 		// The use of `BidderContract` eliminates the need to subtract gas used.
@@ -283,9 +283,19 @@ describe("MainPrize", function () {
 
 		await waitForTransactionReceipt(contracts_.cosmicSignatureNft.connect(contracts_.signers[1]).setApprovalForAll(contracts_.stakingWalletCosmicSignatureNftAddress, true));
 
-		// Minting and staking a CS NFT.
-		// Otherwise `StakingWalletCosmicSignatureNft` would reject an ETH deposit near Comment-202410161.
-		await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).mintCosmicSignatureNft(contracts_.signers[1].address));
+		// Completing a preliminary round to mint a CS NFT.
+		{
+			const nextEthBidPrice_ = await contracts_.cosmicSignatureGameProxy.getNextEthBidPriceAdvanced(1n);
+			await waitForTransactionReceipt(
+				contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEth(-1n, "", {value: nextEthBidPrice_,})
+			);
+			const durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrizeRaw();
+			await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_),]);
+			await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).claimMainPrize());
+		}
+
+		// Staking is needed so that `StakingWalletCosmicSignatureNft` accepts the target round's ETH deposit
+		// near Comment-202410161.
 		let cosmicSignatureNftId_ = 0n;
 		await waitForTransactionReceipt(contracts_.stakingWalletCosmicSignatureNft.connect(contracts_.signers[1]).stake(cosmicSignatureNftId_));
 

@@ -100,11 +100,11 @@ abstract contract MainPrizeV2 is
 
 					ethDepositsTotalAmount_ += raffleEthPrizeAmountForBidder_ * ethDepositIndex_;
 					do {
-						-- ethDepositIndex_;
-						IPrizesWallet.EthDeposit memory ethDepositReference_ = ethDeposits_[ethDepositIndex_];
 						uint256 randomNumber_ = RandomNumberHelpers.generateRandomNumber(randomNumberSeedWrapper_);
 						address raffleWinnerAddress_ = bidsInfoReference_.items[randomNumber_ % bidsInfoReference_.numItems].bidderAddress;
 						// #enable_asserts assert(raffleWinnerAddress_ != address(0));
+						-- ethDepositIndex_;
+						IPrizesWallet.EthDeposit memory ethDepositReference_ = ethDeposits_[ethDepositIndex_];
 						ethDepositReference_.prizeWinnerAddress = raffleWinnerAddress_;
 						ethDepositReference_.amount = raffleEthPrizeAmountForBidder_;
 						emit RaffleWinnerBidderEthPrizeAllocated(

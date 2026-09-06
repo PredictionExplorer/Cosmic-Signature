@@ -112,7 +112,7 @@ class GameModel {
 
 		/**
 		Per-round bid statistics. Key: round number as string.
-		@type {Map<string, {bidderAddresses: string[], biddersInfo: Map<string, {totalSpentEthAmount: bigint, totalSpentCstAmount: bigint, lastBidTimeStamp: bigint}>}>}
+		@type {Map<string, {bidderAddresses: string[], bidRaffleCumulativeWeights: bigint[], biddersInfo: Map<string, {totalSpentEthAmount: bigint, totalSpentCstAmount: bigint, lastBidTimeStamp: bigint}>}>}
 		*/
 		this.rounds = new Map();
 	}
@@ -191,7 +191,7 @@ class GameModel {
 		const key_ = this.roundNum.toString();
 		let round_ = this.rounds.get(key_);
 		if (round_ === undefined) {
-			round_ = { bidderAddresses: [], biddersInfo: new Map() };
+			round_ = { bidderAddresses: [], bidRaffleCumulativeWeights: [], biddersInfo: new Map() };
 			this.rounds.set(key_, round_);
 		}
 		return round_;
@@ -225,6 +225,19 @@ class GameModel {
 
 	getBidderAddresses(roundNum_) {
 		return this.rounds.get(roundNum_.toString())?.bidderAddresses ?? [];
+	}
+
+	getBidRaffleCumulativeWeights(roundNum_) {
+		return this.rounds.get(roundNum_.toString())?.bidRaffleCumulativeWeights ?? [];
+	}
+
+	_appendBidRaffleWeight(bidRaffleWeight_) {
+		const round_ = this._currentRound();
+		const cumulativeWeights_ = round_.bidRaffleCumulativeWeights;
+		while (cumulativeWeights_.length < round_.bidderAddresses.length) {
+			cumulativeWeights_.push(0n);
+		}
+		cumulativeWeights_.push((cumulativeWeights_.at(-1) ?? 0n) + bidRaffleWeight_);
 	}
 
 	// #endregion
@@ -629,12 +642,16 @@ class GameModel {
 				(this.cstDutchAuctionDuration + 1n) * this.cstDutchAuctionDurationChangeDivisor / (this.cstDutchAuctionDurationChangeDivisor + 1n);
 			this.cstDutchAuctionDuration = newCstDutchAuctionDuration_;
 		}
+		if (this.version >= 3) {
+			this._appendBidRaffleWeight(plan_.ethBidPrice);
+		}
 		this._bidCommon(bidderAddress_, ts_);
 		return {
 			...plan_,
 			newCstDutchAuctionDuration: newCstDutchAuctionDuration_,
 			newCstBidPriceDeclineMultiplier: newCstBidPriceDeclineMultiplier_,
 			mainPrizeTime: this.mainPrizeTime,
+			bidRaffleCumulativeWeight: this._currentRound().bidRaffleCumulativeWeights.at(-1) ?? null,
 		};
 	}
 
@@ -650,6 +667,10 @@ class GameModel {
 		const paidPrice_ = this.getNextCstBidPrice(ts_);
 		const reward_ = this.getBidCstRewardAmount(ts_);
 		const rewardSplit_ = this.getBidCstRewardSplit(reward_);
+		if (this.version >= 3) {
+			const bidRaffleWeight_ = this.getNextEthBidPrice(ts_);
+			this._appendBidRaffleWeight(bidRaffleWeight_);
+		}
 		this._bidderInfoForUpdate(bidderAddress_).totalSpentCstAmount += paidPrice_;
 		this.cstDutchAuctionBeginningTimeStamp = ts_;
 		const newBeginningBidPrice_ =
@@ -678,6 +699,7 @@ class GameModel {
 			newCstDutchAuctionDuration: newCstDutchAuctionDuration_,
 			newCstBidPriceDeclineMultiplier: newCstBidPriceDeclineMultiplier_,
 			mainPrizeTime: this.mainPrizeTime,
+			bidRaffleCumulativeWeight: this._currentRound().bidRaffleCumulativeWeights.at(-1) ?? null,
 		};
 	}
 

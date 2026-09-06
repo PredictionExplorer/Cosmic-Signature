@@ -40,6 +40,7 @@ interface ICosmicSignatureGameStorage {
 		address bidderAddress;
 
 		/// @notice This is populated in V3+.
+		/// It is the sum of the raffle weights of this bid and all preceding bids in the same bidding round.
 		uint256 raffleCumulativeWeight;
 	}
 

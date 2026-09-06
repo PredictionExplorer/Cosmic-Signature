@@ -41,6 +41,7 @@ abstract contract MainPrize is
 	///
 	/// [Comment-202605308]
 	/// Symbols Accessed by `claimMainPrize`, `_distributePrizes`, `_prepareNextRound`:
+	///    todo-0 Revisit this list. Add `BidRaffleWeightHelpers`.
 	///    `OpenZeppelinPanic`.
 	///    `nonReentrant`.
 	///    `_msgSender`.
@@ -248,11 +249,11 @@ abstract contract MainPrize is
 
 					ethDepositsTotalAmount_ += raffleEthPrizeAmountForBidder_ * ethDepositIndex_;
 					do {
-						-- ethDepositIndex_;
-						IPrizesWallet.EthDeposit memory ethDepositReference_ = ethDeposits_[ethDepositIndex_];
 						uint256 randomNumber_ = RandomNumberHelpers.generateRandomNumber(randomNumberSeedWrapper_);
 						address raffleWinnerAddress_ = bidsInfoReference_.items[randomNumber_ % bidsInfoReference_.numItems].bidderAddress;
 						// #enable_asserts assert(raffleWinnerAddress_ != address(0));
+						-- ethDepositIndex_;
+						IPrizesWallet.EthDeposit memory ethDepositReference_ = ethDeposits_[ethDepositIndex_];
 						ethDepositReference_.prizeWinnerAddress = raffleWinnerAddress_;
 						ethDepositReference_.amount = raffleEthPrizeAmountForBidder_;
 						emit RaffleWinnerBidderEthPrizeAllocated(

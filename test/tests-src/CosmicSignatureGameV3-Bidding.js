@@ -58,6 +58,8 @@ describe("CosmicSignatureGameV3-Bidding", function () {
 		const gameAddress_ = await game_.getAddress();
 		const bidders_ = [bidder1_, bidder2_, bidder3_];
 		const bidTypes_ = ["ETH", "receive", "CST"];
+		const roundNum_ = await game_.roundNum();
+		const ethBidPriceIncreaseDivisor_ = await game_.ethBidPriceIncreaseDivisor();
 
 		// [Comment-202609061]
 		// Transactions submitted by different accounts do not inherently have a deterministic execution
@@ -69,6 +71,11 @@ describe("CosmicSignatureGameV3-Bidding", function () {
 			const timeStamp_ = (await getLatestBlockTimestamp()) + 100n;
 			const ethBidPrice_ = await game_.getNextEthBidPriceAdvanced(100n);
 			const ethBidValue_ = ethBidPrice_ * 10n;
+			const firstBidIndex_ = await game_.getTotalNumBids(roundNum_);
+			const prevBidRaffleCumulativeWeight_ =
+				(firstBidIndex_ > 0n) ?
+				(await game_.getBidInfoAt(roundNum_, firstBidIndex_ - 1n)).raffleCumulativeWeight :
+				0n;
 			const submitBid_ = (bidType_, bidder_) => {
 				switch (bidType_) {
 					case "ETH":
@@ -110,6 +117,24 @@ describe("CosmicSignatureGameV3-Bidding", function () {
 				receipts_.map(receipt_ => findParsedEvent(receipt_, game_, "BidPlaced").args.bidCstRewardAmount);
 			expect(bidCstRewardAmounts_.filter(value_ => value_ === 0n).length, combinationDescription_).equal(2);
 			expect(bidCstRewardAmounts_.filter(value_ => value_ > 0n).length, combinationDescription_).equal(1);
+
+			const executedBids_ = receipts_.map((receipt_, submittedBidIndex_) => ({
+				receipt: receipt_,
+				bidType: bidTypeCombination_[submittedBidIndex_],
+			})).sort((bid1_, bid2_) => bid1_.receipt.index - bid2_.receipt.index);
+			let expectedBidRaffleWeight_ = ethBidPrice_;
+			let cumulativeWeightBeforeBid_ = prevBidRaffleCumulativeWeight_;
+			for ( let executionIndex_ = 0; executionIndex_ < executedBids_.length; ++ executionIndex_ ) {
+				const bidInfo_ = await game_.getBidInfoAt(roundNum_, firstBidIndex_ + BigInt(executionIndex_));
+				expect(
+					bidInfo_.raffleCumulativeWeight - cumulativeWeightBeforeBid_,
+					`${combinationDescription_}, executed bid ${executionIndex_}`
+				).equal(expectedBidRaffleWeight_);
+				cumulativeWeightBeforeBid_ = bidInfo_.raffleCumulativeWeight;
+				if (executedBids_[executionIndex_].bidType !== "CST") {
+					expectedBidRaffleWeight_ += expectedBidRaffleWeight_ / ethBidPriceIncreaseDivisor_ + 1n;
+				}
+			}
 			expect(await game_.ethDutchAuctionBeginningBidPrice(), combinationDescription_).equal(ethDutchAuctionBeginningBidPrice_);
 		}
 	});

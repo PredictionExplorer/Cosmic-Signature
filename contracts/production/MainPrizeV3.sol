@@ -10,6 +10,7 @@ import { Panic as OpenZeppelinPanic } from "@openzeppelin/contracts/utils/Panic.
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { CosmicSignatureEvents } from "./libraries/CosmicSignatureEvents.sol";
 import { RandomNumberHelpers } from "./libraries/RandomNumberHelpers.sol";
+import { BidRaffleWeightHelpers } from "./libraries/BidRaffleWeightHelpers.sol";
 import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 import { IPrizesWallet } from "./interfaces/IPrizesWallet.sol";
 import { BidStatisticsV2 } from "./BidStatisticsV2.sol";
@@ -105,11 +106,9 @@ abstract contract MainPrizeV3 is
 
 					ethDepositsTotalAmount_ += raffleEthPrizeAmountForBidder_ * ethDepositIndex_;
 					do {
+						address raffleWinnerAddress_ = _pickRaffleWinnerAddress(bidsInfoReference_, randomNumberSeedWrapper_);
 						-- ethDepositIndex_;
 						IPrizesWallet.EthDeposit memory ethDepositReference_ = ethDeposits_[ethDepositIndex_];
-						uint256 randomNumber_ = RandomNumberHelpers.generateRandomNumber(randomNumberSeedWrapper_);
-						address raffleWinnerAddress_ = bidsInfoReference_.items[randomNumber_ % bidsInfoReference_.numItems].bidderAddress;
-						// #enable_asserts assert(raffleWinnerAddress_ != address(0));
 						ethDepositReference_.prizeWinnerAddress = raffleWinnerAddress_;
 						ethDepositReference_.amount = raffleEthPrizeAmountForBidder_;
 						emit RaffleWinnerBidderEthPrizeAllocated(
@@ -276,9 +275,7 @@ abstract contract MainPrizeV3 is
 
 				// #enable_asserts assert(numRaffleCosmicSignatureNftsForBidders > 0);
 				for (uint256 raffleWinnerIndex_ = numRaffleCosmicSignatureNftsForBidders; ; ) {
-					uint256 randomNumber_ = RandomNumberHelpers.generateRandomNumber(randomNumberSeedWrapper_);
-					address raffleWinnerAddress_ = bidsInfoReference_.items[randomNumber_ % bidsInfoReference_.numItems].bidderAddress;
-					// #enable_asserts assert(raffleWinnerAddress_ != address(0));
+					address raffleWinnerAddress_ = _pickRaffleWinnerAddress(bidsInfoReference_, randomNumberSeedWrapper_);
 					-- cosmicSignatureTokenMintSpecIndex_;
 					ICosmicSignatureToken.MintSpec memory cosmicSignatureTokenMintSpec_ = cosmicSignatureTokenMintSpecs_[cosmicSignatureTokenMintSpecIndex_];
 					cosmicSignatureTokenMintSpec_.account = raffleWinnerAddress_;
@@ -526,6 +523,23 @@ abstract contract MainPrizeV3 is
 		}
 
 		// #endregion
+	}
+
+	// #endregion
+	// #region `_pickRaffleWinnerAddress`
+
+	/// @notice Picks a bidder with probability proportional to the bidder's bid raffle weight.
+	function _pickRaffleWinnerAddress(
+		BidsInfo storage bidsInfoReference_,
+		RandomNumberHelpers.RandomNumberSeedWrapper memory randomNumberSeedWrapper_
+	) private view returns (address) {
+		uint256 randomNumber_ = RandomNumberHelpers.generateRandomNumber(randomNumberSeedWrapper_);
+		uint256 bidRaffleTotalWeight_ = BidRaffleWeightHelpers.getTotalWeight(bidsInfoReference_);
+		// #enable_asserts assert(bidRaffleTotalWeight_ > 0);
+		uint256 raffleWinnerBidIndex_ = BidRaffleWeightHelpers.findBidIndex(bidsInfoReference_, randomNumber_ % bidRaffleTotalWeight_);
+		address raffleWinnerAddress_ = bidsInfoReference_.items[raffleWinnerBidIndex_].bidderAddress;
+		// #enable_asserts assert(raffleWinnerAddress_ != address(0));
+		return raffleWinnerAddress_;
 	}
 
 	// #endregion

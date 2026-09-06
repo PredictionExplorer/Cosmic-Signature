@@ -320,6 +320,13 @@ async function executeEthBid(ctx_, actor_, options_) {
 		expect(chainLastBidTs_, `ETH bid (${options_.flavor}): lastBidTimeStamp drift`).to.equal(modelLastBidTs_);
 	}
 
+	if (model.version >= 3) {
+		const bidIndex_ = model.getTotalNumBids(roundNumBefore_) - 1n;
+		const bidInfo_ = await ctx_.game.contract.getBidInfoAt(roundNumBefore_, bidIndex_);
+		expect(bidInfo_.raffleCumulativeWeight, `ETH bid (${options_.flavor}): raffle cumulative weight drift`)
+			.to.equal(expectations_.bidRaffleCumulativeWeight);
+	}
+
 	if (options_.flavor === "donateToken") {
 		const tokenDonated_ = engine.singleEvent(receipt_, contracts.prizesWallet, "TokenDonated", "ETH bid + token donation");
 		expect(tokenDonated_.args.amount).to.equal(donationTokenAmount_);
@@ -446,6 +453,13 @@ async function executeCstBid(ctx_, actor_, options_) {
 		const chainLastBidTs_ = (await ctx_.game.contract.biddersInfo(roundNumBefore_, actor_.address)).lastBidTimeStamp;
 		const modelLastBidTs_ = model.getBidderInfo(roundNumBefore_, actor_.address).lastBidTimeStamp;
 		expect(chainLastBidTs_, `CST bid (${options_.flavor}): lastBidTimeStamp drift`).to.equal(modelLastBidTs_);
+	}
+
+	if (model.version >= 3) {
+		const bidIndex_ = model.getTotalNumBids(roundNumBefore_) - 1n;
+		const bidInfo_ = await ctx_.game.contract.getBidInfoAt(roundNumBefore_, bidIndex_);
+		expect(bidInfo_.raffleCumulativeWeight, `CST bid (${options_.flavor}): raffle cumulative weight drift`)
+			.to.equal(expectations_.bidRaffleCumulativeWeight);
 	}
 
 	if (options_.flavor === "donateToken") {

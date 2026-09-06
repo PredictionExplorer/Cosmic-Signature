@@ -179,12 +179,26 @@ async function runInvariants(ctx_) {
 		const onChainNumBids_ = await game_.getTotalNumBids(model.roundNum);
 		expect(onChainNumBids_, "getTotalNumBids vs model").to.equal(model.getTotalNumBids(model.roundNum));
 		if (model.lastBidderAddress !== hre.ethers.ZeroAddress && onChainNumBids_ > 0n) {
-			const tail_ = await game_.getBidderAddressAt(model.roundNum, onChainNumBids_ - 1n);
-			expect(tail_.toLowerCase(), "bid log tail == lastBidderAddress").to.equal(model.lastBidderAddress);
+			const tailBidInfo_ = await game_.getBidInfoAt(model.roundNum, onChainNumBids_ - 1n);
+			expect(tailBidInfo_.bidderAddress.toLowerCase(), "bid log tail == lastBidderAddress")
+				.to.equal(model.lastBidderAddress);
 			const bidderInfo_ = model.getBidderInfo(model.roundNum, model.lastBidderAddress);
 			const [ethSpent_, cstSpent_] = await game_.getBidderTotalSpentAmounts(model.roundNum, model.lastBidderAddress);
 			expect(ethSpent_, "getBidderTotalSpentAmounts ETH vs model").to.equal(bidderInfo_.totalSpentEthAmount);
 			expect(cstSpent_, "getBidderTotalSpentAmounts CST vs model").to.equal(bidderInfo_.totalSpentCstAmount);
+		}
+	}
+
+	if (model.version >= 3) {
+		const cumulativeWeights_ = model.getBidRaffleCumulativeWeights(model.roundNum);
+		for ( let bidIndex_ = 0; bidIndex_ < cumulativeWeights_.length; ++ bidIndex_ ) {
+			const bidInfo_ = await game_.getBidInfoAt(model.roundNum, BigInt(bidIndex_));
+			expect(bidInfo_.raffleCumulativeWeight, `bid raffle cumulative weight ${bidIndex_} vs model`)
+				.to.equal(cumulativeWeights_[bidIndex_]);
+			if (bidIndex_ > 0 && cumulativeWeights_[bidIndex_ - 1] > 0n) {
+				expect(cumulativeWeights_[bidIndex_], `bid raffle cumulative weight ${bidIndex_} increases`)
+					.greaterThan(cumulativeWeights_[bidIndex_ - 1]);
+			}
 		}
 	}
 

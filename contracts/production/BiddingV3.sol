@@ -11,6 +11,7 @@ import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { CosmicSignatureHelpers } from "./libraries/CosmicSignatureHelpers.sol";
+import { BidRaffleWeightHelpers } from "./libraries/BidRaffleWeightHelpers.sol";
 import { IBidding1V2 } from "./interfaces/IBidding1V2.sol";
 import { BiddingV2Base } from "./BiddingV2Base.sol";
 import { CosmicSignatureGameStorageV3Base } from "./CosmicSignatureGameStorageV3Base.sol";
@@ -124,6 +125,7 @@ abstract contract BiddingV3 is
 		// #endregion
 		// #region
 
+		BidRaffleWeightHelpers.saveForNextBid(bidsInfo[roundNum], ethBidPrice_);
 		biddersInfo[roundNum][_msgSender()].totalSpentEthAmount += paidEthPrice_;
 		if (lastBidderAddress == address(0)) {
 			ethDutchAuctionBeginningBidPrice = ethBidPrice_ * CosmicSignatureConstants.ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
@@ -214,6 +216,8 @@ abstract contract BiddingV3 is
 		// Comment-202609074 applies to `lastBidderAddress`.
 		_burnCstBidPriceAndMintBidCstRewardAmountIfNeeded(lastBidderAddress, paidPrice_, bidCstRewardAmount_);
 
+		uint256 ethBidPrice_ = getNextEthBidPriceAdvanced(int256(0));
+		BidRaffleWeightHelpers.saveForNextBid(bidsInfo[roundNum], ethBidPrice_);
 		biddersInfo[roundNum][_msgSender()].totalSpentCstAmount += paidPrice_;
 		cstDutchAuctionBeginningTimeStamp = block.timestamp;
 

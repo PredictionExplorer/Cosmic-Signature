@@ -37,7 +37,6 @@ const configuration =
 					// Comment-202509242 relates.
 					"SelfDestructibleCosmicSignatureGame",
 
-					// "SpecialCosmicSignatureGame",
 					// "CosmicSignatureGame",
 
 				// If this is empty or zero, we will deploy a new Random Walk NFT contract.
