@@ -36,7 +36,7 @@ It means a copy of the same numbered comment. In other words, the same numbered 
 // Comment-202608222 relates.
 ```
 
-It means that the given comment is in some way relevant at the given location. It implies that it's clear in what way it's relevant. If the relationship is not clear, write a more descriptive reference-comment.
+It means that the given comment is in some way relevant at the given location. Use this form only when the relationship is clear. If it is not, write a more descriptive reference-comment.
 
 ```ts
 // Comment-202608222 relates and/or applies.

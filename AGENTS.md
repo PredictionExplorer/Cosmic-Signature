@@ -79,14 +79,14 @@ assert(x > y);
 - If you are not to perform a todo, use it as context. For example, if the prompt says to develop tests and a todo says to confirm a certain relevant behavior, consider proposing a test for that case.
 - Comments and docs should be brief.
 - Explain non-obvious intricacies in comments. For example, explain dependencies of logic in different parts of the codebase.
-- That said, when performing a refactoring, it can be helpful for me if you explain non-obvious intricacies related to the refactoring in detail in verbose temporary to-be-deleted comments. Format them as follows:
+- That said, when performing a refactoring or editing, it can be helpful for me if you explain non-obvious intricacies related to the refactoring in detail in verbose temporary to-be-deleted comments. Format them as follows:
 
 ```solidity
 // DEL: (Provide details about what you did
 // DEL: and why you did it.)
 ```
 
-  For exampple, when you move code or text to a different location while also deleting parts of it, write a `DEL:`-comment at the old location about what you deleted. You can link the locations with a numbered comment. (It's OK to waste an ID in a `DEL:`-comment.)
+  For example, when you move code or text to a different location while also deleting parts of it, write a `DEL:`-comment at the old location about what you deleted. You can link the locations with a numbered comment. (It's OK to waste an ID in a `DEL:`-comment.)
 - Maintain commented-out code when practical. When refactoring active code, update analogous commented-out code too. If commented-out code is already stale or cannot be updated without broader work, add a `ToDo-9` describing what must be done after it is uncommented.
 - Some conditionally compiled alternatives are mutually exclusive. Keep each reachable compilation variant correct; mutually exclusive alternatives do not need to be valid simultaneously in one compilation.
 - When an explanatory comment or todo occupies one or more separate lines and is associated with code, place it before the relevant lines. Insert an empty line before the comment and after the last relevant line of code when the surrounding structure permits it. When deleting a comment, delete any empty lines that are no longer needed, but be sure not to delete empty lines needed for other comments.
@@ -99,4 +99,4 @@ assert(x > y);
 ## Uncategorized
 
 - Prefer using only ASCII chars. For example, instead of `—`, use `--`. But if the surrounding text intentionally uses non-ASCII chars, keep using them consistently.
-- Minimize model usage by skipping actions that do not affect the end result.
+- Minimize model usage. Skip redundant or non-informative actions, but not actions required by these instructions or needed to ensure correctness. Avoid repeatedly polling long-running commands when you can wait for them to complete.
