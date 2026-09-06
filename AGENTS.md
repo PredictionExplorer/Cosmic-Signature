@@ -99,4 +99,4 @@ assert(x > y);
 ## Uncategorized
 
 - Prefer using only ASCII chars. For example, instead of `—`, use `--`. But if the surrounding text intentionally uses non-ASCII chars, keep using them consistently.
-- Minimize model usage. Skip redundant or non-informative actions, but not actions required by these instructions or needed to ensure correctness. Avoid repeatedly polling long-running commands when you can wait for them to complete.
+- To reduce model usage, prefer not to poll running commands for progress when you can wait for them to complete.
