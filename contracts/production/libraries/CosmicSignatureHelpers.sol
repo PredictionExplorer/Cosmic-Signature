@@ -10,7 +10,7 @@ library CosmicSignatureHelpers {
 	// #region // `max`
 
 	// function max(int256 value1_, int256 value2_) internal pure returns (int256) {
-	// 	return (value1_ >= value2_) ? value1_ : value2_;
+	// 	return (value1_ > value2_) ? value1_ : value2_;
 	// }
 
 	// #endregion
