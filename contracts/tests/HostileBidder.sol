@@ -40,8 +40,8 @@ contract HostileBidder {
 		game.bidWithEth{value: msg.value}(randomWalkNftId_, message_, bidCstRewardAmountMinLimit_);
 	}
 
-	function doBidWithCst(uint256 priceMaxLimit_, string calldata message_, uint256 bidCstRewardAmountMinLimit_) external {
-		game.bidWithCst(priceMaxLimit_, message_, bidCstRewardAmountMinLimit_);
+	function doBidWithCst(uint256 cstPriceMaxLimit_, string calldata message_, uint256 bidCstRewardAmountMinLimit_) external {
+		game.bidWithCst(cstPriceMaxLimit_, message_, bidCstRewardAmountMinLimit_);
 	}
 
 	function doClaimMainPrize() external {

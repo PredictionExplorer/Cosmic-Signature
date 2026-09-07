@@ -646,10 +646,8 @@ class FuzzCampaign {
 			return;
 		}
 		// Build 2-3 sequential ETH bids at the same timestamp, applying the model in submission order.
-		// Within one block each bid escalates the next bid's price (`nextEthBidPrice = p + p/div + 1`),
-		// and in V3 each bid also moves the late-bid-premium window (`_extendMainPrizeTime` runs before
-		// the next bid prices in), so the model computes the exact price ladder up front and each bid
-		// sends its exact price (no refund).
+		// Each bid increases the next base price and extends `mainPrizeTime`, moving the V3 premium window.
+		// The model accounts for these changes so each bid sends its exact price without a refund.
 		const ts_ = this.engine.clampTs(this.engine.planTs(this.engine.boundaryCandidates()));
 		const count_ = this.engine.randomIntRange(2, 3);
 		const ladderPrices_ = this.model.planEthBidPriceLadder(ts_, count_);

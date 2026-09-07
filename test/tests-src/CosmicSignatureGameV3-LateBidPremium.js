@@ -11,6 +11,7 @@ const { ENABLE_SMTCHECKER, waitForTransactionReceipt } = require("../../src/Help
 const {
 	getLatestBlockTimestamp,
 	activateCurrentRound,
+	findParsedEvent,
 } = require("../src/V2UpgradeTestHelpers.js");
 const {
 	ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_RESOLUTION_EXPONENT,
@@ -240,9 +241,12 @@ describe("CosmicSignatureGameV3-LateBidPremium", function () {
 				}
 				expect(bidPlacedLog_.args.paidEthPrice).equal(adjustedPrice_);
 
-				// The premium-adjusted price feeds the exponential next-bid price ladder.
+				// The next price grows from the base after the bid closes the premium window.
 				const ethBidPriceIncreaseDivisor_ = await game_.ethBidPriceIncreaseDivisor();
-				expect(await game_.nextEthBidPrice()).equal(adjustedPrice_ + adjustedPrice_ / ethBidPriceIncreaseDivisor_ + 1n);
+				const newEthBidPriceBase_ = ethBidPriceBase_ + ethBidPriceBase_ / ethBidPriceIncreaseDivisor_ + 1n;
+				expect(await game_.nextEthBidPrice()).equal(newEthBidPriceBase_);
+				expect((await game_.mainPrizeTime()) - (await getLatestBlockTimestamp())).greaterThan(roundLateBidDuration_);
+				expect(await game_.getNextEthBidPrice()).equal(newEthBidPriceBase_);
 			}
 		}
 
@@ -307,6 +311,98 @@ describe("CosmicSignatureGameV3-LateBidPremium", function () {
 		}
 
 		// #endregion
+	});
+
+	it("charges late premiums without increasing price anchors or raffle weights", async function () {
+		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3(2n);
+		const game_ = contracts_.cosmicSignatureGameV3Proxy;
+		const token_ = contracts_.cosmicSignatureToken;
+		const [bidder1_, bidder2_] = contracts_.signers.slice(1, 3);
+		await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setCstBidPriceDeclineMultiplier(10n ** 15n));
+		await activateCurrentRound(game_, contracts_.ownerSigner);
+		await waitForTransactionReceipt(
+			contracts_.randomWalkNft.connect(bidder2_).mint({ value: await contracts_.randomWalkNft.getMintPrice(), })
+		);
+		const randomWalkNftId_ = (await contracts_.randomWalkNft.totalSupply()) - 1n;
+		const roundNum_ = await game_.roundNum();
+		await waitForTransactionReceipt(game_.connect(bidder1_).bidWithEth(-1n, "", 0n, { value: 10n ** 18n, }));
+		const mainPrizeTimeIncrement_ = await game_.mainPrizeTimeIncrementInMicroSeconds();
+		const lateDuration_ = await game_.getRoundLateBidDuration();
+		const increaseDivisor_ = await game_.ethBidPriceIncreaseDivisor();
+		const ethAuctionBeginningPrice_ = await game_.ethDutchAuctionBeginningBidPrice();
+		let cumulativeWeight_ = (await game_.getBidInfoAt(roundNum_, 0n)).raffleCumulativeWeight;
+
+		// Exercise deep-window ETH and receive bids, then an NFT-assisted bid past the deadline.
+		for (const bidType_ of ["ETH", "receive", "NFT"]) {
+			const bidder_ = (bidType_ === "NFT") ? bidder2_ : bidder1_;
+			const ethBidPriceBase_ = await game_.nextEthBidPrice();
+			const mainPrizeTime_ = await game_.mainPrizeTime();
+			const bidTimeStamp_ = mainPrizeTime_ + ((bidType_ === "NFT") ? 123n : -lateDuration_ / 8n);
+			const adjustedPrice_ = addRoundLateBidPricePremiumAmountIfNeeded(
+				ethBidPriceBase_, mainPrizeTime_ - bidTimeStamp_, lateDuration_, mainPrizeTimeIncrement_
+			);
+			expect(adjustedPrice_).greaterThan(ethBidPriceBase_ * 2n);
+			const paidPrice_ = (bidType_ === "NFT") ? (adjustedPrice_ + 1n) / 2n : adjustedPrice_;
+			const spentBefore_ = (await game_.getBidderTotalSpentAmounts(roundNum_, bidder_.address))[0];
+			await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(bidTimeStamp_),]);
+			const receipt_ = await waitForTransactionReceipt(
+				(bidType_ === "receive") ?
+				bidder_.sendTransaction({ to: await game_.getAddress(), value: paidPrice_, }) :
+				game_.connect(bidder_).bidWithEth((bidType_ === "NFT") ? randomWalkNftId_ : -1n, "", 0n, { value: paidPrice_, })
+			);
+			expect(findParsedEvent(receipt_, game_, "BidPlaced").args.paidEthPrice).equal(paidPrice_);
+			expect((await game_.getBidderTotalSpentAmounts(roundNum_, bidder_.address))[0] - spentBefore_).equal(paidPrice_);
+			const newEthBidPriceBase_ = ethBidPriceBase_ + ethBidPriceBase_ / increaseDivisor_ + 1n;
+			expect(await game_.nextEthBidPrice()).equal(newEthBidPriceBase_);
+			expect(await game_.getNextEthBidPrice()).equal(newEthBidPriceBase_);
+			expect(await game_.ethDutchAuctionBeginningBidPrice()).equal(ethAuctionBeginningPrice_);
+			cumulativeWeight_ += ethBidPriceBase_;
+			expect((await game_.getBidInfoAt(roundNum_, (await game_.getTotalNumBids(roundNum_)) - 1n)).raffleCumulativeWeight)
+				.equal(cumulativeWeight_);
+		}
+
+		// Only the first CST bid sets the next round's anchor; neither reset includes a premium.
+		let nextRoundCstBeginningPrice_;
+		for (let bidIndex_ = 0; bidIndex_ < 2; ++ bidIndex_) {
+			const ethBidPriceBase_ = await game_.nextEthBidPrice();
+			const mainPrizeTime_ = await game_.mainPrizeTime();
+			const bidTimeStamp_ = mainPrizeTime_ - lateDuration_ / 4n;
+			const beginningPrice_ = (bidIndex_ === 0) ?
+				await game_.nextRoundFirstCstDutchAuctionBeginningBidPrice() : await game_.cstDutchAuctionBeginningBidPrice();
+			const cstBidPriceBase_ = beginningPrice_ -
+				(bidTimeStamp_ - await game_.cstDutchAuctionBeginningTimeStamp()) * (await game_.cstBidPriceDeclineMultiplier());
+			expect(cstBidPriceBase_).greaterThan(0n);
+			const adjustedPrice_ = addRoundLateBidPricePremiumAmountIfNeeded(
+				cstBidPriceBase_, mainPrizeTime_ - bidTimeStamp_, lateDuration_, mainPrizeTimeIncrement_
+			);
+			expect(adjustedPrice_).greaterThan(cstBidPriceBase_);
+			const bidder_ = (bidIndex_ === 0) ? bidder1_ : bidder2_;
+
+			// Share naturally earned CST rewards to fund the second premium-bearing CST bid.
+			if (bidIndex_ > 0) {
+				await waitForTransactionReceipt(token_.connect(bidder1_).transfer(bidder2_.address, adjustedPrice_));
+			}
+
+			const balanceBefore_ = await token_.balanceOf(bidder_.address);
+			const spentBefore_ = (await game_.getBidderTotalSpentAmounts(roundNum_, bidder_.address))[1];
+			await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(bidTimeStamp_),]);
+			const receipt_ = await waitForTransactionReceipt(game_.connect(bidder_).bidWithCst(adjustedPrice_, "", 0n));
+			expect(findParsedEvent(receipt_, game_, "BidPlaced").args.paidCstPrice).equal(adjustedPrice_);
+			expect(balanceBefore_ - await token_.balanceOf(bidder_.address)).equal(adjustedPrice_);
+			expect((await game_.getBidderTotalSpentAmounts(roundNum_, bidder_.address))[1] - spentBefore_).equal(adjustedPrice_);
+			const minLimit_ = await game_.cstDutchAuctionBeginningBidPriceMinLimit();
+			const newBeginningPrice_ = (cstBidPriceBase_ * 2n > minLimit_) ? cstBidPriceBase_ * 2n : minLimit_;
+			expect(await game_.cstDutchAuctionBeginningBidPrice()).equal(newBeginningPrice_);
+			expect(await game_.getNextCstBidPrice()).equal(newBeginningPrice_);
+			if (bidIndex_ === 0) {
+				nextRoundCstBeginningPrice_ = newBeginningPrice_;
+			}
+			expect(await game_.nextRoundFirstCstDutchAuctionBeginningBidPrice()).equal(nextRoundCstBeginningPrice_);
+			expect(await game_.nextEthBidPrice()).equal(ethBidPriceBase_);
+			cumulativeWeight_ += ethBidPriceBase_;
+			expect((await game_.getBidInfoAt(roundNum_, (await game_.getTotalNumBids(roundNum_)) - 1n)).raffleCumulativeWeight)
+				.equal(cumulativeWeight_);
+		}
 	});
 
 	it("handles extreme premium parameters with checked SMTChecker or wrapping production arithmetic", async function () {

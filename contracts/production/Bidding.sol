@@ -510,12 +510,12 @@ abstract contract Bidding is
 	// #region `bidWithCstAndDonateToken`
 
 	function bidWithCstAndDonateToken(
-		uint256 priceMaxLimit_,
+		uint256 cstPriceMaxLimit_,
 		string memory message_,
 		IERC20 tokenAddress_,
 		uint256 amount_
 	) external override nonReentrant /*_onlyRoundIsActive*/ {
-		_bidWithCst(priceMaxLimit_, message_);
+		_bidWithCst(cstPriceMaxLimit_, message_);
 		prizesWallet.donateToken(roundNum, _msgSender(), tokenAddress_, amount_);
 	}
 
@@ -523,26 +523,26 @@ abstract contract Bidding is
 	// #region `bidWithCstAndDonateNft`
 
 	function bidWithCstAndDonateNft(
-		uint256 priceMaxLimit_,
+		uint256 cstPriceMaxLimit_,
 		string memory message_,
 		IERC721 nftAddress_,
 		uint256 nftId_
 	) external override nonReentrant /*_onlyRoundIsActive*/ {
-		_bidWithCst(priceMaxLimit_, message_);
+		_bidWithCst(cstPriceMaxLimit_, message_);
 		prizesWallet.donateNft(roundNum, _msgSender(), nftAddress_, nftId_);
 	}
 
 	// #endregion
 	// #region `bidWithCst`
 
-	function bidWithCst(uint256 priceMaxLimit_, string memory message_) external override nonReentrant /*_onlyRoundIsActive*/ {
-		_bidWithCst(priceMaxLimit_, message_);
+	function bidWithCst(uint256 cstPriceMaxLimit_, string memory message_) external override nonReentrant /*_onlyRoundIsActive*/ {
+		_bidWithCst(cstPriceMaxLimit_, message_);
 	}
 
 	// #endregion
 	// #region `_bidWithCst`
 
-	function _bidWithCst(uint256 priceMaxLimit_, string memory message_) private /*nonReentrant*/ /*_onlyRoundIsActive*/ {
+	function _bidWithCst(uint256 cstPriceMaxLimit_, string memory message_) private /*nonReentrant*/ /*_onlyRoundIsActive*/ {
 		// [Comment-202412251]
 		// This is a common sense requirement.
 		// The marketing wallet isn't supposed to bid with CST.
@@ -561,11 +561,11 @@ abstract contract Bidding is
 		// [/Comment-202501045]
 
 		// Comment-202503162 relates and/or applies.
-		uint256 paidPrice_ = getNextCstBidPriceAdvanced(int256(0));
+		uint256 paidCstPrice_ = getNextCstBidPriceAdvanced(int256(0));
 
 		// Comment-202412045 applies.
-		if ( ! (paidPrice_ <= priceMaxLimit_) ) {
-			revert CosmicSignatureErrors.InsufficientReceivedBidAmount("The current CST bid price is greater than the maximum you allowed.", paidPrice_, priceMaxLimit_);
+		if ( ! (paidCstPrice_ <= cstPriceMaxLimit_) ) {
+			revert CosmicSignatureErrors.InsufficientReceivedBidAmount("The current CST bid price is greater than the maximum you allowed.", paidCstPrice_, cstPriceMaxLimit_);
 		}
 
 		{
@@ -577,16 +577,16 @@ abstract contract Bidding is
 			// It probably makes little sense to call `ERC20Burnable.burn` or `ERC20Burnable.burnFrom` instead.
 			// [/Comment-202409177]
 			// Comment-202606074 relates and/or applies.
-			mintAndBurnSpecs_[0].value = ( - int256(paidPrice_) );
+			mintAndBurnSpecs_[0].value = ( - int256(paidCstPrice_) );
 
 			mintAndBurnSpecs_[1].account = _msgSender();
 			mintAndBurnSpecs_[1].value = int256(bidCstRewardAmount);
 			token.mintAndBurnMany(mintAndBurnSpecs_);
 		}
-		biddersInfo[roundNum][_msgSender()].totalSpentCstAmount += paidPrice_;
+		biddersInfo[roundNum][_msgSender()].totalSpentCstAmount += paidCstPrice_;
 		cstDutchAuctionBeginningTimeStamp = block.timestamp;
 		uint256 newCstDutchAuctionBeginningBidPrice_ =
-			Math.max(paidPrice_ * CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, cstDutchAuctionBeginningBidPriceMinLimit);
+			Math.max(paidCstPrice_ * CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, cstDutchAuctionBeginningBidPriceMinLimit);
 		cstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
 		if (lastCstBidderAddress == address(0)) {
 			// Comment-202501045 applies.
@@ -604,7 +604,7 @@ abstract contract Bidding is
 			roundNum,
 			_msgSender(),
 			-1,
-			int256(paidPrice_),
+			int256(paidCstPrice_),
 			-1,
 			message_,
 			mainPrizeTime

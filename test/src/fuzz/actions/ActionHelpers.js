@@ -372,11 +372,11 @@ async function executeCstBid(ctx_, actor_, options_) {
 	if (ledger.cstBalanceOf(actor_.address) < price_) {
 		return "skip";
 	}
-	let priceMaxLimit_;
+	let cstPriceMaxLimit_;
 	switch (options_.maxLimitMode ?? "padded") {
-		case "max": priceMaxLimit_ = MAX_UINT256; break;
-		case "exact": priceMaxLimit_ = price_; break;
-		default: priceMaxLimit_ = price_ + engine.randomBigIntRange(0n, price_ + 1n); break;
+		case "max": cstPriceMaxLimit_ = MAX_UINT256; break;
+		case "exact": cstPriceMaxLimit_ = price_; break;
+		default: cstPriceMaxLimit_ = price_ + engine.randomBigIntRange(0n, price_ + 1n); break;
 	}
 	const message_ = engine.randomMessage(Math.min(Number(model.bidMessageLengthMaxLimit), 120));
 	const expectedBidCstReward_ = model.getBidCstRewardAmount(ts_);
@@ -386,17 +386,17 @@ async function executeCstBid(ctx_, actor_, options_) {
 	const buildTx_ = (overrides_) => {
 		switch (options_.flavor) {
 			case "plain":
-				return ctx_.game.connect(actor_.signer).bidWithCst(priceMaxLimit_, message_, minReward_, overrides_);
+				return ctx_.game.connect(actor_.signer).bidWithCst(cstPriceMaxLimit_, message_, minReward_, overrides_);
 			case "donateToken":
 				return ctx_.game.connect(actor_.signer).bidWithCstAndDonateToken(
-					priceMaxLimit_, message_, minReward_, contracts.fuzzTestMockErc20Address, donationTokenAmount_, overrides_);
+					cstPriceMaxLimit_, message_, minReward_, contracts.fuzzTestMockErc20Address, donationTokenAmount_, overrides_);
 			case "donateNft": {
 				const sig_ = (model.version >= 2) ?
 					"bidWithCstAndDonateNft(uint256,string,uint256,address,uint256)" :
 					"bidWithCstAndDonateNft(uint256,string,address,uint256)";
 				const args_ = (model.version >= 2) ?
-					[priceMaxLimit_, message_, minReward_, contracts.fuzzTestMockErc721Address, donationNftId_] :
-					[priceMaxLimit_, message_, contracts.fuzzTestMockErc721Address, donationNftId_];
+					[cstPriceMaxLimit_, message_, minReward_, contracts.fuzzTestMockErc721Address, donationNftId_] :
+					[cstPriceMaxLimit_, message_, contracts.fuzzTestMockErc721Address, donationNftId_];
 				return gameContract_.getFunction(sig_)(...args_, overrides_);
 			}
 			default:
@@ -414,7 +414,7 @@ async function executeCstBid(ctx_, actor_, options_) {
 	const receipt_ = engine.expectOk(result_, `CST bid (${options_.flavor})`);
 
 	const expectations_ = model.applyCstBid(actor_.address, ts_);
-	expect(expectations_.paidPrice, "CST bid: planned price changed").to.equal(price_);
+	expect(expectations_.paidCstPrice, "CST bid: planned price changed").to.equal(price_);
 	expect(expectations_.bidCstRewardAmount).to.equal(expectedBidCstReward_);
 
 	const bidPlaced_ = engine.singleEvent(receipt_, ctx_.game.contract, "BidPlaced", "CST bid");

@@ -24,8 +24,8 @@ contract MaliciousBidder {
 		cosmicSignatureGame.bidWithEth{value: msg.value}(randomWalkNftId_, message_);
 	}
 
-	function doBidWithCst(uint256 priceMaxLimit_, string memory message_) public {
-		cosmicSignatureGame.bidWithCst(priceMaxLimit_, message_);
+	function doBidWithCst(uint256 cstPriceMaxLimit_, string memory message_) public {
+		cosmicSignatureGame.bidWithCst(cstPriceMaxLimit_, message_);
 	}
 
 	function doClaimMainPrize() public {

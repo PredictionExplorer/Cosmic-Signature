@@ -31,7 +31,7 @@ async function getCumulativeWeightAt_(game_, roundNum_, bidIndex_) {
 }
 
 describe("CosmicSignatureGameV3-BidRaffle", function () {
-	it("records the posted ETH bid price as every bid type's raffle weight", async function () {
+	it("records the base ETH bid price as every bid type's raffle weight", async function () {
 		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3(2n);
 		const game_ = contracts_.cosmicSignatureGameV3Proxy;
 		await activateCurrentRound(game_, contracts_.ownerSigner);
@@ -106,8 +106,7 @@ describe("CosmicSignatureGameV3-BidRaffle", function () {
 				bidder1CstBalance_,
 				(await getLatestBlockTimestamp()) + 1n
 			);
-			const currentTimeOffset_ = affordableCstBid_.timeStamp - (await getLatestBlockTimestamp());
-			const concurrentEthBidPrice_ = await game_.getNextEthBidPriceAdvanced(currentTimeOffset_);
+			const concurrentEthBidPrice_ = await game_.nextEthBidPrice();
 			await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(affordableCstBid_.timeStamp),]);
 			const receipt_ = await waitForTransactionReceipt(
 				game_.connect(bidder1_).bidWithCst(1n << 255n, "", 0n)
@@ -138,14 +137,18 @@ describe("CosmicSignatureGameV3-BidRaffle", function () {
 
 		for ( let bidIndex_ = 0; bidIndex_ < bidders_.length; ++ bidIndex_ ) {
 			let postedEthBidPrice_;
+			let expectedBidRaffleWeight_;
 			if (bidIndex_ === bidders_.length - 1) {
 				const bidTimeStamp_ = (await game_.mainPrizeTime()) - 10n;
 				postedEthBidPrice_ = await game_.getNextEthBidPriceAdvanced(
 					bidTimeStamp_ - (await getLatestBlockTimestamp())
 				);
+				expectedBidRaffleWeight_ = await game_.nextEthBidPrice();
+				expect(postedEthBidPrice_).greaterThan(expectedBidRaffleWeight_);
 				await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(bidTimeStamp_),]);
 			} else {
 				postedEthBidPrice_ = await quoteAndPinNextBid_(game_);
+				expectedBidRaffleWeight_ = postedEthBidPrice_;
 			}
 			await waitForTransactionReceipt(
 				game_.connect(bidders_[bidIndex_]).bidWithEth(-1n, "", 0n, { value: postedEthBidPrice_, })
@@ -154,7 +157,7 @@ describe("CosmicSignatureGameV3-BidRaffle", function () {
 				(bidIndex_ > 0) ? await getCumulativeWeightAt_(game_, roundNum_, BigInt(bidIndex_ - 1)) : 0n;
 			expect(
 				(await getCumulativeWeightAt_(game_, roundNum_, BigInt(bidIndex_))) - prevBidRaffleCumulativeWeight_
-			).equal(postedEthBidPrice_);
+			).equal(expectedBidRaffleWeight_);
 		}
 
 		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(await game_.mainPrizeTime()),]);

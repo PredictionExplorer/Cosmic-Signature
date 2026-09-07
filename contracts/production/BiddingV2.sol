@@ -172,7 +172,7 @@ abstract contract BiddingV2 is
 	// #endregion
 	// #region `_bidWithCst`
 
-	function _bidWithCst(uint256 priceMaxLimit_, string memory message_, uint256 bidCstRewardAmountMinLimit_) internal override /* virtual */ /* nonReentrant() */ /* _onlyRoundIsActive() */ {
+	function _bidWithCst(uint256 cstPriceMaxLimit_, string memory message_, uint256 bidCstRewardAmountMinLimit_) internal override /* virtual */ /* nonReentrant() */ /* _onlyRoundIsActive() */ {
 		// Comment-202412251 applies.
 		// #enable_asserts assert(_msgSender() != marketingWallet);
 
@@ -187,18 +187,18 @@ abstract contract BiddingV2 is
 		}
 
 		// Comment-202503162 relates and/or applies.
-		uint256 paidPrice_ = getNextCstBidPriceAdvanced(int256(0));
+		uint256 paidCstPrice_ = getNextCstBidPriceAdvanced(int256(0));
 
 		// Comment-202412045 applies.
-		if ( ! (paidPrice_ <= priceMaxLimit_) ) {
-			revert CosmicSignatureErrors.InsufficientReceivedBidAmount("The current CST bid price is greater than the maximum you allowed.", paidPrice_, priceMaxLimit_);
+		if ( ! (paidCstPrice_ <= cstPriceMaxLimit_) ) {
+			revert CosmicSignatureErrors.InsufficientReceivedBidAmount("The current CST bid price is greater than the maximum you allowed.", paidCstPrice_, cstPriceMaxLimit_);
 		}
 
-		_burnCstBidPriceAndMintBidCstRewardAmountIfNeeded(_msgSender(), paidPrice_, bidCstRewardAmount_);
-		biddersInfo[roundNum][_msgSender()].totalSpentCstAmount += paidPrice_;
+		_burnCstBidPriceAndMintBidCstRewardAmountIfNeeded(_msgSender(), paidCstPrice_, bidCstRewardAmount_);
+		biddersInfo[roundNum][_msgSender()].totalSpentCstAmount += paidCstPrice_;
 		cstDutchAuctionBeginningTimeStamp = block.timestamp;
 		uint256 newCstDutchAuctionBeginningBidPrice_ =
-			Math.max(paidPrice_ * CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, cstDutchAuctionBeginningBidPriceMinLimit);
+			Math.max(paidCstPrice_ * CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, cstDutchAuctionBeginningBidPriceMinLimit);
 		cstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
 		if (lastCstBidderAddress == address(0)) {
 			// Comment-202501045 applies.
@@ -214,7 +214,7 @@ abstract contract BiddingV2 is
 			roundNum,
 			_msgSender(),
 			-1,
-			int256(paidPrice_),
+			int256(paidCstPrice_),
 			-1,
 			message_,
 			bidCstRewardAmount_,

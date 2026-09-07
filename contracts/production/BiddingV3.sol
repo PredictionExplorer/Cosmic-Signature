@@ -50,7 +50,8 @@ abstract contract BiddingV3 is
 		// #region
 
 		// Comment-202503162 relates and/or applies.
-		uint256 ethBidPrice_ = getNextEthBidPriceAdvanced(int256(0));
+		uint256 ethBidPriceBase_ = super.getNextEthBidPriceAdvanced(int256(0));
+		uint256 ethBidPrice_ = _addRoundLateBidPricePremiumAmountIfNeeded(ethBidPriceBase_, int256(0));
 		uint256 paidEthPrice_ =
 			(randomWalkNftId_ < int256(0)) ?
 			ethBidPrice_ :
@@ -125,16 +126,16 @@ abstract contract BiddingV3 is
 		// #endregion
 		// #region
 
-		BidRaffleWeightHelpers.saveForNextBid(bidsInfo[roundNum], ethBidPrice_);
+		BidRaffleWeightHelpers.saveForNextBid(bidsInfo[roundNum], ethBidPriceBase_);
 		biddersInfo[roundNum][_msgSender()].totalSpentEthAmount += paidEthPrice_;
 		if (lastBidderAddress == address(0)) {
-			ethDutchAuctionBeginningBidPrice = ethBidPrice_ * CosmicSignatureConstants.ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
+			ethDutchAuctionBeginningBidPrice = ethBidPriceBase_ * CosmicSignatureConstants.ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
 		} else {
 			_mintBidCstRewardAmountIfNeeded(lastBidderAddress, bidCstRewardAmount_);
 		}
 
 		// Comment-202501061 applies.
-		nextEthBidPrice = CosmicSignatureHelpers.tryIncreaseValueExponentially(ethBidPrice_, ethBidPriceIncreaseDivisor) + 1;
+		nextEthBidPrice = CosmicSignatureHelpers.tryIncreaseValueExponentially(ethBidPriceBase_, ethBidPriceIncreaseDivisor) + 1;
 
 		uint256 newCstBidPriceDeclineMultiplier_ = _tryIncreaseCstBidPriceDeclineMultiplier();
 		_bidCommon(/*bidType_,*/ message_);
@@ -185,13 +186,14 @@ abstract contract BiddingV3 is
 		// unchecked
 		// // #enable_smtchecker */
 
-		return _addRoundLateBidPricePremiumAmountIfNeeded(super.getNextEthBidPriceAdvanced(currentTimeOffset_), currentTimeOffset_);
+		uint256 ethBidPriceBase_ = super.getNextEthBidPriceAdvanced(currentTimeOffset_);
+		return _addRoundLateBidPricePremiumAmountIfNeeded(ethBidPriceBase_, currentTimeOffset_);
 	}
 
 	// #endregion
 	// #region `_bidWithCst`
 
-	function _bidWithCst(uint256 priceMaxLimit_, string memory message_, uint256 bidCstRewardAmountMinLimit_) internal override /* virtual */ /* nonReentrant() */ /* _onlyRoundIsActive() */ {
+	function _bidWithCst(uint256 cstPriceMaxLimit_, string memory message_, uint256 bidCstRewardAmountMinLimit_) internal override /* virtual */ /* nonReentrant() */ /* _onlyRoundIsActive() */ {
 		// Comment-202412251 applies.
 		// #enable_asserts assert(_msgSender() != marketingWallet);
 
@@ -206,19 +208,20 @@ abstract contract BiddingV3 is
 		}
 
 		// Comment-202503162 relates and/or applies.
-		uint256 paidPrice_ = getNextCstBidPriceAdvanced(int256(0));
+		uint256 cstBidPriceBase_ = _getNextCstBidPriceBaseAdvanced(int256(0));
+		uint256 paidCstPrice_ = /* (cstBidPriceBase_ > 0) ? */ _addRoundLateBidPricePremiumAmountIfNeeded(cstBidPriceBase_, int256(0)) /* : 0 */;
 
 		// Comment-202412045 applies.
-		if ( ! (paidPrice_ <= priceMaxLimit_) ) {
-			revert CosmicSignatureErrors.InsufficientReceivedBidAmount("The current CST bid price is greater than the maximum you allowed.", paidPrice_, priceMaxLimit_);
+		if ( ! (paidCstPrice_ <= cstPriceMaxLimit_) ) {
+			revert CosmicSignatureErrors.InsufficientReceivedBidAmount("The current CST bid price is greater than the maximum you allowed.", paidCstPrice_, cstPriceMaxLimit_);
 		}
 
 		// Comment-202609074 applies to `lastBidderAddress`.
-		_burnCstBidPriceAndMintBidCstRewardAmountIfNeeded(lastBidderAddress, paidPrice_, bidCstRewardAmount_);
+		_burnCstBidPriceAndMintBidCstRewardAmountIfNeeded(lastBidderAddress, paidCstPrice_, bidCstRewardAmount_);
 
-		uint256 ethBidPrice_ = getNextEthBidPriceAdvanced(int256(0));
-		BidRaffleWeightHelpers.saveForNextBid(bidsInfo[roundNum], ethBidPrice_);
-		biddersInfo[roundNum][_msgSender()].totalSpentCstAmount += paidPrice_;
+		uint256 ethBidPriceBase_ = super.getNextEthBidPriceAdvanced(int256(0));
+		BidRaffleWeightHelpers.saveForNextBid(bidsInfo[roundNum], ethBidPriceBase_);
+		biddersInfo[roundNum][_msgSender()].totalSpentCstAmount += paidCstPrice_;
 		cstDutchAuctionBeginningTimeStamp = block.timestamp;
 
 		// // todo-0 The following is actually nonsense because someone else gets bid CST reward.
@@ -236,21 +239,21 @@ abstract contract BiddingV3 is
 		// // todo-0 One might want to maintain separate CST rewards for ETH and CST bids,
 		// // todo-0 so that the bids didn't reset each other's rewards. I am not sure if that's a good idea.
 		// // todo-0 
-		// // todo-0 V2 simply doubles `paidPrice_` here.
-		// // todo-0 That is in some way better because if bid CST reward gets reset by an ETH bid, on next CST bid `paidPrice_` is lower,
+		// // todo-0 V2 simply doubles `paidCstPrice_` here.
+		// // todo-0 That is in some way better because if bid CST reward gets reset by an ETH bid, on next CST bid `paidCstPrice_` is lower,
 		// // todo-0 so CST bids get an instant priority boost, which, in turn, goes away as soon as people stop bidding with ETH.
 		// // todo-0 
 		// // todo-0 Try to write a better comment.
 		// uint256 newCstDutchAuctionBeginningBidPrice_ =
 		// 	uint256(
 		// 		CosmicSignatureHelpers.max(
-		// 			(int256(paidPrice_) - int256(bidCstRewardAmount_)) * int256(CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER),
+		// 			(int256(cstBidPriceBase_) - int256(bidCstRewardAmount_)) * int256(CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER),
 		// 			int256(cstDutchAuctionBeginningBidPriceMinLimit)
 		// 		)
 		// 	);
 
 		uint256 newCstDutchAuctionBeginningBidPrice_ =
-			Math.max(paidPrice_ * CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, cstDutchAuctionBeginningBidPriceMinLimit);
+			Math.max(cstBidPriceBase_ * CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, cstDutchAuctionBeginningBidPriceMinLimit);
 		cstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
 		if (lastCstBidderAddress == address(0)) {
 			// Comment-202501045 applies.
@@ -265,7 +268,7 @@ abstract contract BiddingV3 is
 			roundNum,
 			_msgSender(),
 			-1,
-			int256(paidPrice_),
+			int256(paidCstPrice_),
 			-1,
 			message_,
 			bidCstRewardAmount_,
@@ -278,6 +281,16 @@ abstract contract BiddingV3 is
 	// #region `getNextCstBidPriceAdvanced`
 
 	function getNextCstBidPriceAdvanced(int256 currentTimeOffset_) public view override (IBidding1V2, BiddingV2Base) virtual returns (uint256) {
+		uint256 cstBidPriceBase_ = _getNextCstBidPriceBaseAdvanced(currentTimeOffset_);
+		return /* (cstBidPriceBase_ > 0) ? */ _addRoundLateBidPricePremiumAmountIfNeeded(cstBidPriceBase_, currentTimeOffset_) /* : 0 */;
+	}
+
+	// #endregion
+	// #region `_getNextCstBidPriceBaseAdvanced`
+
+	/// @param currentTimeOffset_ Comment-202501107 applies.
+	/// @return The CST bid price without the late-bid premium.
+	function _getNextCstBidPriceBaseAdvanced(int256 currentTimeOffset_) private view returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
@@ -291,10 +304,7 @@ abstract contract BiddingV3 is
 				(lastCstBidderAddress == address(0)) ? nextRoundFirstCstDutchAuctionBeginningBidPrice : cstDutchAuctionBeginningBidPrice;
 
 			int256 nextCstBidPrice_ = int256(cstDutchAuctionBeginningBidPrice_) - cstDutchAuctionElapsedDuration_ * int256(cstBidPriceDeclineMultiplier);
-			if (nextCstBidPrice_ <= int256(0)) {
-				return 0;
-			}
-			return _addRoundLateBidPricePremiumAmountIfNeeded(uint256(nextCstBidPrice_), currentTimeOffset_);
+			return (nextCstBidPrice_ > int256(0)) ? uint256(nextCstBidPrice_) : 0;
 		}
 	}
 
@@ -382,6 +392,7 @@ abstract contract BiddingV3 is
 	// #region `_addRoundLateBidPricePremiumAmountIfNeeded`
 
 	/// @param bidPrice_ As mentioned in Comment-202607119, if it's zero the result will be zero as well.
+	/// @dev The premium affects payment and spent totals only; price updates and raffle weights use the base price.
 	/// todo-0 Test this. Really, all new code needs testing.
 	function _addRoundLateBidPricePremiumAmountIfNeeded(uint256 bidPrice_, int256 currentTimeOffset_) private view returns (uint256 adjustedBidPrice_) {
 		// #enable_smtchecker /*

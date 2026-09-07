@@ -172,7 +172,7 @@ interface IBidding {
 	/// [/Comment-202503168]
 	/// Comment-202503151 applies.
 	function bidWithCstAndDonateToken(
-		uint256 priceMaxLimit_,
+		uint256 cstPriceMaxLimit_,
 		string memory message_,
 		IERC20 tokenAddress_,
 		uint256 amount_
@@ -185,7 +185,7 @@ interface IBidding {
 	/// Comment-202503168 applies.
 	/// Comment-202503153 applies.
 	function bidWithCstAndDonateNft(
-		uint256 priceMaxLimit_,
+		uint256 cstPriceMaxLimit_,
 		string memory message_,
 		IERC721 nftAddress_,
 		uint256 nftId_
@@ -197,14 +197,14 @@ interface IBidding {
 	/// This method would revert if no bids have been placed in the current bidding round yet.
 	/// [/Comment-202605266]
 	/// Comment-202503168 relates.
-	/// @param priceMaxLimit_ .
+	/// @param cstPriceMaxLimit_ .
 	/// [Comment-202605268]
 	/// The maximum price the bidder is willing to pay.
 	/// It's OK if it's zero.
 	/// [/Comment-202605268]
 	/// Comment-202503162 relates and/or applies.
 	/// @param message_ Comment-202503155 applies.
-	function bidWithCst(uint256 priceMaxLimit_, string memory message_) external;
+	function bidWithCst(uint256 cstPriceMaxLimit_, string memory message_) external;
 
 	/// @notice
 	/// [Comment-202605269]

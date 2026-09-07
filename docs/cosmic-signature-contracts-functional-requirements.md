@@ -120,8 +120,6 @@ When another bid is placed, V1 calculaates `mainPrizeTime` as `max(mainPrizeTime
 
 - The first bid in a round is required to be ETH.
 
-- In V3+, no more than 1 bid is allowed within a second.
-
 - In V2, each bid changes CST Dutch auction duration, as described in a separate section.
 
 - In V3+, each bid changes CST bid price decline rate, as described in a separate section.

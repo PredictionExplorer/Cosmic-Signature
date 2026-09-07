@@ -56,7 +56,7 @@ async function bidWithEthAt(game_, bidderSigner_, timeStamp_, bidCstRewardAmount
 	return { receipt_, ethBidPrice_ };
 }
 
-/** Executes a CST bid at exactly the given block timestamp, with `priceMaxLimit_` equal the exact bid price. */
+/** Executes a CST bid at exactly the given block timestamp, with `cstPriceMaxLimit_` equal the exact bid price. */
 async function bidWithCstAt(game_, bidderSigner_, timeStamp_) {
 	const latestTimeStamp_ = await getLatestBlockTimestamp();
 	expect(timeStamp_).greaterThan(latestTimeStamp_);
@@ -282,7 +282,7 @@ describe("CosmicSignatureGameV3-BidCstReward", function () {
 		expect(transfers_[1].args.to).equal(bidder1_.address);
 		expect(transfers_[1].args.value).equal(totalRewardAmount_);
 
-		// A CST bid by the same bidder again nets `totalReward - paidPrice` to that bidder.
+		// A CST bid by the same bidder again nets `totalReward - paidCstPrice` to that bidder.
 		{
 			const bidder2CstBalanceBefore2_ = await token_.balanceOf(bidder2_.address);
 			const { timeStamp: cstBidTimeStamp2_ } =

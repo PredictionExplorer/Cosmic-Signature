@@ -249,13 +249,13 @@ abstract contract BiddingV2Base is
 	// #region `bidWithCstAndDonateToken`
 
 	function bidWithCstAndDonateToken(
-		uint256 priceMaxLimit_,
+		uint256 cstPriceMaxLimit_,
 		string memory message_,
 		uint256 bidCstRewardAmountMinLimit_,
 		IERC20 tokenAddress_,
 		uint256 amount_
 	) external override nonReentrant /*_onlyRoundIsActive*/ {
-		_bidWithCst(priceMaxLimit_, message_, bidCstRewardAmountMinLimit_);
+		_bidWithCst(cstPriceMaxLimit_, message_, bidCstRewardAmountMinLimit_);
 		prizesWallet.donateToken(roundNum, _msgSender(), tokenAddress_, amount_);
 	}
 
@@ -263,27 +263,27 @@ abstract contract BiddingV2Base is
 	// #region `bidWithCstAndDonateNft`
 
 	function bidWithCstAndDonateNft(
-		uint256 priceMaxLimit_,
+		uint256 cstPriceMaxLimit_,
 		string memory message_,
 		uint256 bidCstRewardAmountMinLimit_,
 		IERC721 nftAddress_,
 		uint256 nftId_
 	) external override nonReentrant /*_onlyRoundIsActive*/ {
-		_bidWithCst(priceMaxLimit_, message_, bidCstRewardAmountMinLimit_);
+		_bidWithCst(cstPriceMaxLimit_, message_, bidCstRewardAmountMinLimit_);
 		prizesWallet.donateNft(roundNum, _msgSender(), nftAddress_, nftId_);
 	}
 
 	// #endregion
 	// #region `bidWithCst`
 
-	function bidWithCst(uint256 priceMaxLimit_, string memory message_, uint256 bidCstRewardAmountMinLimit_) external override nonReentrant /*_onlyRoundIsActive*/ {
-		_bidWithCst(priceMaxLimit_, message_, bidCstRewardAmountMinLimit_);
+	function bidWithCst(uint256 cstPriceMaxLimit_, string memory message_, uint256 bidCstRewardAmountMinLimit_) external override nonReentrant /*_onlyRoundIsActive*/ {
+		_bidWithCst(cstPriceMaxLimit_, message_, bidCstRewardAmountMinLimit_);
 	}
 
 	// #endregion
 	// #region `_bidWithCst`
 
-	function _bidWithCst(uint256 priceMaxLimit_, string memory message_, uint256 bidCstRewardAmountMinLimit_) internal virtual;
+	function _bidWithCst(uint256 cstPriceMaxLimit_, string memory message_, uint256 bidCstRewardAmountMinLimit_) internal virtual;
 
 	// #endregion
 	// #region `getNextCstBidPrice`

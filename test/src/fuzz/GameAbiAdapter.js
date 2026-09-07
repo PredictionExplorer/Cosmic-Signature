@@ -53,16 +53,16 @@ class GameAbiAdapter {
 			this.contract.bidWithEthAndDonateNft(randomWalkNftId_, message_, minReward_, nftAddress_, nftId_, overrides_);
 	}
 
-	bidWithCst(priceMaxLimit_, message_, minReward_, overrides_ = {}) {
+	bidWithCst(cstPriceMaxLimit_, message_, minReward_, overrides_ = {}) {
 		return (this.version === 1) ?
-			this.contract.bidWithCst(priceMaxLimit_, message_, overrides_) :
-			this.contract.bidWithCst(priceMaxLimit_, message_, minReward_, overrides_);
+			this.contract.bidWithCst(cstPriceMaxLimit_, message_, overrides_) :
+			this.contract.bidWithCst(cstPriceMaxLimit_, message_, minReward_, overrides_);
 	}
 
-	bidWithCstAndDonateToken(priceMaxLimit_, message_, minReward_, tokenAddress_, amount_, overrides_ = {}) {
+	bidWithCstAndDonateToken(cstPriceMaxLimit_, message_, minReward_, tokenAddress_, amount_, overrides_ = {}) {
 		return (this.version === 1) ?
-			this.contract.bidWithCstAndDonateToken(priceMaxLimit_, message_, tokenAddress_, amount_, overrides_) :
-			this.contract.bidWithCstAndDonateToken(priceMaxLimit_, message_, minReward_, tokenAddress_, amount_, overrides_);
+			this.contract.bidWithCstAndDonateToken(cstPriceMaxLimit_, message_, tokenAddress_, amount_, overrides_) :
+			this.contract.bidWithCstAndDonateToken(cstPriceMaxLimit_, message_, minReward_, tokenAddress_, amount_, overrides_);
 	}
 
 	claimMainPrize(overrides_ = {}) {

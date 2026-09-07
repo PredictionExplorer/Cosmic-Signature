@@ -285,7 +285,7 @@ async function forceCompleteRound(ctx_) {
 /**
 Same-block claim contention: the eligible last bidder and a second actor both submit `claimMainPrize`
 in one block. Only the first (FIFO) succeeds and ends the round; the second must revert (the round has
-already advanced, so it sees no bids). Exercises the main prize's same-block exclusivity.
+already advanced, so it sees no bids).
 @returns {Promise<boolean>} Whether the race ran (and the winning claim was applied).
 */
 async function runClaimRace(ctx_) {

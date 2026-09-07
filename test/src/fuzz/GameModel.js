@@ -341,8 +341,8 @@ class GameModel {
 	}
 
 	/**
-	Exact prices for `count_` back-to-back ETH bids in ONE block at timestamp `ts_` (the same-block burst).
-	Mirrors how each bid escalates the next price (`nextEthBidPrice = p + p / div + 1`) and, in V3,
+	Exact prices for `count_` consecutive ETH bids in one block at timestamp `ts_`.
+	Mirrors how each bid escalates the base price (`nextEthBidPrice = base + base / div + 1`) and, in V3,
 	how each bid's `_extendMainPrizeTime` moves the premium window before the next bid prices in.
 	Does not mutate the model.
 	@returns {bigint[]}
@@ -355,7 +355,7 @@ class GameModel {
 		for (let index_ = 0; index_ < count_; ++ index_) {
 			const price_ = this.addLateBidPremiumIfNeeded(base_, ts_, mainPrizeTime_);
 			prices_.push(price_);
-			base_ = price_ + price_ / this.ethBidPriceIncreaseDivisor + 1n;
+			base_ = base_ + base_ / this.ethBidPriceIncreaseDivisor + 1n;
 			// All burst bids are non-first bids, so `_extendMainPrizeTime` runs for each of them.
 			mainPrizeTime_ = this.isV1Like() ? (maxBigInt(mainPrizeTime_, ts_) + increment_) : (mainPrizeTime_ + increment_);
 		}
@@ -582,7 +582,8 @@ class GameModel {
 	@returns Expected outcome (does not validate revert conditions; callers pre-check applicability).
 	*/
 	planEthBid(ts_, msgValue_, gasPrice_, randomWalkNftId_) {
-		const ethBidPrice_ = this.getNextEthBidPrice(ts_);
+		const ethBidPriceBase_ = this.getNextEthBidPriceBase(ts_);
+		const ethBidPrice_ = this.addLateBidPremiumIfNeeded(ethBidPriceBase_, ts_);
 		const reward_ =
 			(this.version >= 3 && this.lastBidderAddress === hre.ethers.ZeroAddress) ?
 			0n :
@@ -613,7 +614,7 @@ class GameModel {
 				refundAmount_ = overpaid_;
 			}
 		}
-		return { ethBidPrice: ethBidPrice_, paidEthPrice: paidEthPrice_, netEthPaid: netEthPaid_, refundAmount: refundAmount_, swallowed: swallowed_, insufficient: overpaid_ < 0n, bidCstRewardAmount: reward_, bidCstRewardSplit: rewardSplit_ };
+		return { ethBidPriceBase: ethBidPriceBase_, ethBidPrice: ethBidPrice_, paidEthPrice: paidEthPrice_, netEthPaid: netEthPaid_, refundAmount: refundAmount_, swallowed: swallowed_, insufficient: overpaid_ < 0n, bidCstRewardAmount: reward_, bidCstRewardSplit: rewardSplit_ };
 	}
 
 	/**
@@ -628,9 +629,9 @@ class GameModel {
 		}
 		this._bidderInfoForUpdate(bidderAddress_).totalSpentEthAmount += plan_.paidEthPrice;
 		if (this.lastBidderAddress === hre.ethers.ZeroAddress) {
-			this.ethDutchAuctionBeginningBidPrice = plan_.ethBidPrice * c.ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
+			this.ethDutchAuctionBeginningBidPrice = plan_.ethBidPriceBase * c.ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
 		}
-		this.nextEthBidPrice = plan_.ethBidPrice + plan_.ethBidPrice / this.ethBidPriceIncreaseDivisor + 1n;
+		this.nextEthBidPrice = plan_.ethBidPriceBase + plan_.ethBidPriceBase / this.ethBidPriceIncreaseDivisor + 1n;
 		let newCstDutchAuctionDuration_ = null;
 		let newCstBidPriceDeclineMultiplier_ = null;
 		if (this.version >= 3) {
@@ -643,7 +644,7 @@ class GameModel {
 			this.cstDutchAuctionDuration = newCstDutchAuctionDuration_;
 		}
 		if (this.version >= 3) {
-			this._appendBidRaffleWeight(plan_.ethBidPrice);
+			this._appendBidRaffleWeight(plan_.ethBidPriceBase);
 		}
 		this._bidCommon(bidderAddress_, ts_);
 		return {
@@ -657,24 +658,25 @@ class GameModel {
 
 	/**
 	Applies a successful CST bid (mirrors `_bidWithCst`).
-	@returns {{paidPrice: bigint, bidCstRewardAmount: bigint, newCstDutchAuctionDuration: bigint | null, mainPrizeTime: bigint}}
+	@returns {{paidCstPrice: bigint, bidCstRewardAmount: bigint, newCstDutchAuctionDuration: bigint | null, mainPrizeTime: bigint}}
 	*/
 	applyCstBid(bidderAddress_, ts_) {
 		expect(
 			this.version < 3 || this.lastBidderAddress !== hre.ethers.ZeroAddress,
 			"model: applying a first-in-round CST bid"
 		).to.equal(true);
-		const paidPrice_ = this.getNextCstBidPrice(ts_);
+		const cstBidPriceBase_ = this.getNextCstBidPriceBase(ts_);
+		const paidCstPrice_ = this.addLateBidPremiumIfNeeded(cstBidPriceBase_, ts_);
 		const reward_ = this.getBidCstRewardAmount(ts_);
 		const rewardSplit_ = this.getBidCstRewardSplit(reward_);
 		if (this.version >= 3) {
-			const bidRaffleWeight_ = this.getNextEthBidPrice(ts_);
+			const bidRaffleWeight_ = this.getNextEthBidPriceBase(ts_);
 			this._appendBidRaffleWeight(bidRaffleWeight_);
 		}
-		this._bidderInfoForUpdate(bidderAddress_).totalSpentCstAmount += paidPrice_;
+		this._bidderInfoForUpdate(bidderAddress_).totalSpentCstAmount += paidCstPrice_;
 		this.cstDutchAuctionBeginningTimeStamp = ts_;
 		const newBeginningBidPrice_ =
-			maxBigInt(paidPrice_ * c.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, this.cstDutchAuctionBeginningBidPriceMinLimit);
+			maxBigInt(cstBidPriceBase_ * c.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, this.cstDutchAuctionBeginningBidPriceMinLimit);
 		this.cstDutchAuctionBeginningBidPrice = newBeginningBidPrice_;
 		if (this.lastCstBidderAddress === hre.ethers.ZeroAddress) {
 			this.nextRoundFirstCstDutchAuctionBeginningBidPrice = newBeginningBidPrice_;
@@ -693,7 +695,7 @@ class GameModel {
 		}
 		this._bidCommon(bidderAddress_, ts_);
 		return {
-			paidPrice: paidPrice_,
+			paidCstPrice: paidCstPrice_,
 			bidCstRewardAmount: reward_,
 			bidCstRewardSplit: rewardSplit_,
 			newCstDutchAuctionDuration: newCstDutchAuctionDuration_,

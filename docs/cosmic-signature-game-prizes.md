@@ -36,14 +36,16 @@ The rest of this document lists prizes from groups 1 and 2.
 
 #### Bidder Raffle Weight in V3+
 
-In V2-, every bid has equal weight in bidder raffles. In V3+, a bid's weight is the ETH bid price posted when the bid is placed:
+In V2-, every bid has equal weight in bidder raffles. In V3+, a bid's weight is the ETH bid price without the late-bid premium when the bid is placed:
 
-- A plain ETH bid has the posted ETH bid price as its weight.
-- An ETH plus Random Walk NFT bid has the full undiscounted ETH bid price as its weight.
-- A CST bid has the concurrent ETH bid price as its weight.
+- A plain ETH bid has the base ETH bid price as its weight.
+- An ETH plus Random Walk NFT bid has the full undiscounted base ETH bid price as its weight.
+- A CST bid has the concurrent base ETH bid price as its weight.
 - A swallowed ETH overpayment does not increase the weight.
 
-Each `BidInfo.raffleCumulativeWeight`, available through `getBidInfoAt`, is the sum of that bid's weight and all preceding bid weights in the round. A raffle draw selects a random weight unit and binary-searches these cumulative values. Splitting the same posted-price total among more bids does not improve the total weight, and bids placed in the same second are handled independently.
+The late-bid premium increases payment only. It does not increase raffle weight, the next ETH price, or the CST auction beginning price carried into the next round.
+
+Each `BidInfo.raffleCumulativeWeight`, available through `getBidInfoAt`, is the sum of that bid's weight and all preceding bid weights in the round. A raffle draw selects a random weight unit and binary-searches these cumulative values. A bidder's total weight is the sum of their bids' weights.
 
 #### Variables
 

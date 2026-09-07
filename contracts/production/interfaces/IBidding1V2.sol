@@ -85,7 +85,7 @@ interface IBidding1V2 {
 	/// Comment-202503168 applies.
 	/// Comment-202503151 applies.
 	function bidWithCstAndDonateToken(
-		uint256 priceMaxLimit_,
+		uint256 cstPriceMaxLimit_,
 		string memory message_,
 		uint256 bidCstRewardAmountMinLimit_,
 		IERC20 tokenAddress_,
@@ -96,7 +96,7 @@ interface IBidding1V2 {
 	/// Comment-202503168 applies.
 	/// Comment-202503153 applies.
 	function bidWithCstAndDonateNft(
-		uint256 priceMaxLimit_,
+		uint256 cstPriceMaxLimit_,
 		string memory message_,
 		uint256 bidCstRewardAmountMinLimit_,
 		IERC721 nftAddress_,
@@ -105,11 +105,11 @@ interface IBidding1V2 {
 
 	/// @notice Comment-202605266 applies.
 	/// Comment-202503168 relates.
-	/// @param priceMaxLimit_ Comment-202605268 applies.
+	/// @param cstPriceMaxLimit_ Comment-202605268 applies.
 	/// Comment-202503162 relates and/or applies.
 	/// @param message_ Comment-202503155 applies.
 	/// @param bidCstRewardAmountMinLimit_ Comment-202605279 applies.
-	function bidWithCst(uint256 priceMaxLimit_, string memory message_, uint256 bidCstRewardAmountMinLimit_) external;
+	function bidWithCst(uint256 cstPriceMaxLimit_, string memory message_, uint256 bidCstRewardAmountMinLimit_) external;
 
 	/// @notice Comment-202605269 applies.
 	function getNextCstBidPrice() external view returns (uint256);

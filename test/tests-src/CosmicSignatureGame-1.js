@@ -520,10 +520,10 @@ describe("CosmicSignatureGame-1", function () {
 
 						// Adding 1 to avoid a possible division by zero.
 						// Comment-202503162 relates.
-						const cstPriceToPayMaxLimit_ = randomNumber_ % (paidCstPrice_ * 16n + 1n);
+						const cstPriceMaxLimit_ = randomNumber_ % (paidCstPrice_ * 16n + 1n);
 
 						/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
-						const transactionResponsePromise_ = cosmicSignatureGameProxyForSigner_.bidWithCst(cstPriceToPayMaxLimit_, bidMessage_);
+						const transactionResponsePromise_ = cosmicSignatureGameProxyForSigner_.bidWithCst(cstPriceMaxLimit_, bidMessage_);
 						transactionReceipt_ = await tryWaitForTransactionReceipt(transactionResponsePromise_);
 						latestBlock_ = await hre.ethers.provider.getBlock("latest");
 						transactionBlock_ = latestBlock_;
@@ -535,7 +535,7 @@ describe("CosmicSignatureGame-1", function () {
 							await cosmicSignatureGameProxySimulator_.canBidWithCst(
 								transactionBlock_,
 								signer_.address,
-								cstPriceToPayMaxLimit_,
+								cstPriceMaxLimit_,
 								bidMessage_,
 								paidCstPrice_,
 								contracts_,
