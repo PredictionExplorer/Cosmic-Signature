@@ -11,11 +11,40 @@ const {
 	blockTimestampOfReceipt,
 	activateCurrentRound,
 	findParsedEvent,
+	mineAtOrAfter,
+	setNextBlockTimeToAtLeast,
 } = require("../src/V2UpgradeTestHelpers.js");
 const {
 	DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER,
 	deployV1CompleteRoundZeroAndUpgradeToV2AndV3,
+	getV3CstBidPrice,
+	getV3CstDutchAuctionDuration,
+	tryIncreaseValueExponentially,
+	tryReduceValueExponentially,
 } = require("../src/V3UpgradeTestHelpers.js");
+
+/** Reads the CST auction parameters separately from its time-dependent views. */
+async function readCstAuctionState(game_) {
+	return {
+		declineMultiplier: await game_.cstBidPriceDeclineMultiplier(),
+		changeDivisor: await game_.cstBidPriceDeclineMultiplierChangeDivisor(),
+		beginningPrice: await game_.cstDutchAuctionBeginningBidPrice(),
+		nextRoundBeginningPrice: await game_.nextRoundFirstCstDutchAuctionBeginningBidPrice(),
+		beginningPriceMinLimit: await game_.cstDutchAuctionBeginningBidPriceMinLimit(),
+		beginningTimeStamp: await game_.cstDutchAuctionBeginningTimeStamp(),
+	};
+}
+
+/** Checks the derived total duration and elapsed time, including the beginning-price selection. */
+async function assertCstAuctionDurations(game_) {
+	const auction_ = await readCstAuctionState(game_);
+	const beginningPrice_ = (await game_.lastCstBidderAddress()) === hre.ethers.ZeroAddress ?
+		auction_.nextRoundBeginningPrice : auction_.beginningPrice;
+	const [duration_, elapsed_] = await game_.getCstDutchAuctionDurations();
+	expect(duration_).equal(getV3CstDutchAuctionDuration(beginningPrice_, auction_.declineMultiplier));
+	expect(elapsed_).equal((await getLatestBlockTimestamp()) - auction_.beginningTimeStamp);
+	return duration_;
+}
 
 /** Executes an ETH bid at exactly the given block timestamp, paying the exact bid price. */
 async function bidWithEthAt(game_, bidderSigner_, timeStamp_) {
@@ -30,6 +59,149 @@ async function bidWithEthAt(game_, bidderSigner_, timeStamp_) {
 }
 
 describe("CosmicSignatureGameV3-Bidding", function () {
+	it("adjusts the CST decline multiplier for every bid entry point, including zero-price CST bids after long waits", async function () {
+		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3();
+		const game_ = contracts_.cosmicSignatureGameV3Proxy;
+		const bidder_ = contracts_.signers[1];
+		const gameForBidder_ = game_.connect(bidder_);
+		const changeDivisor_ = 20n + BigInt(generateRandomUInt32() % 181);
+		await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setCstBidPriceDeclineMultiplierChangeDivisor(changeDivisor_));
+		const mockToken_ = await (await hre.ethers.getContractFactory("FuzzTestMockErc20", bidder_)).deploy();
+		await mockToken_.waitForDeployment();
+		await waitForTransactionReceipt(mockToken_.mint(bidder_.address, 2n));
+		await waitForTransactionReceipt(mockToken_.approve(contracts_.prizesWalletAddress, 2n));
+		const mockNft_ = await (await hre.ethers.getContractFactory("FuzzTestMockErc721", bidder_)).deploy();
+		await mockNft_.waitForDeployment();
+		const nftIds_ = [];
+		for (let nftIndex_ = 0; nftIndex_ < 2; ++ nftIndex_) {
+			nftIds_.push(await mockNft_.mint.staticCall(bidder_.address));
+			await waitForTransactionReceipt(mockNft_.mint(bidder_.address));
+		}
+		await waitForTransactionReceipt(mockNft_.setApprovalForAll(contracts_.prizesWalletAddress, true));
+		await waitForTransactionReceipt(contracts_.randomWalkNft.connect(bidder_).mint({value: await contracts_.randomWalkNft.getMintPrice(),}));
+		const randomWalkNftId_ = (await contracts_.randomWalkNft.totalSupply()) - 1n;
+		await activateCurrentRound(game_, contracts_.ownerSigner);
+
+		const ethBidSubmissions_ = [
+			() => gameForBidder_.bidWithEth(-1n, "", 0n, {value: 10n ** 18n,}),
+			() => bidder_.sendTransaction({to: contracts_.cosmicSignatureGameProxyAddress, value: 10n ** 18n,}),
+			() => gameForBidder_.bidWithEth(randomWalkNftId_, "", 0n, {value: 10n ** 18n,}),
+			() => gameForBidder_.bidWithEthAndDonateToken(-1n, "", 0n, mockToken_, 1n, {value: 10n ** 18n,}),
+			() => gameForBidder_.bidWithEthAndDonateNft(-1n, "", 0n, mockNft_, nftIds_[0], {value: 10n ** 18n,}),
+		];
+		for (const submitBid_ of ethBidSubmissions_) {
+			const expectedMultiplier_ = tryIncreaseValueExponentially(await game_.cstBidPriceDeclineMultiplier(), changeDivisor_);
+			const receipt_ = await waitForTransactionReceipt(submitBid_());
+			expect(await game_.cstBidPriceDeclineMultiplier()).equal(expectedMultiplier_);
+			expect(findParsedEvent(receipt_, game_, "BidPlaced").args.cstBidPriceDeclineMultiplier).equal(expectedMultiplier_);
+			await assertCstAuctionDurations(game_);
+		}
+
+		const cstBidSubmissions_ = [
+			() => gameForBidder_.bidWithCst(0n, "", 0n),
+			() => gameForBidder_.bidWithCstAndDonateToken(0n, "", 0n, mockToken_, 1n),
+			() => gameForBidder_.bidWithCstAndDonateNft(0n, "", 0n, mockNft_, nftIds_[1]),
+		];
+		for (const submitBid_ of cstBidSubmissions_) {
+			const auctionBefore_ = await readCstAuctionState(game_);
+			const durationBefore_ = await assertCstAuctionDurations(game_);
+			const waitDuration_ = (3n + BigInt(generateRandomUInt32() % 19)) * 86_400n;
+			await mineAtOrAfter(auctionBefore_.beginningTimeStamp + durationBefore_ + waitDuration_);
+			expect(await readCstAuctionState(game_)).deep.equal(auctionBefore_);
+			expect(await assertCstAuctionDurations(game_)).equal(durationBefore_);
+			expect(await game_.getNextCstBidPrice()).equal(0n);
+
+			const expectedMultiplier_ = tryReduceValueExponentially(auctionBefore_.declineMultiplier, changeDivisor_);
+			const receipt_ = await waitForTransactionReceipt(submitBid_());
+			const bidPlaced_ = findParsedEvent(receipt_, game_, "BidPlaced");
+			expect(bidPlaced_.args.paidCstPrice).equal(0n);
+			expect(bidPlaced_.args.cstBidPriceDeclineMultiplier).equal(expectedMultiplier_);
+			expect(await game_.cstBidPriceDeclineMultiplier()).equal(expectedMultiplier_);
+			expect(await game_.cstDutchAuctionBeginningBidPrice()).equal(auctionBefore_.beginningPriceMinLimit);
+			expect(await game_.cstDutchAuctionBeginningTimeStamp()).equal(await blockTimestampOfReceipt(receipt_));
+			await assertCstAuctionDurations(game_);
+		}
+	});
+
+	it("advances CST auction elapsed time and price through long bid-free waits without changing its total duration", async function () {
+		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3();
+		const game_ = contracts_.cosmicSignatureGameV3Proxy;
+		await activateCurrentRound(game_, contracts_.ownerSigner);
+		await bidWithEthAt(game_, contracts_.signers[1], (await getLatestBlockTimestamp()) + 10n);
+		const auction_ = await readCstAuctionState(game_);
+		const duration_ = await assertCstAuctionDurations(game_);
+
+		// The price reaches zero before the premium window, so these quotes equal the premium-free price.
+		expect(auction_.beginningTimeStamp + duration_).lessThan((await game_.mainPrizeTime()) - (await game_.getRoundLateBidDuration()));
+		for (const elapsed_ of [1n, duration_ / 2n, duration_ - 1n, duration_, duration_ + (3n + BigInt(generateRandomUInt32() % 19)) * 86_400n]) {
+			await mineAtOrAfter(auction_.beginningTimeStamp + elapsed_);
+			expect(await readCstAuctionState(game_)).deep.equal(auction_);
+			expect(await assertCstAuctionDurations(game_)).equal(duration_);
+			const price_ = await game_.getNextCstBidPrice();
+			expect(price_).equal(getV3CstBidPrice(auction_.nextRoundBeginningPrice, elapsed_, auction_.declineMultiplier));
+			if (elapsed_ < duration_) {
+				expect(price_).greaterThan(0n);
+			} else {
+				expect(price_).equal(0n);
+			}
+		}
+	});
+
+	it("preserves CST auction parameters across unrelated actions and claims while selecting the next round's beginning price", async function () {
+		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3();
+		const game_ = contracts_.cosmicSignatureGameV3Proxy;
+		const ownerGame_ = game_.connect(contracts_.ownerSigner);
+		const bidder1_ = contracts_.signers[1];
+		const bidder2_ = contracts_.signers[2];
+		const initialAuction_ = await readCstAuctionState(game_);
+		await waitForTransactionReceipt(ownerGame_.setBidMessageLengthMaxLimit((await game_.bidMessageLengthMaxLimit()) + 1n));
+		expect(await readCstAuctionState(game_)).deep.equal(initialAuction_);
+		await activateCurrentRound(game_, contracts_.ownerSigner);
+		expect(await readCstAuctionState(game_)).deep.equal(initialAuction_);
+		await bidWithEthAt(game_, bidder1_, (await getLatestBlockTimestamp()) + 10n);
+		await mineAtOrAfter((await getLatestBlockTimestamp()) + 10n * 86_400n);
+		await waitForTransactionReceipt(game_.connect(bidder2_).bidWithCst(0n, "", 0n));
+
+		// The first CST bid rewards bidder1 and sets the next-round beginning price to the minimum.
+		// A paid second CST bid makes the current and next-round beginning prices different.
+		const paidCstPrice_ = await game_.getNextCstBidPriceAdvanced(1n);
+		expect(paidCstPrice_).greaterThan(0n);
+		expect(await contracts_.cosmicSignatureToken.balanceOf(bidder1_.address)).greaterThan(paidCstPrice_);
+		await setNextBlockTimeToAtLeast((await getLatestBlockTimestamp()) + 1n);
+		await waitForTransactionReceipt(game_.connect(bidder1_).bidWithCst(paidCstPrice_, "", 0n));
+		const auction_ = await readCstAuctionState(game_);
+		expect(auction_.beginningPrice).greaterThan(auction_.nextRoundBeginningPrice);
+		const currentDuration_ = await assertCstAuctionDurations(game_);
+		for (const donate_ of [
+			() => game_.connect(bidder2_).donateEth({value: 1n,}),
+			() => game_.connect(bidder2_).donateEthWithInfo("{}", {value: 1n,}),
+		]) {
+			await waitForTransactionReceipt(donate_());
+			expect(await readCstAuctionState(game_)).deep.equal(auction_);
+			expect(await assertCstAuctionDurations(game_)).equal(currentDuration_);
+		}
+		const roundNum_ = await game_.roundNum();
+		await setNextBlockTimeToAtLeast(await game_.mainPrizeTime());
+		await waitForTransactionReceipt(game_.connect(bidder1_).claimMainPrize());
+		expect(await game_.roundNum()).equal(roundNum_ + 1n);
+		expect(await game_.lastCstBidderAddress()).equal(hre.ethers.ZeroAddress);
+		expect(await readCstAuctionState(game_)).deep.equal(auction_);
+		const nextDuration_ = await assertCstAuctionDurations(game_);
+		expect(nextDuration_).lessThan(currentDuration_);
+		await activateCurrentRound(game_, contracts_.ownerSigner);
+		expect(await readCstAuctionState(game_)).deep.equal(auction_);
+		expect(await assertCstAuctionDurations(game_)).equal(nextDuration_);
+		await mineAtOrAfter((await getLatestBlockTimestamp()) + 7n * 86_400n);
+		await waitForTransactionReceipt(ownerGame_.halveEthDutchAuctionEndingBidPrice());
+		expect(await readCstAuctionState(game_)).deep.equal(auction_);
+		expect(await assertCstAuctionDurations(game_)).equal(nextDuration_);
+		await bidWithEthAt(game_, bidder2_, (await getLatestBlockTimestamp()) + 10n);
+		expect(await game_.cstBidPriceDeclineMultiplier()).equal(tryIncreaseValueExponentially(auction_.declineMultiplier, auction_.changeDivisor));
+		expect(await game_.nextRoundFirstCstDutchAuctionBeginningBidPrice()).equal(auction_.nextRoundBeginningPrice);
+		expect(await game_.cstDutchAuctionBeginningTimeStamp()).equal(await getLatestBlockTimestamp());
+		await assertCstAuctionDurations(game_);
+	});
+
 	it("allows random combinations of ETH, receive(), and CST bids within one block", async function () {
 		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3();
 		const game_ = contracts_.cosmicSignatureGameV3Proxy;
