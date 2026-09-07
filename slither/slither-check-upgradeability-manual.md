@@ -17,6 +17,8 @@ See its manual in another document.
 
 ### Notes
 
+- This utility appears to be less capable than the OpenZeppelin's upgradeable contract validation logic executed by `HardhatRuntimeEnvironment.upgrades.upgradeProxy`.
+
 - Any storage variable renames will be reported as errors. This utility does not support any decorators similar to `@custom:oz-renamed-from`.\
 Comment-202607169 relates.
 
