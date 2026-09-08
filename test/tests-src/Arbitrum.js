@@ -63,10 +63,11 @@ describe("Arbitrum", function () {
 				/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 				const transactionResponsePromise_ = cosmicSignatureGameProxy_.connect(contracts_.signers[2]).claimMainPrize();
 				const transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
-				const arbitrumCallFailedLogs_ = transactionReceipt_.logs.filter((log_) =>
-					log_.address.toLowerCase() === contracts_.cosmicSignatureGameProxyAddress.toLowerCase() &&
-					arbitrumCallFailedTopicHashes_.has(log_.topics[0])
-				);
+				const arbitrumCallFailedLogs_ =
+					transactionReceipt_.logs.filter(
+						(log_) =>
+						(log_.address == contracts_.cosmicSignatureGameProxyAddress && arbitrumCallFailedTopicHashes_.has(log_.topics[0]))
+					);
 				// console.info("%s", `202507119 ${arbitrumCallFailedLogs_.length}`);
 				let eventIndex_ = 0;
 				if ((fakeArbBaseModeCode_ & 0x3n) != 0n) {
