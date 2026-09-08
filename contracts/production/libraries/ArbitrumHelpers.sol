@@ -23,7 +23,7 @@ library ArbitrumHelpers {
 			// but Solidity doesn't appear to guarantee that the transaction won't be reversed after certain errors.
 			// Comment-202502043 relates.
 			// [/Comment-202506296]
-			(isSuccess_, returnData_) = address(arbSys).call(abi.encodeWithSelector(ArbSys.arbBlockNumber.selector));
+			(isSuccess_, returnData_) = address(arbSys).call(abi.encodeCall(ArbSys.arbBlockNumber, ()));
 
 			if (isSuccess_) {
 				if (returnData_.length == 256 / 8) {
@@ -44,7 +44,7 @@ library ArbitrumHelpers {
 			bytes memory returnData_;
 
 			// Comment-202506296 applies.
-			(isSuccess_, returnData_) = address(arbSys).call(abi.encodeWithSelector(ArbSys.arbBlockHash.selector, arbBlockNumber_));
+			(isSuccess_, returnData_) = address(arbSys).call(abi.encodeCall(ArbSys.arbBlockHash, (arbBlockNumber_)));
 
 			if (isSuccess_) {
 				if (returnData_.length == 32) {
@@ -68,7 +68,7 @@ library ArbitrumHelpers {
 			// This method (almost?) always returns a different value for each transaction.
 			// [/Comment-202506298]
 			// Comment-202506296 applies.
-			(isSuccess_, returnData_) = address(arbGasInfo).call(abi.encodeWithSelector(ArbGasInfo.getGasBacklog.selector));
+			(isSuccess_, returnData_) = address(arbGasInfo).call(abi.encodeCall(ArbGasInfo.getGasBacklog, ()));
 
 			if (isSuccess_) {
 				if (returnData_.length == 256 / 8) {
@@ -92,7 +92,7 @@ library ArbitrumHelpers {
 
 			// Comment-202506298 applies.
 			// Comment-202506296 applies.
-			(isSuccess_, returnData_) = address(arbGasInfo).call(abi.encodeWithSelector(ArbGasInfo.getL1PricingUnitsSinceUpdate.selector));
+			(isSuccess_, returnData_) = address(arbGasInfo).call(abi.encodeCall(ArbGasInfo.getL1PricingUnitsSinceUpdate, ()));
 
 			if (isSuccess_) {
 				if (returnData_.length == 256 / 8) {
