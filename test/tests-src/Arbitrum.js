@@ -5,7 +5,7 @@ const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { generateRandomUInt256, waitForTransactionReceipt } = require("../../src/Helpers.js");
-const { loadFixtureDeployContractsForTesting, assertEvent } = require("../../src/ContractTestingHelpers.js");
+const { LONG_TEST_MODE_CODE, loadFixtureDeployContractsForTesting, assertEvent } = require("../../src/ContractTestingHelpers.js");
 
 describe("Arbitrum", function () {
 	it("Calls to Arbitrum precompile contracts errors", async function () {
@@ -39,7 +39,7 @@ describe("Arbitrum", function () {
 				"ArbGasInfoGetL1PricingUnitsSinceUpdateCallFailed",
 			].map(eventName_ => cosmicSignatureGameProxy_.interface.getEvent(eventName_).topicHash));
 
-			for ( let counter_ = 0; counter_ < 50; ++ counter_ ) {
+			for ( let counter_ = (LONG_TEST_MODE_CODE >= 3) ? 50 : 4; counter_ > 0; -- counter_ ) {
 				let fakeArbBaseModeCode_ = generateRandomUInt256();
 
 				// [Comment-202507116]
