@@ -19,6 +19,11 @@ import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 // #endregion
 // #region
 
+/// @dev
+/// [Comment-202609134]
+/// Issue. It's possible to make some improvements in this and some other contracts, but it will not be done,
+/// because the contracts have already been deployed.
+/// [/Comment-202609134]
 contract CosmicSignatureToken is
 	ERC20,
 
@@ -135,8 +140,7 @@ contract CosmicSignatureToken is
 				// [Comment-202606074]
 				// Issue. The caller has negated the value to burn. Problem is that if it was zero, it remains zero,
 				// so we will mint, rather than burn zero.
-				// This issue can be fixed by replacing negation with bitwise not, but it will not be done
-				// because `CosmicSignatureToken` has already been deployed.
+				// This issue can be fixed by replacing negation with bitwise not, but Comment-202609134 applies.
 				// [/Comment-202606074]
 				if (value_ >= int256(0)) {
 					_mint(specReference_.account, uint256(value_));
