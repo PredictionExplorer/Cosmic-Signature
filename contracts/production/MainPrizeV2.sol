@@ -9,6 +9,7 @@ pragma solidity =0.8.34;
 import { Panic as OpenZeppelinPanic } from "@openzeppelin/contracts/utils/Panic.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { CosmicSignatureEvents } from "./libraries/CosmicSignatureEvents.sol";
+import { CosmicSignatureHelpers } from "./libraries/CosmicSignatureHelpers.sol";
 import { RandomNumberHelpers } from "./libraries/RandomNumberHelpers.sol";
 import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 import { IPrizesWallet } from "./interfaces/IPrizesWallet.sol";
@@ -158,7 +159,7 @@ abstract contract MainPrizeV2 is
 				if (isSuccess_) {
 					emit CosmicSignatureEvents.FundsTransferredToCharity(charityAddress, charityEthDonationAmount_);
 				} else {
-					emit CosmicSignatureEvents.FundTransferFailed("ETH transfer to charity failed.", charityAddress, charityEthDonationAmount_);
+					emit CosmicSignatureEvents.EthTransferToCharityFailed(charityAddress, charityEthDonationAmount_);
 				}
 			}
 
@@ -169,14 +170,7 @@ abstract contract MainPrizeV2 is
 		// #region
 
 		// Comment-202501183 applies.
-		{
-			// Comment-202502043 applies.
-			(bool isSuccess_, ) = _msgSender().call{value: mainEthPrizeAmount_}("");
-
-			if ( ! isSuccess_ ) {
-				revert CosmicSignatureErrors.FundTransferFailed("ETH transfer to bidding round main prize beneficiary failed.", _msgSender(), mainEthPrizeAmount_);
-			}
-		}
+		CosmicSignatureHelpers.transferEthTo(payable(_msgSender()), mainEthPrizeAmount_);
 
 		// #endregion
 		// #region

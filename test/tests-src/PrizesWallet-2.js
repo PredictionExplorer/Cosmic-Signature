@@ -312,10 +312,10 @@ describe("PrizesWallet-2", function () {
 						break;
 				}
 				let transactionResponsePromiseAssertion_ = expect(transactionResponsePromise_);
-				if (brokenEthReceiverEthDepositAcceptanceModeCode_ > 0n) {
-					await transactionResponsePromiseAssertion_
-						.revertedWithCustomError(contracts_.prizesWallet, "FundTransferFailed")
-						.withArgs("ETH withdrawal failed.", bidderContractAddress_, prizeWinnerEthBalanceAmount_);
+				if (brokenEthReceiverEthDepositAcceptanceModeCode_ == 1n) {
+					await transactionResponsePromiseAssertion_.revertedWith("I am not accepting deposits.");
+				} else if (brokenEthReceiverEthDepositAcceptanceModeCode_ == 2n) {
+					await transactionResponsePromiseAssertion_.revertedWithPanic(0x01);
 				} else {
 					await transactionResponsePromiseAssertion_
 						.emit(contracts_.prizesWallet, "EthWithdrawn")
@@ -654,8 +654,7 @@ describe("PrizesWallet-2", function () {
 						case 6: {
 							// console.info("%s", "202507094");
 							await transactionResponsePromiseAssertion_
-								.revertedWithCustomError(newPrizesWallet_, "FundTransferFailed")
-								.withArgs("ETH withdrawal failed.", maliciousPrizeWinnerAddress_, anyUint);
+								.revertedWithCustomError(newPrizesWallet_, "ReentrancyGuardReentrantCall");
 							break;
 						}
 						default: {

@@ -229,6 +229,16 @@ library CosmicSignatureErrors {
 	error NftStakeActionAccessDenied(string errStr, uint256 stakeActionId, address callerAddress);
 
 	// #endregion
+	// #region // Charity
+
+	// /// @notice Thrown when an ETH donation transfer to a charity fails.
+	// /// See also: `CosmicSignatureEvents.EthTransferToCharityFailed`.
+	// /// @param charityAddress Charity address.
+	// /// @param amount The amount to transfer.
+	// /// It can potentially be zero.
+	// error EthTransferToCharityFailed(address charityAddress, uint256 amount);
+
+	// #endregion
 	// #region Security
 
 	/// @notice Thrown when an unauthorized caller attempts to call a restricted method.
@@ -247,6 +257,14 @@ library CosmicSignatureErrors {
 	/// @param destinationAddress The intended destination of the funds.
 	/// @param amount The amount to transfer.
 	/// It can potentially be zero.
+	/// @dev
+	/// [Comment-202609144]
+	/// Issue. It's a good idea to eliminate this error and event and replace with errors and events like `EthTransferToCharityFailed`.
+	/// At least, it's better to do what Comment-202609146 suggests.
+	/// Furthermore, in some cases, instead of `payable(address).call`, it's better to call `CosmicSignatureHelpers.transferEthTo`,
+	/// which on revert simply propagates the revert reason.
+	/// But this is used in some already deployed contracts, so Comment-202609134 applies.
+	/// [/Comment-202609144]
 	error FundTransferFailed(string errStr, address destinationAddress, uint256 amount);
 
 	// #endregion

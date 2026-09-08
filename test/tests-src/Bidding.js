@@ -606,10 +606,10 @@ describe("Bidding", function () {
 				/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 				const transactionResponsePromise_ = bidderContract_.connect(contracts_.signers[4]).doBidWithEth({value: ethBidAmount_,});
 				const transactionResponsePromiseAssertion_ = expect(transactionResponsePromise_);
-				if (bidderContractEthDepositAcceptanceModeCode_ > 0n) {
-					await transactionResponsePromiseAssertion_
-						.revertedWithCustomError(cosmicSignatureGameProxy_, "FundTransferFailed")
-						.withArgs("ETH refund transfer failed.", bidderContractAddress_, ethRefundAmount_);
+				if (bidderContractEthDepositAcceptanceModeCode_ == 1n) {
+					await transactionResponsePromiseAssertion_.revertedWith("I am not accepting deposits.");
+				} else if (bidderContractEthDepositAcceptanceModeCode_ == 2n) {
+					await transactionResponsePromiseAssertion_.revertedWithPanic(0x01);
 				} else {
 					await transactionResponsePromiseAssertion_.emit(cosmicSignatureGameProxy_, "BidPlaced");
 				}

@@ -44,7 +44,7 @@ function findCsNftDonor(ctx_) {
 
 /**
 Tracks the current charity recipient and whether it accepts ETH on transfer (used by the
-claim verifier to predict `FundsTransferredToCharity` vs `FundTransferFailed`).
+claim verifier to predict `FundsTransferredToCharity` vs `EthTransferToCharityFailed`).
 The default recipient is the real `CharityWallet` (always accepts). The adversarial rotation
 action swaps it for a `BrokenEthReceiver` in revert mode and back, between rounds.
 */
@@ -126,7 +126,7 @@ const adversarialActions = [
 	},
 	{
 		// Reentrancy guard probe: a malicious contract overpays an ETH bid; on the refund it reenters
-		// a `nonReentrant` game method, which must fail and bubble up as `FundTransferFailed`.
+		// a `nonReentrant` game method, whose guard error must propagate through the refund.
 		// V1 only (the `MaliciousBidder` helper uses the 2-argument bid signature).
 		name: "adversarialReentrancyOnBidRefund",
 		weight: 2,
@@ -168,10 +168,12 @@ const adversarialActions = [
 				valueNeeded: value_,
 				buildTx: (overrides_) => adversaries.maliciousBidder.connect(actor_.signer).doBidWithEth(-1n, "reenter", { ...overrides_, value: value_ }),
 			});
-			// The reentry into a nonReentrant method makes the refund call fail → FundTransferFailed.
-			engine.expectRevert(result_, "FundTransferFailed", "adversarialReentrancyOnBidRefund");
+
+			// The refund propagates the reentrancy guard's error.
+			engine.expectRevert(result_, "ReentrancyGuardReentrantCall", "adversarialReentrancyOnBidRefund");
+
 			await ledger.verifyDirtyEth();
-			return "revert:FundTransferFailed";
+			return "revert:ReentrancyGuardReentrantCall";
 		},
 	},
 	{
@@ -276,8 +278,8 @@ const adversarialActions = [
 	},
 	{
 		// Unstake the broken staker: first with ETH-reward acceptance disabled (the staking wallet's
-		// reward call reverts, so `unstake` must fail `FundTransferFailed`), then with acceptance enabled
-		// (the unstake succeeds and the reward — possibly zero — flows to the broken staker).
+		// reward call reverts, so `unstake` must fail with `FundTransferFailed`), then with acceptance enabled
+		// (the unstake succeeds and the reward -- possibly zero -- flows to the broken staker).
 		name: "adversarialBrokenStakerUnstake",
 		weight: 2,
 		isApplicable: (ctx_) => ctx_.adversaries !== undefined && brokenStakerActiveStakeActionId(ctx_) !== null,

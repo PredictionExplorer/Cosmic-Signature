@@ -41,14 +41,14 @@ abstract contract MainPrize is
 	///
 	/// [Comment-202605308]
 	/// Symbols Accessed by `claimMainPrize`, `_distributePrizes`, `_prepareNextRound`:
-	///    todo-0 Revisit this list. Add `BidRaffleWeightHelpers`.
+	///    todo-0 Revisit this list. Add V3+: `BidRaffleWeightHelpers`.
 	///    `OpenZeppelinPanic`.
 	///    `nonReentrant`.
 	///    `_msgSender`.
 	///    `CosmicSignatureErrors`.
 	///    `CosmicSignatureEvents`.
 	///    `CosmicSignatureHelpers.tryIncreaseValueExponentially`.
-	///    todo-0 `CosmicSignatureHelpers.transferEthTo`.
+	///    `CosmicSignatureHelpers.transferEthTo`.
 	///    `RandomNumberHelpers.RandomNumberSeedWrapper`.
 	///    `RandomNumberHelpers` methods.
 	///    `ICosmicSignatureToken.MintSpec`.
@@ -320,7 +320,7 @@ abstract contract MainPrize is
 				if (isSuccess_) {
 					emit CosmicSignatureEvents.FundsTransferredToCharity(charityAddress, charityEthDonationAmount_);
 				} else {
-					emit CosmicSignatureEvents.FundTransferFailed("ETH transfer to charity failed.", charityAddress, charityEthDonationAmount_);
+					emit CosmicSignatureEvents.EthTransferToCharityFailed(charityAddress, charityEthDonationAmount_);
 				}
 			}
 
@@ -336,14 +336,7 @@ abstract contract MainPrize is
 		// Another option would be to transfer the funds there unconditionally.
 		// But keeping it simple.
 		// [/Comment-202501183]
-		{
-			// Comment-202502043 applies.
-			(bool isSuccess_, ) = _msgSender().call{value: mainEthPrizeAmount_}("");
-
-			if ( ! isSuccess_ ) {
-				revert CosmicSignatureErrors.FundTransferFailed("ETH transfer to bidding round main prize beneficiary failed.", _msgSender(), mainEthPrizeAmount_);
-			}
-		}
+		CosmicSignatureHelpers.transferEthTo(payable(_msgSender()), mainEthPrizeAmount_);
 
 		// #endregion
 		// #region

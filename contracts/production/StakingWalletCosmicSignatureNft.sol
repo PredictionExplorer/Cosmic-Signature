@@ -249,9 +249,11 @@ contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, S
 	///    `_msgSender`.
 	function _payReward(uint256 rewardAmount_) private {
 		// Comment-202502043 applies.
+		// Comment-202609144 relates and/or applies.
 		(bool isSuccess_, ) = _msgSender().call{value: rewardAmount_}("");
 
 		if ( ! isSuccess_ ) {
+			// Comment-202609144 applies.
 			revert CosmicSignatureErrors.FundTransferFailed("NFT staking ETH reward payment failed.", _msgSender(), rewardAmount_);
 		}
 	}
@@ -322,12 +324,15 @@ contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, S
 			// This would revert if `charityAddress_ == address(this)`.
 			// [/Comment-202507296]
 			// Comment-202502043 applies.
+			// Comment-202609144 relates and/or applies.
 			(bool isSuccess_, ) = charityAddress_.call{value: amount_}("");
 
 			if (isSuccess_) {
 				emit CosmicSignatureEvents.FundsTransferredToCharity(charityAddress_, amount_);
 			} else {
+				// Comment-202609144 applies.
 				emit CosmicSignatureEvents.FundTransferFailed("ETH transfer to charity failed.", charityAddress_, amount_);
+
 				returnValue_ = false;
 			}
 		}

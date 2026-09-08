@@ -59,8 +59,8 @@ describe("CosmicSignatureGameV3-Security", function () {
 
 		// Charity payout is best-effort: reentry makes the transfer fail, but claiming still completes.
 		await expect(game_.connect(bidder_).claimMainPrize())
-			.emit(game_, "FundTransferFailed")
-			.withArgs("ETH transfer to charity failed.", hostileCharityAddress_, charityAmount_);
+			.emit(game_, "EthTransferToCharityFailed")
+			.withArgs(hostileCharityAddress_, charityAmount_);
 		expect(await game_.roundNum()).equal(roundNum_ + 1n);
 	});
 

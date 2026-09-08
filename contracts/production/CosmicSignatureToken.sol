@@ -23,6 +23,7 @@ import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 /// [Comment-202609134]
 /// Issue. It's possible to make some improvements in this and some other contracts, but it will not be done,
 /// because the contracts have already been deployed.
+/// Comment-202409149 relates.
 /// [/Comment-202609134]
 contract CosmicSignatureToken is
 	ERC20,

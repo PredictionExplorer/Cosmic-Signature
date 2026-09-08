@@ -163,7 +163,7 @@ describe("CosmicSignatureGameV3-BidCstRewardAttack", function () {
 		const ethBidPrice_ = await game_.getNextEthBidPriceAdvanced(2n);
 		await expect(
 			hostileBidder_.connect(deployerOfHostileContract_).doBidWithEth(-1n, "reentry attempt", 0n, {value: ethBidPrice_ + 10n ** 18n,})
-		).revertedWithCustomError(game_, "FundTransferFailed");
+		).revertedWithCustomError(game_, "ReentrancyGuardReentrantCall");
 
 		// The game is unaffected: the EOA is still the last bidder, and bidding continues normally.
 		expect(await game_.lastBidderAddress()).equal(eoaBidder1_.address);

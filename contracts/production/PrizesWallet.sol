@@ -13,6 +13,7 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
+import { CosmicSignatureHelpers } from "./libraries/CosmicSignatureHelpers.sol";
 import { AddressValidator } from "./AddressValidator.sol";
 import { DonatedTokenHolder } from "./DonatedTokenHolder.sol";
 import { IPrizesWallet } from "./interfaces/IPrizesWallet.sol";
@@ -220,12 +221,7 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 		// It's OK if this is zero.
 		uint256 ethBalanceAmountToWithdraw_ = _prepareWithdrawEth(roundNum_, prizeWinnerAddress_);
 
-		// Comment-202502043 applies.
-		(bool isSuccess_, ) = _msgSender().call{value: ethBalanceAmountToWithdraw_}("");
-
-		if ( ! isSuccess_ ) {
-			revert CosmicSignatureErrors.FundTransferFailed("ETH withdrawal failed.", _msgSender(), ethBalanceAmountToWithdraw_);
-		}
+		CosmicSignatureHelpers.transferEthTo(payable(_msgSender()), ethBalanceAmountToWithdraw_);
 	}
 
 	// #endregion
@@ -253,13 +249,7 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 			// This cannot overflow because ETH total supply is limited.
 			ethBalanceAmountToWithdraw_ += _prepareWithdrawEth(roundNums_[roundNumIndex_], _msgSender());
 		} while (roundNumIndex_ > 0);
-
-		// Comment-202502043 applies.
-		(bool isSuccess_, ) = _msgSender().call{value: ethBalanceAmountToWithdraw_}("");
-
-		if ( ! isSuccess_ ) {
-			revert CosmicSignatureErrors.FundTransferFailed("ETH withdrawal failed.", _msgSender(), ethBalanceAmountToWithdraw_);
-		}
+		CosmicSignatureHelpers.transferEthTo(payable(_msgSender()), ethBalanceAmountToWithdraw_);
 	}
 
 	// #endregion

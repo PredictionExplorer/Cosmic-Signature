@@ -66,7 +66,7 @@ contract HostileBidder {
 		} else if (hostilityModeCode_ == 5) {
 			// This reentry attempt is expected to revert due to the reentrancy guard.
 			// When the incoming transfer is the main prize beneficiary transfer, that in turn
-			// makes the outer claim revert with `FundTransferFailed`.
+			// makes the outer claim revert as well.
 			game.claimMainPrize();
 		}
 	}

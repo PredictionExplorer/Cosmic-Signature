@@ -43,9 +43,11 @@ contract CharityWallet is ReentrancyGuardTransient, Ownable, ICharityWallet {
 		emit CosmicSignatureEvents.FundsTransferredToCharity(charityAddressCopy_, amount_);
 
 		// Comment-202502043 applies.
+		// Comment-202609144 relates and/or applies.
 		(bool isSuccess_, ) = charityAddressCopy_.call{value: amount_}("");
 
 		if ( ! isSuccess_ ) {
+			// Comment-202609144 applies.
 			revert CosmicSignatureErrors.FundTransferFailed("ETH transfer to charity failed.", charityAddressCopy_, amount_);
 		}
 	}
