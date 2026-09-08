@@ -32,7 +32,12 @@ describe("Arbitrum", function () {
 		let cosmicSignatureGameProxy_ = contracts_.cosmicSignatureGameProxy;
 
 		for ( let contractVersionNumber_ = 1; ; ++ contractVersionNumber_ ) {
-			const cosmicSignatureGameProxyArbitrumErrorTopicHash_ = cosmicSignatureGameProxy_.interface.getEvent("ArbitrumError").topicHash;
+			const arbitrumCallFailedTopicHashes_ = new Set([
+				"ArbSysArbBlockNumberCallFailed",
+				"ArbSysArbBlockHashCallFailed",
+				"ArbGasInfoGetGasBacklogCallFailed",
+				"ArbGasInfoGetL1PricingUnitsSinceUpdateCallFailed",
+			].map(eventName_ => cosmicSignatureGameProxy_.interface.getEvent(eventName_).topicHash));
 
 			for ( let counter_ = 0; counter_ < 50; ++ counter_ ) {
 				let fakeArbBaseModeCode_ = generateRandomUInt256();
@@ -58,52 +63,55 @@ describe("Arbitrum", function () {
 				/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 				const transactionResponsePromise_ = cosmicSignatureGameProxy_.connect(contracts_.signers[2]).claimMainPrize();
 				const transactionReceipt_ = await waitForTransactionReceipt(transactionResponsePromise_);
-				const cosmicSignatureGameProxyArbitrumErrorLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics[0] == cosmicSignatureGameProxyArbitrumErrorTopicHash_));
-				// console.info("%s", `202507119 ${cosmicSignatureGameProxyArbitrumErrorLogs_.length}`);
+				const arbitrumCallFailedLogs_ = transactionReceipt_.logs.filter((log_) =>
+					log_.address.toLowerCase() === contracts_.cosmicSignatureGameProxyAddress.toLowerCase() &&
+					arbitrumCallFailedTopicHashes_.has(log_.topics[0])
+				);
+				// console.info("%s", `202507119 ${arbitrumCallFailedLogs_.length}`);
 				let eventIndex_ = 0;
 				if ((fakeArbBaseModeCode_ & 0x3n) != 0n) {
 					// console.info("%s", "202507121");
 					assertEvent(
-						cosmicSignatureGameProxyArbitrumErrorLogs_[eventIndex_],
+						arbitrumCallFailedLogs_[eventIndex_],
 						cosmicSignatureGameProxy_,
-						"ArbitrumError",
-						["ArbSys.arbBlockNumber call failed.",]
+						"ArbSysArbBlockNumberCallFailed",
+						[]
 					);
 					++ eventIndex_;
 				} else if ((fakeArbBaseModeCode_ & 0x30n) != 0n) {
 					// console.info("%s", "202507122");
 					assertEvent(
-						cosmicSignatureGameProxyArbitrumErrorLogs_[eventIndex_],
+						arbitrumCallFailedLogs_[eventIndex_],
 						cosmicSignatureGameProxy_,
-						"ArbitrumError",
-						["ArbSys.arbBlockHash call failed.",]
+						"ArbSysArbBlockHashCallFailed",
+						[]
 					);
 					++ eventIndex_;
 				}
 				if ((fakeArbBaseModeCode_ & 0x300n) != 0n) {
 					// console.info("%s", "202507123");
 					assertEvent(
-						cosmicSignatureGameProxyArbitrumErrorLogs_[eventIndex_],
+						arbitrumCallFailedLogs_[eventIndex_],
 						cosmicSignatureGameProxy_,
-						"ArbitrumError",
-						["ArbGasInfo.getGasBacklog call failed.",]
+						"ArbGasInfoGetGasBacklogCallFailed",
+						[]
 					);
 					++ eventIndex_;
 				}
 				if ((fakeArbBaseModeCode_ & 0x3000n) != 0n) {
 					// console.info("%s", "202507124");
 					assertEvent(
-						cosmicSignatureGameProxyArbitrumErrorLogs_[eventIndex_],
+						arbitrumCallFailedLogs_[eventIndex_],
 						cosmicSignatureGameProxy_,
-						"ArbitrumError",
-						["ArbGasInfo.getL1PricingUnitsSinceUpdate call failed.",]
+						"ArbGasInfoGetL1PricingUnitsSinceUpdateCallFailed",
+						[]
 					);
 					++ eventIndex_;
 				}
 				// if (eventIndex_ == 0) {
 				// 	console.info("%s", "202507125");
 				// }
-				expect(cosmicSignatureGameProxyArbitrumErrorLogs_.length).equal(eventIndex_);
+				expect(arbitrumCallFailedLogs_.length).equal(eventIndex_);
 			}
 
 			if ( ! (contractVersionNumber_ < 3) ) {

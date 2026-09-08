@@ -3,9 +3,13 @@ pragma solidity =0.8.34;
 
 import { ArbSys } from "@arbitrum/nitro-contracts/src/precompiles/ArbSys.sol";
 import { ArbGasInfo } from "@arbitrum/nitro-contracts/src/precompiles/ArbGasInfo.sol";
-import { CosmicSignatureEvents } from "./CosmicSignatureEvents.sol";
 
 library ArbitrumHelpers {
+	event ArbSysArbBlockNumberCallFailed();
+	event ArbSysArbBlockHashCallFailed();
+	event ArbGasInfoGetGasBacklogCallFailed();
+	event ArbGasInfoGetL1PricingUnitsSinceUpdateCallFailed();
+
 	ArbSys internal constant arbSys = ArbSys(address(0x64));
 	ArbGasInfo internal constant arbGasInfo = ArbGasInfo(address(0x6C));
 
@@ -31,7 +35,7 @@ library ArbitrumHelpers {
 			}
 		}
 		if ( ! isSuccess_ ) {
-			emit CosmicSignatureEvents.ArbitrumError("ArbSys.arbBlockNumber call failed.");
+			emit ArbSysArbBlockNumberCallFailed();
 		}
 	}
 
@@ -52,7 +56,7 @@ library ArbitrumHelpers {
 			}
 		}
 		if ( ! isSuccess_ ) {
-			emit CosmicSignatureEvents.ArbitrumError("ArbSys.arbBlockHash call failed.");
+			emit ArbSysArbBlockHashCallFailed();
 		}
 	}
 
@@ -78,7 +82,7 @@ library ArbitrumHelpers {
 			}
 		}
 		if ( ! isSuccess_ ) {
-			emit CosmicSignatureEvents.ArbitrumError("ArbGasInfo.getGasBacklog call failed.");
+			emit ArbGasInfoGetGasBacklogCallFailed();
 		}
 	}
 
@@ -100,7 +104,7 @@ library ArbitrumHelpers {
 			}
 		}
 		if ( ! isSuccess_ ) {
-			emit CosmicSignatureEvents.ArbitrumError("ArbGasInfo.getL1PricingUnitsSinceUpdate call failed.");
+			emit ArbGasInfoGetL1PricingUnitsSinceUpdateCallFailed();
 		}
 	}
 }
