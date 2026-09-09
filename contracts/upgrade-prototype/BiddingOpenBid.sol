@@ -104,7 +104,7 @@ abstract contract BiddingOpenBid is
 
 		// Comment-202508096 applies.
 		if ( ! (ethDutchAuctionElapsedDuration_ > int256(ethDutchAuctionDuration_)) ) {
-			revert CosmicSignatureErrors.InvalidOperationInCurrentState("Too early.");
+			revert CosmicSignatureErrors.InvalidOperationInCurrentState(/* "Too early." */);
 		}
 
 		uint256 newEthDutchAuctionEndingBidPriceDivisor_ = ethDutchAuctionEndingBidPriceDivisor;
@@ -257,7 +257,7 @@ abstract contract BiddingOpenBid is
 				// Comment-202412045 applies.
 				require(
 					msg.value >= ethOpenBidPriceMinLimit_,
-					CosmicSignatureErrors.InsufficientReceivedBidAmount("The ETH amount you transferred for open bid is insufficient.", ethOpenBidPriceMinLimit_, msg.value)
+					CosmicSignatureErrors.InsufficientReceivedBidAmount(/* "The ETH amount you transferred for open bid is insufficient.", */ ethOpenBidPriceMinLimit_, msg.value)
 				);
 
 				paidEthPrice_ = msg.value;
@@ -269,7 +269,7 @@ abstract contract BiddingOpenBid is
 				// Comment-202412045 applies.
 				require(
 					overpaidEthPrice_ >= int256(0),
-					CosmicSignatureErrors.InsufficientReceivedBidAmount("The current ETH bid price is greater than the amount you transferred.", paidEthPrice_, msg.value)
+					CosmicSignatureErrors.InsufficientReceivedBidAmount(/* "The current ETH bid price is greater than the amount you transferred.", */ paidEthPrice_, msg.value)
 				);
 			}
 
@@ -297,7 +297,7 @@ abstract contract BiddingOpenBid is
 			// Comment-202412045 applies.
 			require(
 				overpaidEthPrice_ >= int256(0),
-				CosmicSignatureErrors.InsufficientReceivedBidAmount("The current ETH bid price is greater than the amount you transferred.", paidEthPrice_, msg.value)
+				CosmicSignatureErrors.InsufficientReceivedBidAmount(/* "The current ETH bid price is greater than the amount you transferred.", */ paidEthPrice_, msg.value)
 			);
 
 			if (lastBidderAddress == address(0)) {
@@ -313,7 +313,7 @@ abstract contract BiddingOpenBid is
 			require(
 				usedRandomWalkNfts[uint256(/*params_.randomWalkNftId*/ randomWalkNftId_)] == 0,
 				CosmicSignatureErrors.UsedRandomWalkNft(
-					"This Random Walk NFT has already been used for bidding.",
+					// "This Random Walk NFT has already been used for bidding.",
 					uint256(/*params_.randomWalkNftId*/ randomWalkNftId_)
 				)
 			);
@@ -322,7 +322,7 @@ abstract contract BiddingOpenBid is
 				_msgSender() == randomWalkNft.ownerOf(uint256(/*params_.randomWalkNftId*/ randomWalkNftId_)),
 
 				CosmicSignatureErrors.CallerIsNotNftOwner(
-					"You are not the owner of this Random Walk NFT.",
+					// "You are not the owner of this Random Walk NFT.",
 					randomWalkNft,
 					uint256(/*params_.randomWalkNftId*/ randomWalkNftId_),
 					_msgSender()
@@ -530,7 +530,7 @@ abstract contract BiddingOpenBid is
 
 		// Comment-202412045 applies.
 		if ( ! (paidCstPrice_ <= cstPriceMaxLimit_) ) {
-			revert CosmicSignatureErrors.InsufficientReceivedBidAmount("The current CST bid price is greater than the maximum you allowed.", paidCstPrice_, cstPriceMaxLimit_);
+			revert CosmicSignatureErrors.InsufficientReceivedBidAmount(/* "The current CST bid price is greater than the maximum you allowed.", */ paidCstPrice_, cstPriceMaxLimit_);
 		}
 
 		{
@@ -663,7 +663,7 @@ abstract contract BiddingOpenBid is
 	function _bidCommon(/*BidType bidType_,*/ string memory message_) private /*nonReentrant*/ /*_onlyRoundIsActive*/ {
 		require(
 			bytes(message_).length <= bidMessageLengthMaxLimit,
-			CosmicSignatureErrors.TooLongBidMessage("Message is too long.", bytes(message_).length)
+			CosmicSignatureErrors.TooLongBidMessage(/* "Message is too long.", */ bytes(message_).length)
 		);
 
 		// Comment-202605292 applies.
@@ -673,7 +673,7 @@ abstract contract BiddingOpenBid is
 			_checkRoundIsActive();
 
 			// Comment-202501044 applies.
-			require(msg.value > 0, CosmicSignatureErrors.WrongBidType("The first bid in a bidding round shall be ETH."));
+			require(msg.value > 0, CosmicSignatureErrors.WrongBidType(/* "The first bid in a bidding round shall be ETH." */));
 
 			cstDutchAuctionBeginningTimeStamp = block.timestamp;
 			mainPrizeTime = block.timestamp + getInitialDurationUntilMainPrize();

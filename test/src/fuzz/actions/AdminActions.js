@@ -83,7 +83,7 @@ const adminActions = [
 			});
 			if ( ! result_.ok ) {
 				// Acceptable owner-action reverts (atomic, no state change), so the model is left untouched:
-				//  - "Too early" (InvalidOperationInCurrentState) if the auction had not fully elapsed in this block.
+				//  - `InvalidOperationInCurrentState` if the auction had not fully elapsed in this block.
 				//  - An arithmetic overflow / division-by-zero panic: the contract itself documents that the
 				//    `ethDutchAuctionEndingBidPriceDivisor *= 2` and the divisor recomputation can overflow in
 				//    extreme parameter states (Comment-202508192). The owner is trusted, so this is a known,

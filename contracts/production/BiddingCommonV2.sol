@@ -30,7 +30,7 @@ abstract contract BiddingCommonV2 is
 	function _checkRoundIsInactive() internal view {
 		uint256 roundActivationTimeCopy_ = roundActivationTime;
 		if ( ! (block.timestamp < roundActivationTimeCopy_) ) {
-			revert CosmicSignatureErrors.RoundIsActive("The current bidding round is already active.", roundActivationTimeCopy_, block.timestamp);
+			revert CosmicSignatureErrors.RoundIsActive(/* "The current bidding round is already active.", */ roundActivationTimeCopy_, block.timestamp);
 		}
 	}
 
@@ -42,7 +42,7 @@ abstract contract BiddingCommonV2 is
 	function _checkRoundIsActive() internal view {
 		uint256 roundActivationTimeCopy_ = roundActivationTime;
 		if ( ! (block.timestamp >= roundActivationTimeCopy_) ) {
-			revert CosmicSignatureErrors.RoundIsInactive("The current bidding round is not active yet.", roundActivationTimeCopy_, block.timestamp);
+			revert CosmicSignatureErrors.RoundIsInactive(/* "The current bidding round is not active yet.", */ roundActivationTimeCopy_, block.timestamp);
 		}
 	}
 
@@ -55,7 +55,7 @@ abstract contract BiddingCommonV2 is
 	/// @notice Comment-202503108 applies.
 	function _checkBeforeBidPlacedInRound() internal view {
 		if ( ! (lastBidderAddress == address(0)) ) {
-			revert CosmicSignatureErrors.BidHasBeenPlacedInCurrentRound("A bid has already been placed in the current bidding round.");
+			revert CosmicSignatureErrors.BidHasBeenPlacedInCurrentRound(/* "A bid has already been placed in the current bidding round." */);
 		}
 	}
 

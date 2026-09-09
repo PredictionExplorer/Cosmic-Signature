@@ -152,7 +152,7 @@ describe("Bidding", function () {
 
 				await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner).halveEthDutchAuctionEndingBidPrice())
 					.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "InvalidOperationInCurrentState")
-					.withArgs("Too early.");
+					.withArgs(/* "Too early." */);
 
 				// #endregion
 				// #region
@@ -186,7 +186,7 @@ describe("Bidding", function () {
 						// [/Comment-202508158]
 						await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner).halveEthDutchAuctionEndingBidPrice())
 							.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "InvalidOperationInCurrentState")
-							.withArgs("Too early.");
+							.withArgs(/* "Too early." */);
 
 						// latestBlock_ = await hre.ethers.provider.getBlock("latest");
 						// console.info("%s", `202508162 ${latestBlock_.timestamp}`);

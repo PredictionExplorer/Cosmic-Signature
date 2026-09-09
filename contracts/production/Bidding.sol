@@ -91,7 +91,7 @@ abstract contract Bidding is
 		// This condition isn't necessarily a perfect substiturte for that in case a block spans multiple seconds, and that's OK.
 		// [/Comment-202508096]
 		if ( ! (ethDutchAuctionElapsedDuration_ > int256(ethDutchAuctionDuration_)) ) {
-			revert CosmicSignatureErrors.InvalidOperationInCurrentState("Too early.");
+			revert CosmicSignatureErrors.InvalidOperationInCurrentState(/* "Too early." */);
 		}
 
 		uint256 newEthDutchAuctionEndingBidPriceDivisor_ = ethDutchAuctionEndingBidPriceDivisor;
@@ -294,7 +294,7 @@ abstract contract Bidding is
 			// [Comment-202412045]
 			// Performing this validatin sooner -- to minimize transaction fee in case the validation fails.
 			// [/Comment-202412045]
-			revert CosmicSignatureErrors.InsufficientReceivedBidAmount("The current ETH bid price is greater than the amount you transferred.", paidEthPrice_, msg.value);
+			revert CosmicSignatureErrors.InsufficientReceivedBidAmount(/* "The current ETH bid price is greater than the amount you transferred.", */ paidEthPrice_, msg.value);
 		}
 
 		// #endregion
@@ -312,7 +312,7 @@ abstract contract Bidding is
 			require(
 				usedRandomWalkNfts[uint256(randomWalkNftId_)] == 0,
 				CosmicSignatureErrors.UsedRandomWalkNft(
-					"This Random Walk NFT has already been used for bidding.",
+					// "This Random Walk NFT has already been used for bidding.",
 					uint256(randomWalkNftId_)
 				)
 			);
@@ -325,7 +325,7 @@ abstract contract Bidding is
 				_msgSender() == randomWalkNft.ownerOf(uint256(randomWalkNftId_)),
 
 				CosmicSignatureErrors.CallerIsNotNftOwner(
-					"You are not the owner of this Random Walk NFT.",
+					// "You are not the owner of this Random Walk NFT.",
 					randomWalkNft,
 					uint256(randomWalkNftId_),
 					_msgSender()
@@ -558,7 +558,7 @@ abstract contract Bidding is
 
 		// Comment-202412045 applies.
 		if ( ! (paidCstPrice_ <= cstPriceMaxLimit_) ) {
-			revert CosmicSignatureErrors.InsufficientReceivedBidAmount("The current CST bid price is greater than the maximum you allowed.", paidCstPrice_, cstPriceMaxLimit_);
+			revert CosmicSignatureErrors.InsufficientReceivedBidAmount(/* "The current CST bid price is greater than the maximum you allowed.", */ paidCstPrice_, cstPriceMaxLimit_);
 		}
 
 		{
@@ -709,7 +709,7 @@ abstract contract Bidding is
 	function _bidCommon(/*BidType bidType_,*/ string memory message_) private /*nonReentrant*/ /*_onlyRoundIsActive*/ {
 		require(
 			bytes(message_).length <= bidMessageLengthMaxLimit,
-			CosmicSignatureErrors.TooLongBidMessage("Message is too long.", bytes(message_).length)
+			CosmicSignatureErrors.TooLongBidMessage(/* "Message is too long.", */ bytes(message_).length)
 		);
 
 		// [Comment-202605292]
@@ -724,7 +724,7 @@ abstract contract Bidding is
 			// It appears to be more efficient to validate this here than to validate `lastBidderAddress` near Comment-202501045.
 			// This logic relies on the assumption that ETH bid price is guaranteed to be a nonzero, as specified in Comment-202503162.
 			// [/Comment-202501044]
-			require(msg.value > 0, CosmicSignatureErrors.WrongBidType("The first bid in a bidding round shall be ETH."));
+			require(msg.value > 0, CosmicSignatureErrors.WrongBidType(/* "The first bid in a bidding round shall be ETH." */));
 
 			cstDutchAuctionBeginningTimeStamp = block.timestamp;
 			mainPrizeTime = block.timestamp + getInitialDurationUntilMainPrize();

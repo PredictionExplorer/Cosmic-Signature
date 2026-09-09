@@ -114,19 +114,19 @@ abstract contract MainPrize is
 			// #enable_asserts assert(lastBidderAddress != address(0));
 
 			if ( ! (block.timestamp >= mainPrizeTime) ) {
-				revert CosmicSignatureErrors.MainPrizeEarlyClaim("Not enough time has elapsed.", mainPrizeTime, block.timestamp);
+				revert CosmicSignatureErrors.MainPrizeEarlyClaim(/* "Not enough time has elapsed.", */ mainPrizeTime, block.timestamp);
 			}
 		} else {
 			// Comment-202411169 relates.
 			if ( ! (lastBidderAddress != address(0)) ) {
-				revert CosmicSignatureErrors.NoBidsPlacedInCurrentRound("There have been no bids in the current bidding round yet.");
+				revert CosmicSignatureErrors.NoBidsPlacedInCurrentRound(/* "There have been no bids in the current bidding round yet." */);
 			}
 
 			int256 durationUntilOperationIsPermitted_ = getDurationUntilMainPrizeRaw() + int256(timeoutDurationToClaimMainPrize);
 			if ( ! (durationUntilOperationIsPermitted_ <= int256(0)) ) {
 				revert
 					CosmicSignatureErrors.MainPrizeClaimDenied(
-						"Only the last bidder is permitted to claim the bidding round main prize before a timeout expires.",
+						// "Only the last bidder is permitted to claim the bidding round main prize before a timeout expires.",
 						lastBidderAddress,
 						_msgSender(),
 						uint256(durationUntilOperationIsPermitted_)

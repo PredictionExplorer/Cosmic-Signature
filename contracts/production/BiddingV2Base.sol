@@ -51,7 +51,7 @@ abstract contract BiddingV2Base is
 
 		// Comment-202508096 applies.
 		if ( ! (ethDutchAuctionElapsedDuration_ > int256(ethDutchAuctionDuration_)) ) {
-			revert CosmicSignatureErrors.InvalidOperationInCurrentState("Too early.");
+			revert CosmicSignatureErrors.InvalidOperationInCurrentState(/* "Too early." */);
 		}
 
 		uint256 newEthDutchAuctionEndingBidPriceDivisor_ = ethDutchAuctionEndingBidPriceDivisor;
@@ -393,7 +393,7 @@ abstract contract BiddingV2Base is
 	function _bidCommon(/*BidType bidType_,*/ string memory message_) internal /*nonReentrant*/ /*_onlyRoundIsActive*/ {
 		require(
 			bytes(message_).length <= bidMessageLengthMaxLimit,
-			CosmicSignatureErrors.TooLongBidMessage("Message is too long.", bytes(message_).length)
+			CosmicSignatureErrors.TooLongBidMessage(/* "Message is too long.", */ bytes(message_).length)
 		);
 
 		// Comment-202605292 applies.
@@ -403,7 +403,7 @@ abstract contract BiddingV2Base is
 			_checkRoundIsActive();
 
 			// Comment-202501044 applies.
-			require(msg.value > 0, CosmicSignatureErrors.WrongBidType("The first bid in a bidding round shall be ETH."));
+			require(msg.value > 0, CosmicSignatureErrors.WrongBidType(/* "The first bid in a bidding round shall be ETH." */));
 
 			cstDutchAuctionBeginningTimeStamp = block.timestamp;
 			mainPrizeTime = block.timestamp + getInitialDurationUntilMainPrize();

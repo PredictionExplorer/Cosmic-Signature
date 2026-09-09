@@ -76,7 +76,7 @@ abstract contract BiddingV2 is
 			}
 		} else {
 			// Comment-202412045 applies.
-			revert CosmicSignatureErrors.InsufficientReceivedBidAmount("The current ETH bid price is greater than the amount you transferred.", paidEthPrice_, msg.value);
+			revert CosmicSignatureErrors.InsufficientReceivedBidAmount(/* "The current ETH bid price is greater than the amount you transferred.", */ paidEthPrice_, msg.value);
 		}
 
 		// #endregion
@@ -94,7 +94,7 @@ abstract contract BiddingV2 is
 			require(
 				usedRandomWalkNfts[uint256(randomWalkNftId_)] == 0,
 				CosmicSignatureErrors.UsedRandomWalkNft(
-					"This Random Walk NFT has already been used for bidding.",
+					// "This Random Walk NFT has already been used for bidding.",
 					uint256(randomWalkNftId_)
 				)
 			);
@@ -103,7 +103,7 @@ abstract contract BiddingV2 is
 				_msgSender() == randomWalkNft.ownerOf(uint256(randomWalkNftId_)),
 
 				CosmicSignatureErrors.CallerIsNotNftOwner(
-					"You are not the owner of this Random Walk NFT.",
+					// "You are not the owner of this Random Walk NFT.",
 					randomWalkNft,
 					uint256(randomWalkNftId_),
 					_msgSender()
@@ -184,7 +184,7 @@ abstract contract BiddingV2 is
 
 		// Comment-202412045 applies.
 		if ( ! (paidCstPrice_ <= cstPriceMaxLimit_) ) {
-			revert CosmicSignatureErrors.InsufficientReceivedBidAmount("The current CST bid price is greater than the maximum you allowed.", paidCstPrice_, cstPriceMaxLimit_);
+			revert CosmicSignatureErrors.InsufficientReceivedBidAmount(/* "The current CST bid price is greater than the maximum you allowed.", */ paidCstPrice_, cstPriceMaxLimit_);
 		}
 
 		_burnCstBidPriceAndMintBidCstRewardAmountIfNeeded(_msgSender(), paidCstPrice_, bidCstRewardAmount_);

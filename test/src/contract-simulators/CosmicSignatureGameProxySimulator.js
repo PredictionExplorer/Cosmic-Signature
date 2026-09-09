@@ -457,7 +457,7 @@ async function createCosmicSignatureGameProxySimulator(
 				// console.info("%s", "202504151");
 				await expect(transactionResponsePromise_)
 					.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "InsufficientReceivedBidAmount")
-					.withArgs("The current ETH bid price is greater than the amount you transferred.", paidEthPrice_, value_);
+					.withArgs(/* "The current ETH bid price is greater than the amount you transferred.", */ paidEthPrice_, value_);
 				return false;
 			}
 			if (randomWalkNftId_ < 0n) {
@@ -467,14 +467,14 @@ async function createCosmicSignatureGameProxySimulator(
 					// console.info("%s", "202504152");
 					await expect(transactionResponsePromise_)
 						.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "UsedRandomWalkNft")
-						.withArgs("This Random Walk NFT has already been used for bidding.", randomWalkNftId_);
+						.withArgs(/* "This Random Walk NFT has already been used for bidding.", */ randomWalkNftId_);
 					return false;
 				}
 				if ( ! (bidderAddress_ == this.randomWalkNftSimulator.ownerOf(randomWalkNftId_)) ) {
 					// console.info("%s", "202504153");
 					await expect(transactionResponsePromise_)
 						.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "CallerIsNotNftOwner")
-						.withArgs("You are not the owner of this Random Walk NFT.", contracts_.randomWalkNftAddress, randomWalkNftId_, bidderAddress_);
+						.withArgs(/* "You are not the owner of this Random Walk NFT.", */ contracts_.randomWalkNftAddress, randomWalkNftId_, bidderAddress_);
 					return false;
 				}
 			}
@@ -482,7 +482,7 @@ async function createCosmicSignatureGameProxySimulator(
 				// console.info("%s", "202504154");
 				await expect(transactionResponsePromise_)
 					.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "TooLongBidMessage")
-					.withArgs("Message is too long.", message_.length);
+					.withArgs(/* "Message is too long.", */ message_.length);
 				return false;
 			}
 			if (this.lastBidderAddress == hre.ethers.ZeroAddress) {
@@ -490,7 +490,7 @@ async function createCosmicSignatureGameProxySimulator(
 					// console.info("%s", "202504155");
 					await expect(transactionResponsePromise_)
 						.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "RoundIsInactive")
-						.withArgs("The current bidding round is not active yet.", this.roundActivationTime, BigInt(transactionBlock_.timestamp));
+						.withArgs(/* "The current bidding round is not active yet.", */ this.roundActivationTime, BigInt(transactionBlock_.timestamp));
 					return false;
 				}
 			}
@@ -681,7 +681,7 @@ async function createCosmicSignatureGameProxySimulator(
 				// console.info("%s", "202504166");
 				await expect(transactionResponsePromise_)
 					.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "InsufficientReceivedBidAmount")
-					.withArgs("The current CST bid price is greater than the maximum you allowed.", paidCstPrice_, cstPriceMaxLimit_);
+					.withArgs(/* "The current CST bid price is greater than the maximum you allowed.", */ paidCstPrice_, cstPriceMaxLimit_);
 				return false;
 			}
 			const bidderCstBalanceBeforeTransaction_ = this.cosmicSignatureTokenSimulator.balanceOf(bidderAddress_);
@@ -696,7 +696,7 @@ async function createCosmicSignatureGameProxySimulator(
 				// console.info("%s", "202504168");
 				await expect(transactionResponsePromise_)
 					.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "TooLongBidMessage")
-					.withArgs("Message is too long.", message_.length);
+					.withArgs(/* "Message is too long.", */ message_.length);
 				return false;
 			}
 			if (this.lastBidderAddress == hre.ethers.ZeroAddress) {
@@ -704,14 +704,14 @@ async function createCosmicSignatureGameProxySimulator(
 					// console.info("%s", "202504169");
 					await expect(transactionResponsePromise_)
 						.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "RoundIsInactive")
-						.withArgs("The current bidding round is not active yet.", this.roundActivationTime, BigInt(transactionBlock_.timestamp));
+						.withArgs(/* "The current bidding round is not active yet.", */ this.roundActivationTime, BigInt(transactionBlock_.timestamp));
 					return false;
 				}
 
 				// console.info("%s", "202504171");
 				await expect(transactionResponsePromise_)
 					.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "WrongBidType")
-					.withArgs("The first bid in a bidding round shall be ETH.");
+					.withArgs(/* "The first bid in a bidding round shall be ETH." */);
 				return false;
 			}
 			return true;
@@ -869,7 +869,7 @@ async function createCosmicSignatureGameProxySimulator(
 					// console.info("%s", "202504252");
 					await expect(transactionResponsePromise_)
 						.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "MainPrizeEarlyClaim")
-						.withArgs("Not enough time has elapsed.", this.mainPrizeTime, BigInt(transactionBlock_.timestamp));
+						.withArgs(/* "Not enough time has elapsed.", */ this.mainPrizeTime, BigInt(transactionBlock_.timestamp));
 					return false;
 				}
 			} else {
@@ -877,7 +877,7 @@ async function createCosmicSignatureGameProxySimulator(
 					// console.info("%s", "202504253");
 					await expect(transactionResponsePromise_)
 						.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "NoBidsPlacedInCurrentRound")
-						.withArgs("There have been no bids in the current bidding round yet.");
+						.withArgs(/* "There have been no bids in the current bidding round yet." */);
 					return false;
 				}
 				const durationUntilOperationIsPermitted_ =
@@ -887,7 +887,7 @@ async function createCosmicSignatureGameProxySimulator(
 					await expect(transactionResponsePromise_)
 						.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "MainPrizeClaimDenied")
 						.withArgs(
-							"Only the last bidder is permitted to claim the bidding round main prize before a timeout expires.",
+							// "Only the last bidder is permitted to claim the bidding round main prize before a timeout expires.",
 							this.lastBidderAddress,
 							callerAddress_,
 							durationUntilOperationIsPermitted_

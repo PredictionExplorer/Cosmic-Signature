@@ -399,7 +399,7 @@ const negativeProbes = [
 	},
 	{
 		// The owner may upgrade only while the round is inactive (`_authorizeUpgrade`'s `_onlyRoundIsInactive`).
-		// An owner-initiated upgrade during an active round must revert `RoundIsActive`.
+		// An owner-initiated upgrade during an active round must revert with `RoundIsActive`.
 		name: "probe.upgradeWhileRoundActive",
 		infra: true,
 		isApplicable: (ctx_) => ! ctx_.isRoundInactiveNow() && ctx_.model.roundActivationTime > 0n,

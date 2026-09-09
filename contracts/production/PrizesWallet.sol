@@ -203,7 +203,7 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 		require(
 			block.timestamp >= roundTimeoutTimeToWithdrawPrizes_ && roundTimeoutTimeToWithdrawPrizes_ > 0,
 			CosmicSignatureErrors.EthWithdrawalDenied(
-				"Only the ETH prize winner is permitted to withdraw the prize before a timeout expires.",
+				// "Only the ETH prize winner is permitted to withdraw the prize before a timeout expires.",
 				roundNum_,
 				prizeWinnerAddress_,
 				_msgSender(),
@@ -322,7 +322,7 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 			require(
 				block.timestamp >= roundTimeoutTimeToWithdrawPrizes_ && roundTimeoutTimeToWithdrawPrizes_ > 0,
 				CosmicSignatureErrors.DonatedTokenClaimDenied(
-					"Only the bidding round main prize beneficiary is permitted to claim this ERC-20 token donation before a timeout expires.",
+					// "Only the bidding round main prize beneficiary is permitted to claim this ERC-20 token donation before a timeout expires.",
 					roundNum_,
 					_msgSender(),
 					tokenAddress_,
@@ -423,9 +423,9 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 		DonatedNft memory donatedNftCopy_ = donatedNftReference_;
 		if (address(donatedNftCopy_.nftAddress) == address(0)) {
 			if (index_ >= nextDonatedNftIndex) {
-				revert CosmicSignatureErrors.InvalidDonatedNftIndex("Invalid donated NFT index.", _msgSender(), index_);
+				revert CosmicSignatureErrors.InvalidDonatedNftIndex(/* "Invalid donated NFT index.", */ _msgSender(), index_);
 			}
-			revert CosmicSignatureErrors.DonatedNftAlreadyClaimed("Donated NFT already claimed.", _msgSender(), index_);
+			revert CosmicSignatureErrors.DonatedNftAlreadyClaimed(/* "Donated NFT already claimed.", */ _msgSender(), index_);
 		}
 
 		// Comment-202411286 applies.
@@ -434,7 +434,7 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 			require(
 				block.timestamp >= roundTimeoutTimeToWithdrawPrizes_ && roundTimeoutTimeToWithdrawPrizes_ > 0,
 				CosmicSignatureErrors.DonatedNftClaimDenied(
-					"Only the bidding round main prize beneficiary is permitted to claim this NFT before a timeout expires.",
+					// "Only the bidding round main prize beneficiary is permitted to claim this NFT before a timeout expires.",
 					_msgSender(),
 					index_,
 					roundTimeoutTimeToWithdrawPrizes_,
