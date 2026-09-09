@@ -395,7 +395,7 @@ abstract contract BiddingV3 is
 			adjustedBidPrice_ = bidPrice_;
 			if (lastBidderAddress != address(0)) {
 				uint256 roundLateBidDuration_ = getRoundLateBidDuration();
-				int256 durationUntilMainPrize_ = getDurationUntilMainPrizeRaw() - currentTimeOffset_;
+				int256 durationUntilMainPrize_ = getDurationUntilMainPrize() - currentTimeOffset_;
 
 				// It could be more correct to add 1 to this so that we reached bid price max premium 1 second before `mainPrizeTime`,
 				// but it would make little difference.

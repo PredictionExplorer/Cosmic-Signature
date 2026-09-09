@@ -50,7 +50,7 @@ abstract contract MainPrizeV2Base is
 				revert CosmicSignatureErrors.NoBidsPlacedInCurrentRound(/* "There have been no bids in the current bidding round yet." */);
 			}
 
-			int256 durationUntilOperationIsPermitted_ = getDurationUntilMainPrizeRaw() + int256(timeoutDurationToClaimMainPrize);
+			int256 durationUntilOperationIsPermitted_ = getDurationUntilMainPrize() + int256(timeoutDurationToClaimMainPrize);
 			if ( ! (durationUntilOperationIsPermitted_ <= int256(0)) ) {
 				revert
 					CosmicSignatureErrors.MainPrizeClaimDenied(

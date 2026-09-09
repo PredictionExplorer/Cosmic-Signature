@@ -280,7 +280,7 @@ describe("PrizesWallet-2", function () {
 				bidderContract_.connect(contracts_.signers[4]).doBidWithEth({value: 10n ** (18n - 2n),}) :
 				contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEth(-1n, "", {value: 10n ** (18n - 2n),});
 			await waitForTransactionReceipt(transactionResponsePromise_);
-			let durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrizeRaw();
+			let durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrize();
 			await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_),]);
 			// await hre.ethers.provider.send("evm_mine");
 			transactionResponsePromise_ =
@@ -374,7 +374,7 @@ describe("PrizesWallet-2", function () {
 				.withArgs(0n, contracts_.signers[counter_].address, contracts_.randomWalkNftAddress, nftId_, BigInt(counter_));
 		}
 
-		let durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrizeRaw();
+		let durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_),]);
 		// await hre.ethers.provider.send("evm_mine");
 		await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[2]).claimMainPrize());

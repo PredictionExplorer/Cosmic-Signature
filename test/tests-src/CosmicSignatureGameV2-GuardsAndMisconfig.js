@@ -39,7 +39,7 @@ describe("CosmicSignatureGameV2-GuardsAndMisconfig", function () {
 		const game_ = contracts_.cosmicSignatureGameV2Proxy;
 
 		expect(await game_.getDurationUntilRoundActivation()).greaterThan(0n);
-		expect(await game_.getDurationUntilMainPrize()).equal(0n);
+		expect(await game_.getDurationUntilMainPrize()).lessThan(0n);
 		await expect(game_.connect(contracts_.signers[2]).bidWithEth(-1n, "inactive", 0n, { value: 10n ** 18n }))
 			.revertedWithCustomError(game_, "RoundIsInactive");
 

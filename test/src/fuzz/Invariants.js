@@ -131,11 +131,9 @@ async function runInvariants(ctx_) {
 		expect(await game_.getDurationUntilRoundActivation(), "getDurationUntilRoundActivation vs model")
 			.to.equal(-durationElapsedSinceRoundActivation_);
 
-		const durationUntilMainPrizeRaw_ = model.mainPrizeTime - BigInt(ts_);
-		expect(await game_.getDurationUntilMainPrizeRaw(), "getDurationUntilMainPrizeRaw vs model")
-			.to.equal(durationUntilMainPrizeRaw_);
+		const durationUntilMainPrize_ = model.mainPrizeTime - BigInt(ts_);
 		expect(await game_.getDurationUntilMainPrize(), "getDurationUntilMainPrize vs model")
-			.to.equal((durationUntilMainPrizeRaw_ > 0n) ? durationUntilMainPrizeRaw_ : 0n);
+			.to.equal(durationUntilMainPrize_);
 
 		const [cstDutchAuctionDuration_, cstDutchAuctionElapsedDuration_] = await game_.getCstDutchAuctionDurations();
 		expect(cstDutchAuctionDuration_, "getCstDutchAuctionDurations duration vs model").to.equal(model.getCstDutchAuctionDuration());

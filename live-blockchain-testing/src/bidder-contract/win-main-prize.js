@@ -63,7 +63,7 @@
 // 	await waitForTransactionReceipt(randomWalkNft.connect(signer0).transferFrom(signer0.address, bidderContract.address, nftId));
 // 	await waitForTransactionReceipt(bidderContract.connect(signer0).doBidWithEthPlusRandomWalkNft(nftId));
 //
-// 	let durationUntilMainPrize = await cosmicSignatureGame.getDurationUntilMainPrizeRaw(/*todo-9 {blockTag: "pending",}*/);
+// 	let durationUntilMainPrize = await cosmicSignatureGame.getDurationUntilMainPrize(/*todo-9 {blockTag: "pending",}*/);
 // 	await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize),]);
 // 	// await hre.ethers.provider.send("evm_mine");
 // 	await waitForTransactionReceipt(bidderContract.connect(signer0).doClaimMainPrize());

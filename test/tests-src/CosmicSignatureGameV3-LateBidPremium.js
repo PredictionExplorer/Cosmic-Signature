@@ -98,7 +98,7 @@ describe("CosmicSignatureGameV3-LateBidPremium", function () {
 
 		{
 			expect(await game_.lastBidderAddress()).equal(hre.ethers.ZeroAddress);
-			expect(await game_.getDurationUntilMainPrizeRaw()).lessThan(0n);
+			expect(await game_.getDurationUntilMainPrize()).lessThan(0n);
 			const ts_ = await getLatestBlockTimestamp();
 			const elapsed_ = ts_ - await game_.roundActivationTime();
 			const expectedPurePrice_ = ethDutchAuctionPrice(

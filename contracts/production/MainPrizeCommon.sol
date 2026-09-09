@@ -21,12 +21,7 @@ abstract contract MainPrizeCommon is
 		}
 	}
 
-	function getDurationUntilMainPrize() external view override returns (uint256) {
-		int256 durationUntilMainPrize_ = getDurationUntilMainPrizeRaw();
-		return (durationUntilMainPrize_ > int256(0)) ? uint256(durationUntilMainPrize_) : 0;
-	}
-
-	function getDurationUntilMainPrizeRaw() public view override returns (int256) {
+	function getDurationUntilMainPrize() public view override returns (int256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
