@@ -56,7 +56,11 @@ interface IBidding {
 	/// Comments there apply.
 	/// [/Comment-202503147]
 	/// See also: `ICosmicSignatureGame.fallback`, `IEthDonations.donateEth`.
-	/// todo-0 ??? Maybe eliminate this, to reduce contract size. Then declare the `message_` param `calldata`.
+	/// @dev
+	/// [Comment-202609158]
+	/// Issue. This method increases contract bytecode size, but appears to provide little value.
+	/// So consider eliminating it. Then also in bidding methods declare the `message_` param `calldata`.
+	/// [/Comment-202609158]
 	receive() external payable;
 
 	/// @notice
