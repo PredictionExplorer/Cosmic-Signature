@@ -50,9 +50,11 @@ describe("CosmicSignatureGameV2-Gameplay", function () {
 		await waitForTransactionReceipt(game_.connect(contracts_.signers[2]).donateEthWithInfo("v2 info", { value: 123n }));
 		expect(await game_.numEthDonationWithInfoRecords()).equal(1n);
 		await activateCurrentRound(game_, contracts_.ownerSigner);
-		const [initialCstDuration_, initialCstElapsedDuration_] = await game_.getCstDutchAuctionDurations();
+		const [initialCstDuration_, /* initialCstElapsedDuration_ */] = await game_.getCstDutchAuctionDurations();
 		expect(initialCstDuration_).greaterThan(0n);
-		expect(initialCstElapsedDuration_).greaterThanOrEqual(0n);
+
+		// // Comment-202610021 applies.
+		// expect(initialCstElapsedDuration_).greaterThanOrEqual(0n);
 
 		const mocks_ = await deployDonationMocks(contracts_);
 		for (const signer_ of contracts_.signers.slice(2, 8)) {

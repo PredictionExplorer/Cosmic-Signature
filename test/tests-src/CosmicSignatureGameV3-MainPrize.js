@@ -208,15 +208,21 @@ describe("CosmicSignatureGameV3-MainPrize", function () {
 				.greaterThanOrEqual(beneficiaryNftBalanceBefore_ + mainPrizeNumCosmicSignatureNfts_);
 
 			// #endregion
+			// #region
 
 			// `BidStatisticsV3._saveChampionDurations` persists the round-final values before
 			// `_prepareNextRound` clears the champion addresses and resets the Chrono-Warrior duration.
 			const championDurations_ = await game_.championDurations(roundNum_);
-			expect(championDurations_.enduranceChampion).equal(await game_.enduranceChampionDuration());
+
+			// // Comment-202610021 applies.
+			// expect(championDurations_.enduranceChampion).equal(await game_.enduranceChampionDuration());
+
 			expect(championDurations_.enduranceChampion).greaterThan(0n);
 			expect(championDurations_.chronoWarrior).greaterThan(0n);
 
 			expect(await game_.roundNum()).equal(roundNum_ + 1n);
+
+			// #endregion
 		}
 	});
 });

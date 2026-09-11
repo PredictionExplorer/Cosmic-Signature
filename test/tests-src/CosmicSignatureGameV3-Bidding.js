@@ -23,16 +23,26 @@ const {
 	tryReduceValueExponentially,
 } = require("../src/V3UpgradeTestHelpers.js");
 
-/** Reads the CST auction parameters separately from its time-dependent views. */
+/** Reads only CST auction parameters that are valid in the current state. */
 async function readCstAuctionState(game_) {
-	return {
+	const auction_ = {
 		declineMultiplier: await game_.cstBidPriceDeclineMultiplier(),
 		changeDivisor: await game_.cstBidPriceDeclineMultiplierChangeDivisor(),
-		beginningPrice: await game_.cstDutchAuctionBeginningBidPrice(),
 		nextRoundBeginningPrice: await game_.nextRoundFirstCstDutchAuctionBeginningBidPrice(),
 		beginningPriceMinLimit: await game_.cstDutchAuctionBeginningBidPriceMinLimit(),
-		beginningTimeStamp: await game_.cstDutchAuctionBeginningTimeStamp(),
 	};
+
+	// Comment-202610021 applies.
+	if ((await game_.lastCstBidderAddress()) !== hre.ethers.ZeroAddress) {
+		auction_.beginningPrice = await game_.cstDutchAuctionBeginningBidPrice();
+	}
+
+	// Comment-202610021 applies.
+	if ((await game_.lastBidderAddress()) !== hre.ethers.ZeroAddress) {
+		auction_.beginningTimeStamp = await game_.cstDutchAuctionBeginningTimeStamp();
+	}
+
+	return auction_;
 }
 
 /** Checks the derived total duration and elapsed time, including the beginning-price selection. */
@@ -42,7 +52,12 @@ async function assertCstAuctionDurations(game_) {
 		auction_.nextRoundBeginningPrice : auction_.beginningPrice;
 	const [duration_, elapsed_] = await game_.getCstDutchAuctionDurations();
 	expect(duration_).equal(getV3CstDutchAuctionDuration(beginningPrice_, auction_.declineMultiplier));
-	expect(elapsed_).equal((await getLatestBlockTimestamp()) - auction_.beginningTimeStamp);
+
+	// Comment-202610021 applies.
+	if ((await game_.lastBidderAddress()) !== hre.ethers.ZeroAddress) {
+		expect(elapsed_).equal((await getLatestBlockTimestamp()) - auction_.beginningTimeStamp);
+	}
+
 	return duration_;
 }
 
@@ -185,15 +200,15 @@ describe("CosmicSignatureGameV3-Bidding", function () {
 		await waitForTransactionReceipt(game_.connect(bidder1_).claimMainPrize());
 		expect(await game_.roundNum()).equal(roundNum_ + 1n);
 		expect(await game_.lastCstBidderAddress()).equal(hre.ethers.ZeroAddress);
-		expect(await readCstAuctionState(game_)).deep.equal(auction_);
+		expect(auction_).include(await readCstAuctionState(game_));
 		const nextDuration_ = await assertCstAuctionDurations(game_);
 		expect(nextDuration_).lessThan(currentDuration_);
 		await activateCurrentRound(game_, contracts_.ownerSigner);
-		expect(await readCstAuctionState(game_)).deep.equal(auction_);
+		expect(auction_).include(await readCstAuctionState(game_));
 		expect(await assertCstAuctionDurations(game_)).equal(nextDuration_);
 		await mineAtOrAfter((await getLatestBlockTimestamp()) + 7n * 86_400n);
 		await waitForTransactionReceipt(ownerGame_.halveEthDutchAuctionEndingBidPrice());
-		expect(await readCstAuctionState(game_)).deep.equal(auction_);
+		expect(auction_).include(await readCstAuctionState(game_));
 		expect(await assertCstAuctionDurations(game_)).equal(nextDuration_);
 		await bidWithEthAt(game_, bidder2_, (await getLatestBlockTimestamp()) + 10n);
 		expect(await game_.cstBidPriceDeclineMultiplier()).equal(tryIncreaseValueExponentially(auction_.declineMultiplier, auction_.changeDivisor));

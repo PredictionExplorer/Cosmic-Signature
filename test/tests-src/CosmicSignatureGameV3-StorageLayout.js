@@ -140,7 +140,11 @@ describe("CosmicSignatureGameV3-StorageLayout", function () {
 		await assertDefaultV3Initialization(gameV3_);
 
 		// V3 removes no selectors; a couple of representative V2 methods must still exist and work.
-		expect(await gameV3_.getBidCstRewardAmount()).greaterThanOrEqual(0n);
-		expect(await gameV3_.getNextEthBidPrice()).greaterThan(0n);
+		{
+			// Comment-202610021 applies: ignore the indeterminate return value.
+			await gameV3_.getBidCstRewardAmount();
+
+			expect(await gameV3_.getNextEthBidPrice()).greaterThan(0n);
+		}
 	});
 });

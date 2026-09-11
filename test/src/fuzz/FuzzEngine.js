@@ -226,6 +226,8 @@ class FuzzEngine {
 	boundaryCandidates() {
 		const model_ = this.model;
 		const out_ = [model_.roundActivationTime];
+
+		// Comment-202610021 applies.
 		if (model_.lastBidderAddress !== "0x0000000000000000000000000000000000000000") {
 			out_.push(model_.mainPrizeTime);
 			out_.push(model_.mainPrizeTime + model_.timeoutDurationToClaimMainPrize);
@@ -236,8 +238,9 @@ class FuzzEngine {
 				out_.push(model_.mainPrizeTime - roundLateBidDuration_ / 2n);
 				out_.push(model_.mainPrizeTime - roundLateBidDuration_ / 8n);
 			}
+			out_.push(model_.cstDutchAuctionBeginningTimeStamp + model_.getCstDutchAuctionDuration());
 		}
-		out_.push(model_.cstDutchAuctionBeginningTimeStamp + model_.getCstDutchAuctionDuration());
+
 		out_.push(model_.roundActivationTime + model_.getEthDutchAuctionDuration());
 		if (this.ledger.randomWalkNft.lastMinter !== "0x0000000000000000000000000000000000000000") {
 			out_.push(this.ledger.randomWalkNft.lastMintTime + 30n * 86_400n);

@@ -5,7 +5,7 @@
 const { expect } = require("chai");
 const hre = require("hardhat");
 const { ENABLE_ASSERTS } = require("../../../src/Helpers.js");
-const { MAX_UINT256 } = require("../../../src/BigIntMathHelpers.js");
+// const { MAX_UINT256 } = require("../../../src/BigIntMathHelpers.js");
 
 // #endregion
 // #region Invariant suite
@@ -89,8 +89,8 @@ async function runInvariants(ctx_) {
 	expect(await game_.mainPrizeTimeIncrementInMicroSeconds(), "mainPrizeTimeIncrement vs model").to.equal(model.mainPrizeTimeIncrementInMicroSeconds);
 	expect((await game_.lastBidderAddress()).toLowerCase(), "lastBidderAddress vs model").to.equal(model.lastBidderAddress);
 	expect((await game_.lastCstBidderAddress()).toLowerCase(), "lastCstBidderAddress vs model").to.equal(model.lastCstBidderAddress);
-	expect((await game_.enduranceChampionAddress()).toLowerCase(), "enduranceChampionAddress vs model").to.equal(model.enduranceChampionAddress);
-	expect((await game_.chronoWarriorAddress()).toLowerCase(), "chronoWarriorAddress vs model").to.equal(model.chronoWarriorAddress);
+	expect(await game_.enduranceChampionAddress(), "enduranceChampionAddress vs model").to.equal(hre.ethers.getAddress(model.enduranceChampionAddress));
+	expect(await game_.chronoWarriorAddress(), "chronoWarriorAddress vs model").to.equal(hre.ethers.getAddress(model.chronoWarriorAddress));
 	expect(await game_.chronoWarriorDuration(), "chronoWarriorDuration vs model").to.equal(model.chronoWarriorDurationUint());
 	expect(await game_.nextEthBidPrice(), "nextEthBidPrice vs model").to.equal(model.nextEthBidPrice);
 	expect(await game_.ethDutchAuctionBeginningBidPrice(), "ethDutchAuctionBeginningBidPrice vs model").to.equal(model.ethDutchAuctionBeginningBidPrice);
@@ -213,36 +213,45 @@ async function runInvariants(ctx_) {
 
 		const onChainCstPrice_ = await game_.getNextCstBidPrice();
 		expect(onChainCstPrice_, "getNextCstBidPrice vs model").to.equal(model.getNextCstBidPrice(ts_));
-		expect(await game_.getNextCstBidPriceAdvanced(0n), "getNextCstBidPrice == Advanced(0)").to.equal(onChainCstPrice_);
+
+		// Comment-202610021 applies to this contract-only comparison.
+		if (model.lastBidderAddress !== hre.ethers.ZeroAddress) {
+			expect(await game_.getNextCstBidPriceAdvanced(0n), "getNextCstBidPrice == Advanced(0)").to.equal(onChainCstPrice_);
+		}
 
 		if (model.version >= 2) {
 			const onChainReward_ = await game_.getBidCstRewardAmount();
 			expect(onChainReward_, "getBidCstRewardAmount vs model").to.equal(model.getBidCstRewardAmount(ts_));
-			expect(await game_.getBidCstRewardAmountAdvanced(0n), "getBidCstRewardAmount == Advanced(0)").to.equal(onChainReward_);
+
+			// Comment-202610021 applies to this contract-only comparison.
+			if (model.lastBidderAddress !== hre.ethers.ZeroAddress) {
+				expect(await game_.getBidCstRewardAmountAdvanced(0n), "getBidCstRewardAmount == Advanced(0)").to.equal(onChainReward_);
+			}
 		}
 	}
 
-	// `tryGetCurrentChampions` matches the model projection.
+	// Current champion information at this block's timestamp matches the model.
 	{
 		const champions_ = await game_.tryGetCurrentChampions();
-		const projected_ = model.tryGetCurrentChampions(ts_);
-		expect(champions_[0].toLowerCase(), "tryGetCurrentChampions endurance addr").to.equal(projected_.enduranceChampionAddress);
-		expect(champions_[1], "tryGetCurrentChampions endurance duration").to.equal(projected_.enduranceChampionDuration);
-		expect(champions_[2].toLowerCase(), "tryGetCurrentChampions chrono addr").to.equal(projected_.chronoWarriorAddress);
-		expect(champions_[3], "tryGetCurrentChampions chrono duration").to.equal(projected_.chronoWarriorDuration);
+		const currentChampions_ = model.tryGetCurrentChampions(ts_);
+		expect(champions_[0], "tryGetCurrentChampions endurance addr").to.equal(hre.ethers.getAddress(currentChampions_.enduranceChampionAddress));
+		expect(champions_[1], "tryGetCurrentChampions endurance duration").to.equal(currentChampions_.enduranceChampionDuration);
+		expect(champions_[2], "tryGetCurrentChampions chrono addr").to.equal(hre.ethers.getAddress(currentChampions_.chronoWarriorAddress));
+		expect(champions_[3], "tryGetCurrentChampions chrono duration").to.equal(currentChampions_.chronoWarriorDuration);
 	}
 
-	// Chrono sentinel rule: (addr == 0) == (duration is sentinel).
-	{
-		const chronoAddr_ = await game_.chronoWarriorAddress();
-		const chronoDur_ = await game_.chronoWarriorDuration();
-		const sentinel_ = MAX_UINT256;
-		if (chronoAddr_ === hre.ethers.ZeroAddress) {
-			expect(chronoDur_, "zero chrono addr => sentinel duration").to.equal(sentinel_);
-		} else {
-			expect(chronoDur_ <= (1n << 255n) - 1n, "nonzero chrono addr => non-sentinel duration").to.equal(true);
-		}
-	}
+	// // Comment-202610021 applies to this contract-only check.
+	// // Chrono sentinel rule: (addr == 0) == (duration is sentinel).
+	// {
+	// 	const chronoAddr_ = await game_.chronoWarriorAddress();
+	// 	const chronoDur_ = await game_.chronoWarriorDuration();
+	// 	const sentinel_ = MAX_UINT256;
+	// 	if (chronoAddr_ === hre.ethers.ZeroAddress) {
+	// 		expect(chronoDur_, "zero chrono addr => sentinel duration").to.equal(sentinel_);
+	// 	} else {
+	// 		expect(chronoDur_ <= (1n << 255n) - 1n, "nonzero chrono addr => non-sentinel duration").to.equal(true);
+	// 	}
+	// }
 
 	// #endregion
 	// #region Secondary prize amount views

@@ -8,7 +8,7 @@ const hre = require("hardhat");
 // #region Probe helper
 
 /**
-Runs an intentionally-reverting transaction and asserts the exact error.
+Runs an intentionally-reverting transaction. If `expected` is omitted, accepts any revert reason.
 The transaction reverts, so neither the model nor the ledger change (gas is accounted by the engine).
 @returns {Promise<string>} `revert:<name>` on success, "skip" if not set up.
 */
@@ -19,11 +19,11 @@ async function runProbe(ctx_, { signer, buildTx, expected, ts, value }) {
 		return "skip";
 	}
 	const result_ = await ctx_.engine.execTx({ signer, buildTx, ts, valueNeeded: value ?? 0n });
-	const expectedList_ = Array.isArray(expected) ? expected : [expected];
+	const expectedList_ = expected === undefined ? null : (Array.isArray(expected) ? expected : [expected]);
 	if (result_.ok) {
-		throw new Error(`negative probe expected revert in {${expectedList_.join(", ")}} but the tx succeeded`);
+		throw new Error(`negative probe expected ${expectedList_ === null ? "a revert" : `revert in {${expectedList_.join(", ")}}`} but the tx succeeded`);
 	}
-	if ( ! expectedList_.includes(result_.revert.name) ) {
+	if (expectedList_ !== null && ! expectedList_.includes(result_.revert.name)) {
 		throw new Error(
 			`negative probe expected one of {${expectedList_.join(", ")}} but got ${result_.revert.name}: ${result_.revert.message.slice(0, 300)}`
 		);
@@ -170,20 +170,18 @@ const negativeProbes = [
 			ctx_.model.version >= 2 &&
 			ctx_.model.lastBidderAddress === hre.ethers.ZeroAddress,
 		run: (ctx_, actor_) => {
-			const ts_ = ctx_.engine.clampTs(ctx_.model.roundActivationTime + ctx_.model.getCstDutchAuctionDuration() + 1n);
-			if (ts_ < ctx_.model.roundActivationTime) {
-				return "skip";
-			}
-			if (ctx_.model.getNextCstBidPrice(ts_) !== 0n) {
-				return "skip";
-			}
+			// Sometimes bid immediately, including before activation; otherwise sample up to
+			// one CST Dutch auction duration after activation, without using an indeterminate price.
+			const earliestTimeStamp_ = ctx_.engine.lastTs + 1n;
+			const latestTimeStamp_ = ctx_.engine.clampTs(ctx_.model.roundActivationTime + ctx_.model.getCstDutchAuctionDuration());
+			const ts_ = ctx_.engine.randomIntRange(0, 1) === 0 ? earliestTimeStamp_ :
+				ctx_.engine.randomBigIntRange(earliestTimeStamp_, latestTimeStamp_);
+
+			// Comment-202501045 allows different revert reasons; only rejection is guaranteed.
 			return runProbe(ctx_, {
 				signer: actor_.signer,
 				ts: ts_,
 				buildTx: (overrides_) => ctx_.game.connect(actor_.signer).bidWithCst((1n << 256n) - 1n, "", 0n, overrides_),
-				// V3 reaches reward minting before `_bidCommon` can reject the bid type, so minting
-				// the reward to the zero last-bidder address fails first.
-				expected: (ctx_.model.version >= 3) ? "ERC20InvalidReceiver" : "WrongBidType",
 			});
 		},
 	},

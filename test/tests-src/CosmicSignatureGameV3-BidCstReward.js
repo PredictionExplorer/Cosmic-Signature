@@ -90,34 +90,35 @@ describe("CosmicSignatureGameV3-BidCstReward", function () {
 		expect(rewardPerMinute_).lessThanOrEqual(10n ** 18n);
 	});
 
-	it("the reward getter uses timestamp zero before the first bid and the last bid timestamp afterwards", async function () {
+	it("the reward getter accrues since the last bid", async function () {
 		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3();
 		const game_ = contracts_.cosmicSignatureGameV3Proxy;
 		await activateCurrentRound(game_, contracts_.ownerSigner);
 		const mainPrizeTimeIncrementInMicroSeconds_ = await game_.mainPrizeTimeIncrementInMicroSeconds();
 
-		// Before the first bid, the zero address's bidder record has timestamp zero. The getter therefore
-		// reports the purely mathematical accrual since Unix epoch, even though the first ETH bid ignores it.
-		const latestTimeStampBeforeFirstBid_ = await getLatestBlockTimestamp();
-		for (const currentTimeOffset_ of [0n, 1n, 60n, 3_600n, 7n * 24n * 60n * 60n,]) {
-			expect(
-				await game_.getBidCstRewardAmountAdvanced(currentTimeOffset_),
-				`before the first bid, at offset ${currentTimeOffset_}`
-			).equal(
-				getV3BidCstRewardAmount(
-					latestTimeStampBeforeFirstBid_ + currentTimeOffset_,
-					DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER,
-					mainPrizeTimeIncrementInMicroSeconds_
-				)
-			);
-		}
-		expect(await game_.getBidCstRewardAmount()).equal(
-			getV3BidCstRewardAmount(
-				latestTimeStampBeforeFirstBid_,
-				DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER,
-				mainPrizeTimeIncrementInMicroSeconds_
-			)
-		);
+		// // Comment-202610021 applies.
+		// // Before the first bid, the zero address's bidder record has timestamp zero. The getter therefore
+		// // reports the purely mathematical accrual since Unix epoch, even though the first ETH bid ignores it.
+		// const latestTimeStampBeforeFirstBid_ = await getLatestBlockTimestamp();
+		// for (const currentTimeOffset_ of [0n, 1n, 60n, 3_600n, 7n * 24n * 60n * 60n,]) {
+		// 	expect(
+		// 		await game_.getBidCstRewardAmountAdvanced(currentTimeOffset_),
+		// 		`before the first bid, at offset ${currentTimeOffset_}`
+		// 	).equal(
+		// 		getV3BidCstRewardAmount(
+		// 			latestTimeStampBeforeFirstBid_ + currentTimeOffset_,
+		// 			DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER,
+		// 			mainPrizeTimeIncrementInMicroSeconds_
+		// 		)
+		// 	);
+		// }
+		// expect(await game_.getBidCstRewardAmount()).equal(
+		// 	getV3BidCstRewardAmount(
+		// 		latestTimeStampBeforeFirstBid_,
+		// 		DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER,
+		// 		mainPrizeTimeIncrementInMicroSeconds_
+		// 	)
+		// );
 
 		// Place the first bid at a known timestamp.
 		const firstBidTimeStamp_ = (await getLatestBlockTimestamp()) + 10n;

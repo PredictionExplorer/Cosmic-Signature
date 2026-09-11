@@ -39,7 +39,17 @@ describe("CosmicSignatureGameV2-GuardsAndMisconfig", function () {
 		const game_ = contracts_.cosmicSignatureGameV2Proxy;
 
 		expect(await game_.getDurationUntilRoundActivation()).greaterThan(0n);
-		expect(await game_.getDurationUntilMainPrize()).lessThan(0n);
+
+		// // [Comment-202610021]
+		// // Do not assert indeterminate, irrelevant values in contract-only checks.
+		// // Before the first bid, Comment-202501022 applies to mainPrizeTime, nextEthBidPrice,
+		// // CST Dutch auction elapsed duration, next CST bid price, and V3+ bid CST reward getters.
+		// // The next ETH bid price getters remain valid before the first bid and round activation.
+		// // CST Dutch auction beginning bid price and raw champion durations have their own validity conditions.
+		// // Contract/model equality and upgrade storage-preservation checks may compare these values.
+		// // [/Comment-202610021]
+		// expect(await game_.getDurationUntilMainPrize()).lessThan(0n);
+
 		await expect(game_.connect(contracts_.signers[2]).bidWithEth(-1n, "inactive", 0n, { value: 10n ** 18n }))
 			.revertedWithCustomError(game_, "RoundIsInactive");
 
@@ -86,15 +96,17 @@ describe("CosmicSignatureGameV2-GuardsAndMisconfig", function () {
 		expect(durationDivisorAfter_).lessThanOrEqual(durationDivisorBefore_);
 	});
 
-	it("documents zero CST duration owner misconfiguration", async function () {
-		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2();
-		const game_ = contracts_.cosmicSignatureGameV2Proxy;
-		await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setCstDutchAuctionDuration(0n));
-		await activateCurrentRound(game_, contracts_.ownerSigner);
-
-		expect(await game_.getNextCstBidPrice()).equal(0n);
-		await expect(game_.getNextCstBidPriceAdvanced( - (await getLatestBlockTimestamp()) - 1n )).revertedWithPanic(0x12);
-	});
+	// // Zero CST Dutch auction duration is a misconfiguration with undefined behavior,
+	// // regardless of whether the current round has received a bid.
+	// it("documents zero CST duration owner misconfiguration", async function () {
+	// 	const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2();
+	// 	const game_ = contracts_.cosmicSignatureGameV2Proxy;
+	// 	await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setCstDutchAuctionDuration(0n));
+	// 	await activateCurrentRound(game_, contracts_.ownerSigner);
+	//
+	// 	expect(await game_.getNextCstBidPrice()).equal(0n);
+	// 	await expect(game_.getNextCstBidPriceAdvanced( - (await getLatestBlockTimestamp()) - 1n )).revertedWithPanic(0x12);
+	// });
 
 	// // This tests Comment-202607016.
 	// it("raises the V2 next-round first CST price when the owner raises the CST minimum", async function () {
