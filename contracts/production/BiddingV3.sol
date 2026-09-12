@@ -467,8 +467,6 @@ abstract contract BiddingV3 is
 		{
 			// Comment-202501022 applies.
 			// And that's OK, because there is no bid CST reward for the first bid in a bidding round.
-			// todo-0 Tell Nick to not show bid CST reward until someone places the first bid in the current round.
-			// todo-0 Review an AI generated doc about changes and think what to tell Nick.
 			uint256 lastBidTimeStampCopy_ = biddersInfo[roundNum][lastBidderAddress].lastBidTimeStamp;
 
 			int256 elapsedDuration_ = int256(block.timestamp) + currentTimeOffset_ - int256(lastBidTimeStampCopy_);
