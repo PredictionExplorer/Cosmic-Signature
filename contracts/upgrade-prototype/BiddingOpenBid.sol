@@ -112,48 +112,59 @@ abstract contract BiddingOpenBid is
 		// Comment-202508187 applies.
 		// Comment-202501301 applies.
 		// Comment-202508103 applies.
-		uint256 currentEthBidPrice_ = ethDutchAuctionBeginningBidPrice / newEthDutchAuctionEndingBidPriceDivisor_ + 1;
+		uint256 currentEthBidPrice_;
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			currentEthBidPrice_ = ethDutchAuctionBeginningBidPrice / newEthDutchAuctionEndingBidPriceDivisor_ + 1;
+		}
 
 		// Comment-202508192 applies.
 		newEthDutchAuctionEndingBidPriceDivisor_ *= 2;
 
-		// Comment-202508189 applies.
-		// Comment-202501301 applies.
-		// Comment-202508103 applies.
-		uint256 ethDutchAuctionEndingBidPrice_ = ethDutchAuctionBeginningBidPrice / newEthDutchAuctionEndingBidPriceDivisor_ + 1;
-
-		// Comment-202508191 applies.
-		uint256 newEthDutchAuctionDurationDivisor_;
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
 		{
-			uint256 numerator_ = (ethDutchAuctionBeginningBidPrice - currentEthBidPrice_) * mainPrizeTimeIncrementInMicroSeconds;
-			uint256 denominator_ = (ethDutchAuctionBeginningBidPrice - ethDutchAuctionEndingBidPrice_) * uint256(ethDutchAuctionElapsedDuration_);
+			// Comment-202508189 applies.
+			// Comment-202501301 applies.
+			// Comment-202508103 applies.
+			uint256 ethDutchAuctionEndingBidPrice_ = ethDutchAuctionBeginningBidPrice / newEthDutchAuctionEndingBidPriceDivisor_ + 1;
 
-			// Comment-202508142 applies.
-			newEthDutchAuctionDurationDivisor_ = (numerator_ /* + denominator_ / 2 */) / denominator_ + 1;
+			// Comment-202508191 applies.
+			uint256 newEthDutchAuctionDurationDivisor_;
+			{
+				uint256 numerator_ = (ethDutchAuctionBeginningBidPrice - currentEthBidPrice_) * mainPrizeTimeIncrementInMicroSeconds;
+				uint256 denominator_ = (ethDutchAuctionBeginningBidPrice - ethDutchAuctionEndingBidPrice_) * uint256(ethDutchAuctionElapsedDuration_);
+
+				// Comment-202508142 applies.
+				newEthDutchAuctionDurationDivisor_ = (numerator_ /* + denominator_ / 2 */) / denominator_ + 1;
+			}
+			// if ( ! (newEthDutchAuctionDurationDivisor_ > 0) ) {
+			// 	revert CosmicSignatureErrors.EthDutchAuctionEndingBidPriceHalvingError("newEthDutchAuctionDurationDivisor_ == 0");
+			// }
+			// #enable_asserts assert(newEthDutchAuctionDurationDivisor_ > 0);
+
+			/*
+			{
+				// Comment-202508135 applies.
+				assert(newEthDutchAuctionDurationDivisor_ <= ethDutchAuctionDurationDivisor);
+
+				// Comment-202508099 applies.
+				uint256 newEthDutchAuctionDuration_ = mainPrizeTimeIncrementInMicroSeconds / newEthDutchAuctionDurationDivisor_;
+
+				// Comment-202508135 applies.
+				assert(newEthDutchAuctionDuration_ >= ethDutchAuctionDuration_);
+
+				// Comment-202508157 applies.
+				assert(newEthDutchAuctionDuration_ > uint256(ethDutchAuctionElapsedDuration_));
+			}
+			*/
+
+			_setEthDutchAuctionDurationDivisor(newEthDutchAuctionDurationDivisor_);
+			_setEthDutchAuctionEndingBidPriceDivisor(newEthDutchAuctionEndingBidPriceDivisor_);
 		}
-		// if ( ! (newEthDutchAuctionDurationDivisor_ > 0) ) {
-		// 	revert CosmicSignatureErrors.EthDutchAuctionEndingBidPriceHalvingError("newEthDutchAuctionDurationDivisor_ == 0");
-		// }
-		// #enable_asserts assert(newEthDutchAuctionDurationDivisor_ > 0);
-
-		/*
-		{
-			// Comment-202508135 applies.
-			assert(newEthDutchAuctionDurationDivisor_ <= ethDutchAuctionDurationDivisor);
-
-			// Comment-202508099 applies.
-			uint256 newEthDutchAuctionDuration_ = mainPrizeTimeIncrementInMicroSeconds / newEthDutchAuctionDurationDivisor_;
-
-			// Comment-202508135 applies.
-			assert(newEthDutchAuctionDuration_ >= ethDutchAuctionDuration_);
-
-			// Comment-202508157 applies.
-			assert(newEthDutchAuctionDuration_ > uint256(ethDutchAuctionElapsedDuration_));
-		}
-		*/
-
-		_setEthDutchAuctionDurationDivisor(newEthDutchAuctionDurationDivisor_);
-		_setEthDutchAuctionEndingBidPriceDivisor(newEthDutchAuctionEndingBidPriceDivisor_);
 	}
 	
 	// #endregion
@@ -231,39 +242,73 @@ abstract contract BiddingOpenBid is
 	/// @param isOpenBid_ Set this to `true` to specify that the bid price is "open", meaning any price the user wants.
 	/// `nextEthBidPrice` will be calculated based on `msg.value`.
 	function _bidWithEth(/*bytes memory data_*/ int256 randomWalkNftId_, bool isOpenBid_, string memory message_) private /*nonReentrant*/ /*_onlyRoundIsActive*/ {
-		// #region //
-		
-		// BidParams memory params_ = abi.decode(data_, (BidParams));
-		// BidType bidType_;
-
-		// #endregion
 		// #region
 
-		// Comment-202503162 relates and/or applies.
-		uint256 ethBidPrice_ = getNextEthBidPriceAdvanced(int256(0));
-		uint256 paidEthPrice_;
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			// #region //
+			
+			// BidParams memory params_ = abi.decode(data_, (BidParams));
+			// BidType bidType_;
 
-		int256 overpaidEthPrice_ = int256(0);
-
-		// #endregion
-		// #region
-
-		if (/*params_.randomWalkNftId*/ randomWalkNftId_ < int256(0)) {
+			// #endregion
 			// #region
 
-			if (/*params_.isOpenBid*/ isOpenBid_) {
-				uint256 ethOpenBidPriceMinLimit_ = ethBidPrice_ * timesEthBidPrice;
+			// Comment-202503162 relates and/or applies.
+			uint256 ethBidPrice_ = getNextEthBidPriceAdvanced(int256(0));
+			uint256 paidEthPrice_;
 
-				// Comment-202412045 applies.
-				require(
-					msg.value >= ethOpenBidPriceMinLimit_,
-					CosmicSignatureErrors.InsufficientReceivedBidAmount(/* "The ETH amount you transferred for open bid is insufficient.", */ ethOpenBidPriceMinLimit_, msg.value)
-				);
+			int256 overpaidEthPrice_ = int256(0);
 
-				paidEthPrice_ = msg.value;
-				// #enable_asserts assert(overpaidEthPrice_ == int256(0));
+			// #endregion
+			// #region
+
+			if (/*params_.randomWalkNftId*/ randomWalkNftId_ < int256(0)) {
+				// #region
+
+				if (/*params_.isOpenBid*/ isOpenBid_) {
+					uint256 ethOpenBidPriceMinLimit_ = ethBidPrice_ * timesEthBidPrice;
+
+					// Comment-202412045 applies.
+					require(
+						msg.value >= ethOpenBidPriceMinLimit_,
+						CosmicSignatureErrors.InsufficientReceivedBidAmount(/* "The ETH amount you transferred for open bid is insufficient.", */ ethOpenBidPriceMinLimit_, msg.value)
+					);
+
+					paidEthPrice_ = msg.value;
+					// #enable_asserts assert(overpaidEthPrice_ == int256(0));
+				} else {
+					paidEthPrice_ = ethBidPrice_;
+					overpaidEthPrice_ = int256(msg.value) - int256(paidEthPrice_);
+
+					// Comment-202412045 applies.
+					require(
+						overpaidEthPrice_ >= int256(0),
+						CosmicSignatureErrors.InsufficientReceivedBidAmount(/* "The current ETH bid price is greater than the amount you transferred.", */ paidEthPrice_, msg.value)
+					);
+				}
+
+				// #endregion
+				// #region
+
+				if (lastBidderAddress == address(0)) {
+					ethDutchAuctionBeginningBidPrice = paidEthPrice_ * CosmicSignatureConstants.ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
+				}
+
+				// Comment-202501061 applies.
+				nextEthBidPrice = CosmicSignatureHelpers.tryIncreaseValueExponentially(paidEthPrice_, ethBidPriceIncreaseDivisor) + 1;
+
+				// // #enable_asserts assert(bidType_ == BidType.ETH);
+
+				// #endregion
 			} else {
-				paidEthPrice_ = ethBidPrice_;
+				// #region
+
+				// Issue. Somewhere around here, we probably should evaluate `isOpenBid_` and act differently if it's `true`.
+
+				paidEthPrice_ = getEthPlusRandomWalkNftBidPrice(ethBidPrice_);
 				overpaidEthPrice_ = int256(msg.value) - int256(paidEthPrice_);
 
 				// Comment-202412045 applies.
@@ -271,108 +316,83 @@ abstract contract BiddingOpenBid is
 					overpaidEthPrice_ >= int256(0),
 					CosmicSignatureErrors.InsufficientReceivedBidAmount(/* "The current ETH bid price is greater than the amount you transferred.", */ paidEthPrice_, msg.value)
 				);
+
+				if (lastBidderAddress == address(0)) {
+					ethDutchAuctionBeginningBidPrice = ethBidPrice_ * CosmicSignatureConstants.ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
+				}
+
+				// Comment-202501061 applies.
+				nextEthBidPrice = CosmicSignatureHelpers.tryIncreaseValueExponentially(ethBidPrice_, ethBidPriceIncreaseDivisor) + 1;
+				
+				// #endregion
+				// #region
+
+				require(
+					usedRandomWalkNfts[uint256(/*params_.randomWalkNftId*/ randomWalkNftId_)] == 0,
+					CosmicSignatureErrors.UsedRandomWalkNft(
+						// "This Random Walk NFT has already been used for bidding.",
+						uint256(/*params_.randomWalkNftId*/ randomWalkNftId_)
+					)
+				);
+				require(
+					// Comment-202502091 applies.
+					_msgSender() == randomWalkNft.ownerOf(uint256(/*params_.randomWalkNftId*/ randomWalkNftId_)),
+
+					CosmicSignatureErrors.CallerIsNotNftOwner(
+						// "You are not the owner of this Random Walk NFT.",
+						randomWalkNft,
+						uint256(/*params_.randomWalkNftId*/ randomWalkNftId_),
+						_msgSender()
+					)
+				);
+				usedRandomWalkNfts[uint256(/*params_.randomWalkNftId*/ randomWalkNftId_)] = 1;
+				// bidType_ = BidType.RandomWalk;
+				
+				// #endregion
 			}
 
 			// #endregion
 			// #region
 
-			if (lastBidderAddress == address(0)) {
-				ethDutchAuctionBeginningBidPrice = paidEthPrice_ * CosmicSignatureConstants.ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
-			}
-
-			// Comment-202501061 applies.
-			nextEthBidPrice = CosmicSignatureHelpers.tryIncreaseValueExponentially(paidEthPrice_, ethBidPriceIncreaseDivisor) + 1;
-
-			// // #enable_asserts assert(bidType_ == BidType.ETH);
-
-			// #endregion
-		} else {
-			// #region
-
-			// Issue. Somewhere around here, we probably should evaluate `isOpenBid_` and act differently if it's `true`.
-
-			paidEthPrice_ = getEthPlusRandomWalkNftBidPrice(ethBidPrice_);
-			overpaidEthPrice_ = int256(msg.value) - int256(paidEthPrice_);
-
-			// Comment-202412045 applies.
-			require(
-				overpaidEthPrice_ >= int256(0),
-				CosmicSignatureErrors.InsufficientReceivedBidAmount(/* "The current ETH bid price is greater than the amount you transferred.", */ paidEthPrice_, msg.value)
+			biddersInfo[roundNum][_msgSender()].totalSpentEthAmount += paidEthPrice_;
+			token.mint(_msgSender(), bidCstRewardAmount);
+			_bidCommon(/*bidType_,*/ /*params_.message*/ message_);
+			emit BidPlaced(
+				roundNum,
+				_msgSender(),
+				int256(paidEthPrice_),
+				-1,
+				/*params_.randomWalkNftId*/ randomWalkNftId_,
+				/*params_.message*/ message_,
+				mainPrizeTime
 			);
 
-			if (lastBidderAddress == address(0)) {
-				ethDutchAuctionBeginningBidPrice = ethBidPrice_ * CosmicSignatureConstants.ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
-			}
-
-			// Comment-202501061 applies.
-			nextEthBidPrice = CosmicSignatureHelpers.tryIncreaseValueExponentially(ethBidPrice_, ethBidPriceIncreaseDivisor) + 1;
-			
 			// #endregion
 			// #region
 
-			require(
-				usedRandomWalkNfts[uint256(/*params_.randomWalkNftId*/ randomWalkNftId_)] == 0,
-				CosmicSignatureErrors.UsedRandomWalkNft(
-					// "This Random Walk NFT has already been used for bidding.",
-					uint256(/*params_.randomWalkNftId*/ randomWalkNftId_)
-				)
-			);
-			require(
-				// Comment-202502091 applies.
-				_msgSender() == randomWalkNft.ownerOf(uint256(/*params_.randomWalkNftId*/ randomWalkNftId_)),
+			// Comment-202505096 applies.
+			// Issue. To keep it simple, this logic is not necessarily as good as that in `Bidding._bidWithEth`.
+			if (overpaidEthPrice_ > int256(0)) {
+				// Comment-202606216 applies.
+				// // #enable_asserts assert(tx.gasprice > 0);
 
-				CosmicSignatureErrors.CallerIsNotNftOwner(
-					// "You are not the owner of this Random Walk NFT.",
-					randomWalkNft,
-					uint256(/*params_.randomWalkNftId*/ randomWalkNftId_),
-					_msgSender()
-				)
-			);
-			usedRandomWalkNfts[uint256(/*params_.randomWalkNftId*/ randomWalkNftId_)] = 1;
-			// bidType_ = BidType.RandomWalk;
-			
-			// #endregion
-		}
+				// // Comment-202607014 applies.
+				// uint256 txGasPrice_ = tx.gasprice;
+				// uint256 ethBidRefundAmountToSwallowMaxLimit_ =
+				// 	(txGasPrice_ > 0) ?
+				// 	(ethBidRefundAmountInGasToSwallowMaxLimit * txGasPrice_) :
+				// 	type(uint256).max;
 
-		// #endregion
-		// #region
-
-		biddersInfo[roundNum][_msgSender()].totalSpentEthAmount += paidEthPrice_;
-		token.mint(_msgSender(), bidCstRewardAmount);
-		_bidCommon(/*bidType_,*/ /*params_.message*/ message_);
-		emit BidPlaced(
-			roundNum,
-			_msgSender(),
-			int256(paidEthPrice_),
-			-1,
-			/*params_.randomWalkNftId*/ randomWalkNftId_,
-			/*params_.message*/ message_,
-			mainPrizeTime
-		);
-
-		// #endregion
-		// #region
-
-		// Comment-202505096 applies.
-		// Issue. To keep it simple, this logic is not necessarily as good as that in `Bidding._bidWithEth`.
-		if (overpaidEthPrice_ > int256(0)) {
-			// Comment-202606216 applies.
-			// // #enable_asserts assert(tx.gasprice > 0);
-
-			// // Comment-202607014 applies.
-			// uint256 txGasPrice_ = tx.gasprice;
-			// uint256 ethBidRefundAmountToSwallowMaxLimit_ =
-			// 	(txGasPrice_ > 0) ?
-			// 	(ethBidRefundAmountInGasToSwallowMaxLimit * txGasPrice_) :
-			// 	type(uint256).max;
-
-			uint256 ethBidRefundAmountToSwallowMaxLimit_ = ethBidRefundAmountInGasToSwallowMaxLimit * tx.gasprice;
-			if (uint256(overpaidEthPrice_) <= ethBidRefundAmountToSwallowMaxLimit_) {
-				// Doing nothing.
-			} else {
-				// Comment-202506219 applies.
-				CosmicSignatureHelpers.transferEthTo(payable(_msgSender()), uint256(overpaidEthPrice_));
+				uint256 ethBidRefundAmountToSwallowMaxLimit_ = ethBidRefundAmountInGasToSwallowMaxLimit * tx.gasprice;
+				if (uint256(overpaidEthPrice_) <= ethBidRefundAmountToSwallowMaxLimit_) {
+					// Doing nothing.
+				} else {
+					// Comment-202506219 applies.
+					CosmicSignatureHelpers.transferEthTo(payable(_msgSender()), uint256(overpaidEthPrice_));
+				}
 			}
+
+			// #endregion
 		}
 
 		// #endregion
@@ -459,10 +479,6 @@ abstract contract BiddingOpenBid is
 	// #region `getEthDutchAuctionDurations`
 
 	function getEthDutchAuctionDurations() public view override returns (uint256, int256) {
-		// // #enable_smtchecker /*
-		// unchecked
-		// // #enable_smtchecker */
-
 		uint256 ethDutchAuctionDuration_ = _getEthDutchAuctionDuration();
 		int256 ethDutchAuctionElapsedDuration_ = getDurationElapsedSinceRoundActivation();
 		return (ethDutchAuctionDuration_, ethDutchAuctionElapsedDuration_);
@@ -523,50 +539,55 @@ abstract contract BiddingOpenBid is
 		// Comment-202412251 applies.
 		// #enable_asserts assert(_msgSender() != marketingWallet);
 
-		// Comment-202501045 applies.
-
-		// Comment-202503162 relates and/or applies.
-		uint256 paidCstPrice_ = getNextCstBidPriceAdvanced(int256(0));
-
-		// Comment-202412045 applies.
-		if ( ! (paidCstPrice_ <= cstPriceMaxLimit_) ) {
-			revert CosmicSignatureErrors.InsufficientReceivedBidAmount(/* "The current CST bid price is greater than the maximum you allowed.", */ paidCstPrice_, cstPriceMaxLimit_);
-		}
-
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
 		{
-			ICosmicSignatureToken.MintOrBurnSpec[] memory mintAndBurnSpecs_ = new ICosmicSignatureToken.MintOrBurnSpec[](2);
-			mintAndBurnSpecs_[0].account = _msgSender();
-
-			// Comment-202409177 applies.
-			// Comment-202606074 relates and/or applies.
-			mintAndBurnSpecs_[0].value = ( - int256(paidCstPrice_) );
-
-			mintAndBurnSpecs_[1].account = _msgSender();
-			mintAndBurnSpecs_[1].value = int256(bidCstRewardAmount);
-			token.mintAndBurnMany(mintAndBurnSpecs_);
-		}
-		biddersInfo[roundNum][_msgSender()].totalSpentCstAmount += paidCstPrice_;
-		cstDutchAuctionBeginningTimeStamp = block.timestamp;
-		uint256 newCstDutchAuctionBeginningBidPrice_ =
-			Math.max(paidCstPrice_ * CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, cstDutchAuctionBeginningBidPriceMinLimit);
-		cstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
-		if (lastCstBidderAddress == address(0)) {
 			// Comment-202501045 applies.
 
-			// Comment-202504212 applies.
-			nextRoundFirstCstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
+			// Comment-202503162 relates and/or applies.
+			uint256 paidCstPrice_ = getNextCstBidPriceAdvanced(int256(0));
+
+			// Comment-202412045 applies.
+			if ( ! (paidCstPrice_ <= cstPriceMaxLimit_) ) {
+				revert CosmicSignatureErrors.InsufficientReceivedBidAmount(/* "The current CST bid price is greater than the maximum you allowed.", */ paidCstPrice_, cstPriceMaxLimit_);
+			}
+
+			{
+				ICosmicSignatureToken.MintOrBurnSpec[] memory mintAndBurnSpecs_ = new ICosmicSignatureToken.MintOrBurnSpec[](2);
+				mintAndBurnSpecs_[0].account = _msgSender();
+
+				// Comment-202409177 applies.
+				// Comment-202606074 relates and/or applies.
+				mintAndBurnSpecs_[0].value = ( - int256(paidCstPrice_) );
+
+				mintAndBurnSpecs_[1].account = _msgSender();
+				mintAndBurnSpecs_[1].value = int256(bidCstRewardAmount);
+				token.mintAndBurnMany(mintAndBurnSpecs_);
+			}
+			biddersInfo[roundNum][_msgSender()].totalSpentCstAmount += paidCstPrice_;
+			cstDutchAuctionBeginningTimeStamp = block.timestamp;
+			uint256 newCstDutchAuctionBeginningBidPrice_ =
+				Math.max(paidCstPrice_ * CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, cstDutchAuctionBeginningBidPriceMinLimit);
+			cstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
+			if (lastCstBidderAddress == address(0)) {
+				// Comment-202501045 applies.
+
+				// Comment-202504212 applies.
+				nextRoundFirstCstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
+			}
+			lastCstBidderAddress = _msgSender();
+			_bidCommon(/*BidType.CST,*/ message_);
+			emit BidPlaced(
+				roundNum,
+				_msgSender(),
+				-1,
+				int256(paidCstPrice_),
+				-1,
+				message_,
+				mainPrizeTime
+			);
 		}
-		lastCstBidderAddress = _msgSender();
-		_bidCommon(/*BidType.CST,*/ message_);
-		emit BidPlaced(
-			roundNum,
-			_msgSender(),
-			-1,
-			int256(paidCstPrice_),
-			-1,
-			message_,
-			mainPrizeTime
-		);
 	}
 
 	// #endregion
@@ -603,10 +624,6 @@ abstract contract BiddingOpenBid is
 	// #region `getCstDutchAuctionDurations`
 
 	function getCstDutchAuctionDurations() external view override returns (uint256, uint256) {
-		// // #enable_smtchecker /*
-		// unchecked
-		// // #enable_smtchecker */
-
 		uint256 cstDutchAuctionDuration_ = _getCstDutchAuctionDuration();
 		uint256 cstDutchAuctionElapsedDuration_ = _getCstDutchAuctionElapsedDuration();
 		return (cstDutchAuctionDuration_, cstDutchAuctionElapsedDuration_);
@@ -661,38 +678,43 @@ abstract contract BiddingOpenBid is
 	/// @param message_ Comment-202503155 applies.
 	/// @dev Comment-202411169 relates and/or applies.
 	function _bidCommon(/*BidType bidType_,*/ string memory message_) private /*nonReentrant*/ /*_onlyRoundIsActive*/ {
-		require(
-			bytes(message_).length <= bidMessageLengthMaxLimit,
-			CosmicSignatureErrors.TooLongBidMessage(/* "Message is too long.", */ bytes(message_).length)
-		);
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			require(
+				bytes(message_).length <= bidMessageLengthMaxLimit,
+				CosmicSignatureErrors.TooLongBidMessage(/* "Message is too long.", */ bytes(message_).length)
+			);
 
-		// Comment-202605292 applies.
-		if (lastBidderAddress == address(0)) {
+			// Comment-202605292 applies.
+			if (lastBidderAddress == address(0)) {
 
-			// Comment-202411169 relates.
-			_checkRoundIsActive();
+				// Comment-202411169 relates.
+				_checkRoundIsActive();
 
-			// Comment-202501044 applies.
-			require(msg.value > 0, CosmicSignatureErrors.WrongBidType(/* "The first bid in a bidding round shall be ETH." */));
+				// Comment-202501044 applies.
+				require(msg.value > 0, CosmicSignatureErrors.WrongBidType(/* "The first bid in a bidding round shall be ETH." */));
 
-			cstDutchAuctionBeginningTimeStamp = block.timestamp;
-			mainPrizeTime = block.timestamp + getInitialDurationUntilMainPrize();
-			emit FirstBidPlacedInRound(roundNum, block.timestamp);
-		} else {
-			// Comment-202411169 applies.
-			// #enable_asserts assert(block.timestamp >= roundActivationTime);
+				cstDutchAuctionBeginningTimeStamp = block.timestamp;
+				mainPrizeTime = block.timestamp + getInitialDurationUntilMainPrize();
+				emit FirstBidPlacedInRound(roundNum, block.timestamp);
+			} else {
+				// Comment-202411169 applies.
+				// #enable_asserts assert(block.timestamp >= roundActivationTime);
 
-			_updateChampionsIfNeeded();
-			_extendMainPrizeTime();
+				_updateChampionsIfNeeded();
+				_extendMainPrizeTime();
+			}
+			// lastBidType = bidType_;
+			lastBidderAddress = _msgSender();
+			BidsInfo storage bidsInfoReference_ = bidsInfo[roundNum];
+			uint256 totalNumBids_ = bidsInfoReference_.numItems;
+			bidsInfoReference_.items[totalNumBids_].bidderAddress = _msgSender();
+			++ totalNumBids_;
+			bidsInfoReference_.numItems = totalNumBids_;
+			biddersInfo[roundNum][_msgSender()].lastBidTimeStamp = block.timestamp;
 		}
-		// lastBidType = bidType_;
-		lastBidderAddress = _msgSender();
-		BidsInfo storage bidsInfoReference_ = bidsInfo[roundNum];
-		uint256 totalNumBids_ = bidsInfoReference_.numItems;
-		bidsInfoReference_.items[totalNumBids_].bidderAddress = _msgSender();
-		++ totalNumBids_;
-		bidsInfoReference_.numItems = totalNumBids_;
-		biddersInfo[roundNum][_msgSender()].lastBidTimeStamp = block.timestamp;
 	}
 
 	// #endregion

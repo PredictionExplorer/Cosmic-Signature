@@ -198,8 +198,10 @@ contract CosmicSignatureToken is
 	// /// It's incorrect to call this method if `newAllowance_` is the maximum possible value.
 	// /// todo-9 ??? Maybe rename `oldAllowance_` and `newAllowance_` to `oldValue_` and `newValue_`.
 	// function safeApprove(address spender_, uint256 oldAllowance_, uint256 newAllowance_) external /*override*/ {
-	// 	// todo-9 Is it really necessary to validate this? Better `require` this?
+	// 	// todo-9 Is it really necessary to `assert` this? Better `require` this?
 	// 	// #enable_asserts assert(newAllowance_ < type(uint256).max);
+	//
+	// 	// todo-9 Should we suppress overflow checking in the mode in which SMTChecker is disabled?
 	//
 	// 	uint256 allowance_ = allowance(_msgSender(), spender_);
 	// 	if (allowance_ < oldAllowance_) {

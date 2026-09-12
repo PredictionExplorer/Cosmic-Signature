@@ -59,48 +59,59 @@ abstract contract BiddingV2Base is
 		// Comment-202508187 applies.
 		// Comment-202501301 applies.
 		// Comment-202508103 applies.
-		uint256 currentEthBidPrice_ = ethDutchAuctionBeginningBidPrice / newEthDutchAuctionEndingBidPriceDivisor_ + 1;
+		uint256 currentEthBidPrice_;
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			currentEthBidPrice_ = ethDutchAuctionBeginningBidPrice / newEthDutchAuctionEndingBidPriceDivisor_ + 1;
+		}
 
 		// Comment-202508192 applies.
 		newEthDutchAuctionEndingBidPriceDivisor_ *= 2;
 
-		// Comment-202508189 applies.
-		// Comment-202501301 applies.
-		// Comment-202508103 applies.
-		uint256 ethDutchAuctionEndingBidPrice_ = ethDutchAuctionBeginningBidPrice / newEthDutchAuctionEndingBidPriceDivisor_ + 1;
-
-		// Comment-202508191 applies.
-		uint256 newEthDutchAuctionDurationDivisor_;
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
 		{
-			uint256 numerator_ = (ethDutchAuctionBeginningBidPrice - currentEthBidPrice_) * mainPrizeTimeIncrementInMicroSeconds;
-			uint256 denominator_ = (ethDutchAuctionBeginningBidPrice - ethDutchAuctionEndingBidPrice_) * uint256(ethDutchAuctionElapsedDuration_);
+			// Comment-202508189 applies.
+			// Comment-202501301 applies.
+			// Comment-202508103 applies.
+			uint256 ethDutchAuctionEndingBidPrice_ = ethDutchAuctionBeginningBidPrice / newEthDutchAuctionEndingBidPriceDivisor_ + 1;
 
-			// Comment-202508142 applies.
-			newEthDutchAuctionDurationDivisor_ = (numerator_ /* + denominator_ / 2 */) / denominator_ + 1;
+			// Comment-202508191 applies.
+			uint256 newEthDutchAuctionDurationDivisor_;
+			{
+				uint256 numerator_ = (ethDutchAuctionBeginningBidPrice - currentEthBidPrice_) * mainPrizeTimeIncrementInMicroSeconds;
+				uint256 denominator_ = (ethDutchAuctionBeginningBidPrice - ethDutchAuctionEndingBidPrice_) * uint256(ethDutchAuctionElapsedDuration_);
+
+				// Comment-202508142 applies.
+				newEthDutchAuctionDurationDivisor_ = (numerator_ /* + denominator_ / 2 */) / denominator_ + 1;
+			}
+			// if ( ! (newEthDutchAuctionDurationDivisor_ > 0) ) {
+			// 	revert CosmicSignatureErrors.EthDutchAuctionEndingBidPriceHalvingError("newEthDutchAuctionDurationDivisor_ == 0");
+			// }
+			// #enable_asserts assert(newEthDutchAuctionDurationDivisor_ > 0);
+
+			/*
+			{
+				// Comment-202508135 applies.
+				assert(newEthDutchAuctionDurationDivisor_ <= ethDutchAuctionDurationDivisor);
+
+				// Comment-202508099 applies.
+				uint256 newEthDutchAuctionDuration_ = mainPrizeTimeIncrementInMicroSeconds / newEthDutchAuctionDurationDivisor_;
+
+				// Comment-202508135 applies.
+				assert(newEthDutchAuctionDuration_ >= ethDutchAuctionDuration_);
+
+				// Comment-202508157 applies.
+				assert(newEthDutchAuctionDuration_ > uint256(ethDutchAuctionElapsedDuration_));
+			}
+			*/
+
+			_setEthDutchAuctionDurationDivisor(newEthDutchAuctionDurationDivisor_);
+			_setEthDutchAuctionEndingBidPriceDivisor(newEthDutchAuctionEndingBidPriceDivisor_);
 		}
-		// if ( ! (newEthDutchAuctionDurationDivisor_ > 0) ) {
-		// 	revert CosmicSignatureErrors.EthDutchAuctionEndingBidPriceHalvingError("newEthDutchAuctionDurationDivisor_ == 0");
-		// }
-		// #enable_asserts assert(newEthDutchAuctionDurationDivisor_ > 0);
-
-		/*
-		{
-			// Comment-202508135 applies.
-			assert(newEthDutchAuctionDurationDivisor_ <= ethDutchAuctionDurationDivisor);
-
-			// Comment-202508099 applies.
-			uint256 newEthDutchAuctionDuration_ = mainPrizeTimeIncrementInMicroSeconds / newEthDutchAuctionDurationDivisor_;
-
-			// Comment-202508135 applies.
-			assert(newEthDutchAuctionDuration_ >= ethDutchAuctionDuration_);
-
-			// Comment-202508157 applies.
-			assert(newEthDutchAuctionDuration_ > uint256(ethDutchAuctionElapsedDuration_));
-		}
-		*/
-
-		_setEthDutchAuctionDurationDivisor(newEthDutchAuctionDurationDivisor_);
-		_setEthDutchAuctionEndingBidPriceDivisor(newEthDutchAuctionEndingBidPriceDivisor_);
 	}
 
 	// #endregion
@@ -221,10 +232,6 @@ abstract contract BiddingV2Base is
 	// #region `getEthDutchAuctionDurations`
 
 	function getEthDutchAuctionDurations() public view override returns (uint256, int256) {
-		// // #enable_smtchecker /*
-		// unchecked
-		// // #enable_smtchecker */
-
 		uint256 ethDutchAuctionDuration_ = _getEthDutchAuctionDuration();
 		int256 ethDutchAuctionElapsedDuration_ = getDurationElapsedSinceRoundActivation();
 		return (ethDutchAuctionDuration_, ethDutchAuctionElapsedDuration_);
@@ -391,38 +398,43 @@ abstract contract BiddingV2Base is
 	/// @param message_ Comment-202503155 applies.
 	/// @dev Comment-202411169 relates and/or applies.
 	function _bidCommon(/*BidType bidType_,*/ string memory message_) internal /*nonReentrant*/ /*_onlyRoundIsActive*/ {
-		require(
-			bytes(message_).length <= bidMessageLengthMaxLimit,
-			CosmicSignatureErrors.TooLongBidMessage(/* "Message is too long.", */ bytes(message_).length)
-		);
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			require(
+				bytes(message_).length <= bidMessageLengthMaxLimit,
+				CosmicSignatureErrors.TooLongBidMessage(/* "Message is too long.", */ bytes(message_).length)
+			);
 
-		// Comment-202605292 applies.
-		if (lastBidderAddress == address(0)) {
+			// Comment-202605292 applies.
+			if (lastBidderAddress == address(0)) {
 
-			// Comment-202411169 relates.
-			_checkRoundIsActive();
+				// Comment-202411169 relates.
+				_checkRoundIsActive();
 
-			// Comment-202501044 applies.
-			require(msg.value > 0, CosmicSignatureErrors.WrongBidType(/* "The first bid in a bidding round shall be ETH." */));
+				// Comment-202501044 applies.
+				require(msg.value > 0, CosmicSignatureErrors.WrongBidType(/* "The first bid in a bidding round shall be ETH." */));
 
-			cstDutchAuctionBeginningTimeStamp = block.timestamp;
-			mainPrizeTime = block.timestamp + getInitialDurationUntilMainPrize();
-			emit FirstBidPlacedInRound(roundNum, block.timestamp);
-		} else {
-			// Comment-202411169 applies.
-			// #enable_asserts assert(block.timestamp >= roundActivationTime);
+				cstDutchAuctionBeginningTimeStamp = block.timestamp;
+				mainPrizeTime = block.timestamp + getInitialDurationUntilMainPrize();
+				emit FirstBidPlacedInRound(roundNum, block.timestamp);
+			} else {
+				// Comment-202411169 applies.
+				// #enable_asserts assert(block.timestamp >= roundActivationTime);
 
-			_updateChampionsIfNeeded();
-			_extendMainPrizeTime();
+				_updateChampionsIfNeeded();
+				_extendMainPrizeTime();
+			}
+			// lastBidType = bidType_;
+			lastBidderAddress = _msgSender();
+			BidsInfo storage bidsInfoReference_ = bidsInfo[roundNum];
+			uint256 totalNumBids_ = bidsInfoReference_.numItems;
+			bidsInfoReference_.items[totalNumBids_].bidderAddress = _msgSender();
+			++ totalNumBids_;
+			bidsInfoReference_.numItems = totalNumBids_;
+			biddersInfo[roundNum][_msgSender()].lastBidTimeStamp = block.timestamp;
 		}
-		// lastBidType = bidType_;
-		lastBidderAddress = _msgSender();
-		BidsInfo storage bidsInfoReference_ = bidsInfo[roundNum];
-		uint256 totalNumBids_ = bidsInfoReference_.numItems;
-		bidsInfoReference_.items[totalNumBids_].bidderAddress = _msgSender();
-		++ totalNumBids_;
-		bidsInfoReference_.numItems = totalNumBids_;
-		biddersInfo[roundNum][_msgSender()].lastBidTimeStamp = block.timestamp;
 	}
 
 	// #endregion

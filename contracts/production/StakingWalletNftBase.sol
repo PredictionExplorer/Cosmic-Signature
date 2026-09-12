@@ -13,6 +13,7 @@ import { IStakingWalletNftBase } from "./interfaces/IStakingWalletNftBase.sol";
 // #endregion
 // #region
 
+/// @dev Comment-202609176 applies.
 abstract contract StakingWalletNftBase is AddressValidator, IStakingWalletNftBase {
 	// #region State
 

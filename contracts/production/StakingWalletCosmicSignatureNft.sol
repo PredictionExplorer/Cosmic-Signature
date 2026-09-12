@@ -17,6 +17,7 @@ import { IStakingWalletCosmicSignatureNft } from "./interfaces/IStakingWalletCos
 // #endregion
 // #region
 
+/// @dev Comment-202609176 applies.
 contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, StakingWalletNftBase, IStakingWalletCosmicSignatureNft {
 	// #region Data Types
 

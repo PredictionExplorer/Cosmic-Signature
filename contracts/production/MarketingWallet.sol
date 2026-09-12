@@ -15,6 +15,7 @@ import { IMarketingWallet } from "./interfaces/IMarketingWallet.sol";
 // #endregion
 // #region
 
+/// @dev Comment-202609176 applies.
 contract MarketingWallet is Ownable, AddressValidator, IMarketingWallet {
 	// #region State
 

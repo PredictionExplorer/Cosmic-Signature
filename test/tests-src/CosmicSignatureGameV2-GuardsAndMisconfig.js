@@ -96,6 +96,22 @@ describe("CosmicSignatureGameV2-GuardsAndMisconfig", function () {
 		expect(durationDivisorAfter_).lessThanOrEqual(durationDivisorBefore_);
 	});
 
+	it("ethDutchAuctionEndingBidPriceDivisor doubling overflow results in a revert", async function () {
+		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2();
+		const game_ = contracts_.cosmicSignatureGameV2Proxy;
+		const endingBidPriceDivisor_ = 1n << 255n;
+		await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setEthDutchAuctionEndingBidPriceDivisor(endingBidPriceDivisor_));
+		const durationDivisor_ = await game_.ethDutchAuctionDurationDivisor();
+		const [auctionDuration_,] = await game_.getEthDutchAuctionDurations();
+		await mineAtOrAfter((await game_.roundActivationTime()) + auctionDuration_ + 1n);
+
+		// Comment-202508192: require the overflow panic, not division by zero after a wrapped doubling.
+		await expect(game_.connect(contracts_.ownerSigner).halveEthDutchAuctionEndingBidPrice()).revertedWithPanic(0x11);
+
+		expect(await game_.ethDutchAuctionEndingBidPriceDivisor()).equal(endingBidPriceDivisor_);
+		expect(await game_.ethDutchAuctionDurationDivisor()).equal(durationDivisor_);
+	});
+
 	// // Zero CST Dutch auction duration is a misconfiguration with undefined behavior,
 	// // regardless of whether the current round has received a bid.
 	// it("documents zero CST duration owner misconfiguration", async function () {

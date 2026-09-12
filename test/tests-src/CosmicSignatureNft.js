@@ -87,16 +87,16 @@ describe("CosmicSignatureNft", function () {
 			expect(await newCosmicSignatureNft_.totalSupply()).equal(1n);
 		}
 
-		{
+		// Exercise seed wraparound explicitly as well as retaining random-seed coverage.
+		for (const randomNumberSeed_ of [generateRandomUInt256(), hre.ethers.MaxUint256]) {
 			const roundNum_ = BigInt(generateRandomUInt32());
 			const nftOwnerAddresses_ = [
 				contracts_.signers[2].address,
 				contracts_.signers[3].address,
 			];
-			const randomNumberSeed_ = generateRandomUInt256();
 			await expect(newCosmicSignatureNft_.connect(pickUnauthorizedCaller_()).mintMany(roundNum_, nftOwnerAddresses_, randomNumberSeed_))
 				.revertedWithCustomError(newCosmicSignatureNft_, "UnauthorizedCaller");
-			const firstNftId_ = 1n;
+			const firstNftId_ = await newCosmicSignatureNft_.totalSupply();
 			await expect(newCosmicSignatureNft_.connect(contracts_.signers[0]).mintMany(roundNum_, nftOwnerAddresses_, randomNumberSeed_))
 				.emit(newCosmicSignatureNft_, "Transfer")
 				.withArgs(hre.ethers.ZeroAddress, contracts_.signers[2].address, firstNftId_)

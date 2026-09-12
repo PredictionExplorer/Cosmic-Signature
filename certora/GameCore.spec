@@ -203,35 +203,38 @@ rule canClaimExactlyAtMainPrizeTime {
 
 // ===== CANNOTCLAIM RULES =====
 
-rule cannotClaimAtMaxRoundNumber {
-    env e;
-    
-    // Set round number to maximum uint256
-    uint256 currentRound = roundNum(e);
-    require currentRound == max_uint256;
-    
-    // Ensure there has been at least one bid
-    address lastBidder = lastBidderAddress(e);
-    require lastBidder != 0;
-    
-    // The caller is the last bidder
-    require e.msg.sender == lastBidder;
-    
-    // Get timing values
-    uint256 prizeTime = mainPrizeTime(e);
-    uint256 activationTime = roundActivationTime(e);
-    
-    // Ensure we can claim
-    require activationTime > 0;
-    require prizeTime > activationTime;
-    require e.block.timestamp >= prizeTime;
-    
-    // Try to claim (should revert due to round overflow)
-    claimMainPrize@withrevert(e);
-    
-    assert lastReverted,
-           "Claim should fail when round number is at maximum";
-}
+// // Issue. Codex has commented out the checked round-counter overflow rule. Reaching this round number is not realistic,
+// // and normal (with SMTChecker disabled) builds now increment the counter unchecked; no revert is promised for this state.
+// // ToDo-9 If revived, revise this rule for unchecked arithmetic and realistic reachable round numbers.
+// rule cannotClaimAtMaxRoundNumber {
+//     env e;
+//
+//     // Set round number to maximum uint256
+//     uint256 currentRound = roundNum(e);
+//     require currentRound == max_uint256;
+//
+//     // Ensure there has been at least one bid
+//     address lastBidder = lastBidderAddress(e);
+//     require lastBidder != 0;
+//
+//     // The caller is the last bidder
+//     require e.msg.sender == lastBidder;
+//
+//     // Get timing values
+//     uint256 prizeTime = mainPrizeTime(e);
+//     uint256 activationTime = roundActivationTime(e);
+//
+//     // Ensure we can claim
+//     require activationTime > 0;
+//     require prizeTime > activationTime;
+//     require e.block.timestamp >= prizeTime;
+//
+//     // Try to claim (should revert due to round overflow)
+//     claimMainPrize@withrevert(e);
+//
+//     assert lastReverted,
+//            "Claim should fail when round number is at maximum";
+// }
 
 rule cannotClaimOneSecondEarly {
     env e;
@@ -2043,4 +2046,3 @@ rule totalEthConservation {
     assert roundAfter == roundBefore + 1,
            "Total ETH distributed should be properly accounted for";
 }
-

@@ -13,8 +13,9 @@ import { IRandomWalkNFT } from "./interfaces/IRandomWalkNFT.sol";
 /// Some refactorings accommodate breaking changes in OpenZeppelin.
 /// Comment-202503251 relates.
 /// Comment-202502063 relates.
-/// Comment-202609134 relates.
+/// Comment-202609134 applies.
 /// [/Comment-202409149]
+/// Comment-202609176 applies.
 ///
 /// Issue. There is a little vulnerability here, described in Comment-202503253.
 contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {

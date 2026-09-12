@@ -84,10 +84,8 @@ const adminActions = [
 			if ( ! result_.ok ) {
 				// Acceptable owner-action reverts (atomic, no state change), so the model is left untouched:
 				//  - `InvalidOperationInCurrentState` if the auction had not fully elapsed in this block.
-				//  - An arithmetic overflow / division-by-zero panic: the contract itself documents that the
-				//    `ethDutchAuctionEndingBidPriceDivisor *= 2` and the divisor recomputation can overflow in
-				//    extreme parameter states (Comment-202508192). The owner is trusted, so this is a known,
-				//    harmless footgun rather than a bug.
+				//  - A panic from checked divisor doubling (Comment-202508192) or division by zero.
+				//    Other arithmetic checks are enabled only in SMTChecker builds.
 				const acceptable_ = result_.revert.name === "InvalidOperationInCurrentState" || result_.revert.kind === "panic";
 				expect(acceptable_, `halveEthDutchAuctionEndingBidPrice unexpected revert: ${result_.revert.name} (${result_.revert.message.slice(0, 160)})`).to.equal(true);
 				return `revert:${result_.revert.kind === "panic" ? "Panic" : result_.revert.name}`;

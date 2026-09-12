@@ -18,6 +18,11 @@ import { ICosmicSignatureNft } from "./interfaces/ICosmicSignatureNft.sol";
 // #endregion
 // #region
 
+/// @dev
+/// [Comment-202609176]
+/// Issue. It appears to be safe to suppress some arithmetic overflow checks in this contract,
+/// but it will not be done, due to Comment-202609134.
+/// [/Comment-202609176]
 contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICosmicSignatureNft {
 	// #region State
 

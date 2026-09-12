@@ -129,7 +129,7 @@ describe("CosmicSignatureGame-3", function () {
 		const cosmicSignatureGameV2ImplementationByteCodeSize_ =
 			// cosmicSignatureGameV2Factory.bytecode.length / 2 - 1;
 			(await hre.ethers.provider.getCode(cosmicSignatureGameV2ImplementationAddress_)).length / 2 - 1;
-		expect(cosmicSignatureGameV2ImplementationByteCodeSize_).greaterThanOrEqual(19 * 1024);
+		expect(cosmicSignatureGameV2ImplementationByteCodeSize_).greaterThanOrEqual(18 * 1024);
 		console.info(
 			"%s",
 			"CosmicSignatureGameV2 implementation bytecode size is " +

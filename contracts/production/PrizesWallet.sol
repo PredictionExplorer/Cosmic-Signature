@@ -101,16 +101,21 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 	// #region `registerRoundEndAndDepositEthMany`
 
 	function registerRoundEndAndDepositEthMany(uint256 roundNum_, address mainPrizeBeneficiaryAddress_, EthDeposit[] calldata ethDeposits_) external payable override nonReentrant _onlyGame returns (uint256) {
-		uint256 roundTimeoutTimeToWithdrawPrizes_ = _registerRoundEnd(roundNum_, mainPrizeBeneficiaryAddress_);
-		// #enable_asserts uint256 ethDepositAmountSum_ = 0;
-		for (uint256 ethDepositIndex_ = ethDeposits_.length; ethDepositIndex_ > 0; ) {
-			-- ethDepositIndex_;
-			EthDeposit calldata ethDepositReference_ = ethDeposits_[ethDepositIndex_];
-			// #enable_asserts ethDepositAmountSum_ += ethDepositReference_.amount;
-			_depositEth(roundNum_, ethDepositIndex_, ethDepositReference_.prizeWinnerAddress, ethDepositReference_.amount);
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			uint256 roundTimeoutTimeToWithdrawPrizes_ = _registerRoundEnd(roundNum_, mainPrizeBeneficiaryAddress_);
+			// #enable_asserts uint256 ethDepositAmountSum_ = 0;
+			for (uint256 ethDepositIndex_ = ethDeposits_.length; ethDepositIndex_ > 0; ) {
+				-- ethDepositIndex_;
+				EthDeposit calldata ethDepositReference_ = ethDeposits_[ethDepositIndex_];
+				// #enable_asserts ethDepositAmountSum_ += ethDepositReference_.amount;
+				_depositEth(roundNum_, ethDepositIndex_, ethDepositReference_.prizeWinnerAddress, ethDepositReference_.amount);
+			}
+			// #enable_asserts assert(ethDepositAmountSum_ == msg.value);
+			return roundTimeoutTimeToWithdrawPrizes_;
 		}
-		// #enable_asserts assert(ethDepositAmountSum_ == msg.value);
-		return roundTimeoutTimeToWithdrawPrizes_;
 	}
 
 	// #endregion
@@ -136,12 +141,13 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 			// #enable_asserts assert(roundTimeoutTimesToWithdrawPrizes[roundNum_] == 0);
 			// #enable_asserts assert(roundNum_ == 0 || roundTimeoutTimesToWithdrawPrizes[roundNum_ - 1] != 0);
 			// #enable_asserts assert(mainPrizeBeneficiaryAddress_ != address(0));
+
 			mainPrizeBeneficiaryAddresses[roundNum_] = mainPrizeBeneficiaryAddress_;
 
 			// [Comment-202606264]
 			// We got another issue here that Comment-202606235 is talking about.
 			// Therefore this must be within an `unchecked` block,
-			// so I have wrapped all code in the `_prepareNextRound` method in an `unchecked` block.
+			// so I have wrapped all code in the `_registerRoundEnd` method in an `unchecked` block.
 			// The contract owner can still set `timeoutDurationToWithdrawPrizes` to a small value or zero before a round ends
 			// to shorten winner exclusivity timeout. That is an accepted benevolent-owner risk rather than a min/max clamp.
 			// Note that if `PrizesWallet` (with or without this fix) is deployed and registered with the Game
@@ -181,11 +187,16 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 
 	function _depositEth(uint256 roundNum_, uint256 prizeWinnerIndex_, address prizeWinnerAddress_, uint256 amount_) private {
 		// #enable_asserts assert(prizeWinnerAddress_ != address(0));
+		
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			// This cannot overflow because ETH total supply is limited.
+			_ethBalanceAmounts[roundNum_][uint256(uint160(prizeWinnerAddress_))] += amount_;
 
-		// This cannot overflow because ETH total supply is limited.
-		_ethBalanceAmounts[roundNum_][uint256(uint160(prizeWinnerAddress_))] += amount_;
-
-		emit EthReceived(roundNum_, prizeWinnerIndex_, prizeWinnerAddress_, amount_);
+			emit EthReceived(roundNum_, prizeWinnerIndex_, prizeWinnerAddress_, amount_);
+		}
 	}
 
 	// #endregion
@@ -235,21 +246,26 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 	// #region `_withdrawEthMany`
 
 	function _withdrawEthMany(uint256[] calldata roundNums_) private {
-		uint256 roundNumIndex_ = roundNums_.length;
-		if (roundNumIndex_ <= 0) {
-			return;
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			uint256 roundNumIndex_ = roundNums_.length;
+			if (roundNumIndex_ <= 0) {
+				return;
+			}
+
+			// It's OK if this is zero.
+			uint256 ethBalanceAmountToWithdraw_ = 0;
+			
+			do {
+				-- roundNumIndex_;
+
+				// This cannot overflow because ETH total supply is limited.
+				ethBalanceAmountToWithdraw_ += _prepareWithdrawEth(roundNums_[roundNumIndex_], _msgSender());
+			} while (roundNumIndex_ > 0);
+			CosmicSignatureHelpers.transferEthTo(payable(_msgSender()), ethBalanceAmountToWithdraw_);
 		}
-
-		// It's OK if this is zero.
-		uint256 ethBalanceAmountToWithdraw_ = 0;
-		
-		do {
-			-- roundNumIndex_;
-
-			// This cannot overflow because ETH total supply is limited.
-			ethBalanceAmountToWithdraw_ += _prepareWithdrawEth(roundNums_[roundNumIndex_], _msgSender());
-		} while (roundNumIndex_ > 0);
-		CosmicSignatureHelpers.transferEthTo(payable(_msgSender()), ethBalanceAmountToWithdraw_);
 	}
 
 	// #endregion
@@ -365,10 +381,15 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 	// #region `_claimManyDonatedTokens`
 
 	function _claimManyDonatedTokens(DonatedTokenToClaim[] calldata donatedTokensToClaim_) private {
-		for (uint256 donatedTokenToClaimIndex_ = donatedTokensToClaim_.length; donatedTokenToClaimIndex_ > 0; ) {
-			-- donatedTokenToClaimIndex_;
-			DonatedTokenToClaim calldata donatedTokenToClaimReference_ = donatedTokensToClaim_[donatedTokenToClaimIndex_];
-			_claimDonatedToken(donatedTokenToClaimReference_.roundNum, donatedTokenToClaimReference_.tokenAddress, donatedTokenToClaimReference_.amount);
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			for (uint256 donatedTokenToClaimIndex_ = donatedTokensToClaim_.length; donatedTokenToClaimIndex_ > 0; ) {
+				-- donatedTokenToClaimIndex_;
+				DonatedTokenToClaim calldata donatedTokenToClaimReference_ = donatedTokensToClaim_[donatedTokenToClaimIndex_];
+				_claimDonatedToken(donatedTokenToClaimReference_.roundNum, donatedTokenToClaimReference_.tokenAddress, donatedTokenToClaimReference_.amount);
+			}
 		}
 	}
 
@@ -393,19 +414,24 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 		nonReentrant
 		_onlyGame {
 		// #enable_asserts assert(donorAddress_ != address(0));
-		uint256 nextDonatedNftIndexCopy_ = nextDonatedNftIndex;
-		DonatedNft storage newDonatedNftReference_ = donatedNfts[nextDonatedNftIndexCopy_];
-		newDonatedNftReference_.roundNum = roundNum_;
-		newDonatedNftReference_.nftAddress = nftAddress_;
-		newDonatedNftReference_.nftId = nftId_;
-		emit NftDonated(roundNum_, donorAddress_, nftAddress_, nftId_, nextDonatedNftIndexCopy_);
-		++ nextDonatedNftIndexCopy_;
-		nextDonatedNftIndex = nextDonatedNftIndexCopy_;
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			uint256 nextDonatedNftIndexCopy_ = nextDonatedNftIndex;
+			DonatedNft storage newDonatedNftReference_ = donatedNfts[nextDonatedNftIndexCopy_];
+			newDonatedNftReference_.roundNum = roundNum_;
+			newDonatedNftReference_.nftAddress = nftAddress_;
+			newDonatedNftReference_.nftId = nftId_;
+			emit NftDonated(roundNum_, donorAddress_, nftAddress_, nftId_, nextDonatedNftIndexCopy_);
+			++ nextDonatedNftIndexCopy_;
+			nextDonatedNftIndex = nextDonatedNftIndexCopy_;
 
-		// [Comment-202502245]
-		// This would revert if `nftAddress_` is zero or there is no ERC-721-compatible contract there.
-		// [/Comment-202502245]
-		nftAddress_.transferFrom(donorAddress_, address(this), nftId_);
+			// [Comment-202502245]
+			// This would revert if `nftAddress_` is zero or there is no ERC-721-compatible contract there.
+			// [/Comment-202502245]
+			nftAddress_.transferFrom(donorAddress_, address(this), nftId_);
+		}
 	}
 
 	// #endregion
@@ -461,9 +487,14 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 	// #region `_claimManyDonatedNfts`
 
 	function _claimManyDonatedNfts(uint256[] calldata indexes_) private {
-		for (uint256 indexIndex_ = indexes_.length; indexIndex_ > 0; ) {
-			-- indexIndex_;
-			_claimDonatedNft(indexes_[indexIndex_]);
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			for (uint256 indexIndex_ = indexes_.length; indexIndex_ > 0; ) {
+				-- indexIndex_;
+				_claimDonatedNft(indexes_[indexIndex_]);
+			}
 		}
 	}
 

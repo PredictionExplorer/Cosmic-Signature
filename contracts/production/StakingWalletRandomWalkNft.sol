@@ -15,6 +15,7 @@ import { IStakingWalletRandomWalkNft } from "./interfaces/IStakingWalletRandomWa
 // #endregion
 // #region
 
+/// @dev Comment-202609176 applies.
 contract StakingWalletRandomWalkNft is StakingWalletNftBase, IStakingWalletRandomWalkNft {
 	// #region Data Types
 

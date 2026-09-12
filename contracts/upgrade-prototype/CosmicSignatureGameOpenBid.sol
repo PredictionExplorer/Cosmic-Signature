@@ -73,6 +73,8 @@ contract CosmicSignatureGameOpenBid is
 	/// with a modifier like `_onlyIfPrevVersionWasInitialized`.
 	/// But if you decide to use this code pattern, it will be up to the contract owner performing the upgrade to not break things.
 	/// Comment-202606126 relates.
+	/// It would be nice to suppress the arithmetic overflow check here, but it would be difficult,
+	/// so let's leave it alone in this test-only contract.
 	/// [/Comment-202606084]
 	function reinitialize() external override /*virtual*/ /*onlyOwner*/ reinitializer(uint64(uint256(_getInitializedVersion()) + 1)) {
 		// // #enable_asserts // #disable_smtchecker console.log("CosmicSignatureGameOpenBid.reinitialize");

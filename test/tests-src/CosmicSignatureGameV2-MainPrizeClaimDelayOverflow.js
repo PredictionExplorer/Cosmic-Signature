@@ -1,12 +1,8 @@
 "use strict";
 
-// Tests for Comment-202606235: `MainPrizeV2._prepareNextRound` wraps its body in an `unchecked` block so a
-// malicious/compromised owner can no longer brick `claimMainPrize` by setting `delayDurationBeforeRoundActivation`
-// to a value that overflows `block.timestamp + delayDurationBeforeRoundActivation`. Because the round-activation
-// setter (Comment-202503106) has no round-state guard, the owner could previously make the overflow revert the
-// claim, lock the rightful winner out during their exclusive window, wait out the claim timeout, and then atomically
-// restore a safe value and claim the prize themselves. The `unchecked` block makes the addition wrap instead of
-// reverting, so the winner's claim can never be blocked this way.
+// Comment-202606235: round-activation addition wraps outside SMTChecker builds, preventing an overflowing
+// owner-supplied delay from blocking a main prize claim. The current V1 and V2 sources both have this behavior;
+// this does not change already deployed implementations.
 
 const { describe, it } = require("mocha");
 const { expect } = require("chai");
@@ -158,8 +154,8 @@ describe("CosmicSignatureGameV2-MainPrizeClaimDelayOverflow", function () {
 	});
 });
 
-describe("CosmicSignatureGameV1-MainPrizeClaimDelayOverflow (pre-fix behavior)", function () {
-	it("demonstrates the vulnerability the V2 fix addresses: on V1 a max delay makes claimMainPrize revert with an overflow panic", async function () {
+describe("CosmicSignatureGameV1-MainPrizeClaimDelayOverflow", function () {
+	it("wraps a max activation delay outside SMTChecker builds", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 		const game_ = contracts_.cosmicSignatureGameProxy;
 		const bidder_ = contracts_.signers[2];
@@ -173,9 +169,13 @@ describe("CosmicSignatureGameV1-MainPrizeClaimDelayOverflow (pre-fix behavior)",
 		);
 
 		await mineAtOrAfter(await game_.mainPrizeTime());
-		// V1's `_prepareNextRound` uses checked arithmetic, so `block.timestamp + delayDurationBeforeRoundActivation`
-		// overflows and reverts with Panic(0x11), bricking the prize. This is the exact behavior Comment-202606235
-		// eliminates in V2.
-		await expect(game_.connect(bidder_).claimMainPrize()).revertedWithPanic(0x11);
+		const receipt_ = await claimMainPrizeWithOverflowingDelay(game_, bidder_);
+		if (receipt_ === undefined) {
+			return;
+		}
+		const claimTimeStamp_ = await blockTimestampOfReceipt(receipt_);
+		expect(await game_.roundActivationTime()).equal(claimTimeStamp_ - 1n);
+		expect(await game_.roundNum()).equal(1n);
+		expect(await game_.lastBidderAddress()).equal(hre.ethers.ZeroAddress);
 	});
 });

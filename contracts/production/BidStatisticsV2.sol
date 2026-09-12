@@ -43,28 +43,33 @@ abstract contract BidStatisticsV2 is
 
 	/// @notice Comment-202605245 applies.
 	function _updateChampionsIfNeeded() internal {
-		// if (lastBidderAddress == address(0)) return;
-		// #enable_asserts assert(lastBidderAddress != address(0));
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			// if (lastBidderAddress == address(0)) return;
+			// #enable_asserts assert(lastBidderAddress != address(0));
 
-		uint256 lastBidTimeStampCopy_ = biddersInfo[roundNum][lastBidderAddress].lastBidTimeStamp;
-		uint256 lastBidDuration_ = block.timestamp - lastBidTimeStampCopy_;
-		if (enduranceChampionAddress == address(0)) {
-			enduranceChampionAddress = lastBidderAddress;
-			enduranceChampionStartTimeStamp = lastBidTimeStampCopy_;
-			enduranceChampionDuration = lastBidDuration_;
-			// #enable_asserts assert(chronoWarriorAddress == address(0));
-		} else if (lastBidDuration_ > enduranceChampionDuration) {
-			{
-				uint256 chronoEndTimeStamp_ = lastBidTimeStampCopy_ + enduranceChampionDuration;
-				_updateChronoWarriorIfNeeded(chronoEndTimeStamp_);
+			uint256 lastBidTimeStampCopy_ = biddersInfo[roundNum][lastBidderAddress].lastBidTimeStamp;
+			uint256 lastBidDuration_ = block.timestamp - lastBidTimeStampCopy_;
+			if (enduranceChampionAddress == address(0)) {
+				enduranceChampionAddress = lastBidderAddress;
+				enduranceChampionStartTimeStamp = lastBidTimeStampCopy_;
+				enduranceChampionDuration = lastBidDuration_;
+				// #enable_asserts assert(chronoWarriorAddress == address(0));
+			} else if (lastBidDuration_ > enduranceChampionDuration) {
+				{
+					uint256 chronoEndTimeStamp_ = lastBidTimeStampCopy_ + enduranceChampionDuration;
+					_updateChronoWarriorIfNeeded(chronoEndTimeStamp_);
+				}
+				prevEnduranceChampionDuration = enduranceChampionDuration;
+				enduranceChampionAddress = lastBidderAddress;
+				enduranceChampionStartTimeStamp = lastBidTimeStampCopy_;
+				enduranceChampionDuration = lastBidDuration_;
 			}
-			prevEnduranceChampionDuration = enduranceChampionDuration;
-			enduranceChampionAddress = lastBidderAddress;
-			enduranceChampionStartTimeStamp = lastBidTimeStampCopy_;
-			enduranceChampionDuration = lastBidDuration_;
-		}
 
-		// #enable_asserts assert(enduranceChampionAddress != address(0));
+			// #enable_asserts assert(enduranceChampionAddress != address(0));
+		}
 	}
 
 	// #endregion
@@ -76,15 +81,20 @@ abstract contract BidStatisticsV2 is
 		// #enable_asserts assert(int256(chronoWarriorDuration) >= -1);
 		// #enable_asserts assert((chronoWarriorAddress == address(0)) == (int256(chronoWarriorDuration) < int256(0)));
 
-		uint256 chronoStartTimeStamp_ = enduranceChampionStartTimeStamp + prevEnduranceChampionDuration;
-		uint256 chronoDuration_ = chronoEndTimeStamp_ - chronoStartTimeStamp_;
-		if (int256(chronoDuration_) > int256(chronoWarriorDuration)) {
-			chronoWarriorAddress = enduranceChampionAddress;
-			chronoWarriorDuration = chronoDuration_;
-		}
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			uint256 chronoStartTimeStamp_ = enduranceChampionStartTimeStamp + prevEnduranceChampionDuration;
+			uint256 chronoDuration_ = chronoEndTimeStamp_ - chronoStartTimeStamp_;
+			if (int256(chronoDuration_) > int256(chronoWarriorDuration)) {
+				chronoWarriorAddress = enduranceChampionAddress;
+				chronoWarriorDuration = chronoDuration_;
+			}
 
-		// #enable_asserts assert(chronoWarriorAddress != address(0));
-		// #enable_asserts assert(int256(chronoWarriorDuration) >= int256(0));
+			// #enable_asserts assert(chronoWarriorAddress != address(0));
+			// #enable_asserts assert(int256(chronoWarriorDuration) >= int256(0));
+		}
 	}
 
 	// #endregion
@@ -99,39 +109,69 @@ abstract contract BidStatisticsV2 is
 		) {
 		// #region
 
-		if (lastBidderAddress != address(0)) {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
 			// #region
 
-			// Comment-202605244 applies.
-			enduranceChampionAddress_ = enduranceChampionAddress;
-			uint256 enduranceChampionStartTimeStamp_ = enduranceChampionStartTimeStamp;
-			enduranceChampionDuration_ = enduranceChampionDuration;
-			uint256 prevEnduranceChampionDuration_ = prevEnduranceChampionDuration;
-			chronoWarriorAddress_ = chronoWarriorAddress;
-			chronoWarriorDuration_ = chronoWarriorDuration;
-
-			// #endregion
-			// #region
-
-			uint256 lastBidTimeStampCopy_ = biddersInfo[roundNum][lastBidderAddress].lastBidTimeStamp;
-			uint256 lastBidDuration_ = block.timestamp - lastBidTimeStampCopy_;
-
-			// #endregion
-			// #region
-
-			if (enduranceChampionAddress_ == address(0)) {
+			if (lastBidderAddress != address(0)) {
 				// #region
 
-				enduranceChampionAddress_ = lastBidderAddress;
-				enduranceChampionStartTimeStamp_ = lastBidTimeStampCopy_;
-				enduranceChampionDuration_ = lastBidDuration_;
+				// Comment-202605244 applies.
+				enduranceChampionAddress_ = enduranceChampionAddress;
+				uint256 enduranceChampionStartTimeStamp_ = enduranceChampionStartTimeStamp;
+				enduranceChampionDuration_ = enduranceChampionDuration;
+				uint256 prevEnduranceChampionDuration_ = prevEnduranceChampionDuration;
+				chronoWarriorAddress_ = chronoWarriorAddress;
+				chronoWarriorDuration_ = chronoWarriorDuration;
 
 				// #endregion
-			} else if (lastBidDuration_ > enduranceChampionDuration_) {
+				// #region
+
+				uint256 lastBidTimeStampCopy_ = biddersInfo[roundNum][lastBidderAddress].lastBidTimeStamp;
+				uint256 lastBidDuration_ = block.timestamp - lastBidTimeStampCopy_;
+
+				// #endregion
+				// #region
+
+				if (enduranceChampionAddress_ == address(0)) {
+					// #region
+
+					enduranceChampionAddress_ = lastBidderAddress;
+					enduranceChampionStartTimeStamp_ = lastBidTimeStampCopy_;
+					enduranceChampionDuration_ = lastBidDuration_;
+
+					// #endregion
+				} else if (lastBidDuration_ > enduranceChampionDuration_) {
+					// #region
+
+					{
+						uint256 chronoEndTimeStamp_ = lastBidTimeStampCopy_ + enduranceChampionDuration_;
+						uint256 chronoStartTimeStamp_ = enduranceChampionStartTimeStamp_ + prevEnduranceChampionDuration_;
+						uint256 chronoDuration_ = chronoEndTimeStamp_ - chronoStartTimeStamp_;
+						if (int256(chronoDuration_) > int256(chronoWarriorDuration_)) {
+							chronoWarriorAddress_ = enduranceChampionAddress_;
+							chronoWarriorDuration_ = chronoDuration_;
+						}
+					}
+
+					// #endregion
+					// #region
+
+					prevEnduranceChampionDuration_ = enduranceChampionDuration_;
+					enduranceChampionAddress_ = lastBidderAddress;
+					enduranceChampionStartTimeStamp_ = lastBidTimeStampCopy_;
+					enduranceChampionDuration_ = lastBidDuration_;
+
+					// #endregion
+				}
+
+				// #endregion
 				// #region
 
 				{
-					uint256 chronoEndTimeStamp_ = lastBidTimeStampCopy_ + enduranceChampionDuration_;
+					uint256 chronoEndTimeStamp_ = block.timestamp;
 					uint256 chronoStartTimeStamp_ = enduranceChampionStartTimeStamp_ + prevEnduranceChampionDuration_;
 					uint256 chronoDuration_ = chronoEndTimeStamp_ - chronoStartTimeStamp_;
 					if (int256(chronoDuration_) > int256(chronoWarriorDuration_)) {
@@ -141,32 +181,11 @@ abstract contract BidStatisticsV2 is
 				}
 
 				// #endregion
-				// #region
-
-				prevEnduranceChampionDuration_ = enduranceChampionDuration_;
-				enduranceChampionAddress_ = lastBidderAddress;
-				enduranceChampionStartTimeStamp_ = lastBidTimeStampCopy_;
-				enduranceChampionDuration_ = lastBidDuration_;
-
-				// #endregion
-			}
-
-			// #endregion
-			// #region
-
-			{
-				uint256 chronoEndTimeStamp_ = block.timestamp;
-				uint256 chronoStartTimeStamp_ = enduranceChampionStartTimeStamp_ + prevEnduranceChampionDuration_;
-				uint256 chronoDuration_ = chronoEndTimeStamp_ - chronoStartTimeStamp_;
-				if (int256(chronoDuration_) > int256(chronoWarriorDuration_)) {
-					chronoWarriorAddress_ = enduranceChampionAddress_;
-					chronoWarriorDuration_ = chronoDuration_;
-				}
 			}
 
 			// #endregion
 		}
-
+		
 		// #endregion
 	}
 

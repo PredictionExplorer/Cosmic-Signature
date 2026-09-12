@@ -288,6 +288,12 @@ describe("StakingWalletRandomWalkNft", function () {
 			await waitForTransactionReceipt(contracts_.stakingWalletRandomWalkNft.connect(contracts_.signers[stakerIndex_]).stake(nftId_));
 		}
 
+		// A little unrelated test: seed increments must wrap; picks fill the array from the end.
+		const wraparoundPicks_ = await contracts_.stakingWalletRandomWalkNft.pickRandomStakerAddressesIfPossible(2n, hre.ethers.MaxUint256);
+		const maxSeedPick_ = await contracts_.stakingWalletRandomWalkNft.pickRandomStakerAddressesIfPossible(1n, hre.ethers.MaxUint256);
+		const zeroSeedPick_ = await contracts_.stakingWalletRandomWalkNft.pickRandomStakerAddressesIfPossible(1n, 0n);
+		expect(wraparoundPicks_).deep.equal([zeroSeedPick_[0], maxSeedPick_[0]]);
+
 		let randomNumberSeed_ = generateRandomUInt256();
 		let numStakersToPick_ = 0n;
 		/** @type {number[]} */
