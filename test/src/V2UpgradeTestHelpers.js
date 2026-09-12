@@ -52,12 +52,13 @@ async function completeRoundZero(contracts_, bidderIndex_ = 1) {
 }
 
 async function deployV1CompleteRoundZeroAndUpgradeToV2() {
-	const contracts_ = await loadFixtureDeployContractsForTesting(2n);
+	const contracts_ = { ...await loadFixtureDeployContractsForTesting(2n) };
 	await completeRoundZero(contracts_);
 	await upgradeToV2(contracts_);
 	return contracts_;
 }
 
+// `contracts_` must be a mutable, test-local copy, not the frozen fixture object.
 async function upgradeToV2(contracts_, upgradeOptions_ = {}) {
 	const cosmicSignatureGameV2Factory_ =
 		await hre.ethers.getContractFactory("CosmicSignatureGameV2", contracts_.ownerSigner);

@@ -31,7 +31,7 @@ async function expectReinitializeUnavailable(game_, signer_) {
 
 describe("CosmicSignatureGameV3-GuardsAndMisconfig", function () {
 	it("documents that roundNum > 0 is assert-only in reinitialize, through the whole V1 -> V2 -> V3 chain", async function () {
-		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
+		const contracts_ = { ...await loadFixtureDeployContractsForTesting(-1_000_000_000n) };
 		expect(await contracts_.cosmicSignatureGameProxy.roundNum()).equal(0n);
 
 		if (ENABLE_ASSERTS) {
@@ -57,7 +57,7 @@ describe("CosmicSignatureGameV3-GuardsAndMisconfig", function () {
 	});
 
 	it("documents that a skipped V2 reinitialize is caught only by the V3 assert", async function () {
-		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
+		const contracts_ = { ...await loadFixtureDeployContractsForTesting(2n) };
 		await completeRoundZero(contracts_);
 
 		// Upgrade to V2 WITHOUT calling `reinitialize`, so the initialized version stays at 1

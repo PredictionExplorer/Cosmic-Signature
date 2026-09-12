@@ -112,7 +112,11 @@ This function is to be used for unit tests.
 It's OK to pass this function to `loadFixture`.
 */
 async function deployContractsForTesting() {
-	return deployContractsForTestingAdvanced("CosmicSignatureGame");
+	const contracts = await deployContractsForTestingAdvanced("CosmicSignatureGame");
+
+	// Freezing the fixture reference.
+	// A caller that needs to add or replace properties must first make a shallow copy.
+	return Object.freeze(contracts);
 }
 
 // #endregion

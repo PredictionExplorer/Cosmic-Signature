@@ -73,7 +73,7 @@ async function assertCarriedStateUnchanged(game_, snapshot_) {
 
 describe("CosmicSignatureGameV3-StorageLayout", function () {
 	it("preserves carried V1/V2 state and applies only the documented overwrites", async function () {
-		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
+		const contracts_ = { ...await loadFixtureDeployContractsForTesting(2n) };
 		await completeRoundZero(contracts_);
 		await upgradeToV2(contracts_);
 		const gameV2_ = contracts_.cosmicSignatureGameV2Proxy.connect(contracts_.ownerSigner);

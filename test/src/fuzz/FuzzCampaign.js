@@ -181,19 +181,11 @@ class FuzzCampaign {
 	async setup() {
 		const profile_ = this.profile;
 
-		// Deploy V1 protocol via the standard fixture.
-		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
+		// The fixture restores chain state but returns its cached JavaScript object unchanged.
+		// Keep replacement contract references and fuzz-only fields local to this campaign.
+		const contracts_ = { ...await loadFixtureDeployContractsForTesting(2n) };
 		this.contracts = contracts_;
 		contracts_.charitySignerAddress = contracts_.charitySigner.address;
-
-		// `loadFixture` memoizes ONE shared `contracts_` object across campaigns while the chain itself
-		// is snapshot-restored, so undo the PrizesWallet swap a previous campaign in this process may
-		// have performed on it (the first archived wallet is the fixture's original one).
-		if (contracts_.oldPrizesWallets !== undefined && contracts_.oldPrizesWallets.length > 0) {
-			contracts_.prizesWallet = contracts_.oldPrizesWallets[0].contract;
-			contracts_.prizesWalletAddress = contracts_.oldPrizesWallets[0].address;
-			contracts_.oldPrizesWallets = [];
-		}
 
 		// Deploy fuzz-only mock ERC-20 / ERC-721 used for donation paths.
 		const deployer_ = contracts_.signers[0];

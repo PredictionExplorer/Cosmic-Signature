@@ -69,8 +69,9 @@
 "use strict";
 
 const { describe, it } = require("mocha");
+const { expect } = require("chai");
 const { generateRandomUInt256 } = require("../../src/Helpers.js");
-const { LONG_TEST_MODE_CODE } = require("../../src/ContractTestingHelpers.js");
+const { LONG_TEST_MODE_CODE, loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
 const { parseFuzzSeedFromEnvironment } = require("../src/fuzz/FuzzSeed.js");
 const { readEnvOverrides, buildProfile, runFuzzCampaigns } = require("../src/fuzz/FuzzCampaign.js");
 
@@ -79,9 +80,36 @@ const { readEnvOverrides, buildProfile, runFuzzCampaigns } = require("../src/fuz
 
 describe("FuzzTest", function () {
 	it("Unified model-based campaign: fuzz V1, upgrade to V2, fuzz V2, upgrade to V3, fuzz V3, with exact invariants and negative probes", async function () {
+		const fixtureContracts_ = await loadFixtureDeployContractsForTesting(2n);
+
+		// In strict mode, the cached fixture must reject additions, replacements, and deletions.
+		expect(Object.isFrozen(fixtureContracts_)).equal(true);
+		expect(() => { fixtureContracts_.cosmicSignatureGameV2Proxy = fixtureContracts_.cosmicSignatureGameProxy; }).to.throw(TypeError);
+		expect(() => { fixtureContracts_.prizesWallet = fixtureContracts_.cosmicSignatureGameProxy; }).to.throw(TypeError);
+		expect(() => { delete fixtureContracts_.prizesWallet; }).to.throw(TypeError);
+
+		const originalContractReferences_ = { ...fixtureContracts_ };
 		const seed_ = parseFuzzSeedFromEnvironment(process.env.FUZZ_SEED) ?? generateRandomUInt256();
 		const profile_ = buildProfile(LONG_TEST_MODE_CODE, readEnvOverrides());
 		await runFuzzCampaigns(profile_, seed_);
+
+		// Snapshot restoration does not undo mutations of the fixture's cached JavaScript object.
+		// Check added fields too, so this regression does not depend on a random wallet swap.
+		expect(Object.keys(fixtureContracts_)).deep.equal(Object.keys(originalContractReferences_));
+		for (const [name_, reference_] of Object.entries(originalContractReferences_)) {
+			expect(fixtureContracts_[name_], `Fuzz changed fixture field ${name_}`).equal(reference_);
+		}
+
+		// Ordinary tests use both activation-time arguments; both must restore the original wallet.
+		for (const roundActivationTime_ of [2n, -1_000_000_000n]) {
+			const restoredContracts_ = await loadFixtureDeployContractsForTesting(roundActivationTime_);
+			expect(restoredContracts_).equal(fixtureContracts_);
+			expect(Object.isFrozen(restoredContracts_)).equal(true);
+			expect(restoredContracts_.prizesWallet).equal(originalContractReferences_.prizesWallet);
+			expect(restoredContracts_.prizesWalletAddress).equal(originalContractReferences_.prizesWalletAddress);
+			expect(await restoredContracts_.cosmicSignatureGameProxy.prizesWallet()).equal(restoredContracts_.prizesWalletAddress);
+			expect(await restoredContracts_.prizesWallet.mainPrizeBeneficiaryAddresses(0n)).equal(await restoredContracts_.cosmicSignatureGameProxy.lastBidderAddress());
+		}
 	});
 });
 

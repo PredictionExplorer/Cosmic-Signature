@@ -15,7 +15,7 @@ const {
 
 describe("CosmicSignatureGameV2-GuardsAndMisconfig", function () {
 	it("documents that roundNum > 0 is assert-only in reinitialize", async function () {
-		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
+		const contracts_ = { ...await loadFixtureDeployContractsForTesting(-1_000_000_000n) };
 		expect(await contracts_.cosmicSignatureGameProxy.roundNum()).equal(0n);
 		const factory_ = await hre.ethers.getContractFactory("CosmicSignatureGameV2", contracts_.ownerSigner);
 

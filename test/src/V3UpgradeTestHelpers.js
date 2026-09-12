@@ -43,13 +43,14 @@ const DEFAULT_PAID_ETH_PRIZE_AMOUNT_PERCENTAGE_V3 = 50n;
 // #endregion
 
 async function deployV1CompleteRoundZeroAndUpgradeToV2AndV3() {
-	const contracts_ = await loadFixtureDeployContractsForTesting(2n);
+	const contracts_ = { ...await loadFixtureDeployContractsForTesting(2n) };
 	await completeRoundZero(contracts_);
 	await upgradeToV2(contracts_);
 	await upgradeToV3(contracts_);
 	return contracts_;
 }
 
+// `contracts_` must be a mutable, test-local copy, not the frozen fixture object.
 async function upgradeToV3(contracts_, upgradeOptions_ = {}) {
 	const cosmicSignatureGameV3Factory_ =
 		await hre.ethers.getContractFactory("CosmicSignatureGameV3", contracts_.ownerSigner);
