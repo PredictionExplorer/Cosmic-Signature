@@ -66,9 +66,7 @@ library CosmicSignatureHelpers {
 		(bool isSuccess_, ) = toAddress_.call{value: amount_}("");
 
 		if ( ! isSuccess_ ) {
-			// Comment-202609025 relates and/or applies.
 			assembly ("memory-safe") {
-
 				let returnDataSize_ := returndatasize()
 				let freeMemoryPointer_ := mload(0x40)
 				returndatacopy(freeMemoryPointer_, 0, returnDataSize_)

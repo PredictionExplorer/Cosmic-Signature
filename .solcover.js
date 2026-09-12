@@ -32,11 +32,9 @@
 module.exports = {
 	skipFiles: ["tests/", "upgrade-prototype/",],
 
-	// [Comment-202609025]
 	// It appears that we don't need this unless instrumented Solidity compilation fails.
 	// Actually, I had to add this to fix the "stack too deep" compile error.
 	// I also had to supplement some `assembly` keywords with `("memory-safe")` (which is the right thing to do regardless).
-	// [/Comment-202609025]
 	configureYulOptimizer: true,
 
 	istanbulReporter: ["html", /*"text",*/],
