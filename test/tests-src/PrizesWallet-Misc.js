@@ -8,7 +8,7 @@
 const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
-const { anyUint } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
+// const { anyUint } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { MAX_UINT256 } = require("../../src/BigIntMathHelpers.js");
 const { ENABLE_ASSERTS, generateRandomUInt32, generateRandomUInt256, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { setRoundActivationTimeIfNeeded } = require("../../src/ContractDeploymentHelpers.js");
@@ -19,7 +19,7 @@ const { upgradeToV3 } = require("../src/V3UpgradeTestHelpers.js");
 // #endregion
 // #region
 
-describe("PrizesWallet-2", function () {
+describe("PrizesWallet-Misc", function () {
 	// #region `it`
 
 	it("Deployment", async function () {

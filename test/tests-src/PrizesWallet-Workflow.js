@@ -15,7 +15,7 @@ const { LONG_TEST_MODE_CODE, loadFixtureDeployContractsForTesting, tryWaitForTra
 // #endregion
 // #region
 
-describe("PrizesWallet-1", function () {
+describe("PrizesWallet-Workflow", function () {
 	// #region `it`
 
 	it("Workflow", async function () {

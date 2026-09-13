@@ -41,7 +41,7 @@ const { LONG_TEST_MODE_CODE, loadFixtureDeployContractsForTesting, makeNextBlock
 // 	latestBlock = latestBlock_;
 // }
 
-describe("Bidding", function () {
+describe("CosmicSignatureGameV1-Bidding", function () {
 	it("Smoke-test", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 

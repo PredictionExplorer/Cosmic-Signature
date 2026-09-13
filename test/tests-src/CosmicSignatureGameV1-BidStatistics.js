@@ -18,7 +18,7 @@ async function bidWithEthAt(game_, bidder_, timestamp_) {
 	await waitForTransactionReceipt(game_.connect(bidder_).bidWithEth(-1n, "", 0n, {value: 10n ** 18n,}));
 }
 
-describe("BidStatistics", function () {
+describe("CosmicSignatureGameV1-BidStatistics", function () {
 	it("Bid duration accounting: 2 bidders place bids of different durations", async function () {
 		// Test case description:
 		//    signer 1 longest bid is 1000 seconds long.

@@ -9,7 +9,7 @@ const { generateRandomUInt256, waitForTransactionReceipt } = require("../../src/
 const { setRoundActivationTimeIfNeeded } = require("../../src/ContractDeploymentHelpers.js");
 const { loadFixtureDeployContractsForTesting, makeNextBlockTimeDeterministic } = require("../../src/ContractTestingHelpers.js");
 
-describe("MainPrize", function () {
+describe("CosmicSignatureGameV1-MainPrize", function () {
 	it("Test 1", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
 
