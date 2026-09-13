@@ -19,7 +19,7 @@
 			# 'npx' 'hardhat' 'test' '--grep' '^CosmicSignatureGameV1-Misc '
 			# 'npx' 'hardhat' 'test' '--grep' '^PrizesWallet-Misc Swapping to a fresh PrizesWallet after the V2 or V3 upgrade$'
 			# 'npx' 'hardhat' 'test' '--grep' '(?<!\bLong-term aggressive bidding behaves correctly)$'
-			# 'npx' 'hardhat' 'test' '--grep' '^PrizesWallet-Misc |^StakingWalletCosmicSignatureNft |^CharityWallet |^SystemManagement |^CosmicSignatureGameV1-BidStatistics |^CosmicSignatureGameV1-Bidding |^CosmicSignatureGameV1-MainPrize |^CosmicSignatureGameV1-Misc |^BidderContract |^BlockTimeStamps '
+			# 'npx' 'hardhat' 'test' '--grep' '^PrizesWallet-Misc |^StakingWalletCosmicSignatureNft |^CharityWallet |^CosmicSignatureGame-All-Versions-SystemManagement |^CosmicSignatureGameV1-BidStatistics |^CosmicSignatureGameV1-Bidding |^CosmicSignatureGameV1-MainPrize |^CosmicSignatureGameV1-Misc |^BidderContract |^BlockTimeStamps '
 			# 'npx' 'hardhat' 'test' '--grep' '^[^ ]+(?<!-Old) '
 			'npx' 'hardhat' 'test'
 

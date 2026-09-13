@@ -8,7 +8,7 @@ const { generateRandomUInt256, waitForTransactionReceipt } = require("../../src/
 const { setRoundActivationTimeIfNeeded } = require("../../src/ContractDeploymentHelpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
 
-describe("SystemManagement", function () {
+describe("CosmicSignatureGame-All-Versions-SystemManagement", function () {
 	it("Setters while the current bidding round is inactive", async function () {
 		for ( let contractVersionNumber_ = 1; ; ++ contractVersionNumber_ ) {
 			const contracts_ = await loadFixtureDeployContractsForTesting((contractVersionNumber_ <= 1) ? (-1_000_000_000n) : 2n);
