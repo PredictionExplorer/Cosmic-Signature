@@ -29,7 +29,7 @@ const deployContracts = async function (
 	transferContractOwnershipToCosmicSignatureDao,
 	roundActivationTime
 ) {
-	return await deployContractsAdvanced(
+	return /*await*/ deployContractsAdvanced(
 		deployerSigner,
 		"CosmicSignatureGame",
 		randomWalkNftAddress,
