@@ -15,7 +15,7 @@ const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTest
 // #endregion
 // #region `describe`
 
-describe("CosmicSignatureGame-3", function () {
+describe("CosmicSignatureGame-All-Versions-Upgrade", function () {
 	it("Smoke-test", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
