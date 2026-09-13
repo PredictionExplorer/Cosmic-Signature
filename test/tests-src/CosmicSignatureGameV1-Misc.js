@@ -7,6 +7,10 @@ const hre = require("hardhat");
 const { generateRandomUInt32, uint32ToPaddedHexString, waitForTransactionReceipt } = require("../../src/Helpers.js");
 // const { setRoundActivationTimeIfNeeded } = require("../../src/ContractDeploymentHelpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
+const {
+	getLatestBlockTimestamp,
+	mineAtOrAfter,
+} = require("../src/V2UpgradeTestHelpers.js");
 
 describe("CosmicSignatureGameV1-Misc", function () {
 	it("Smoke-test", async function () {
@@ -34,6 +38,22 @@ describe("CosmicSignatureGameV1-Misc", function () {
 		expect(await contracts_.cosmicSignatureGameProxy.mainPrizeTimeIncrementInMicroSeconds()).equal(60n * 60n * 10n ** 6n);
 	});
 
+	// Issue. I have eliminated the `fallback` method and refactored this test to confirm the behavior that is expected
+	// when there is no `fallback` method.
+	it("The fallback method", async function () {
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
+
+		await expect(
+			hre.ethers.provider.call({
+				to: contracts_.cosmicSignatureGameProxyAddress,
+
+				// A (likely) non-existent selector.
+				data: /*"0xffffffff"*/ uint32ToPaddedHexString(generateRandomUInt32()),
+			})
+		// ).revertedWith("Method does not exist.");
+		).revertedWithoutReason();
+	});
+
 	it("The transferOwnership method", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
@@ -59,19 +79,27 @@ describe("CosmicSignatureGameV1-Misc", function () {
 		}
 	});
 
-	// Issue. I have eliminated the `fallback` method and refactored this test to confirm the behavior that is expected
-	// when there is no `fallback` method.
-	it("The fallback method", async function () {
-		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
+	it("setDelayDurationBeforeRoundActivation(48 hours) takes effect only when a new round activation is scheduled", async function () {
+		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
+		const game_ = contracts_.cosmicSignatureGameProxy;
+		const bidder_ = contracts_.signers[2];
 
-		await expect(
-			hre.ethers.provider.call({
-				to: contracts_.cosmicSignatureGameProxyAddress,
+		const oldRoundActivationTime_ = await game_.roundActivationTime();
+		await mineAtOrAfter(oldRoundActivationTime_);
+		const ethPrice_ = await game_.getNextEthBidPrice();
+		await waitForTransactionReceipt(game_.connect(bidder_).bidWithEth(-1n, "", { value: ethPrice_ }));
+		const mainPrizeTime_ = await game_.mainPrizeTime();
 
-				// A (likely) non-existent selector.
-				data: /*"0xffffffff"*/ uint32ToPaddedHexString(generateRandomUInt32()),
-			})
-		// ).revertedWith("Method does not exist.");
-		).revertedWithoutReason();
+		const newDelay_ = 48n * 60n * 60n;
+		await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setDelayDurationBeforeRoundActivation(newDelay_));
+		expect(await game_.delayDurationBeforeRoundActivation()).equal(newDelay_);
+		expect(await game_.roundActivationTime()).equal(oldRoundActivationTime_);
+		expect(await game_.mainPrizeTime()).equal(mainPrizeTime_);
+
+		await mineAtOrAfter(mainPrizeTime_);
+		const beforeClaimBlockTime_ = await getLatestBlockTimestamp();
+		await waitForTransactionReceipt(game_.connect(bidder_).claimMainPrize());
+		expect(await game_.roundNum()).equal(1n);
+		expect(await game_.roundActivationTime()).equal(beforeClaimBlockTime_ + newDelay_ + 1n);
 	});
 });
