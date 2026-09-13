@@ -7,10 +7,7 @@ const hre = require("hardhat");
 const { generateRandomUInt32, uint32ToPaddedHexString, waitForTransactionReceipt } = require("../../src/Helpers.js");
 // const { setRoundActivationTimeIfNeeded } = require("../../src/ContractDeploymentHelpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
-const {
-	getLatestBlockTimestamp,
-	mineAtOrAfter,
-} = require("../src/V2UpgradeTestHelpers.js");
+const { mineAtOrAfter, getLatestBlockTimestamp } = require("../src/V2UpgradeTestHelpers.js");
 
 describe("CosmicSignatureGameV1-Misc", function () {
 	it("Smoke-test", async function () {
