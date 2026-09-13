@@ -272,10 +272,9 @@ abstract contract BiddingOpenBid is
 					uint256 ethOpenBidPriceMinLimit_ = ethBidPrice_ * timesEthBidPrice;
 
 					// Comment-202412045 applies.
-					require(
-						msg.value >= ethOpenBidPriceMinLimit_,
-						CosmicSignatureErrors.InsufficientReceivedBidAmount(/* "The ETH amount you transferred for open bid is insufficient.", */ ethOpenBidPriceMinLimit_, msg.value)
-					);
+					if ( ! (msg.value >= ethOpenBidPriceMinLimit_) ) {
+						revert CosmicSignatureErrors.InsufficientReceivedBidAmount(/* "The ETH amount you transferred for open bid is insufficient.", */ ethOpenBidPriceMinLimit_, msg.value);
+					}
 
 					paidEthPrice_ = msg.value;
 					// #enable_asserts assert(overpaidEthPrice_ == int256(0));
@@ -284,10 +283,9 @@ abstract contract BiddingOpenBid is
 					overpaidEthPrice_ = int256(msg.value) - int256(paidEthPrice_);
 
 					// Comment-202412045 applies.
-					require(
-						overpaidEthPrice_ >= int256(0),
-						CosmicSignatureErrors.InsufficientReceivedBidAmount(/* "The current ETH bid price is greater than the amount you transferred.", */ paidEthPrice_, msg.value)
-					);
+					if ( ! (overpaidEthPrice_ >= int256(0)) ) {
+						revert CosmicSignatureErrors.InsufficientReceivedBidAmount(/* "The current ETH bid price is greater than the amount you transferred.", */ paidEthPrice_, msg.value);
+					}
 				}
 
 				// #endregion
@@ -312,10 +310,9 @@ abstract contract BiddingOpenBid is
 				overpaidEthPrice_ = int256(msg.value) - int256(paidEthPrice_);
 
 				// Comment-202412045 applies.
-				require(
-					overpaidEthPrice_ >= int256(0),
-					CosmicSignatureErrors.InsufficientReceivedBidAmount(/* "The current ETH bid price is greater than the amount you transferred.", */ paidEthPrice_, msg.value)
-				);
+				if ( ! (overpaidEthPrice_ >= int256(0)) ) {
+					revert CosmicSignatureErrors.InsufficientReceivedBidAmount(/* "The current ETH bid price is greater than the amount you transferred.", */ paidEthPrice_, msg.value);
+				}
 
 				if (lastBidderAddress == address(0)) {
 					ethDutchAuctionBeginningBidPrice = ethBidPrice_ * CosmicSignatureConstants.ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
@@ -327,24 +324,24 @@ abstract contract BiddingOpenBid is
 				// #endregion
 				// #region
 
-				require(
-					usedRandomWalkNfts[uint256(/*params_.randomWalkNftId*/ randomWalkNftId_)] == 0,
-					CosmicSignatureErrors.UsedRandomWalkNft(
+				if ( ! (usedRandomWalkNfts[uint256(/*params_.randomWalkNftId*/ randomWalkNftId_)] == 0) ) {
+					revert CosmicSignatureErrors.UsedRandomWalkNft(
 						// "This Random Walk NFT has already been used for bidding.",
 						uint256(/*params_.randomWalkNftId*/ randomWalkNftId_)
-					)
-				);
-				require(
-					// Comment-202502091 applies.
-					_msgSender() == randomWalkNft.ownerOf(uint256(/*params_.randomWalkNftId*/ randomWalkNftId_)),
+					);
+				}
 
-					CosmicSignatureErrors.CallerIsNotNftOwner(
+				// Comment-202502091 applies.
+				if ( ! (_msgSender() == randomWalkNft.ownerOf(uint256(/*params_.randomWalkNftId*/ randomWalkNftId_))) ) {
+					
+					revert CosmicSignatureErrors.CallerIsNotNftOwner(
 						// "You are not the owner of this Random Walk NFT.",
 						randomWalkNft,
 						uint256(/*params_.randomWalkNftId*/ randomWalkNftId_),
 						_msgSender()
-					)
-				);
+					);
+				}
+
 				usedRandomWalkNfts[uint256(/*params_.randomWalkNftId*/ randomWalkNftId_)] = 1;
 				// bidType_ = BidType.RandomWalk;
 				
@@ -682,10 +679,9 @@ abstract contract BiddingOpenBid is
 		unchecked
 		// #enable_smtchecker */
 		{
-			require(
-				bytes(message_).length <= bidMessageLengthMaxLimit,
-				CosmicSignatureErrors.TooLongBidMessage(/* "Message is too long.", */ bytes(message_).length)
-			);
+			if ( ! (bytes(message_).length <= bidMessageLengthMaxLimit) ) {
+				revert CosmicSignatureErrors.TooLongBidMessage(/* "Message is too long.", */ bytes(message_).length);
+			}
 
 			// Comment-202605292 applies.
 			if (lastBidderAddress == address(0)) {
@@ -694,7 +690,9 @@ abstract contract BiddingOpenBid is
 				_checkRoundIsActive();
 
 				// Comment-202501044 applies.
-				require(msg.value > 0, CosmicSignatureErrors.WrongBidType(/* "The first bid in a bidding round shall be ETH." */));
+				if ( ! (msg.value > 0) ) {
+					revert CosmicSignatureErrors.WrongBidType(/* "The first bid in a bidding round shall be ETH." */);
+				}
 
 				cstDutchAuctionBeginningTimeStamp = block.timestamp;
 				mainPrizeTime = block.timestamp + getInitialDurationUntilMainPrize();

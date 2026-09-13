@@ -38,7 +38,12 @@ contract CharityWallet is ReentrancyGuardTransient, Ownable, ICharityWallet {
 
 	function _send(uint256 amount_) private {
 		address charityAddressCopy_ = charityAddress;
+
+		// [Comment-202609203]
+		// Issue. It would be nice to replace `require` with `if`, but it will not be done, due to Comment-202609134.
+		// [/Comment-202609203]
 		require(charityAddressCopy_ != address(0), CosmicSignatureErrors.ZeroAddress("Charity address not set."));
+
 		// emit DonationSent(charityAddressCopy_, amount_);
 		emit CosmicSignatureEvents.FundsTransferredToCharity(charityAddressCopy_, amount_);
 

@@ -307,6 +307,7 @@ contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, S
 	function tryPerformMaintenance(address charityAddress_) external override nonReentrant onlyOwner returns (bool) {
 		// #region
 
+		// Comment-202609203 applies.
 		require(numStakedNfts == 0, CosmicSignatureErrors.ThereAreStakedNfts("There are still staked NFTs."));
 
 		// #endregion

@@ -211,17 +211,16 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 
 	function withdrawEth(uint256 roundNum_, address prizeWinnerAddress_) external override nonReentrant {
 		uint256 roundTimeoutTimeToWithdrawPrizes_ = roundTimeoutTimesToWithdrawPrizes[roundNum_];
-		require(
-			block.timestamp >= roundTimeoutTimeToWithdrawPrizes_ && roundTimeoutTimeToWithdrawPrizes_ > 0,
-			CosmicSignatureErrors.EthWithdrawalDenied(
+		if ( ! (block.timestamp >= roundTimeoutTimeToWithdrawPrizes_ && roundTimeoutTimeToWithdrawPrizes_ > 0) ) {
+			revert CosmicSignatureErrors.EthWithdrawalDenied(
 				// "Only the ETH prize winner is permitted to withdraw the prize before a timeout expires.",
 				roundNum_,
 				prizeWinnerAddress_,
 				_msgSender(),
 				roundTimeoutTimeToWithdrawPrizes_,
 				block.timestamp
-			)
-		);
+			);
+		}
 		_withdrawEth(roundNum_, prizeWinnerAddress_);
 	}
 
@@ -335,17 +334,16 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 		// [/Comment-202411286]
 		if (_msgSender() != mainPrizeBeneficiaryAddresses[roundNum_]) {
 			uint256 roundTimeoutTimeToWithdrawPrizes_ = roundTimeoutTimesToWithdrawPrizes[roundNum_];
-			require(
-				block.timestamp >= roundTimeoutTimeToWithdrawPrizes_ && roundTimeoutTimeToWithdrawPrizes_ > 0,
-				CosmicSignatureErrors.DonatedTokenClaimDenied(
+			if ( ! (block.timestamp >= roundTimeoutTimeToWithdrawPrizes_ && roundTimeoutTimeToWithdrawPrizes_ > 0) ) {
+				revert CosmicSignatureErrors.DonatedTokenClaimDenied(
 					// "Only the bidding round main prize beneficiary is permitted to claim this ERC-20 token donation before a timeout expires.",
 					roundNum_,
 					_msgSender(),
 					tokenAddress_,
 					roundTimeoutTimeToWithdrawPrizes_,
 					block.timestamp
-				)
-			);
+				);
+			}
 		}
 
 		DonatedToken storage donatedTokenReference_ = donatedTokens[roundNum_];
@@ -457,16 +455,15 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 		// Comment-202411286 applies.
 		if (_msgSender() != mainPrizeBeneficiaryAddresses[donatedNftCopy_.roundNum]) {
 			uint256 roundTimeoutTimeToWithdrawPrizes_ = roundTimeoutTimesToWithdrawPrizes[donatedNftCopy_.roundNum];
-			require(
-				block.timestamp >= roundTimeoutTimeToWithdrawPrizes_ && roundTimeoutTimeToWithdrawPrizes_ > 0,
-				CosmicSignatureErrors.DonatedNftClaimDenied(
+			if ( ! (block.timestamp >= roundTimeoutTimeToWithdrawPrizes_ && roundTimeoutTimeToWithdrawPrizes_ > 0) ) {
+				revert CosmicSignatureErrors.DonatedNftClaimDenied(
 					// "Only the bidding round main prize beneficiary is permitted to claim this NFT before a timeout expires.",
 					_msgSender(),
 					index_,
 					roundTimeoutTimeToWithdrawPrizes_,
 					block.timestamp
-				)
-			);
+				);
+			}
 		}
 
 		delete donatedNftReference_.roundNum;

@@ -97,24 +97,24 @@ abstract contract BiddingV2 is
 			} else {
 				// #region
 
-				require(
-					usedRandomWalkNfts[uint256(randomWalkNftId_)] == 0,
-					CosmicSignatureErrors.UsedRandomWalkNft(
+				if ( ! (usedRandomWalkNfts[uint256(randomWalkNftId_)] == 0) ) {
+					revert CosmicSignatureErrors.UsedRandomWalkNft(
 						// "This Random Walk NFT has already been used for bidding.",
 						uint256(randomWalkNftId_)
-					)
-				);
-				require(
-					// Comment-202502091 applies.
-					_msgSender() == randomWalkNft.ownerOf(uint256(randomWalkNftId_)),
+					);
+				}
 
-					CosmicSignatureErrors.CallerIsNotNftOwner(
+				// Comment-202502091 applies.
+				if ( ! (_msgSender() == randomWalkNft.ownerOf(uint256(randomWalkNftId_))) ) {
+					
+					revert CosmicSignatureErrors.CallerIsNotNftOwner(
 						// "You are not the owner of this Random Walk NFT.",
 						randomWalkNft,
 						uint256(randomWalkNftId_),
 						_msgSender()
-					)
-				);
+					);
+				}
+
 				usedRandomWalkNfts[uint256(randomWalkNftId_)] = 1;
 				// bidType_ = BidType.RandomWalk;
 

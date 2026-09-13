@@ -326,28 +326,28 @@ abstract contract Bidding is
 			} else {
 				// #region
 
-				require(
-					usedRandomWalkNfts[uint256(randomWalkNftId_)] == 0,
-					CosmicSignatureErrors.UsedRandomWalkNft(
+				if ( ! (usedRandomWalkNfts[uint256(randomWalkNftId_)] == 0) ) {
+					revert CosmicSignatureErrors.UsedRandomWalkNft(
 						// "This Random Walk NFT has already been used for bidding.",
 						uint256(randomWalkNftId_)
-					)
-				);
-				require(
-					// [Comment-202502091]
-					// It would probably be a bad idea to evaluate something like
-					// `randomWalkNft._isAuthorized` or `randomWalkNft._isApprovedOrOwner`
-					// Comment-202502063 relates.
-					// [/Comment-202502091]
-					_msgSender() == randomWalkNft.ownerOf(uint256(randomWalkNftId_)),
+					);
+				}
 
-					CosmicSignatureErrors.CallerIsNotNftOwner(
+				// [Comment-202502091]
+				// It would probably be a bad idea to evaluate something like
+				// `randomWalkNft._isAuthorized` or `randomWalkNft._isApprovedOrOwner`.
+				// Comment-202502063 relates.
+				// [/Comment-202502091]
+				if ( ! (_msgSender() == randomWalkNft.ownerOf(uint256(randomWalkNftId_))) ) {
+
+					revert CosmicSignatureErrors.CallerIsNotNftOwner(
 						// "You are not the owner of this Random Walk NFT.",
 						randomWalkNft,
 						uint256(randomWalkNftId_),
 						_msgSender()
-					)
-				);
+					);
+				}
+
 				usedRandomWalkNfts[uint256(randomWalkNftId_)] = 1;
 				// bidType_ = BidType.RandomWalk;
 
@@ -728,10 +728,9 @@ abstract contract Bidding is
 		unchecked
 		// #enable_smtchecker */
 		{
-			require(
-				bytes(message_).length <= bidMessageLengthMaxLimit,
-				CosmicSignatureErrors.TooLongBidMessage(/* "Message is too long.", */ bytes(message_).length)
-			);
+			if ( ! (bytes(message_).length <= bidMessageLengthMaxLimit) ) {
+				revert CosmicSignatureErrors.TooLongBidMessage(/* "Message is too long.", */ bytes(message_).length);
+			}
 
 			// [Comment-202605292]
 			// The first bid of the current bidding round?
@@ -745,7 +744,9 @@ abstract contract Bidding is
 				// It appears to be more efficient to validate this here than to validate `lastBidderAddress` near Comment-202501045.
 				// This logic relies on the assumption that ETH bid price is guaranteed to be a nonzero, as specified in Comment-202503162.
 				// [/Comment-202501044]
-				require(msg.value > 0, CosmicSignatureErrors.WrongBidType(/* "The first bid in a bidding round shall be ETH." */));
+				if ( ! (msg.value > 0) ) {
+					revert CosmicSignatureErrors.WrongBidType(/* "The first bid in a bidding round shall be ETH." */);
+				}
 
 				cstDutchAuctionBeginningTimeStamp = block.timestamp;
 				mainPrizeTime = block.timestamp + getInitialDurationUntilMainPrize();

@@ -402,10 +402,9 @@ abstract contract BiddingV2Base is
 		unchecked
 		// #enable_smtchecker */
 		{
-			require(
-				bytes(message_).length <= bidMessageLengthMaxLimit,
-				CosmicSignatureErrors.TooLongBidMessage(/* "Message is too long.", */ bytes(message_).length)
-			);
+			if ( ! (bytes(message_).length <= bidMessageLengthMaxLimit) ) {
+				revert CosmicSignatureErrors.TooLongBidMessage(/* "Message is too long.", */ bytes(message_).length);
+			}
 
 			// Comment-202605292 applies.
 			if (lastBidderAddress == address(0)) {
@@ -414,7 +413,9 @@ abstract contract BiddingV2Base is
 				_checkRoundIsActive();
 
 				// Comment-202501044 applies.
-				require(msg.value > 0, CosmicSignatureErrors.WrongBidType(/* "The first bid in a bidding round shall be ETH." */));
+				if ( ! (msg.value > 0) ) {
+					revert CosmicSignatureErrors.WrongBidType(/* "The first bid in a bidding round shall be ETH." */);
+				}
 
 				cstDutchAuctionBeginningTimeStamp = block.timestamp;
 				mainPrizeTime = block.timestamp + getInitialDurationUntilMainPrize();

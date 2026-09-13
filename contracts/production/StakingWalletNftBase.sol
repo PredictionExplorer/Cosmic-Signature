@@ -63,10 +63,12 @@ abstract contract StakingWalletNftBase is AddressValidator, IStakingWalletNftBas
 	///    `CosmicSignatureErrors.NftHasAlreadyBeenStaked`.
 	///    `usedNfts`.
 	function _stake(uint256 nftId_) internal virtual {
+		// Comment-202609203 applies.
 		require(
 			usedNfts[nftId_] == 0,
 			CosmicSignatureErrors.NftHasAlreadyBeenStaked("This NFT has already been staked in the past. An NFT is allowed to be staked only once.", nftId_)
 		);
+
 		usedNfts[nftId_] = 1;
 	}
 
