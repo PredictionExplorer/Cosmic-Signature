@@ -34,7 +34,7 @@ const {
 // #endregion
 // #region `describe`
 
-describe("CosmicSignatureGame-1", function () {
+describe("CosmicSignatureGame-Integration-Test", function () {
 	// #region `it`
 
 	it("Integration test over multiple bidding rounds", async function () {
@@ -42,7 +42,7 @@ describe("CosmicSignatureGame-1", function () {
 
 		// Comment-202506082 applies.
 		// The bigger this value the higher is the chance that the logic near Comment-202505117 will reduce ETH bid price to 1 Wei.
-		const numRoundsToRunMinLimit_ = (LONG_TEST_MODE_CODE >= 3) ? 25 : 1;
+		const numRoundsToRunMinLimit_ = (LONG_TEST_MODE_CODE >= 3) ? 25 : 2;
 
 		const bidAverageCountPerRoundMinLimit_ = (LONG_TEST_MODE_CODE >= 3) ? 10.0 : 2.0;
 
