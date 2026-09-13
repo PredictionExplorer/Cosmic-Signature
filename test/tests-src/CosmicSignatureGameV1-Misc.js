@@ -8,7 +8,7 @@ const { generateRandomUInt32, uint32ToPaddedHexString, waitForTransactionReceipt
 // const { setRoundActivationTimeIfNeeded } = require("../../src/ContractDeploymentHelpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
 
-describe("CosmicSignatureGame-Misc", function () {
+describe("CosmicSignatureGameV1-Misc", function () {
 	it("Smoke-test", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 

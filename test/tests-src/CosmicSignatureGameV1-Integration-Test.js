@@ -34,7 +34,7 @@ const {
 // #endregion
 // #region `describe`
 
-describe("CosmicSignatureGame-Integration-Test", function () {
+describe("CosmicSignatureGameV1-Integration-Test", function () {
 	// #region `it`
 
 	it("Integration test over multiple bidding rounds", async function () {
