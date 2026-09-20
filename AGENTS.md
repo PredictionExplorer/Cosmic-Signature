@@ -77,7 +77,7 @@ assert(x > y);
 - Review `docs/numbered-comments.md`. It contains some instructions for you. Prefer writing numbered items when they offer an advantage over their non-numbered counterparts. Consider using numbered items to link dependent or similar parts of the codebase. Similar code is not necessarily dependent, but when one occurrence requires refactoring, others may require the same change. A numbered comment identifying repeated logic or data structures can help locate all affected places.
 - Perform AI or human todos only if requested to do so in the prompt. Delete every todo that you have completed.
 - If you are not to perform a todo, use it as context. For example, if the prompt says to develop tests and a todo says to confirm a certain relevant behavior, consider proposing a test for that case.
-- Comments and docs should be brief.
+- Comments and docs should be brief, but clear to someone with limited familiarity with the project. When referring to project-specific concepts, use their full or clearly descriptive names. Avoid slash-style shorthand and do not omit words needed for clarity.
 - Explain non-obvious intricacies in comments. For example, explain dependencies of logic in different parts of the codebase.
 - That said, when performing a refactoring or editing, it can be helpful for me if you explain non-obvious intricacies related to the refactoring in detail in verbose temporary to-be-deleted comments. Format them as follows:
 
