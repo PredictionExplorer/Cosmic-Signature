@@ -6,6 +6,7 @@ pragma solidity =0.8.34;
 // #endregion
 // #region
 
+// // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
 import { Panic as OpenZeppelinPanic } from "@openzeppelin/contracts/utils/Panic.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { CosmicSignatureEvents } from "./libraries/CosmicSignatureEvents.sol";
@@ -238,17 +239,21 @@ abstract contract MainPrizeV3 is
 						cosmicSignatureTokenMintSpec_.value = cstPrizeAmount;
 						// #enable_asserts assert(mainPrizeNumCosmicSignatureNfts > 0);
 						// #enable_asserts assert(cosmicSignatureNftOwnerAddresses_.length - cosmicSignatureTokenMintSpecIndex_ == mainPrizeNumCosmicSignatureNfts);
+						// // #enable_asserts // #disable_smtchecker console.log("202609266");
 
 						// This makes `mainPrizeNumCosmicSignatureNfts` iterations.
-						// todo-0 Test the above.
+						// todo-1 +++ Test the above.
 						for (uint256 cosmicSignatureNftIndex_ = cosmicSignatureNftOwnerAddresses_.length; ; ) {
 							-- cosmicSignatureNftIndex_;
+							// // #enable_asserts // #disable_smtchecker console.log("202609267", cosmicSignatureNftIndex_);
 							cosmicSignatureNftOwnerAddresses_[cosmicSignatureNftIndex_] = _msgSender();
 							if (cosmicSignatureNftIndex_ <= cosmicSignatureTokenMintSpecIndex_) {
 								// #enable_asserts assert(cosmicSignatureNftIndex_ == cosmicSignatureTokenMintSpecIndex_);
 								break;
 							}
 						}
+
+						// // #enable_asserts // #disable_smtchecker console.log("202609268");
 					}
 
 					// #endregion

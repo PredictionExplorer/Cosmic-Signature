@@ -16,11 +16,11 @@
 			export ENABLE_ASSERTS="${3}"
 			export ENABLE_SMTCHECKER="${4}"
 
-			# 'npx' 'hardhat' 'test' '--grep' '^PrizesWallet-Misc '
+			# 'npx' 'hardhat' 'test' '--grep' '^CosmicSignatureGameV3-MainPrize '
+			# 'npx' 'hardhat' 'test' '--grep' '^PrizesWallet-Misc |^StakingWalletCosmicSignatureNft |^CharityWallet '
 			# 'npx' 'hardhat' 'test' '--grep' '^PrizesWallet-Misc Swapping to a fresh PrizesWallet after the V2 or V3 upgrade$'
-			# 'npx' 'hardhat' 'test' '--grep' '(?<!\bLong-term aggressive bidding behaves correctly)$'
-			# 'npx' 'hardhat' 'test' '--grep' '^PrizesWallet-Misc |^StakingWalletCosmicSignatureNft |^CharityWallet |^CosmicSignatureGame-All-Versions-SystemManagement |^CosmicSignatureGame-All-Versions-BidStatistics |^CosmicSignatureGameV1-Bidding |^CosmicSignatureGameV1-MainPrize |^BidderContract |^BlockTimeStamps '
 			# 'npx' 'hardhat' 'test' '--grep' '^[^ ]+(?<!-Old) '
+			# 'npx' 'hardhat' 'test' '--grep' '(?<!\bLong-term aggressive bidding behaves correctly)$'
 			'npx' 'hardhat' 'test'
 
 			if [ $? -ne 0 ]; then
