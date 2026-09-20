@@ -48,7 +48,7 @@ Other environment variables are listed further.
    They are documented in comments in `${workspaceFolder}/src/Helpers.js`.\
    The variables (or lack thereof) affect the compiler output folders. Relevant logic is located near Comment-202503272 and Comment-202503302.\
    To compile with SMTChecker, execute `${workspaceFolder}/smtchecker/compile-1.bash`. (Be sure to review a manual file in the same folder.)\
-   To compile (and immediately run tests) with other sensible combinations of the variables, execute `${workspaceFolder}/test/runners/test-1.bash`.
+   To compile (and immediately run tests) with other sensible combinations of the variables, execute `${workspaceFolder}/test/runners/test.bash`.
 
 #### Notes
 
