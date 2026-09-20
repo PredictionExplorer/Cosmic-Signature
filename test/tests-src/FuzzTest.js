@@ -73,7 +73,7 @@ const { expect } = require("chai");
 const { generateRandomUInt256 } = require("../../src/Helpers.js");
 const { LONG_TEST_MODE_CODE, loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
 const { parseFuzzSeedFromEnvironment } = require("../src/fuzz/FuzzSeed.js");
-const { readEnvOverrides, buildProfile, runFuzzCampaigns } = require("../src/fuzz/FuzzCampaign.js");
+const { buildProfile, readEnvOverrides, runFuzzCampaigns } = require("../src/fuzz/FuzzCampaign.js");
 
 // #endregion
 // #region

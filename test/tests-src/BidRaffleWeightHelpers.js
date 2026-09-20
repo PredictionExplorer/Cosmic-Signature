@@ -96,11 +96,8 @@ describe("BidRaffleWeightHelpers", function () {
 	});
 
 	it("matches a linear scan for random weight arrays", async function () {
-		// Issue. I replaced `0x9d1a35c5a45c2f11ba07899fa25ce2a557eeff29e6c273e0b25ce33cd24b6f95n`
-		// with a call to `generateRandomUInt256`. Why was that magic number hardcoded?
 		const seed_ = parseFuzzSeedFromEnvironment(process.env["FUZZ_SEED"]) ?? generateRandomUInt256();
-
-		console.info("%s", `Random seed: ${uint256ToPaddedHexString(seed_)}`);
+		// console.info("%s", `Random seed: ${uint256ToPaddedHexString(seed_)}`);
 		const randomNumberSeedWrapper_ = {value: seed_,};
 		const random_ = () => generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 		for ( let arrayCounter_ = 0; arrayCounter_ < 150; ++ arrayCounter_ ) {

@@ -6,7 +6,7 @@ import { ICosmicSignatureGameStorage } from "../production/interfaces/ICosmicSig
 
 /// @notice A test-only harness for `BidRaffleWeightHelpers`.
 contract BidRaffleWeightHelpersTestHarness {
-	mapping(uint256 arrayId => ICosmicSignatureGameStorage.BidsInfo bidsInfo) private _bidsInfo;
+	mapping(uint256 arrayId => ICosmicSignatureGameStorage.BidsInfo) private _bidsInfo;
 
 	function appendWeights(uint256 arrayId_, uint256[] calldata weights_) external {
 		ICosmicSignatureGameStorage.BidsInfo storage bidsInfo_ = _bidsInfo[arrayId_];

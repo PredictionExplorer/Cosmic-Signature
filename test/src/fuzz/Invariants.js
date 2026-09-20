@@ -5,7 +5,6 @@
 const { expect } = require("chai");
 const hre = require("hardhat");
 const { ENABLE_ASSERTS } = require("../../../src/Helpers.js");
-// const { MAX_UINT256 } = require("../../../src/BigIntMathHelpers.js");
 
 // #endregion
 // #region Invariant suite

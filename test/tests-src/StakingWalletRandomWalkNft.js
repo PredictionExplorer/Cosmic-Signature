@@ -4,6 +4,7 @@ const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
 const { anyUint } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
+const { asUint256 } = require("../../src/BigIntMathHelpers.js");
 const { shuffleArray, generateRandomUInt32, generateRandomUInt256, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { loadFixtureDeployContractsForTesting, assertAddressIsValid } = require("../../src/ContractTestingHelpers.js");
 
@@ -300,7 +301,7 @@ describe("StakingWalletRandomWalkNft", function () {
 		const numLuckyStakerPicks_ = (new Array(numStakers_)).fill(0);
 		for ( let iterationCounter_ = 1; ; ) {
 			numStakersToPick_ += numStakersToPickIncrement_;
-			randomNumberSeed_ = BigInt.asUintN(256, randomNumberSeed_ + (1n << 64n));
+			randomNumberSeed_ = asUint256(randomNumberSeed_ + (1n << 64n));
 			const luckyStakerAddresses_ = await contracts_.stakingWalletRandomWalkNft.pickRandomStakerAddressesIfPossible(numStakersToPick_, randomNumberSeed_);
 			for (const luckyStakerAddress_ of luckyStakerAddresses_) {
 				assertAddressIsValid(luckyStakerAddress_);

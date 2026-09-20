@@ -13,6 +13,8 @@
 // const hre = require("hardhat");
 const { HardhatContext } = require("hardhat/internal/context");
 
+const { asUint256 } = require("./BigIntMathHelpers.js");
+
 // #endregion
 // #region
 
@@ -152,7 +154,7 @@ function generateRandomUInt256() {
 
 /** Comment-202504065 applies. */
 function generateRandomUInt256FromSeedWrapper(seedWrapper_) {
-	const newSeed_ = BigInt.asUintN(256, seedWrapper_.value + 1n);
+	const newSeed_ = asUint256(seedWrapper_.value + 1n);
 	seedWrapper_.value = newSeed_;
 	const randomNumber_ = generateRandomUInt256FromSeed(newSeed_);
 	return randomNumber_;

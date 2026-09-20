@@ -4,6 +4,7 @@ const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
+const { SECONDS_PER_DAY } = require("../../src/CosmicSignatureConstants.js");
 const { generateRandomUInt32, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
 
@@ -27,9 +28,9 @@ describe("CosmicSignatureDao", function () {
 
 		const latestBlock_ = await hre.ethers.provider.getBlock("latest");
 		let votingDelay_ = await contracts_.cosmicSignatureDao.votingDelay();
-		expect(votingDelay_).equal(2n * 24n * 60n * 60n);
+		expect(votingDelay_).equal(2n * SECONDS_PER_DAY);
 		let votingPeriod_ = await contracts_.cosmicSignatureDao.votingPeriod();
-		expect(votingPeriod_).equal(2n * 7n * 24n * 60n * 60n);
+		expect(votingPeriod_).equal(2n * 7n * SECONDS_PER_DAY);
 		let proposalThreshold_ = await contracts_.cosmicSignatureDao.proposalThreshold();
 		expect(proposalThreshold_).equal(100n * 10n ** 18n);
 		let quorumNumerator_ = await contracts_.cosmicSignatureDao.quorumNumerator();

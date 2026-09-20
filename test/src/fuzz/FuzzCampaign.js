@@ -8,10 +8,10 @@
 const { expect } = require("chai");
 const hre = require("hardhat");
 const {
-	ENABLE_ASSERTS,
-	ENABLE_HARDHAT_PREPROCESSOR,
-	ENABLE_SMTCHECKER,
 	HARDHAT_MODE_CODE,
+	ENABLE_HARDHAT_PREPROCESSOR,
+	ENABLE_ASSERTS,
+	ENABLE_SMTCHECKER,
 	generateRandomUInt256FromSeedWrapper,
 	parseIntegerEnvironmentVariable,
 	uint256ToPaddedHexString,
@@ -21,14 +21,28 @@ const { GameModel } = require("./GameModel.js");
 const { ShadowState } = require("./ShadowState.js");
 const { GameAbiAdapter } = require("./GameAbiAdapter.js");
 const { FuzzEngine } = require("./FuzzEngine.js");
-const { runInvariants, assertCoverageFloors, hasMinimalCoverageFloors, printCoverageReport, mergeStatsInto } = require("./Invariants.js");
+const { runInvariants, hasMinimalCoverageFloors, assertCoverageFloors, printCoverageReport, mergeStatsInto } = require("./Invariants.js");
 const { performUpgradeToV2, performUpgradeToV3, performPrizesWalletSwap, upgradeAuthProbe } = require("./UpgradePhase.js");
-const { biddingActions, claimActions, donationActions, stakingActions, forceCompleteRound, runClaimRace } = require("./actions/CoreActions.js");
+const {
+	biddingActions,
+	forceCompleteRound,
+	runClaimRace,
+	claimActions,
+	donationActions,
+	stakingActions,
+} = require("./actions/CoreActions.js");
 const { randomWalkActions, tokenActions, prizesWalletActions, walletActions } = require("./actions/SecondaryActions.js");
 const { adminActions, daoActions } = require("./actions/AdminActions.js");
 const { extraTokenActions, extraPrizesWalletActions } = require("./actions/ExtraActions.js");
 const { negativeProbes } = require("./actions/NegativeProbes.js");
-const { CharityController, adversarialActions, applyArbitrumChaos, resetArbitrumChaos, ARB_SYS_ADDRESS, ARB_GAS_INFO_ADDRESS } = require("./actions/AdversarialActions.js");
+const {
+	CharityController,
+	adversarialActions,
+	ARB_SYS_ADDRESS,
+	ARB_GAS_INFO_ADDRESS,
+	applyArbitrumChaos,
+	resetArbitrumChaos,
+} = require("./actions/AdversarialActions.js");
 
 // #endregion
 // #region Profiles
@@ -53,7 +67,7 @@ function buildProfile(longTestModeCode_, envOverrides_) {
 			burstPercent: 6,
 			verbosity: 1,
 			chaosPercent: 35,
-			overflowModePercent: 10,
+			earlyBidModePercent: 10,
 			upgradeAfterRoundZeroPercent: 50,
 			upgradeToV3AfterOneMoreRoundPercent: 50,
 			swapPrizesWalletAfterV3UpgradePercent: 50,
@@ -73,7 +87,7 @@ function buildProfile(longTestModeCode_, envOverrides_) {
 			burstPercent: 7,
 			verbosity: 1,
 			chaosPercent: 60,
-			overflowModePercent: 15,
+			earlyBidModePercent: 15,
 			upgradeAfterRoundZeroPercent: 50,
 			upgradeToV3AfterOneMoreRoundPercent: 50,
 			swapPrizesWalletAfterV3UpgradePercent: 50,
@@ -94,7 +108,7 @@ function buildProfile(longTestModeCode_, envOverrides_) {
 			burstPercent: 8,
 			verbosity: 1,
 			chaosPercent: 70,
-			overflowModePercent: 20,
+			earlyBidModePercent: 20,
 			upgradeAfterRoundZeroPercent: 50,
 			upgradeToV3AfterOneMoreRoundPercent: 50,
 			swapPrizesWalletAfterV3UpgradePercent: 50,
@@ -158,7 +172,7 @@ function deriveCampaignProfile(profile_, seedWrapper_) {
 	return {
 		...profile_,
 		chaos: chanceFromSeed(seedWrapper_, profile_.chaosPercent ?? 0),
-		overflowMode: chanceFromSeed(seedWrapper_, profile_.overflowModePercent ?? 0),
+		earlyBidMode: chanceFromSeed(seedWrapper_, profile_.earlyBidModePercent ?? 0),
 		upgradeAfterRoundZero: chanceFromSeed(seedWrapper_, profile_.upgradeAfterRoundZeroPercent ?? 0),
 		v2RoundsBeforeV3Upgrade: v2RoundsBeforeV3Upgrade_,
 		swapPrizesWalletAfterV3Upgrade: chanceFromSeed(seedWrapper_, profile_.swapPrizesWalletAfterV3UpgradePercent ?? 0),
@@ -734,7 +748,7 @@ class FuzzCampaign {
 		console.info(
 			`  profile: actors=${this.profile.numActors} v1Rounds=${this.profile.v1Rounds} ` +
 			`v2Rounds=${this.profile.v2Rounds} v3Rounds=${this.profile.v3Rounds} chaos=${this.profile.chaos} ` +
-			`overflowMode=${this.profile.overflowMode === true} ` +
+			`earlyBidMode=${this.profile.earlyBidMode === true} ` +
 			`upgradeAfterRoundZero=${this.profile.upgradeAfterRoundZero === true} ` +
 			`v2RoundsBeforeV3Upgrade=${this.profile.v2RoundsBeforeV3Upgrade} ` +
 			`swapPrizesWalletAfterV3Upgrade=${this.profile.swapPrizesWalletAfterV3Upgrade === true}`
@@ -875,9 +889,9 @@ async function runOneCampaignWithTrace(campaign_) {
 
 module.exports = {
 	FuzzCampaign,
-	runFuzzCampaigns,
 	buildProfile,
 	readEnvOverrides,
+	runFuzzCampaigns,
 };
 
 // #endregion

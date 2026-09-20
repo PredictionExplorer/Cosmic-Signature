@@ -4,6 +4,7 @@ const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
 const { anyUint } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
+const { SECONDS_PER_HOUR } = require("../../src/CosmicSignatureConstants.js");
 const { shuffleArray, generateRandomUInt32, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { setRoundActivationTimeIfNeeded } = require("../../src/ContractDeploymentHelpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
@@ -227,7 +228,7 @@ describe("StakingWalletCosmicSignatureNft", function () {
 				shuffleArray(bidders_);
 				for ( let bidderIndex_ = generateRandomUInt32() % numBidders_; ; ) {
 					// console.info("%s", "202507215");
-					await hre.ethers.provider.send("evm_increaseTime", [generateRandomUInt32() % (60 * 60),]);
+					await hre.ethers.provider.send("evm_increaseTime", [generateRandomUInt32() % (Number(SECONDS_PER_HOUR)),]);
 					// await hre.ethers.provider.send("evm_mine");
 					await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(bidders_[bidderIndex_]).bidWithEth(-1n, "", {value: 10n ** 18n,}));
 					if (( -- bidderIndex_ ) < 0) {

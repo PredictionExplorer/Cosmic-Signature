@@ -3,44 +3,27 @@
 const { expect } = require("chai");
 const hre = require("hardhat");
 const {
-	getLatestBlockTimestamp,
-	completeRoundZero,
-	upgradeToV2,
-} = require("./V2UpgradeTestHelpers.js");
+	INITIAL_MAIN_PRIZE_TIME_INCREMENT,
+	MICROSECONDS_PER_SECOND,
+	DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT_V3,
+	DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER,
+	INITIAL_CST_BID_PRICE_DECLINE_MULTIPLIER,
+	DEFAULT_CST_BID_PRICE_DECLINE_MULTIPLIER_CHANGE_DIVISOR,
+	DEFAULT_ROUND_LATE_BID_DURATION_DIVISOR,
+	ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_RESOLUTION_EXPONENT,
+	DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_BASE_MULTIPLIER,
+	DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_EXPONENT,
+	DEFAULT_CHRONO_WARRIOR_ETH_PRIZE_AMOUNT_PERCENTAGE_V3,
+	DEFAULT_RAFFLE_TOTAL_ETH_PRIZE_AMOUNT_FOR_BIDDERS_PERCENTAGE_V3,
+	DEFAULT_COSMIC_SIGNATURE_NFT_STAKING_TOTAL_ETH_REWARD_AMOUNT_PERCENTAGE_V3,
+	DEFAULT_MAIN_ETH_PRIZE_AMOUNT_PERCENTAGE_V3,
+	DEFAULT_MAIN_PRIZE_NUM_COSMIC_SIGNATURE_NFTS,
+	DEFAULT_CHARITY_ETH_DONATION_AMOUNT_PERCENTAGE_V3,
+} = require("../../src/CosmicSignatureConstants.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
+const { completeRoundZero, upgradeToV2, getLatestBlockTimestamp } = require("./V2UpgradeTestHelpers.js");
 
-// #region JS mirrors of the V3 `reinitialize` defaults in `CosmicSignatureConstants`.
-
-const MICROSECONDS_PER_SECOND = 1_000_000n;
-const INITIAL_MAIN_PRIZE_TIME_INCREMENT = 60n * 60n;
-const INITIAL_ROUND_LATE_BID_DURATION = 20n * 60n;
-const DEFAULT_ROUND_LATE_BID_DURATION_DIVISOR =
-	(INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND + INITIAL_ROUND_LATE_BID_DURATION / 2n) / INITIAL_ROUND_LATE_BID_DURATION;
-const ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_RESOLUTION_EXPONENT = 13n;
-const DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_BASE_MULTIPLIER = 3567993n << ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_RESOLUTION_EXPONENT;
-const DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_EXPONENT = 8n;
-const INITIAL_BID_CST_REWARD_AMOUNT_PER_MINUTE = 10n ** 18n;
-
-// `(1 CST per minute) * mainPrizeTimeIncrementInMicroSeconds`, expressed per second.
-// The reward formula is `elapsedDuration * bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds`,
-// so with the initial main prize time increment the reward accrues at exactly 1 CST per minute.
-const DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER =
-	(INITIAL_BID_CST_REWARD_AMOUNT_PER_MINUTE * INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND + 60n / 2n) / 60n;
-
-const DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT_V3 = INITIAL_BID_CST_REWARD_AMOUNT_PER_MINUTE;
-const INITIAL_CST_BID_PRICE_DECLINE_MULTIPLIER =
-	(DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER + INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND / 2n) /
-	(INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND);
-const DEFAULT_CST_BID_PRICE_DECLINE_MULTIPLIER_CHANGE_DIVISOR = 100n;
-const DEFAULT_MAIN_PRIZE_NUM_COSMIC_SIGNATURE_NFTS = 3n;
-const DEFAULT_MAIN_ETH_PRIZE_AMOUNT_PERCENTAGE_V3 = 20n;
-const DEFAULT_CHARITY_ETH_DONATION_AMOUNT_PERCENTAGE_V3 = 5n;
-const DEFAULT_RAFFLE_TOTAL_ETH_PRIZE_AMOUNT_FOR_BIDDERS_PERCENTAGE_V3 = 5n;
-const DEFAULT_COSMIC_SIGNATURE_NFT_STAKING_TOTAL_ETH_REWARD_AMOUNT_PERCENTAGE_V3 = 5n;
-const DEFAULT_CHRONO_WARRIOR_ETH_PRIZE_AMOUNT_PERCENTAGE_V3 = 15n;
 const DEFAULT_PAID_ETH_PRIZE_AMOUNT_PERCENTAGE_V3 = 50n;
-
-// #endregion
 
 async function deployV1CompleteRoundZeroAndUpgradeToV2AndV3() {
 	const contracts_ = { ...await loadFixtureDeployContractsForTesting(2n) };
@@ -95,47 +78,6 @@ async function assertDefaultV3Initialization(game_) {
 		(await game_.cosmicSignatureNftStakingTotalEthRewardAmountPercentage()) +
 		(await game_.chronoWarriorEthPrizeAmountPercentage())
 	).equal(DEFAULT_PAID_ETH_PRIZE_AMOUNT_PERCENTAGE_V3);
-}
-
-/**
-JS mirror of the V3 `getBidCstRewardAmountAdvanced` linear formula after a bid has been placed.
-@param {bigint} elapsedDuration_ Seconds since the last bid. May be non-positive.
-@param {bigint} bidCstRewardAmountMultiplier_
-@param {bigint} mainPrizeTimeIncrementInMicroSeconds_
-*/
-function getV3BidCstRewardAmount(
-	elapsedDuration_,
-	bidCstRewardAmountMultiplier_ = DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER,
-	mainPrizeTimeIncrementInMicroSeconds_ = INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND
-) {
-	if (elapsedDuration_ <= 0n) {
-		return 0n;
-	}
-	return elapsedDuration_ * bidCstRewardAmountMultiplier_ / mainPrizeTimeIncrementInMicroSeconds_;
-}
-
-/**
-JS mirror of the premium-free V3 CST bid price: a linear decline from the beginning bid price
-at `cstBidPriceDeclineMultiplier` CST Wei per second, floored at zero.
-*/
-function getV3CstBidPrice(cstDutchAuctionBeginningBidPrice_, cstDutchAuctionElapsedDuration_, cstBidPriceDeclineMultiplier_) {
-	const price_ = cstDutchAuctionBeginningBidPrice_ - cstDutchAuctionElapsedDuration_ * cstBidPriceDeclineMultiplier_;
-	return (price_ <= 0n) ? 0n : price_;
-}
-
-/** JS mirror of `BiddingV3._getCstDutchAuctionDuration`. */
-function getV3CstDutchAuctionDuration(cstDutchAuctionBeginningBidPrice_, cstBidPriceDeclineMultiplier_) {
-	return (cstDutchAuctionBeginningBidPrice_ + (cstBidPriceDeclineMultiplier_ - 1n)) / cstBidPriceDeclineMultiplier_;
-}
-
-/** JS mirror of `CosmicSignatureHelpers.tryIncreaseValueExponentially`. */
-function tryIncreaseValueExponentially(value_, divisor_) {
-	return value_ + value_ / divisor_;
-}
-
-/** JS mirror of `CosmicSignatureHelpers.tryReduceValueExponentially`. */
-function tryReduceValueExponentially(value_, divisor_) {
-	return (value_ + 1n) * divisor_ / (divisor_ + 1n);
 }
 
 /**
@@ -195,34 +137,57 @@ function addRoundLateBidPricePremiumAmountIfNeeded(
 	return bidPrice_ + premiumAmount_;
 }
 
+/**
+JS mirror of the V3 `getBidCstRewardAmountAdvanced` linear formula after a bid has been placed.
+@param {bigint} elapsedDuration_ Seconds since the last bid. May be non-positive.
+@param {bigint} bidCstRewardAmountMultiplier_
+@param {bigint} mainPrizeTimeIncrementInMicroSeconds_
+*/
+function getV3BidCstRewardAmount(
+	elapsedDuration_,
+	bidCstRewardAmountMultiplier_ = DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER,
+	mainPrizeTimeIncrementInMicroSeconds_ = INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND
+) {
+	if (elapsedDuration_ <= 0n) {
+		return 0n;
+	}
+	return elapsedDuration_ * bidCstRewardAmountMultiplier_ / mainPrizeTimeIncrementInMicroSeconds_;
+}
+
+/**
+JS mirror of the premium-free V3 CST bid price: a linear decline from the beginning bid price
+at `cstBidPriceDeclineMultiplier` CST Wei per second, floored at zero.
+*/
+function getV3CstBidPrice(cstDutchAuctionBeginningBidPrice_, cstDutchAuctionElapsedDuration_, cstBidPriceDeclineMultiplier_) {
+	const price_ = cstDutchAuctionBeginningBidPrice_ - cstDutchAuctionElapsedDuration_ * cstBidPriceDeclineMultiplier_;
+	return (price_ <= 0n) ? 0n : price_;
+}
+
+/** JS mirror of `BiddingV3._getCstDutchAuctionDuration`. */
+function getV3CstDutchAuctionDuration(cstDutchAuctionBeginningBidPrice_, cstBidPriceDeclineMultiplier_) {
+	return (cstDutchAuctionBeginningBidPrice_ + (cstBidPriceDeclineMultiplier_ - 1n)) / cstBidPriceDeclineMultiplier_;
+}
+
+/** Comment-202606059 applies. */
+function tryIncreaseValueExponentially(value_, divisor_) {
+	return value_ + value_ / divisor_;
+}
+
+/** Comment-202606059 applies. */
+function tryReduceValueExponentially(value_, divisor_) {
+	return (value_ + 1n) * divisor_ / (divisor_ + 1n);
+}
+
 module.exports = {
-	MICROSECONDS_PER_SECOND,
-	INITIAL_MAIN_PRIZE_TIME_INCREMENT,
-	INITIAL_ROUND_LATE_BID_DURATION,
-	DEFAULT_ROUND_LATE_BID_DURATION_DIVISOR,
-	ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_RESOLUTION_EXPONENT,
-	DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_BASE_MULTIPLIER,
-	DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_EXPONENT,
-	INITIAL_BID_CST_REWARD_AMOUNT_PER_MINUTE,
-	DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER,
-	DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT_V3,
-	INITIAL_CST_BID_PRICE_DECLINE_MULTIPLIER,
-	DEFAULT_CST_BID_PRICE_DECLINE_MULTIPLIER_CHANGE_DIVISOR,
-	DEFAULT_MAIN_PRIZE_NUM_COSMIC_SIGNATURE_NFTS,
-	DEFAULT_MAIN_ETH_PRIZE_AMOUNT_PERCENTAGE_V3,
-	DEFAULT_CHARITY_ETH_DONATION_AMOUNT_PERCENTAGE_V3,
-	DEFAULT_RAFFLE_TOTAL_ETH_PRIZE_AMOUNT_FOR_BIDDERS_PERCENTAGE_V3,
-	DEFAULT_COSMIC_SIGNATURE_NFT_STAKING_TOTAL_ETH_REWARD_AMOUNT_PERCENTAGE_V3,
-	DEFAULT_CHRONO_WARRIOR_ETH_PRIZE_AMOUNT_PERCENTAGE_V3,
 	DEFAULT_PAID_ETH_PRIZE_AMOUNT_PERCENTAGE_V3,
 	deployV1CompleteRoundZeroAndUpgradeToV2AndV3,
 	upgradeToV3,
 	assertDefaultV3Initialization,
+	findTimeStampWithAffordableCstBidPrice,
 	addRoundLateBidPricePremiumAmountIfNeeded,
 	getV3BidCstRewardAmount,
 	getV3CstBidPrice,
 	getV3CstDutchAuctionDuration,
 	tryIncreaseValueExponentially,
 	tryReduceValueExponentially,
-	findTimeStampWithAffordableCstBidPrice,
 };

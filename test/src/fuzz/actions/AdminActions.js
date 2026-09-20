@@ -1,8 +1,12 @@
+// #region
+
 "use strict";
 
+// #endregion
 // #region Imports
 
 const { expect } = require("chai");
+const { SECONDS_PER_HOUR, SECONDS_PER_DAY } = require("../../../../src/CosmicSignatureConstants.js");
 
 // #endregion
 // #region Owner setter mutation (between rounds only)
@@ -157,13 +161,13 @@ function buildSafeMutations(ctx_) {
 	add_("setMainEthPrizeAmountPercentage", BigInt(engine.randomIntRange(10, 40)), (m_, v_) => { m_.mainEthPrizeAmountPercentage = v_; });
 	add_("setCharityEthDonationAmountPercentage", BigInt(engine.randomIntRange(1, 10)), (m_, v_) => { m_.charityEthDonationAmountPercentage = v_; });
 	add_("setMarketingWalletCstContributionAmount", BigInt(engine.randomIntRange(0, 5000)) * 10n ** 18n, (m_, v_) => { m_.marketingWalletCstContributionAmount = v_; });
-	add_("setTimeoutDurationToClaimMainPrize", BigInt(engine.randomIntRange(1, 5)) * 86_400n, (m_, v_) => { m_.timeoutDurationToClaimMainPrize = v_; });
+	add_("setTimeoutDurationToClaimMainPrize", BigInt(engine.randomIntRange(1, 5)) * SECONDS_PER_DAY, (m_, v_) => { m_.timeoutDurationToClaimMainPrize = v_; });
 	add_("setDelayDurationBeforeRoundActivation", BigInt(engine.randomIntRange(60, 7200)), (m_, v_) => { m_.delayDurationBeforeRoundActivation = v_; });
 	add_("setMainPrizeTimeIncrementIncreaseDivisor", BigInt(engine.randomIntRange(50, 200)), (m_, v_) => { m_.mainPrizeTimeIncrementIncreaseDivisor = v_; });
 
 	if (model.version === 2) {
 		// V3 replaces these parameters and makes both setters revert with `NotImplemented`.
-		add_("setCstDutchAuctionDuration", BigInt(engine.randomIntRange(3600, 2 * 86400)), (m_, v_) => { m_.cstDutchAuctionDuration = v_; });
+		add_("setCstDutchAuctionDuration", BigInt(engine.randomIntRange(Number(SECONDS_PER_HOUR), 2 * Number(SECONDS_PER_DAY))), (m_, v_) => { m_.cstDutchAuctionDuration = v_; });
 		add_("setCstDutchAuctionDurationChangeDivisor", BigInt(engine.randomIntRange(50, 1000)), (m_, v_) => { m_.cstDutchAuctionDurationChangeDivisor = v_; });
 	}
 	if (model.version >= 2) {

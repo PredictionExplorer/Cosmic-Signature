@@ -7,117 +7,123 @@
 const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
-const { generateRandomUInt256, waitForTransactionReceipt } = require("../../src/Helpers.js");
-const {
-	getLatestBlockTimestamp,
-	activateCurrentRound,
-} = require("../src/V2UpgradeTestHelpers.js");
 const {
 	DEFAULT_CHRONO_WARRIOR_ETH_PRIZE_AMOUNT_PERCENTAGE_V3,
-	DEFAULT_CHARITY_ETH_DONATION_AMOUNT_PERCENTAGE_V3,
+	DEFAULT_RAFFLE_TOTAL_ETH_PRIZE_AMOUNT_FOR_BIDDERS_PERCENTAGE_V3,
 	DEFAULT_COSMIC_SIGNATURE_NFT_STAKING_TOTAL_ETH_REWARD_AMOUNT_PERCENTAGE_V3,
 	DEFAULT_MAIN_ETH_PRIZE_AMOUNT_PERCENTAGE_V3,
 	DEFAULT_MAIN_PRIZE_NUM_COSMIC_SIGNATURE_NFTS,
-	DEFAULT_PAID_ETH_PRIZE_AMOUNT_PERCENTAGE_V3,
-	DEFAULT_RAFFLE_TOTAL_ETH_PRIZE_AMOUNT_FOR_BIDDERS_PERCENTAGE_V3,
-	deployV1CompleteRoundZeroAndUpgradeToV2AndV3,
-} = require("../src/V3UpgradeTestHelpers.js");
+	DEFAULT_CHARITY_ETH_DONATION_AMOUNT_PERCENTAGE_V3,
+} = require("../../src/CosmicSignatureConstants.js");
+const { generateRandomUInt256, waitForTransactionReceipt } = require("../../src/Helpers.js");
+const { activateCurrentRound, getLatestBlockTimestamp } = require("../src/V2UpgradeTestHelpers.js");
+const { DEFAULT_PAID_ETH_PRIZE_AMOUNT_PERCENTAGE_V3, deployV1CompleteRoundZeroAndUpgradeToV2AndV3 } = require("../src/V3UpgradeTestHelpers.js");
+const { configureRewardAndDeployHostileBidder, hostileBidWithEthAt } = require("../src/AdversarialTestHelpers.js");
+const { testAcrossGameVersions, bidWithEthAt } = require("../src/GameRoundTestHelpers.js");
 
 describe("CosmicSignatureGameV3-MainPrize", function () {
 	it("pays the V3 ETH prize split and leaves 50 percent in the game", async function () {
-		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3();
-		const game_ = contracts_.cosmicSignatureGameV3Proxy;
+		await testAcrossGameVersions(async (contracts_, game_) => {
+			// Stake one of the CS NFTs minted in round 0 so the staking deposit succeeds and can be reconciled.
+			const staker_ = contracts_.signers[1];
+			const stakedCosmicSignatureNftId_ = 0n;
+			if (await contracts_.cosmicSignatureNft.ownerOf(stakedCosmicSignatureNftId_) === staker_.address) {
+				expect(await contracts_.cosmicSignatureNft.ownerOf(stakedCosmicSignatureNftId_)).equal(staker_.address);
+				await waitForTransactionReceipt(
+					contracts_.cosmicSignatureNft
+						.connect(staker_)
+						.setApprovalForAll(contracts_.stakingWalletCosmicSignatureNftAddress, true)
+				);
+				await waitForTransactionReceipt(
+					contracts_.stakingWalletCosmicSignatureNft.connect(staker_).stake(stakedCosmicSignatureNftId_)
+				);
+			}
+			expect(await contracts_.cosmicSignatureNft.ownerOf(stakedCosmicSignatureNftId_)).equal(contracts_.stakingWalletCosmicSignatureNftAddress);
 
-		// Stake one of the CS NFTs minted in round 0 so the staking deposit succeeds and can be reconciled.
-		const staker_ = contracts_.signers[1];
-		const stakedCosmicSignatureNftId_ = 0n;
-		expect(await contracts_.cosmicSignatureNft.ownerOf(stakedCosmicSignatureNftId_)).equal(staker_.address);
-		await waitForTransactionReceipt(
-			contracts_.cosmicSignatureNft
-				.connect(staker_)
-				.setApprovalForAll(contracts_.stakingWalletCosmicSignatureNftAddress, true)
-		);
-		await waitForTransactionReceipt(
-			contracts_.stakingWalletCosmicSignatureNft.connect(staker_).stake(stakedCosmicSignatureNftId_)
-		);
+			await activateCurrentRound(game_, contracts_.ownerSigner);
+			const bidders_ = contracts_.signers.slice(2, 5);
+			for (const bidder_ of bidders_) {
+				const bidTimeStamp_ = (await getLatestBlockTimestamp()) + 1n;
+				const bidPrice_ = await game_.getNextEthBidPriceAdvanced(1n);
+				await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(bidTimeStamp_),]);
+				await waitForTransactionReceipt(
+					game_.connect(bidder_).bidWithEth(-1n, "", 0n, {value: bidPrice_,})
+				);
+			}
+			const beneficiary_ = bidders_.at(-1);
 
-		await activateCurrentRound(game_, contracts_.ownerSigner);
-		const bidders_ = contracts_.signers.slice(2, 5);
-		for (const bidder_ of bidders_) {
-			const bidTimeStamp_ = (await getLatestBlockTimestamp()) + 1n;
-			const bidPrice_ = await game_.getNextEthBidPriceAdvanced(1n);
-			await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(bidTimeStamp_),]);
+			// Make the balance divisible by 300 so every percentage and each of the 3 raffle draws is exact.
+			let gameEthBalance_ = await hre.ethers.provider.getBalance(contracts_.cosmicSignatureGameProxyAddress);
+			const balanceRemainder_ = gameEthBalance_ % 300n;
+			const donationAmount_ = (balanceRemainder_ === 0n) ? 300n : 300n - balanceRemainder_;
 			await waitForTransactionReceipt(
-				game_.connect(bidder_).bidWithEth(-1n, "", 0n, {value: bidPrice_,})
+				game_.connect(contracts_.signers[0]).donateEth({value: donationAmount_,})
 			);
-		}
-		const beneficiary_ = bidders_.at(-1);
+			gameEthBalance_ = await hre.ethers.provider.getBalance(contracts_.cosmicSignatureGameProxyAddress);
+			expect(gameEthBalance_ % 300n).equal(0n);
 
-		// Make the balance divisible by 300 so every percentage and each of the 3 raffle draws is exact.
-		let gameEthBalance_ = await hre.ethers.provider.getBalance(contracts_.cosmicSignatureGameProxyAddress);
-		const balanceRemainder_ = gameEthBalance_ % 300n;
-		const donationAmount_ = (balanceRemainder_ === 0n) ? 300n : 300n - balanceRemainder_;
-		await waitForTransactionReceipt(
-			game_.connect(contracts_.signers[0]).donateEth({value: donationAmount_,})
-		);
-		gameEthBalance_ = await hre.ethers.provider.getBalance(contracts_.cosmicSignatureGameProxyAddress);
-		expect(gameEthBalance_ % 300n).equal(0n);
+			const mainEthPrizeAmount_ = await game_.getMainEthPrizeAmount();
+			const charityEthDonationAmount_ = await game_.getCharityEthDonationAmount();
+			const raffleTotalEthPrizeAmountForBidders_ = await game_.getRaffleTotalEthPrizeAmountForBidders();
+			const cosmicSignatureNftStakingTotalEthRewardAmount_ = await game_.getCosmicSignatureNftStakingTotalEthRewardAmount();
+			const chronoWarriorEthPrizeAmount_ = await game_.getChronoWarriorEthPrizeAmount();
 
-		const mainEthPrizeAmount_ = await game_.getMainEthPrizeAmount();
-		const charityEthDonationAmount_ = await game_.getCharityEthDonationAmount();
-		const raffleTotalEthPrizeAmountForBidders_ = await game_.getRaffleTotalEthPrizeAmountForBidders();
-		const cosmicSignatureNftStakingTotalEthRewardAmount_ = await game_.getCosmicSignatureNftStakingTotalEthRewardAmount();
-		const chronoWarriorEthPrizeAmount_ = await game_.getChronoWarriorEthPrizeAmount();
+			expect(mainEthPrizeAmount_).equal(gameEthBalance_ * DEFAULT_MAIN_ETH_PRIZE_AMOUNT_PERCENTAGE_V3 / 100n);
+			expect(charityEthDonationAmount_).equal(gameEthBalance_ * DEFAULT_CHARITY_ETH_DONATION_AMOUNT_PERCENTAGE_V3 / 100n);
+			expect(raffleTotalEthPrizeAmountForBidders_).equal(gameEthBalance_ * DEFAULT_RAFFLE_TOTAL_ETH_PRIZE_AMOUNT_FOR_BIDDERS_PERCENTAGE_V3 / 100n);
+			expect(cosmicSignatureNftStakingTotalEthRewardAmount_).equal(gameEthBalance_ * DEFAULT_COSMIC_SIGNATURE_NFT_STAKING_TOTAL_ETH_REWARD_AMOUNT_PERCENTAGE_V3 / 100n);
+			expect(chronoWarriorEthPrizeAmount_).equal(gameEthBalance_ * DEFAULT_CHRONO_WARRIOR_ETH_PRIZE_AMOUNT_PERCENTAGE_V3 / 100n);
 
-		expect(mainEthPrizeAmount_).equal(gameEthBalance_ * DEFAULT_MAIN_ETH_PRIZE_AMOUNT_PERCENTAGE_V3 / 100n);
-		expect(charityEthDonationAmount_).equal(gameEthBalance_ * DEFAULT_CHARITY_ETH_DONATION_AMOUNT_PERCENTAGE_V3 / 100n);
-		expect(raffleTotalEthPrizeAmountForBidders_).equal(gameEthBalance_ * DEFAULT_RAFFLE_TOTAL_ETH_PRIZE_AMOUNT_FOR_BIDDERS_PERCENTAGE_V3 / 100n);
-		expect(cosmicSignatureNftStakingTotalEthRewardAmount_).equal(gameEthBalance_ * DEFAULT_COSMIC_SIGNATURE_NFT_STAKING_TOTAL_ETH_REWARD_AMOUNT_PERCENTAGE_V3 / 100n);
-		expect(chronoWarriorEthPrizeAmount_).equal(gameEthBalance_ * DEFAULT_CHRONO_WARRIOR_ETH_PRIZE_AMOUNT_PERCENTAGE_V3 / 100n);
+			const numRaffleEthPrizesForBidders_ = await game_.numRaffleEthPrizesForBidders();
+			expect(numRaffleEthPrizesForBidders_).equal(3n);
+			expect(raffleTotalEthPrizeAmountForBidders_ % numRaffleEthPrizesForBidders_).equal(0n);
+			expect(raffleTotalEthPrizeAmountForBidders_ / numRaffleEthPrizesForBidders_)
+				.equal(gameEthBalance_ * DEFAULT_RAFFLE_TOTAL_ETH_PRIZE_AMOUNT_FOR_BIDDERS_PERCENTAGE_V3 / 100n / 3n);
 
-		const numRaffleEthPrizesForBidders_ = await game_.numRaffleEthPrizesForBidders();
-		expect(numRaffleEthPrizesForBidders_).equal(3n);
-		expect(raffleTotalEthPrizeAmountForBidders_ % numRaffleEthPrizesForBidders_).equal(0n);
-		expect(raffleTotalEthPrizeAmountForBidders_ / numRaffleEthPrizesForBidders_)
-			.equal(gameEthBalance_ * DEFAULT_RAFFLE_TOTAL_ETH_PRIZE_AMOUNT_FOR_BIDDERS_PERCENTAGE_V3 / 100n / 3n);
+			const totalEthPrizeAmount_ =
+				mainEthPrizeAmount_ +
+				charityEthDonationAmount_ +
+				raffleTotalEthPrizeAmountForBidders_ +
+				cosmicSignatureNftStakingTotalEthRewardAmount_ +
+				chronoWarriorEthPrizeAmount_;
+			expect(totalEthPrizeAmount_).equal(gameEthBalance_ * DEFAULT_PAID_ETH_PRIZE_AMOUNT_PERCENTAGE_V3 / 100n);
+			expect(gameEthBalance_ - totalEthPrizeAmount_).equal(gameEthBalance_ * 50n / 100n);
 
-		const totalEthPrizeAmount_ =
-			mainEthPrizeAmount_ +
-			charityEthDonationAmount_ +
-			raffleTotalEthPrizeAmountForBidders_ +
-			cosmicSignatureNftStakingTotalEthRewardAmount_ +
-			chronoWarriorEthPrizeAmount_;
-		expect(totalEthPrizeAmount_).equal(gameEthBalance_ * DEFAULT_PAID_ETH_PRIZE_AMOUNT_PERCENTAGE_V3 / 100n);
-		expect(gameEthBalance_ - totalEthPrizeAmount_).equal(gameEthBalance_ * 50n / 100n);
+			const beneficiaryEthBalanceBefore_ = await hre.ethers.provider.getBalance(beneficiary_.address);
+			const charityWalletEthBalanceBefore_ = await hre.ethers.provider.getBalance(contracts_.charityWalletAddress);
+			const prizesWalletEthBalanceBefore_ = await hre.ethers.provider.getBalance(contracts_.prizesWalletAddress);
+			const stakingWalletEthBalanceBefore_ =
+				await hre.ethers.provider.getBalance(contracts_.stakingWalletCosmicSignatureNftAddress);
 
-		const beneficiaryEthBalanceBefore_ = await hre.ethers.provider.getBalance(beneficiary_.address);
-		const charityWalletEthBalanceBefore_ = await hre.ethers.provider.getBalance(contracts_.charityWalletAddress);
-		const prizesWalletEthBalanceBefore_ = await hre.ethers.provider.getBalance(contracts_.prizesWalletAddress);
-		const stakingWalletEthBalanceBefore_ =
-			await hre.ethers.provider.getBalance(contracts_.stakingWalletCosmicSignatureNftAddress);
+			await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(await game_.mainPrizeTime()),]);
+			const claimReceipt_ = await waitForTransactionReceipt(game_.connect(beneficiary_).claimMainPrize());
 
-		await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(await game_.mainPrizeTime()),]);
-		const claimReceipt_ = await waitForTransactionReceipt(game_.connect(beneficiary_).claimMainPrize());
-
-		expect(await hre.ethers.provider.getBalance(beneficiary_.address))
-			.equal(beneficiaryEthBalanceBefore_ + mainEthPrizeAmount_ - claimReceipt_.fee);
-		expect(await hre.ethers.provider.getBalance(contracts_.charityWalletAddress))
-			.equal(charityWalletEthBalanceBefore_ + charityEthDonationAmount_);
-		expect(await hre.ethers.provider.getBalance(contracts_.prizesWalletAddress))
-			.equal(prizesWalletEthBalanceBefore_ + raffleTotalEthPrizeAmountForBidders_ + chronoWarriorEthPrizeAmount_);
-		expect(await hre.ethers.provider.getBalance(contracts_.stakingWalletCosmicSignatureNftAddress))
-			.equal(stakingWalletEthBalanceBefore_ + cosmicSignatureNftStakingTotalEthRewardAmount_);
-		expect(await hre.ethers.provider.getBalance(contracts_.cosmicSignatureGameProxyAddress))
-			.equal(gameEthBalance_ - totalEthPrizeAmount_);
+			expect(await hre.ethers.provider.getBalance(beneficiary_.address))
+				.equal(beneficiaryEthBalanceBefore_ + mainEthPrizeAmount_ - claimReceipt_.fee);
+			expect(await hre.ethers.provider.getBalance(contracts_.charityWalletAddress))
+				.equal(charityWalletEthBalanceBefore_ + charityEthDonationAmount_);
+			expect(await hre.ethers.provider.getBalance(contracts_.prizesWalletAddress))
+				.equal(prizesWalletEthBalanceBefore_ + raffleTotalEthPrizeAmountForBidders_ + chronoWarriorEthPrizeAmount_);
+			expect(await hre.ethers.provider.getBalance(contracts_.stakingWalletCosmicSignatureNftAddress))
+				.equal(stakingWalletEthBalanceBefore_ + cosmicSignatureNftStakingTotalEthRewardAmount_);
+			expect(await hre.ethers.provider.getBalance(contracts_.cosmicSignatureGameProxyAddress))
+				.equal(gameEthBalance_ - totalEthPrizeAmount_);
+		}, 3, 3);
 	});
 
 	it("mints mainPrizeNumCosmicSignatureNfts sequential NFTs to the beneficiary, for various configured counts", async function () {
+		// #region Deployment
+
 		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3();
 		const game_ = contracts_.cosmicSignatureGameV3Proxy;
 		const gameForOwner_ = game_.connect(contracts_.ownerSigner);
 		expect(await game_.mainPrizeNumCosmicSignatureNfts()).equal(DEFAULT_MAIN_PRIZE_NUM_COSMIC_SIGNATURE_NFTS);
 
-		for ( let roundIndex_ = 0; roundIndex_ < 3; ++ roundIndex_ ) {
+		// #endregion
+
+		for ( let roundIndex_ = 0; roundIndex_ < 4; ++ roundIndex_ ) {
+			// #region Configure and play the round
+
 			const mainPrizeNumCosmicSignatureNfts_ = 1n + (generateRandomUInt256() % 6n) % 5n;
 
 			// The round is inactive right after the previous claim; configure the NFT count and activate.
@@ -149,6 +155,9 @@ describe("CosmicSignatureGameV3-MainPrize", function () {
 				await waitForTransactionReceipt(game_.connect(bidder1_).bidWithCst((1n << 255n), "", 0n));
 			}
 
+			// #endregion
+			// #region Claim and expected prize amounts
+
 			// The last bidder claims at `mainPrizeTime`.
 			const beneficiary_ = placeCstBid_ ? bidder1_ : bidder2_;
 			const mainPrizeTime_ = await game_.mainPrizeTime();
@@ -167,6 +176,7 @@ describe("CosmicSignatureGameV3-MainPrize", function () {
 
 			const transactionReceipt_ = await waitForTransactionReceipt(game_.connect(beneficiary_).claimMainPrize());
 
+			// #endregion
 			// #region `MainPrizeClaimed` (the V3 version with `prizeNumCosmicSignatureNfts`).
 
 			let mainPrizeClaimedLog_;
@@ -224,5 +234,43 @@ describe("CosmicSignatureGameV3-MainPrize", function () {
 
 			// #endregion
 		}
+	});
+
+	it("a hostile last bidder cannot block the round from completing", async function () {
+		await testAcrossGameVersions(async (contracts_, game_) => {
+			const { hostileBidder_ } = await configureRewardAndDeployHostileBidder(contracts_, game_);
+			const token_ = contracts_.cosmicSignatureToken;
+			const hostileBidderAddress_ = await hostileBidder_.getAddress();
+			const deployerOfHostileContract_ = contracts_.signers[10];
+			const eoaBidder1_ = contracts_.signers[1];
+			const claimant_ = contracts_.signers[3];
+			const roundNumBefore_ = await game_.roundNum();
+
+			// The hostile contract ends up being the last bidder and refuses everything.
+			await bidWithEthAt(game_, eoaBidder1_, (await getLatestBlockTimestamp()) + 10n);
+			await waitForTransactionReceipt(hostileBidder_.setHostilityModeCode(1n));
+			await hostileBidWithEthAt(game_, hostileBidder_, deployerOfHostileContract_, (await getLatestBlockTimestamp()) + 30n);
+			expect(await game_.lastBidderAddress()).equal(hostileBidderAddress_);
+
+			// It never claims (its `claimMainPrize` would revert on the main ETH prize transfer anyway),
+			// so after the timeout somebody else claims. Nothing the hostile contract does can prevent that:
+			// its prizes are either minted (CST, CS NFTs) or deposited into `PrizesWallet` (ETH) for pull-withdrawal.
+			const claimTimeStamp_ = (await game_.mainPrizeTime()) + (await game_.timeoutDurationToClaimMainPrize()) + 1n;
+			await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(claimTimeStamp_),]);
+			const hostileCstBalanceBefore_ = await token_.balanceOf(hostileBidderAddress_);
+			const receipt_ = await waitForTransactionReceipt(game_.connect(claimant_).claimMainPrize());
+			expect(receipt_.status).equal(1);
+			expect(await game_.roundNum()).equal(roundNumBefore_ + 1n);
+
+			// Per the design, the reward accrued since the hostile contract's last bid (which would be
+			// hundreds of `cstPrizeAmount`s at this rate over the 2-day timeout) is NOT minted at claim time.
+			// Any CST it received in the claim are secondary prizes, each of `cstPrizeAmount`
+			// (endurance champion, chrono-warrior, and/or CST raffle prizes).
+			const cstPrizeAmount_ = await game_.cstPrizeAmount();
+			const maxNumCstPrizes_ = 2n + await game_.numRaffleCosmicSignatureNftsForBidders();
+			const hostileCstBalanceChange_ = await token_.balanceOf(hostileBidderAddress_) - hostileCstBalanceBefore_;
+			expect(hostileCstBalanceChange_ % cstPrizeAmount_).equal(0n);
+			expect(hostileCstBalanceChange_ / cstPrizeAmount_).lessThanOrEqual(maxNumCstPrizes_);
+		}, 3, 3);
 	});
 });

@@ -1,8 +1,12 @@
+// #region
+
 "use strict";
 
+// #endregion
 // #region Imports
 
 const { expect } = require("chai");
+const { SECONDS_PER_HOUR, SECONDS_PER_DAY } = require("../../../src/CosmicSignatureConstants.js");
 const { generateRandomUInt256FromSeedWrapper } = require("../../../src/Helpers.js");
 const { checkTransactionErrorObject } = require("../../../src/ContractTestingHelpers.js");
 
@@ -201,11 +205,11 @@ class FuzzEngine {
 		} else if (roll_ < 55) {
 			delta_ = this.randomBigIntRange(6n, 120n); // small
 		} else if (roll_ < 80) {
-			delta_ = this.randomBigIntRange(121n, 3_600n); // medium
+			delta_ = this.randomBigIntRange(121n, SECONDS_PER_HOUR); // medium
 		} else if (roll_ < 92) {
-			delta_ = this.randomBigIntRange(3_601n, 36n * 3_600n); // large
+			delta_ = this.randomBigIntRange((SECONDS_PER_HOUR + 1n), 36n * SECONDS_PER_HOUR); // large
 		} else if (roll_ < 96) {
-			delta_ = this.randomBigIntRange(2n * 86_400n, 14n * 86_400n); // huge
+			delta_ = this.randomBigIntRange(2n * SECONDS_PER_DAY, 14n * SECONDS_PER_DAY); // huge
 		} else {
 			// Boundary snapping.
 			const future_ = boundaryCandidates_.filter((candidate_) => candidate_ > this.lastTs + 2n);
@@ -243,7 +247,7 @@ class FuzzEngine {
 
 		out_.push(model_.roundActivationTime + model_.getEthDutchAuctionDuration());
 		if (this.ledger.randomWalkNft.lastMinter !== "0x0000000000000000000000000000000000000000") {
-			out_.push(this.ledger.randomWalkNft.lastMintTime + 30n * 86_400n);
+			out_.push(this.ledger.randomWalkNft.lastMintTime + 30n * SECONDS_PER_DAY);
 		}
 		for (const timeout_ of this.ledger.prizesWallet.roundTimeouts.values()) {
 			out_.push(timeout_);

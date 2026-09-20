@@ -1,9 +1,13 @@
+// #region
+
 "use strict";
 
+// #endregion
 // #region Imports
 
 const { expect } = require("chai");
 const hre = require("hardhat");
+const { SECONDS_PER_HOUR, SECONDS_PER_DAY } = require("../../../../src/CosmicSignatureConstants.js");
 
 // #endregion
 // #region EIP-712 helpers
@@ -37,7 +41,7 @@ const extraTokenActions = [
 				return "skip";
 			}
 			const value_ = engine.randomBigIntRange(1n, 10n ** 18n);
-			const deadline_ = engine.lastTs + 3_600n;
+			const deadline_ = engine.lastTs + SECONDS_PER_HOUR;
 			const nonce_ = await contracts.cosmicSignatureToken.nonces(actor_.address);
 			const domain_ = await tokenDomain(ctx_);
 			const types_ = {
@@ -76,7 +80,7 @@ const extraTokenActions = [
 			if ( ! engine.canAfford(submitter_.address, 0n) ) {
 				return "skip";
 			}
-			const expiry_ = engine.lastTs + 3_600n;
+			const expiry_ = engine.lastTs + SECONDS_PER_HOUR;
 			const nonce_ = await contracts.cosmicSignatureToken.nonces(actor_.address);
 			const domain_ = await tokenDomain(ctx_);
 			const types_ = {
@@ -189,7 +193,7 @@ const extraPrizesWalletActions = [
 		run: async (ctx_) => {
 			const { engine, ledger, contracts } = ctx_;
 			const owner_ = contracts.ownerSigner;
-			const newValue_ = engine.randomBigIntRange(7n * 86_400n, 10n * 7n * 86_400n);
+			const newValue_ = engine.randomBigIntRange(7n * SECONDS_PER_DAY, 10n * 7n * SECONDS_PER_DAY);
 			const result_ = await engine.execTx({
 				signer: owner_,
 				buildTx: (overrides_) => contracts.prizesWallet.connect(owner_).setTimeoutDurationToWithdrawPrizes(newValue_, overrides_),

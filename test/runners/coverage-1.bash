@@ -29,7 +29,7 @@
 	# export ENABLE_SMTCHECKER='???'
 
 	# 'npx' 'hardhat' 'coverage' '--testfiles' 'test/tests-src/CosmicSignatureGameV1-MainPrize.js'
-	# 'npx' 'hardhat' 'coverage' '--testfiles' 'test/tests-src/{PrizesWallet-Misc.js,StakingWalletCosmicSignatureNft.js,CosmicSignatureGame-All-Versions-SystemManagement.js,CosmicSignatureGameV1-BidStatistics.js,CosmicSignatureGameV1-Bidding.js,CosmicSignatureGameV1-MainPrize.js,CosmicSignatureGameV1-Misc.js,BidderContract.js,BlockTimeStamps.js}'
+	# 'npx' 'hardhat' 'coverage' '--testfiles' 'test/tests-src/{PrizesWallet-Misc.js,StakingWalletCosmicSignatureNft.js,CosmicSignatureGame-All-Versions-SystemManagement.js,CosmicSignatureGame-All-Versions-BidStatistics.js,CosmicSignatureGameV1-Bidding.js,CosmicSignatureGameV1-MainPrize.js,BidderContract.js,BlockTimeStamps.js}'
 	'npx' 'hardhat' 'coverage'
 
 	if [ $? -ne 0 ]; then

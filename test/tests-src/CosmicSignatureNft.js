@@ -4,6 +4,7 @@ const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
+const { asUint256 } = require("../../src/BigIntMathHelpers.js");
 const { generateRandomUInt32, generateRandomUInt256, generateRandomUInt256FromSeed, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
 
@@ -105,7 +106,7 @@ describe("CosmicSignatureNft", function () {
 				.and.emit(newCosmicSignatureNft_, "Transfer")
 				.withArgs(hre.ethers.ZeroAddress, contracts_.signers[3].address, firstNftId_ + 1n)
 				.and.emit(newCosmicSignatureNft_, "NftMinted")
-				.withArgs(roundNum_, contracts_.signers[3].address, generateRandomUInt256FromSeed(BigInt.asUintN(256, randomNumberSeed_ + 1n)), firstNftId_ + 1n);
+				.withArgs(roundNum_, contracts_.signers[3].address, generateRandomUInt256FromSeed(asUint256(randomNumberSeed_ + 1n)), firstNftId_ + 1n);
 		}
 	});
 

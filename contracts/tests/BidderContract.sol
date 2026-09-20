@@ -20,7 +20,7 @@ import { BrokenEthReceiver } from "./BrokenEthReceiver.sol";
 contract BidderContract is BrokenEthReceiver {
 	CosmicSignatureGame public immutable cosmicSignatureGame;
 
-	/// @notice Issue. Our V2+ support is limited.
+	/// @notice Selects V1 or the shared V2/V3 bidding ABI.
 	uint256 public contractVersionNumber = 1;
 
 	/// @notice We are going to withdraw ETH that we could have received in these rounds.
@@ -49,21 +49,25 @@ contract BidderContract is BrokenEthReceiver {
 	function doBidWithEth() external payable {
 		if (contractVersionNumber < 2) {
 			// // #enable_asserts // #disable_smtchecker uint256 gasUsed_  = gasleft();
-			cosmicSignatureGame.bidWithEth{value: msg.value}(-1, "BidderContract ETH bid");
+			cosmicSignatureGame.bidWithEth{value: msg.value}(-1, "BidderContract V1 ETH bid");
 			// // #enable_asserts // #disable_smtchecker gasUsed_  -= gasleft();
 			// // #enable_asserts // #disable_smtchecker console.log("BidderContract.doBidWithEth; CosmicSignatureGame.bidWithEth gas used =", gasUsed_);
 		} else {
-			CosmicSignatureGameV2(payable(cosmicSignatureGame)).bidWithEth{value: msg.value}(-1, "BidderContract V2 ETH bid", 0);
+			CosmicSignatureGameV2(payable(cosmicSignatureGame)).bidWithEth{value: msg.value}(-1, "BidderContract V2+ ETH bid", 0);
 		}
 	}
 
 	function doBidWithEthPlusRandomWalkNft(uint256 nftId_) external payable {
 		RandomWalkNFT randomWalkNft_ = cosmicSignatureGame.randomWalkNft();
 		randomWalkNft_.transferFrom(msg.sender, address(this), nftId_);
-		// // #enable_asserts // #disable_smtchecker uint256 gasUsed_  = gasleft();
-		cosmicSignatureGame.bidWithEth{value: msg.value}(int256(nftId_), "BidderContract ETH bid with a Random Walk NFT");
-		// // #enable_asserts // #disable_smtchecker gasUsed_  -= gasleft();
-		// // #enable_asserts // #disable_smtchecker console.log("BidderContract.doBidWithEthPlusRandomWalkNft; CosmicSignatureGame.bidWithEth gas used =", gasUsed_);
+		if (contractVersionNumber < 2) {
+			// // #enable_asserts // #disable_smtchecker uint256 gasUsed_  = gasleft();
+			cosmicSignatureGame.bidWithEth{value: msg.value}(int256(nftId_), "BidderContract V1 ETH bid with a Random Walk NFT");
+			// // #enable_asserts // #disable_smtchecker gasUsed_  -= gasleft();
+			// // #enable_asserts // #disable_smtchecker console.log("BidderContract.doBidWithEthPlusRandomWalkNft; CosmicSignatureGame.bidWithEth gas used =", gasUsed_);
+		} else {
+			CosmicSignatureGameV2(payable(cosmicSignatureGame)).bidWithEth{value: msg.value}(int256(nftId_), "BidderContract V2+ ETH bid with a Random Walk NFT", 0);
+		}
 		randomWalkNft_.transferFrom(address(this), msg.sender, nftId_);
 	}
 
@@ -72,22 +76,26 @@ contract BidderContract is BrokenEthReceiver {
 		PrizesWallet prizesWallet_ = cosmicSignatureGame.prizesWallet();
 		uint256 nextDonatedNftIndex_ = prizesWallet_.nextDonatedNftIndex();
 		donatedNftIndexes.push(nextDonatedNftIndex_);
-		// // #enable_asserts // #disable_smtchecker uint256 gasUsed_  = gasleft();
-		cosmicSignatureGame.bidWithEthAndDonateNft{value: msg.value}(-1, "BidderContract ETH bid with an NFT donation", nftAddress_, nftId_);
-		// // #enable_asserts // #disable_smtchecker gasUsed_  -= gasleft();
-		// // #enable_asserts // #disable_smtchecker console.log("BidderContract.doBidWithEthAndDonateNft; CosmicSignatureGame.bidWithEthAndDonateNft gas used =", gasUsed_);
+		if (contractVersionNumber < 2) {
+			// // #enable_asserts // #disable_smtchecker uint256 gasUsed_  = gasleft();
+			cosmicSignatureGame.bidWithEthAndDonateNft{value: msg.value}(-1, "BidderContract V1 ETH bid with an NFT donation", nftAddress_, nftId_);
+			// // #enable_asserts // #disable_smtchecker gasUsed_  -= gasleft();
+			// // #enable_asserts // #disable_smtchecker console.log("BidderContract.doBidWithEthAndDonateNft; CosmicSignatureGame.bidWithEthAndDonateNft gas used =", gasUsed_);
+		} else {
+			CosmicSignatureGameV2(payable(cosmicSignatureGame)).bidWithEthAndDonateNft{value: msg.value}(-1, "BidderContract V2+ ETH bid with an NFT donation", 0, nftAddress_, nftId_);
+		}
 	}
 
 	function doClaimMainPrize() external {
 		wonRoundNums.push(cosmicSignatureGame.roundNum());
-		if (contractVersionNumber < 2) {
+		// if (contractVersionNumber < 2) {
 			// // #enable_asserts // #disable_smtchecker uint256 gasUsed_  = gasleft();
 			cosmicSignatureGame.claimMainPrize();
 			// // #enable_asserts // #disable_smtchecker gasUsed_  -= gasleft();
 			// // #enable_asserts // #disable_smtchecker console.log("BidderContract.doClaimMainPrize; CosmicSignatureGame.claimMainPrize gas used =", gasUsed_);
-		} else {
-			CosmicSignatureGameV2(payable(cosmicSignatureGame)).claimMainPrize();
-		}
+		// } else {
+		// 	CosmicSignatureGameV2(payable(cosmicSignatureGame)).claimMainPrize();
+		// }
 
 		// [Comment-202508067]
 		// Not transferring the received ETH to the caller. Is it OK?
@@ -154,7 +162,7 @@ contract BidderContract is BrokenEthReceiver {
 				prizesWallet_.claimDonatedNft(donatedNftIndex_);
 
 				// Issue. If this reverts for a single NFT, the whole transaction would revert.
-				// So a malicious NFT contrct can break our logic.
+				// So a malicious NFT contract can break our logic.
 				nftAddress_.transferFrom(address(this), msg.sender, nftId_);
 			}
 			delete donatedNftIndexes;

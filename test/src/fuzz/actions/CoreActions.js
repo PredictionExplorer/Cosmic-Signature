@@ -1,11 +1,15 @@
+// #region
+
 "use strict";
 
+// #endregion
 // #region Imports
 
 const { expect } = require("chai");
-const { ENABLE_SMTCHECKER } = require("../../../../src/Helpers.js");
 const hre = require("hardhat");
+const { SECONDS_PER_HOUR, SECONDS_PER_DAY } = require("../../../../src/CosmicSignatureConstants.js");
 const { MAX_UINT256 } = require("../../../../src/BigIntMathHelpers.js");
+const { ENABLE_SMTCHECKER } = require("../../../../src/Helpers.js");
 const {
 	pickBiddableRandomWalkNft,
 	pickStakeableRandomWalkNft,
@@ -152,7 +156,7 @@ async function claimAsLastBidder(ctx_) {
 	}
 	let ts_ = model.mainPrizeTime;
 	if (engine.chancePercent(50)) {
-		ts_ = model.mainPrizeTime + engine.randomBigIntRange(0n, 7n * 86_400n);
+		ts_ = model.mainPrizeTime + engine.randomBigIntRange(0n, 7n * SECONDS_PER_DAY);
 	}
 	return executeClaim(ctx_, claimer_, engine.clampTs(ts_));
 }
@@ -169,7 +173,7 @@ async function claimAfterTimeout(ctx_) {
 	if (claimer_ === null) {
 		return "skip";
 	}
-	const ts_ = engine.clampTs(model.mainPrizeTime + model.timeoutDurationToClaimMainPrize + engine.randomBigIntRange(1n, 3_600n));
+	const ts_ = engine.clampTs(model.mainPrizeTime + model.timeoutDurationToClaimMainPrize + engine.randomBigIntRange(1n, SECONDS_PER_HOUR));
 	return executeClaim(ctx_, claimer_, ts_);
 }
 
@@ -207,7 +211,7 @@ async function claimWithOverflowingDelay(ctx_) {
 	// The last bidder still claims successfully; the unchecked addition wraps instead of reverting.
 	let ts_ = model.mainPrizeTime;
 	if (engine.chancePercent(50)) {
-		ts_ = model.mainPrizeTime + engine.randomBigIntRange(0n, 7n * 86_400n);
+		ts_ = model.mainPrizeTime + engine.randomBigIntRange(0n, 7n * SECONDS_PER_DAY);
 	}
 	const claimTs_ = engine.clampTs(ts_);
 	let outcome_;

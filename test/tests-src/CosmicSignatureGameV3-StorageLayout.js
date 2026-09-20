@@ -3,17 +3,11 @@
 const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
+const { TIMESTAMP_9000_01_01, SECONDS_PER_HOUR, SECONDS_PER_DAY } = require("../../src/CosmicSignatureConstants.js");
 const { waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
-const {
-	TIMESTAMP_9000_01_01,
-	completeRoundZero,
-	upgradeToV2,
-} = require("../src/V2UpgradeTestHelpers.js");
-const {
-	assertDefaultV3Initialization,
-	upgradeToV3,
-} = require("../src/V3UpgradeTestHelpers.js");
+const { completeRoundZero, upgradeToV2 } = require("../src/V2UpgradeTestHelpers.js");
+const { upgradeToV3, assertDefaultV3Initialization } = require("../src/V3UpgradeTestHelpers.js");
 
 async function snapshotCarriedState(game_) {
 	return {
@@ -82,10 +76,10 @@ describe("CosmicSignatureGameV3-StorageLayout", function () {
 		await waitForTransactionReceipt(gameV2_.setRoundActivationTime(TIMESTAMP_9000_01_01));
 
 		// Move a few V1-era and V2-era parameters off their defaults, so "carried unchanged" is meaningful.
-		await waitForTransactionReceipt(gameV2_.setDelayDurationBeforeRoundActivation(48n * 60n * 60n));
+		await waitForTransactionReceipt(gameV2_.setDelayDurationBeforeRoundActivation(2n * SECONDS_PER_DAY));
 		await waitForTransactionReceipt(gameV2_.setBidMessageLengthMaxLimit(123n));
 		await waitForTransactionReceipt(gameV2_.setCstPrizeAmount(777n * 10n ** 18n));
-		await waitForTransactionReceipt(gameV2_.setCstDutchAuctionDuration(11n * 60n * 60n));
+		await waitForTransactionReceipt(gameV2_.setCstDutchAuctionDuration(11n * SECONDS_PER_HOUR));
 		await waitForTransactionReceipt(gameV2_.setCstDutchAuctionDurationChangeDivisor(234n));
 		await waitForTransactionReceipt(gameV2_.setBidCstRewardAmountMultiplier(123_456_789n));
 		await waitForTransactionReceipt(gameV2_.setMainEthPrizeAmountPercentage(31n));

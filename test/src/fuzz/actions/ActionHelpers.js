@@ -15,13 +15,8 @@ const { MAX_UINT256 } = require("../../../../src/BigIntMathHelpers.js");
 /**
 Chooses a bid timestamp respecting round activation for first bids.
 
-For the FIRST bid of a round, the timestamp is spread across (and sometimes beyond) the ETH Dutch
-auction duration rather than always landing right at activation. This matters: the first bid sets
-`ethDutchAuctionBeginningBidPrice = ethBidPrice * 2`, so if every round's first bid lands at
-activation (no decay), the beginning price ratchets up ~2x per round and explodes exponentially
-over hundreds of rounds — eventually overflowing the contract's `unchecked` ETH-price arithmetic
-(an unrealistic regime). Spreading the first bid lets the Dutch auction decay, so the long-run
-price mean-reverts and stays in a realistic, bug-finding range. It is also closer to real usage.
+First bids normally sample early, late, and expired ETH Dutch auctions.
+The optional earlyBidMode instead bids at activation; finite actor balances still limit prices.
 
 @returns {bigint | null} `null` if bidding is impossible in a sane time frame (round frozen).
 */
@@ -35,11 +30,8 @@ function planBidTs(ctx_) {
 	const ethAuctionDuration_ = model.getEthDutchAuctionDuration();
 	const span_ = (ethAuctionDuration_ > 0n) ? ethAuctionDuration_ : 600n;
 	let offset_;
-	if (engine.profile.overflowMode) {
-		// Overflow-targeting mode: always bid the first bid right at activation (no Dutch decay), so the
-		// beginning price ratchets up ~2x each round and the ETH price climbs into the high / `unchecked`
-		// uint256-wraparound regime that the default spreading deliberately avoids. The model mirrors the
-		// wraparound exactly via `u256(...)`; finite actor budgets bound how far it actually climbs.
+	if (engine.profile.earlyBidMode) {
+		// Exercise repeated early bids while the actors can afford them.
 		offset_ = 0n;
 	} else {
 		const roll_ = engine.randomIntRange(0, 99);

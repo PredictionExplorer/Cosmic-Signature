@@ -9,12 +9,16 @@ const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
 // const { anyUint } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
+const { SECONDS_PER_HOUR } = require("../../src/CosmicSignatureConstants.js");
 const { MAX_UINT256 } = require("../../src/BigIntMathHelpers.js");
 const { ENABLE_ASSERTS, generateRandomUInt32, generateRandomUInt256, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { setRoundActivationTimeIfNeeded } = require("../../src/ContractDeploymentHelpers.js");
 const { loadFixtureDeployContractsForTesting, assertEvent } = require("../../src/ContractTestingHelpers.js");
 const { deployV1CompleteRoundZeroAndUpgradeToV2, activateCurrentRound } = require("../src/V2UpgradeTestHelpers.js");
+const { getLatestBlockTimestamp } = require("../src/V2UpgradeTestHelpers.js");
 const { upgradeToV3 } = require("../src/V3UpgradeTestHelpers.js");
+const { deployBrokenToken } = require("../src/AdversarialTestHelpers.js");
+const { testAcrossGameVersions, bidWithEthAt } = require("../src/GameRoundTestHelpers.js");
 
 // #endregion
 // #region
@@ -44,6 +48,55 @@ describe("PrizesWallet-Misc", function () {
 				.withArgs(newValue_);
 			expect(await contracts_.prizesWallet.timeoutDurationToWithdrawPrizes()).equal(newValue_);
 		}
+	});
+
+	// #endregion
+	// #region `it`
+
+	it("a donated NFT that rejects its claim remains claimable later", async function () {
+		await testAcrossGameVersions(async (contracts_, game_) => {
+			await activateCurrentRound(game_, contracts_.ownerSigner);
+			const bidder_ = contracts_.signers[1];
+
+			const brokenToken_ = await deployBrokenToken(contracts_.prizesWallet, contracts_.signers[10]);
+			const brokenTokenAddress_ = await brokenToken_.getAddress();
+			const nftId_ = 42n;
+			await waitForTransactionReceipt(brokenToken_.mintNft(bidder_.address, nftId_));
+
+			const donatedNftIndex_ = await contracts_.prizesWallet.nextDonatedNftIndex();
+			await waitForTransactionReceipt(
+				game_.connect(bidder_).bidWithEthAndDonateNft(
+					-1n,
+					"",
+					...(game_.interface.getFunction("bidWithEth").inputs.length === 3 ? [0n] : []),
+					brokenTokenAddress_,
+					nftId_,
+					{ value: 10n ** 18n }
+				)
+			);
+			expect(await brokenToken_.ownerOf(nftId_)).equal(await contracts_.prizesWallet.getAddress());
+
+			await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(await game_.mainPrizeTime()),]);
+			await waitForTransactionReceipt(game_.connect(bidder_).claimMainPrize());
+
+			await waitForTransactionReceipt(brokenToken_.setModeCode(2n));
+			await expect(
+				contracts_.prizesWallet.connect(bidder_).claimDonatedNft(donatedNftIndex_)
+			).revertedWith("BrokenToken rejects claim transfer.");
+
+			// Reverting the transfer also restores the preceding record deletion, so the NFT is not lost.
+			const donatedNftAfterFailedClaim_ = await contracts_.prizesWallet.donatedNfts(donatedNftIndex_);
+			expect(donatedNftAfterFailedClaim_.nftAddress).equal(brokenTokenAddress_);
+			expect(await brokenToken_.ownerOf(nftId_)).equal(await contracts_.prizesWallet.getAddress());
+
+			await waitForTransactionReceipt(brokenToken_.setModeCode(0n));
+			await waitForTransactionReceipt(
+				contracts_.prizesWallet.connect(bidder_).claimDonatedNft(donatedNftIndex_)
+			);
+			expect(await brokenToken_.ownerOf(nftId_)).equal(bidder_.address);
+			expect((await contracts_.prizesWallet.donatedNfts(donatedNftIndex_)).nftAddress)
+				.equal(hre.ethers.ZeroAddress);
+		});
 	});
 
 	// #endregion
@@ -265,42 +318,46 @@ describe("PrizesWallet-Misc", function () {
 	// #region `it`
 
 	it("The withdrawEth and withdrawEthMany methods", async function () {
-		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
+		await testAcrossGameVersions(async (contracts_, game_, roundNum_, contractVersionNumber_) => {
+			// This selects both the winner and withdrawal method.
+			const withdrawalModeCode_ = BigInt(generateRandomUInt32() % 3);
 
-		const bidderContractFactory_ = await hre.ethers.getContractFactory("BidderContract", contracts_.deployerSigner);
-		const bidderContract_ = await bidderContractFactory_.deploy(contracts_.cosmicSignatureGameProxyAddress);
-		await bidderContract_.waitForDeployment();
-		const bidderContractAddress_ = await bidderContract_.getAddress();
+			const bidderContractFactory_ = await hre.ethers.getContractFactory("BidderContract", contracts_.deployerSigner);
+			const bidderContract_ = await bidderContractFactory_.deploy(contracts_.cosmicSignatureGameProxyAddress);
+			await bidderContract_.waitForDeployment();
+			const bidderContractAddress_ = await bidderContract_.getAddress();
 
-		for ( let roundNum_ = 0n; roundNum_ <= 2n; ++ roundNum_ ) {
-			await setRoundActivationTimeIfNeeded(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner), 2n);
-			/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
-			let transactionResponsePromise_ =
-				(roundNum_ != 1n) ?
-				bidderContract_.connect(contracts_.signers[4]).doBidWithEth({value: 10n ** (18n - 2n),}) :
-				contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEth(-1n, "", {value: 10n ** (18n - 2n),});
-			await waitForTransactionReceipt(transactionResponsePromise_);
-			let durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrize();
+			await waitForTransactionReceipt(bidderContract_.setContractVersionNumber(contractVersionNumber_));
+			await setRoundActivationTimeIfNeeded(game_.connect(contracts_.ownerSigner), 2n);
+			let transactionResponsePromise_;
+			if (withdrawalModeCode_ === 1n) {
+				await bidWithEthAt(game_, contracts_.signers[1], (await getLatestBlockTimestamp()) + 1n);
+			} else {
+				const bidTimeStamp_ = (await getLatestBlockTimestamp()) + 1n;
+				const bidPrice_ = await game_.getNextEthBidPriceAdvanced(1n);
+				await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(bidTimeStamp_)]);
+				await waitForTransactionReceipt(bidderContract_.connect(contracts_.signers[4]).doBidWithEth({ value: bidPrice_ }));
+			}
+			let durationUntilMainPrize_ = await game_.getDurationUntilMainPrize();
 			await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_),]);
 			// await hre.ethers.provider.send("evm_mine");
 			transactionResponsePromise_ =
-				(roundNum_ != 1n) ?
+				(withdrawalModeCode_ != 1n) ?
 				bidderContract_.connect(contracts_.signers[5]).doClaimMainPrize() :
-				contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).claimMainPrize();
+				game_.connect(contracts_.signers[1]).claimMainPrize();
 			await waitForTransactionReceipt(transactionResponsePromise_);
-			const prizeWinnerAddress_ = (roundNum_ != 1n) ? bidderContractAddress_ : contracts_.signers[1].address;
+			const prizeWinnerAddress_ = (withdrawalModeCode_ != 1n) ? bidderContractAddress_ : contracts_.signers[1].address;
 			const prizeWinnerEthBalanceAmount_ = await contracts_.prizesWallet["getEthBalanceAmount(uint256,address)"](roundNum_, prizeWinnerAddress_);
 			expect(prizeWinnerEthBalanceAmount_).greaterThan(0n);
-			if (roundNum_ == 1n) {
+			if (withdrawalModeCode_ == 1n) {
 				const timeoutDurationToWithdrawPrizes_ = await contracts_.prizesWallet.timeoutDurationToWithdrawPrizes();
 				await hre.ethers.provider.send("evm_increaseTime", [Number(timeoutDurationToWithdrawPrizes_),]);
 				// await hre.ethers.provider.send("evm_mine");
 			}
 			for ( let brokenEthReceiverEthDepositAcceptanceModeCode_ = 2n; brokenEthReceiverEthDepositAcceptanceModeCode_ >= 0n; -- brokenEthReceiverEthDepositAcceptanceModeCode_ ) {
-				// console.info("%s", `202511164 ${roundNum_} ${brokenEthReceiverEthDepositAcceptanceModeCode_}`);
 				transactionResponsePromise_ = bidderContract_.setEthDepositAcceptanceModeCode(brokenEthReceiverEthDepositAcceptanceModeCode_);
 				await waitForTransactionReceipt(transactionResponsePromise_);
-				switch (roundNum_) {
+				switch (withdrawalModeCode_) {
 					case 0n:
 						transactionResponsePromise_ = bidderContract_.connect(contracts_.signers[6])["doWithdrawEth(uint256)"](roundNum_);
 						break;
@@ -320,14 +377,17 @@ describe("PrizesWallet-Misc", function () {
 					await transactionResponsePromiseAssertion_
 						.emit(contracts_.prizesWallet, "EthWithdrawn")
 						.withArgs(roundNum_, prizeWinnerAddress_, bidderContractAddress_, prizeWinnerEthBalanceAmount_);
-					if (roundNum_ == 2n) {
+					if (withdrawalModeCode_ == 2n) {
 						await transactionResponsePromiseAssertion_
 							.emit(contracts_.prizesWallet, "EthWithdrawn")
 							.withArgs(roundNum_, prizeWinnerAddress_, bidderContractAddress_, 0n);
 					}
 				}
 			}
-		}
+
+			// Permissionless withdrawal may have advanced past the next round's activation.
+			await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setRoundActivationTime((await getLatestBlockTimestamp()) + SECONDS_PER_HOUR));
+		});
 	});
 
 	// #endregion

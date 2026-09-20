@@ -333,7 +333,7 @@ abstract contract BiddingOpenBid is
 
 				// Comment-202502091 applies.
 				if ( ! (_msgSender() == randomWalkNft.ownerOf(uint256(/*params_.randomWalkNftId*/ randomWalkNftId_))) ) {
-					
+
 					revert CosmicSignatureErrors.CallerIsNotNftOwner(
 						// "You are not the owner of this Random Walk NFT.",
 						randomWalkNft,

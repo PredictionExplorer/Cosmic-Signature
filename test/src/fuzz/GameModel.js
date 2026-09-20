@@ -7,8 +7,8 @@
 
 const hre = require("hardhat");
 const { expect } = require("chai");
-const { sqrtFloor, maxBigInt, u256 } = require("../../../src/BigIntMathHelpers.js");
-const c = require("./FuzzConstants.js");
+const c = require("../../../src/CosmicSignatureConstants.js");
+const { maxBigInt, sqrtFloor, uint256ToInt256, int256ToUint256, u256 } = require("../../../src/BigIntMathHelpers.js");
 
 // #endregion
 // #region `GameModel`
@@ -180,7 +180,7 @@ class GameModel {
 		this.enduranceChampionDuration = await game_.enduranceChampionDuration();
 		this.prevEnduranceChampionDuration = await game_.prevEnduranceChampionDuration();
 		this.chronoWarriorAddress = (await game_.chronoWarriorAddress()).toLowerCase();
-		this.chronoWarriorDuration = BigInt.asIntN(256, await game_.chronoWarriorDuration());
+		this.chronoWarriorDuration = uint256ToInt256(await game_.chronoWarriorDuration());
 	}
 
 	// #endregion
@@ -245,7 +245,7 @@ class GameModel {
 
 	/** `uint256(int256(-1))` for chain comparisons. */
 	chronoWarriorDurationUint() {
-		return BigInt.asUintN(256, this.chronoWarriorDuration);
+		return int256ToUint256(this.chronoWarriorDuration);
 	}
 
 	/**
@@ -509,7 +509,7 @@ class GameModel {
 			enduranceChampionAddress: endurance_,
 			enduranceChampionDuration: enduranceDuration_,
 			chronoWarriorAddress: chrono_,
-			chronoWarriorDuration: BigInt.asUintN(256, chronoDuration_),
+			chronoWarriorDuration: int256ToUint256(chronoDuration_),
 		};
 	}
 
@@ -748,7 +748,7 @@ class GameModel {
 		if (this.version >= 3) {
 			this.championDurationsByRound.set(this.roundNum.toString(), {
 				enduranceChampion: this.enduranceChampionDuration,
-				chronoWarrior: BigInt.asUintN(256, this.chronoWarriorDuration),
+				chronoWarrior: int256ToUint256(this.chronoWarriorDuration),
 			});
 		}
 

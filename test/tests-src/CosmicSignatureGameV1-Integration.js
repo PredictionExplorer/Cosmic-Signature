@@ -28,12 +28,14 @@ const {
 	assertCosmicSignatureGameProxySimulatorTryGetCurrentChampions,
 	assertCosmicSignatureGameProxySimulatorGetEthDutchAuctionDurations,
 	assertCosmicSignatureGameProxySimulatorGetCstDutchAuctionDurations,
-} =
-	require("../src/contract-simulators/CosmicSignatureGameProxySimulator.js");
+} = require("../src/contract-simulators/CosmicSignatureGameProxySimulator.js");
 
 // #endregion
 // #region `describe`
 
+// [Comment-202609242]
+// This test is a bit of a legacy. It tests only V1. The Fuzz Test is a similar more advanced test that tests all versions.
+// [/Comment-202609242]
 describe("CosmicSignatureGameV1-Integration", function () {
 	// #region `it`
 

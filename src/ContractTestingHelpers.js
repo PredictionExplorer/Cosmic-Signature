@@ -8,6 +8,7 @@
 const { assert: chaiAssert, expect } = require("chai");
 const hre = require("hardhat");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
+const { asUint256 } = require("./BigIntMathHelpers.js");
 const { parseIntegerEnvironmentVariable, sleepForMilliSeconds, waitForTransactionReceipt } = require("./Helpers.js");
 const { MyNonceManager } = require("./MyNonceManager.js");
 const { mochaHooks } = require("./MochaHooks.js");
@@ -327,6 +328,7 @@ function assertEvent(event, contract, eventName, eventArgs) {
 // #region `makeNextBlockTimeDeterministic`
 
 /**
+todo-0 Review all calls to this, especially in tests refactored by the AI.
 This function does what issue 3 in Comment-202501193 recommends.
 A simple way to use this function is to subtract its return value
 from the value to be passed to the "evm_increaseTime" JSON RPC method.
@@ -392,7 +394,7 @@ Comment-202506284 applies.
 		const l1PricingUnitsSinceUpdate = BigInt(latestBlock.number * 307);
 		randomNumberSeed ^= l1PricingUnitsSinceUpdate << (64n * 3n);
 	}
-	expect(randomNumberSeed).equal(BigInt.asUintN(256, randomNumberSeed));
+	expect(randomNumberSeed).equal(asUint256(randomNumberSeed));
 	return randomNumberSeed;
 }
 

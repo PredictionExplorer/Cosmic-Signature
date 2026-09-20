@@ -8,6 +8,37 @@
 const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
+const {
+	DEFAULT_DELAY_DURATION_BEFORE_ROUND_ACTIVATION,
+	INITIAL_MAIN_PRIZE_TIME_INCREMENT,
+	MICROSECONDS_PER_SECOND,
+	DEFAULT_ETH_DUTCH_AUCTION_DURATION_DIVISOR,
+	FIRST_ROUND_INITIAL_ETH_BID_PRICE,
+	ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER,
+	DEFAULT_ETH_DUTCH_AUCTION_ENDING_BID_PRICE_DIVISOR,
+	DEFAULT_ETH_BID_PRICE_INCREASE_DIVISOR,
+	RANDOMWALK_NFT_BID_PRICE_DIVISOR,
+	DEFAULT_ETH_BID_REFUND_AMOUNT_IN_GAS_TO_SWALLOW_MAX_LIMIT,
+	DEFAULT_CST_DUTCH_AUCTION_DURATION_DIVISOR,
+	CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER,
+	DEFAULT_BID_CST_REWARD_AMOUNT,
+	DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT,
+	DEFAULT_BID_MESSAGE_LENGTH_MAX_LIMIT,
+	DEFAULT_CST_PRIZE_AMOUNT,
+	DEFAULT_CHRONO_WARRIOR_ETH_PRIZE_AMOUNT_PERCENTAGE,
+	DEFAULT_RAFFLE_TOTAL_ETH_PRIZE_AMOUNT_FOR_BIDDERS_PERCENTAGE,
+	DEFAULT_NUM_RAFFLE_ETH_PRIZES_FOR_BIDDERS,
+	DEFAULT_NUM_RAFFLE_COSMIC_SIGNATURE_NFTS_FOR_BIDDERS,
+	DEFAULT_NUM_RAFFLE_COSMIC_SIGNATURE_NFTS_FOR_RANDOMWALK_NFT_STAKERS,
+	DEFAULT_COSMIC_SIGNATURE_NFT_STAKING_TOTAL_ETH_REWARD_AMOUNT_PERCENTAGE,
+	DEFAULT_INITIAL_DURATION_UNTIL_MAIN_PRIZE_DIVISOR,
+	DEFAULT_MAIN_PRIZE_TIME_INCREMENT_INCREASE_DIVISOR,
+	DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE,
+	DEFAULT_MAIN_ETH_PRIZE_AMOUNT_PERCENTAGE,
+	DEFAULT_MARKETING_WALLET_CST_CONTRIBUTION_AMOUNT,
+	DEFAULT_CHARITY_ETH_DONATION_AMOUNT_PERCENTAGE,
+} = require("../../../src/CosmicSignatureConstants.js");
+const { uint256ToInt256 } = require("../../../src/BigIntMathHelpers.js");
 const { generateRandomUInt256FromSeedWrapper } = require("../../../src/Helpers.js");
 const { assertAddressIsValid, assertEvent, generateRandomUInt256Seed } = require("../../../src/ContractTestingHelpers.js");
 
@@ -25,15 +56,6 @@ async function createCosmicSignatureGameProxySimulator(
 	stakingWalletCosmicSignatureNftSimulator_,
 	charityWalletSimulator_
 ) {
-	// #region
-
-	const FIRST_ROUND_INITIAL_ETH_BID_PRICE = 10n ** (18n - 4n);
-	const ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER = 2n;
-	const DEFAULT_ETH_DUTCH_AUCTION_ENDING_BID_PRICE_DIVISOR = 100n * ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
-	const RANDOMWALK_NFT_BID_PRICE_DIVISOR = 2n;
-	const CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER = 2n;
-
-	// #endregion
 	// #region
 
 	const cosmicSignatureGameProxySimulator_ = {
@@ -70,23 +92,19 @@ async function createCosmicSignatureGameProxySimulator(
 		chronoWarriorAddress: hre.ethers.ZeroAddress,
 		chronoWarriorDuration: (-1n),
 		roundNum: 0n,
-		delayDurationBeforeRoundActivation: 60n * 60n / 2n,
+		delayDurationBeforeRoundActivation: DEFAULT_DELAY_DURATION_BEFORE_ROUND_ACTIVATION,
 		roundActivationTime: await contracts_.cosmicSignatureGameProxy.roundActivationTime(),
-		ethDutchAuctionDurationDivisor: (60n * 60n * 1_000_000n + (2n * 24n * 60n * 60n) / 2n) / (2n * 24n * 60n * 60n),
-		FIRST_ROUND_INITIAL_ETH_BID_PRICE,
+		ethDutchAuctionDurationDivisor: DEFAULT_ETH_DUTCH_AUCTION_DURATION_DIVISOR,
 		ethDutchAuctionBeginningBidPrice: 0n,
-		ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER,
 		ethDutchAuctionEndingBidPriceDivisor: DEFAULT_ETH_DUTCH_AUCTION_ENDING_BID_PRICE_DIVISOR,
 		nextEthBidPrice: 0n,
-		ethBidPriceIncreaseDivisor: 100n,
-		RANDOMWALK_NFT_BID_PRICE_DIVISOR,
-		ethBidRefundAmountInGasToSwallowMaxLimit: 6843n,
+		ethBidPriceIncreaseDivisor: DEFAULT_ETH_BID_PRICE_INCREASE_DIVISOR,
+		ethBidRefundAmountInGasToSwallowMaxLimit: DEFAULT_ETH_BID_REFUND_AMOUNT_IN_GAS_TO_SWALLOW_MAX_LIMIT,
 		cstDutchAuctionBeginningTimeStamp: 0n,
-		cstDutchAuctionDurationDivisor: (60n * 60n * 1_000_000n + (24n * 60n * 60n / 2n) / 2n) / (24n * 60n * 60n / 2n),
+		cstDutchAuctionDurationDivisor: DEFAULT_CST_DUTCH_AUCTION_DURATION_DIVISOR,
 		cstDutchAuctionBeginningBidPrice: 0n,
-		CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER,
-		nextRoundFirstCstDutchAuctionBeginningBidPrice: 200n * 10n ** 18n,
-		cstDutchAuctionBeginningBidPriceMinLimit: 200n * 10n ** 18n,
+		nextRoundFirstCstDutchAuctionBeginningBidPrice: DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT,
+		cstDutchAuctionBeginningBidPriceMinLimit: DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT,
 
 		/**
 		[Comment-202504221]
@@ -96,21 +114,21 @@ async function createCosmicSignatureGameProxySimulator(
 		*/
 		usedRandomWalkNfts: {},
 
-		bidMessageLengthMaxLimit: 280n,
-		bidCstRewardAmount: 100n * 10n ** 18n,
-		cstPrizeAmount: 1_000n * 10n ** 18n,
-		chronoWarriorEthPrizeAmountPercentage: 8n,
-		raffleTotalEthPrizeAmountForBiddersPercentage: 4n,
-		numRaffleEthPrizesForBidders: 3n,
-		numRaffleCosmicSignatureNftsForBidders: 10n,
-		numRaffleCosmicSignatureNftsForRandomWalkNftStakers: 10n,
-		cosmicSignatureNftStakingTotalEthRewardAmountPercentage: 6n,
-		initialDurationUntilMainPrizeDivisor: (60n * 60n * 1_000_000n + (24n * 60n * 60n) / 2n) / (24n * 60n * 60n),
+		bidMessageLengthMaxLimit: DEFAULT_BID_MESSAGE_LENGTH_MAX_LIMIT,
+		bidCstRewardAmount: DEFAULT_BID_CST_REWARD_AMOUNT,
+		cstPrizeAmount: DEFAULT_CST_PRIZE_AMOUNT,
+		chronoWarriorEthPrizeAmountPercentage: DEFAULT_CHRONO_WARRIOR_ETH_PRIZE_AMOUNT_PERCENTAGE,
+		raffleTotalEthPrizeAmountForBiddersPercentage: DEFAULT_RAFFLE_TOTAL_ETH_PRIZE_AMOUNT_FOR_BIDDERS_PERCENTAGE,
+		numRaffleEthPrizesForBidders: DEFAULT_NUM_RAFFLE_ETH_PRIZES_FOR_BIDDERS,
+		numRaffleCosmicSignatureNftsForBidders: DEFAULT_NUM_RAFFLE_COSMIC_SIGNATURE_NFTS_FOR_BIDDERS,
+		numRaffleCosmicSignatureNftsForRandomWalkNftStakers: DEFAULT_NUM_RAFFLE_COSMIC_SIGNATURE_NFTS_FOR_RANDOMWALK_NFT_STAKERS,
+		cosmicSignatureNftStakingTotalEthRewardAmountPercentage: DEFAULT_COSMIC_SIGNATURE_NFT_STAKING_TOTAL_ETH_REWARD_AMOUNT_PERCENTAGE,
+		initialDurationUntilMainPrizeDivisor: DEFAULT_INITIAL_DURATION_UNTIL_MAIN_PRIZE_DIVISOR,
 		mainPrizeTime: 0n,
-		mainPrizeTimeIncrementInMicroSeconds: 60n * 60n * 1_000_000n,
-		mainPrizeTimeIncrementIncreaseDivisor: 100n,
-		timeoutDurationToClaimMainPrize: 24n * 60n * 60n,
-		mainEthPrizeAmountPercentage: 25n,
+		mainPrizeTimeIncrementInMicroSeconds: INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND,
+		mainPrizeTimeIncrementIncreaseDivisor: DEFAULT_MAIN_PRIZE_TIME_INCREMENT_INCREASE_DIVISOR,
+		timeoutDurationToClaimMainPrize: DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE,
+		mainEthPrizeAmountPercentage: DEFAULT_MAIN_ETH_PRIZE_AMOUNT_PERCENTAGE,
 		cosmicSignatureTokenSimulator: cosmicSignatureTokenSimulator_,
 		randomWalkNftSimulator: randomWalkNftSimulator_,
 		cosmicSignatureNftSimulator: cosmicSignatureNftSimulator_,
@@ -118,9 +136,9 @@ async function createCosmicSignatureGameProxySimulator(
 		stakingWalletRandomWalkNftSimulator: stakingWalletRandomWalkNftSimulator_,
 		stakingWalletCosmicSignatureNftSimulator: stakingWalletCosmicSignatureNftSimulator_,
 		// marketingWalletSimulator:
-		marketingWalletCstContributionAmount: 3_000n * 10n ** 18n,
+		marketingWalletCstContributionAmount: DEFAULT_MARKETING_WALLET_CST_CONTRIBUTION_AMOUNT,
 		charityWalletSimulator: charityWalletSimulator_,
-		charityEthDonationAmountPercentage: 7n,
+		charityEthDonationAmountPercentage: DEFAULT_CHARITY_ETH_DONATION_AMOUNT_PERCENTAGE,
 
 		// #endregion
 		// #region `getDurationUntilRoundActivation`
@@ -157,7 +175,7 @@ async function createCosmicSignatureGameProxySimulator(
 		// #region `getMainPrizeTimeIncrement`
 
 		getMainPrizeTimeIncrement: function() {
-			const mainPrizeTimeIncrement_ = this.mainPrizeTimeIncrementInMicroSeconds / 1_000_000n;
+			const mainPrizeTimeIncrement_ = this.mainPrizeTimeIncrementInMicroSeconds / MICROSECONDS_PER_SECOND;
 			return mainPrizeTimeIncrement_;
 		},
 
@@ -166,7 +184,7 @@ async function createCosmicSignatureGameProxySimulator(
 
 		setMainPrizeTimeIncrementInMicroSeconds: function(newValue_, contracts_, transactionReceipt_, eventIndexWrapper_) {
 			expect(typeof newValue_).equal("bigint");
-			expect(newValue_).greaterThanOrEqual(1_000_000n);
+			expect(newValue_).greaterThanOrEqual(MICROSECONDS_PER_SECOND);
 			this.mainPrizeTimeIncrementInMicroSeconds = newValue_;
 			assertEvent(
 				transactionReceipt_.logs[eventIndexWrapper_.value],
@@ -550,7 +568,7 @@ async function createCosmicSignatureGameProxySimulator(
 			this.biddersInfo[bidderAddress_].totalSpentEthAmount += paidEthPrice_;
 			if (this.lastBidderAddress == hre.ethers.ZeroAddress) {
 				// console.info("%s", `202505115 ${hre.ethers.formatEther(ethBidPrice_)}`);
-				this.ethDutchAuctionBeginningBidPrice = ethBidPrice_ * this.ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
+				this.ethDutchAuctionBeginningBidPrice = ethBidPrice_ * ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
 			} else {
 				// console.info("%s", "202505126");
 			}
@@ -600,7 +618,7 @@ async function createCosmicSignatureGameProxySimulator(
 				nextEthBidPrice_ = this.ethDutchAuctionBeginningBidPrice;
 				if (nextEthBidPrice_ == 0n) {
 					// console.info("%s", "202505127");
-					nextEthBidPrice_ = this.FIRST_ROUND_INITIAL_ETH_BID_PRICE;
+					nextEthBidPrice_ = FIRST_ROUND_INITIAL_ETH_BID_PRICE;
 				} else {
 					const ethDutchAuctionElapsedDuration_ = this.getDurationElapsedSinceRoundActivation(blockBeforeTransaction_) + currentTimeOffset_;
 					if (ethDutchAuctionElapsedDuration_ <= 0n) {
@@ -632,8 +650,8 @@ async function createCosmicSignatureGameProxySimulator(
 
 		getEthPlusRandomWalkNftBidPrice: function(ethBidPrice_) {
 			const ethPlusRandomWalkNftBidPrice_ =
-				(ethBidPrice_ + (this.RANDOMWALK_NFT_BID_PRICE_DIVISOR - 1n)) /
-				this.RANDOMWALK_NFT_BID_PRICE_DIVISOR;
+				(ethBidPrice_ + (RANDOMWALK_NFT_BID_PRICE_DIVISOR - 1n)) /
+				RANDOMWALK_NFT_BID_PRICE_DIVISOR;
 			return ethPlusRandomWalkNftBidPrice_;
 		},
 
@@ -736,7 +754,7 @@ async function createCosmicSignatureGameProxySimulator(
 
 			this.biddersInfo[bidderAddress_].totalSpentCstAmount += paidCstPrice_;
 			this.cstDutchAuctionBeginningTimeStamp = BigInt(transactionBlock_.timestamp);
-			let newCstDutchAuctionBeginningBidPrice_ = paidCstPrice_ * this.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
+			let newCstDutchAuctionBeginningBidPrice_ = paidCstPrice_ * CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
 			if (newCstDutchAuctionBeginningBidPrice_ < this.cstDutchAuctionBeginningBidPriceMinLimit) {
 				newCstDutchAuctionBeginningBidPrice_ = this.cstDutchAuctionBeginningBidPriceMinLimit;
 			}
@@ -1342,7 +1360,7 @@ async function assertCosmicSignatureGameProxySimulator(cosmicSignatureGameProxyS
 	expect(await contracts_.cosmicSignatureGameProxy.enduranceChampionDuration()).equal(cosmicSignatureGameProxySimulator_.enduranceChampionDuration);
 	expect(await contracts_.cosmicSignatureGameProxy.prevEnduranceChampionDuration()).equal(cosmicSignatureGameProxySimulator_.prevEnduranceChampionDuration);
 	expect(await contracts_.cosmicSignatureGameProxy.chronoWarriorAddress()).equal(cosmicSignatureGameProxySimulator_.chronoWarriorAddress);
-	expect(BigInt.asIntN(256, await contracts_.cosmicSignatureGameProxy.chronoWarriorDuration())).equal(cosmicSignatureGameProxySimulator_.chronoWarriorDuration);
+	expect(uint256ToInt256(await contracts_.cosmicSignatureGameProxy.chronoWarriorDuration())).equal(cosmicSignatureGameProxySimulator_.chronoWarriorDuration);
 	expect(await contracts_.cosmicSignatureGameProxy.roundNum()).equal(cosmicSignatureGameProxySimulator_.roundNum);
 	expect(await contracts_.cosmicSignatureGameProxy.delayDurationBeforeRoundActivation()).equal(cosmicSignatureGameProxySimulator_.delayDurationBeforeRoundActivation);
 	expect(await contracts_.cosmicSignatureGameProxy.roundActivationTime()).equal(cosmicSignatureGameProxySimulator_.roundActivationTime);

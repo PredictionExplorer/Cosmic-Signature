@@ -1,19 +1,16 @@
+// #region
+
 "use strict";
 
+// #endregion
 // #region Imports
 
 const { expect } = require("chai");
 const hre = require("hardhat");
+const { SECONDS_PER_DAY } = require("../../../src/CosmicSignatureConstants.js");
 const { ENABLE_ASSERTS } = require("../../../src/Helpers.js");
-const {
-	upgradeToV2,
-	assertDefaultV2Initialization,
-	expectUnknownSelector,
-} = require("../V2UpgradeTestHelpers.js");
-const {
-	upgradeToV3,
-	assertDefaultV3Initialization,
-} = require("../V3UpgradeTestHelpers.js");
+const { upgradeToV2, assertDefaultV2Initialization, expectUnknownSelector } = require("../V2UpgradeTestHelpers.js");
+const { upgradeToV3, assertDefaultV3Initialization } = require("../V3UpgradeTestHelpers.js");
 
 // #endregion
 // #region Snapshot
@@ -113,7 +110,7 @@ async function performUpgradeToV2(ctx_) {
 	const prevImplementation_ = await hre.upgrades.erc1967.getImplementationAddress(contracts.cosmicSignatureGameProxyAddress);
 
 	// 1. Freeze the round far in the future so `_authorizeUpgrade`'s `_onlyRoundIsInactive` holds.
-	const freezeActivation_ = engine.lastTs + 10n * 365n * 86_400n;
+	const freezeActivation_ = engine.lastTs + 10n * 365n * SECONDS_PER_DAY;
 	const freezeResult_ = await engine.execTx({
 		signer: contracts.ownerSigner,
 		buildTx: (overrides_) => v1Game_.connect(contracts.ownerSigner).setRoundActivationTime(freezeActivation_, overrides_),
@@ -198,7 +195,7 @@ async function performUpgradeToV3(ctx_) {
 	const prevImplementation_ = await hre.upgrades.erc1967.getImplementationAddress(contracts.cosmicSignatureGameProxyAddress);
 
 	// 1. Freeze the round far in the future so `_authorizeUpgrade`'s `_onlyRoundIsInactive` holds.
-	const freezeActivation_ = engine.lastTs + 10n * 365n * 86_400n;
+	const freezeActivation_ = engine.lastTs + 10n * 365n * SECONDS_PER_DAY;
 	const freezeResult_ = await engine.execTx({
 		signer: contracts.ownerSigner,
 		buildTx: (overrides_) => v2Game_.connect(contracts.ownerSigner).setRoundActivationTime(freezeActivation_, overrides_),

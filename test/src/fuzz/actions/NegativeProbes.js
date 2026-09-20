@@ -1,8 +1,12 @@
+// #region
+
 "use strict";
 
+// #endregion
 // #region Imports
 
 const hre = require("hardhat");
+const { MAX_UINT256 } = require("../../../../src/BigIntMathHelpers.js");
 
 // #endregion
 // #region Probe helper
@@ -181,7 +185,7 @@ const negativeProbes = [
 			return runProbe(ctx_, {
 				signer: actor_.signer,
 				ts: ts_,
-				buildTx: (overrides_) => ctx_.game.connect(actor_.signer).bidWithCst((1n << 256n) - 1n, "", 0n, overrides_),
+				buildTx: (overrides_) => ctx_.game.connect(actor_.signer).bidWithCst(MAX_UINT256, "", 0n, overrides_),
 			});
 		},
 	},
@@ -205,7 +209,7 @@ const negativeProbes = [
 			return runProbe(ctx_, {
 				signer: actor_.signer,
 				ts: ts_,
-				buildTx: (overrides_) => ctx_.game.connect(actor_.signer).bidWithCst((1n << 256n) - 1n, "", reward_ + 1n, overrides_),
+				buildTx: (overrides_) => ctx_.game.connect(actor_.signer).bidWithCst(MAX_UINT256, "", reward_ + 1n, overrides_),
 				expected: "BidCstRewardAmountMinLimitNotReached",
 			});
 		},
@@ -476,6 +480,8 @@ const negativeProbes = [
 			});
 		},
 	},
+
+	// #endregion
 ];
 
 // #endregion

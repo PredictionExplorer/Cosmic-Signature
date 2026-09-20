@@ -15,6 +15,7 @@ const { LONG_TEST_MODE_CODE, loadFixtureDeployContractsForTesting, tryWaitForTra
 // #endregion
 // #region
 
+// Comment-202609242 applies.
 describe("PrizesWallet-Workflow", function () {
 	// #region `it`
 
