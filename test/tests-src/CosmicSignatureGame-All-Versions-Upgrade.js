@@ -14,7 +14,7 @@ const { ENABLE_ASSERTS, generateRandomUInt32, waitForTransactionReceipt } = requ
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
 const { upgradeToV2, assertDefaultV2Initialization } = require("../src/V2UpgradeTestHelpers.js");
 const { upgradeToV3, assertDefaultV3Initialization } = require("../src/V3UpgradeTestHelpers.js");
-const { testGameRounds, bidAndClaimMainPrize } = require("../src/GameRoundTestHelpers.js");
+const { testGameRounds, activateRoundBidAndClaimMainPrize } = require("../src/GameRoundTestHelpers.js");
 
 // #endregion
 // #region
@@ -86,7 +86,7 @@ describe("CosmicSignatureGame-All-Versions-Upgrade", function () {
 	it("Upgrading CosmicSignatureGame ==> CosmicSignatureGameV2 ==> CosmicSignatureGameV3 ==> CosmicSignatureGameOpenBid", async function () {
 		// #region
 
-		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		// #endregion
 		// #region
@@ -110,7 +110,7 @@ describe("CosmicSignatureGame-All-Versions-Upgrade", function () {
 		// #endregion
 		// #region
 
-		await testGameRounds(contracts_, contracts_.cosmicSignatureGameProxy, bidAndClaimMainPrize, 1 + generateRandomUInt32() % 4);
+		await testGameRounds(contracts_, contracts_.cosmicSignatureGameProxy, activateRoundBidAndClaimMainPrize, 1 + generateRandomUInt32() % 4);
 
 		// #endregion
 		// #region
@@ -160,7 +160,7 @@ describe("CosmicSignatureGame-All-Versions-Upgrade", function () {
 		// #endregion
 		// #region
 
-		await testGameRounds(contracts_, cosmicSignatureGameV2Proxy_, bidAndClaimMainPrize, /* 1 + */ generateRandomUInt32() % /* 4 */ 5);
+		await testGameRounds(contracts_, cosmicSignatureGameV2Proxy_, activateRoundBidAndClaimMainPrize, /* 1 + */ generateRandomUInt32() % /* 4 */ 5);
 
 		// #endregion
 		// #region
@@ -211,7 +211,7 @@ describe("CosmicSignatureGame-All-Versions-Upgrade", function () {
 		// #endregion
 		// #region
 
-		await testGameRounds(contracts_, cosmicSignatureGameV3Proxy_, bidAndClaimMainPrize);
+		await testGameRounds(contracts_, cosmicSignatureGameV3Proxy_, activateRoundBidAndClaimMainPrize);
 
 		// #endregion
 		// #region
@@ -292,8 +292,8 @@ describe("CosmicSignatureGame-All-Versions-Upgrade", function () {
 	});
 
 	it("a bare upgrade leaves one permissionless reinitialize call per version", async function () {
-		const contracts_ = { ...await loadFixtureDeployContractsForTesting(2n) };
-		await testGameRounds(contracts_, contracts_.cosmicSignatureGameProxy, bidAndClaimMainPrize, 1 + generateRandomUInt32() % 4);
+		const contracts_ = { ...await loadFixtureDeployContractsForTesting(-1_000_000_000n) };
+		await testGameRounds(contracts_, contracts_.cosmicSignatureGameProxy, activateRoundBidAndClaimMainPrize, 1 + generateRandomUInt32() % 4);
 		for (const [upgradeIndex_, upgrade_] of gameUpgrades.entries()) {
 			// Deliberately omit the atomic reinitialize call used by the production upgrade task.
 			await upgrade_.upgrade(contracts_, { call: undefined });
@@ -308,18 +308,18 @@ describe("CosmicSignatureGame-All-Versions-Upgrade", function () {
 			await expectReinitializeUnavailable(game_, contracts_.ownerSigner);
 			await expectReinitializeUnavailable(game_, contracts_.signers[9]);
 			const numRounds_ = (upgradeIndex_ === gameUpgrades.length - 1) ? 4 : 1 + generateRandomUInt32() % 4;
-			await testGameRounds(contracts_, game_, bidAndClaimMainPrize, numRounds_);
+			await testGameRounds(contracts_, game_, activateRoundBidAndClaimMainPrize, numRounds_);
 		}
 	});
 
 	it("asserts that the preceding version was initialized", async function () {
 		for (let skippedUpgradeIndex_ = 0; skippedUpgradeIndex_ < gameUpgrades.length - 1; ++ skippedUpgradeIndex_) {
-			const contracts_ = { ...await loadFixtureDeployContractsForTesting(2n) };
-			await testGameRounds(contracts_, contracts_.cosmicSignatureGameProxy, bidAndClaimMainPrize, 1 + generateRandomUInt32() % 4);
+			const contracts_ = { ...await loadFixtureDeployContractsForTesting(-1_000_000_000n) };
+			await testGameRounds(contracts_, contracts_.cosmicSignatureGameProxy, activateRoundBidAndClaimMainPrize, 1 + generateRandomUInt32() % 4);
 			for (let upgradeIndex_ = 0; upgradeIndex_ < skippedUpgradeIndex_; ++ upgradeIndex_) {
 				const upgrade_ = gameUpgrades[upgradeIndex_];
 				await upgrade_.upgrade(contracts_);
-				await testGameRounds(contracts_, contracts_[`cosmicSignatureGameV${upgrade_.versionNumber}Proxy`], bidAndClaimMainPrize, 1 + generateRandomUInt32() % 4);
+				await testGameRounds(contracts_, contracts_[`cosmicSignatureGameV${upgrade_.versionNumber}Proxy`], activateRoundBidAndClaimMainPrize, 1 + generateRandomUInt32() % 4);
 			}
 			const skippedUpgrade_ = gameUpgrades[skippedUpgradeIndex_];
 			await skippedUpgrade_.upgrade(contracts_, { call: undefined });

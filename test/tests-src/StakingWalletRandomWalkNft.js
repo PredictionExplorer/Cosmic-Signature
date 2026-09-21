@@ -348,7 +348,7 @@ describe("StakingWalletRandomWalkNft", function () {
 	});
 
 	it("An unauthorized caller unstakes a Random Walk NFT", async function () {
-		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		const stakingWalletRandomWalkNftNftStakedTopicHash_ = contracts_.stakingWalletRandomWalkNft.interface.getEvent("NftStaked").topicHash;
 
@@ -375,7 +375,7 @@ describe("StakingWalletRandomWalkNft", function () {
 	});
 
 	it("Unstaking an invalid stakeActionId", async function () {
-		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		const stakingWalletRandomWalkNftNftStakedTopicHash_ = contracts_.stakingWalletRandomWalkNft.interface.getEvent("NftStaked").topicHash;
 
@@ -413,7 +413,7 @@ describe("StakingWalletRandomWalkNft", function () {
 	});
 
 	it("Double-unstaking Random Walk NFTs", async function () {
-		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		const stakingWalletRandomWalkNftNftStakedTopicHash_ = contracts_.stakingWalletRandomWalkNft.interface.getEvent("NftStaked").topicHash;
 

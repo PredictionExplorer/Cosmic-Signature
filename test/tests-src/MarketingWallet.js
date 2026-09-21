@@ -16,7 +16,7 @@ describe("MarketingWallet", function () {
 	});
 
 	it("Changing the treasurer", async function () {
-		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		let randomNumber32_ = generateRandomUInt32();
 		const unauthorizedOwnerSigner_ = ((randomNumber32_ & 1) == 0) ? contracts_.treasurerSigner : contracts_.signers[11];

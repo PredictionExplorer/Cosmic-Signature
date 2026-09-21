@@ -197,7 +197,8 @@ class FuzzCampaign {
 
 		// The fixture restores chain state but returns its cached JavaScript object unchanged.
 		// Keep replacement contract references and fuzz-only fields local to this campaign.
-		const contracts_ = { ...await loadFixtureDeployContractsForTesting(2n) };
+		const contracts_ = { ...await loadFixtureDeployContractsForTesting(-1_000_000_000n) };
+
 		this.contracts = contracts_;
 		contracts_.charitySignerAddress = contracts_.charitySigner.address;
 
@@ -585,6 +586,9 @@ class FuzzCampaign {
 		let actionsSinceInvariant_ = 0;
 
 		while (this.model.roundNum - startRound_ < BigInt(targetRounds_)) {
+			// Reactivate a post-claim round only when another segment will run.
+			await this._reactivateIfInactive();
+
 			for (let step_ = 0; step_ < profile_.actionsPerSegment; ++ step_) {
 				const actor_ = this.engine.pick(this.actors);
 
@@ -628,9 +632,6 @@ class FuzzCampaign {
 				const elapsedSec_ = ((Date.now() - this.startMs) / 1000).toFixed(0);
 				console.info(`  [${label_} ${elapsedSec_}s] completed ${completed_}/${targetRounds_} rounds | chainRound ${this.model.roundNum} | actions ${this.engine.actionSeq} | invariants ${this.context.invariantRunCount}`);
 			}
-
-			// Re-activate the freshly prepared round (post-claim it is inactive until `roundActivationTime`).
-			await this._reactivateIfInactive();
 		}
 	}
 
@@ -767,7 +768,11 @@ class FuzzCampaign {
 		// Mid-campaign upgrade (we are in a fresh post-claim, round-inactive state).
 		console.info("\n  >>> Performing V1 -> V2 upgrade <<<\n");
 		await performUpgradeToV2(this.context);
-		await this._activateRound();
+
+		if (this.profile.v2RoundsBeforeV3Upgrade > 0) {
+			await this._activateRound();
+		}
+
 		await runInvariants(this.context);
 		console.info("  >>> Upgrade complete; continuing on V2 <<<\n");
 

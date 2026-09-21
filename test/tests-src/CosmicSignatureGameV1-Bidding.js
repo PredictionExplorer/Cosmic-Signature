@@ -420,7 +420,7 @@ describe("CosmicSignatureGameV1-Bidding", function () {
 	});
 
 	it("Bidding-related durations", async function () {
-		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 		await testGameRounds(contracts_, contracts_.cosmicSignatureGameProxy, async (contracts_, game_) => {
 			await activateCurrentRound(game_, contracts_.ownerSigner);
 
@@ -447,7 +447,7 @@ describe("CosmicSignatureGameV1-Bidding", function () {
 	});
 
 	it("Bidding with ETH + Random Walk NFT", async function () {
-		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 		await testGameRounds(contracts_, contracts_.cosmicSignatureGameProxy, async (contracts_, game_) => {
 			await activateCurrentRound(game_, contracts_.ownerSigner);
 
@@ -477,7 +477,7 @@ describe("CosmicSignatureGameV1-Bidding", function () {
 	});
 
 	it("Each bidder bids with ETH + Random Walk NFT", async function () {
-		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 		await testGameRounds(contracts_, contracts_.cosmicSignatureGameProxy, async (contracts_, game_) => {
 			await activateCurrentRound(game_, contracts_.ownerSigner);
 
@@ -498,7 +498,7 @@ describe("CosmicSignatureGameV1-Bidding", function () {
 	});
 
 	it("ETH bid refund", async function () {
-		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 		await testGameRounds(contracts_, contracts_.cosmicSignatureGameProxy, async (contracts_, game_) => {
 			await activateCurrentRound(game_, contracts_.ownerSigner);
 
@@ -524,7 +524,7 @@ describe("CosmicSignatureGameV1-Bidding", function () {
 	});
 
 	it("ETH + Random Walk NFT bid refund", async function () {
-		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 		await testGameRounds(contracts_, contracts_.cosmicSignatureGameProxy, async (contracts_, game_) => {
 			await activateCurrentRound(game_, contracts_.ownerSigner);
 

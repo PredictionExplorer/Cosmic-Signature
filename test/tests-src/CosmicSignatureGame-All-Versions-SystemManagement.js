@@ -5,7 +5,7 @@ const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { generateRandomUInt256, waitForTransactionReceipt } = require("../../src/Helpers.js");
-const { testAcrossGameVersions, bidAndClaimMainPrize } = require("../src/GameRoundTestHelpers.js");
+const { testAcrossGameVersions, activateRoundBidAndClaimMainPrize } = require("../src/GameRoundTestHelpers.js");
 
 describe("CosmicSignatureGame-All-Versions-SystemManagement", function () {
 	it("Setters while the current bidding round is inactive", async function () {
@@ -470,7 +470,7 @@ describe("CosmicSignatureGame-All-Versions-SystemManagement", function () {
 				expect(await cosmicSignatureGameProxyForOwner_.charityEthDonationAmountPercentage()).equal(newValue_);
 				await waitForTransactionReceipt(cosmicSignatureGameProxyForOwner_.setCharityEthDonationAmountPercentage(prevValue_));
 			}
-			await bidAndClaimMainPrize(contracts_, game_);
+			await activateRoundBidAndClaimMainPrize(contracts_, game_);
 		});
 	});
 
@@ -609,7 +609,7 @@ describe("CosmicSignatureGame-All-Versions-SystemManagement", function () {
 			await expect(cosmicSignatureGameProxyForSigner_.setMarketingWalletCstContributionAmount(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");
 			await expect(cosmicSignatureGameProxyForSigner_.setCharityAddress(testSigner_.address)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");
 			await expect(cosmicSignatureGameProxyForSigner_.setCharityEthDonationAmountPercentage(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");
-			await bidAndClaimMainPrize(contracts_, game_);
+			await activateRoundBidAndClaimMainPrize(contracts_, game_);
 		});
 	});
 });

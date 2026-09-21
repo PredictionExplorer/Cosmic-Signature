@@ -1,7 +1,7 @@
 "use strict";
 
 const { describe, it } = require("mocha");
-const { testAcrossGameVersions, bidAndClaimMainPrize, finishGameRound, bidWithEthAt } = require("../src/GameRoundTestHelpers.js");
+const { testAcrossGameVersions, activateRoundBidAndClaimMainPrize, bidAndClaimMainPrize, finishGameRound, bidWithEthAt } = require("../src/GameRoundTestHelpers.js");
 const { activateCurrentRound, mineAtOrAfter, getLatestBlockTimestamp } = require("../src/V2UpgradeTestHelpers.js");
 const hre = require("hardhat");
 const { expect } = require("chai");
@@ -14,7 +14,7 @@ describe("CosmicSignatureGame-All-Versions-Bidding", function () {
 	it("keeps ETH Dutch auction ending-price divisor doubling checked", async function () {
 		await testAcrossGameVersions(async (contracts_, game_) => {
 			// Round zero has no ETH Dutch auction. Check the next round's auction after each claim.
-			await bidAndClaimMainPrize(contracts_, game_);
+			await activateRoundBidAndClaimMainPrize(contracts_, game_);
 			const gameForOwner_ = game_.connect(contracts_.ownerSigner);
 			const normalEndingBidPriceDivisor_ = await game_.ethDutchAuctionEndingBidPriceDivisor();
 			const endingBidPriceDivisor_ = 1n << 255n;

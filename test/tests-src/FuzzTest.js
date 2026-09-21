@@ -80,7 +80,7 @@ const { buildProfile, readEnvOverrides, runFuzzCampaigns } = require("../src/fuz
 
 describe("FuzzTest", function () {
 	it("Unified model-based campaign: fuzz V1, upgrade to V2, fuzz V2, upgrade to V3, fuzz V3, with exact invariants and negative probes", async function () {
-		const fixtureContracts_ = await loadFixtureDeployContractsForTesting(2n);
+		const fixtureContracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		// In strict mode, the cached fixture must reject additions, replacements, and deletions.
 		expect(Object.isFrozen(fixtureContracts_)).equal(true);

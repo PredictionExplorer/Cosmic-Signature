@@ -2,7 +2,6 @@
 
 const { expect } = require("chai");
 const hre = require("hardhat");
-const { SECONDS_PER_HOUR } = require("../../src/CosmicSignatureConstants.js");
 const { generateRandomUInt32, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
 const { upgradeToV2, activateCurrentRound, setNextBlockTimeToAtLeast, getLatestBlockTimestamp, blockTimestampOfReceipt } = require("./V2UpgradeTestHelpers.js");
@@ -10,7 +9,7 @@ const { upgradeToV3 } = require("./V3UpgradeTestHelpers.js");
 
 /** Uses one proxy throughout: random 1-4 rounds before upgrades, then four rounds on the final version. */
 async function testAcrossGameVersions(testRound_, firstVersion_ = 1, lastVersion_ = 3) {
-	const contracts_ = { ...await loadFixtureDeployContractsForTesting(SECONDS_PER_HOUR) };
+	const contracts_ = { ...await loadFixtureDeployContractsForTesting(-1_000_000_000n) };
 	for (let version_ = 1; version_ <= lastVersion_; ++ version_) {
 		if (version_ === 2) await upgradeToV2(contracts_);
 		else if (version_ === 3) await upgradeToV3(contracts_);
@@ -20,7 +19,7 @@ async function testAcrossGameVersions(testRound_, firstVersion_ = 1, lastVersion
 			if (version_ >= firstVersion_) {
 				await testRound_(contracts_, game_, roundNum_, version_);
 			} else {
-				await bidAndClaimMainPrize(contracts_, game_);
+				await activateRoundBidAndClaimMainPrize(contracts_, game_);
 			}
 		}, numRounds_);
 	}
@@ -39,10 +38,15 @@ async function testGameRounds(contracts_, game_, testRound_, numRounds_ = 4) {
 	}
 }
 
-/** Plays a minimal round for scenarios that do not exercise bidding. */
+/** Activates the round, places one ETH bid, and claims its main prize. */
+async function activateRoundBidAndClaimMainPrize(contracts_, game_) {
+	await activateCurrentRound(game_, contracts_.ownerSigner);
+	return bidAndClaimMainPrize(contracts_, game_);
+}
+
+/** Plays a minimal round without changing its activation time. */
 async function bidAndClaimMainPrize(contracts_, game_) {
 	expect(await game_.lastBidderAddress()).equal(hre.ethers.ZeroAddress);
-	await activateCurrentRound(game_, contracts_.ownerSigner);
 	await bidWithEthAt(game_, contracts_.signers[1], (await getLatestBlockTimestamp()) + 1n);
 	return finishGameRound(contracts_, game_);
 }
@@ -71,6 +75,7 @@ async function bidWithEthAt(game_, bidder_, timeStamp_) {
 module.exports = {
 	testAcrossGameVersions,
 	testGameRounds,
+	activateRoundBidAndClaimMainPrize,
 	bidAndClaimMainPrize,
 	finishGameRound,
 	bidWithEthAt,
