@@ -151,21 +151,28 @@ async function deployContractsForTestingAdvanced(
 	await waitForTransactionReceipt(signer19.sendTransaction({to: deployerSigner.address, value: ethAmount,}));
 	await waitForTransactionReceipt(signer18.sendTransaction({to: ownerSigner.address, value: ethAmount,}));
 	await waitForTransactionReceipt(signer17.sendTransaction({to: treasurerSigner.address, value: ethAmount,}));
+
+	// `Object.assign` includes the additional properties in the inferred object type.
 	const contracts =
-		await deployContractsAdvanced(
-			deployerSigner,
-			cosmicSignatureGameContractName,
-			"",
-			charitySigner.address,
-			false,
-			-1_000_000_000n
+		Object.assign(
+			await deployContractsAdvanced(
+				deployerSigner,
+				cosmicSignatureGameContractName,
+				"",
+				charitySigner.address,
+				false,
+				-1_000_000_000n
+			),
+			{
+				signerAddressToIndexMapping,
+				signers,
+				treasurerSigner,
+				charitySigner,
+				ownerSigner,
+				deployerSigner,
+			}
 		);
-	contracts.signerAddressToIndexMapping = signerAddressToIndexMapping;
-	contracts.signers = signers;
-	contracts.treasurerSigner = treasurerSigner;
-	contracts.charitySigner = charitySigner;
-	contracts.ownerSigner = ownerSigner;
-	contracts.deployerSigner = deployerSigner;
+
 	// await waitForTransactionReceipt(contracts.cosmicSignatureToken.transferOwnership(ownerSigner.address));
 	await waitForTransactionReceipt(contracts.randomWalkNft.transferOwnership(ownerSigner.address));
 	await waitForTransactionReceipt(contracts.cosmicSignatureNft.transferOwnership(ownerSigner.address));
