@@ -226,26 +226,24 @@ abstract contract BiddingV3 is
 			biddersInfo[roundNum][_msgSender()].totalSpentCstAmount += paidCstPrice_;
 			cstDutchAuctionBeginningTimeStamp = block.timestamp;
 
-			// // todo-0 The following is actually nonsense because someone else gets bid CST reward.
-			// // todo-0 But not if the same bidder bids again.
-			// // todo-0 Think again and maybe discuss.
-			// //
+			// // [Comment-202609292]
 			// // Doubling the effective paid CST price.
 			// //
-			// // todo-0 Is this a good idea?
-			// // todo-0 Bid CST reward will begin increasing from zero after this bid.
-			// // todo-0 Problem is that the logic kinda gets disrupted by ETH bids, because they also reset bid CST reward.
-			// // todo-0 So when ETH bid price becomes high enough to discourage ETH bids, CST bids immediately become more appealing,
-			// // todo-0 because ETH bids no longer reset CST bid rewards,
-			// // todo-0 which results in lots of consequitive CST bids towards the end of the round.
-			// // todo-0 One might want to maintain separate CST rewards for ETH and CST bids,
-			// // todo-0 so that the bids didn't reset each other's rewards. I am not sure if that's a good idea.
-			// // todo-0 
-			// // todo-0 V2 simply doubles `paidCstPrice_` here.
-			// // todo-0 That is in some way better because if bid CST reward gets reset by an ETH bid, on next CST bid `paidCstPrice_` is lower,
-			// // todo-0 so CST bids get an instant priority boost, which, in turn, goes away as soon as people stop bidding with ETH.
-			// // todo-0 
-			// // todo-0 Try to write a better comment.
+			// // This idea makes no sense because someone else gets bid CST reward, but not if the same bidder bids again.
+			// //
+			// // Bid CST reward will begin increasing from zero after this bid.
+			// // Problem is that the logic kinda gets disrupted by ETH bids, because they also reset bid CST reward.
+			// // So when ETH bid price becomes high enough to discourage ETH bids, CST bids immediately become more appealing,
+			// // because ETH bids no longer reset CST bid rewards,
+			// // which results in lots of consequitive CST bids towards the end of the round.
+			// // One might want to maintain separate CST rewards for ETH and CST bids,
+			// // so that the bids didn't reset each other's rewards.
+			// // 
+			// // V2- simply doubles `cstBidPriceBase_` here.
+			// // That is in some way better because if bid CST reward gets reset by an ETH bid,
+			// // on next CST bid `cstBidPriceBase_` is lower, so CST bids get an instant priority boost,
+			// // which, in turn, goes away as soon as people stop bidding with ETH.
+			// // [/Comment-202609292]
 			// uint256 newCstDutchAuctionBeginningBidPrice_ =
 			// 	uint256(
 			// 		CosmicSignatureHelpers.max(
@@ -315,50 +313,53 @@ abstract contract BiddingV3 is
 	// #region `_tryIncreaseCstBidPriceDeclineMultiplier`
 
 	function _tryIncreaseCstBidPriceDeclineMultiplier() private returns (uint256) {
+		// // [Comment-202609294]
+		// // This idea makes no sense for the same reason the Comment-202609292 idea does.
+		// // [/Comment-202609294]
 		// // #enable_smtchecker /*
 		// unchecked
 		// // #enable_smtchecker */
-		{
-			// // todo-0 I forgot what exactly was wrong with this logic? Maybe leave it commented and write a comment.
-			// // todo-0 Test what this equals.
-			// uint256 bidCstRewardAmountPerSecond_ = bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds;
-			// uint256 cstBidPriceDeclineEffectiveMultiplier_ = cstBidPriceDeclineMultiplier + bidCstRewardAmountPerSecond_;
-			// cstBidPriceDeclineEffectiveMultiplier_ = CosmicSignatureHelpers.tryIncreaseValueExponentially(cstBidPriceDeclineEffectiveMultiplier_, cstBidPriceDeclineMultiplierChangeDivisor);
-			// int256 newCstBidPriceDeclineMultiplier_ = int256(cstBidPriceDeclineEffectiveMultiplier_) - int256(bidCstRewardAmountPerSecond_);
-			// // #enable_asserts assert(newCstBidPriceDeclineMultiplier_ > int256(0));
-			// cstBidPriceDeclineMultiplier = uint256(newCstBidPriceDeclineMultiplier_);
+		// {
+		// 	uint256 bidCstRewardAmountPerSecond_ = bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds;
+		// 	uint256 cstBidPriceDeclineEffectiveMultiplier_ = cstBidPriceDeclineMultiplier + bidCstRewardAmountPerSecond_;
+		// 	cstBidPriceDeclineEffectiveMultiplier_ = CosmicSignatureHelpers.tryIncreaseValueExponentially(cstBidPriceDeclineEffectiveMultiplier_, cstBidPriceDeclineMultiplierChangeDivisor);
+		// 	int256 newCstBidPriceDeclineMultiplier_ = int256(cstBidPriceDeclineEffectiveMultiplier_) - int256(bidCstRewardAmountPerSecond_);
+		// 	cstBidPriceDeclineMultiplier = uint256(newCstBidPriceDeclineMultiplier_);
+		// }
 
-			uint256 newCstBidPriceDeclineMultiplier_ =
-				CosmicSignatureHelpers.tryIncreaseValueExponentially(cstBidPriceDeclineMultiplier, cstBidPriceDeclineMultiplierChangeDivisor);
-			cstBidPriceDeclineMultiplier = newCstBidPriceDeclineMultiplier_;
-			return newCstBidPriceDeclineMultiplier_;
-		}
+		uint256 newCstBidPriceDeclineMultiplier_ =
+			CosmicSignatureHelpers.tryIncreaseValueExponentially(cstBidPriceDeclineMultiplier, cstBidPriceDeclineMultiplierChangeDivisor);
+		cstBidPriceDeclineMultiplier = newCstBidPriceDeclineMultiplier_;
+		return newCstBidPriceDeclineMultiplier_;
 	}
 
 	// #endregion
 	// #region `_tryReduceCstBidPriceDeclineMultiplier`
 
 	function _tryReduceCstBidPriceDeclineMultiplier() private returns (uint256) {
+		// // Comment-202609294 applies.
 		// // #enable_smtchecker /*
 		// unchecked
 		// // #enable_smtchecker */
-		{
-			// // todo-0 I forgot what exactly was wrong with this logic? Maybe leave it commented and write a comment.
-			// // todo-0 Test what this equals.
-			// uint256 bidCstRewardAmountPerSecond_ = bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds;
-			// uint256 cstBidPriceDeclineEffectiveMultiplier_ = cstBidPriceDeclineMultiplier + bidCstRewardAmountPerSecond_;
-			// cstBidPriceDeclineEffectiveMultiplier_ = CosmicSignatureHelpers.tryReduceValueExponentially(cstBidPriceDeclineEffectiveMultiplier_, cstBidPriceDeclineMultiplierChangeDivisor);
-			// int256 newCstBidPriceDeclineMultiplier_ = int256(cstBidPriceDeclineEffectiveMultiplier_) - int256(bidCstRewardAmountPerSecond_);
-			// if (newCstBidPriceDeclineMultiplier_ <= int256(0)) {
-			// 	newCstBidPriceDeclineMultiplier_ = int256(1);
-			// }
-			// cstBidPriceDeclineMultiplier = uint256(newCstBidPriceDeclineMultiplier_);
+		// {
+		// 	uint256 bidCstRewardAmountPerSecond_ = bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds;
+		// 	uint256 cstBidPriceDeclineEffectiveMultiplier_ = cstBidPriceDeclineMultiplier + bidCstRewardAmountPerSecond_;
+		// 	cstBidPriceDeclineEffectiveMultiplier_ = CosmicSignatureHelpers.tryReduceValueExponentially(cstBidPriceDeclineEffectiveMultiplier_, cstBidPriceDeclineMultiplierChangeDivisor);
+		// 	int256 newCstBidPriceDeclineMultiplier_ = int256(cstBidPriceDeclineEffectiveMultiplier_) - int256(bidCstRewardAmountPerSecond_);
+		//
+		// 	// todo-9 Does this logic guarantee that a subsequent call to `_tryIncreaseCstBidPriceDeclineMultiplier`
+		// 	// todo-9 will increase this value?
+		// 	if (newCstBidPriceDeclineMultiplier_ <= int256(0)) {
+		// 		newCstBidPriceDeclineMultiplier_ = int256(1);
+		// 	}
+		//
+		// 	cstBidPriceDeclineMultiplier = uint256(newCstBidPriceDeclineMultiplier_);
+		// }
 
-			uint256 newCstBidPriceDeclineMultiplier_ =
-				CosmicSignatureHelpers.tryReduceValueExponentially(cstBidPriceDeclineMultiplier, cstBidPriceDeclineMultiplierChangeDivisor);
-			cstBidPriceDeclineMultiplier = newCstBidPriceDeclineMultiplier_;
-			return newCstBidPriceDeclineMultiplier_;
-		}
+		uint256 newCstBidPriceDeclineMultiplier_ =
+			CosmicSignatureHelpers.tryReduceValueExponentially(cstBidPriceDeclineMultiplier, cstBidPriceDeclineMultiplierChangeDivisor);
+		cstBidPriceDeclineMultiplier = newCstBidPriceDeclineMultiplier_;
+		return newCstBidPriceDeclineMultiplier_;
 	}
 
 	// #endregion
@@ -392,7 +393,7 @@ abstract contract BiddingV3 is
 
 	/// @param bidPrice_ As mentioned in Comment-202607119, if it's zero the result will be zero as well.
 	/// @dev The premium affects payment and spent totals only; price updates and raffle weights use the base price.
-	/// todo-0 Test this. Really, all new code needs testing.
+	/// todo-1 +++ Test this.
 	function _addRoundLateBidPricePremiumAmountIfNeeded(uint256 bidPrice_, int256 currentTimeOffset_) private view returns (uint256 adjustedBidPrice_) {
 		// #enable_smtchecker /*
 		unchecked

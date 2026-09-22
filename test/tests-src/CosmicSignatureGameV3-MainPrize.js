@@ -220,8 +220,7 @@ describe("CosmicSignatureGameV3-MainPrize", function () {
 			// #endregion
 			// #region
 
-			// `BidStatisticsV3._saveChampionDurations` persists the round-final values before
-			// `_prepareNextRound` clears the champion addresses and resets the Chrono-Warrior duration.
+			// `BidStatisticsV3._saveChampionDurations` persists the round-final values before `_prepareNextRound` is called.
 			const championDurations_ = await game_.championDurations(roundNum_);
 
 			// // Comment-202610021 applies.

@@ -41,7 +41,6 @@ abstract contract MainPrize is
 	///
 	/// [Comment-202605308]
 	/// Symbols Accessed by `claimMainPrize`, `_distributePrizes`, `_prepareNextRound`:
-	///    todo-0 Revisit this list. Add V3+: `BidRaffleWeightHelpers`.
 	///    `OpenZeppelinPanic`.
 	///    `nonReentrant`.
 	///    `_msgSender`.
@@ -51,9 +50,10 @@ abstract contract MainPrize is
 	///    `CosmicSignatureHelpers.transferEthTo`.
 	///    `RandomNumberHelpers.RandomNumberSeedWrapper`.
 	///    `RandomNumberHelpers` methods.
+	///    V3+: `BidRaffleWeightHelpers`.
 	///    `ICosmicSignatureToken.MintSpec`.
 	///    `IPrizesWallet.EthDeposit`.
-	///     todo-0 What about `BidInfo`? V3+ only?
+	///    // `BidInfo`.
 	///    `BidsInfo`.
 	///    `lastBidderAddress`.
 	///    `lastCstBidderAddress`.
@@ -105,6 +105,7 @@ abstract contract MainPrize is
 	///    `_prepareNextRound`.
 	///    `getMainEthPrizeAmount`.
 	///    `getCharityEthDonationAmount`.
+	///    V3+: `_pickRaffleWinnerAddress`.
 	/// [/Comment-202605308]
 	function claimMainPrize() external override nonReentrant /*_onlyRoundIsActive*/ {
 		// #region
