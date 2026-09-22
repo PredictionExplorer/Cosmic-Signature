@@ -348,9 +348,8 @@ describe("CosmicSignatureGameV3-Bidding", function () {
 
 			const bidder_ = contracts_.signers[1];
 
-			// Slow the CST price decline down (the round is inactive right after the upgrade, so the owner can),
-			// so that the 200 CST beginning bid price carried over from V1 declines to zero only after ~55 hours.
-			// That makes the CST bid price still nonzero within the late bid premium window,
+			// Slow the CST price decline down, so that the 200 CST beginning bid price carried over from V1
+			// declines to zero only after ~55 hours. That makes the CST bid price still nonzero within the late bid premium window,
 			// which opens ~24 hours into the round, so the CST premium section below can sample nonzero prices.
 			await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setCstBidPriceDeclineMultiplier(10n ** 15n));
 
@@ -362,14 +361,14 @@ describe("CosmicSignatureGameV3-Bidding", function () {
 			{
 				expect(await game_.lastBidderAddress()).equal(hre.ethers.ZeroAddress);
 				expect(await game_.getDurationUntilMainPrize()).lessThan(0n);
-				const ts_ = await getLatestBlockTimestamp();
-				const elapsed_ = ts_ - await game_.roundActivationTime();
-				const expectedPurePrice_ = ethDutchAuctionPrice(
-					await game_.ethDutchAuctionBeginningBidPrice(),
-					elapsed_,
-					(await game_.mainPrizeTimeIncrementInMicroSeconds()) / (await game_.ethDutchAuctionDurationDivisor()),
-					await game_.ethDutchAuctionEndingBidPriceDivisor()
-				);
+				const [ethDutchAuctionDuration_, elapsed_,] = await game_.getEthDutchAuctionDurations();
+				const expectedPurePrice_ =
+					ethDutchAuctionPrice(
+						await game_.ethDutchAuctionBeginningBidPrice(),
+						elapsed_,
+						ethDutchAuctionDuration_,
+						await game_.ethDutchAuctionEndingBidPriceDivisor()
+					);
 				expect(await game_.getNextEthBidPrice()).equal(expectedPurePrice_);
 			}
 
@@ -388,8 +387,11 @@ describe("CosmicSignatureGameV3-Bidding", function () {
 			// The default 20-minute window grows with completed rounds.
 			expect(roundLateBidDuration_).greaterThanOrEqual(20n * 60n);
 
+			/** @type {bigint} */
 			const baseMultiplier_ = await game_.roundLateBidPricePremiumAmountBaseMultiplier();
+			/** @type {bigint} */
 			const exponent_ = await game_.roundLateBidPricePremiumAmountExponent();
+			/** @type {bigint} */
 			const ethBidPriceBase_ = await game_.nextEthBidPrice();
 
 			// #endregion
@@ -399,34 +401,48 @@ describe("CosmicSignatureGameV3-Bidding", function () {
 				/** @type {bigint} */
 				const mainPrizeTime_ = await game_.mainPrizeTime();
 				const ts_ = await getLatestBlockTimestamp();
-				const adjustedPriceAt_ = (durationUntilMainPrize_) => addRoundLateBidPricePremiumAmountIfNeeded(
-					ethBidPriceBase_,
-					durationUntilMainPrize_,
-					roundLateBidDuration_,
-					mainPrizeTimeIncrementInMicroSeconds_,
-					baseMultiplier_,
-					exponent_
-				);
+				const adjustedPriceAt_ =
+					(durationUntilMainPrize_) =>
+					addRoundLateBidPricePremiumAmountIfNeeded(
+						ethBidPriceBase_,
+						durationUntilMainPrize_,
+						roundLateBidDuration_,
+						mainPrizeTimeIncrementInMicroSeconds_,
+						baseMultiplier_,
+						exponent_
+					);
 
 				// Exact-mirror sweep of the curve; `durationUntilMainPrize` decreases left to right.
 				for (const durationUntilMainPrize_ of [
 					roundLateBidDuration_ + SECONDS_PER_HOUR,
+					roundLateBidDuration_ + 3n,
+					roundLateBidDuration_ + 2n,
 					roundLateBidDuration_ + 1n,
 					roundLateBidDuration_,
+					roundLateBidDuration_ - 1n,
+					roundLateBidDuration_ - 2n,
+					roundLateBidDuration_ - 3n,
+					roundLateBidDuration_ / 2n,
 					roundLateBidDuration_ / 3n,
-					7n,
+					10n,
+					3n,
+					2n,
 					1n,
 					0n,
 					-1n,
-					-SECONDS_PER_HOUR,
-					-roundLateBidDuration_ * 10n,
+					-2n,
+					-3n,
+					( - SECONDS_PER_HOUR ),
+					roundLateBidDuration_ * (-10n),
 				]) {
 					const currentTimeOffset_ = mainPrizeTime_ - durationUntilMainPrize_ - ts_;
+					// console.info(`202609295 ${await game_._addRoundLateBidPricePremiumAmountIfNeeded(10n ** (4n * 9n), currentTimeOffset_)}`);
 					expect(
 						await game_.getNextEthBidPriceAdvanced(currentTimeOffset_),
 						`ETH premium mismatch at durationUntilMainPrize == ${durationUntilMainPrize_}`
 					).equal(adjustedPriceAt_(durationUntilMainPrize_));
 				}
+				// console.info();
 
 				// No premium at or before the window opening.
 				expect(adjustedPriceAt_(roundLateBidDuration_ + SECONDS_PER_HOUR)).equal(ethBidPriceBase_);
@@ -459,7 +475,7 @@ describe("CosmicSignatureGameV3-Bidding", function () {
 				expect(maxAdjustedPrice_ - ethBidPriceBase_).lessThan(ethBidPriceBase_ * 4n * 101n / 100n);
 				expect(adjustedPriceAt_(-1n)).equal(maxAdjustedPrice_);
 				expect(adjustedPriceAt_(-SECONDS_PER_HOUR)).equal(maxAdjustedPrice_);
-				expect(adjustedPriceAt_(-roundLateBidDuration_ * 10n)).equal(maxAdjustedPrice_);
+				expect(adjustedPriceAt_(roundLateBidDuration_ * (-10n))).equal(maxAdjustedPrice_);
 			}
 
 			// #endregion
@@ -481,14 +497,15 @@ describe("CosmicSignatureGameV3-Bidding", function () {
 				{
 					const bidTs_ = mainPrizeTime_ - roundLateBidDuration_ / 2n + 1n;
 					const durationUntilMainPrize_ = mainPrizeTime_ - bidTs_;
-					const adjustedPrice_ = addRoundLateBidPricePremiumAmountIfNeeded(
-						ethBidPriceBase_,
-						durationUntilMainPrize_,
-						roundLateBidDuration_,
-						mainPrizeTimeIncrementInMicroSeconds_,
-						baseMultiplier_,
-						exponent_
-					);
+					const adjustedPrice_ =
+						addRoundLateBidPricePremiumAmountIfNeeded(
+							ethBidPriceBase_,
+							durationUntilMainPrize_,
+							roundLateBidDuration_,
+							mainPrizeTimeIncrementInMicroSeconds_,
+							baseMultiplier_,
+							exponent_
+						);
 					expect(adjustedPrice_).greaterThan(ethBidPriceBase_);
 					await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(bidTs_),]);
 					const transactionReceipt_ =
@@ -553,14 +570,15 @@ describe("CosmicSignatureGameV3-Bidding", function () {
 						cstDutchAuctionBeginningBidPrice_ - (sampleTs_ - cstDutchAuctionBeginningTimeStamp_) * cstBidPriceDeclineMultiplier_;
 					expect(cstBidPriceBase_).greaterThan(0n);
 
-					const adjustedCstPrice_ = addRoundLateBidPricePremiumAmountIfNeeded(
-						cstBidPriceBase_,
-						durationUntilMainPrize_,
-						roundLateBidDuration_,
-						mainPrizeTimeIncrementInMicroSeconds_,
-						baseMultiplier_,
-						exponent_
-					);
+					const adjustedCstPrice_ =
+						addRoundLateBidPricePremiumAmountIfNeeded(
+							cstBidPriceBase_,
+							durationUntilMainPrize_,
+							roundLateBidDuration_,
+							mainPrizeTimeIncrementInMicroSeconds_,
+							baseMultiplier_,
+							exponent_
+						);
 					expect(
 						await game_.getNextCstBidPriceAdvanced(sampleTs_ - ts_),
 						`CST premium mismatch at durationUntilMainPrize == ${durationUntilMainPrize_}`
@@ -573,7 +591,11 @@ describe("CosmicSignatureGameV3-Bidding", function () {
 			}
 
 			// #endregion
+			// #region
+
 			await finishGameRound(contracts_, game_);
+
+			// #endregion
 		}, 3, 3);
 	});
 
