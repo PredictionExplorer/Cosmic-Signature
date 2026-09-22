@@ -109,7 +109,7 @@ library CosmicSignatureConstants {
 	uint256 internal constant DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT_V3 = INITIAL_BID_CST_REWARD_AMOUNT_PER_MINUTE;
 
 	/// @notice In V3+, initial `CosmicSignatureGameStorageV3Base.cstBidPriceDeclineMultiplier`.
-	/// todo-0 Recheck that this is about 1/60 of 1 ether.
+	/// todo-1 +++ Recheck that this is about 1/60 of 1 ether.
 	uint256 internal constant INITIAL_CST_BID_PRICE_DECLINE_MULTIPLIER = (DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER + INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND / 2) / (INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND);
 
 	/// @notice In V3+, default `CosmicSignatureGameStorageV3Base.cstBidPriceDeclineMultiplierChangeDivisor`.
@@ -160,7 +160,7 @@ library CosmicSignatureConstants {
 
 	/// @notice In V3+, default `CosmicSignatureGameStorageV2Base.bidCstRewardAmountMultiplier`.
 	/// See also: `DEFAULT_BID_CST_REWARD_AMOUNT_RADICAND_MULTIPLIER`.
-	/// todo-0 Make sure this produces the correct result, close to 1/60 CST per second.
+	/// todo-1 +++ Make sure this produces the correct result, close to 1/60 CST per second.
 	uint256 internal constant DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER = (INITIAL_BID_CST_REWARD_AMOUNT_PER_MINUTE * INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND + (1 minutes) / 2) / (1 minutes);
 
 	// #endregion

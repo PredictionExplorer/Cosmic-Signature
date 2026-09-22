@@ -473,8 +473,9 @@ abstract contract BiddingV3 is
 			uint256 bidCstRewardAmount_ = 0;
 			if (elapsedDuration_ > int256(0)) {
 				// Comment-202607167 applies.
-				// todo-0 Test what this equals.
+				// todo-1 +++ Test what this equals.
 				bidCstRewardAmount_ = uint256(elapsedDuration_) * bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds;
+				// // #enable_asserts // #disable_smtchecker console.log("202609282", bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds, bidCstRewardAmount_ / uint256(elapsedDuration_));
 			}
 			return bidCstRewardAmount_;
 		}

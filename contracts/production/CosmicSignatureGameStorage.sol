@@ -58,10 +58,9 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	/// @dev
 	/// [Comment-202411098]
-	/// todo-0 Maybe delete this and/or some other similar comments and/or make them non-issues.
-	/// Issue. One might want to not save info about past bidding rounds.
+	/// todo-1 +++ Maybe delete this and/or some other similar comments and/or make them non-issues.
+	/// Our logic not necessarily uses some of this info, especially about past bidding rounds.
 	/// But the project founders consider using this info for other purposes.
-	/// Comment-202502045 relates.
 	/// [/Comment-202411098]
 	/// Comment-202502044 relates.
 	mapping(uint256 roundNum => BidsInfo) public bidsInfo;
