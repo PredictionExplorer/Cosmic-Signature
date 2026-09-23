@@ -176,7 +176,7 @@ abstract contract BiddingOpenBid is
 		IERC20 /*tokenAddress_*/,
 		uint256 /*amount_*/
 	) external payable override nonReentrant /*_onlyRoundIsActive*/ {
-		revert ("This method is not implemented.");
+		revert CosmicSignatureErrors.NotImplemented(/* "This method is not implemented." */);
 	}
 
 	// #endregion
@@ -203,7 +203,7 @@ abstract contract BiddingOpenBid is
 		IERC721 /*nftAddress_*/,
 		uint256 /*nftId_*/
 	) external payable override nonReentrant /*_onlyRoundIsActive*/ {
-		revert ("This method is not implemented.");
+		revert CosmicSignatureErrors.NotImplemented(/* "This method is not implemented." */);
 	}
 
 	// #endregion
@@ -225,7 +225,7 @@ abstract contract BiddingOpenBid is
 	// #region `bidWithEth`
 
 	function bidWithEth(int256 /*randomWalkNftId_*/, string memory /*message_*/) external payable override nonReentrant /*_onlyRoundIsActive*/ {
-		revert ("This method is not implemented.");
+		revert CosmicSignatureErrors.NotImplemented(/* "This method is not implemented." */);
 	}
 
 	// #endregion
