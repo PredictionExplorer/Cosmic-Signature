@@ -74,7 +74,7 @@ describe("PrizesWallet-Misc", function () {
 					{ value: 10n ** 18n }
 				)
 			);
-			expect(await brokenToken_.ownerOf(nftId_)).equal(await contracts_.prizesWallet.getAddress());
+			expect(await brokenToken_.ownerOf(nftId_)).equal(await contracts_.prizesWalletAddress);
 
 			await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(await game_.mainPrizeTime()),]);
 			await waitForTransactionReceipt(game_.connect(bidder_).claimMainPrize());
@@ -87,7 +87,7 @@ describe("PrizesWallet-Misc", function () {
 			// Reverting the transfer also restores the preceding record deletion, so the NFT is not lost.
 			const donatedNftAfterFailedClaim_ = await contracts_.prizesWallet.donatedNfts(donatedNftIndex_);
 			expect(donatedNftAfterFailedClaim_.nftAddress).equal(brokenTokenAddress_);
-			expect(await brokenToken_.ownerOf(nftId_)).equal(await contracts_.prizesWallet.getAddress());
+			expect(await brokenToken_.ownerOf(nftId_)).equal(await contracts_.prizesWalletAddress);
 
 			await waitForTransactionReceipt(brokenToken_.setModeCode(0n));
 			await waitForTransactionReceipt(

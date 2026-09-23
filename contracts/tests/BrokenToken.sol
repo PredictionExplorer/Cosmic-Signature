@@ -1,34 +1,37 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity =0.8.34;
 
+import { AddressValidator } from "../production/AddressValidator.sol";
 import { PrizesWallet } from "../production/PrizesWallet.sol";
 
 /// @title Deliberately broken token used to test failed token transfers
 /// @notice This incomplete test double exposes the shared ERC-20 and ERC-721 `transferFrom`
 /// selector and can reject either all transfers or only transfers out of a particular prizes wallet.
-/// @dev This contract used to be named `RevertingToken`. It intentionally implements only the
-/// methods needed by the tests and therefore must not be used as a real ERC-20 or ERC-721 token.
+/// This contract intentionally implements only the methods needed by the tests
+/// and therefore must not be used as a real ERC-20 or ERC-721 token.
+/// @dev This contract used to be named `RevertingToken`.
 // solhint-disable-next-line comprehensive-interface
-contract BrokenToken {
+contract BrokenToken is AddressValidator {
 	/// @notice The prizes wallet whose outgoing NFT transfers can be made to fail.
 	PrizesWallet public immutable prizesWallet;
 
 	/// @notice Selects the simulated failure behavior.
-	/// @dev Mode 1 rejects every `transferFrom`; mode 2 rejects only transfers whose `from_`
-	/// is `prizesWallet`; any other value permits transfers.
-	uint256 public modeCode;
+	/// Mode 1 rejects every `transferFrom`;
+	/// mode 2 rejects only transfers whose `from_` is `prizesWallet`;
+	/// any other value permits transfers.
+	uint256 public modeCode = 0;
 
-	/// @notice Returns the simulated owner of each NFT ID.
+	/// @notice Stores the simulated owner of each NFT ID.
 	mapping(uint256 nftId => address ownerAddress) public ownerOf;
 
 	/// @notice Creates the broken token test double.
 	/// @param prizesWallet_ The prizes wallet whose outgoing transfers mode 2 rejects.
-	constructor(PrizesWallet prizesWallet_) {
+	constructor(PrizesWallet prizesWallet_) _providedAddressIsNonZero(address(prizesWallet_)) {
 		prizesWallet = prizesWallet_;
 	}
 
-	/// @notice Changes the simulated failure behavior.
-	/// @param newValue_ The new mode code.
+	/// @notice Sets `modeCode`.
+	/// @param newValue_ The new value.
 	function setModeCode(uint256 newValue_) external {
 		modeCode = newValue_;
 	}
@@ -36,14 +39,15 @@ contract BrokenToken {
 	/// @notice Assigns a simulated NFT ID to an owner.
 	/// @param to_ The address that will own the NFT.
 	/// @param nftId_ The simulated NFT ID.
-	function mintNft(address to_, uint256 nftId_) external {
+	function mintNft(address to_, uint256 nftId_) external _providedAddressIsNonZero(to_) {
+		require(ownerOf[nftId_] == address(0), "The given NFT ID already exists.");
 		ownerOf[nftId_] = to_;
 	}
 
 	/// @notice Simulates the ERC-20 `balanceOf` function.
-	/// @dev The value is intentionally always zero because the donation tests need only transfer failure behavior.
 	/// @param account_ The ignored account.
-	/// @return The simulated balance, always zero.
+	/// @return The simulated balance.
+	/// It's intentionally always zero because the donation tests need only transfer failure behavior.
 	function balanceOf(address account_) external pure returns (uint256) {
 		account_;
 		return 0;
@@ -64,7 +68,7 @@ contract BrokenToken {
 	/// @param from_ The purported current owner or token sender.
 	/// @param to_ The recipient.
 	/// @param amountOrNftId_ The ERC-20 amount or simulated NFT ID.
-	function transferFrom(address from_, address to_, uint256 amountOrNftId_) public {
+	function transferFrom(address from_, address to_, uint256 amountOrNftId_) _providedAddressIsNonZero(from_) _providedAddressIsNonZero(to_) public {
 		if (modeCode == 1) {
 			revert("BrokenToken rejects transferFrom.");
 		}
@@ -82,7 +86,8 @@ contract BrokenToken {
 	/// @notice Simulates the ERC-721 `approve` function as a no-op.
 	/// @param to_ The ignored approved address.
 	/// @param nftId_ The ignored NFT ID.
-	function approve(address to_, uint256 nftId_) external pure {
+	/// @dev A real method like this is not pure, so I have commented out the `pure` keyword.
+	function approve(address to_, uint256 nftId_) _providedAddressIsNonZero(to_) external /* pure */ {
 		to_;
 		nftId_;
 	}
