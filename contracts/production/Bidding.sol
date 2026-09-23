@@ -164,7 +164,7 @@ abstract contract Bidding is
 				// Provided our configuration is correct, neither numerator nor denominator can be zero,
 				// while their quotient can potentially be.
 				// Not adding a half of the denominator to the numerator.
-				// Adding 1 to the quotient, and therefore the result cannot be zero.
+				// Adding 1 to the quotient, so the result cannot be zero.
 				// Another alternative would be to not add 1.
 				// The current formula is better because the alternatives sometimes result in a temporary increase of the ETH bid price,
 				// while our goal is to reduce it.

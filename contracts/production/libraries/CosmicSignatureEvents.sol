@@ -23,7 +23,7 @@ library CosmicSignatureEvents {
 	/// It can potentially be zero.
 	/// @dev
 	/// [Comment-202609146]
-	/// One might want to rename `Fund` to `Eth`.
+	/// Issue. One might want to rename `Fund` to `Eth`.
 	/// But this is used in some already deployed contracts, so Comment-202609134 applies.
 	/// Comment-202609144 relates.
 	/// [/Comment-202609146]

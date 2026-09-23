@@ -59,7 +59,6 @@ interface IBidding1V2 {
 	/// In V3+, the previous bidder gets bid CST reward, which results in the following:
 	/// - On the first bid in a bidding round this parameter is ignored.
 	/// - The new bidder might want to pass zero unless they placed the previous bid through the same or different account.
-	/// todo-0 The above requires web site refactoring and updating user facing docs.
 	/// [/Comment-202605279]
 	function bidWithEth(int256 randomWalkNftId_, string memory message_, uint256 bidCstRewardAmountMinLimit_) external payable;
 

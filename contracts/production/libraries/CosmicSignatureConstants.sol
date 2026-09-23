@@ -80,7 +80,7 @@ library CosmicSignatureConstants {
 	/// Issue. On Arbitrum Sepolia and, likely, on Arbitrum One, at least during a gas estimate call, `tx.gasprice` is zero.
 	/// Comment-202607014 relates.
 	/// [/Comment-202606216]
-	/// This value equals the amount of gas consumed by the logic in the block near Comment-202506219.
+	/// This value equals the amount of gas consumed by the logic near Comment-202506219.
 	/// todo-2 This value might need tweaking after a blockchain upgrade.
 	/// [/Comment-202502052]
 	uint256 internal constant DEFAULT_ETH_BID_REFUND_AMOUNT_IN_GAS_TO_SWALLOW_MAX_LIMIT = 6843;

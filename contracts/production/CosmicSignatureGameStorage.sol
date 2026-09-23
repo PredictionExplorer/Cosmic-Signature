@@ -35,7 +35,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #endregion
 	// #region Bid Statistics
 
-	// /// todo-9 Rename to `lastBidTypeCode`.
+	// /// @dev todo-9 Rename to `lastBidTypeCode`.
 	// BidType public lastBidType;
 
 	/// @notice
@@ -44,7 +44,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [/Comment-202605182]
 	/// @dev
 	/// [Comment-202502044]
-	/// Issue. This is the same as the last `bidsInfo` item. So it could make sense to eliminate this variable.
+	/// Issue. This equals `bidderAddress` in the last `bidsInfo` item. So it could make sense to eliminate this variable.
 	/// But let's leave it alone.
 	/// [/Comment-202502044]
 	address public lastBidderAddress;
@@ -58,7 +58,6 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	/// @dev
 	/// [Comment-202411098]
-	/// todo-1 +++ Maybe delete this and/or some other similar comments and/or make them non-issues.
 	/// Our logic not necessarily uses some of this info, especially about past bidding rounds.
 	/// But the project founders consider using this info for other purposes.
 	/// [/Comment-202411098]
@@ -128,9 +127,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [Comment-202605187]
 	/// Delay duration from when the main prize gets claimed until the next bidding round activates.
 	/// [/Comment-202605187]
-	/// [Comment-202411064]
-	/// This is a configurable parameter.
-	/// [/Comment-202411064]
+	/// Comment-202411064 applies.
 	/// [Comment-202412312]
 	/// We do not automatically increase this.
 	/// Comment-202411067 relates.
@@ -149,7 +146,9 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// The current bidding round activation time.
 	/// Starting at this point in time, people will be allowed to place bids.
 	/// [/Comment-202605188]
-	/// Comment-202411064 applies.
+	/// [Comment-202411064]
+	/// This is a configurable parameter.
+	/// [/Comment-202411064]
 	/// [Comment-202411172]
 	/// At the same time, this is a variable that the logic changes.
 	/// [/Comment-202411172]
@@ -181,7 +180,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// @notice
 	/// [Comment-202503084]
 	/// ETH Dutch auction beginning bid price.
-	/// We calculate this based on `ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER`.
+	/// We calculate this based on `CosmicSignatureConstants.ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER`.
 	/// [/Comment-202503084]
 	/// [Comment-202605192]
 	/// After contract deployment, this variable remains zero until we assign a valid value to it.
@@ -237,7 +236,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// @notice
 	/// [Comment-202411066]
 	/// CST Dutch auction beginning bid price.
-	/// We calculate this based on `CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER`.
+	/// We calculate this based on `CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER`.
 	/// We don't let this fall below `cstDutchAuctionBeginningBidPriceMinLimit`,
 	/// which relieves us from the annoyance of possible marginal cases, such as a bidding round lasting forever.
 	/// [/Comment-202411066]
@@ -460,7 +459,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	/// @notice
 	/// [Comment-202605225]
-	/// At the end of each bidding round, we mint this CST amount for `marketingWallet`.
+	/// On main prize claim, we mint this CST amount to `marketingWallet`.
 	/// [/Comment-202605225]
 	/// Comment-202411064 applies.
 	uint256 public marketingWalletCstContributionAmount;

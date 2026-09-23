@@ -51,6 +51,7 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 
 	/// @notice Details about ERC-20 token donations made to the Game.
 	/// Contains 1 item for each bidding round number.
+	/// The item remains unpopulated until someone makes an ERC-20 token donation during the given bidding round.
 	DonatedToken[1 << 64] public donatedTokens;
 
 	uint256 public nextDonatedNftIndex = 0;

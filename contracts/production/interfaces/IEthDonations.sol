@@ -28,6 +28,7 @@ interface IEthDonations {
 	/// Alternatively, one might want to add the `data` parameter
 	/// and eliminate `ethDonationWithInfoRecords` and `EthDonationWithInfoRecord`.
 	/// But Nick prefers the current design.
+	/// Comment-202411098 relates and/or applies.
 	/// [/Comment-202503111]
 	event EthDonatedWithInfo(uint256 indexed roundNum, address indexed donorAddress, uint256 amount, uint256 indexed ethDonationWithInfoRecordIndex);
 

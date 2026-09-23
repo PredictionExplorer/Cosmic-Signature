@@ -46,9 +46,9 @@ This document goes a little bit beyond purely functional requirements. It's inte
 
 - `StakingWalletCosmicSignatureNft`. Staking Wallet for Cosmic Signature NFTs. It holds ETH to be distributed to stakers. It tracks the cumulative amount of ETH rewards earned by each staked NFT and pays it to the staker on NFT unstake.
 
-- `MarketingWallet`. This wallet holds CST funds and facilitates their distribution to fund marketing activities, such as rewarding people for marketing the project on social media. The `CosmicSignatureGame` contract mints a configurable CST amount for this wallet at the end of each bidding round. Only the appointed by the DAO treasurer is permitted to transfer funds out of this wallet.
+- `MarketingWallet`. This wallet holds CST funds and facilitates their distribution to fund marketing activities, such as rewarding people for marketing the project on social media. The `CosmicSignatureGame` contract mints a configurable CST amount to this wallet on main prize claim. Only the appointed by the DAO treasurer is permitted to transfer funds out of this wallet.
 
-- `CharityWallet`. This contract holds an ETH balance to be donated to charity. The DAO decides which charity to donate the funds to. `CosmicSignatureGame` deposits a configurable percentage of its ETH to this wallet at the end of each bidding round. As noted in Comment-202409273, this contract lets anybody to periodically transfer accumulated donations to the designated charity.
+- `CharityWallet`. This contract holds an ETH balance to be donated to charity. The DAO decides which charity to donate the funds to. `CosmicSignatureGame` deposits a configurable percentage of its ETH to this wallet on main prize claim. As noted in Comment-202409273, this contract lets anybody to periodically transfer accumulated donations to the designated charity.
 
 - `CosmicSignatureDao`. This contract implements the governance mechanism for the Cosmic Signature ecosystem. `${workspaceFolder}/test/tests-src/CosmicSignatureDao.js` shows what our DAO can be used for.
 
@@ -203,7 +203,7 @@ A user also can force-send ETH to the Game contract by `selfdestruct`ing a contr
 
 - When a user places a bid of any type, they get rewarded with a configurable amount of CST.
 
-- At the end of a round, various amounts of CST are minted for various beneficiaries, including `MarketingWallet`.
+- At the end of a round, various amounts of CST are minted to various beneficiaries, including `MarketingWallet`.
 
 - The treasurer uses CST in `MarketingWallet` to fund marketing activities, such as rewarding people for marketing the project on social media.
 
@@ -219,7 +219,7 @@ A user also can force-send ETH to the Game contract by `selfdestruct`ing a contr
 
 #### Cosmic Signature NFT (Symbol = "COSMIC")
 
-- At the end of a round, a number of COSMICs are minted for various beneficiaries.
+- At the end of a round, a number of COSMICs are minted to various beneficiaries.
 
 - At any time, a COSMIC can be staked. A COSMIC is allowed to be staked only once.
 

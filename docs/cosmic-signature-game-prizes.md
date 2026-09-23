@@ -20,7 +20,7 @@ This document lists all prizes awarded by our game.
 
 1. Prizes awarded to the bidder when placing a bid.
 
-2. Prizes awarded to main prize winner and other bidders at the end of each bidding round. This is done by the `MainPrize._distributePrizes` method. Prizes in this group are broken down into main ETH prize and secondary, a.k.a. special prizes.
+2. Prizes awarded to main prize winner and other bidders at the end of each bidding round (on main prize claim). This is done by the `MainPrize._distributePrizes` method. Prizes in this group are broken down into main ETH prize and secondary, a.k.a. special prizes.
 
 3. Additional prizes that do not belong to the above groups.
 

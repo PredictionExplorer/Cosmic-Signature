@@ -193,7 +193,7 @@ contract CosmicSignatureToken is
 
 	// /// @dev todo-9 Idea. But maybe we don't need this.
 	// /// `oldAllowance_` is the allowance the caller has seen before they sent a transaction request to call this method.
-	// /// Event if the allowance decreases before the transaction gets executed this method will do the right thing.
+	// /// Even if the allowance decreases before the transaction gets executed this method will do the right thing.
 	// /// This method offers no benefit if either `oldAllowance_` or `newAllowance_` is zero.
 	// /// It's incorrect to call this method if `newAllowance_` is the maximum possible value.
 	// /// todo-9 ??? Maybe rename `oldAllowance_` and `newAllowance_` to `oldValue_` and `newValue_`.
@@ -201,7 +201,7 @@ contract CosmicSignatureToken is
 	// 	// todo-9 Is it really necessary to `assert` this? Better `revert` if this is `false`?
 	// 	// #enable_asserts assert(newAllowance_ < type(uint256).max);
 	//
-	// 	// todo-9 Should we suppress overflow checking in the mode in which SMTChecker is disabled?
+	// 	// todo-9 Should we suppress any overflow checking in the mode in which SMTChecker is disabled?
 	//
 	// 	uint256 allowance_ = allowance(_msgSender(), spender_);
 	// 	if (allowance_ < oldAllowance_) {

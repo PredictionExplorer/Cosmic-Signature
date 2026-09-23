@@ -16,7 +16,6 @@ import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 /// @author The Cosmic Signature Development Team.
 /// @notice This library contains custom errors used by the Cosmic Signature contracts.
 /// See also: `CosmicSignatureEvents`.
-/// @dev Using these custom errors to implement more detailed and gas-efficient error reporting.
 library CosmicSignatureErrors {
 	// #region Bidding
 
@@ -110,6 +109,7 @@ library CosmicSignatureErrors {
 	/// @notice Thrown when the provided NFT name length exceeds the maximum allowed.
 	/// See also: `TooLongBidMessage`.
 	/// @param errStr Description of the error.
+	/// Comment-202609299 applies.
 	/// @param nftNameLength The NFT name length.
 	/// Comment-202409143 relates.
 	error TooLongNftName(string errStr, uint256 nftNameLength);
@@ -189,11 +189,13 @@ library CosmicSignatureErrors {
 
 	/// @notice Thrown when there are still staked NFTs.
 	/// @param errStr Description of the error.
+	/// Comment-202609299 applies.
 	error ThereAreStakedNfts(string errStr);
 
 	/// @notice Thrown when attempting to stake an NFT that has already been staked in the past.
 	/// See also: `UsedRandomWalkNft`.
 	/// @param errStr Description of the error.
+	/// Comment-202609299 applies.
 	/// @param nftId NFT ID.
 	error NftHasAlreadyBeenStaked(string errStr, uint256 nftId);
 
@@ -206,11 +208,13 @@ library CosmicSignatureErrors {
 
 	/// @notice Thrown when an invalid NFT stake action ID is provided.
 	/// @param errStr Description of the error.
+	/// Comment-202609299 applies.
 	/// @param stakeActionId The invalid value.
 	error NftStakeActionInvalidId(string errStr, uint256 stakeActionId);
 
 	/// @notice Thrown when an unauthorized caller attempts to access an NFT stake action.
 	/// @param errStr Description of the error.
+	/// Comment-202609299 applies.
 	/// @param stakeActionId NFT stake action ID.
 	/// @param callerAddress Caller address.
 	error NftStakeActionAccessDenied(string errStr, uint256 stakeActionId, address callerAddress);
@@ -218,6 +222,7 @@ library CosmicSignatureErrors {
 	// #endregion
 	// #region // Charity
 
+	// todo-1 +++ Keep this commented. Don't delete.
 	// /// @notice Thrown when an ETH donation transfer to a charity fails.
 	// /// See also: `CosmicSignatureEvents.EthTransferToCharityFailed`.
 	// /// @param charityAddress Charity address.
@@ -230,6 +235,7 @@ library CosmicSignatureErrors {
 
 	/// @notice Thrown when an unauthorized caller attempts to call a restricted method.
 	/// @param errStr Description of the error.
+	/// Comment-202609299 applies.
 	/// @param callerAddress Caller address.
 	/// @dev We do not and should not have any other errors of this kind.
 	error UnauthorizedCaller(string errStr, address callerAddress);
@@ -241,12 +247,13 @@ library CosmicSignatureErrors {
 	/// This is used only for ETH.
 	/// See also: `CosmicSignatureEvents.FundTransferFailed`.
 	/// @param errStr Description of the error.
+	/// Comment-202609299 applies.
 	/// @param destinationAddress The intended destination of the funds.
 	/// @param amount The amount to transfer.
 	/// It can potentially be zero.
 	/// @dev
 	/// [Comment-202609144]
-	/// Issue. It's a good idea to eliminate this error and event and replace with errors and events like `EthTransferToCharityFailed`.
+	/// Issue. It would be a good idea to eliminate this error and event and replace with errors and events like `EthTransferToCharityFailed`.
 	/// At least, it's better to do what Comment-202609146 suggests.
 	/// Furthermore, in some cases, instead of `payable(address).call`, it's better to call `CosmicSignatureHelpers.transferEthTo`,
 	/// which on revert simply propagates the revert reason.
@@ -259,6 +266,12 @@ library CosmicSignatureErrors {
 
 	/// @notice Thrown when a nonzero address is required, but zero is observed.
 	/// @param errStr Description of the error.
+	/// [Comment-202609299]
+	/// Issue. It would be a good idea to eliminate this param to make the code more efficient,
+	/// but this custom error is used in some already deployed contracts,
+	/// and I don't want to introduce a different custom error to be used in not yet deployed contracts,
+	/// so Comment-202609134 applies.
+	/// [/Comment-202609299]
 	error ZeroAddress(string errStr);
 
 	// /// @notice Thrown when a nonzero value is required, but zero is observed.

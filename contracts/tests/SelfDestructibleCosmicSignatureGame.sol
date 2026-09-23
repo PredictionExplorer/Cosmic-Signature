@@ -33,7 +33,7 @@ contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
 		// [/Comment-202606032]
 
 		// // Cosmic Signature NFTs.
-		// // todo-9 This logic doesn't appear to make sense because we mint CS NFTs for bidders, not for the game itself, right?
+		// // todo-9 This logic doesn't appear to make sense because we mint CS NFTs to bidders, not to the Game itself, right?
 		// for (uint256 nftId_ = nft.totalSupply(); nftId_ > 0; ) {
 		// 	-- nftId_;
 		// 	address nftOwnerAddress_ = nft.ownerOf(nftId_);
@@ -47,7 +47,7 @@ contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
 		// todo-9 We don't need to return any Random Walk NFTs, right?
 		// todo-9 This contract can't own them, right?
 
-		// // todo-9 This logic doesn't appear to make sense because we mint CSTs for bidders, not for the game itself, right?
+		// // todo-9 This logic doesn't appear to make sense because we mint CSTs to bidders, not to the Game itself, right?
 		// {
 		// 	uint256 myCstBalanceAmount_ = token.balanceOf(address(this));
 		// 	if (myCstBalanceAmount_ > 0) {

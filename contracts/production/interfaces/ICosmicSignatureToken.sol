@@ -30,6 +30,7 @@ interface ICosmicSignatureToken is IERC20, IERC20Permit, IAddressValidator {
 
 		/// @notice A positive value is to mint; a negative value is to burn.
 		/// It's OK if this is zero.
+		/// @dev Comment-202606074 relates and/or applies.
 		int256 value;
 	}
 

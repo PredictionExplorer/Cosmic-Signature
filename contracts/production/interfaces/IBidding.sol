@@ -53,7 +53,7 @@ interface IBidding {
 	/// [/Comment-202605253]
 	/// [Comment-202503147]
 	/// Calling this method is equivalent to calling `bidWithEth` with default parameters.
-	/// Comments there apply.
+	/// Comment-202503149 applies.
 	/// [/Comment-202503147]
 	/// See also: `ICosmicSignatureGame.fallback`, `IEthDonations.donateEth`.
 	/// @dev

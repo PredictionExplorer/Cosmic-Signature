@@ -162,16 +162,8 @@ abstract contract BiddingV3 is
 
 			// Comment-202505096 applies.
 			if (overpaidEthPrice_ > int256(0)) {
-				// // #enable_asserts // #disable_smtchecker uint256 gasUsed1_ = gasleft();
-				// // #enable_asserts // #disable_smtchecker uint256 gasUsed2_ = gasleft();
-
 				// Comment-202506219 applies.
 				CosmicSignatureHelpers.transferEthTo(payable(_msgSender()), uint256(overpaidEthPrice_));
-
-				// // #enable_asserts // #disable_smtchecker gasUsed2_ -= gasleft();
-				// // #enable_asserts // #disable_smtchecker gasUsed1_ -= gasleft();
-				// // #enable_asserts // #disable_smtchecker uint256 accurateGasUsed_ = gasUsed2_ - (gasUsed1_ - gasUsed2_);
-				// // #enable_asserts // #disable_smtchecker console.log("Gas Used =", gasUsed1_, gasUsed2_, accurateGasUsed_);
 			}
 
 			// #endregion
@@ -229,7 +221,7 @@ abstract contract BiddingV3 is
 			// // [Comment-202609292]
 			// // Doubling the effective paid CST price.
 			// //
-			// // This idea makes no sense because someone else gets bid CST reward, but not if the same bidder bids again.
+			// // Actually, this idea makes no sense because someone else gets bid CST reward, but not if the same bidder bids again.
 			// //
 			// // Bid CST reward will begin increasing from zero after this bid.
 			// // Problem is that the logic kinda gets disrupted by ETH bids, because they also reset bid CST reward.
@@ -425,7 +417,7 @@ abstract contract BiddingV3 is
 					// We multiply and then divide by `2 ** 13` to increase resolution of integer math.
 					// Max premium multiplier to multiply bid price by:
 					// 9742 ** 8 / 2 ** (13 * 8) == ~4
-					// todo-0 Test the actual multiplier and its exponential growth.
+					// todo-1 +++ Test the actual multiplier and its exponential growth.
 					// Let's say, our bid price is 1_000_000_000. Calculating max premium:
 					// (9742n ** 8n * 1_000_000_000n) >> (13n * 8n) == 4_000_050_302n
 					//
@@ -467,7 +459,7 @@ abstract contract BiddingV3 is
 		// #enable_smtchecker */
 		{
 			// Comment-202501022 applies.
-			// And that's OK, because there is no bid CST reward for the first bid in a bidding round.
+			// And that's OK, because no bid CST reward is minted on the first bid in a bidding round.
 			uint256 lastBidTimeStampCopy_ = biddersInfo[roundNum][lastBidderAddress].lastBidTimeStamp;
 
 			int256 elapsedDuration_ = int256(block.timestamp) + currentTimeOffset_ - int256(lastBidTimeStampCopy_);

@@ -18,8 +18,8 @@ library RandomNumberHelpers {
 	struct RandomNumberSeedWrapper {
 		/// @dev
 		/// [Comment-202502075]
-		/// This is a random number seed.
-		/// We generate a random number by incrementing its seed and calculating a hash sum of the result.
+		/// This is a random number seed, which initial value is to be generated randomly.
+		/// We generate a random number by incrementing the seed and calculating a hash sum of the result.
 		/// It's important that calculations involving this variable ignored overflows.
 		/// That includes cases when we pass it to a method by value and then the method makes calculations involving the passed value.
 		/// [/Comment-202502075]
@@ -27,7 +27,7 @@ library RandomNumberHelpers {
 		/// Optimization idea.
 		/// Use the initially generated random number seed as a random number.
 		/// Then, without incrementing it, calculate its hash sum, assign the result to itself, and use it as a random number.
-		/// Only then start incrementing random number seed.
+		/// Only then start incrementing the seed.
 		/// [/Comment-202502077]
 		uint256 value;
 	}
@@ -58,7 +58,7 @@ library RandomNumberHelpers {
 			// [Comment-202506276]
 			// I've seen L1 and L2 block hashes being equal.
 			// So it would be incorrect to bitwise xor them with each other.
-			// Therefore let's shift this.
+			// Therefore shifting this.
 			// [/Comment-202506276]
 			uint256 randomNumberSeed_ = uint256(blockhash(block.number - 1)) >> 1;
 

@@ -6,7 +6,6 @@ pragma solidity =0.8.34;
 // #endregion
 // #region
 
-// // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
@@ -153,16 +152,8 @@ abstract contract BiddingV2 is
 
 			// Comment-202505096 applies.
 			if (overpaidEthPrice_ > int256(0)) {
-				// // #enable_asserts // #disable_smtchecker uint256 gasUsed1_ = gasleft();
-				// // #enable_asserts // #disable_smtchecker uint256 gasUsed2_ = gasleft();
-
 				// Comment-202506219 applies.
 				CosmicSignatureHelpers.transferEthTo(payable(_msgSender()), uint256(overpaidEthPrice_));
-
-				// // #enable_asserts // #disable_smtchecker gasUsed2_ -= gasleft();
-				// // #enable_asserts // #disable_smtchecker gasUsed1_ -= gasleft();
-				// // #enable_asserts // #disable_smtchecker uint256 accurateGasUsed_ = gasUsed2_ - (gasUsed1_ - gasUsed2_);
-				// // #enable_asserts // #disable_smtchecker console.log("Gas Used =", gasUsed1_, gasUsed2_, accurateGasUsed_);
 			}
 
 			// #endregion

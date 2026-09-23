@@ -32,7 +32,7 @@ abstract contract CosmicSignatureGameStorageV2Base is ICosmicSignatureGameStorag
 	// #endregion
 	// #region Bid Statistics
 
-	// /// todo-9 Rename to `lastBidTypeCode`.
+	// /// @dev todo-9 Rename to `lastBidTypeCode`.
 	// BidType public lastBidType;
 
 	/// @notice Comment-202605182 applies.

@@ -147,7 +147,7 @@ interface IPrizesWallet is IAddressValidator {
 	/// @param tokenAddress The ERC-20 contract address.
 	/// @param amount Token amount.
 	/// This is the same value as the one near Comment-202507143,
-	/// but if it was initially zero it was replaced with the actual balance received from `tokenAddress`.
+	/// but if it was initially zero it was replaced with the value returned by `tokenAddress_.balanceOf`.
 	event DonatedTokenClaimed(
 		uint256 indexed roundNum,
 		address indexed beneficiaryAddress,

@@ -13,7 +13,7 @@ import { IStakingWalletCosmicSignatureNft } from "./IStakingWalletCosmicSignatur
 /// @notice
 /// [Comment-202605235]
 /// For each parameter marked with Comment-202411064, provides an event to be emitted when the parameter changes.
-/// The logic also changes some of those variables. They are marked with Comment-202411172. And on that kind of change
+/// The logic also changes some of those parameters. They are marked with Comment-202411172. And on that kind of change
 /// the respective event will not necessarily be emitted.
 /// [/Comment-202605235]
 interface ISystemEvents {
