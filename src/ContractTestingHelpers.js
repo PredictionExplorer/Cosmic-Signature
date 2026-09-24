@@ -93,7 +93,7 @@ async function loadFixtureDeployContractsForTesting(roundActivationTime) {
 	// 	// Making the timings of immediate calls to the blockchain more deterministic.
 	// 	// Since we call this here, a typical test doesn't need to call this
 	// 	// immediately after `loadFixtureDeployContractsForTesting` returns,
-	// 	// and a quick test doesn't need to call this at all.
+	// 	// and a test that completes quickly doesn't need to call this at all.
 	// 	// But most tests don't need this, so let's not do this.
 	// 	await makeNextBlockTimeDeterministic();
 	// }

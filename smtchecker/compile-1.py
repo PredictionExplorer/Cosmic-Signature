@@ -11,17 +11,17 @@ def run_command(command):
         return False
 
 def main():
-    # Generate unique ID
+    # Generate unique ID.
     unique_id_number = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
 
-    # Change directory
+    # Change directory.
     try:
         os.chdir('..')
     except OSError:
         print('Error 202409019.')
         return 2
 
-    # Set environment variables
+    # Set environment variables.
     os.environ['HARDHAT_MODE_CODE'] = '1'
     os.environ['ENABLE_HARDHAT_PREPROCESSOR'] = 'true'
     os.environ['ENABLE_ASSERTS'] = 'true'
@@ -39,25 +39,22 @@ def main():
     # [/Comment-202409014]
     smt_checker_output_folder_name = 'smtchecker/compile-1-output'
 
-    # Create output directory
+    # Create output directory.
     os.makedirs(smt_checker_output_folder_name, exist_ok = True)
 
     output_file_name = f"{smt_checker_output_folder_name}/{unique_id_number}.txt"
-
-    # Run Hardhat compile
     start_time = time.time()
 
+    # Run Hardhat compile.
     # Comment-202409012 applies.
     result = run_command(f'npx hardhat compile --force >> "{output_file_name}" 2>&1')
 
     end_time = time.time()
-
     print(f"Compilation took {end_time - start_time:.2f} seconds")
 
     if not result:
         print('Error. Hardhat Compile failed.')
         return 2
-
     return 0
 
 if __name__ == "__main__":

@@ -334,13 +334,13 @@ task("register-upgraded-cosmic-signature-game", "Verifies and registers a newly 
 	// todo-0 Later execute this code in the production.
 	// // [Comment-202607156]
 	// // Registering the new `PrizesWallet` deployed near Comment-202607153.
-	// // Before running this, edit the hardcoded addresses.
+	// // *** Before running this, edit the hardcoded addresses.
 	// // [/Comment-202607156]
 	// {
-	// 	// Remember to provide this value.
+	// 	// *** Remember to provide this value.
 	// 	const cosmicSignatureGameProxyAddress = "0x0000000000000000000000000000000000000000";
 	// 
-	// 	// Remember to provide this value.
+	// 	// *** Remember to provide this value.
 	// 	// Take it from the upgrade-cosmic-signature-game task console output.
 	// 	const newPrizesWalletAddress = "0x0000000000000000000000000000000000000000";
 	// 
