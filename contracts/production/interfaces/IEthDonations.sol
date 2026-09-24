@@ -38,6 +38,10 @@ interface IEthDonations {
 	/// The logic running on the blockchain doesn't enforce a minimum donation.
 	/// The enforcement is done at higher levels in the stack.
 	/// [/Comment-202503113]
+	/// [Comment-202610044]
+	/// Note that a user can force-send ETH to us by `selfdestruct`ing a contract,
+	/// which would result in the same outcome as a donation, except a respective event won't be emitted.
+	/// [/Comment-202610044]
 	/// See also: `donateEthWithInfo`, `IBidding.receive`, `IBidding1V2.receive`, `ICosmicSignatureGame.fallback`, `ICosmicSignatureGameV2.fallback`.
 	function donateEth() external payable;
 

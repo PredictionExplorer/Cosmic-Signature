@@ -185,7 +185,7 @@ An NFT may be staked only once. Once unstaked, the same NFT may not be staked ag
 #### ETH
 
 - At any time, a user can donate ETH to the Game contract.\
-A user also can force-send ETH to the Game contract by `selfdestruct`ing a contract, which would result in the same outcome as a donation, except a respective event won't be emitted.
+According to Comment-202610044, a user also can force-send ETH to the Game contract by `selfdestruct`ing a contract, which would result in the same outcome as a donation, except a respective event won't be emitted.
 
 - While a round is active, a user can place an ETH bid. The current ETH bid price, or a half of it if an RWLK was provided, is transferred to the Game contract.
 
