@@ -14,7 +14,7 @@ const helpersModule = require("./src/Helpers.js");
 // #region
 
 // [Comment-202503272]
-// The use of different folders prevents a recompile of some Solidity sources
+// The use of different folders prevents a rebuild of some Solidity sources
 // when using a different combination of environment variables.
 // [/Comment-202503272]
 // [Comment-202503302]
@@ -30,37 +30,27 @@ const solidityCompilationCacheSubFolderName =
 
 // [Comment-202409011]
 // Issue. Hardhat would automatically install `solc-js`, but `solc-js` terminates with an error when SMTChecker is enabled.
-// It could be a solc-js bug.
-// So we must tell Hardhat to use the binary `solc` of the given version.
-// Remember to manually install it.
-// One option is to install the `solc` package globally:
-//    `sudo add-apt-repository ppa:ethereum/ethereum`
-//    `sudo apt install solc`
-// Update: From Solidity 0.8.31 ChangeLog: Ubuntu PPA Packages: Discontinue the PPA as a binary distribution channel.
-// Another, arguably better option is to use the `solc-select` tool.
+// It could be a `solc-js` bug.
+// todo-3 Check if they have now fixed it.
+// So you must install the binary `solc` of a particular version and we must tell Hardhat to use it.
+//
+// To install `solc`, use the `solc-select` tool.
 // It's documented at https://github.com/crytic/solc-select .
-// After you install it, to switch to a particular solc version, use this command:
-//    solc-select use 0.8.34 --always-install
+// Install it:
+//    `pip3 install solc-select`
+// Install and switch to a particular `solc` version:
+//    `solc-select use 0.8.34 --always-install`
 // It's OK if afterwards you switch to a different version. As long as the given version remains installed, we will find and use it.
 //
-// Update 1. It turns out that just like `solc-js`, `solc` installed with `solc-select` also fails when SMTChecker is enabled.
-// So you must install `solc` globally.
-// You can still use `solc` installed with `solc-select` when you don't need SMTChecker.
-//
-// Update 2. On the cosmic2 server, even the globally installed `solc` didn't work.
-// Installing the `z3` package fixed that:
+// To run `solc` with SMTChecker enabled, you might have to install the `z3` package.
 //    `sudo apt install z3`
-// Now even `solc` installed with `solc-select` works. So it's actually unnecessary to install `solc` globally.
-// todo-3 Test if `solc-js` works too.
 //
 // Note that Hardhat will not necessarily validate `solc` of what version it's executing,
 // so it's your responsibility to correctly configure all the relevant parameters that reference this comment.
-// Note that if your system is configured to install updates automatically and you installed the `solc` package globally,
-// the package can be updated at any moment, so you might want to disable quiet automatic updates.
 // [/Comment-202409011]
 
 // Comment-202409011 applies.
-// todo-1 Periodically check out known Solidity compiler bugs at https://www.soliditylang.org/blog/category/security-alerts/ .
+// todo-1 Periodically check out known Solidity compiler bugs at https://docs.soliditylang.org/en/latest/bugs.html .
 // [ToDo-202409098-2]
 // When changing this, remember to revisit the configuration near Comment-202411136, Comment-202408026, Comment-202408025.
 // [/ToDo-202409098-2]
@@ -74,8 +64,7 @@ const solidityVersion = "0.8.34";
 // Make sure you are executing the executable pointed at by the `solidityCompilerPath` variable.
 // We log it near Comment-202411143.
 //
-// 2025-08 Update.
-// The binary `solc` long version looks like "0.8.XX+commit.1234abcd.Linux.g++".
+// Note that the binary `solc` long version looks like "0.8.XX+commit.1234abcd.Linux.g++".
 // Problem is that's too long for EtherScan. It dislikes the ".Linux.g++" suffix.
 // The supported versions listed at https://etherscan.io/solcversions contain no suffixes.
 // `solc-js` is said to report its version without the suffix.
@@ -85,19 +74,11 @@ const solidityCompilerLongVersion = solidityVersion + "+commit.80d5c536";
 
 // Comment-202409011 applies.
 // Comment-202411136 relates.
-let solidityCompilerPath;
-const solidityCompilerPathGlobal = "/usr/bin/solc";
-// if (helpersModule.ENABLE_SMTCHECKER < 2) {
-	solidityCompilerPath = `${process.env.HOME}/.solc-select/artifacts/solc-${solidityVersion}/solc-${solidityVersion}`;
-	if ( ! nodeFsModule.statSync(solidityCompilerPath, {throwIfNoEntry: false,})?.isFile() ) {
-		solidityCompilerPath = `${process.env.HOME}/.local/bin/solc`;
-		if ( ! nodeFsModule.statSync(solidityCompilerPath, {throwIfNoEntry: false,})?.isFile() ) {
-			solidityCompilerPath = solidityCompilerPathGlobal;
-		}
-	}
-// } else {
-// 	solidityCompilerPath = solidityCompilerPathGlobal;
-// }
+let solidityCompilerPath = `${process.env.HOME}/.solc-select/artifacts/solc-${solidityVersion}/solc-${solidityVersion}`;
+if ( ! nodeFsModule.statSync(solidityCompilerPath, {throwIfNoEntry: false,})?.isFile() ) {
+	// Issue. This is unlikely to exist.
+	solidityCompilerPath = `${process.env.HOME}/.local/bin/solc`;
+}
 
 // #endregion
 // #region
@@ -211,7 +192,6 @@ subtask(
 		}
 	
 		// This point is supposed to be unreachable.
-		
 		throw new Error(`Hardhat is trying to use a wrong Solidity compiler version: \`${args.solcVersion}\`.`);
 
 		// // Calling the default implementation.
@@ -309,9 +289,12 @@ const hardhatUserConfig = {
 			},
 
 			metadata: {
+				// [Comment-202610032]
 				// This reduces contract bytecode size a little.
 				// This does not make it impossible to verify contracts on EtherScan or ArbiScan.
-				// But this does make it impossible to verify contracts on Sourcify (which we don't need to).
+				// But this does make it impossible to verify contracts on Sourcify.
+				// Comment-202509112 relates.
+				// [/Comment-202610032]
 				appendCBOR: false,
 
 				// // This does not affect contract bytecode size.
@@ -540,6 +523,7 @@ const hardhatUserConfig = {
 
 	// // [Comment-202509112]
 	// // It appears that we can get by without this.
+	// // Comment-202610032 relates.
 	// // [/Comment-202509112]
 	// sourcify: {
 	// 	enabled: true,
