@@ -189,6 +189,9 @@ interface IPrizesWallet is IAddressValidator {
 	/// @param newValue_ The new value.
 	function setTimeoutDurationToWithdrawPrizes(uint256 newValue_) external;
 
+	// #enable_asserts /// @dev Comment-202610038 applies.
+	// #enable_asserts function setBypassSomeAsserts(bool newValue_) external;
+
 	/// @notice Calling this method is equivalent to calling `registerRoundEnd` once and then `depositEth` zero or more times.
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
 	/// Comments near `registerRoundEnd` and `depositEth` apply.

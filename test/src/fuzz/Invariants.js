@@ -4,7 +4,6 @@
 
 const { expect } = require("chai");
 const hre = require("hardhat");
-const { ENABLE_ASSERTS } = require("../../../src/Helpers.js");
 
 // #endregion
 // #region Invariant suite
@@ -377,8 +376,8 @@ function assertCoverageFloors(statsMap_, profile_) {
 	// ... and every meaningful user action the protocol supports must have actually SUCCEEDED at least
 	// once across the soak — covering bids (ETH / Random Walk NFT / CST), staking and unstaking, ETH and
 	// donation flows, prize and donated-asset withdrawals (the winner receiving donated NFTs/ERC-20s),
-	// CST/NFT transfers and signatures, RW mint/withdraw, the V1 -> V2 -> V3 upgrade chain, and (in
-	// production-like builds) the post-V3 PrizesWallet swap.
+	// CST/NFT transfers and signatures, RW mint/withdraw, the V1 -> V2 -> V3 upgrade chain, and
+	// the post-V3 PrizesWallet swap.
 	const mustSucceed_ = [
 		"bidWithEth", "bidWithEthExactPrice", "bidWithEthSwallow", "bidWithEthRefund",
 		"bidWithEthPlusRandomWalkNft", "bidWithEthReceive", "bidWithEthAndDonateToken", "bidWithEthAndDonateNft",
@@ -397,13 +396,8 @@ function assertCoverageFloors(statsMap_, profile_) {
 		"adminMutateParameters", "daoGovernanceCycle",
 		"adversarialReentrancyOnBidRefund", "adversarialMaliciousTokenDonation",
 		"upgradeAuthProbe",
-		"upgradeToV2", "upgradeToV3",
+		"upgradeToV2", "upgradeToV3", "prizesWalletSwap",
 	];
-	if ( ! ENABLE_ASSERTS ) {
-		// The swap is skipped in assert-enabled builds: `PrizesWallet` asserts that the previous round is
-		// registered, which can never hold for a wallet deployed mid-campaign (see `performPrizesWalletSwap`).
-		mustSucceed_.push("prizesWalletSwap");
-	}
 	const neverSucceeded_ = mustSucceed_.filter((name_) => succeeded_(name_) <= 0);
 	expect(
 		neverSucceeded_.length,

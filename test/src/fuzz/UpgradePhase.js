@@ -8,7 +8,6 @@
 const { expect } = require("chai");
 const hre = require("hardhat");
 const { SECONDS_PER_DAY } = require("../../../src/CosmicSignatureConstants.js");
-const { ENABLE_ASSERTS } = require("../../../src/Helpers.js");
 const { upgradeToV2, assertDefaultV2Initialization, expectUnknownSelector } = require("../V2UpgradeTestHelpers.js");
 const { upgradeToV3, assertDefaultV3Initialization } = require("../V3UpgradeTestHelpers.js");
 
@@ -283,20 +282,14 @@ may withdraw/claim everything), then deploys a fresh `PrizesWallet` and points t
 
 Must run while the round is FROZEN (right after `performUpgradeToV3`), before re-activation.
 
-Skipped in assert-enabled builds: `PrizesWallet.registerRoundEndAndDepositEthMany` asserts that
-the previous round is registered (`mainPrizeBeneficiaryAddresses[roundNum - 1] != 0`), which can
-never hold for a wallet deployed mid-campaign, so every claim would panic (the
-"Swapping to a fresh PrizesWallet" test documents this).
+In assert-enabled builds, claim actions bypass the missing previous-round assertions only for
+the first claim after replacement (Comment-202610038).
 
 @returns {Promise<boolean>} Whether the swap was performed.
 */
 async function performPrizesWalletSwap(ctx_) {
 	const { engine, model, ledger, contracts } = ctx_;
 
-	if (ENABLE_ASSERTS) {
-		console.info("  >>> Skipping the PrizesWallet swap (assert-enabled build) <<<");
-		return false;
-	}
 	// The richest actor drains the wallet (the ETH drains accrue to it, so it stays solvent throughout).
 	const caller_ = [...ctx_.actors]
 		.sort((a_, b_) => {

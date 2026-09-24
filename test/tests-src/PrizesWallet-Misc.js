@@ -18,7 +18,7 @@ const { deployV1CompleteRoundZeroAndUpgradeToV2, activateCurrentRound } = requir
 const { getLatestBlockTimestamp } = require("../src/V2UpgradeTestHelpers.js");
 const { upgradeToV3 } = require("../src/V3UpgradeTestHelpers.js");
 const { deployBrokenToken } = require("../src/AdversarialTestHelpers.js");
-const { testAcrossGameVersions, bidWithEthAt } = require("../src/GameRoundTestHelpers.js");
+const { testAcrossGameVersions, testGameRounds, bidWithEthAt } = require("../src/GameRoundTestHelpers.js");
 
 // #endregion
 // #region
@@ -103,14 +103,17 @@ describe("PrizesWallet-Misc", function () {
 	// #region `it`
 
 	// Comment-202606264 relates.
+	// Comment-202610038 relates.
 	it("Swapping to a fresh PrizesWallet after the V2 or V3 upgrade", async function () {
+		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2();
+		expect(await contracts_.cosmicSignatureGameV2Proxy.roundNum()).equal(1n);
+
 		for ( let contractVersionNumber_ = 2; contractVersionNumber_ <= 3; ++ contractVersionNumber_ ) {
-			const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2();
 			if (contractVersionNumber_ >= 3) {
 				await upgradeToV3(contracts_);
 			}
 			const game_ = (contractVersionNumber_ >= 3) ? contracts_.cosmicSignatureGameV3Proxy : contracts_.cosmicSignatureGameV2Proxy;
-			expect(await game_.roundNum()).equal(1n);
+			const firstRoundNum_ = await game_.roundNum();
 
 			const newPrizesWallet_ = await contracts_.prizesWalletFactory.deploy(contracts_.cosmicSignatureGameProxyAddress);
 			await newPrizesWallet_.waitForDeployment();
@@ -119,25 +122,35 @@ describe("PrizesWallet-Misc", function () {
 			await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setPrizesWallet(newPrizesWalletAddress_));
 			expect(await game_.prizesWallet()).equal(newPrizesWalletAddress_);
 
-			await activateCurrentRound(game_, contracts_.ownerSigner);
 			const bidder_ = contracts_.signers[2];
-			const nextEthBidPrice_ = await game_.getNextEthBidPriceAdvanced(1n);
-			await waitForTransactionReceipt(game_.connect(bidder_).bidWithEth(-1n, "fresh prizes wallet", 0n, {value: nextEthBidPrice_,}));
-			await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(await game_.mainPrizeTime()),]);
-			// await hre.ethers.provider.send("evm_mine");
+			const numRounds_ = (contractVersionNumber_ === 3) ? 4 : (1 + generateRandomUInt32() % 4);
+			await testGameRounds(contracts_, game_, async (contracts_, game_, roundNum_) => {
+				if (ENABLE_ASSERTS) {
+					expect(await newPrizesWallet_.bypassSomeAsserts()).equal(false);
+				}
+				await activateCurrentRound(game_, contracts_.ownerSigner);
+				const nextEthBidPrice_ = await game_.getNextEthBidPriceAdvanced(1n);
+				await waitForTransactionReceipt(game_.connect(bidder_).bidWithEth(-1n, "fresh prizes wallet", 0n, {value: nextEthBidPrice_,}));
+				await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(await game_.mainPrizeTime()),]);
 
-			const claimMainPrizeTransactionResponsePromise_ = game_.connect(bidder_).claimMainPrize();
-			if (ENABLE_ASSERTS) {
-				await expect(claimMainPrizeTransactionResponsePromise_).revertedWithPanic(0x1);
-			} else {
-				const claimMainPrizeTransactionReceipt_ = await waitForTransactionReceipt(claimMainPrizeTransactionResponsePromise_);
+				if (ENABLE_ASSERTS && roundNum_ === firstRoundNum_) {
+					await expect(game_.connect(bidder_).claimMainPrize()).revertedWithPanic(0x1);
+					await waitForTransactionReceipt(newPrizesWallet_.setBypassSomeAsserts(true));
+					expect(await newPrizesWallet_.bypassSomeAsserts()).equal(true);
+				}
+
+				const claimMainPrizeTransactionReceipt_ = await waitForTransactionReceipt(game_.connect(bidder_).claimMainPrize());
+				if (ENABLE_ASSERTS && roundNum_ === firstRoundNum_) {
+					await waitForTransactionReceipt(newPrizesWallet_.setBypassSomeAsserts(false));
+					expect(await newPrizesWallet_.bypassSomeAsserts()).equal(false);
+				}
 				expect(claimMainPrizeTransactionReceipt_.status).equal(1);
-				expect(await game_.roundNum()).equal(2n);
-				expect(await newPrizesWallet_.mainPrizeBeneficiaryAddresses(1n)).equal(bidder_.address);
-				expect(await newPrizesWallet_.roundTimeoutTimesToWithdrawPrizes(1n)).greaterThan(0n);
-			}
-			expect(await newPrizesWallet_.mainPrizeBeneficiaryAddresses(0n)).equal(hre.ethers.ZeroAddress);
-			expect(await newPrizesWallet_.roundTimeoutTimesToWithdrawPrizes(0n)).equal(0n);
+				expect(await game_.roundNum()).equal(roundNum_ + 1n);
+				expect(await newPrizesWallet_.mainPrizeBeneficiaryAddresses(roundNum_)).equal(bidder_.address);
+				expect(await newPrizesWallet_.roundTimeoutTimesToWithdrawPrizes(roundNum_)).greaterThan(0n);
+			}, numRounds_);
+			expect(await newPrizesWallet_.mainPrizeBeneficiaryAddresses(firstRoundNum_ - 1n)).equal(hre.ethers.ZeroAddress);
+			expect(await newPrizesWallet_.roundTimeoutTimesToWithdrawPrizes(firstRoundNum_ - 1n)).equal(0n);
 		}
 	});
 

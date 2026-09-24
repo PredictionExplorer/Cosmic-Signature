@@ -60,6 +60,13 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 	/// Contains zero or more items for each bidding round.
 	DonatedNft[1 << 64] public donatedNfts;
 
+	// #enable_asserts /// @dev
+	// #enable_asserts /// [Comment-202610038]
+	// #enable_asserts /// In the assert-enabled build, this facilitates testing `PrizesWallet` redeployment
+	// #enable_asserts /// and re-registration with the Game after at least 1 bidding round completes.
+	// #enable_asserts /// [/Comment-202610038]
+	// #enable_asserts bool public bypassSomeAsserts = false;
+
 	// #endregion
 	// #region `constructor`
 
@@ -97,6 +104,13 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 		timeoutDurationToWithdrawPrizes = newValue_;
 		emit TimeoutDurationToWithdrawPrizesChanged(newValue_);
 	}
+
+	// #endregion
+	// #region `setBypassSomeAsserts`
+
+	// #enable_asserts function setBypassSomeAsserts(bool newValue_) external override {
+	// #enable_asserts 	bypassSomeAsserts = newValue_;
+	// #enable_asserts }
 
 	// #endregion
 	// #region `registerRoundEndAndDepositEthMany`
@@ -138,9 +152,9 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 
 		{
 			// #enable_asserts assert(mainPrizeBeneficiaryAddresses[roundNum_] == address(0));
-			// #enable_asserts assert(roundNum_ == 0 || mainPrizeBeneficiaryAddresses[roundNum_ - 1] != address(0));
+			// #enable_asserts assert(bypassSomeAsserts || roundNum_ == 0 || mainPrizeBeneficiaryAddresses[roundNum_ - 1] != address(0));
 			// #enable_asserts assert(roundTimeoutTimesToWithdrawPrizes[roundNum_] == 0);
-			// #enable_asserts assert(roundNum_ == 0 || roundTimeoutTimesToWithdrawPrizes[roundNum_ - 1] != 0);
+			// #enable_asserts assert(bypassSomeAsserts || roundNum_ == 0 || roundTimeoutTimesToWithdrawPrizes[roundNum_ - 1] != 0);
 			// #enable_asserts assert(mainPrizeBeneficiaryAddress_ != address(0));
 
 			mainPrizeBeneficiaryAddresses[roundNum_] = mainPrizeBeneficiaryAddress_;
@@ -151,9 +165,6 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 			// so I have wrapped all code in the `_registerRoundEnd` method in an `unchecked` block.
 			// The contract owner can still set `timeoutDurationToWithdrawPrizes` to a small value or zero before a round ends
 			// to shorten winner exclusivity timeout. That is an accepted benevolent-owner risk rather than a min/max clamp.
-			// Note that if `PrizesWallet` (with or without this fix) is deployed and registered with the Game
-			// after at least 1 bidding round completes, `_registerRoundEnd` will later be called for the first time
-			// with`roundNum_ > 0`, which will cause some asserts to fail, which is OK.
 			// `PrizesWallet` has already been deployed, but it's unnecessary to add a new `PrizesWalletV2` with this fix.
 			// [/Comment-202606264]
 			uint256 roundTimeoutTimeToWithdrawPrizes_ = block.timestamp + timeoutDurationToWithdrawPrizes;
