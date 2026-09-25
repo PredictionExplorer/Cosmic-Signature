@@ -76,7 +76,8 @@ abstract contract BidStatisticsV2 is
 	// #region `_updateChronoWarriorIfNeeded`
 
 	/// @notice Comment-202605246 applies.
-	function _updateChronoWarriorIfNeeded(uint256 chronoEndTimeStamp_) internal {
+	/// @return updated_ Whether the Chrono-Warrior record was replaced.
+	function _updateChronoWarriorIfNeeded(uint256 chronoEndTimeStamp_) internal returns (bool updated_) {
 		// #enable_asserts assert(enduranceChampionAddress != address(0));
 		// #enable_asserts assert(int256(chronoWarriorDuration) >= -1);
 		// #enable_asserts assert((chronoWarriorAddress == address(0)) == (int256(chronoWarriorDuration) < int256(0)));
@@ -90,6 +91,7 @@ abstract contract BidStatisticsV2 is
 			if (int256(chronoDuration_) > int256(chronoWarriorDuration)) {
 				chronoWarriorAddress = enduranceChampionAddress;
 				chronoWarriorDuration = chronoDuration_;
+				updated_ = true;
 			}
 
 			// #enable_asserts assert(chronoWarriorAddress != address(0));
@@ -198,7 +200,7 @@ abstract contract BidStatisticsV2 is
 	/// so that `claimMainPrize` could call this.
 	/// In V2, this is a no-op.
 	/// [/Comment-202607178]
-	function _saveChampionDurations() internal virtual {
+	function _saveChampionDurations(bool /* isSameBid_ */) internal virtual {
 		// #enable_asserts assert(enduranceChampionDuration > 0);
 		// #enable_asserts assert(int256(chronoWarriorDuration) > int256(0));
 	}

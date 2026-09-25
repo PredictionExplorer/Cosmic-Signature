@@ -558,8 +558,8 @@ abstract contract MainPrizeV3 is
 	// #endregion
 	// #region Overrides Required By Solidity
 
-	function _saveChampionDurations() internal override (BidStatisticsV2, BidStatisticsV3) virtual {
-		super._saveChampionDurations();
+	function _saveChampionDurations(bool isSameBid_) internal override (BidStatisticsV2, BidStatisticsV3) virtual {
+		super._saveChampionDurations(isSameBid_);
 	}
 
 	// #endregion

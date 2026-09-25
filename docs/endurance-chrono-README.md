@@ -85,7 +85,7 @@ These roles are maintained in `BidStatistics`:
 ```
 t=1000: Alice bids (first bid, becomes EC immediately)
   - EC: Alice, start=1000, duration=0
-  - CW: none (initialized to max uint256)
+  - CW: none (duration initialized to -1)
 
 t=1100: Bob bids (Alice was EC for 100 seconds)
   - EC: still Alice, duration=100

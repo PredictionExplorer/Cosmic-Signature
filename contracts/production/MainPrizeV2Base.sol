@@ -76,10 +76,10 @@ abstract contract MainPrizeV2Base is
 
 			// Comment-202605309 applies.
 			_updateChampionsIfNeeded();
-			_updateChronoWarriorIfNeeded(block.timestamp);
+			bool isSameBid_ = _updateChronoWarriorIfNeeded(block.timestamp);
 
 			// Comment-202607178 relates.
-			_saveChampionDurations();
+			_saveChampionDurations(isSameBid_);
 
 			_distributePrizes();
 			_prepareNextRound();

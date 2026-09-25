@@ -48,6 +48,12 @@ interface ICosmicSignatureGameStorage {
 	struct BidsInfo {
 		uint256 numItems;
 		mapping(uint256 bidNum => BidInfo) items;
+
+		/// @notice Round outcome flags, populated on main prize claim in V3+.
+		/// @dev todo-0 Revisit this variable type.
+		/// todo-0 Revisit the above comment. Some bits could be populated not on main prize claim. Maybe don't mention that.
+		/// todo-0 Consider combining this variable with other variables in the same storage slot.
+		uint8 flags;
 	}
 
 	/// @notice Details about a bidder.

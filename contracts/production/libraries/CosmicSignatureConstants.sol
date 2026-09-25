@@ -24,7 +24,9 @@ library CosmicSignatureConstants {
 	// #endregion
 	// #region Bid Statistics
 
-	// Empty.
+	/// @notice This flag indicates that the same individual bid earned both Endurance Champion and Chrono-Warrior titles.
+	/// @dev todo-0 Revisit this constant type.
+	uint8 internal constant SAME_BID_EARNED_ENDURANCE_CHAMPION_AND_CHRONO_WARRIOR_TITLES = uint8(1 << 2);
 
 	// #endregion
 	// #region Bidding

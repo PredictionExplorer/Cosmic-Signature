@@ -88,8 +88,8 @@ contract CosmicSignatureGameV3 is
 		super.setCstDutchAuctionDurationChangeDivisor(newValue_);
 	}
 
-	function _saveChampionDurations() internal override (BidStatisticsV2, BidStatisticsV3, MainPrizeV3) /* virtual */ {
-		super._saveChampionDurations();
+	function _saveChampionDurations(bool isSameBid_) internal override (BidStatisticsV2, BidStatisticsV3, MainPrizeV3) /* virtual */ {
+		super._saveChampionDurations(isSameBid_);
 	}
 
 	function getNextEthBidPriceAdvanced(int256 currentTimeOffset_) public view override (BiddingV2Base, BiddingV3) /* virtual */ returns (uint256) {
