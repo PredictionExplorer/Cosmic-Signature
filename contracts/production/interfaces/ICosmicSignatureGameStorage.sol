@@ -45,23 +45,25 @@ interface ICosmicSignatureGameStorage {
 	}
 
 	/// @notice Details about all bids in one bidding round.
-	struct BidsInfo {
+	/// @dev Comment-202610054 relates.
+struct BidsInfo {
 		uint256 numItems;
 		mapping(uint256 bidNum => BidInfo) items;
 
 		/// @notice Round outcome flags, populated on main prize claim in V3+.
 		/// @dev todo-0 Revisit this variable type.
 		/// todo-0 Revisit the above comment. Some bits could be populated not on main prize claim. Maybe don't mention that.
-		/// todo-0 Consider combining this variable with other variables in the same storage slot.
+		/// todo-0 Consider combining this variable and/or other variables with other variables in the same storage slot.
 		uint8 flags;
 	}
 
 	/// @notice Details about a bidder.
+	/// @dev Comment-202610054 relates.
 	struct BidderInfo {
-		/// @dev Comment-202503162 relates and/or applies.
+		/// @notice Comment-202503162 relates and/or applies.
 		uint256 totalSpentEthAmount;
 
-		/// @dev Comment-202503162 relates and/or applies.
+		/// @notice Comment-202503162 relates and/or applies.
 		uint256 totalSpentCstAmount;
 
 		uint256 lastBidTimeStamp;

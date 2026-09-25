@@ -66,14 +66,14 @@ interface IBidding1V2 {
 	function getNextEthBidPrice() external view returns (uint256);
 
 	/// @notice Comment-202605259 applies.
+	/// Comment-202503162 applies.
 	/// See also: `getNextEthBidPrice`.
 	/// @param currentTimeOffset_ Comment-202501107 applies.
 	/// @return Comment-202605261 applies.
-	/// @dev Comment-202503162 applies.
 	function getNextEthBidPriceAdvanced(int256 currentTimeOffset_) external view returns (uint256);
 
 	/// @notice Comment-202605262 applies.
-	/// @dev Comment-202503162 applies.
+	/// Comment-202503162 applies.
 	function getEthPlusRandomWalkNftBidPrice(uint256 ethBidPrice_) external pure returns (uint256);
 
 	/// @return Comment-202605263 applies.
@@ -113,11 +113,11 @@ interface IBidding1V2 {
 	function getNextCstBidPrice() external view returns (uint256);
 
 	/// @notice Comment-202605271 applies.
+	/// Comment-202503162 applies.
 	/// See also: `getNextCstBidPrice`.
 	/// @param currentTimeOffset_ Comment-202501107 applies.
 	/// @return Comment-202605272 applies.
 	/// Comment-202501022 applies.
-	/// @dev Comment-202503162 applies.
 	function getNextCstBidPriceAdvanced(int256 currentTimeOffset_) external view returns (uint256);
 
 	/// @return Comment-202605273 applies.

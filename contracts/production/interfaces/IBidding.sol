@@ -138,25 +138,24 @@ interface IBidding {
 	/// [Comment-202605259]
 	/// Calculates the current price that a bidder is required to pay to place an ETH bid.
 	/// [/Comment-202605259]
+	/// [Comment-202503162]
+	/// An ETH bid with or without a Random Walk NFT price is guaranteed to be a nonzero.
+	/// `getEthPlusRandomWalkNftBidPrice` is guaranteed to return a nonzero, provided it's passed a nonzero.
+	/// A CST bid price can potentially be zero.
+	/// [/Comment-202503162]
 	/// See also: `getNextEthBidPrice`.
 	/// @param currentTimeOffset_ Comment-202501107 applies.
 	/// @return
 	/// [Comment-202605261]
 	/// The next ETH bid price.
 	/// [/Comment-202605261]
-	/// @dev
-	/// [Comment-202503162]
-	/// An ETH bid with or without a Random Walk NFT price is guaranteed to be a nonzero.
-	/// `getEthPlusRandomWalkNftBidPrice` is guaranteed to return a nonzero, provided it's passed a nonzero.
-	/// A CST bid price can potentially be zero.
-	/// [/Comment-202503162]
 	function getNextEthBidPriceAdvanced(int256 currentTimeOffset_) external view returns (uint256);
 
 	/// @notice
 	/// [Comment-202605262]
 	/// Calculates and returns an ETH + Random Walk NFT bid price, given an ETH only bid price.
 	/// [/Comment-202605262]
-	/// @dev Comment-202503162 applies.
+	/// Comment-202503162 applies.
 	function getEthPlusRandomWalkNftBidPrice(uint256 ethBidPrice_) external pure returns (uint256);
 
 	/// @return
@@ -223,6 +222,7 @@ interface IBidding {
 	/// The price declines linearly over CST Dutch auction duration.
 	/// But in V2+, it also slightly declines on each ETH bid, as mentioned in Comment-202608312.
 	/// [/Comment-202605271]
+	/// Comment-202503162 applies.
 	/// See also: `getNextCstBidPrice`.
 	/// @param currentTimeOffset_ .
 	/// [Comment-202501107]
@@ -251,7 +251,6 @@ interface IBidding {
 	/// It can potentially be zero.
 	/// [/Comment-202605272]
 	/// Comment-202501022 applies.
-	/// @dev Comment-202503162 applies.
 	function getNextCstBidPriceAdvanced(int256 currentTimeOffset_) external view returns (uint256);
 
 	/// @return

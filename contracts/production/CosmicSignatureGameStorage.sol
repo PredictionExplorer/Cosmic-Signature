@@ -62,9 +62,14 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// But the project founders consider using this info for other purposes.
 	/// [/Comment-202411098]
 	/// Comment-202502044 relates.
+	/// [Comment-202610054]
+	/// Issue. It could make sense to combine `bidsInfo` and `biddersInfo`,
+	/// but doing so would break storage layout compatibility, so Comment-202609134 applies.
+	/// [/Comment-202610054]
 	mapping(uint256 roundNum => BidsInfo) public bidsInfo;
 
 	/// @dev Comment-202411098 applies.
+	/// Comment-202610054 applies.
 	mapping(uint256 roundNum => mapping(address bidderAddress => BidderInfo)) public biddersInfo;
 
 	/// @notice
