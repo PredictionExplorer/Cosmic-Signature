@@ -19,8 +19,6 @@ interface IBidding2V3 {
 	/// It's zero on the first bid in a round.
 	/// @param cstBidPriceDeclineMultiplier Comment-202608181 applies.
 	/// Comment-202608319 relates.
-	/// todo-0 Tell Nick that this replaced `cstDutchAuctionDuration` param.
-	/// todo-0 The `getCstDutchAuctionDurations` function still exists. It now calculates the duration. The duration changes on each bid and on main prize claim.
 	/// @param mainPrizeTime Comment-202412152 applies.
 	event BidPlaced(
 		uint256 indexed roundNum,
