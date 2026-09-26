@@ -7,7 +7,6 @@ pragma solidity =0.8.34;
 // #region
 
 import { Panic as OpenZeppelinPanic } from "@openzeppelin/contracts/utils/Panic.sol";
-import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { CosmicSignatureEvents } from "./libraries/CosmicSignatureEvents.sol";
 import { CosmicSignatureHelpers } from "./libraries/CosmicSignatureHelpers.sol";
 import { RandomNumberHelpers } from "./libraries/RandomNumberHelpers.sol";
