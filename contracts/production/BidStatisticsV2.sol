@@ -15,28 +15,28 @@ import { IBidStatistics } from "./interfaces/IBidStatistics.sol";
 abstract contract BidStatisticsV2 is
 	CosmicSignatureGameStorageV2Base,
 	IBidStatistics {
-	// #region `getTotalNumBids`
+	// #region // `getTotalNumBids`
 
-	function getTotalNumBids(uint256 roundNum_) external view override returns (uint256) {
-		BidsInfo storage bidsInfoReference_ = bidsInfo[roundNum_];
-		uint256 totalNumBids_ = bidsInfoReference_.numItems;
-		return totalNumBids_;
-	}
+	// function getTotalNumBids(uint256 roundNum_) external view override returns (uint256) {
+	// 	RoundStats storage roundStatsReference_ = roundStats[roundNum_];
+	// 	uint256 totalNumBids_ = roundStatsReference_.numBids;
+	// 	return totalNumBids_;
+	// }
 
 	// #endregion
 	// #region `getBidInfoAt`
 
 	function getBidInfoAt(uint256 roundNum_, uint256 bidIndex_) external view override returns (BidInfo memory) {
-		return bidsInfo[roundNum_].items[bidIndex_];
+		return roundStats[roundNum_].bidsInfo[bidIndex_];
 	}
 
 	// #endregion
-	// #region `getBidderTotalSpentAmounts`
+	// #region // `getBidderTotalSpentAmounts`
 
-	function getBidderTotalSpentAmounts(uint256 roundNum_, address bidderAddress_) external view override returns (uint256, uint256) {
-		BidderInfo storage bidderInfoReference_ = biddersInfo[roundNum_][bidderAddress_];
-		return (bidderInfoReference_.totalSpentEthAmount, bidderInfoReference_.totalSpentCstAmount);
-	}
+	// function getBidderTotalSpentAmounts(uint256 roundNum_, address bidderAddress_) external view override returns (uint256, uint256) {
+	// 	BidderInfo storage bidderInfoReference_ = biddersInfo[roundNum_][bidderAddress_];
+	// 	return (bidderInfoReference_.totalSpentEthAmount, bidderInfoReference_.totalSpentCstAmount);
+	// }
 
 	// #endregion
 	// #region `_updateChampionsIfNeeded`
@@ -192,7 +192,7 @@ abstract contract BidStatisticsV2 is
 	}
 
 	// #endregion
-	// #region `_saveChampionDurations`
+	// #region `_updateRoundStatsOnMainPrizeClaim`
 
 	/// @dev
 	/// [Comment-202607178]
@@ -200,7 +200,7 @@ abstract contract BidStatisticsV2 is
 	/// so that `claimMainPrize` could call this.
 	/// In V2, this is a no-op.
 	/// [/Comment-202607178]
-	function _saveChampionDurations(bool /* isSameBid_ */) internal virtual {
+	function _updateRoundStatsOnMainPrizeClaim(bool /* isSameBid_ */) internal virtual {
 		// #enable_asserts assert(enduranceChampionDuration > 0);
 		// #enable_asserts assert(int256(chronoWarriorDuration) > int256(0));
 	}

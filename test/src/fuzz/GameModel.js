@@ -99,20 +99,23 @@ class GameModel {
 		this.chronoWarriorAddress = hre.ethers.ZeroAddress;
 		/** Stored as a signed value; `-1n` is the on-chain `uint256(int256(-1))` sentinel. */
 		this.chronoWarriorDuration = -1n;
+		/** @type {number | null} Individual bid identities, independent of bidder addresses. */
+		this.enduranceChampionBidIndex = null;
+		/** @type {number | null} */
+		this.chronoWarriorBidIndex = null;
 
 		/** @type {Set<string>} Random Walk NFT ids (as decimal strings) used for bidding. */
 		this.usedRandomWalkNfts = new Set();
 
 		/**
-		In V3+, `claimMainPrize` saves the final champion durations of the round.
-		Key: round number as a decimal string.
-		@type {Map<string, {enduranceChampion: bigint, chronoWarrior: bigint}>}
-		*/
-		this.championDurationsByRound = new Map();
-
-		/**
 		Per-round bid statistics. Key: round number as string.
-		@type {Map<string, {bidderAddresses: string[], bidRaffleCumulativeWeights: bigint[], biddersInfo: Map<string, {totalSpentEthAmount: bigint, totalSpentCstAmount: bigint, lastBidTimeStamp: bigint}>}>}
+		@type {Map<string, {
+			bidderAddresses: string[], bidRaffleCumulativeWeights: bigint[],
+			biddersInfo: Map<string, {totalSpentEthAmount: bigint, totalSpentCstAmount: bigint, lastBidTimeStamp: bigint}>,
+			numCstBids: bigint, totalSpentEthAmount: bigint, totalSpentCstAmount: bigint,
+			maxEthBidPrice: bigint, maxCstBidPrice: bigint,
+			enduranceChampionDuration: bigint, chronoWarriorDuration: bigint, flags: bigint
+		}>}
 		*/
 		this.rounds = new Map();
 	}
@@ -191,17 +194,29 @@ class GameModel {
 		const key_ = this.roundNum.toString();
 		let round_ = this.rounds.get(key_);
 		if (round_ === undefined) {
-			round_ = { bidderAddresses: [], bidRaffleCumulativeWeights: [], biddersInfo: new Map() };
+			round_ = {
+				bidderAddresses: [], bidRaffleCumulativeWeights: [], biddersInfo: new Map(),
+				numCstBids: 0n, totalSpentEthAmount: 0n, totalSpentCstAmount: 0n,
+				maxEthBidPrice: 0n, maxCstBidPrice: 0n,
+				enduranceChampionDuration: 0n, chronoWarriorDuration: 0n, flags: 0n,
+			};
 			this.rounds.set(key_, round_);
 		}
 		return round_;
 	}
 
-	/**
-	@param {bigint} roundNum_
-	@param {string} bidderAddress_ Lowercase.
-	*/
-	getBidderInfo(roundNum_, bidderAddress_) {
+	// /**
+	// @param {bigint} roundNum_
+	// @param {string} bidderAddress_ Lowercase.
+	// */
+	// getBidderInfo(roundNum_, bidderAddress_) {
+	// 	const round_ = this.rounds.get(roundNum_.toString());
+	// 	const info_ = round_?.biddersInfo.get(bidderAddress_.toLowerCase());
+	// 	return info_ ?? { totalSpentEthAmount: 0n, totalSpentCstAmount: 0n, lastBidTimeStamp: 0n };
+	// }
+
+	/** Mirrors the generated `biddersInfo` getter. */
+	biddersInfo(roundNum_, bidderAddress_) {
 		const round_ = this.rounds.get(roundNum_.toString());
 		const info_ = round_?.biddersInfo.get(bidderAddress_.toLowerCase());
 		return info_ ?? { totalSpentEthAmount: 0n, totalSpentCstAmount: 0n, lastBidTimeStamp: 0n };
@@ -218,9 +233,25 @@ class GameModel {
 		return info_;
 	}
 
-	/** Number of bids in the given round. */
-	getTotalNumBids(roundNum_) {
-		return BigInt(this.rounds.get(roundNum_.toString())?.bidderAddresses.length ?? 0);
+	// /** Number of bids in the given round. */
+	// getTotalNumBids(roundNum_) {
+	// 	return BigInt(this.rounds.get(roundNum_.toString())?.bidderAddresses.length ?? 0);
+	// }
+
+	/** Mirrors the scalar fields returned by the generated `roundStats` getter. */
+	roundStats(roundNum_) {
+		const round_ = this.rounds.get(roundNum_.toString());
+		return {
+			numBids: BigInt(round_?.bidderAddresses.length ?? 0),
+			numCstBids: round_?.numCstBids ?? 0n,
+			totalSpentEthAmount: round_?.totalSpentEthAmount ?? 0n,
+			totalSpentCstAmount: round_?.totalSpentCstAmount ?? 0n,
+			maxEthBidPrice: round_?.maxEthBidPrice ?? 0n,
+			maxCstBidPrice: round_?.maxCstBidPrice ?? 0n,
+			enduranceChampionDuration: round_?.enduranceChampionDuration ?? 0n,
+			chronoWarriorDuration: round_?.chronoWarriorDuration ?? 0n,
+			flags: round_?.flags ?? 0n,
+		};
 	}
 
 	getBidderAddresses(roundNum_) {
@@ -425,7 +456,8 @@ class GameModel {
 		const lastBidTimeStamp_ =
 			(this.lastBidderAddress === hre.ethers.ZeroAddress) ?
 			((this.version >= 3) ? 0n : this.roundActivationTime) :
-			this.getBidderInfo(this.roundNum, this.lastBidderAddress).lastBidTimeStamp;
+			// this.getBidderInfo(this.roundNum, this.lastBidderAddress).lastBidTimeStamp;
+			this.biddersInfo(this.roundNum, this.lastBidderAddress).lastBidTimeStamp;
 		const elapsed_ = ts_ - lastBidTimeStamp_;
 		if (elapsed_ <= 0n) {
 			return 0n;
@@ -476,7 +508,8 @@ class GameModel {
 		let prevEnduranceDuration_ = this.prevEnduranceChampionDuration;
 		let chrono_ = this.chronoWarriorAddress;
 		let chronoDuration_ = this.chronoWarriorDuration;
-		const lastBidTs_ = this.getBidderInfo(this.roundNum, this.lastBidderAddress).lastBidTimeStamp;
+		// const lastBidTs_ = this.getBidderInfo(this.roundNum, this.lastBidderAddress).lastBidTimeStamp;
+		const lastBidTs_ = this.biddersInfo(this.roundNum, this.lastBidderAddress).lastBidTimeStamp;
 		const lastBidDuration_ = ts_ - lastBidTs_;
 		if (endurance_ === hre.ethers.ZeroAddress) {
 			endurance_ = this.lastBidderAddress;
@@ -518,16 +551,19 @@ class GameModel {
 
 	/** Mirrors `_updateChampionsIfNeeded` (requires `lastBidderAddress != 0`). */
 	_updateChampionsIfNeeded(ts_) {
-		const lastBidTs_ = this.getBidderInfo(this.roundNum, this.lastBidderAddress).lastBidTimeStamp;
+		// const lastBidTs_ = this.getBidderInfo(this.roundNum, this.lastBidderAddress).lastBidTimeStamp;
+		const lastBidTs_ = this.biddersInfo(this.roundNum, this.lastBidderAddress).lastBidTimeStamp;
 		const lastBidDuration_ = ts_ - lastBidTs_;
 		if (this.enduranceChampionAddress === hre.ethers.ZeroAddress) {
 			this.enduranceChampionAddress = this.lastBidderAddress;
+			this.enduranceChampionBidIndex = this._currentRound().bidderAddresses.length - 1;
 			this.enduranceChampionStartTimeStamp = lastBidTs_;
 			this.enduranceChampionDuration = lastBidDuration_;
 		} else if (lastBidDuration_ > this.enduranceChampionDuration) {
 			this._updateChronoWarriorIfNeeded(lastBidTs_ + this.enduranceChampionDuration);
 			this.prevEnduranceChampionDuration = this.enduranceChampionDuration;
 			this.enduranceChampionAddress = this.lastBidderAddress;
+			this.enduranceChampionBidIndex = this._currentRound().bidderAddresses.length - 1;
 			this.enduranceChampionStartTimeStamp = lastBidTs_;
 			this.enduranceChampionDuration = lastBidDuration_;
 		}
@@ -539,6 +575,7 @@ class GameModel {
 		const chronoDuration_ = chronoEndTimeStamp_ - chronoStart_;
 		if (chronoDuration_ > this.chronoWarriorDuration) {
 			this.chronoWarriorAddress = this.enduranceChampionAddress;
+			this.chronoWarriorBidIndex = this.enduranceChampionBidIndex;
 			this.chronoWarriorDuration = chronoDuration_;
 		}
 	}
@@ -645,6 +682,9 @@ class GameModel {
 		}
 		if (this.version >= 3) {
 			this._appendBidRaffleWeight(plan_.ethBidPriceBase);
+			const round_ = this._currentRound();
+			round_.totalSpentEthAmount += plan_.paidEthPrice;
+			round_.maxEthBidPrice = maxBigInt(round_.maxEthBidPrice, plan_.paidEthPrice);
 		}
 		this._bidCommon(bidderAddress_, ts_);
 		return {
@@ -672,6 +712,10 @@ class GameModel {
 		if (this.version >= 3) {
 			const bidRaffleWeight_ = this.getNextEthBidPriceBase(ts_);
 			this._appendBidRaffleWeight(bidRaffleWeight_);
+			const round_ = this._currentRound();
+			++ round_.numCstBids;
+			round_.totalSpentCstAmount += paidCstPrice_;
+			round_.maxCstBidPrice = maxBigInt(round_.maxCstBidPrice, paidCstPrice_);
 		}
 		this._bidderInfoForUpdate(bidderAddress_).totalSpentCstAmount += paidCstPrice_;
 		this.cstDutchAuctionBeginningTimeStamp = ts_;
@@ -746,10 +790,15 @@ class GameModel {
 		this._updateChronoWarriorIfNeeded(ts_);
 
 		if (this.version >= 3) {
-			this.championDurationsByRound.set(this.roundNum.toString(), {
-				enduranceChampion: this.enduranceChampionDuration,
-				chronoWarrior: int256ToUint256(this.chronoWarriorDuration),
-			});
+			const round_ = this._currentRound();
+			round_.enduranceChampionDuration = this.enduranceChampionDuration;
+			round_.chronoWarriorDuration = int256ToUint256(this.chronoWarriorDuration);
+
+			// Compare individual bids, so two winning bids from the same wallet do not set the flag.
+			expect(this.enduranceChampionBidIndex, "model: missing final Endurance Champion bid").to.not.equal(null);
+			expect(this.chronoWarriorBidIndex, "model: missing final Chrono-Warrior bid").to.not.equal(null);
+			round_.flags = (this.enduranceChampionBidIndex === this.chronoWarriorBidIndex) ?
+				c.SAME_BID_EARNED_ENDURANCE_CHAMPION_AND_CHRONO_WARRIOR_TITLES : 0n;
 		}
 
 		const mainEthPrizeAmount_ = gameEthBalance_ * this.mainEthPrizeAmountPercentage / 100n;
@@ -798,8 +847,10 @@ class GameModel {
 		this.lastBidderAddress = hre.ethers.ZeroAddress;
 		this.lastCstBidderAddress = hre.ethers.ZeroAddress;
 		this.enduranceChampionAddress = hre.ethers.ZeroAddress;
+		this.enduranceChampionBidIndex = null;
 		this.prevEnduranceChampionDuration = 0n;
 		this.chronoWarriorAddress = hre.ethers.ZeroAddress;
+		this.chronoWarriorBidIndex = null;
 		this.chronoWarriorDuration = -1n;
 		this.roundNum += 1n;
 		this.mainPrizeTimeIncrementInMicroSeconds += this.mainPrizeTimeIncrementInMicroSeconds / this.mainPrizeTimeIncrementIncreaseDivisor;

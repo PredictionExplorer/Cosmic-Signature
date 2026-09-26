@@ -54,7 +54,8 @@ async function verifyBidRaffleClaimDraws(game_, roundNum_, claimTransactionRecei
 
 /** Reads a round's bidder addresses and cumulative raffle weights. */
 async function readBidRaffleData(game_, roundNum_) {
-	const numBids_ = await game_.getTotalNumBids(roundNum_);
+	// const numBids_ = await game_.getTotalNumBids(roundNum_);
+	const numBids_ = (await game_.roundStats(roundNum_)).numBids;
 	const bidderAddresses_ = [];
 	const cumulativeWeights_ = [];
 	for ( let bidIndex_ = 0n; bidIndex_ < numBids_; ++ bidIndex_ ) {

@@ -220,14 +220,14 @@ describe("CosmicSignatureGameV3-MainPrize", function () {
 			// #endregion
 			// #region
 
-			// `BidStatisticsV3._saveChampionDurations` persists the round-final values before `_prepareNextRound` is called.
-			const championDurations_ = await game_.championDurations(roundNum_);
+			// `BidStatisticsV3._updateRoundStatsOnMainPrizeClaim` saves the final durations before the next round starts.
+			const roundStats_ = await game_.roundStats(roundNum_);
 
 			// // Comment-202610021 applies.
-			// expect(championDurations_.enduranceChampion).equal(await game_.enduranceChampionDuration());
+			// expect(roundStats_.enduranceChampionDuration).equal(await game_.enduranceChampionDuration());
 
-			expect(championDurations_.enduranceChampion).greaterThan(0n);
-			expect(championDurations_.chronoWarrior).greaterThan(0n);
+			expect(roundStats_.enduranceChampionDuration).greaterThan(0n);
+			expect(roundStats_.chronoWarriorDuration).greaterThan(0n);
 
 			expect(await game_.roundNum()).equal(roundNum_ + 1n);
 

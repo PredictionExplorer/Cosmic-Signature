@@ -27,7 +27,7 @@ library BidRaffleWeightHelpers {
 	/// This guarantees that a nonempty bidding round has a nonzero total raffle weight,
 	/// which is used as a divisor when a raffle winner is picked.
 	function saveForNextBid(
-		ICosmicSignatureGameStorage.BidsInfo storage bidsInfo_,
+		ICosmicSignatureGameStorage.RoundStats storage roundStats_,
 		uint256 bidRaffleWeight_
 	) internal {
 		// #enable_asserts assert(bidRaffleWeight_ > 0);
@@ -36,12 +36,12 @@ library BidRaffleWeightHelpers {
 		// #enable_smtchecker */
 		{
 			uint256 bidRaffleCumulativeWeight_ = bidRaffleWeight_;
-			uint256 bidIndex_ = bidsInfo_.numItems;
+			uint256 bidIndex_ = roundStats_.numBids;
 			if (bidIndex_ > 0) {
-				uint256 prevBidRaffleCumulativeWeight_ = bidsInfo_.items[bidIndex_ - 1].raffleCumulativeWeight;
+				uint256 prevBidRaffleCumulativeWeight_ = roundStats_.bidsInfo[bidIndex_ - 1].raffleCumulativeWeight;
 				bidRaffleCumulativeWeight_ += prevBidRaffleCumulativeWeight_;
 			}
-			bidsInfo_.items[bidIndex_].raffleCumulativeWeight = bidRaffleCumulativeWeight_;
+			roundStats_.bidsInfo[bidIndex_].raffleCumulativeWeight = bidRaffleCumulativeWeight_;
 		}
 	}
 
@@ -49,12 +49,12 @@ library BidRaffleWeightHelpers {
 	// #region `getTotalWeight`
 
 	/// @return The total raffle weight, or zero if there are no bids.
-	function getTotalWeight(ICosmicSignatureGameStorage.BidsInfo storage bidsInfo_) internal view returns (uint256) {
+	function getTotalWeight(ICosmicSignatureGameStorage.RoundStats storage roundStats_) internal view returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
 		{
-			return (bidsInfo_.numItems > 0) ? bidsInfo_.items[bidsInfo_.numItems - 1].raffleCumulativeWeight : 0;
+			return (roundStats_.numBids > 0) ? roundStats_.bidsInfo[roundStats_.numBids - 1].raffleCumulativeWeight : 0;
 		}
 	}
 
@@ -66,20 +66,20 @@ library BidRaffleWeightHelpers {
 	/// The first bid whose cumulative weight exceeds `targetCumulativeWeight_`.
 	/// [/Comment-202609094]
 	function findBidIndex(
-		ICosmicSignatureGameStorage.BidsInfo storage bidsInfo_,
+		ICosmicSignatureGameStorage.RoundStats storage roundStats_,
 		uint256 targetCumulativeWeight_
 	) internal view returns (uint256) {
-		// #enable_asserts assert(bidsInfo_.numItems > 0);
-		// #enable_asserts assert(targetCumulativeWeight_ < getTotalWeight(bidsInfo_));
+		// #enable_asserts assert(roundStats_.numBids > 0);
+		// #enable_asserts assert(targetCumulativeWeight_ < getTotalWeight(roundStats_));
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
 		{
 			uint256 lowBidIndex_ = 0;
-			uint256 highBidIndex_ = bidsInfo_.numItems - 1;
+			uint256 highBidIndex_ = roundStats_.numBids - 1;
 			while (lowBidIndex_ < highBidIndex_) {
 				uint256 middleBidIndex_ = (lowBidIndex_ + highBidIndex_) >> 1;
-				if (bidsInfo_.items[middleBidIndex_].raffleCumulativeWeight > targetCumulativeWeight_) {
+				if (roundStats_.bidsInfo[middleBidIndex_].raffleCumulativeWeight > targetCumulativeWeight_) {
 					highBidIndex_ = middleBidIndex_;
 				} else {
 					lowBidIndex_ = middleBidIndex_ + 1;

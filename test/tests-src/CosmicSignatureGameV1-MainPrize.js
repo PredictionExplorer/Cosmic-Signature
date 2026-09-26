@@ -38,8 +38,9 @@ describe("CosmicSignatureGameV1-MainPrize", function () {
 		let gameBalanceAmount_ = await hre.ethers.provider.getBalance(contracts_.cosmicSignatureGameProxyAddress);
 		expect(gameBalanceAmount_).equal(ethDonationAmount_ + nextEthBidPrice_);
 		let roundNum_ = await contracts_.cosmicSignatureGameProxy.roundNum();
-		let totalSpentEthAmount_ = await contracts_.cosmicSignatureGameProxy.getBidderTotalSpentAmounts(roundNum_, contracts_.signers[1].address);
-		expect(totalSpentEthAmount_[0]).equal(nextEthBidPrice_);
+		// const totalSpentEthAmount_ = (await contracts_.cosmicSignatureGameProxy.getBidderTotalSpentAmounts(roundNum_, contracts_.signers[1].address))[0];
+		const totalSpentEthAmount_ = (await contracts_.cosmicSignatureGameProxy.biddersInfo(roundNum_, contracts_.signers[1].address))[0];
+		expect(totalSpentEthAmount_).equal(nextEthBidPrice_);
 
 		let durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		expect(durationUntilMainPrize_).equal(initialDurationUntilMainPrize_);
@@ -122,7 +123,8 @@ describe("CosmicSignatureGameV1-MainPrize", function () {
 		await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).bidWithEth(-1n, "", {value: nextEthBidPrice_,}));
 		roundNum_ = await contracts_.cosmicSignatureGameProxy.roundNum();
 		expect(roundNum_).equal(2n);
-		expect(await contracts_.cosmicSignatureGameProxy.getTotalNumBids(roundNum_)).equal(1n);
+		// expect(await contracts_.cosmicSignatureGameProxy.getTotalNumBids(roundNum_)).equal(1n);
+		expect((await contracts_.cosmicSignatureGameProxy.roundStats(roundNum_)).numBids).equal(1n);
 		expect(await contracts_.cosmicSignatureGameProxy.getBidInfoAt(roundNum_, 0n)).deep.equal([contracts_.signers[1].address, 0n,]);
 		durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrize();
 		expect(durationUntilMainPrize_).greaterThan(0n);
@@ -250,7 +252,8 @@ describe("CosmicSignatureGameV1-MainPrize", function () {
 		++ roundNum_;
 
 		// Asserting that the total number of bids has been reset.
-		let totalNumBids_ = await contracts_.cosmicSignatureGameProxy.getTotalNumBids(roundNum_);
+		// let totalNumBids_ = await contracts_.cosmicSignatureGameProxy.getTotalNumBids(roundNum_);
+		let totalNumBids_ = (await contracts_.cosmicSignatureGameProxy.roundStats(roundNum_)).numBids;
 		expect(totalNumBids_).equal(0n);
 
 		prizesWalletEthReceivedLogs_ = transactionReceipt_.logs.filter((log_) => (log_.topics[0] == prizesWalletEthReceivedTopicHash_));

@@ -39,7 +39,7 @@ abstract contract MainPrizeV2 is
 			// Comment-202605312 applies.
 			randomNumberSeedWrapper_.value = RandomNumberHelpers.generateRandomNumberSeed();
 
-			BidsInfo storage bidsInfoReference_ = bidsInfo[roundNum];
+			RoundStats storage roundStatsReference_ = roundStats[roundNum];
 			uint256 timeoutTimeToWithdrawSecondaryPrizes_;
 
 			// Comment-202501161 applies.
@@ -108,7 +108,7 @@ abstract contract MainPrizeV2 is
 						ethDepositsTotalAmount_ += raffleEthPrizeAmountForBidder_ * ethDepositIndex_;
 						do {
 							uint256 randomNumber_ = RandomNumberHelpers.generateRandomNumber(randomNumberSeedWrapper_);
-							address raffleWinnerAddress_ = bidsInfoReference_.items[randomNumber_ % bidsInfoReference_.numItems].bidderAddress;
+							address raffleWinnerAddress_ = roundStatsReference_.bidsInfo[randomNumber_ % roundStatsReference_.numBids].bidderAddress;
 							// #enable_asserts assert(raffleWinnerAddress_ != address(0));
 							-- ethDepositIndex_;
 							IPrizesWallet.EthDeposit memory ethDepositReference_ = ethDeposits_[ethDepositIndex_];
@@ -248,7 +248,7 @@ abstract contract MainPrizeV2 is
 					// #enable_asserts assert(numRaffleCosmicSignatureNftsForBidders > 0);
 					for (uint256 raffleWinnerIndex_ = numRaffleCosmicSignatureNftsForBidders; ; ) {
 						uint256 randomNumber_ = RandomNumberHelpers.generateRandomNumber(randomNumberSeedWrapper_);
-						address raffleWinnerAddress_ = bidsInfoReference_.items[randomNumber_ % bidsInfoReference_.numItems].bidderAddress;
+						address raffleWinnerAddress_ = roundStatsReference_.bidsInfo[randomNumber_ % roundStatsReference_.numBids].bidderAddress;
 						// #enable_asserts assert(raffleWinnerAddress_ != address(0));
 						-- cosmicSignatureTokenMintSpecIndex_;
 						ICosmicSignatureToken.MintSpec memory cosmicSignatureTokenMintSpec_ = cosmicSignatureTokenMintSpecs_[cosmicSignatureTokenMintSpecIndex_];

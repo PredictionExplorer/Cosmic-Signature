@@ -15,12 +15,6 @@ import { ICosmicSignatureGameStorageV3 } from "./interfaces/ICosmicSignatureGame
 abstract contract CosmicSignatureGameStorageV3Base is
 	CosmicSignatureGameStorageV2Base,
 	ICosmicSignatureGameStorageV3 {
-	// #region Bid Statistics V3
-
-	/// @dev Comment-202411098 applies.
-	mapping(uint256 roundNum => ChampionDurations) public championDurations;
-
-	// #endregion
 	// #region Bidding V3
 
 	/// @notice

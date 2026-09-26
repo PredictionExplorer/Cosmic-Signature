@@ -245,7 +245,8 @@ describe("CosmicSignatureGameV2-Bidding", function () {
 			);
 			await assertV2BidPlaced(receipt_, game_, bidder_, BigInt(ethPrice_), -1n, -1n, expectedBidCstReward_);
 			{
-				const spent_ = await game_.getBidderTotalSpentAmounts(await game_.roundNum(), bidder_.address);
+				// const spent_ = await game_.getBidderTotalSpentAmounts(await game_.roundNum(), bidder_.address);
+				const spent_ = await game_.biddersInfo(await game_.roundNum(), bidder_.address);
 				expect(spent_[0]).greaterThan(0n);
 				expect(spent_[1]).equal(0n);
 			}

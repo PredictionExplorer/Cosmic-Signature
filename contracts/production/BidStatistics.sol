@@ -15,28 +15,28 @@ import { IBidStatistics } from "./interfaces/IBidStatistics.sol";
 abstract contract BidStatistics is
 	CosmicSignatureGameStorage,
 	IBidStatistics {
-	// #region `getTotalNumBids`
+	// #region // `getTotalNumBids`
 
-	function getTotalNumBids(uint256 roundNum_) external view override returns (uint256) {
-		BidsInfo storage bidsInfoReference_ = bidsInfo[roundNum_];
-		uint256 totalNumBids_ = bidsInfoReference_.numItems;
-		return totalNumBids_;
-	}
+	// function getTotalNumBids(uint256 roundNum_) external view override returns (uint256) {
+	// 	RoundStats storage roundStatsReference_ = roundStats[roundNum_];
+	// 	uint256 totalNumBids_ = roundStatsReference_.numBids;
+	// 	return totalNumBids_;
+	// }
 
 	// #endregion
 	// #region `getBidInfoAt`
 
 	function getBidInfoAt(uint256 roundNum_, uint256 bidIndex_) external view override returns (BidInfo memory) {
-		return bidsInfo[roundNum_].items[bidIndex_];
+		return roundStats[roundNum_].bidsInfo[bidIndex_];
 	}
 
 	// #endregion
-	// #region `getBidderTotalSpentAmounts`
+	// #region // `getBidderTotalSpentAmounts`
 
-	function getBidderTotalSpentAmounts(uint256 roundNum_, address bidderAddress_) external view override returns (uint256, uint256) {
-		BidderInfo storage bidderInfoReference_ = biddersInfo[roundNum_][bidderAddress_];
-		return (bidderInfoReference_.totalSpentEthAmount, bidderInfoReference_.totalSpentCstAmount);
-	}
+	// function getBidderTotalSpentAmounts(uint256 roundNum_, address bidderAddress_) external view override returns (uint256, uint256) {
+	// 	BidderInfo storage bidderInfoReference_ = biddersInfo[roundNum_][bidderAddress_];
+	// 	return (bidderInfoReference_.totalSpentEthAmount, bidderInfoReference_.totalSpentCstAmount);
+	// }
 
 	// #endregion
 	// #region `_updateChampionsIfNeeded`

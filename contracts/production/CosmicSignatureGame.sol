@@ -76,7 +76,7 @@ contract CosmicSignatureGame is
 		// // lastBidType = todo-9 Should we assert that this equals `ETH`?
 		// lastBidderAddress =
 		// lastCstBidderAddress =
-		// bidsInfo =
+		// roundStats =
 		// biddersInfo =
 		// enduranceChampionAddress =
 		// enduranceChampionStartTimeStamp =

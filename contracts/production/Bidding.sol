@@ -763,11 +763,11 @@ abstract contract Bidding is
 			}
 			// lastBidType = bidType_;
 			lastBidderAddress = _msgSender();
-			BidsInfo storage bidsInfoReference_ = bidsInfo[roundNum];
-			uint256 totalNumBids_ = bidsInfoReference_.numItems;
-			bidsInfoReference_.items[totalNumBids_].bidderAddress = _msgSender();
+			RoundStats storage roundStatsReference_ = roundStats[roundNum];
+			uint256 totalNumBids_ = roundStatsReference_.numBids;
+			roundStatsReference_.bidsInfo[totalNumBids_].bidderAddress = _msgSender();
 			++ totalNumBids_;
-			bidsInfoReference_.numItems = totalNumBids_;
+			roundStatsReference_.numBids = totalNumBids_;
 			biddersInfo[roundNum][_msgSender()].lastBidTimeStamp = block.timestamp;
 		}
 	}

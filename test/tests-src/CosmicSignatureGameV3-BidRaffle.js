@@ -109,7 +109,8 @@ describe("CosmicSignatureGameV3-BidRaffle", function () {
 				).equal(concurrentEthBidPrice_);
 			}
 
-			expect(await game_.getTotalNumBids(roundNum_)).equal(6n);
+			// expect(await game_.getTotalNumBids(roundNum_)).equal(6n);
+			expect((await game_.roundStats(roundNum_)).numBids).equal(6n);
 			const { cumulativeWeights: cumulativeWeights_ } = await readBidRaffleData(game_, roundNum_);
 			for ( let bidIndex_ = 1; bidIndex_ < cumulativeWeights_.length; ++ bidIndex_ ) {
 				expect(cumulativeWeights_[bidIndex_], `cumulative weight ${bidIndex_}`)

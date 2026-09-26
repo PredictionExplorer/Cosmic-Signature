@@ -112,13 +112,14 @@ async function runInvariants(ctx_) {
 		expect(await game_.cstBidPriceDeclineMultiplierChangeDivisor(), "cstBidPriceDeclineMultiplierChangeDivisor vs model").to.equal(model.cstBidPriceDeclineMultiplierChangeDivisor);
 		expect(await game_.mainPrizeNumCosmicSignatureNfts(), "mainPrizeNumCosmicSignatureNfts vs model").to.equal(model.mainPrizeNumCosmicSignatureNfts);
 		expect(await game_.getRoundLateBidDuration(), "getRoundLateBidDuration vs model").to.equal(model.getRoundLateBidDuration());
+	}
 
-		for (const [roundNumString_, expectedDurations_] of model.championDurationsByRound) {
-			const onChainDurations_ = await game_.championDurations(BigInt(roundNumString_));
-			expect(onChainDurations_[0], `championDurations[${roundNumString_}].enduranceChampion vs model`)
-				.to.equal(expectedDurations_.enduranceChampion);
-			expect(onChainDurations_[1], `championDurations[${roundNumString_}].chronoWarrior vs model`)
-				.to.equal(expectedDurations_.chronoWarrior);
+	// Check completed rounds too. V1/V2 rounds must retain zero in their new V3-only fields after upgrade.
+	for (const roundNumString_ of new Set([...model.rounds.keys(), model.roundNum.toString()])) {
+		const roundNum_ = BigInt(roundNumString_);
+		const onChainStats_ = await game_.roundStats(roundNum_);
+		for (const [field_, expectedValue_] of Object.entries(model.roundStats(roundNum_))) {
+			expect(onChainStats_[field_], `roundStats[${roundNumString_}].${field_} vs model`).to.equal(expectedValue_);
 		}
 	}
 
@@ -175,16 +176,23 @@ async function runInvariants(ctx_) {
 
 	// Bid statistics tail.
 	{
-		const onChainNumBids_ = await game_.getTotalNumBids(model.roundNum);
-		expect(onChainNumBids_, "getTotalNumBids vs model").to.equal(model.getTotalNumBids(model.roundNum));
+		// const onChainNumBids_ = await game_.getTotalNumBids(model.roundNum);
+		// expect(onChainNumBids_, "getTotalNumBids vs model").to.equal(model.getTotalNumBids(model.roundNum));
+		const onChainNumBids_ = (await game_.roundStats(model.roundNum)).numBids;
+		expect(onChainNumBids_, "roundStats.numBids vs model").to.equal(model.roundStats(model.roundNum).numBids);
 		if (model.lastBidderAddress !== hre.ethers.ZeroAddress && onChainNumBids_ > 0n) {
 			const tailBidInfo_ = await game_.getBidInfoAt(model.roundNum, onChainNumBids_ - 1n);
 			expect(tailBidInfo_.bidderAddress.toLowerCase(), "bid log tail == lastBidderAddress")
 				.to.equal(model.lastBidderAddress);
-			const bidderInfo_ = model.getBidderInfo(model.roundNum, model.lastBidderAddress);
-			const [ethSpent_, cstSpent_] = await game_.getBidderTotalSpentAmounts(model.roundNum, model.lastBidderAddress);
-			expect(ethSpent_, "getBidderTotalSpentAmounts ETH vs model").to.equal(bidderInfo_.totalSpentEthAmount);
-			expect(cstSpent_, "getBidderTotalSpentAmounts CST vs model").to.equal(bidderInfo_.totalSpentCstAmount);
+			// const bidderInfo_ = model.getBidderInfo(model.roundNum, model.lastBidderAddress);
+			// const [ethSpent_, cstSpent_] = await game_.getBidderTotalSpentAmounts(model.roundNum, model.lastBidderAddress);
+			// expect(ethSpent_, "getBidderTotalSpentAmounts ETH vs model").to.equal(bidderInfo_.totalSpentEthAmount);
+			// expect(cstSpent_, "getBidderTotalSpentAmounts CST vs model").to.equal(bidderInfo_.totalSpentCstAmount);
+			const bidderInfo_ = model.biddersInfo(model.roundNum, model.lastBidderAddress);
+			const onChainBidderInfo_ = await game_.biddersInfo(model.roundNum, model.lastBidderAddress);
+			for (const [field_, expectedValue_] of Object.entries(bidderInfo_)) {
+				expect(onChainBidderInfo_[field_], `biddersInfo.${field_} vs model`).to.equal(expectedValue_);
+			}
 		}
 	}
 

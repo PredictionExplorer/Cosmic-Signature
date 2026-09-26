@@ -94,16 +94,21 @@ describe("CosmicSignatureGameV3-StorageLayout", function () {
 		expect(await gameV2_.chronoWarriorEthPrizeAmountPercentage()).equal(13n);
 
 		const carriedState_ = await snapshotCarriedState(gameV2_);
+		const completedRoundStats_ = await gameV2_.roundStats(0n);
+		const completedRoundBidInfo_ = await gameV2_.getBidInfoAt(0n, 0n);
+		expect(completedRoundStats_.numBids).equal(1n);
+		expect(Array.from(completedRoundStats_).slice(1)).deep.equal(Array(8).fill(0n));
 
 		// The V3 `reinitialize` overwrites these values and the five prize percentages configured above.
 		expect(await gameV2_.bidCstRewardAmountMultiplier()).equal(123_456_789n);
 		expect(await gameV2_.cstDutchAuctionBeginningBidPriceMinLimit()).not.equal(10n ** 18n);
 
-		// The 7 new V3 slots are taken from the gap region, so on V2 their getters must not even exist.
+		// The 6 new V3 slots are taken from the gap region, so on V2 their getters must not even exist.
+		// Champion durations now belong to `roundStats`, which is available in all versions.
 		const cosmicSignatureGameV3Factory_ =
 			await hre.ethers.getContractFactory("CosmicSignatureGameV3", contracts_.ownerSigner);
 		for (const newGetterName_ of [
-			"championDurations(uint256)",
+			// "championDurations(uint256)",
 			"cstBidPriceDeclineMultiplier()",
 			"cstBidPriceDeclineMultiplierChangeDivisor()",
 			"roundLateBidDurationDivisor()",
@@ -132,6 +137,8 @@ describe("CosmicSignatureGameV3-StorageLayout", function () {
 
 		await assertCarriedStateUnchanged(gameV3_, carriedState_);
 		await assertDefaultV3Initialization(gameV3_);
+		expect(await gameV3_.roundStats(0n)).deep.equal(completedRoundStats_);
+		expect(await gameV3_.getBidInfoAt(0n, 0n)).deep.equal(completedRoundBidInfo_);
 
 		// V3 removes no selectors; a couple of representative V2 methods must still exist and work.
 		{

@@ -79,7 +79,7 @@ abstract contract MainPrizeV2Base is
 			bool isSameBid_ = _updateChronoWarriorIfNeeded(block.timestamp);
 
 			// Comment-202607178 relates.
-			_saveChampionDurations(isSameBid_);
+			_updateRoundStatsOnMainPrizeClaim(isSameBid_);
 
 			_distributePrizes();
 			_prepareNextRound();

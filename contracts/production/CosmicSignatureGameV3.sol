@@ -46,7 +46,6 @@ contract CosmicSignatureGameV3 is
 
 		// todo-0 Remember to list all new variables here, at least commented.
 
-		// championDurations =
 		cstDutchAuctionBeginningBidPriceMinLimit = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT_V3;
 		cstBidPriceDeclineMultiplier = CosmicSignatureConstants.INITIAL_CST_BID_PRICE_DECLINE_MULTIPLIER;
 		// // #enable_asserts // #disable_smtchecker console.log("202609284", cstBidPriceDeclineMultiplier);
@@ -88,8 +87,8 @@ contract CosmicSignatureGameV3 is
 		super.setCstDutchAuctionDurationChangeDivisor(newValue_);
 	}
 
-	function _saveChampionDurations(bool isSameBid_) internal override (BidStatisticsV2, BidStatisticsV3, MainPrizeV3) /* virtual */ {
-		super._saveChampionDurations(isSameBid_);
+	function _updateRoundStatsOnMainPrizeClaim(bool isSameBid_) internal override (BidStatisticsV2, BidStatisticsV3, MainPrizeV3) /* virtual */ {
+		super._updateRoundStatsOnMainPrizeClaim(isSameBid_);
 	}
 
 	function getNextEthBidPriceAdvanced(int256 currentTimeOffset_) public view override (BiddingV2Base, BiddingV3) /* virtual */ returns (uint256) {

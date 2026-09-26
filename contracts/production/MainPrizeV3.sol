@@ -46,7 +46,7 @@ abstract contract MainPrizeV3 is
 			// Comment-202605312 applies.
 			randomNumberSeedWrapper_.value = RandomNumberHelpers.generateRandomNumberSeed();
 
-			BidsInfo storage bidsInfoReference_ = bidsInfo[roundNum];
+			RoundStats storage roundStatsReference_ = roundStats[roundNum];
 			uint256 timeoutTimeToWithdrawSecondaryPrizes_;
 
 			// Comment-202501161 applies.
@@ -114,7 +114,7 @@ abstract contract MainPrizeV3 is
 
 						ethDepositsTotalAmount_ += raffleEthPrizeAmountForBidder_ * ethDepositIndex_;
 						do {
-							address raffleWinnerAddress_ = _pickRaffleWinnerAddress(bidsInfoReference_, randomNumberSeedWrapper_);
+							address raffleWinnerAddress_ = _pickRaffleWinnerAddress(roundStatsReference_, randomNumberSeedWrapper_);
 							-- ethDepositIndex_;
 							IPrizesWallet.EthDeposit memory ethDepositReference_ = ethDeposits_[ethDepositIndex_];
 							ethDepositReference_.prizeWinnerAddress = raffleWinnerAddress_;
@@ -280,7 +280,7 @@ abstract contract MainPrizeV3 is
 
 					// #enable_asserts assert(numRaffleCosmicSignatureNftsForBidders > 0);
 					for (uint256 raffleWinnerIndex_ = numRaffleCosmicSignatureNftsForBidders; ; ) {
-						address raffleWinnerAddress_ = _pickRaffleWinnerAddress(bidsInfoReference_, randomNumberSeedWrapper_);
+						address raffleWinnerAddress_ = _pickRaffleWinnerAddress(roundStatsReference_, randomNumberSeedWrapper_);
 						-- cosmicSignatureTokenMintSpecIndex_;
 						ICosmicSignatureToken.MintSpec memory cosmicSignatureTokenMintSpec_ = cosmicSignatureTokenMintSpecs_[cosmicSignatureTokenMintSpecIndex_];
 						cosmicSignatureTokenMintSpec_.account = raffleWinnerAddress_;
@@ -538,7 +538,7 @@ abstract contract MainPrizeV3 is
 
 	/// @notice Picks a bidder with probability proportional to the bidder's bid raffle weight.
 	function _pickRaffleWinnerAddress(
-		BidsInfo storage bidsInfoReference_,
+		RoundStats storage roundStatsReference_,
 		RandomNumberHelpers.RandomNumberSeedWrapper memory randomNumberSeedWrapper_
 	) private view returns (address) {
 		// #enable_smtchecker /*
@@ -546,10 +546,10 @@ abstract contract MainPrizeV3 is
 		// #enable_smtchecker */
 		{
 			uint256 randomNumber_ = RandomNumberHelpers.generateRandomNumber(randomNumberSeedWrapper_);
-			uint256 bidRaffleTotalWeight_ = BidRaffleWeightHelpers.getTotalWeight(bidsInfoReference_);
+			uint256 bidRaffleTotalWeight_ = BidRaffleWeightHelpers.getTotalWeight(roundStatsReference_);
 			// #enable_asserts assert(bidRaffleTotalWeight_ > 0);
-			uint256 raffleWinnerBidIndex_ = BidRaffleWeightHelpers.findBidIndex(bidsInfoReference_, randomNumber_ % bidRaffleTotalWeight_);
-			address raffleWinnerAddress_ = bidsInfoReference_.items[raffleWinnerBidIndex_].bidderAddress;
+			uint256 raffleWinnerBidIndex_ = BidRaffleWeightHelpers.findBidIndex(roundStatsReference_, randomNumber_ % bidRaffleTotalWeight_);
+			address raffleWinnerAddress_ = roundStatsReference_.bidsInfo[raffleWinnerBidIndex_].bidderAddress;
 			// #enable_asserts assert(raffleWinnerAddress_ != address(0));
 			return raffleWinnerAddress_;
 		}
@@ -558,8 +558,8 @@ abstract contract MainPrizeV3 is
 	// #endregion
 	// #region Overrides Required By Solidity
 
-	function _saveChampionDurations(bool isSameBid_) internal override (BidStatisticsV2, BidStatisticsV3) virtual {
-		super._saveChampionDurations(isSameBid_);
+	function _updateRoundStatsOnMainPrizeClaim(bool isSameBid_) internal override (BidStatisticsV2, BidStatisticsV3) virtual {
+		super._updateRoundStatsOnMainPrizeClaim(isSameBid_);
 	}
 
 	// #endregion

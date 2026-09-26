@@ -132,7 +132,14 @@ abstract contract BiddingV3 is
 			// #endregion
 			// #region
 
-			BidRaffleWeightHelpers.saveForNextBid(bidsInfo[roundNum], ethBidPriceBase_);
+			{
+				RoundStats storage roundStatsReference_ = roundStats[roundNum];
+				BidRaffleWeightHelpers.saveForNextBid(roundStatsReference_, ethBidPriceBase_);
+				roundStatsReference_.totalSpentEthAmount += paidEthPrice_;
+				if (paidEthPrice_ > roundStatsReference_.maxEthBidPrice) {
+					roundStatsReference_.maxEthBidPrice = paidEthPrice_;
+				}
+			}
 			biddersInfo[roundNum][_msgSender()].totalSpentEthAmount += paidEthPrice_;
 			if (lastBidderAddress == address(0)) {
 				ethDutchAuctionBeginningBidPrice = ethBidPriceBase_ * CosmicSignatureConstants.ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
@@ -213,8 +220,16 @@ abstract contract BiddingV3 is
 			// Comment-202609074 applies to `lastBidderAddress`.
 			_burnCstBidPriceAndMintBidCstRewardAmountIfNeeded(lastBidderAddress, paidCstPrice_, bidCstRewardAmount_);
 
-			uint256 ethBidPriceBase_ = super.getNextEthBidPriceAdvanced(int256(0));
-			BidRaffleWeightHelpers.saveForNextBid(bidsInfo[roundNum], ethBidPriceBase_);
+			{
+				RoundStats storage roundStatsReference_ = roundStats[roundNum];
+				uint256 ethBidPriceBase_ = super.getNextEthBidPriceAdvanced(int256(0));
+				BidRaffleWeightHelpers.saveForNextBid(roundStatsReference_, ethBidPriceBase_);
+				++ roundStatsReference_.numCstBids;
+				roundStatsReference_.totalSpentCstAmount += paidCstPrice_;
+				if (paidCstPrice_ > roundStatsReference_.maxCstBidPrice) {
+					roundStatsReference_.maxCstBidPrice = paidCstPrice_;
+				}
+			}
 			biddersInfo[roundNum][_msgSender()].totalSpentCstAmount += paidCstPrice_;
 			cstDutchAuctionBeginningTimeStamp = block.timestamp;
 

@@ -46,7 +46,7 @@ abstract contract CosmicSignatureGameStorageV2Base is ICosmicSignatureGameStorag
 	/// Comment-202502044 relates.
 	/// // Comment-202607169 applies.
 	/// // @custom:oz-renamed-from bidderAddresses
-	mapping(uint256 roundNum => BidsInfo) public bidsInfo;
+	mapping(uint256 roundNum => RoundStats) public roundStats;
 
 	/// @dev Comment-202411098 applies.
 	mapping(uint256 roundNum => mapping(address bidderAddress => BidderInfo)) public biddersInfo;

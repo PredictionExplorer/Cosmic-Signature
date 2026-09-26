@@ -83,6 +83,14 @@ function ethDutchAuctionPrice(beginningBidPrice_, elapsedDuration_, auctionDurat
 	return endingBidPrice_;
 }
 
+/** Checks the bidding fields without assuming that champion statistics have been finalized. */
+async function assertRoundBidStats(game_, roundNum_, expectedStats_) {
+	const stats_ = await game_.roundStats(roundNum_);
+	for (const [name_, value_] of Object.entries(expectedStats_)) {
+		expect(stats_[name_], `round ${roundNum_}: ${name_}`).equal(value_);
+	}
+}
+
 describe("CosmicSignatureGameV3-Bidding", function () {
 	it("adjusts the CST decline multiplier for every bid entry point, including zero-price CST bids after long waits", async function () {
 		await testAcrossGameVersions(async (contracts_, game_) => {
@@ -127,6 +135,7 @@ describe("CosmicSignatureGameV3-Bidding", function () {
 				() => gameForBidder_.bidWithCstAndDonateNft(0n, "", 0n, mockNft_, nftIds_[1]),
 			];
 			for (const submitBid_ of cstBidSubmissions_) {
+				const statsBefore_ = await game_.roundStats(await game_.roundNum());
 				const auctionBefore_ = await readCstAuctionState(game_);
 				const durationBefore_ = await assertCstAuctionDurations(game_);
 				const waitDuration_ = (3n + BigInt(generateRandomUInt32() % 19)) * SECONDS_PER_DAY;
@@ -143,6 +152,14 @@ describe("CosmicSignatureGameV3-Bidding", function () {
 				expect(await game_.cstBidPriceDeclineMultiplier()).equal(expectedMultiplier_);
 				expect(await game_.cstDutchAuctionBeginningBidPrice()).equal(auctionBefore_.beginningPriceMinLimit);
 				expect(await game_.cstDutchAuctionBeginningTimeStamp()).equal(await blockTimestampOfReceipt(receipt_));
+				await assertRoundBidStats(game_, await game_.roundNum(), {
+					numBids: statsBefore_.numBids + 1n,
+					numCstBids: statsBefore_.numCstBids + 1n,
+					totalSpentEthAmount: statsBefore_.totalSpentEthAmount,
+					totalSpentCstAmount: 0n,
+					maxEthBidPrice: statsBefore_.maxEthBidPrice,
+					maxCstBidPrice: 0n,
+				});
 				await assertCstAuctionDurations(game_);
 			}
 			await finishGameRound(contracts_, game_);
@@ -269,7 +286,8 @@ describe("CosmicSignatureGameV3-Bidding", function () {
 				const timeStamp_ = (await getLatestBlockTimestamp()) + 100n;
 				const ethBidPrice_ = await game_.getNextEthBidPriceAdvanced(100n);
 				const ethBidValue_ = ethBidPrice_ * 10n;
-				const firstBidIndex_ = await game_.getTotalNumBids(roundNum_);
+				// const firstBidIndex_ = await game_.getTotalNumBids(roundNum_);
+				const firstBidIndex_ = (await game_.roundStats(roundNum_)).numBids;
 				const prevBidRaffleCumulativeWeight_ =
 					(firstBidIndex_ > 0n) ?
 					(await game_.getBidInfoAt(roundNum_, firstBidIndex_ - 1n)).raffleCumulativeWeight :
@@ -599,7 +617,7 @@ describe("CosmicSignatureGameV3-Bidding", function () {
 		}, 3, 3);
 	});
 
-	it("charges late bid premiums without increasing price anchors or raffle weights", async function () {
+	it("records premium-inclusive paid amounts without increasing price anchors or raffle weights", async function () {
 		await testAcrossGameVersions(async (contracts_, game_) => {
 			const token_ = contracts_.cosmicSignatureToken;
 			const [bidder1_, bidder2_] = contracts_.signers.slice(1, 3);
@@ -617,7 +635,37 @@ describe("CosmicSignatureGameV3-Bidding", function () {
 			);
 			const randomWalkNftId_ = (await contracts_.randomWalkNft.totalSupply()) - 1n;
 			const roundNum_ = await game_.roundNum();
-			await waitForTransactionReceipt(game_.connect(bidder1_).bidWithEth(-1n, "", 0n, { value: 10n ** 18n, }));
+			const expectedStats_ = {
+				numBids: 0n,
+				numCstBids: 0n,
+				totalSpentEthAmount: 0n,
+				totalSpentCstAmount: 0n,
+				maxEthBidPrice: 0n,
+				maxCstBidPrice: 0n,
+			};
+			await assertRoundBidStats(game_, roundNum_, expectedStats_);
+			const firstEthPrice_ = await game_.getNextEthBidPriceAdvanced(1n);
+			await bidWithEthAt(game_, bidder1_, (await getLatestBlockTimestamp()) + 1n);
+			expectedStats_.numBids = 1n;
+			expectedStats_.totalSpentEthAmount = firstEthPrice_;
+			expectedStats_.maxEthBidPrice = firstEthPrice_;
+			await assertRoundBidStats(game_, roundNum_, expectedStats_);
+
+			const gameAddress_ = await game_.getAddress();
+			for (const donate_ of [
+				() => game_.connect(bidder2_).donateEth({ value: 13n }),
+				() => game_.connect(bidder2_).donateEthWithInfo("{}", { value: 19n }),
+			]) {
+				await waitForTransactionReceipt(donate_());
+				await assertRoundBidStats(game_, roundNum_, expectedStats_);
+			}
+
+			// Model a forced ETH transfer's balance-only effect without calling a game entry point.
+			const forcedBalance_ = (await hre.ethers.provider.getBalance(gameAddress_)) + 23n;
+			await hre.ethers.provider.send("hardhat_setBalance", [gameAddress_, hre.ethers.toQuantity(forcedBalance_)]);
+			expect(await hre.ethers.provider.getBalance(gameAddress_)).equal(forcedBalance_);
+			await assertRoundBidStats(game_, roundNum_, expectedStats_);
+
 			const mainPrizeTimeIncrement_ = await game_.mainPrizeTimeIncrementInMicroSeconds();
 			const lateDuration_ = await game_.getRoundLateBidDuration();
 			const increaseDivisor_ = await game_.ethBidPriceIncreaseDivisor();
@@ -634,22 +682,43 @@ describe("CosmicSignatureGameV3-Bidding", function () {
 					ethBidPriceBase_, mainPrizeTime_ - bidTimeStamp_, lateDuration_, mainPrizeTimeIncrement_
 				);
 				expect(adjustedPrice_).greaterThan(ethBidPriceBase_ * 2n);
-				const paidPrice_ = (bidType_ === "NFT") ? (adjustedPrice_ + 1n) / 2n : adjustedPrice_;
-				const spentBefore_ = (await game_.getBidderTotalSpentAmounts(roundNum_, bidder_.address))[0];
+				const quotedPrice_ = (bidType_ === "NFT") ? (adjustedPrice_ + 1n) / 2n : adjustedPrice_;
+
+				// Equal EIP-1559 fee and priority caps make tx.gasprice equal to this value.
+				const { maxFeePerGas: gasPrice_, } = await hre.ethers.provider.getFeeData();
+				const swallowLimit_ = (await game_.ethBidRefundAmountInGasToSwallowMaxLimit()) * gasPrice_;
+				expect(swallowLimit_).greaterThan(0n);
+
+				// ETH refunds excess above the limit; receive() retains a one-wei excess; NFT pays exactly.
+				const overpayment_ = (bidType_ === "ETH") ? swallowLimit_ + 1n : ((bidType_ === "receive") ? 1n : 0n);
+				const paidPrice_ = quotedPrice_ + ((bidType_ === "receive") ? overpayment_ : 0n);
+				const sentAmount_ = quotedPrice_ + overpayment_;
+				// const spentBefore_ = (await game_.getBidderTotalSpentAmounts(roundNum_, bidder_.address))[0];
+				const spentBefore_ = (await game_.biddersInfo(roundNum_, bidder_.address)).totalSpentEthAmount;
+				const gameBalanceBefore_ = await hre.ethers.provider.getBalance(gameAddress_);
 				await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(bidTimeStamp_),]);
 				const receipt_ = await waitForTransactionReceipt(
 					(bidType_ === "receive") ?
-					bidder_.sendTransaction({ to: await game_.getAddress(), value: paidPrice_, }) :
-					game_.connect(bidder_).bidWithEth((bidType_ === "NFT") ? randomWalkNftId_ : -1n, "", 0n, { value: paidPrice_, })
+					bidder_.sendTransaction({ to: gameAddress_, value: sentAmount_, maxFeePerGas: gasPrice_, maxPriorityFeePerGas: gasPrice_, }) :
+					game_.connect(bidder_).bidWithEth((bidType_ === "NFT") ? randomWalkNftId_ : -1n, "", 0n, { value: sentAmount_, maxFeePerGas: gasPrice_, maxPriorityFeePerGas: gasPrice_, })
 				);
+				expect(receipt_.gasPrice).equal(gasPrice_);
 				expect(findParsedEvent(receipt_, game_, "BidPlaced").args.paidEthPrice).equal(paidPrice_);
-				expect((await game_.getBidderTotalSpentAmounts(roundNum_, bidder_.address))[0] - spentBefore_).equal(paidPrice_);
+				// expect((await game_.getBidderTotalSpentAmounts(roundNum_, bidder_.address))[0] - spentBefore_).equal(paidPrice_);
+				expect((await game_.biddersInfo(roundNum_, bidder_.address)).totalSpentEthAmount - spentBefore_).equal(paidPrice_);
+				expect((await hre.ethers.provider.getBalance(gameAddress_)) - gameBalanceBefore_).equal(paidPrice_);
+				++ expectedStats_.numBids;
+				expectedStats_.totalSpentEthAmount += paidPrice_;
+				if (paidPrice_ > expectedStats_.maxEthBidPrice) expectedStats_.maxEthBidPrice = paidPrice_;
+				await assertRoundBidStats(game_, roundNum_, expectedStats_);
 				const newEthBidPriceBase_ = ethBidPriceBase_ + ethBidPriceBase_ / increaseDivisor_ + 1n;
 				expect(await game_.nextEthBidPrice()).equal(newEthBidPriceBase_);
 				expect(await game_.getNextEthBidPrice()).equal(newEthBidPriceBase_);
 				expect(await game_.ethDutchAuctionBeginningBidPrice()).equal(ethAuctionBeginningPrice_);
 				cumulativeWeight_ += ethBidPriceBase_;
-				expect((await game_.getBidInfoAt(roundNum_, (await game_.getTotalNumBids(roundNum_)) - 1n)).raffleCumulativeWeight)
+				// expect((await game_.getBidInfoAt(roundNum_, (await game_.getTotalNumBids(roundNum_)) - 1n)).raffleCumulativeWeight)
+				// 	.equal(cumulativeWeight_);
+				expect((await game_.getBidInfoAt(roundNum_, (await game_.roundStats(roundNum_)).numBids - 1n)).raffleCumulativeWeight)
 					.equal(cumulativeWeight_);
 			}
 
@@ -676,12 +745,19 @@ describe("CosmicSignatureGameV3-Bidding", function () {
 				}
 
 				const balanceBefore_ = await token_.balanceOf(bidder_.address);
-				const spentBefore_ = (await game_.getBidderTotalSpentAmounts(roundNum_, bidder_.address))[1];
+				// const spentBefore_ = (await game_.getBidderTotalSpentAmounts(roundNum_, bidder_.address))[1];
+				const spentBefore_ = (await game_.biddersInfo(roundNum_, bidder_.address)).totalSpentCstAmount;
 				await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(bidTimeStamp_),]);
 				const receipt_ = await waitForTransactionReceipt(game_.connect(bidder_).bidWithCst(adjustedPrice_, "", 0n));
 				expect(findParsedEvent(receipt_, game_, "BidPlaced").args.paidCstPrice).equal(adjustedPrice_);
 				expect(balanceBefore_ - await token_.balanceOf(bidder_.address)).equal(adjustedPrice_);
-				expect((await game_.getBidderTotalSpentAmounts(roundNum_, bidder_.address))[1] - spentBefore_).equal(adjustedPrice_);
+				// expect((await game_.getBidderTotalSpentAmounts(roundNum_, bidder_.address))[1] - spentBefore_).equal(adjustedPrice_);
+				expect((await game_.biddersInfo(roundNum_, bidder_.address)).totalSpentCstAmount - spentBefore_).equal(adjustedPrice_);
+				++ expectedStats_.numBids;
+				++ expectedStats_.numCstBids;
+				expectedStats_.totalSpentCstAmount += adjustedPrice_;
+				if (adjustedPrice_ > expectedStats_.maxCstBidPrice) expectedStats_.maxCstBidPrice = adjustedPrice_;
+				await assertRoundBidStats(game_, roundNum_, expectedStats_);
 				const minLimit_ = await game_.cstDutchAuctionBeginningBidPriceMinLimit();
 				const newBeginningPrice_ = (cstBidPriceBase_ * 2n > minLimit_) ? cstBidPriceBase_ * 2n : minLimit_;
 				expect(await game_.cstDutchAuctionBeginningBidPrice()).equal(newBeginningPrice_);
@@ -692,10 +768,30 @@ describe("CosmicSignatureGameV3-Bidding", function () {
 				expect(await game_.nextRoundFirstCstDutchAuctionBeginningBidPrice()).equal(nextRoundCstBeginningPrice_);
 				expect(await game_.nextEthBidPrice()).equal(ethBidPriceBase_);
 				cumulativeWeight_ += ethBidPriceBase_;
-				expect((await game_.getBidInfoAt(roundNum_, (await game_.getTotalNumBids(roundNum_)) - 1n)).raffleCumulativeWeight)
+				// expect((await game_.getBidInfoAt(roundNum_, (await game_.getTotalNumBids(roundNum_)) - 1n)).raffleCumulativeWeight)
+				// 	.equal(cumulativeWeight_);
+				expect((await game_.getBidInfoAt(roundNum_, (await game_.roundStats(roundNum_)).numBids - 1n)).raffleCumulativeWeight)
 					.equal(cumulativeWeight_);
 			}
+
+			// After the premium window closes, the last ETH bid can cost less than an earlier bid.
+			const lastEthPrice_ = await game_.getNextEthBidPriceAdvanced(1n);
+			expect(lastEthPrice_).equal(await game_.nextEthBidPrice());
+			expect(lastEthPrice_).lessThan(expectedStats_.maxEthBidPrice);
+			await bidWithEthAt(game_, bidder1_, (await getLatestBlockTimestamp()) + 1n);
+			++ expectedStats_.numBids;
+			expectedStats_.totalSpentEthAmount += lastEthPrice_;
+			await assertRoundBidStats(game_, roundNum_, expectedStats_);
 			await finishGameRound(contracts_, game_);
+			await assertRoundBidStats(game_, roundNum_, expectedStats_);
+			await assertRoundBidStats(game_, roundNum_ + 1n, {
+				numBids: 0n,
+				numCstBids: 0n,
+				totalSpentEthAmount: 0n,
+				totalSpentCstAmount: 0n,
+				maxEthBidPrice: 0n,
+				maxCstBidPrice: 0n,
+			});
 		}, 3, 3);
 	});
 
@@ -730,7 +826,8 @@ describe("CosmicSignatureGameV3-Bidding", function () {
 
 		// The token error wins over both `RoundIsInactive` and `WrongBidType`, and all interim work rolls back.
 		expect(await game_.lastBidderAddress()).equal(hre.ethers.ZeroAddress);
-		expect(await game_.getTotalNumBids(await game_.roundNum())).equal(0n);
+		// expect(await game_.getTotalNumBids(await game_.roundNum())).equal(0n);
+		expect((await game_.roundStats(await game_.roundNum())).numBids).equal(0n);
 		expect(await token_.totalSupply()).equal(totalSupplyBefore_);
 	});
 
@@ -747,12 +844,15 @@ describe("CosmicSignatureGameV3-Bidding", function () {
 			// the reentrancy guard reverts it, and that reverts the refund and the entire hostile bid.
 			await waitForTransactionReceipt(hostileBidder_.setHostilityModeCode(4n));
 			const ethBidPrice_ = await game_.getNextEthBidPriceAdvanced(2n);
+			const roundNum_ = await game_.roundNum();
+			const statsBefore_ = await game_.roundStats(roundNum_);
 			await expect(
 				hostileBidder_.connect(deployerOfHostileContract_).doBidWithEth(-1n, "reentry attempt", 0n, {value: ethBidPrice_ + 10n ** 18n,})
 			).revertedWithCustomError(game_, "ReentrancyGuardReentrantCall");
 
 			// The game is unaffected: the EOA is still the last bidder, and bidding continues normally.
 			expect(await game_.lastBidderAddress()).equal(eoaBidder1_.address);
+			expect(await game_.roundStats(roundNum_)).deep.equal(statsBefore_);
 			await bidWithEthAt(game_, eoaBidder1_, (await getLatestBlockTimestamp()) + 30n);
 			await finishGameRound(contracts_, game_);
 		}, 3, 3);

@@ -5,19 +5,24 @@ import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
 
 /// @notice This contract supports updating and getting game playing statistics, including Endurance Champion and Chrono-Warrior.
 interface IBidStatistics is ICosmicSignatureGameStorage {
-	/// @return The total number of bids in the given bidding round.
-	/// If an argument is invalid the return value is indeterminate.
-	function getTotalNumBids(uint256 roundNum_) external view returns (uint256);
+	// /// @return The total number of bids in the given bidding round.
+	// /// If an argument is invalid the return value is indeterminate.
+	// /// @dev
+	// /// [Comment-202610064]
+	// /// Solidity auto-generates a similar method, so we don't need this one.
+	// /// [/Comment-202610064]
+	// function getTotalNumBids(uint256 roundNum_) external view returns (uint256);
 
 	/// @return Bid details in the given bidding round at the given bid index.
 	/// If an argument is invalid the return value is indeterminate.
 	function getBidInfoAt(uint256 roundNum_, uint256 bidIndex_) external view returns (BidInfo memory);
 
-	/// @return A tuple containing the total ETH and CST amounts spent by the given bidder in the given bidding round.
-	/// If the given bidder didn't bid in the given bidding round both return values will be zeros.
-	/// If an argument is invalid the return value is indeterminate.
-	/// Comment-202503162 relates and/or applies.
-	function getBidderTotalSpentAmounts(uint256 roundNum_, address bidderAddress_) external view returns (uint256, uint256);
+	// /// @return A tuple containing the total ETH and CST amounts spent by the given bidder in the given bidding round.
+	// /// If the given bidder didn't bid in the given bidding round both return values will be zeros.
+	// /// If an argument is invalid the return value is indeterminate.
+	// /// Comment-202503162 relates and/or applies.
+	// /// @dev Comment-202610064 applies.
+	// function getBidderTotalSpentAmounts(uint256 roundNum_, address bidderAddress_) external view returns (uint256, uint256);
 
 	// /// @return The current real-time Endurance Champion address and duration.
 	// /// @dev

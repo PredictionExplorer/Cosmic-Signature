@@ -6,30 +6,30 @@ import { ICosmicSignatureGameStorage } from "../production/interfaces/ICosmicSig
 
 /// @notice A test-only harness for `BidRaffleWeightHelpers`.
 contract BidRaffleWeightHelpersTestHarness {
-	mapping(uint256 arrayId => ICosmicSignatureGameStorage.BidsInfo) private _bidsInfo;
+	mapping(uint256 arrayId => ICosmicSignatureGameStorage.RoundStats) private _roundStats;
 
 	function appendWeights(uint256 arrayId_, uint256[] calldata weights_) external {
-		ICosmicSignatureGameStorage.BidsInfo storage bidsInfo_ = _bidsInfo[arrayId_];
+		ICosmicSignatureGameStorage.RoundStats storage roundStats_ = _roundStats[arrayId_];
 		for ( uint256 index_ = 0; index_ < weights_.length; ++ index_ ) {
-			BidRaffleWeightHelpers.saveForNextBid(bidsInfo_, weights_[index_]);
-			++ bidsInfo_.numItems;
+			BidRaffleWeightHelpers.saveForNextBid(roundStats_, weights_[index_]);
+			++ roundStats_.numBids;
 		}
 	}
 
 	function getNumBids(uint256 arrayId_) external view returns (uint256) {
-		return _bidsInfo[arrayId_].numItems;
+		return _roundStats[arrayId_].numBids;
 	}
 
 	function getCumulativeWeightAt(uint256 arrayId_, uint256 bidIndex_) external view returns (uint256) {
-		return _bidsInfo[arrayId_].items[bidIndex_].raffleCumulativeWeight;
+		return _roundStats[arrayId_].bidsInfo[bidIndex_].raffleCumulativeWeight;
 	}
 
 	function getTotalWeight(uint256 arrayId_) external view returns (uint256) {
-		return BidRaffleWeightHelpers.getTotalWeight(_bidsInfo[arrayId_]);
+		return BidRaffleWeightHelpers.getTotalWeight(_roundStats[arrayId_]);
 	}
 
 	function findBidIndex(uint256 arrayId_, uint256 targetCumulativeWeight_) external view returns (uint256) {
-		return BidRaffleWeightHelpers.findBidIndex(_bidsInfo[arrayId_], targetCumulativeWeight_);
+		return BidRaffleWeightHelpers.findBidIndex(_roundStats[arrayId_], targetCumulativeWeight_);
 	}
 
 	function findBidIndexMany(
@@ -38,7 +38,7 @@ contract BidRaffleWeightHelpersTestHarness {
 	) external view returns (uint256[] memory bidIndexes_) {
 		bidIndexes_ = new uint256[](targetCumulativeWeights_.length);
 		for ( uint256 index_ = 0; index_ < targetCumulativeWeights_.length; ++ index_ ) {
-			bidIndexes_[index_] = BidRaffleWeightHelpers.findBidIndex(_bidsInfo[arrayId_], targetCumulativeWeights_[index_]);
+			bidIndexes_[index_] = BidRaffleWeightHelpers.findBidIndex(_roundStats[arrayId_], targetCumulativeWeights_[index_]);
 		}
 	}
 }
