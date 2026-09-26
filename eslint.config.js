@@ -9,15 +9,21 @@
 const globals = require("globals");
 const esLintJs = require("@eslint/js");
 const typeScriptEsLint = require("typescript-eslint");
+const chaiFriendlyEsLintPlugin = require("eslint-plugin-chai-friendly");
 const stylisticEsLintPlugin = require("@stylistic/eslint-plugin");
 
 const esLintConfigArray =
 	typeScriptEsLint.config(
 		[
 			{
+				// An ignores-only entry excludes generated directories from every configuration.
 				ignores: [
+					"artifacts/**",
+					"cache/**",
 					"coverage/**",
 				],
+			},
+			{
 				plugins: {
 					"@typescript-eslint": typeScriptEsLint.plugin,
 					"@stylistic-eslint-plugin": stylisticEsLintPlugin,
@@ -37,6 +43,7 @@ const esLintConfigArray =
 				extends: [
 					esLintJs.configs.recommended,
 					typeScriptEsLint.configs.recommendedTypeChecked,
+					chaiFriendlyEsLintPlugin.configs.recommendedFlat,
 
 					// // todo-3 This generates a zillion lints. Maybe revisit this someday.
 					// stylisticEsLintPlugin.configs.recommended,

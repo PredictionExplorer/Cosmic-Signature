@@ -437,6 +437,11 @@ describe("CosmicSignatureGameV3-BidCstReward", function () {
 				randomState_ ^= (randomState_ << 17n) & ((1n << 64n) - 1n);
 				return randomState_;
 			};
+
+			/**
+			@param {bigint} minValue_
+			@param {bigint} maxValue_
+			*/
 			const nextRandomRange_ = (minValue_, maxValue_) => minValue_ + nextRandom_() % (maxValue_ - minValue_ + 1n);
 
 			// A random reward multiplier: either a multiple of the default (~1 to ~100 CST per minute),

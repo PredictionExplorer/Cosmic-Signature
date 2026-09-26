@@ -235,7 +235,10 @@ describe("StakingWalletCosmicSignatureNft", function () {
 						break;
 					}
 				}
-				const cosmicSignatureNftStakingTotalEthRewardAmount_ = /** @type {bigint} */ await contracts_.cosmicSignatureGameProxy.getCosmicSignatureNftStakingTotalEthRewardAmount();
+
+				/** @type {bigint} */
+				const cosmicSignatureNftStakingTotalEthRewardAmount_ = await contracts_.cosmicSignatureGameProxy.getCosmicSignatureNftStakingTotalEthRewardAmount();
+
 				expect(cosmicSignatureNftStakingTotalEthRewardAmount_).greaterThan(0n);
 				const durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrize();
 				await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_),]);
@@ -252,12 +255,16 @@ describe("StakingWalletCosmicSignatureNft", function () {
 					expect(stakingWalletCosmicSignatureNftEthDepositReceivedParsedLog_.args.roundNum).equal(roundNum_);
 					expect(stakingWalletCosmicSignatureNftEthDepositReceivedParsedLog_.args.depositAmount).equal(cosmicSignatureNftStakingTotalEthRewardAmount_);
 					expect(Number(stakingWalletCosmicSignatureNftEthDepositReceivedParsedLog_.args.numStakedNfts)).equal(stakeActions_.length);
-					const rewardAmountPerStakedNftIncrement_ = cosmicSignatureNftStakingTotalEthRewardAmount_ / stakingWalletCosmicSignatureNftEthDepositReceivedParsedLog_.args.numStakedNfts;
+
+					/** @type {bigint} */
+					const numStakedNfts_ = stakingWalletCosmicSignatureNftEthDepositReceivedParsedLog_.args.numStakedNfts;
+
+					const rewardAmountPerStakedNftIncrement_ = cosmicSignatureNftStakingTotalEthRewardAmount_ / numStakedNfts_;
 					expect(rewardAmountPerStakedNftIncrement_).greaterThan(0n);
 					ethRewardAmountPerStakedNft_ += rewardAmountPerStakedNftIncrement_;
 					expect(stakingWalletCosmicSignatureNftEthDepositReceivedParsedLog_.args.rewardAmountPerStakedNft).equal(ethRewardAmountPerStakedNft_);
 					expect(await contracts_.stakingWalletCosmicSignatureNft.rewardAmountPerStakedNft()).equal(ethRewardAmountPerStakedNft_);
-					const remainderEthAmountIncrement_ = cosmicSignatureNftStakingTotalEthRewardAmount_ - rewardAmountPerStakedNftIncrement_ * stakingWalletCosmicSignatureNftEthDepositReceivedParsedLog_.args.numStakedNfts;
+					const remainderEthAmountIncrement_ = cosmicSignatureNftStakingTotalEthRewardAmount_ - rewardAmountPerStakedNftIncrement_ * numStakedNfts_;
 					// console.info("%s", `202507217 ${remainderEthAmountIncrement_}`);
 					expect(remainderEthAmountIncrement_).greaterThanOrEqual(0n);
 					remainderEthAmount_ += remainderEthAmountIncrement_;

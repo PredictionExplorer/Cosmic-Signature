@@ -130,7 +130,7 @@ This function is to be used for unit tests.
 async function deployContractsForTestingAdvanced(
 	cosmicSignatureGameContractName
 ) {
-	await hackPrepareHardhatCoverageOnceIfNeeded();
+	hackPrepareHardhatCoverageOnceIfNeeded();
 	await storeContractDeployedByteCodeAtAddress("FakeArbSys", "0x0000000000000000000000000000000000000064");
 	await storeContractDeployedByteCodeAtAddress("FakeArbGasInfo", "0x000000000000000000000000000000000000006C");
 	const deployerSigner = new MyNonceManager(new hre.ethers.Wallet("0xa482f69f1d7e46439c6be45fd58d1281f8fd60bd10b34e91898864e22abf4ee0", hre.ethers.provider));
@@ -201,7 +201,7 @@ Comment-202505294 relates.
 Comment-202509185 relates.
 [/Comment-202508265]
 */
-async function hackPrepareHardhatCoverageOnceIfNeeded() {
+function hackPrepareHardhatCoverageOnceIfNeeded() {
 	// Comment-202508267 applies.
 	const gas = 30_000_000;
 
@@ -221,7 +221,7 @@ async function hackPrepareHardhatCoverageOnceIfNeeded() {
 	hre.network.config.gas = gas;
 
 	// This will execute some assertions.
-	await mochaHooks.beforeAll();
+	mochaHooks.beforeAll();
 }
 
 // #endregion

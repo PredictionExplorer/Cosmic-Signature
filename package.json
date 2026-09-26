@@ -17,6 +17,7 @@
 		"@openzeppelin/hardhat-upgrades": "~3.9.1",
 		"@stylistic/eslint-plugin": "^5.10.0",
 		"eslint": "^9.39.4",
+		"eslint-plugin-chai-friendly": "^1.2.1",
 		"hardhat": "~2.27.2",
 		"hardhat-preprocessor": "~0.1.5",
 		"hardhat-tracer": "~3.4.0",

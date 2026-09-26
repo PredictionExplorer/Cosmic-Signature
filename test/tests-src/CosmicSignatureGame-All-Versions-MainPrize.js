@@ -40,7 +40,7 @@ describe("CosmicSignatureGame-All-Versions-MainPrize", function () {
 	});
 
 	it("The StakingWalletCosmicSignatureNft.deposit method reversal", async function () {
-		await testAcrossGameVersions(async (contracts_, cosmicSignatureGameProxy_, roundNum_, contractVersionNumber_) => {
+		await testAcrossGameVersions(async (contracts_, cosmicSignatureGameProxy_/*, roundNum_, contractVersionNumber_*/) => {
 			const brokenStakingWalletCosmicSignatureNftFactory_ = await hre.ethers.getContractFactory("BrokenStakingWalletCosmicSignatureNft", contracts_.deployerSigner);
 			const brokenStakingWalletCosmicSignatureNft_ = await brokenStakingWalletCosmicSignatureNftFactory_.deploy();
 			await brokenStakingWalletCosmicSignatureNft_.waitForDeployment();
@@ -94,7 +94,7 @@ describe("CosmicSignatureGame-All-Versions-MainPrize", function () {
 
 	// Comment-202411077 relates and/or applies.
 	it("ETH receive by charity reversal", async function () {
-		await testAcrossGameVersions(async (contracts_, cosmicSignatureGameProxy_, roundNum_, contractVersionNumber_) => {
+		await testAcrossGameVersions(async (contracts_, cosmicSignatureGameProxy_/*, roundNum_, contractVersionNumber_*/) => {
 			const brokenEthReceiverFactory_ = await hre.ethers.getContractFactory("BrokenEthReceiver", contracts_.deployerSigner);
 			const brokenEthReceiver_ = await brokenEthReceiverFactory_.deploy();
 			await brokenEthReceiver_.waitForDeployment();

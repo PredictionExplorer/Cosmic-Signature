@@ -3,7 +3,7 @@
 const { describe, it, before } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
-const { generateRandomUInt256, generateRandomUInt256FromSeedWrapper, uint256ToPaddedHexString } = require("../../src/Helpers.js");
+const { generateRandomUInt256, generateRandomUInt256FromSeedWrapper/*, uint256ToPaddedHexString*/ } = require("../../src/Helpers.js");
 const { findBidIndexReference, calculateCumulativeWeights } = require("../src/BidRaffleTestHelpers.js");
 const { parseFuzzSeedFromEnvironment } = require("../src/fuzz/FuzzSeed.js");
 

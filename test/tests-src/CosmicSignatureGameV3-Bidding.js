@@ -274,6 +274,8 @@ describe("CosmicSignatureGameV3-Bidding", function () {
 			const bidders_ = [bidder1_, bidder2_, bidder3_];
 			const bidTypes_ = ["ETH", "receive", "CST"];
 			const roundNum_ = await game_.roundNum();
+
+			/** @type {bigint} */
 			const ethBidPriceIncreaseDivisor_ = await game_.ethBidPriceIncreaseDivisor();
 
 			// [Comment-202609061]
@@ -284,7 +286,10 @@ describe("CosmicSignatureGameV3-Bidding", function () {
 			for (let iterationIndex_ = 0; iterationIndex_ < 10; ++ iterationIndex_) {
 				const bidTypeCombination_ = bidders_.map(() => bidTypes_[generateRandomUInt32() % bidTypes_.length]);
 				const timeStamp_ = (await getLatestBlockTimestamp()) + 100n;
+
+				/** @type {bigint} */
 				const ethBidPrice_ = await game_.getNextEthBidPriceAdvanced(100n);
+
 				const ethBidValue_ = ethBidPrice_ * 10n;
 				// const firstBidIndex_ = await game_.getTotalNumBids(roundNum_);
 				const firstBidIndex_ = (await game_.roundStats(roundNum_)).numBids;

@@ -179,6 +179,7 @@ function populateNetworkIsMainNetOnce(hre) {
 
 subtask(
 	TASK_COMPILE_SOLIDITY_GET_SOLC_BUILD,
+	// eslint-disable-next-line @typescript-eslint/require-await -- Hardhat actions must return a Promise.
 	async (args/*, hre, runSuper*/) => {
 		if (args.solcVersion == solidityVersion) {
 			return {

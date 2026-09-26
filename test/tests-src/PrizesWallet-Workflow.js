@@ -253,7 +253,7 @@ describe("PrizesWallet-Workflow", function () {
 				allNfts_[nftContractIndex_].push(contracts_.signers[bidderIndex_].address);
 
 				// #endregion
-			} else if ((choice1Code_ -= 1) < 0) {
+			} else if ((choice1Code_ -= 1) < 0) { // eslint-disable-line no-dupe-else-if
 				// #region `registerRoundEnd`
 
 				// console.info("%s", "202506084");
@@ -270,7 +270,7 @@ describe("PrizesWallet-Workflow", function () {
 				prepareNextRound_();
 
 				// #endregion
-			} else if ((choice1Code_ -= 2) < 0) {
+			} else if ((choice1Code_ -= 2) < 0) { // eslint-disable-line no-dupe-else-if
 				// #region `depositEth`
 
 				// console.info("%s", "202506144");
@@ -301,7 +301,7 @@ describe("PrizesWallet-Workflow", function () {
 				expect(prizeWinnerEthBalanceAmountFromContract_).equal(ethBalanceAmounts_[prizeWinnerIndex_][Number(roundNum_)]);
 
 				// #endregion
-			} else if ((choice1Code_ -= 2) < 0) {
+			} else if ((choice1Code_ -= 2) < 0) { // eslint-disable-line no-dupe-else-if
 				// #region `withdrawEth(uint256 roundNum_)`, `withdrawEthMany`
 
 				// console.info("%s", `202506088 ${choice1Code_}`);
@@ -346,7 +346,7 @@ describe("PrizesWallet-Workflow", function () {
 				expect(prizeWinnerEthBalanceAmountFromContract_).equal(ethBalanceAmounts_[prizeWinnerIndex_][Number(prizeRoundNum_)]);
 
 				// #endregion
-			} else if ((choice1Code_ -= 1) < 0) {
+			} else if ((choice1Code_ -= 1) < 0) { // eslint-disable-line no-dupe-else-if
 				// #region `withdrawEth(uint256 roundNum_, address prizeWinnerAddress_)`
 
 				// console.info("%s", "202506089");
@@ -425,7 +425,7 @@ describe("PrizesWallet-Workflow", function () {
 				}
 
 				// #endregion
-			} else if ((choice1Code_ -= 2) < 0) {
+			} else if ((choice1Code_ -= 2) < 0) { // eslint-disable-line no-dupe-else-if
 				// #region `donateToken`
 
 				// console.info("%s", "202506097");
@@ -503,7 +503,7 @@ describe("PrizesWallet-Workflow", function () {
 				expect(await newPrizesWallet_.getDonatedTokenBalanceAmount(roundNum_, tokensAddress_[tokenIndex_])).equal(allTokenBalanceAmounts_[tokenIndex_][donatedTokens_[Number(roundNum_)]]);
 
 				// #endregion
-			} else if ((choice1Code_ -= 2) < 0) {
+			} else if ((choice1Code_ -= 2) < 0) { // eslint-disable-line no-dupe-else-if
 				// #region `claimDonatedToken`
 
 				{
@@ -703,7 +703,7 @@ describe("PrizesWallet-Workflow", function () {
 				}
 
 				// #endregion
-			} else if ((choice1Code_ -= 1) < 0) {
+			} else if ((choice1Code_ -= 1) < 0) { // eslint-disable-line no-dupe-else-if
 				// #region `donateNft`
 
 				// console.info("%s", "202506127");

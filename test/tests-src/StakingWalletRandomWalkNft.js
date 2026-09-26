@@ -257,9 +257,9 @@ describe("StakingWalletRandomWalkNft", function () {
 			// const timeStamp1_ = performance.now();
 			const minNumLuckyStakerPicks_ = Math.min( ... numLuckyStakerPicks_ );
 			// const timeStamp2_ = performance.now();
-			// console.info("%s", `202507263 ${(timeStamp2_ - timeStamp1_).toFixed(1)} ${minNumLuckyStakerPicks_} ${numLuckyStakerPicks_}`);
+			// console.info("%s", `202507263 ${(timeStamp2_ - timeStamp1_).toFixed(1)} ${minNumLuckyStakerPicks_} ${numLuckyStakerPicks_.join(",")}`);
 			if (minNumLuckyStakerPicks_ <= 0) {
-				throw new Error(`The random picking of stakers is not necessarily random. At least 1 staker has not been picked. ${numLuckyStakerPicks_}`);
+				throw new Error(`The random picking of stakers is not necessarily random. At least 1 staker has not been picked. ${numLuckyStakerPicks_.join(",")}`);
 			}
 		}
 	});
@@ -310,12 +310,12 @@ describe("StakingWalletRandomWalkNft", function () {
 			const minNumLuckyStakerPicks_ = Math.min( ... numLuckyStakerPicks_ );
 			const maxNumLuckyStakerPicks_ = Math.max( ... numLuckyStakerPicks_ );
 			const minToMaxNumLuckyStakerPicksRatio_ = minNumLuckyStakerPicks_ / maxNumLuckyStakerPicks_;
-			// console.info("%s", `202507269 ${iterationCounter_} ${minNumLuckyStakerPicks_} ${maxNumLuckyStakerPicks_} ${minToMaxNumLuckyStakerPicksRatio_} ${numLuckyStakerPicks_}`);
+			// console.info("%s", `202507269 ${iterationCounter_} ${minNumLuckyStakerPicks_} ${maxNumLuckyStakerPicks_} ${minToMaxNumLuckyStakerPicksRatio_} ${numLuckyStakerPicks_.join(",")}`);
 			if (minToMaxNumLuckyStakerPicksRatio_ >= minToMaxNumLuckyStakerPicksRatioMinLimit_) {
 				break;
 			}
 			if (( ++ iterationCounter_ ) > numIterationsMaxLimit_) {
-				throw new Error(`The random picking of stakers is not necessarily random. Some stakers were picked significantly fewer or more times than the others. ${minNumLuckyStakerPicks_} ${maxNumLuckyStakerPicks_} ${minToMaxNumLuckyStakerPicksRatio_} ${numLuckyStakerPicks_}`);
+				throw new Error(`The random picking of stakers is not necessarily random. Some stakers were picked significantly fewer or more times than the others. ${minNumLuckyStakerPicks_} ${maxNumLuckyStakerPicks_} ${minToMaxNumLuckyStakerPicksRatio_} ${numLuckyStakerPicks_.join(",")}`);
 			}
 		}
 	});
