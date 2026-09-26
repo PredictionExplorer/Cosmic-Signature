@@ -90,9 +90,7 @@ interface ICosmicSignatureGameStorage {
 
 		/// @notice In V3+, bidding round outcome flags.
 		/// Comment-202610069 relates.
-		/// @dev todo-0 Revisit this variable type.
-		/// todo-0 Consider combining this variable and/or other variables with other variables in the same storage slot.
-		uint8 flags;
+		uint256 flags;
 	}
 
 	/// @notice Details about a bidder.

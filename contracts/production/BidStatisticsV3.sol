@@ -29,7 +29,7 @@ abstract contract BidStatisticsV3 is
 		RoundStats storage roundStatsReference_ = roundStats[roundNum];
 		roundStatsReference_.enduranceChampionDuration = enduranceChampionDuration;
 		roundStatsReference_.chronoWarriorDuration = chronoWarriorDuration;
-		// #enable_asserts assert(roundStatsReference_.flags == uint8(0));
+		// #enable_asserts assert(roundStatsReference_.flags == 0);
 		if (isSameBid_) {
 			// roundStatsReference_.flags |= CosmicSignatureConstants.SAME_BID_EARNED_ENDURANCE_CHAMPION_AND_CHRONO_WARRIOR_TITLES;
 			roundStatsReference_.flags = CosmicSignatureConstants.SAME_BID_EARNED_ENDURANCE_CHAMPION_AND_CHRONO_WARRIOR_TITLES;
