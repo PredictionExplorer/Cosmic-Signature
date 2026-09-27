@@ -58,6 +58,8 @@ Make sure `deployerPrivateKey_<network-name>` matches the current contract owner
 
 - The upgrade transaction will revert unless the current bidding round is inactive. To increase the inactivity duration, while the current bidding round is active, increase `delayDurationBeforeRoundActivation`, and while the current bidding round is inactive, increase `roundActivationTime` by callling respective setters.
 
+- The contract upgrade configuration supports the `unsafeAllowRenames` and `unsafeSkipStorageCheck` params. Try to avoid setting any of them to `true`.
+
 - You might want to test the initial deployment of all contracts and then upgrading the game contract to `CosmicSignatureGameV2`, `CosmicSignatureGameV3`, ..., and then to `CosmicSignatureGameOpenBid`. This is just for a test. It would be incorrect to upgrade to `CosmicSignatureGameOpenBid` after an arbitrary version in the production, even if it was a real useful contract. See Comment-202606084 and Comment-202606126 for details.\
 OpenZeppelin would actually disallow the upgrade from V2+ to `CosmicSignatureGameOpenBid`. Storage check would fail. Therefore, in `upgrade-cosmic-signature-game-config-<network-name>-CosmicSignatureGameOpenBid.json` you must temporarily set `unsafeSkipStorageCheck` to `true`.
 
