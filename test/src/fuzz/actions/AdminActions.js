@@ -186,7 +186,6 @@ function buildSafeMutations(ctx_) {
 			(m_, v_) => { m_.roundLateBidPricePremiumAmountBaseMultiplier = v_; }
 		);
 		add_("setRoundLateBidPricePremiumAmountExponent", BigInt(engine.randomIntRange(1, 10)), (m_, v_) => { m_.roundLateBidPricePremiumAmountExponent = v_; });
-		// Comment-202411064: the number of main prize NFTs; exercise 1 through 5.
 		add_("setMainPrizeNumCosmicSignatureNfts", BigInt(engine.randomIntRange(1, 5)), (m_, v_) => { m_.mainPrizeNumCosmicSignatureNfts = v_; });
 		add_(
 			"setCstBidPriceDeclineMultiplier",
