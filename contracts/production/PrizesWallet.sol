@@ -60,6 +60,7 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 	/// Contains zero or more items for each bidding round.
 	DonatedNft[1 << 64] public donatedNfts;
 
+	// #enable_asserts /// @notice Comment-202411064 applies.
 	// #enable_asserts /// @dev
 	// #enable_asserts /// [Comment-202610038]
 	// #enable_asserts /// In the assert-enabled build, this facilitates testing `PrizesWallet` redeployment
@@ -108,7 +109,7 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 	// #endregion
 	// #region `setBypassSomeAsserts`
 
-	// #enable_asserts function setBypassSomeAsserts(bool newValue_) external override {
+	// #enable_asserts function setBypassSomeAsserts(bool newValue_) external override /* onlyOwner */ {
 	// #enable_asserts 	bypassSomeAsserts = newValue_;
 	// #enable_asserts }
 

@@ -20,6 +20,7 @@ contract MarketingWallet is Ownable, AddressValidator, IMarketingWallet {
 	// #region State
 
 	/// @notice The treasurer's role is to distribute marketing rewards.
+	/// Comment-202411064 applies.
 	address public treasurerAddress;
 
 	/// @notice The `CosmicSignatureToken` contract address.

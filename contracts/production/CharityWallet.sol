@@ -10,6 +10,7 @@ import { ICharityWallet } from "./interfaces/ICharityWallet.sol";
 contract CharityWallet is ReentrancyGuardTransient, Ownable, ICharityWallet {
 	/// @notice The current designated charity address.
 	/// It can be zero.
+	/// Comment-202411064 applies.
 	address public charityAddress = address(0);
 
 	constructor() Ownable(_msgSender()) {
