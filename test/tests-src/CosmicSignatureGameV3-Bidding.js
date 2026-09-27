@@ -5,8 +5,9 @@
 const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
-const { DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER, SECONDS_PER_HOUR, SECONDS_PER_DAY } = require("../../src/CosmicSignatureConstants.js");
-const { generateRandomUInt32, waitForTransactionReceipt } = require("../../src/Helpers.js");
+const { DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER, CST_BID_PRICE_DECLINE_MULTIPLIER_MAX_LIMIT, SECONDS_PER_HOUR, SECONDS_PER_DAY } = require("../../src/CosmicSignatureConstants.js");
+const { MAX_INT256, uint256ToInt256 } = require("../../src/BigIntMathHelpers.js");
+const { ENABLE_SMTCHECKER, generateRandomUInt32, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const {
 	activateCurrentRound,
 	findParsedEvent,
@@ -161,6 +162,58 @@ describe("CosmicSignatureGameV3-Bidding", function () {
 					maxCstBidPrice: 0n,
 				});
 				await assertCstAuctionDurations(game_);
+			}
+			await finishGameRound(contracts_, game_);
+		}, 3, 3);
+	});
+
+	it("caps the CST decline multiplier and delays signed-price overflow beyond 100 years", async function () {
+		const maxSafeElapsedDuration_ = 100n * 366n * SECONDS_PER_DAY;
+		expect(MAX_INT256 / maxSafeElapsedDuration_).equal(CST_BID_PRICE_DECLINE_MULTIPLIER_MAX_LIMIT);
+		expect(maxSafeElapsedDuration_ * CST_BID_PRICE_DECLINE_MULTIPLIER_MAX_LIMIT).at.most(MAX_INT256);
+		expect((maxSafeElapsedDuration_ + 1n) * CST_BID_PRICE_DECLINE_MULTIPLIER_MAX_LIMIT).greaterThan(MAX_INT256);
+
+		await testAcrossGameVersions(async (contracts_, game_) => {
+			const ownerGame_ = game_.connect(contracts_.ownerSigner);
+			const bidder_ = contracts_.signers[1];
+			const changeDivisor_ = await game_.cstBidPriceDeclineMultiplierChangeDivisor();
+			await waitForTransactionReceipt(ownerGame_.setCstBidPriceDeclineMultiplier(CST_BID_PRICE_DECLINE_MULTIPLIER_MAX_LIMIT - 1n));
+			expect(tryIncreaseValueExponentially(CST_BID_PRICE_DECLINE_MULTIPLIER_MAX_LIMIT - 1n, changeDivisor_)).greaterThan(CST_BID_PRICE_DECLINE_MULTIPLIER_MAX_LIMIT);
+
+			// Isolate the auction overflow from premium arithmetic on the resulting enormous price.
+			await waitForTransactionReceipt(ownerGame_.setRoundLateBidPricePremiumAmountBaseMultiplier(0n));
+
+			await activateCurrentRound(game_, contracts_.ownerSigner);
+			for (let bidIndex_ = 0; bidIndex_ < 2; ++ bidIndex_) {
+				const receipt_ = await bidWithEthAt(game_, bidder_, (await getLatestBlockTimestamp()) + 10n);
+				expect(await game_.cstBidPriceDeclineMultiplier()).equal(CST_BID_PRICE_DECLINE_MULTIPLIER_MAX_LIMIT);
+				expect(findParsedEvent(receipt_, game_, "BidPlaced").args.cstBidPriceDeclineMultiplier).equal(CST_BID_PRICE_DECLINE_MULTIPLIER_MAX_LIMIT);
+			}
+
+			// A CST bid must still reduce the capped multiplier; an ETH bid can then restore it.
+			const reducedMultiplier_ = tryReduceValueExponentially(CST_BID_PRICE_DECLINE_MULTIPLIER_MAX_LIMIT, changeDivisor_);
+			expect(reducedMultiplier_).lessThan(CST_BID_PRICE_DECLINE_MULTIPLIER_MAX_LIMIT);
+			await setNextBlockTimeToAtLeast((await getLatestBlockTimestamp()) + 1n);
+			const cstReceipt_ = await waitForTransactionReceipt(game_.connect(bidder_).bidWithCst(0n, "", 0n));
+			const cstBidPlaced_ = findParsedEvent(cstReceipt_, game_, "BidPlaced");
+			expect(cstBidPlaced_.args.paidCstPrice).equal(0n);
+			expect(cstBidPlaced_.args.cstBidPriceDeclineMultiplier).equal(reducedMultiplier_);
+			expect(await game_.cstBidPriceDeclineMultiplier()).equal(reducedMultiplier_);
+			const ethReceipt_ = await bidWithEthAt(game_, bidder_, (await getLatestBlockTimestamp()) + 1n);
+			expect(await game_.cstBidPriceDeclineMultiplier()).equal(CST_BID_PRICE_DECLINE_MULTIPLIER_MAX_LIMIT);
+			expect(findParsedEvent(ethReceipt_, game_, "BidPlaced").args.cstBidPriceDeclineMultiplier).equal(CST_BID_PRICE_DECLINE_MULTIPLIER_MAX_LIMIT);
+
+			// Comment-202610093 applies. Query future prices without advancing the blockchain clock.
+			const elapsedDuration_ = (await getLatestBlockTimestamp()) - (await game_.cstDutchAuctionBeginningTimeStamp());
+			const safeTimeOffset_ = maxSafeElapsedDuration_ - elapsedDuration_;
+			expect(await game_.getNextCstBidPriceAdvanced(safeTimeOffset_)).equal(0n);
+			if (ENABLE_SMTCHECKER > 0) {
+				await expect(game_.getNextCstBidPriceAdvanced(safeTimeOffset_ + 1n)).revertedWithPanic(0x11);
+			} else {
+				const beginningPrice_ = await game_.cstDutchAuctionBeginningBidPrice();
+				const wrappedPrice_ = uint256ToInt256(beginningPrice_ - (maxSafeElapsedDuration_ + 1n) * CST_BID_PRICE_DECLINE_MULTIPLIER_MAX_LIMIT);
+				expect(wrappedPrice_).greaterThan(0n);
+				expect(await game_.getNextCstBidPriceAdvanced(safeTimeOffset_ + 1n)).equal(wrappedPrice_);
 			}
 			await finishGameRound(contracts_, game_);
 		}, 3, 3);

@@ -8,7 +8,7 @@
 const hre = require("hardhat");
 const { expect } = require("chai");
 const c = require("../../../src/CosmicSignatureConstants.js");
-const { maxBigInt, sqrtFloor, uint256ToInt256, int256ToUint256, u256 } = require("../../../src/BigIntMathHelpers.js");
+const { maxBigInt, minBigInt, sqrtFloor, uint256ToInt256, int256ToUint256, u256 } = require("../../../src/BigIntMathHelpers.js");
 
 // #endregion
 // #region `GameModel`
@@ -673,7 +673,10 @@ class GameModel {
 		let newCstBidPriceDeclineMultiplier_ = null;
 		if (this.version >= 3) {
 			newCstBidPriceDeclineMultiplier_ =
-				this.cstBidPriceDeclineMultiplier + this.cstBidPriceDeclineMultiplier / this.cstBidPriceDeclineMultiplierChangeDivisor;
+				minBigInt(
+					this.cstBidPriceDeclineMultiplier + this.cstBidPriceDeclineMultiplier / this.cstBidPriceDeclineMultiplierChangeDivisor,
+					c.CST_BID_PRICE_DECLINE_MULTIPLIER_MAX_LIMIT
+				);
 			this.cstBidPriceDeclineMultiplier = newCstBidPriceDeclineMultiplier_;
 		} else if (this.version >= 2) {
 			newCstDutchAuctionDuration_ =

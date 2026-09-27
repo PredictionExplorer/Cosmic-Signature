@@ -117,6 +117,12 @@ library CosmicSignatureConstants {
 	/// todo-1 +++ Recheck that this is about 1/60 of 1 ether.
 	uint256 internal constant INITIAL_CST_BID_PRICE_DECLINE_MULTIPLIER = (DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER + INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND / 2) / (INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND);
 
+	/// @notice In V3+, this caps `CosmicSignatureGameStorageV3Base.cstBidPriceDeclineMultiplier`.
+	/// Why the cap is needed, is explained in Comment-202610093.
+	/// Given this value, the overflow can happen only after CST Dutch auction lasts for over 100 years.
+	/// @dev I feel that it's unnecessary to make this configurable.
+	uint256 internal constant CST_BID_PRICE_DECLINE_MULTIPLIER_MAX_LIMIT = uint256(type(int256).max) / (100 * (366 days));
+
 	/// @notice In V3+, default `CosmicSignatureGameStorageV3Base.cstBidPriceDeclineMultiplierChangeDivisor`.
 	/// @dev
 	/// [Comment-202607301]

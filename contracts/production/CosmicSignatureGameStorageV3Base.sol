@@ -27,6 +27,7 @@ abstract contract CosmicSignatureGameStorageV3Base is
 	/// We increase this on each ETH bid and reduce on each CST bid, based on `cstBidPriceDeclineMultiplierChangeDivisor`.
 	/// Comment-202608312 applies.
 	/// [/Comment-202608181]
+	/// This must be capped, as discussed in Comment-202610093.
 	/// Comment-202411064 applies.
 	/// Comment-202411172 applies.
 	/// @dev Comment-202608315 applies.

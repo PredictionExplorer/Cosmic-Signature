@@ -8,6 +8,9 @@ All division is truncating (like Solidity `uint256` division for non-negative op
 /** Maximum `uint256` value (`2 ** 256 - 1`). */
 const MAX_UINT256 = (1n << 256n) - 1n;
 
+/** Maximum `int256` value (`2 ** 255 - 1`). */
+const MAX_INT256 = (1n << 255n) - 1n;
+
 /**
 Solidity-style `Math.max`.
 Although it appears that the OpenZeppelin implementation supports only unsigned integers.
@@ -86,6 +89,7 @@ function u256(value_, label_ = "uint256 arithmetic", allowWrap_ = false) {
 
 module.exports = {
 	MAX_UINT256,
+	MAX_INT256,
 	maxBigInt,
 	minBigInt,
 	sqrtFloor,

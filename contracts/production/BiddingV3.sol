@@ -311,7 +311,18 @@ abstract contract BiddingV3 is
 			uint256 cstDutchAuctionBeginningBidPrice_ =
 				(lastCstBidderAddress == address(0)) ? nextRoundFirstCstDutchAuctionBeginningBidPrice : cstDutchAuctionBeginningBidPrice;
 
-			int256 nextCstBidPrice_ = int256(cstDutchAuctionBeginningBidPrice_) - cstDutchAuctionElapsedDuration_ * int256(cstBidPriceDeclineMultiplier);
+			int256 nextCstBidPrice_ =
+				int256(cstDutchAuctionBeginningBidPrice_) -
+				
+				// [Comment-202610093]
+				// This formula would present an overflow risk if `cstBidPriceDeclineMultiplier` increase was unbounded.
+				// Here is what would need to happen for `cstBidPriceDeclineMultiplier` to become too large.
+				// A certain number of bidding rounds must complete, each resetting ETH bid price to a low value,
+				// so no unrealistic amounts of ETH are required. During the rounds, there must be more ETH than CST bids.
+				// There are a number of other formulas involving `cstBidPriceDeclineMultiplier`,
+				// but they require larger values to overflow.
+				// [/Comment-202610093]
+				cstDutchAuctionElapsedDuration_ * int256(cstBidPriceDeclineMultiplier);
 			return (nextCstBidPrice_ > int256(0)) ? uint256(nextCstBidPrice_) : 0;
 		}
 	}
@@ -335,7 +346,10 @@ abstract contract BiddingV3 is
 		// }
 
 		uint256 newCstBidPriceDeclineMultiplier_ =
-			CosmicSignatureHelpers.tryIncreaseValueExponentially(cstBidPriceDeclineMultiplier, cstBidPriceDeclineMultiplierChangeDivisor);
+			Math.min(
+				CosmicSignatureHelpers.tryIncreaseValueExponentially(cstBidPriceDeclineMultiplier, cstBidPriceDeclineMultiplierChangeDivisor),
+				CosmicSignatureConstants.CST_BID_PRICE_DECLINE_MULTIPLIER_MAX_LIMIT
+			);
 		cstBidPriceDeclineMultiplier = newCstBidPriceDeclineMultiplier_;
 		return newCstBidPriceDeclineMultiplier_;
 	}
