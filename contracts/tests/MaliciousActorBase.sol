@@ -40,17 +40,17 @@ abstract contract MaliciousActorBase {
 			// Similar magic numbers exist in multiple places.
 			// [/Comment-202507062]
 			if (modeCode == 1) {
-				if (contractVersionNumber < 2) {
+				// if (contractVersionNumber < 2) {
 					game.donateEth{value: 1 wei}();
-				} else {
-					CosmicSignatureGameV2(payable(game)).donateEth{value: 1 wei}();
-				}
+				// } else {
+				// 	CosmicSignatureGameV2(payable(game)).donateEth{value: 1 wei}();
+				// }
 			} else if (modeCode == 2) {
-				if (contractVersionNumber < 2) {
+				// if (contractVersionNumber < 2) {
 					game.donateEthWithInfo{value: 1 wei}("Reentry");
-				} else {
-					CosmicSignatureGameV2(payable(game)).donateEthWithInfo{value: 1 wei}("Reentry");
-				}
+				// } else {
+				// 	CosmicSignatureGameV2(payable(game)).donateEthWithInfo{value: 1 wei}("Reentry");
+				// }
 			} else if (modeCode == 3) {
 				CosmicSignatureHelpers.transferEthTo(payable(game), 0.01 ether);
 			} else if (modeCode == 4) {
@@ -90,11 +90,11 @@ abstract contract MaliciousActorBase {
 					CosmicSignatureGameV2(payable(game)).bidWithCst(10000 ether, "", 0);
 				}
 			} else if (modeCode == 10) {
-				if (contractVersionNumber < 2) {
+				// if (contractVersionNumber < 2) {
 					game.claimMainPrize();
-				} else {
-					CosmicSignatureGameV2(payable(game)).claimMainPrize();
-				}
+				// } else {
+				// 	CosmicSignatureGameV2(payable(game)).claimMainPrize();
+				// }
 			} else if (modeCode == 101) {
 				IPrizesWallet.EthDeposit[] memory ethDeposits_;
 				prizesWallet.registerRoundEndAndDepositEthMany{value: 0 wei}(0, address(this), ethDeposits_);
