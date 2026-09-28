@@ -11,6 +11,31 @@ const { deployBrokenToken } = require("../src/AdversarialTestHelpers.js");
 const { setRoundActivationTimeIfNeeded } = require("../../src/ContractDeploymentHelpers.js");
 
 describe("CosmicSignatureGame-All-Versions-Bidding", function () {
+	it("halves the ETH Dutch auction ending price after the auction has elapsed", async function () {
+		await testAcrossGameVersions(async (contracts_, game_, roundNum_) => {
+			// Round zero has no ETH Dutch auction; finish it before testing V1.
+			if (roundNum_ === 0n) {
+				await activateRoundBidAndClaimMainPrize(contracts_, game_);
+			}
+
+			const endingBidPriceDivisorBefore_ = await game_.ethDutchAuctionEndingBidPriceDivisor();
+			const durationDivisorBefore_ = await game_.ethDutchAuctionDurationDivisor();
+			const [ethDutchAuctionDuration_,] = await game_.getEthDutchAuctionDurations();
+			const halveTimeStamp_ = (await game_.roundActivationTime()) + ethDutchAuctionDuration_ + 1n;
+			await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(halveTimeStamp_),]);
+
+			await expect(game_.connect(contracts_.ownerSigner).halveEthDutchAuctionEndingBidPrice())
+				.emit(game_, "EthDutchAuctionEndingBidPriceDivisorChanged")
+				.withArgs(endingBidPriceDivisorBefore_ * 2n);
+
+			expect(await game_.ethDutchAuctionEndingBidPriceDivisor()).equal(endingBidPriceDivisorBefore_ * 2n);
+			const durationDivisorAfter_ = await game_.ethDutchAuctionDurationDivisor();
+			expect(durationDivisorAfter_).greaterThan(0n);
+			expect(durationDivisorAfter_).lessThanOrEqual(durationDivisorBefore_);
+			await bidAndClaimMainPrize(contracts_, game_);
+		});
+	});
+
 	it("keeps ETH Dutch auction ending-price divisor doubling checked", async function () {
 		await testAcrossGameVersions(async (contracts_, game_) => {
 			// Round zero has no ETH Dutch auction. Check the next round's auction after each claim.

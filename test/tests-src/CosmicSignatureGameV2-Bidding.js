@@ -6,7 +6,7 @@ const { activateCurrentRound, assertDefaultV2Initialization, findParsedEvent, mi
 const { expect } = require("chai");
 const { SECONDS_PER_DAY } = require("../../src/CosmicSignatureConstants.js");
 const { waitForTransactionReceipt } = require("../../src/Helpers.js");
-const { testAcrossGameVersions, bidAndClaimMainPrize, finishGameRound } = require("../src/GameRoundTestHelpers.js");
+const { testAcrossGameVersions, finishGameRound } = require("../src/GameRoundTestHelpers.js");
 
 async function deployDonationMocks(contracts_) {
 	const erc20Factory_ = await hre.ethers.getContractFactory("FuzzTestMockErc20", contracts_.deployerSigner);
@@ -45,26 +45,6 @@ async function placeEthBid(game_, bidder_) {
 }
 
 describe("CosmicSignatureGameV2-Bidding", function () {
-	it("halves the V2 ETH Dutch auction ending price after the auction has elapsed", async function () {
-		await testAcrossGameVersions(async (contracts_, game_) => {
-			const endingBidPriceDivisorBefore_ = await game_.ethDutchAuctionEndingBidPriceDivisor();
-			const durationDivisorBefore_ = await game_.ethDutchAuctionDurationDivisor();
-			const [ethDutchAuctionDuration_,] = await game_.getEthDutchAuctionDurations();
-			const halveTimeStamp_ = (await game_.roundActivationTime()) + ethDutchAuctionDuration_ + 1n;
-			await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(halveTimeStamp_),]);
-
-			await expect(game_.connect(contracts_.ownerSigner).halveEthDutchAuctionEndingBidPrice())
-				.emit(game_, "EthDutchAuctionEndingBidPriceDivisorChanged")
-				.withArgs(endingBidPriceDivisorBefore_ * 2n);
-
-			expect(await game_.ethDutchAuctionEndingBidPriceDivisor()).equal(endingBidPriceDivisorBefore_ * 2n);
-			const durationDivisorAfter_ = await game_.ethDutchAuctionDurationDivisor();
-			expect(durationDivisorAfter_).greaterThan(0n);
-			expect(durationDivisorAfter_).lessThanOrEqual(durationDivisorBefore_);
-			await bidAndClaimMainPrize(contracts_, game_);
-		}, 2, 2);
-	});
-
 	it("documents changeDivisor greater than duration as a no-op reduction boundary", async function () {
 		await testAcrossGameVersions(async (contracts_, game_) => {
 			await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setCstDutchAuctionDuration(10n));
