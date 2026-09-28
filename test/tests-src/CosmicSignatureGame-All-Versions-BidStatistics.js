@@ -73,7 +73,7 @@ describe("CosmicSignatureGame-All-Versions-BidStatistics", function () {
 		});
 	});
 
-	it("keeps round history across upgrades and saves V3 champion durations and individual-bid flags only on claim", async function () {
+	it("keeps round history across upgrades and saves V3+ champion durations and individual-bid flags only on main prize claim", async function () {
 		const completedRounds_ = [];
 		const numRoundsByVersion_ = [0, 0, 0, 0];
 		const scenarios_ = [

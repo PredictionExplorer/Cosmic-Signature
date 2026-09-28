@@ -134,7 +134,7 @@ abstract contract CosmicSignatureGameStorageV2Base is ICosmicSignatureGameStorag
 	/// We reduce this on each ETH bid and increase on each CST bid, based on `cstDutchAuctionDurationChangeDivisor`.
 	/// [Comment-202608312]
 	/// As a result, bidders are encouraged to place the same number of ETH and CST bids.
-	/// But an unintended consequence is that an ETH bid results in a small instant reduction of CST bid price, which is OK.
+	/// But an unintended consequence is that an ETH bid causes a small instant reduction of CST bid price, which is OK.
 	/// [/Comment-202608312]
 	/// [/Comment-202606101]
 	/// Comment-202411064 applies.

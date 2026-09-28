@@ -306,7 +306,7 @@ async function createCosmicSignatureGameProxySimulator(
 		// #endregion
 		// #region `getRoundStats`
 
-		/** Mirrors the generated getter for the current round; V1 leaves the new stats zero. */
+		/** Mirrors the generated getter for the current round; V1 leaves the V3+ stats zero. */
 		getRoundStats: function() {
 			return {
 				numBids: BigInt(this.bidsInfo.length),

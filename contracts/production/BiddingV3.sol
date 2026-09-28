@@ -236,7 +236,11 @@ abstract contract BiddingV3 is
 			// // [Comment-202609292]
 			// // Doubling the effective paid CST price.
 			// //
-			// // Actually, this idea makes no sense because someone else gets bid CST reward, but not if the same bidder bids again.
+			// // Actually, this idea makes no sense because someone else (the previous bidder) gets bid CST reward.
+			// // Although the same bidder can bid again from the same or different account,
+			// // but it appears to be a bad idea to attempt to treat that case differently.
+			// // The rest of this comment describes this idea as if the bidder who bids was getting the reward
+			// // within the same transaction. Parts of it might still be relevant.
 			// //
 			// // Bid CST reward will begin increasing from zero after this bid.
 			// // Problem is that the logic kinda gets disrupted by ETH bids, because they also reset bid CST reward.

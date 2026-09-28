@@ -128,6 +128,7 @@ describe("CosmicSignatureGameV3-StorageLayout", function () {
 		await hre.upgrades.validateUpgrade(
 			contracts_.cosmicSignatureGameProxy,
 			cosmicSignatureGameV3Factory_,
+			
 			// `validateUpgrade` accepts validation options only; the initializer call is exercised by `upgradeToV3` below.
 			{ kind: "uups" }
 		);

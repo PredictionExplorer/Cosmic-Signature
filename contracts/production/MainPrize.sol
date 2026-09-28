@@ -378,7 +378,7 @@ abstract contract MainPrize is
 
 				// [Comment-202511104]
 				// Now this becomes the number of CST mints to make, minus 1.
-				// Before V3, this equals the number of CS NFTs to mint.
+				// In V2-, this equals the number of CS NFTs to mint.
 				// In V3+, the number of CS NFTs to mint is greater by `mainPrizeNumCosmicSignatureNfts - 1`.
 				// [/Comment-202511104]
 				cosmicSignatureTokenMintSpecIndex_ += luckyStakerAddresses_.length;
@@ -387,7 +387,7 @@ abstract contract MainPrize is
 				// Addresses for which to mint CS NFTs.
 				// [/Comment-202605319]
 				// [Comment-202511094]
-				// Before V3, `cosmicSignatureTokenMintSpecs_.length == cosmicSignatureNftOwnerAddresses_.length + 1`.
+				// In V2-, `cosmicSignatureTokenMintSpecs_.length == cosmicSignatureNftOwnerAddresses_.length + 1`.
 				// In V3+, `cosmicSignatureTokenMintSpecs_.length == cosmicSignatureNftOwnerAddresses_.length + 1 - (mainPrizeNumCosmicSignatureNfts - 1)`.
 				// Comment-202511104 relates.
 				// [/Comment-202511094]

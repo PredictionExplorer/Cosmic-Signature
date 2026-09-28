@@ -5,7 +5,7 @@ const hre = require("hardhat");
 const { generateRandomUInt256FromSeedWrapper } = require("../../src/Helpers.js");
 const { generateRandomUInt256Seed } = require("../../src/ContractTestingHelpers.js");
 
-/** Replays the V3 bidder raffle draws and checks the emitted winners. */
+/** Replays the V3+ bidder raffle draws and checks the emitted winners. */
 async function verifyBidRaffleClaimDraws(game_, roundNum_, claimTransactionReceipt_) {
 	const blockBeforeTransaction_ = await hre.ethers.provider.getBlock(claimTransactionReceipt_.blockNumber - 1);
 	const transactionBlock_ = await claimTransactionReceipt_.getBlock();

@@ -95,7 +95,7 @@ If an ETH bid is accompanied by a Random Walk NFT, the bid price becomes a half 
 
 Every **CST bid price** is formed using a Dutch auction. The first CST Dutch auction in a given round begins when a user places the first ETH bid.\
 The first beginning CST bid price of round zero equals a configurable beginning minimum. The first beginning CST bid price in a nonzero round equals the second beginning CST bid price in the previous round. When someone places a CST bid, the new beginning price is calculated as 2x of the paid price, but no lower than the aforementioned minimum. After each CST bid, the Dutch auction repeats.\
-CST bid price declines lineraly. It can become zero in the unlikely case of nobody bidding. In V2-, CST Dutch auction durartion over which the price declines down to zero is configurable, and in V2 it's automatically reduced on each ETH and increased on each CST bid to encourage the same number of ETH and CST bids. In V3+, the price declines a configurable amount per second, which is similarly changed, but in the opposite directions.
+CST bid price declines lineraly. It can become zero in the unlikely case of nobody bidding. In V2-, CST Dutch auction durartion over which the price declines down to zero is configurable, and in V2 it's automatically reduced on each ETH and increased on each CST bid to encourage the same number of ETH and CST bids. In V3+, the price declines a configurable amount per second, which is similarly changed on bids, but in the opposite directions.
 
 In V3+, if someone bids within a configurable duration before `mainPrizeTime`, a premium is added to the bid price.
 
@@ -124,7 +124,7 @@ When another bid is placed, V1 calculaates `mainPrizeTime` as `max(mainPrizeTime
 
 - In V3+, each bid changes CST bid price decline rate, as described in a separate section.
 
-- Each bid changes the next bid price, as described in a separate section. In V2+, an ETH bid also affects the next CST bid price.
+- Each bid changes the next bid price of the same bid type, as described in a separate section. In V2+, an ETH bid also causes a small instant reduction of CST bid price, as mentionrd in Comment-202608312.
 
 - Each bid advances `mainPrizeTime`, as described in a separate section.
 
@@ -238,7 +238,7 @@ According to Comment-202610044, a user also can force-send ETH to the Game contr
 - Parameters:
 	- Random Walk NFT ID (optional).
 	- Message (maye be empty).
-	- V2+: Bid CST reward min limit (maye be zero).
+	- V2+: Bid CST reward min limit (may be zero).
 
 - If the provided message is too long: revert.
 

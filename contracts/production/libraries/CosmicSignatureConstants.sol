@@ -91,6 +91,7 @@ library CosmicSignatureConstants {
 	uint256 internal constant DEFAULT_ETH_BID_REFUND_AMOUNT_IN_GAS_TO_SWALLOW_MAX_LIMIT = 6843;
 
 	/// @notice In V2, initial `CosmicSignatureGameStorageV2Base.cstDutchAuctionDuration`.
+	/// In V1, this is used to calculate another constant.
 	uint256 internal constant INITIAL_CST_DUTCH_AUCTION_DURATION = (1 days) / 2;
 
 	/// @notice In V1, default `CosmicSignatureGameStorage.cstDutchAuctionDurationDivisor`.
