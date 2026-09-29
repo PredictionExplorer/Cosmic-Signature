@@ -535,7 +535,7 @@ abstract contract MainPrizeV3 is
 	// #endregion
 	// #region `_pickRaffleWinnerAddress`
 
-	/// @notice Picks a bidder with probability proportional to the bidder's bid raffle weight.
+	/// @notice Picks a bid with probability proportional to its raffle weight and returns its bidder.
 	function _pickRaffleWinnerAddress(
 		RoundStats storage roundStatsReference_,
 		RandomNumberHelpers.RandomNumberSeedWrapper memory randomNumberSeedWrapper_

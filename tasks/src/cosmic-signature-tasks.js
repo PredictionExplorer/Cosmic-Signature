@@ -292,6 +292,8 @@ task("upgrade-cosmic-signature-game", "Upgrades the CosmicSignatureGame contract
 	// // [Comment-202607153]
 	// // Pairing the new game contract with a fresh `PrizesWallet`.
 	// // The round must still be inactive for `setPrizesWallet` to succeed.
+	// // When testing an assert-enabled `PrizesWallet`, Comment-202610038 applies: bypass the round-sequence asserts
+	// // for its first main prize claim, then re-enable them for subsequent rounds.
 	// // Comment-202607156 relates.
 	// // [/Comment-202607153]
 	// {

@@ -362,7 +362,7 @@ async function performPrizesWalletSwap(ctx_) {
 	expect(await engine.provider.getBalance(contracts.prizesWalletAddress), "PrizesWallet swap: the old wallet still holds ETH").to.equal(0n);
 	await ledger.verifyDirtyEth();
 
-	// 6. Deploy the fresh wallet (owned by the game like the original; ownership goes to the owner signer).
+	// 6. Deploy the fresh wallet bound to the game; transfer ownership from the deployer to the owner signer.
 	const newPrizesWallet_ = await contracts.prizesWalletFactory.deploy(contracts.cosmicSignatureGameProxyAddress);
 	await newPrizesWallet_.waitForDeployment();
 	const newPrizesWalletAddress_ = await newPrizesWallet_.getAddress();

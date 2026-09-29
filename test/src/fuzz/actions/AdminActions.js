@@ -73,8 +73,8 @@ const adminActions = [
 			// Needs the ETH Dutch auction to have fully elapsed at the action timestamp.
 			const minTs_ = model.roundActivationTime + model.getEthDutchAuctionDuration() + 2n;
 			const ts_ = engine.clampTs(minTs_ + engine.randomBigIntRange(1n, 600n));
-			// The action must still happen while the round is inactive (commented modifier in code, but the
-			// "too early" check uses elapsed-since-activation, which is fine here); also requires no bid placed.
+			// The action is selected while the round is inactive, but its transaction is mined after the
+			// auction ends. No bid may have been placed; the method does not require an inactive round.
 			if (ts_ >= model.roundActivationTime && model.roundActivationTime > engine.lastTs) {
 				// `_onlyBeforeBidPlacedInRound` holds (no bids). The method itself does not require inactivity.
 			}

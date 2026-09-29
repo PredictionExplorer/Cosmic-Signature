@@ -323,8 +323,7 @@ abstract contract BiddingV3 is
 				// Here is what would need to happen for `cstBidPriceDeclineMultiplier` to become too large.
 				// A certain number of bidding rounds must complete, each resetting ETH bid price to a low value,
 				// so no unrealistic amounts of ETH are required. During the rounds, there must be more ETH than CST bids.
-				// There are a number of other formulas involving `cstBidPriceDeclineMultiplier`,
-				// but they require larger values to overflow.
+				// There are also other formulas involving `cstBidPriceDeclineMultiplier`, but they require larger values to overflow.
 				// [/Comment-202610093]
 				cstDutchAuctionElapsedDuration_ * int256(cstBidPriceDeclineMultiplier);
 			return (nextCstBidPrice_ > int256(0)) ? uint256(nextCstBidPrice_) : 0;
@@ -416,9 +415,10 @@ abstract contract BiddingV3 is
 	// #endregion
 	// #region `_addRoundLateBidPricePremiumAmountIfNeeded`
 
+	/// @notice The premium affects prices bidders are required to pay and paid-amount stats only;
+	/// price updates and raffle weights use the base price.
 	/// @param bidPrice_ As mentioned in Comment-202607119, if it's zero the result will be zero as well.
-	/// @dev The premium affects payment and spent totals only; price updates and raffle weights use the base price.
-	/// todo-1 +++ Test this.
+	/// @dev todo-1 +++ Test this.
 	function _addRoundLateBidPricePremiumAmountIfNeeded(uint256 bidPrice_, int256 currentTimeOffset_) private view returns (uint256 adjustedBidPrice_) {
 		// #enable_smtchecker /*
 		unchecked

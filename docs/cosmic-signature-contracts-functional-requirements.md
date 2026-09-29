@@ -87,19 +87,19 @@ ETH bid is broken down into 2 subtypes: with and without a Random Walk NFT.
 
 The `CosmicSignatureGame` contract dictates bid prices. Bidders have no control over that. However it's still under their control when to bid, which affects the prices.
 
-Round zero **ETH bid price** equals a hardcoded constant. It does not change.\
-In any round, ETH bid price of the second and further bids increases exponentially as the previous bid paid price plus a configurable fraction of it. (The price does not change over time.)\
-Starting with round 1, the first bid beginning ETH bid price equals 2x of the first bid paid price in the previous round. Beginning at `roundActivationTime` and over a configurable duration, the price declines linearly from the maximum to the minimum. The minimum is a configurable fraction of the first bid paid price in the previous round. If bid price reaches its minimum and nobody bid yet it will stay at its minimum indefinitely (but the `halveEthDutchAuctionEndingBidPrice` method gives the contract owner an option to lower it further). That's a Dutch auction.
+Round zero's first **ETH bid price** equals a hardcoded constant. It does not change over time.\
+In any round, the base ETH bid price of the second and further ETH bids increases exponentially as the previous ETH bid's undiscounted base price plus a configurable fraction of it (the logic must ensure that even a small value will increase). This base price does not change over time.\
+Starting with round 1, the first bid beginning ETH bid price equals 2x of the first ETH bid's undiscounted base price in the previous round. Beginning at `roundActivationTime` and over a configurable duration, the price declines linearly from the maximum to the minimum. The minimum is the beginning price divided by a configurable divisor (the logic must ensure that the price is nonzero, as discussed in Comment-202503162). If bid price reaches its minimum and nobody bid yet it will stay at its minimum indefinitely (but the `halveEthDutchAuctionEndingBidPrice` method gives the contract owner an option to lower it further). That's a Dutch auction.
 
-If an ETH bid is accompanied by a Random Walk NFT, the bid price becomes a half of its normal value.
+If an ETH bid is accompanied by a Random Walk NFT, the bid price becomes a half of its normal value (the logic must ensure that the price is nonzero, as discussed in Comment-202503162).
 
 Every **CST bid price** is formed using a Dutch auction. The first CST Dutch auction in a given round begins when a user places the first ETH bid.\
-The first beginning CST bid price of round zero equals a configurable beginning minimum. The first beginning CST bid price in a nonzero round equals the second beginning CST bid price in the previous round. When someone places a CST bid, the new beginning price is calculated as 2x of the paid price, but no lower than the aforementioned minimum. After each CST bid, the Dutch auction repeats.\
-CST bid price declines lineraly. It can become zero in the unlikely case of nobody bidding. In V2-, CST Dutch auction durartion over which the price declines down to zero is configurable, and in V2 it's automatically reduced on each ETH and increased on each CST bid to encourage the same number of ETH and CST bids. In V3+, the price declines a configurable amount per second, which is similarly changed on bids, but in the opposite directions.
+The first beginning CST bid price of round zero equals a configurable beginning minimum. The first beginning CST bid price in a nonzero round equals the second beginning CST bid price in the previous round, or remains unchanged if that round had no CST bid. When someone places a CST bid, the new beginning price is calculated as 2x of the base price without any late-bid premium, but no lower than the aforementioned minimum. After each CST bid, the Dutch auction repeats.\
+The base CST bid price declines linearly and can reach zero. In V2-, CST Dutch auction duration over which the price declines down to zero is configurable, and in V2 it's automatically reduced on each ETH and increased on each CST bid to encourage the same number of ETH and CST bids. In V3+, the price declines a configurable amount per second, which is similarly changed on bids, but in the opposite directions.
 
 In V3+, if someone bids within a configurable duration before `mainPrizeTime`, a premium is added to the bid price.
 
-Again, a Dutch auction is used for: (1) the first ETH bid price in a nonzero round; (2) each CST bid price. Round zero first ETH bid price is a constant. Any round non-first ETH bid price increases exponentially from the previous bid paid price.
+Again, a Dutch auction is used for: (1) the first ETH bid price in a nonzero round; (2) each CST bid's base price. Round zero first ETH bid price is a constant. Any round non-first ETH bid's base price increases exponentially from the previous ETH bid's undiscounted base price. Late-bid premiums and swallowed ETH overpayments do not increase these price anchors.
 
 ### Bid Monetary Effects
 
@@ -107,7 +107,7 @@ Again, a Dutch auction is used for: (1) the first ETH bid price in a nonzero rou
 
 - When placing a CST bid, the current CST bid price gets burned from the bidder's CST balance.
 
-- When someone places a bid of any type, a configurable bid CST reward gets minted. In V1, the amount is fixed. In V2, the amount is proportional to the square root of the duration elapsed since the previous bid in the current bidding round. In V3+, the amount is linearly proportional to the same elapsed duration. In V2-, the reward is minted to the bidder placing the bid, while in V3+, to the bidder who placed the previous bid in the current bidding round. See `${workspaceFolder}/docs/cosmic-signature-game-prizes.md` for details.
+- When someone places a bid of any type, a configurable bid CST reward gets minted if nonzero. In V1, the amount is fixed. In V2, the amount is proportional to the square root of the duration elapsed since the previous bid in the current bidding round, or since round activation for the first bid. In V3+, the amount is linearly proportional to the duration since the previous bid; the first bid mints no reward. In V2-, the reward is minted to the bidder placing the bid, while in V3+, to the bidder who placed the previous bid in the current bidding round. See `${workspaceFolder}/docs/cosmic-signature-game-prizes.md` for details.
 
 ### `mainPrizeTime` Update Logic
 
@@ -201,7 +201,7 @@ According to Comment-202610044, a user also can force-send ETH to the Game contr
 
 - While a round is active, a user can place a CST bid. The current CST bid price gets burned.
 
-- When a user places a bid of any type, they get rewarded with a configurable amount of CST.
+- When a user places a bid of any type, a configurable CST reward goes to that bidder in V2-, or to the previous bidder in V3+. See Bid Monetary Effects above.
 
 - At the end of a round, various amounts of CST are minted to various beneficiaries, including `MarketingWallet`.
 
@@ -247,11 +247,11 @@ According to Comment-202610044, a user also can force-send ETH to the Game contr
 - V2+: If the provided bid CST reward min limit is greater than the current bid CST reward: revert.\
   But in V3+ don't check this if there were no bids in the current round yet.
 
-- Calculate the current ETH bid price.
+- Calculate the current ETH bid price, including any V3+ late-bid premium.
 
 - Calculate the price the user is required to pay. It will be (1) the same as above or (2) a half of it if the user provided an RW NFT.
 
-- V3+: If a bid was already placed within the current round and the current time is close to `mainPrizeTime`: add a premium to the above price.
+- V3+: Use the undiscounted ETH bid price without the premium for price updates and raffle weights (Comment-202609098).
 
 - If `msg.value` is less than required: revert.
 
@@ -270,7 +270,7 @@ According to Comment-202610044, a user also can force-send ETH to the Game contr
 
 - V2: reduce CST Dutch auction duration.
 
-- V3+: increase CST bid price decline per second.
+- V3+: increase CST bid price decline per second, up to its cap (Comment-202610093).
 
 - If the user sent us more ETH than required: transfer the excess back to them. But don't do it if the refund amount is less than or equal than what it would cost to transfer it.
 

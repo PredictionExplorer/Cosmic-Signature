@@ -83,8 +83,8 @@ async function assertDefaultV3Initialization(game_) {
 /**
 Finds a block timestamp, greater than the latest one and at least `minTimeStamp_`, at which the next CST bid price
 is at most `maxPrice_` (and, if `requireNonZeroPrice_`, greater than zero).
-The CST Dutch auction price declines to zero, so walking the remaining auction always finds an affordable spot,
-unless a nonzero price is required and the affordable window has already fully passed.
+Samples the remaining auction through its zero-price endpoint. If a nonzero price is required,
+a narrow affordable window may fall between samples or may already have passed.
 @returns {Promise<{timeStamp: bigint, price: bigint}>}
 */
 async function findTimeStampWithAffordableCstBidPrice(game_, maxPrice_, minTimeStamp_, requireNonZeroPrice_ = false) {

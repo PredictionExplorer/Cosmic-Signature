@@ -54,6 +54,6 @@ Other environment variables are listed further.
 
 #### Notes
 
-- ABI files of all contracts are exported to the `${workspaceFolder}/artifacts` folder.
+- Contract artifacts, including ABIs, are written under `${workspaceFolder}/artifacts` in configuration-dependent subfolders (Comment-202503272).
 
 - The Solidity compiler is configured in `${workspaceFolder}/hardhat.config.js`, in the `hardhatUserConfig.solidity` object.

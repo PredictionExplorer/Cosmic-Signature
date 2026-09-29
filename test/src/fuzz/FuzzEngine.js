@@ -68,7 +68,7 @@ function decodeRevert(errorObject_, interfaces_) {
 /**
 Campaign orchestrator: seeded RNG, exact block-timestamp control, transaction execution
 with per-transaction gas accounting (including mined-but-reverted transactions),
-participant funding with ledger-recorded refills, statistics, and a failure trace.
+finite participant budgets, statistics, and a failure trace.
 */
 class FuzzEngine {
 	// #region Construction
@@ -297,7 +297,7 @@ class FuzzEngine {
 	@param {(overrides: {gasPrice: bigint}) => Promise<import("ethers").TransactionResponse>} args_.buildTx
 	@param {bigint} [args_.ts] Planned block timestamp; defaults to `lastTs + 1`.
 	@param {bigint} [args_.gasPrice] Explicit legacy gas price; defaults to a random one.
-	@param {bigint} [args_.valueNeeded] ETH the signer must afford (refill check).
+	@param {bigint} [args_.valueNeeded] ETH the signer must afford in addition to the gas reserve.
 	@returns {Promise<{ok: true, receipt: import("ethers").TransactionReceipt, ts: bigint, gasPrice: bigint}
 		| {ok: false, revert: {kind: string, name: string, message: string}, ts: bigint, gasPrice: bigint, minedTs: bigint | null}>}
 	*/
@@ -363,8 +363,8 @@ class FuzzEngine {
 
 	/**
 	Executes several transactions inside one block (same timestamp), via automine toggling.
-	Items run in submission (FIFO) order. Each item's `onResult({status, receipt})` is invoked
-	in order so callers can apply model/ledger updates sequentially.
+	The Hardhat FIFO mempool configuration preserves submission order. Results are returned in
+	that order so callers can apply model updates sequentially; the ledger is updated here.
 	@param {bigint} ts_ Planned block timestamp.
 	@param {Array<{signer: any, buildTx: (overrides: {gasPrice: bigint}) => Promise<any>, gasPrice?: bigint, valueNeeded?: bigint}>} items_
 	@returns {Promise<Array<{status: number, receipt: import("ethers").TransactionReceipt}>>}

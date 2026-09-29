@@ -212,7 +212,7 @@ class ShadowState {
 		const actual_ = await this.hre.ethers.provider.getBalance(key_);
 		const previous_ = this.eth.get(key_) ?? 0n;
 		// Absorb the out-of-band change (e.g. the upgrade plugin's untracked owner gas) as a net injection
-		// so the global conservation identity `sum(balances) + totalGasBurned == totalRefilled` is preserved.
+		// so `sum(balances) + totalGasBurned == totalRefilled + conservationOffset` is preserved.
 		this.totalRefilled += actual_ - previous_;
 		this.eth.set(key_, actual_);
 		this.dirtyEth.delete(key_);

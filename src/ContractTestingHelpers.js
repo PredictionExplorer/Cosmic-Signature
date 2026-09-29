@@ -115,7 +115,7 @@ It's OK to pass this function to `loadFixture`.
 async function deployContractsForTesting() {
 	const contracts = await deployContractsForTestingAdvanced("CosmicSignatureGame");
 
-	// Freezing the fixture reference.
+	// Freezing the fixture object.
 	// A caller that needs to add or replace properties must first make a shallow copy.
 	return Object.freeze(contracts);
 }

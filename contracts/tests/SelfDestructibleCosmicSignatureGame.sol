@@ -9,8 +9,8 @@ import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 /// This contract is used for testing on a live blockchain.
 /// [/Comment-202606031]
 /// [Comment-202508065]
-/// It will return all the assets back to the `owner()` and self-destruct.
-/// Correction: as per Comment-202509241, this contract is no longer self-destructible.
+/// It transfers the Game's ETH balance back to `owner()`.
+/// As per Comment-202509241, this contract is no longer self-destructible.
 /// [/Comment-202508065]
 contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
 	/// @dev

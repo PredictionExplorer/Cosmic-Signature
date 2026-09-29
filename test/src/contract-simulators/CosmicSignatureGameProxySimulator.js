@@ -333,12 +333,10 @@ async function createCosmicSignatureGameProxySimulator(
 		// #endregion
 		// #region `getBidderInfo`
 
-		// /**
-		// Solidity autogenerates a similar method.
-		// In the contarct, a remotely similar method is named `getBidderTotalSpentAmounts`.
-		// */
-
-		/** Mirrors the generated `biddersInfo` getter for the current round. */
+		/**
+		Mirrors the generated `biddersInfo` getter for the current round.
+		The similar Game contract method `getBidderTotalSpentAmounts` is now commented out.
+		*/
 		getBidderInfo: function(bidderAddress_) {
 			// expect(bidderAddress_).properAddress;
 			const bidderInfo_ = this.biddersInfo[bidderAddress_];

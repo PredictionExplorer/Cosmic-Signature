@@ -63,7 +63,7 @@ library BidRaffleWeightHelpers {
 
 	/// @return
 	/// [Comment-202609094]
-	/// The first bid whose cumulative weight exceeds `targetCumulativeWeight_`.
+	/// The index of the first bid whose cumulative weight exceeds `targetCumulativeWeight_`.
 	/// [/Comment-202609094]
 	function findBidIndex(
 		ICosmicSignatureGameStorage.RoundStats storage roundStats_,

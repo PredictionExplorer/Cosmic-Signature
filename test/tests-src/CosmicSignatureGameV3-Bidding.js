@@ -417,7 +417,7 @@ describe("CosmicSignatureGameV3-Bidding", function () {
 
 	// Tests `BiddingV3`'s late bid price premium: within a configurable duration before `mainPrizeTime`
 	// (`getRoundLateBidDuration()`), both the ETH and the CST bid price get an exponentially growing
-	// premium, reaching a multiplier of ~4x at (and beyond) `mainPrizeTime` with the default parameters.
+	// premium, reaching a total price of ~5x the base price at (and beyond) `mainPrizeTime` with the default parameters.
 	it("adds an exponentially growing, capped premium to ETH and CST bid prices near mainPrizeTime", async function () {
 		await testAcrossGameVersions(async (contracts_, game_) => {
 			// #region Setup: V1 -> V2 -> V3, then activate the round.

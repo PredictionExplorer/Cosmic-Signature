@@ -1,10 +1,10 @@
-### Testiging Cosmic Signature DAO With the Tally App
+### Testing Cosmic Signature DAO With the Tally App
 
 #### Introduction
 
 This document provides guidance on how to deploy contracts to Arbitrum Sepolia and use the Tally app to change `CharityWallet.charityAddress`.
 
-I have provided a similar unit test in `${workspaceFolder}/test/test-src/CosmicSignatureDao.js`. There is also a test in there that changes `MarketingWallet.treasurerAddress`.
+I have provided a similar unit test in `${workspaceFolder}/test/tests-src/CosmicSignatureDao.js`. There is also a test in there that changes `MarketingWallet.treasurerAddress`.
 
 My relevant ChatGPT chat is located at https://chatgpt.com/share/e/68d2db25-db18-800d-b095-d2fd1cd25480 .
 

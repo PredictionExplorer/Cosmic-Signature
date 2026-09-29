@@ -23,7 +23,7 @@ Some tests test exact timings of actions. They can fail, more likely if the syst
 
 We have achieved 100% Solidity coverage, except the `BiddingCommon._onlyRoundIsActive` modifier, as well as the same thing in further versions, because they are not called. `RandomWalkNFT` is not 100% covered either because it's essentially a third party contract from another project.
 
-`BiddingCommonV2._onlyNonFirstRound` and `CosmicSignatureGameV2._onlyIfPrevVersionWasInitialized`, as well as the same things in further versions, do nothing when asserts are disabled. Despite of them being called and covered, we have observed that for some reason they are flagged as not fully covered.
+`BiddingCommonV2._onlyNonFirstRound` and `CosmicSignatureGameV2Base._onlyIfPrevVersionWasInitialized`, as well as the same things in further versions, do nothing when asserts are disabled. Despite of them being called and covered, we have observed that for some reason they are flagged as not fully covered.
 
 Because some tests are driven by random numbers, occasionally you can observe some code locations not covered or a signer running out of gas.
 

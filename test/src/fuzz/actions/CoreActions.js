@@ -183,10 +183,10 @@ async function claimAfterTimeout(ctx_) {
 Comment-202606235 coverage. A malicious/compromised owner sets `delayDurationBeforeRoundActivation` to
 `type(uint256).max` mid-round (the setter has no round-state guard, Comment-202503106). On V1 this makes
 `block.timestamp + delayDurationBeforeRoundActivation` in `_prepareNextRound` overflow and revert, bricking the
-prize. V2 wraps that body in `unchecked`, so the last bidder's claim still succeeds and `roundActivationTime` merely
+prize. V2+ wraps that body in `unchecked`, so the last bidder's claim still succeeds and `roundActivationTime` merely
 wraps modulo 2^256. This action drives that exact path through the full claim verification, then restores a sane
-	delay so subsequent rounds activate normally (no lock-in). V2-only: V1 inherits the checked
-	`MainPrize._prepareNextRound`, where this claim would revert.
+delay so subsequent rounds activate normally (no lock-in). V2+-only: V1 inherits the checked
+`MainPrize._prepareNextRound`, where this claim would revert. SMTChecker builds also keep the addition checked.
 */
 async function claimWithOverflowingDelay(ctx_) {
 	const { engine, model, ledger } = ctx_;

@@ -46,7 +46,7 @@ abstract contract MainPrizeCommonV2 is
 		emit MainPrizeTimeIncrementInMicroSecondsChanged(newValue_);
 	}
 
-	/// @notice Comment-202605242 apples.
+	/// @notice Comment-202605242 applies.
 	function _extendMainPrizeTime() internal {
 		// #enable_smtchecker /*
 		unchecked

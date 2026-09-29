@@ -10,12 +10,13 @@
 //      2, 3, ... rounds).
 //   4. Perform the real UUPS V2 -> V3 upgrade, asserting full state-diff preservation (including the
 //      V2 parameters), V3 re-initialization, and double-initialize rejection. Half of the campaigns
-//      (in production-like builds) then deploy a fresh `PrizesWallet` and point the game at it via
-//      `setPrizesWallet`, after draining the old wallet.
+//      then deploy a fresh `PrizesWallet` and point the game at it via `setPrizesWallet`, after draining
+//      the old wallet. Assert-enabled builds bypass missing history for its first claim (Comment-202610038).
 //   5. Continue fuzzing the V3 game for several more complete rounds.
 //
 // The campaign is model-based: a JS `GameModel` reimplements the deterministic on-chain math
-// exactly (prices, the V2 sqrt / V3 linear-and-split CST bid reward, CST Dutch-auction duration drift,
+// exactly (prices, the V2 square-root CST bid reward and V3 linear reward paid entirely to the outbid bidder,
+// CST Dutch-auction duration drift,
 // the V3 late-bid price premium, mainPrize timing, champion automaton, round advancement,
 // the V3 multi-NFT main prize), and `ShadowState` ledgers track every ETH/CST/NFT/donation flow.
 // Every action verifies its exact event set and exact ledger deltas; negative probes assert exact
@@ -30,7 +31,7 @@
 // afford, so values stay in a realistic, non-astronomical range.
 //
 // The model treats unexpected uint256 wraparound inside unchecked arithmetic as a harness failure.
-// The only fuzz-owned wraparound exceptions are the random seed helper and the documented V2
+// The only fuzz-owned wraparound exceptions are the random seed helper and the documented V2+
 // owner-adversarial round-activation path at Comment-202606235. Related PrizesWallet concern
 // Comment-202606264 is covered by targeted tests/docs rather than an additional model allowlist.
 // Owner parameter choices that are only possible before a bid in the current round are modeled as

@@ -779,8 +779,8 @@ class FuzzCampaign {
 		// Phase 2: V2. Half of the campaigns run exactly 1 round here; the rest zero, 2, 3, ... rounds.
 		await this._runPhase("V2", this.profile.v2RoundsBeforeV3Upgrade);
 
-		// Second mid-campaign upgrade, plus (half of the time, in production-like builds)
-		// a swap to a freshly deployed PrizesWallet.
+		// Second mid-campaign upgrade, plus (half of the time) a swap to a freshly deployed PrizesWallet.
+		// Assert-enabled builds use the bypass described in Comment-202610038.
 		console.info("\n  >>> Performing V2 -> V3 upgrade <<<\n");
 		await performUpgradeToV3(this.context);
 		if (this.profile.swapPrizesWalletAfterV3Upgrade) {

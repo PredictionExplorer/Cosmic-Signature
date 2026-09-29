@@ -13,7 +13,8 @@ pragma solidity =0.8.34;
 library CosmicSignatureEvents {
 	// #region Charity
 
-	/// @notice This is similar to `CosmicSignatureErrors.EthTransferToCharityFailed`.
+	/// @notice Emitted when an ETH transfer to charity fails without reverting the transaction.
+	/// This is similar to `CosmicSignatureErrors.EthTransferToCharityFailed`.
 	event EthTransferToCharityFailed(address indexed charityAddress, uint256 amount);
 
 	/// @notice Emitted after a donation has been transferred to charity.

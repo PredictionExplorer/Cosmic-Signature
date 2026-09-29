@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity =0.8.34;
 
-/// @notice This contract contains all state variables that `CosmicSignatureGame` and the contracts that it inherits access.
+/// @notice Shared storage types used by the Game contracts.
+/// Similarly named contracts implementing this interface contain all state variables
+/// that the Game contracts of all versions and their base contracts need.
 interface ICosmicSignatureGameStorage {
 	/// @notice Details about an ETH donation with additional info made to the Game.
 	/// @dev Comment-202503111 relates and/or applies.
@@ -40,10 +42,13 @@ interface ICosmicSignatureGameStorage {
 		address bidderAddress;
 
 		/// @notice In V3+, the sum of the raffle weights of this bid and all preceding bids in the same bidding round.
+		/// Comment-202609098 describes the weights.
+		/// This field remains zero for bids placed in V2-.
 		uint256 raffleCumulativeWeight;
 	}
 
 	/// @notice Bidding round stats.
+	/// Fields after `bidsInfo` remain zero for rounds completed in V2-.
 	/// @dev Comment-202610054 relates.
 	struct RoundStats {
 		uint256 numBids;
@@ -56,7 +61,8 @@ interface ICosmicSignatureGameStorage {
 
 		/// @notice In V3+, the sum of all ETH bid prices paid.
 		/// [Comment-202610059]
-		/// Paid amounts include late bid premiums and swallowed ETH overpayments, but exclude ETH refunds and donations.
+		/// Paid amounts include late bid premiums and swallowed ETH overpayments,
+		/// but exclude ETH overpayment refunds and donations.
 		/// [/Comment-202610059]
 		/// Given Comment-202501045, the number of ETH bids in a bidding round is guaranteed to be nonzero.
 		/// In addition, given Comment-202503162, if this is nonzero and the given bidding round has already ended,
@@ -96,10 +102,12 @@ interface ICosmicSignatureGameStorage {
 	/// @notice Details about a bidder.
 	/// @dev Comment-202610054 relates.
 	struct BidderInfo {
-		/// @notice Comment-202503162 relates and/or applies.
+		/// @notice Comment-202610059 applies.
+		/// Comment-202503162 relates and/or applies.
 		uint256 totalSpentEthAmount;
 
-		/// @notice Comment-202503162 relates and/or applies.
+		/// @notice Comment-202610059 applies.
+		/// Comment-202503162 relates and/or applies.
 		uint256 totalSpentCstAmount;
 
 		uint256 lastBidTimeStamp;

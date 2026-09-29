@@ -89,7 +89,7 @@ const configuration =
 				prizesWallet: {
 					// [Comment-202509305]
 					// If this is negative we will not set respective parameter.
-					// Warning. A too short timeout can potentially result in hackers stealing your asserts.
+					// Warning. A too short timeout can let other callers claim your assets before the test does.
 					// So consider configuring a bigger or better negative value here.
 					// The test will anyway not be delayed by this.
 					// [/Comment-202509305]

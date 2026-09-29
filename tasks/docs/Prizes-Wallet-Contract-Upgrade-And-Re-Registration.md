@@ -28,6 +28,10 @@ The old `PrizesWallet` will remain live afterwards. Prize winners will still be 
 
 - It could make sense for the web site to keep showing and/or using both the old and the new `PrizesWallet`s until people withdraw their assets from the old one.
 
+#### Notes
+
+- You have an option to test things on assert-enabled (and, optionally, also SMTChecker-enabled) contracts. When replacing `PrizesWallet` after one or more rounds in an assert-enabled build, call `setBypassSomeAsserts(true)` on the new wallet immediately before the first main prize claim using it, then `setBypassSomeAsserts(false)` afterwards. This bypasses assertions about the old wallet's round history. See Comment-202610038.
+
 #### Afterwards
 
 - Revert any temporary edits you made in files.

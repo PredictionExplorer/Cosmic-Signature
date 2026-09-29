@@ -193,7 +193,7 @@ Executes and fully verifies an ETH bid (any flavor).
 @param {object} options_
 @param {"plain" | "rwNft" | "receive" | "donateToken" | "donateNft"} options_.flavor
 @param {"exact" | "swallow" | "refund" | "random"} [options_.valueMode]
-@param {"zero" | "exact"} [options_.minRewardMode] V2 only.
+@param {"zero" | "exact"} [options_.minRewardMode] V2+ only.
 @returns {Promise<string>} "ok" or "skip".
 */
 async function executeEthBid(ctx_, actor_, options_) {
@@ -267,8 +267,8 @@ async function executeEthBid(ctx_, actor_, options_) {
 
 	const expectations_ = model.applyEthBid(actor_.address, ts_, value_, gasPrice_, randomWalkNftId_);
 
-	// Net ETH: the actor loses `netEthPaid` (the base price plus any swallowed overpay; a real refund
-	// returns in the same tx), and the game keeps it.
+	// Net ETH: the actor loses `netEthPaid` (the required price, including any premium and NFT discount,
+	// plus any swallowed overpay), and the game keeps it. Any refund returns in the same transaction.
 	ledger.addEth(actor_.address, -expectations_.netEthPaid);
 	ledger.addEth(ctx_.game.address, expectations_.netEthPaid);
 

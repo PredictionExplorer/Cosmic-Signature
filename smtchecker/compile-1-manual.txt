@@ -1,7 +1,7 @@
     How to execute SMTChecker.
 
 @ Review https://github.com/PredictionExplorer/hardhat-preprocessor-integration-prototype/blob/main/contracts/Lock.sol
-  for what you can possibly do in the code. Althoug that prototype goes beyond of what makes sense to do in the production code,
+  for what you can possibly do in the code. Although that prototype goes beyond what makes sense to do in production code,
   and it's not necessarily OK to deploy as is, without preprocessing.
 
 @ In the code, add asserts and whatever other relevant logic.
@@ -15,11 +15,13 @@
   Remember to prepend any variables that are used only by asserts.
   Make sure the code is OK to deploy as is, without preprocessing.
 
-@ Try to find the folowing case sensitive regular experssion patterns in source files. The findings might indicate mistakes.
+@ Search source files with the following case-sensitive regular expressions. Matches might indicate mistakes.
 
 (?<!// #enable)_asserts
 
 (?<!// #enable_asserts )\bassert\s*\(
+
+(?<!// #(?:enable|disable))_smtchecker
 
 @ Review Comment-202409013.
   Specify there what contracts to analyze, or leave all commented.

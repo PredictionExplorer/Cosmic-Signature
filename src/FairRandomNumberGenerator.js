@@ -23,9 +23,8 @@ Because of that, the ratio of weights:
 
    weight(i) / weight(j)
 
-between candidates depends only on the difference between their counts.
-For example, if candidate A is behind candidate B by the same count (say, 1 vs. 3 or 11 vs. 13),
-candidate A's weight is higher, and the ratio is the same.
+between candidates depends on their deficits relative to the maximum count.
+For example, increasing every candidate's count by 10 leaves all weights and their ratios unchanged.
 
 @param {number} n_ The total number of candidates. Explained above.
 It's a positive and not too big integer value without a fractional part.
