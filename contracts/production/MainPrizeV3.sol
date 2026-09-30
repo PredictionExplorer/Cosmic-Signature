@@ -240,8 +240,7 @@ abstract contract MainPrizeV3 is
 						// #enable_asserts assert(cosmicSignatureNftOwnerAddresses_.length - cosmicSignatureTokenMintSpecIndex_ == mainPrizeNumCosmicSignatureNfts);
 						// // #enable_asserts // #disable_smtchecker console.log("202609266");
 
-						// This makes `mainPrizeNumCosmicSignatureNfts` iterations.
-						// todo-1 +++ Test the above.
+						// This loop makes `mainPrizeNumCosmicSignatureNfts` iterations.
 						for (uint256 cosmicSignatureNftIndex_ = cosmicSignatureNftOwnerAddresses_.length; ; ) {
 							-- cosmicSignatureNftIndex_;
 							// // #enable_asserts // #disable_smtchecker console.log("202609267", cosmicSignatureNftIndex_);

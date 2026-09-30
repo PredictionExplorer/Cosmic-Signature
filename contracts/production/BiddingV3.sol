@@ -418,7 +418,6 @@ abstract contract BiddingV3 is
 	/// @notice The premium affects prices bidders are required to pay and paid-amount stats only;
 	/// price updates and raffle weights use the base price.
 	/// @param bidPrice_ As mentioned in Comment-202607119, if it's zero the result will be zero as well.
-	/// @dev todo-1 +++ Test this.
 	function _addRoundLateBidPricePremiumAmountIfNeeded(uint256 bidPrice_, int256 currentTimeOffset_) private view returns (uint256 adjustedBidPrice_) {
 		// #enable_smtchecker /*
 		unchecked
@@ -450,7 +449,6 @@ abstract contract BiddingV3 is
 					// We multiply and then divide by `2 ** 13` to increase resolution of integer math.
 					// Max premium multiplier to multiply bid price by:
 					// 9742 ** 8 / 2 ** (13 * 8) == ~4
-					// todo-1 +++ Test the actual multiplier and its exponential growth.
 					// Let's say, our bid price is 1_000_000_000. Calculating max premium:
 					// (9742n ** 8n * 1_000_000_000n) >> (13n * 8n) == 4_000_050_302n
 					//
@@ -499,7 +497,6 @@ abstract contract BiddingV3 is
 			uint256 bidCstRewardAmount_ = 0;
 			if (elapsedDuration_ > int256(0)) {
 				// Comment-202607167 applies.
-				// todo-1 +++ Test what this equals.
 				bidCstRewardAmount_ = uint256(elapsedDuration_) * bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds;
 				// // #enable_asserts // #disable_smtchecker console.log("202609282", bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds, bidCstRewardAmount_ / uint256(elapsedDuration_));
 			}

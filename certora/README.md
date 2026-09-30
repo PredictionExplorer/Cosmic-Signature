@@ -1,7 +1,7 @@
 # Just in case you don't know...
 
 Issue. Files in this folder tree are all stale.\
-ToDo-3 Hopefully, someone will revisit them some day.\
+ToDo-3 Hopefully, someone will revisit them someday.\
 ToDo-3 Review Git Blame for these files. Yuriy's AI made a few little edits in them.
 
 ---

@@ -18,7 +18,6 @@ abstract contract BidStatisticsV3 is
 	CosmicSignatureGameStorageV3Base {
 	// #region `_updateRoundStatsOnMainPrizeClaim`
 
-	/// todo-1 +++ Test that this is called.
 	/// @param isSameBid_ Whether the same individual bid earned both Endurance Champion and Chrono-Warrior titles.
 	/// It's taken from the value returned by the final call to `_updateChronoWarriorIfNeeded`.
 	/// The values returned by earlier calls to it are ignored

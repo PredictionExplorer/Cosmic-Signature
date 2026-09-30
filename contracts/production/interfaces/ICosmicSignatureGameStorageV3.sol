@@ -3,8 +3,7 @@ pragma solidity =0.8.34;
 
 import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
 
-/// @dev todo-0 If this interface is going to become empty, consider deleting it.
-/// todo-0 Remember to delete it from `Cosmic-Signature-Project-File-List.odt`.
+/// @dev This interface is now empty, so it could be OK to delete it. But let's keep it as an example.
 interface ICosmicSignatureGameStorageV3 is ICosmicSignatureGameStorage {
 	// Empty.
 }
