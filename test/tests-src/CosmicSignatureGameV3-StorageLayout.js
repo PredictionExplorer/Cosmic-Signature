@@ -108,7 +108,6 @@ describe("CosmicSignatureGameV3-StorageLayout", function () {
 		const cosmicSignatureGameV3Factory_ =
 			await hre.ethers.getContractFactory("CosmicSignatureGameV3", contracts_.ownerSigner);
 		for (const newGetterName_ of [
-			// "championDurations(uint256)",
 			"cstBidPriceDeclineMultiplier()",
 			"cstBidPriceDeclineMultiplierChangeDivisor()",
 			"roundLateBidDurationDivisor()",
