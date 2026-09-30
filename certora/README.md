@@ -1,4 +1,9 @@
+# Just in case you don't know...
 
+Issue. Files in this folder tree are all stale.\
+ToDo-3 Hopefully, someone will revisit them some day.
+
+---
 
 ## Step 1.   Activate virtual environment
 source .venv/bin/activate
