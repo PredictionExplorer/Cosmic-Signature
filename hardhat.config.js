@@ -290,15 +290,16 @@ const hardhatUserConfig = {
 			},
 
 			metadata: {
-				// [Comment-202610032]
-				// This reduces contract bytecode size a little.
-				// This does not make it impossible to verify contracts on EtherScan or ArbiScan.
-				// But this does make it impossible to verify contracts on Sourcify.
-				// Comment-202509112 relates.
-				// [/Comment-202610032]
-				appendCBOR: false,
+				// // [Comment-202610032]
+				// // This reduces contract bytecode size a little.
+				// // This does not make it impossible to verify contracts on EtherScan or ArbiScan.
+				// // But this does make it impossible to verify contracts on Sourcify.
+				// // Taras actually wants to register the contracts on Sourcify, so I have commented this out.
+				// // Comment-202509112 relates.
+				// // [/Comment-202610032]
+				// appendCBOR: false,
 
-				// // This does not affect contract bytecode size.
+				// // When `appendCBOR` is `false`, this does not affect contract bytecode size.
 				// bytecodeHash: "none",
 			},
 
