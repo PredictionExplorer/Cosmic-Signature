@@ -18,7 +18,7 @@ const {
 // But the V2 sources have since been refactored, so these tests validate against what is actually deployed:
 // the V2 storage layout recorded in the OpenZeppelin manifest on the live V2 upgrade.
 const DEPLOYED_V2_FIXTURE_PATH =
-	nodePathModule.join(__dirname, "../src/deployed-storage-layouts/arbitrumOne-CosmicSignatureGameV2.json");
+	nodePathModule.join(__dirname, "../data/deployed-storage-layouts/arbitrumOne-CosmicSignatureGameV2.json");
 
 // In the deployed V2 this was `mapping(uint256 => BidderAddresses) bidderAddresses`.
 const RENAMED_VARIABLE_SLOT = "259";

@@ -393,7 +393,7 @@ Each pick selects the first bid whose `raffleCumulativeWeight` exceeds `random %
 
 The new V1 and V2 bytecode and ABI differ from the deployed implementations. Tests that deploy V1, upgrade to V2, then to V3 exercise the refactored sources, not the live V2 bytecode.
 
-- Live behavior was checked separately. An Arbitrum One fork rehearsal upgraded the real deployed V2 to V3 and played 2 rounds; its scripts are not committed. The committed, reproducible check is `test/tests-src/CosmicSignatureGameV3-DeployedV2StorageLayout.js`, which validates V3 against the deployed V2 layout in `test/src/deployed-storage-layouts/arbitrumOne-CosmicSignatureGameV2.json`.
+- Live behavior was checked separately. An Arbitrum One fork rehearsal upgraded the real deployed V2 to V3 and played 2 rounds; its scripts are not committed. The committed, reproducible check is `test/tests-src/CosmicSignatureGameV3-DeployedV2StorageLayout.js`, which validates V3 against the deployed V2 layout in `test/data/deployed-storage-layouts/arbitrumOne-CosmicSignatureGameV2.json`.
 - To decode historical events and errors, and to verify historical implementations, use `main` artifacts.
 
 #### Contract Structure
