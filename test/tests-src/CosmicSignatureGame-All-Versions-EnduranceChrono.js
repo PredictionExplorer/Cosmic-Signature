@@ -161,6 +161,49 @@ const SCENARIOS = [
 			isSameBid: true,
 		});
 	},
+
+	// In V2+, `mainPrizeTime` can remain in the past after a bid, so the bidder can claim the main prize in the same block.
+	// Comment-202606175 relates.
+	async function playBidAndClaimInOneBlock(contracts_, game_, roundNum_, version_) {
+		const [alice_, bob_,] = contracts_.signers.slice(1, 3);
+		await configureShortRound(contracts_, game_);
+		const timeStamp_ = (await getLatestBlockTimestamp()) + 1000n;
+
+		await bidWithEthAt(game_, alice_, timeStamp_);
+		if (version_ < 2) {
+			// In V1, a bid always moves `mainPrizeTime` to the future.
+			await bidWithEthAt(game_, bob_, timeStamp_ + 1000n);
+			await claimMainPrizeAndCheckChampions(game_, bob_, roundNum_, version_, await game_.mainPrizeTime(), {
+				enduranceChampion: alice_, chronoWarrior: alice_,
+			});
+			return;
+		}
+
+		// Bob's bid lasts zero seconds. Alice's bid lasted 1000 seconds and earns both titles.
+		const ethBidPrice_ = await game_.getNextEthBidPriceAdvanced(1000n);
+		await hre.network.provider.send("evm_setAutomine", [false]);
+		let bidTransactionResponse_;
+		let claimTransactionResponse_;
+		try {
+			bidTransactionResponse_ = await game_.connect(bob_).bidWithEth(-1n, "", 0n, { value: ethBidPrice_ * 2n, });
+			claimTransactionResponse_ = await game_.connect(bob_).claimMainPrize();
+			await hre.network.provider.send("evm_setNextBlockTimestamp", [Number(timeStamp_ + 1000n)]);
+			await hre.network.provider.send("evm_mine");
+		} finally {
+			await hre.network.provider.send("evm_setAutomine", [true]);
+		}
+		const bidReceipt_ = await bidTransactionResponse_.wait();
+		const claimReceipt_ = await claimTransactionResponse_.wait();
+		expect(claimReceipt_.blockNumber).equal(bidReceipt_.blockNumber);
+		expect(findParsedEvent(claimReceipt_, game_, "EnduranceChampionPrizePaid").args.enduranceChampionAddress).equal(alice_.address);
+		expect(findParsedEvent(claimReceipt_, game_, "ChronoWarriorPrizePaid").args.chronoWarriorAddress).equal(alice_.address);
+		if (version_ >= 3) {
+			const roundStats_ = await game_.roundStats(roundNum_);
+			expect(roundStats_.enduranceChampionDuration).equal(1000n);
+			expect(roundStats_.chronoWarriorDuration).equal(1000n);
+			expect(roundStats_.flags).equal(SAME_BID_EARNED_ENDURANCE_CHAMPION_AND_CHRONO_WARRIOR_TITLES);
+		}
+	},
 ];
 
 describe("CosmicSignatureGame-All-Versions-EnduranceChrono", function () {
