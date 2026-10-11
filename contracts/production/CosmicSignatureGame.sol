@@ -72,6 +72,12 @@ contract CosmicSignatureGame is
 		__Ownable_init(ownerAddress_);
 		__UUPSUpgradeable_init();
 
+		// [Comment-202610175]
+		// Assigning to these variables without emitting events that their setters would emit.
+		// Afterwards, clients must query these variables upon receiving the `Initialized` event.
+		// Comment-202605235 relates.
+		// Comment-202610177 relates.
+		// [/Comment-202610175]
 		// ethDonationWithInfoRecords =
 		// // lastBidType = todo-9 Should we assert that this equals `ETH`?
 		// lastBidderAddress =

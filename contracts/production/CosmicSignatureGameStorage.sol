@@ -293,6 +293,9 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// @notice In V1.
 	/// [Comment-202607273]
 	/// We mint this CST amount as a bidder reward for placing a bid.
+	/// In V2-, the bidder placing the bid receives the reward.
+	/// In V3+, the previous bidder receives it.
+	/// Comment-202605279 relates.
 	/// [/Comment-202607273]
 	/// Comment-202411064 applies.
 	/// @dev Comment-202606053 relates.

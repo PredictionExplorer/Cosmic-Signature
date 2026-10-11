@@ -1,12 +1,28 @@
+// [Comment-202610172]
+// See `docs/endurance-chrono-README.md`.
+// [/Comment-202610172]
+
 "use strict";
 
 const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
 const { SAME_BID_EARNED_ENDURANCE_CHAMPION_AND_CHRONO_WARRIOR_TITLES, MICROSECONDS_PER_SECOND } = require("../../src/CosmicSignatureConstants.js");
-const { waitForTransactionReceipt } = require("../../src/Helpers.js");
+const { shuffleArray, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { activateCurrentRound, findParsedEvent, mineAtOrAfter, getLatestBlockTimestamp, blockTimestampOfReceipt } = require("../src/V2UpgradeTestHelpers.js");
-const { testAcrossGameVersions, bidWithEthAt } = require("../src/GameRoundTestHelpers.js");
+const { testAcrossGameVersions, finishGameRound, bidWithEthAt } = require("../src/GameRoundTestHelpers.js");
+
+async function checkEnduranceChampion(contracts_, game_, bidderIndices_, timeOffsets_, winnerIndex_, duration_) {
+	const startTime_ = await getLatestBlockTimestamp() + 100n;
+	for (let index_ = 0; index_ < bidderIndices_.length; ++ index_) {
+		await bidWithEthAt(game_, contracts_.signers[bidderIndices_[index_]], startTime_ + timeOffsets_[index_]);
+	}
+	const [address_, actualDuration_] = await game_.tryGetCurrentChampions();
+	expect(address_).equal(await game_.enduranceChampionAddress());
+	expect(address_).equal(contracts_.signers[winnerIndex_].address);
+	expect(actualDuration_).equal(await game_.enduranceChampionDuration());
+	expect(actualDuration_).equal(duration_);
+}
 
 /** Makes the main prize time increment and the initial duration until main prize 100 seconds each. */
 async function configureShortRound(contracts_, game_) {
@@ -18,7 +34,7 @@ async function configureShortRound(contracts_, game_) {
 
 /**
 Places ETH bids by `bidders_` in a single block with the given timestamp.
-In V3+, multiple bids within the same second are allowed, so a bid can remain the last bid for zero seconds.
+All versions allow multiple bids within the same second, so a bid can remain the last bid for zero seconds.
 */
 async function bidWithEthInOneBlockAt(game_, bidders_, timeStamp_) {
 	const latestTimeStamp_ = await getLatestBlockTimestamp();
@@ -28,13 +44,21 @@ async function bidWithEthInOneBlockAt(game_, bidders_, timeStamp_) {
 	const ethBidPrice_ = await game_.getNextEthBidPriceAdvanced(timeStamp_ - latestTimeStamp_);
 	const args_ = [-1n, ""];
 	if (game_.interface.getFunction("bidWithEth").inputs.length === 3) args_.push(0n);
-	await hre.network.provider.send("evm_setAutomine", [false]);
 	const transactionResponses_ = [];
+	await hre.network.provider.send("evm_setAutomine", [false]);
 	try {
+		await hre.network.provider.send("evm_setNextBlockTimestamp", [Number(timeStamp_)]);
+
+		// [Comment-202611021]
+		// Awaiting each submission before starting the next preserves its order in Hardhat's FIFO mempool.
+		// The submission completes once Hardhat accepts the transaction; it does not wait for mining.
+		// Issue. These tests depend on that ordering. Concurrent contract calls can reach Hardhat in a different order,
+		// even with FIFO, so replacing sequential awaits with Promise.all could make the tests fail.
+		// [/Comment-202611021]
 		for (const bidder_ of bidders_) {
 			transactionResponses_.push(await game_.connect(bidder_).bidWithEth(...args_, { value: ethBidPrice_ * 2n }));
 		}
-		await hre.network.provider.send("evm_setNextBlockTimestamp", [Number(timeStamp_)]);
+
 		await hre.network.provider.send("evm_mine");
 	} finally {
 		await hre.network.provider.send("evm_setAutomine", [true]);
@@ -162,6 +186,27 @@ const SCENARIOS = [
 		});
 	},
 
+	// The first two bids last zero seconds; the first remains the stored champion until the final bid is evaluated.
+	async function playThreeBidsInOneBlock(contracts_, game_, roundNum_, version_) {
+		const [alice_, bob_, carol_,] = contracts_.signers.slice(1, 4);
+		await configureShortRound(contracts_, game_);
+		const timeStamp_ = (await getLatestBlockTimestamp()) + 1000n;
+
+		await bidWithEthInOneBlockAt(game_, [alice_, bob_, carol_,], timeStamp_);
+		await expectStoredEnduranceChampion(game_, alice_.address, timeStamp_, 0n, 0n);
+		expect(await game_.chronoWarriorAddress()).equal(hre.ethers.ZeroAddress);
+		expect((await game_.roundStats(roundNum_)).numBids).equal(3n);
+		for (const [bidIndex_, bidder_] of [alice_, bob_, carol_,].entries()) {
+			expect((await game_.getBidInfoAt(roundNum_, bidIndex_)).bidderAddress).equal(bidder_.address);
+		}
+
+		await claimMainPrizeAndCheckChampions(game_, carol_, roundNum_, version_, timeStamp_ + 300n, {
+			enduranceChampion: carol_, enduranceChampionDuration: 300n,
+			chronoWarrior: carol_, chronoWarriorDuration: 300n,
+			isSameBid: true,
+		});
+	},
+
 	// In V2+, `mainPrizeTime` can remain in the past after a bid, so the bidder can claim the main prize in the same block.
 	// Comment-202606175 relates.
 	async function playBidAndClaimInOneBlock(contracts_, game_, roundNum_, version_) {
@@ -181,13 +226,16 @@ const SCENARIOS = [
 
 		// Bob's bid lasts zero seconds. Alice's bid lasted 1000 seconds and earns both titles.
 		const ethBidPrice_ = await game_.getNextEthBidPriceAdvanced(1000n);
-		await hre.network.provider.send("evm_setAutomine", [false]);
 		let bidTransactionResponse_;
 		let claimTransactionResponse_;
+		await hre.network.provider.send("evm_setAutomine", [false]);
 		try {
+			await hre.network.provider.send("evm_setNextBlockTimestamp", [Number(timeStamp_ + 1000n)]);
+
+			// Both transactions use Bob's account, so their nonces enforce bid-before-claim ordering.
 			bidTransactionResponse_ = await game_.connect(bob_).bidWithEth(-1n, "", 0n, { value: ethBidPrice_ * 2n, });
 			claimTransactionResponse_ = await game_.connect(bob_).claimMainPrize();
-			await hre.network.provider.send("evm_setNextBlockTimestamp", [Number(timeStamp_ + 1000n)]);
+
 			await hre.network.provider.send("evm_mine");
 		} finally {
 			await hre.network.provider.send("evm_setAutomine", [true]);
@@ -207,11 +255,69 @@ const SCENARIOS = [
 ];
 
 describe("CosmicSignatureGame-All-Versions-EnduranceChrono", function () {
-	it("follows the documented bid-by-bid, real-time, and main prize claim champion logic", async function () {
-		const numRoundsByVersion_ = [0, 0, 0, 0,];
-		await testAcrossGameVersions(async (contracts_, game_, roundNum_, version_) => {
-			const scenario_ = SCENARIOS[(numRoundsByVersion_[version_] ++) % SCENARIOS.length];
-			await scenario_(contracts_, game_, roundNum_, version_);
+	it("selects the longest bid among two bidders", async function () {
+		await testAcrossGameVersions(async (contracts_, game_) => {
+			await activateCurrentRound(game_, contracts_.ownerSigner);
+			await checkEnduranceChampion(contracts_, game_, [1, 2, 1, 2, 1], [0n, 1000n, 6000n, 7000n, 8000n], 2, 5000n);
+			await finishGameRound(contracts_, game_);
 		});
+	});
+
+	it("keeps the first champion when three bidders have equal bid durations", async function () {
+		await testAcrossGameVersions(async (contracts_, game_) => {
+			await activateCurrentRound(game_, contracts_.ownerSigner);
+			const bidders_ = [1, 2, 3, 2, 1, 2, 3, 2, 1, 2, 1, 2, 1];
+			await checkEnduranceChampion(contracts_, game_, bidders_, bidders_.map((_, index_) => BigInt(index_) * 1000n), 1, 1000n);
+			await finishGameRound(contracts_, game_);
+		});
+	});
+
+	it("replaces the champion as successively longer bids finish", async function () {
+		await testAcrossGameVersions(async (contracts_, game_) => {
+			await activateCurrentRound(game_, contracts_.ownerSigner);
+			await checkEnduranceChampion(contracts_, game_, [0, 1, 2, 3], [0n, 1000n, 3000n, 8000n], 2, 5000n);
+			await finishGameRound(contracts_, game_);
+		});
+	});
+
+	it("keeps the longer Chrono-Warrior tenure when the current Endurance Champion changes", async function () {
+		await testAcrossGameVersions(async (contracts_, game_, roundNum_) => {
+			await activateCurrentRound(game_, contracts_.ownerSigner);
+			const baseTimeStamp_ = await getLatestBlockTimestamp() + 100n;
+			await bidWithEthAt(game_, contracts_.signers[1], baseTimeStamp_);
+			await bidWithEthAt(game_, contracts_.signers[2], baseTimeStamp_ + 100n);
+			await bidWithEthAt(game_, contracts_.signers[3], baseTimeStamp_ + 10_100n);
+			await bidWithEthAt(game_, contracts_.signers[4], baseTimeStamp_ + 20_200n);
+			// const [ethSpent_, cstSpent_] = await game_.getBidderTotalSpentAmounts(roundNum_, contracts_.signers[2].address);
+			const { totalSpentEthAmount: ethSpent_, totalSpentCstAmount: cstSpent_ } =
+				await game_.biddersInfo(roundNum_, contracts_.signers[2].address);
+			expect(ethSpent_).greaterThan(0n);
+			expect(cstSpent_).equal(0n);
+			expect(await game_.enduranceChampionAddress()).equal(contracts_.signers[3].address);
+			expect(await game_.enduranceChampionDuration()).equal(10_100n);
+			expect(await game_.chronoWarriorAddress()).equal(contracts_.signers[2].address);
+			expect(await game_.chronoWarriorDuration()).equal(19_900n);
+			await mineAtOrAfter(baseTimeStamp_ + 30_301n);
+			const champions_ = await game_.tryGetCurrentChampions();
+			expect(champions_[0]).equal(contracts_.signers[4].address);
+			expect(champions_[1]).equal(10_101n);
+			expect(champions_[2]).equal(contracts_.signers[2].address);
+			expect(champions_[3]).equal(19_900n);
+			await finishGameRound(contracts_, game_);
+		});
+	});
+
+	it("follows the documented bid-by-bid, real-time, and main prize claim champion logic", async function () {
+		const numRoundsByVersion_ = [undefined, 0, 0, 0,];
+		const scenarios_ = [...SCENARIOS];
+		shuffleArray(scenarios_);
+
+		// Repeat upgrade sequences until every version has exercised every scenario, despite random pre-upgrade round counts.
+		do {
+			await testAcrossGameVersions(async (contracts_, game_, roundNum_, version_) => {
+				const scenario_ = scenarios_[(numRoundsByVersion_[version_] ++) % scenarios_.length];
+				await scenario_(contracts_, game_, roundNum_, version_);
+			});
+		} while (numRoundsByVersion_.slice(1).some((numRounds_) => numRounds_ < scenarios_.length));
 	});
 });

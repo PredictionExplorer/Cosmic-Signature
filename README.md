@@ -11,15 +11,15 @@ This document provides an overview and links to detailed docs. To avoid stale co
 
 ## Documentation
 
-- Prizes: [docs/cosmic-signature-game-prizes.md](docs/cosmic-signature-game-prizes.md).
 - Endurance Champion and Chrono-Warrior: [docs/endurance-chrono-README.md](docs/endurance-chrono-README.md).
-- Changes made in the latest Game contract version, including what frontend and backend developers need to change: [docs/v3-vs-v2-changes.md](docs/v3-vs-v2-changes.md).
-- Contracts and their functional requirements: [docs/cosmic-signature-contracts-functional-requirements.md](docs/cosmic-signature-contracts-functional-requirements.md).
+- Prizes: [docs/cosmic-signature-game-prizes.md](docs/cosmic-signature-game-prizes.md).
 - Contract class diagram and calls: [docs/cosmic-signature-contracts-class-diagram-and-calls.svg](docs/cosmic-signature-contracts-class-diagram-and-calls.svg).
-- Audit considerations, including the benevolent-owner assumption: [docs/cosmic-signature-contracts-audit-considerations.md](docs/cosmic-signature-contracts-audit-considerations.md).
+- Contracts and their functional requirements: [docs/cosmic-signature-contracts-functional-requirements.md](docs/cosmic-signature-contracts-functional-requirements.md).
 - Numbered comments, such as `Comment-202501022`, used throughout the codebase: [docs/numbered-comments.md](docs/numbered-comments.md).
 - Testing the DAO with the Tally app: [docs/testing-cosmic-signature-dao-with-the-tally-app.md](docs/testing-cosmic-signature-dao-with-the-tally-app.md).
+- Audit considerations: [docs/cosmic-signature-contracts-audit-considerations.md](docs/cosmic-signature-contracts-audit-considerations.md).
 - Default parameter values: `contracts/production/libraries/CosmicSignatureConstants.sol`. Some of them are calculated in [contract-configuration-params-calculation/](contract-configuration-params-calculation/).
+- Changes made in the latest Game contract version, including what frontend and backend developers need to change: [docs/v3-vs-v2-changes.md](docs/v3-vs-v2-changes.md).
 
 ---
 
@@ -63,12 +63,14 @@ npm ci
 npx hardhat compile
 ```
 
+See also: [contracts-compiling/](contracts-compiling/)
+
 ### Run Tests
 
 Test runners are in [test/runners/](test/runners/). They test multiple combinations of conditional compilation options. For example:
 
 ```bash
-npm run hardhat-test-quick
+npm run hardhat-test-full
 ```
 
 ### Local Development Node

@@ -16,7 +16,7 @@ interface IBidding2V3 {
 	/// A negative value indicates that no Random Walk NFT was used.
 	/// @param message Comment-202503155 applies.
 	/// @param bidCstRewardAmount Comment-202607273 applies.
-	/// It's zero on the first bid in a round.
+	/// It can be zero. It's always zero on the first bid in a round.
 	/// @param cstBidPriceDeclineMultiplier Comment-202608181 applies.
 	/// Comment-202608319 relates.
 	/// @param mainPrizeTime Comment-202412152 applies.

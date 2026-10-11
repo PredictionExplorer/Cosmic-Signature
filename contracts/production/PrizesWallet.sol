@@ -109,8 +109,14 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 	// #endregion
 	// #region `setBypassSomeAsserts`
 
-	// #enable_asserts function setBypassSomeAsserts(bool newValue_) external override /* onlyOwner */ {
+	// #enable_asserts function setBypassSomeAsserts(bool newValue_) external override onlyOwner {
 	// #enable_asserts 	bypassSomeAsserts = newValue_;
+	// #enable_asserts 
+	// #enable_asserts 	// [Comment-202610177]
+	// #enable_asserts 	// There is no event to emit here.
+	// #enable_asserts 	// Comment-202605235 relates.
+	// #enable_asserts 	// Comment-202610175 relates.
+	// #enable_asserts 	// [/Comment-202610177]
 	// #enable_asserts }
 
 	// #endregion

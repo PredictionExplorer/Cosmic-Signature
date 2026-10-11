@@ -16,7 +16,7 @@ The logic is the same in all Game contract versions, except that V3+ also saves 
 
 #### Terms
 
-- **Last bid duration** -- how long a bid remained the last bid. It starts when the bid is placed. It ends when the next bid is placed or, for the final bid in the round, when the main prize is claimed. It can be zero, because in V3+ multiple bids can be placed within the same second.
+- **Last bid duration** -- how long a bid remained the last bid. It starts when the bid is placed. It ends when the next bid is placed or, for the final bid in the round, when the main prize is claimed. It can be zero, because the Game allows multiple bids within the same block or second.
 
 - **Endurance record** -- the longest last bid duration observed so far in the current bidding round. The bid that set it is the current Endurance Champion.
 
@@ -87,4 +87,6 @@ The real-time standings can change at any second, even when nobody bids. For exa
 
 #### Notes
 
-- Between bidding rounds, use `roundStats` (V3+) or the prize events to find out past results. After a main prize claim, the champion state variables are reset for the next round, except `enduranceChampionStartTimeStamp` and `enduranceChampionDuration`, which keep stale values until the next Endurance Champion is assigned. `chronoWarriorDuration` is reset to `type(uint256).max`, which the contract treats as -1.
+- Between bidding rounds, use `roundStats` (V3+) or the prize events to find out past results. On a main prize claim, some champion state variables are reset for the next round, while others remain stale until updated during the next round.
+
+- See relevant tests near Comment-202610172.

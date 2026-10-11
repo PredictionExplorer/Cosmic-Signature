@@ -13,8 +13,10 @@ import { IStakingWalletCosmicSignatureNft } from "./IStakingWalletCosmicSignatur
 /// @notice
 /// [Comment-202605235]
 /// For each parameter marked with Comment-202411064, provides an event to be emitted when the parameter changes.
-/// The logic also changes some of those parameters. They are marked with Comment-202411172. And on that kind of change
-/// the respective event will not necessarily be emitted.
+/// The logic also changes some of those parameters during normal operations. They are marked with Comment-202411172.
+/// And on that kind of change in some cases we emit different events instead of the respective dedicated ones.
+/// Exception: near Comment-202610175, initialization emits `Initialized` instead of parameter-change events.
+/// Comment-202610177 relates.
 /// [/Comment-202605235]
 interface ISystemEvents {
 	/// @notice Emitted when `delayDurationBeforeRoundActivation` is changed.

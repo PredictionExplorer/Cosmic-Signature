@@ -56,12 +56,11 @@ function getMappingValueStructTypeId(mappingTypeId_) {
 	return mappingTypeId_.match(/t_struct\([^)]*\)\d+_storage/)[0];
 }
 
-/** Simulates the temporary edits the V3 upgrade procedure makes near `roundStats`. */
-function annotateRoundStatsAsRetypedFromBidderAddresses(v3Layout_) {
+/** Simulates enabling the rename annotation on the deployed V2 upgrade branch. */
+function annotateRoundStatsAsRenamedFromBidderAddresses(v3Layout_) {
 	const annotatedLayout_ = structuredClone(v3Layout_);
 	const roundStatsItem_ = findStorageItemAtSlot(annotatedLayout_, RENAMED_VARIABLE_SLOT);
 	roundStatsItem_.renamedFrom = "bidderAddresses";
-	roundStatsItem_.retypedFrom = "mapping(uint256 => ICosmicSignatureGameStorage.BidderAddresses)";
 	return annotatedLayout_;
 }
 
@@ -164,7 +163,7 @@ describe("CosmicSignatureGameV3-DeployedV2StorageLayout", function () {
 			expect(report_.pass, report_.explain(false)).equal(true);
 		}
 
-		const annotatedV3Layout_ = annotateRoundStatsAsRetypedFromBidderAddresses(v3Layout_);
+		const annotatedV3Layout_ = annotateRoundStatsAsRenamedFromBidderAddresses(v3Layout_);
 		const annotatedReport_ = getStorageUpgradeReport(deployedV2Layout_, annotatedV3Layout_, validationOptions_);
 		expect(annotatedReport_.pass, annotatedReport_.explain(false)).equal(true);
 

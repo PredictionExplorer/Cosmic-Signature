@@ -555,6 +555,7 @@ abstract contract BiddingOpenBid is
 				mintAndBurnSpecs_[0].account = _msgSender();
 
 				// Comment-202409177 applies.
+				// Comment-202610173 applies.
 				// Comment-202606074 relates and/or applies.
 				mintAndBurnSpecs_[0].value = ( - int256(paidCstPrice_) );
 

@@ -152,12 +152,12 @@ describe("CosmicSignatureGameV2-Bidding", function () {
 			expect(await game_.getDurationUntilRoundActivation()).greaterThan(0n);
 
 			// // [Comment-202610021]
-			// // Do not assert indeterminate, irrelevant values in contract-only checks.
+			// // It's wrong to assert indeterminate, irrelevant values in contract-only checks.
 			// // Before the first bid, Comment-202501022 applies to `mainPrizeTime`, `nextEthBidPrice`,
 			// // CST Dutch auction elapsed duration, next CST bid price, and V3+ bid CST reward getters.
 			// // The next ETH bid price getters remain valid before the first bid and round activation.
 			// // CST Dutch auction beginning bid price and raw champion durations have their own validity conditions.
-			// // Contract/model equality and upgrade storage-preservation checks may compare these values.
+			// // That said, contract/model equality and upgrade storage-preservation checks may compare these values.
 			// // [/Comment-202610021]
 			// expect(await game_.getDurationUntilMainPrize()).lessThan(0n);
 

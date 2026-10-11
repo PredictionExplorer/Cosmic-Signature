@@ -587,8 +587,10 @@ abstract contract Bidding is
 
 				// [Comment-202409177]
 				// Burning before minting requires the bidder to have the amount to burn.
-				// It probably makes little sense to call `ERC20Burnable.burn` or `ERC20Burnable.burnFrom` instead.
 				// [/Comment-202409177]
+				// [Comment-202610173]
+				// It probably makes little sense to call `ERC20Burnable.burn` or `ERC20Burnable.burnFrom` instead.
+				// [/Comment-202610173]
 				// Comment-202606074 relates and/or applies.
 				mintAndBurnSpecs_[0].value = ( - int256(paidCstPrice_) );
 

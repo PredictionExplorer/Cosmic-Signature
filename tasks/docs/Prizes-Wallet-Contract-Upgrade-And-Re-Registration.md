@@ -14,13 +14,13 @@ The old `PrizesWallet` will remain live afterwards. Prize winners will still be 
 
 - Note the new `PrizesWallet` address logged to the console.
 
-- In the contract deployment report JSON file, update `prizesWalletAddress` with the new value. Remember to edit all your copies of the file.
+- In the current Git branch that you are using for this upgrade, in the V1 contract deployment report JSON file, update `prizesWalletAddress` with the new value. Note the Game upgrade and re-registration tasks do not actually read that report field.
 
 - Near Comment-202607156, provide the correct hardcoded addresses.
 
 - Register the upgraded Game contract.
 
-- Make sure that the Game proxy `prizesWallet` state variable now points at the new `PrizesWallet`. Make sure that in the new `PrizesWallet`, the `game` state variable points at the Game proxy.
+- On ArbiScan, make sure that the Game proxy `prizesWallet` state variable now points at the new `PrizesWallet` and in the new `PrizesWallet` the `game` state variable points at the Game proxy.
 
 #### Web Site Changes
 
@@ -30,8 +30,4 @@ The old `PrizesWallet` will remain live afterwards. Prize winners will still be 
 
 #### Notes
 
-- You have an option to test things on assert-enabled (and, optionally, also SMTChecker-enabled) contracts. When replacing `PrizesWallet` after one or more rounds in an assert-enabled build, call `setBypassSomeAsserts(true)` on the new wallet immediately before the first main prize claim using it, then `setBypassSomeAsserts(false)` afterwards. This bypasses assertions about the old wallet's round history. See Comment-202610038.
-
-#### Afterwards
-
-- Revert any temporary edits you made in files.
+- You have an option to test things on assert-enabled (and, optionally, also SMTChecker-enabled) contracts. When replacing `PrizesWallet` after one or more rounds in an assert-enabled build, have the wallet owner call `setBypassSomeAsserts(true)` on the new wallet immediately before the first main prize claim using it, then `setBypassSomeAsserts(false)` afterwards. This bypasses assertions about the old wallet's round history. See Comment-202610038.

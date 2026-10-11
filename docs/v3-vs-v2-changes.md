@@ -36,7 +36,7 @@ Each change is attributed to the lowest version whose source shows it. A change 
 - V3 is deployed by a UUPS `upgradeToAndCall(newImplementation, reinitialize())` on the existing proxy. The task config `tasks/config/upgrade-cosmic-signature-game-config-arbitrumOne-CosmicSignatureGameV3.json` passes `newInitializerMethodName = "reinitialize"`.
 - The live V2 `_authorizeUpgrade` requires `onlyOwner` and `_onlyRoundIsInactive`. So the upgrade happens between rounds, and no round mixes V2 and V3 bids. As of the rehearsal fork (block 512486253), round 3 activates at Unix time 1791800077 (2026-10-12 10:14 UTC). The owner can change this, so re-read `roundActivationTime()` before upgrading. The upgrade and `setPrizesWallet` must both land before activation for round 3 to be the first V3 round. Otherwise both revert until round 3 is claimed, and round 4 is the first V3 round.
 - `reinitialize()` is guarded only by OpenZeppelin `reinitializer(3)`. It has no `onlyOwner` (Comment-202606128), and its other modifiers only assert. It must run atomically as the upgrade call payload. A second call reverts with `InvalidInitialization`.
-- `reinitialize()` emits only `Initialized(3)` (plus the proxy's `Upgraded`). It emits none of the `*Changed` events for the values it writes.
+- `reinitialize()` emits only `Initialized(3)` (plus the proxy's `Upgraded`). By design, clients must read the parameter getters on `Initialized` rather than expect individual `*Changed` events (Comment-202610175).
 - The procedure is in `tasks/docs/Cosmic-Signature-Game-Contract-Upgrade-And-Re-Registration.md`.
 
 ##### Values Written by `reinitialize()`
@@ -72,15 +72,19 @@ The "Live V2" column comes from a fork rehearsal of the real upgrade at Arbitrum
 
 ##### OpenZeppelin Storage Validation
 
-Slot 259 changed from `bidderAddresses` to `roundStats` (see [Storage Layout](#storage-layout)). The rehearsal ran OpenZeppelin `validateUpgrade` against the layout of the live V2 implementation, with `unsafeAllowRenames` and `unsafeSkipStorageCheck` both `false`. The results:
+Slot 259 changed from `bidderAddresses` to `roundStats` (see [Storage Layout](#storage-layout)). Validation against the deployed V2 layout requires both annotations below, with `unsafeAllowRenames` and `unsafeSkipStorageCheck` both `false`:
 
 | Annotation on `roundStats` in `CosmicSignatureGameStorageV2Base` | Result |
 | --- | --- |
-| As committed (`/// // @custom:oz-renamed-from bidderAddresses` is commented out; no `oz-retyped-from` line exists) | Fails: "Replaced `bidderAddresses` with `roundStats` of incompatible type" |
+| Development sources: `oz-retyped-from` is active, but `oz-renamed-from` is commented out | Fails against deployed V2 because the rename is not acknowledged |
 | Only `/// @custom:oz-renamed-from bidderAddresses` | Fails: incompatible struct, members renamed and retyped |
 | `/// @custom:oz-renamed-from bidderAddresses` plus `/// @custom:oz-retyped-from mapping(uint256 => ICosmicSignatureGameStorage.BidderAddresses)` | Passes |
 
-`tasks/docs/Cosmic-Signature-Game-Contract-Upgrade-And-Re-Registration.md` currently prescribes only the rename annotation, which fails. Both annotations are needed. `test/tests-src/CosmicSignatureGameV3-DeployedV2StorageLayout.js` checks V3 against the deployed V2 layout and covers these cases. The older `CosmicSignatureGameV3-StorageLayout.js` validates against the new V2 source, which already has `roundStats`, so it cannot detect this.
+Enable the rename annotation on the deployment branch. It remains commented during development because the tests' V1 already has `roundStats`, so adding a rename from `bidderAddresses` in V2 would fail V1 -> V2 validation. Follow `tasks/docs/Cosmic-Signature-Game-Contract-Upgrade-And-Re-Registration.md`, including its instructions for obsolete annotations on other variables (ToDo-202607169-1). Commit the exact deployment sources, configuration, reports, and OpenZeppelin manifest on that branch.
+
+OpenZeppelin compares `oz-retyped-from` with the old layout's type name; the named type need not exist in the new sources. A nonmatching annotation leaves the normal type check in place. It also tolerates the same `oz-renamed-from` on both sides of an upgrade, which explains why unchanged V2 annotations do not break V2 -> V3 tests.
+
+`test/tests-src/CosmicSignatureGameV3-DeployedV2StorageLayout.js` checks these cases against the deployed V2 layout. The separate `CosmicSignatureGameV3-StorageLayout.js` validates upgrades from the refactored sources; it does not replace the deployed-layout checks.
 
 #### Storage Layout
 
@@ -227,7 +231,7 @@ All items in this section are `V3` unless labeled otherwise. The section describ
 - **Price getters.** `getNextEthBidPrice[Advanced]` and `getNextCstBidPrice[Advanced]` now return the base plus the premium. So after the first bid the ETH price rises every second inside the window and stays at about 5x after `mainPrizeTime`; in live V2 it was constant between bids. The CST price can also rise inside the window, not only fall. A bid that sends exactly the quoted price can revert with `InsufficientReceivedBidAmount` if it is mined later.
 - **Random Walk NFT discount.** `paidEthPrice = ceil((base + premium) / 2)`, so the 50% discount also applies to the premium. The raffle weight is the full undiscounted base. `getEthPlusRandomWalkNftBidPrice` is unchanged.
 - **Overpayment** handling is unchanged. An excess above `ethBidRefundAmountInGasToSwallowMaxLimit * tx.gasprice` is refunded. A smaller excess is swallowed and counted as paid. A failed refund now reverts with the bidder's raw revert data (`V1+`).
-- As in live V2, several bids may be placed in the same second.
+- All Game versions allow several bids in the same second.
 
 ##### CST Bidding and the CST Dutch Auction
 
@@ -244,9 +248,10 @@ All items in this section are `V3` unless labeled otherwise. The section describ
 - **Beginning price after a CST bid** is `max(2 * base, cstDutchAuctionBeginningBidPriceMinLimit)`. Live V2 used `2 * paidPrice`, which had no premium to exclude. The first CST bid of a round also stores this value in `nextRoundFirstCstDutchAuctionBeginningBidPrice`. The minimum limit drops from 200 CST to 1 CST.
 - **First V3 round.** `nextRoundFirstCstDutchAuctionBeginningBidPrice` keeps its live value of 200 CST. The first CST auction of the first V3 round therefore starts at 200 CST when the round's first ETH bid is placed. That bid has already raised `m` to 16,833,333,333,333,333 (`_tryIncreaseCstBidPriceDeclineMultiplier` runs before `_bidCommon` starts the auction), so the price reaches 0 after about 11,882 s (3.3 hours), or sooner if more ETH bids follow. The value 12000 that `getCstDutchAuctionDurations()` reports before that bid uses the initial multiplier.
 - **Zero price.** The base price can reach 0, and a CST bid at price 0 is valid. It still mints the bid CST reward to the previous bidder. If the reward is nonzero, the zero burn is executed as a zero mint to the bidder (Comment-202606074, unchanged).
+  - This is accepted by design: competing bidders are expected to bid before the price approaches zero. Near `mainPrizeTime`, premium growth is expected to outweigh the base-price decline. These are market assumptions, not contract guarantees; a zero base price still has zero premium and receives the usual raffle weight.
 - **`getCstDutchAuctionDurations()`** now returns `(ceil(beginningPrice / cstBidPriceDeclineMultiplier), now - cstDutchAuctionBeginningTimeStamp)`. The first value is the number of seconds from the auction start until the base price reaches 0. It changes on every bid, because `m` changes and, on a CST bid, the beginning price changes. It also changes on main prize claim, when `lastCstBidderAddress` is reset. It panics with a division by zero if `cstBidPriceDeclineMultiplier == 0`. The elapsed value is meaningless before the round's first bid (Comment-202501022).
 - **Frozen getters.** `cstDutchAuctionDuration()` and `cstDutchAuctionDurationChangeDivisor()` keep their last V2 values forever. V3 neither reads nor writes them (Comment-202608317).
-- **Rate mismatch.** `m` does not scale with `mainPrizeTimeIncrementInMicroSeconds`, but the bid CST reward rate does. At the live increment, the reward is about 0.97 CST per minute. Right after the upgrade, the CST price declines at about 1 CST per minute (the initial multiplier). From then on, the reward rate falls about 1% per round as the increment grows, while `m` moves about 1% per bid (up on ETH bids, down on CST bids) and is never reset, so the two rates are not tied to each other.
+- **Independent rate adjustments.** The bid CST reward rate falls about 1% per round as `mainPrizeTimeIncrementInMicroSeconds` grows. The CST decline multiplier instead changes on every bid and can vary substantially within a round. Omitting another once-per-round adjustment is deliberate; competition is expected to compensate through the decline rate or CST prices, without an enforced relationship between the rates. At the rehearsal's increment, the reward was about 0.97 CST per minute and the initial decline rate about 1 CST per minute.
 
 ##### Bid CST Reward
 
@@ -352,11 +357,8 @@ Each pick selects the first bid whose `raffleCumulativeWeight` exceeds `random %
 
 ##### Owner Configuration
 
-- **New setters** (`V3`): the 6 setters listed in [Functions](#functions). Each is `onlyOwner` and `_onlyRoundIsInactive`, and emits its `*Changed(uint256)` event. As with existing setters, none validates its argument. Zero values are benevolent-owner footguns:
-  - `setCstBidPriceDeclineMultiplierChangeDivisor(0)` makes every ETH bid panic with a division by zero, including the first bid of a round, so no round can start until the owner restores a nonzero divisor.
-  - `setRoundLateBidDurationDivisor(0)` makes `getRoundLateBidDuration` and every non-first bid panic.
-  - `setCstBidPriceDeclineMultiplier(0)` freezes the CST price at its beginning price permanently, because neither ETH nor CST bids can move the multiplier off 0. `getCstDutchAuctionDurations` then panics with a division by zero. Only another owner call between rounds fixes it.
-  - `setMainPrizeNumCosmicSignatureNfts(0)` lets the claim succeed with 0 NFTs for the beneficiary. `MainPrizeClaimed` then reports `prizeNumCosmicSignatureNfts = 0` and an ID that will belong to a later prize.
+- **New setters** (`V3`): the 6 setters listed in [Functions](#functions). Each is `onlyOwner` and `_onlyRoundIsInactive`, and emits its `*Changed(uint256)` event. As with existing setters, the owner is trusted to choose valid parameters; argument validation is deliberately omitted. Misconfigured behavior is unsupported. In particular, `mainPrizeNumCosmicSignatureNfts` must be nonzero, which an assert-enabled build checks; its behavior at zero is otherwise undefined.
+- **Arithmetic assumptions.** Comment-202607119 describes the premium calculation with the default parameters. It does not guarantee overflow safety for arbitrary owner-supplied parameters.
 - **Disabled setters** (`V3`). `setCstDutchAuctionDuration` and `setCstDutchAuctionDurationChangeDivisor` revert with `NotImplemented()` for any caller, before any ownership check. Their events can no longer be emitted (Comment-202608014).
 - **Changed meaning.** `setBidCstRewardAmountMultiplier` now takes a linear multiplier. `setCstDutchAuctionBeginningBidPriceMinLimit` now bounds `2 * base` instead of `2 * paidPrice`.
 - **`mainPrizeTimeIncrementInMicroSeconds`** now also scales the late-bid window (`getRoundLateBidDuration`) and the premium curve. It already scaled the bid CST reward in live V2, inside the square root, and now scales it linearly. It does not scale `cstBidPriceDeclineMultiplier`.
@@ -434,7 +436,7 @@ Checklist conclusions:
 
 ##### `PrizesWallet` (New Deployment, `PW`)
 
-- The functions, events, constructor, and storage layout are identical to `main`.
+- In production builds, the functions, events, constructor, and storage layout are identical to `main`.
 - The error `FundTransferFailed(string, address, uint256)` (`0x154fb6c6`) was removed from the ABI. ETH withdrawals use `transferEthTo`, so a failure bubbles the recipient's raw revert data instead.
 - Errors lost `errStr`:
 
@@ -449,7 +451,7 @@ Checklist conclusions:
   `UnauthorizedCaller(string, address)` and `ZeroAddress(string)` are unchanged.
 - More loops and arithmetic run in `unchecked` blocks: `registerRoundEndAndDepositEthMany`, `_depositEth`, multi-round `withdrawEth`, `claimManyDonatedTokens`, `donateNft`, and `claimManyDonatedNfts`. Behavior is unchanged for realistic values.
 - Comment-202606264 (already in `main`, added in commit `ad198b48` on 2026-06-13): `_registerRoundEnd` runs in `unchecked`, so a huge owner-set `timeoutDurationToWithdrawPrizes` cannot overflow round-end registration and block `claimMainPrize` (same class as Comment-202606235). The old wallet was deployed before this commit, so the redeployment is what brings the fix on chain. The branch also corrects the method name in the comment (`_prepareNextRound` -> `_registerRoundEnd`).
-- `setBypassSomeAsserts` and `bypassSomeAsserts` exist only in `#enable_asserts` builds (Comment-202610038). They are not in the production ABI.
+- `setBypassSomeAsserts` and `bypassSomeAsserts` exist only in `#enable_asserts` builds (Comment-202610038). The setter is `onlyOwner` to prevent others from disrupting testing and emits no event (Comment-202610177). They are not in the production ABI.
 
 ##### Contracts That Are Not Redeployed
 
@@ -470,16 +472,16 @@ Checklist for Nick. "Upgrade block" means the block of the `Upgraded` event on t
 - [ ] `BidPlaced` has the same topic in both versions, so switch decoding by block number.
   - From the upgrade block on, field 8 is `cstBidPriceDeclineMultiplier` (CST wei per second).
   - `bidCstRewardAmount` belongs to the bidder of the previous `BidPlaced` in the same round. It is 0 on the first bid. If you match CST `Transfer` logs instead, take the nonzero mint immediately before that `BidPlaced` log: a zero-price CST bid also emits a zero-value mint to the bidder (Comment-202606074), there is no mint when the reward is 0, and a transaction can contain several bids.
-  - Do not rely on generated ABI docs for this field: Comment-202607273 and the `getBidCstRewardAmountAdvanced` NatSpec still say the reward is minted to the bidder placing the bid.
+  - Comment-202607273 and the reward getter NatSpec distinguish the V2- recipient (the new bidder) from the V3+ recipient (the previous bidder).
   - Rename or add the database column for field 8. Never mix duration and multiplier values in one series.
 - [ ] Subscribe to the new `MainPrizeClaimed` topic (`0x9314e785...`) and keep the old one for history. Store `prizeFirstCosmicSignatureNftId` and `prizeNumCosmicSignatureNfts`.
 - [ ] Do not treat `MainPrizeClaimed` as the last prize event of a claim. Finalize a claim at the end of the transaction, or at `RoundActivationTimeChanged`.
 - [ ] Take NFT IDs from each `*PrizePaid` event and the `MainPrizeClaimed` range. The beneficiary's NFTs are now the highest IDs of the claim.
 - [ ] Update CST `Transfer` matching for the new mint order at claim time, and for reward mints going to the previous bidder.
 - [ ] Add `EthTransferToCharityFailed`, the 4 `Arb*CallFailed` events, and the 6 new `*Changed` events. `ArbitrumError` and the Game's `FundTransferFailed` event will not appear again.
-- [ ] `reinitialize()` emits no `*Changed` events. Snapshot every parameter getter at the upgrade block (see [the table](#values-written-by-reinitialize)).
-- [ ] Track `cstBidPriceDeclineMultiplier` through `BidPlaced`, because bids change it without an event.
-- [ ] Record the first V3 round number: `roundNum()` at the upgrade block. The upgrade can only land while the round is inactive, so this is round 3 if it lands before round 3's activation, and otherwise round 4.
+- [ ] On `Initialized`, snapshot every parameter getter at that block; initialization deliberately omits individual `*Changed` events (Comment-202610175; see [the table](#values-written-by-reinitialize)).
+- [ ] Track `cstBidPriceDeclineMultiplier` through `BidPlaced`, because automatic bid updates emit that event instead of `CstBidPriceDeclineMultiplierChanged` (Comment-202608319).
+- [ ] Record the first V3 round number: `roundNum()` at the upgrade block. The upgrade can only land while the round is inactive; do not hard-code the round number from the rehearsal.
 
 ##### Contract Calls and ABI
 

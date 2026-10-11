@@ -1,5 +1,7 @@
 ### Testing Cosmic Signature DAO With the Tally App
 
+todo-2 This doc is yet to be improved and finished.
+
 #### Introduction
 
 This document provides guidance on how to deploy contracts to Arbitrum Sepolia and use the Tally app to change `CharityWallet.charityAddress`.

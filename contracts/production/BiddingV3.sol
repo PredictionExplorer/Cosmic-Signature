@@ -452,7 +452,7 @@ abstract contract BiddingV3 is
 					// Let's say, our bid price is 1_000_000_000. Calculating max premium:
 					// (9742n ** 8n * 1_000_000_000n) >> (13n * 8n) == 4_000_050_302n
 					//
-					// This cannot overflow.
+					// This cannot overflow with the default parameters.
 					// Comment-202412033 relates.
 					// This can be zero.
 					// [/Comment-202607119]

@@ -44,11 +44,14 @@ abstract contract CosmicSignatureGameStorageV2Base is ICosmicSignatureGameStorag
 
 	/// @dev Comment-202411098 applies.
 	/// Comment-202502044 relates.
-	/// // Comment-202607169 applies.
+	/// Comment-202610054 applies.
+	/// ToDo-202607169-1 applies.
 	/// // @custom:oz-renamed-from bidderAddresses
+	/// @custom:oz-retyped-from mapping(uint256 => ICosmicSignatureGameStorage.BidderAddresses)
 	mapping(uint256 roundNum => RoundStats) public roundStats;
 
 	/// @dev Comment-202411098 applies.
+	/// Comment-202610054 applies.
 	mapping(uint256 roundNum => mapping(address bidderAddress => BidderInfo)) public biddersInfo;
 
 	/// @notice Comment-202605184 applies.
@@ -147,10 +150,10 @@ abstract contract CosmicSignatureGameStorageV2Base is ICosmicSignatureGameStorag
 	/// [Comment-202606057]
 	/// This occupies the same storage slot as `CosmicSignatureGameStorage.cstDutchAuctionDurationDivisor`.
 	/// [/Comment-202606057]
-	/// [Comment-202607169]
-	/// Issue. This variable is reused for further versions of the contract, where it is no longer renamed.
-	/// But OpenZeppelin's upgradeable contract validator does not complain.
-	/// [/Comment-202607169]
+	/// [ToDo-202607169-1]
+	/// Before upgrading to the next contract version, revisit OpenZeppelin annotations
+	/// that acknowledge storage variable renames or type changes.
+	/// [/ToDo-202607169-1]
 	/// @custom:oz-renamed-from cstDutchAuctionDurationDivisor
 	uint256 public cstDutchAuctionDuration;
 
@@ -185,7 +188,7 @@ abstract contract CosmicSignatureGameStorageV2Base is ICosmicSignatureGameStorag
 	/// [Comment-202606053]
 	/// This occupies the same storage slot as `CosmicSignatureGameStorage.bidCstRewardAmount`.
 	/// [/Comment-202606053]
-	/// Comment-202607169 applies.
+	/// ToDo-202607169-1 applies.
 	/// // @custom:oz-renamed-from cstRewardAmountForBidding
 	/// @custom:oz-renamed-from bidCstRewardAmount
 	uint256 public bidCstRewardAmountMultiplier;

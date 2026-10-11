@@ -693,7 +693,10 @@ class FuzzCampaign {
 				expectedRewardByActor_.set(plan_.actor.addressLower, 0n);
 			}
 		}
+
+		// Comment-202611021 applies.
 		const results_ = await this.engine.execBurst(ts_, items_);
+
 		// Apply the model/ledger for each bid in submission order.
 		for (let index_ = 0; index_ < results_.length; ++ index_) {
 			const plan_ = plans_[index_];

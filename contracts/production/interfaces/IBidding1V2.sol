@@ -56,9 +56,10 @@ interface IBidding1V2 {
 	/// [Comment-202605279]
 	/// The minimum bid CST reward amount the bidder is willing to accept.
 	/// It may be zero.
-	/// In V3+, the previous bidder gets bid CST reward, which results in the following:
-	/// - On the first bid in a bidding round this parameter is ignored.
-	/// - The new bidder might want to pass zero unless they placed the previous bid through the same or different account.
+	/// According to Comment-202607273, in V3+, the previous bidder gets bid CST reward, which results in the following:
+	/// - On the first bid in a bidding round no bid CST reward is minted and this parameter is ignored.
+	/// - On a subsequent bid, the new bidder might want to pass zero unless they placed the previous bid
+	///   through the same or different account.
 	/// [/Comment-202605279]
 	function bidWithEth(int256 randomWalkNftId_, string memory message_, uint256 bidCstRewardAmountMinLimit_) external payable;
 
@@ -130,6 +131,7 @@ interface IBidding1V2 {
 
 	/// @notice Calculates and returns the current CST amount to be minted to a bidder as a reward for placing a bid.
 	/// It can be zero.
+	/// Comment-202607273 applies.
 	/// In V3+, Comment-202501022 applies.
 	/// @param currentTimeOffset_ Comment-202501107 applies.
 	function getBidCstRewardAmountAdvanced(int256 currentTimeOffset_) external view returns (uint256);

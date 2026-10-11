@@ -78,8 +78,8 @@ interface ICosmicSignatureGameStorage {
 
 		/// @notice In V3+, the maximum ETH bid price paid.
 		/// Comment-202610059 applies.
-		/// Note that this can be greater than the last ETH bid price, because the late bid premium logic can result in
-		/// an earlier bid price being higher.
+		/// Note that this can be greater than the last ETH bid paid price, because the late bid premium logic can result in
+		/// an earlier bid price being higher, or if the last ETH bid was with a Random Walk NFT.
 		/// Comment-202503162 relates and/or applies.
 		uint256 maxEthBidPrice;
 
