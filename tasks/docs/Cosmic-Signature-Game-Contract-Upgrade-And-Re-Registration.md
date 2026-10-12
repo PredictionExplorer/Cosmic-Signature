@@ -10,7 +10,7 @@ The same blockchains are supported.
 
 #### Make Copies of Old Files
 
-- Switch to the Git branch you used when deploying or upgrading to the previous version of the contract and copy `../output/` and `../runners/.openzeppelin/` to a folder outside the Git repo.
+- Switch to the Git branch you used when deploying or upgrading to the previous version of the contract and copy `../output/` and `../runners/.openzeppelin/` to a folder outside the Git repo. If those folders were never committed, take them from the backup copy you made after the previous deployment; the upgrade task reads the proxy address from the deployment report, and OpenZeppelin validates the new implementation against the manifest.
 
 - Switch back to the `main` branch.
 
@@ -65,7 +65,7 @@ The production config files and scripts contain the words `arbitrumOne` and `Cos
 
 - See respective section in `Cosmic-Signature-Contracts-Deployment-And-Registration.md`.
 
-- The upgrade transaction will revert unless the current bidding round is inactive. To increase the inactivity duration, while the current bidding round is active, increase `delayDurationBeforeRoundActivation`, and while the current bidding round is inactive, increase `roundActivationTime` by callling respective setters.
+- The upgrade transaction will revert unless the current bidding round is inactive. To increase the inactivity duration, while the current bidding round is active, increase `delayDurationBeforeRoundActivation`, and while no bid has been placed in the current bidding round yet, increase `roundActivationTime` by calling respective setters. Read `roundActivationTime()` immediately before upgrading.
 
 - The contract upgrade configuration supports the `unsafeAllowRenames` and `unsafeSkipStorageCheck` params. Try to avoid setting any of them to `true`.
 
@@ -77,7 +77,9 @@ OpenZeppelin would actually disallow the upgrade from V2+ to `CosmicSignatureGam
 (2) I reduced `__gap_persistent` length a few orders of magnitude, because OpenZeppelin's upgradeable contract validation logic executed by `HardhatRuntimeEnvironment.upgrades.upgradeProxy` was crashing due to an overflow. But storage layout remains compatible because the given storage variable is the last. Testing with `CosmicSignatureGameOpenBid` has not run into this case because it added a storage variable after the gap (which is actually a violation of Comment-202412148).\
 The problem is that the initially deployed `CosmicSignatureGame` storage layout still exists in the tracking info stored in `../runners/.openzeppelin`. Therefore, when upgrading to V2 in the production, OpenZeppelin's upgradeable contract validation logic will complain. To silence it, before upgrading, make the following edits. In `../config/upgrade-cosmic-signature-game-config-arbitrumOne-CosmicSignatureGameV2.json`, set `unsafeSkipStorageCheck` to `true`. In `CosmicSignatureGameStorageV2Base`, near `bidCstRewardAmountMultiplier`, comment out `@custom:oz-renamed-from` and uncomment another that specifies `cstRewardAmountForBidding`.
 
-- When developing V3, I made some refactorings in V2 that OpenZeppelin upgradeable contract validator will flag as incompatible. Therefore, when upgrading the initially deployed V2 to V3, in `CosmicSignatureGameStorageV2Base`, near `roundStats`, uncomment the `@custom:oz-renamed-from` annotation. Also, comment out all similar annotations near other variables tagged with ToDo-202607169-1.
+- The above V1 to V2 instruction is historical. Do not replay it: with the current line order, uncommenting that annotation would place a commented-out annotation directly after an active one, which the NatSpec parser appends to the active tag's value.
+
+- When developing V3, I made some refactorings in V2 that OpenZeppelin upgradeable contract validator would flag as incompatible. The committed sources acknowledge them with `@custom:oz-renamed-from` and `@custom:oz-retyped-from` annotations in `CosmicSignatureGameStorageV2Base` and `CosmicSignatureGameStorage`, which are active and validate both against the deployed V2 and in the tests' V1 to V2 to V3 chain. Do not comment out any of them, including the ones tagged with ToDo-202607169-1: the manifest records them on deployment, and the next upgrade's validation depends on them. The reasoning and the evidence are in `${workspaceFolder}/docs/cosmic-signature-game-upgrade-storage-annotations.md` and Comment-202611032.
 
 #### Afterwards
 

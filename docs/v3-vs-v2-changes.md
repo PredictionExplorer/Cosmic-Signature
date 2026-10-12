@@ -34,7 +34,7 @@ Each change is attributed to the lowest version whose source shows it. A change 
 ##### Procedure
 
 - V3 is deployed by a UUPS `upgradeToAndCall(newImplementation, reinitialize())` on the existing proxy. The task config `tasks/config/upgrade-cosmic-signature-game-config-arbitrumOne-CosmicSignatureGameV3.json` passes `newInitializerMethodName = "reinitialize"`.
-- The live V2 `_authorizeUpgrade` requires `onlyOwner` and `_onlyRoundIsInactive`. So the upgrade happens between rounds, and no round mixes V2 and V3 bids. As of the rehearsal fork (block 512486253), round 3 was to activate at Unix time 1791800077 (2026-10-12 10:14 UTC); as of 2026-10-11, the live `roundActivationTime()` read 1792022400 (2026-10-15 00:00 UTC). The owner can change this, so re-read `roundActivationTime()` before upgrading. The upgrade and `setPrizesWallet` must both land before activation for round 3 to be the first V3 round. Otherwise both revert until round 3 is claimed, and round 4 is the first V3 round.
+- The live V2 `_authorizeUpgrade` requires `onlyOwner` and `_onlyRoundIsInactive`. So the upgrade happens between rounds, and no round mixes V2 and V3 bids. As of the rehearsal fork (block 512486253), round 3 was to activate at Unix time 1791800077 (2026-10-12 10:14 UTC); as of 2026-10-11, the live `roundActivationTime()` read 1792022400 (2026-10-15 00:00 UTC), and on 2026-10-12 the owner moved it to 1792627200 (2026-10-22 00:00 UTC). The owner can change this, so re-read `roundActivationTime()` before upgrading. The upgrade and `setPrizesWallet` must both land before activation for round 3 to be the first V3 round. Otherwise both revert until round 3 is claimed, and round 4 is the first V3 round.
 - `reinitialize()` is guarded only by OpenZeppelin `reinitializer(3)`. It has no `onlyOwner` (Comment-202606128), and its other modifiers only assert. It must run atomically as the upgrade call payload. A second call reverts with `InvalidInitialization`.
 - `reinitialize()` emits only `Initialized(3)` (plus the proxy's `Upgraded`). By design, clients must read the parameter getters on `Initialized` rather than expect individual `*Changed` events (Comment-202610175).
 - The procedure is in `tasks/docs/Cosmic-Signature-Game-Contract-Upgrade-And-Re-Registration.md`.
@@ -70,19 +70,19 @@ The "Live V2" column comes from a fork rehearsal of the real upgrade at Arbitrum
 
 ##### OpenZeppelin Storage Validation
 
-Slot 259 changed from `bidderAddresses` to `roundStats` (see [Storage Layout](#storage-layout)). Validation against the deployed V2 layout requires both annotations below, with `unsafeAllowRenames` and `unsafeSkipStorageCheck` both `false`:
+Slot 259 changed from `bidderAddresses` to `roundStats` (see [Storage Layout](#storage-layout)). Validation against the deployed V2 layout requires both annotations on `roundStats` in `CosmicSignatureGameStorageV2Base`, with `unsafeAllowRenames` and `unsafeSkipStorageCheck` both `false`:
 
-| Annotation on `roundStats` in `CosmicSignatureGameStorageV2Base` | Result |
+| Annotations on `roundStats` | Result |
 | --- | --- |
-| Development sources: `oz-retyped-from` is active, but `oz-renamed-from` is commented out | Fails against deployed V2 because the rename is not acknowledged |
+| Only `/// @custom:oz-retyped-from mapping(uint256 => ICosmicSignatureGameStorage.BidderAddresses)` | Fails against deployed V2 because the rename is not acknowledged |
 | Only `/// @custom:oz-renamed-from bidderAddresses` | Fails: incompatible struct, members renamed and retyped |
-| `/// @custom:oz-renamed-from bidderAddresses` plus `/// @custom:oz-retyped-from mapping(uint256 => ICosmicSignatureGameStorage.BidderAddresses)` | Passes |
+| Both | Passes |
 
-Enable the rename annotation on the deployment branch. It remains commented during development because the tests' V1 already has `roundStats`, so adding a rename from `bidderAddresses` in V2 would fail V1 -> V2 validation. Follow `tasks/docs/Cosmic-Signature-Game-Contract-Upgrade-And-Re-Registration.md`, including its instructions for obsolete annotations on other variables (ToDo-202607169-1). Commit the exact deployment sources, configuration, reports, and OpenZeppelin manifest on that branch.
+Both annotations are active in the committed sources, so the sources deploy as they are. The tests' V1 already declares `roundStats`, which would make the same rename annotation fail the V1 -> V2 validation, so the in-repo V1 declares `@custom:oz-renamed-from bidderAddresses` as well; OpenZeppelin accepts equal `oz-renamed-from` values on both sides of an upgrade. For the same reason the V2 annotations at slots 277 and 283 do not break the V2 -> V3 validation, in tests or live, and they must stay: the manifest records them on deployment, and the next upgrade's validation compares against the recorded values (Comment-202611032). The rules, the outcome of every annotation variant, and the fork rehearsal evidence are in [cosmic-signature-game-upgrade-storage-annotations.md](cosmic-signature-game-upgrade-storage-annotations.md).
 
-OpenZeppelin compares `oz-retyped-from` with the old layout's type name; the named type need not exist in the new sources. A nonmatching annotation leaves the normal type check in place. It also tolerates the same `oz-renamed-from` on both sides of an upgrade, which explains why unchanged V2 annotations do not break V2 -> V3 tests.
+OpenZeppelin compares `oz-retyped-from` with the old layout's type name; the named type need not exist in the new sources. A nonmatching annotation leaves the normal type check in place.
 
-`test/tests-src/CosmicSignatureGameV3-DeployedV2StorageLayout.js` checks these cases against the deployed V2 layout. The separate `CosmicSignatureGameV3-StorageLayout.js` validates upgrades from the refactored sources; it does not replace the deployed-layout checks.
+`test/tests-src/CosmicSignatureGameV3-DeployedV2StorageLayout.js` checks these cases against the deployed V2 layout and asserts that the compiled V3 layout records the annotations. The separate `CosmicSignatureGameV3-StorageLayout.js` validates upgrades from the refactored sources; it does not replace the deployed-layout checks.
 
 #### Storage Layout
 

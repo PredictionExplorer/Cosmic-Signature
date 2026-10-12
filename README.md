@@ -21,6 +21,7 @@ This document provides an overview and links to detailed docs. To avoid stale co
 - Audit considerations: [docs/cosmic-signature-contracts-audit-considerations.md](docs/cosmic-signature-contracts-audit-considerations.md).
 - Default parameter values: `contracts/production/libraries/CosmicSignatureConstants.sol`. Some of them are calculated in [contract-configuration-params-calculation/](contract-configuration-params-calculation/).
 - Changes made in the latest Game contract version, including what frontend and backend developers need to change: [docs/v3-vs-v2-changes.md](docs/v3-vs-v2-changes.md).
+- OpenZeppelin storage annotations in the Game sources, why they stay, and the evidence that the committed sources deploy as they are: [docs/cosmic-signature-game-upgrade-storage-annotations.md](docs/cosmic-signature-game-upgrade-storage-annotations.md).
 
 ---
 

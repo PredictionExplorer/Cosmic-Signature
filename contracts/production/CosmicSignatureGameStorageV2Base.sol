@@ -46,7 +46,21 @@ abstract contract CosmicSignatureGameStorageV2Base is ICosmicSignatureGameStorag
 	/// Comment-202502044 relates.
 	/// Comment-202610054 applies.
 	/// ToDo-202607169-1 applies.
-	/// // @custom:oz-renamed-from bidderAddresses
+	/// [Comment-202611032]
+	/// OpenZeppelin storage layout validation compares the layout that the deployment manifest records
+	/// for the deployed implementation with the layout of the new implementation. For each variable, it reports
+	/// a rename unless the new variable's `oz-renamed-from` names the recorded variable, and, when the names are equal,
+	/// it also reports a rename if the new variable's `oz-renamed-from` differs from the recorded one.
+	/// It reports a type change unless the new variable's `oz-retyped-from` names the recorded type.
+	/// The manifest records each deployed implementation together with its annotations.
+	/// So the annotations below must stay in the sources forever. Removing one is harmless for the next deployment,
+	/// but the deployment after that would be rejected with an error like "Renamed `x` to `x`",
+	/// because its annotation would no longer match the recorded one.
+	/// The tests upgrade from the V1 sources in this repository, which were refactored to V3 names,
+	/// so those sources carry the same `oz-renamed-from` annotations where the deployed V1 names differ.
+	/// Details and evidence: `docs/cosmic-signature-game-upgrade-storage-annotations.md`.
+	/// [/Comment-202611032]
+	/// @custom:oz-renamed-from bidderAddresses
 	/// @custom:oz-retyped-from mapping(uint256 => ICosmicSignatureGameStorage.BidderAddresses)
 	mapping(uint256 roundNum => RoundStats) public roundStats;
 
@@ -159,6 +173,7 @@ abstract contract CosmicSignatureGameStorageV2Base is ICosmicSignatureGameStorag
 	/// Before upgrading to the next contract version, revisit OpenZeppelin annotations
 	/// that acknowledge storage variable renames or type changes.
 	/// [/ToDo-202607169-1]
+	/// Comment-202611032 applies.
 	/// @custom:oz-renamed-from cstDutchAuctionDurationDivisor
 	uint256 public cstDutchAuctionDuration;
 
@@ -197,6 +212,7 @@ abstract contract CosmicSignatureGameStorageV2Base is ICosmicSignatureGameStorag
 	/// This occupies the same storage slot as `CosmicSignatureGameStorage.bidCstRewardAmount`.
 	/// [/Comment-202606053]
 	/// ToDo-202607169-1 applies.
+	/// Comment-202611032 applies.
 	/// // @custom:oz-renamed-from cstRewardAmountForBidding
 	/// @custom:oz-renamed-from bidCstRewardAmount
 	uint256 public bidCstRewardAmountMultiplier;
