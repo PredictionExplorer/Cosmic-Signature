@@ -20,6 +20,20 @@ import { IBiddingV3 } from "./interfaces/IBiddingV3.sol";
 // #endregion
 // #region
 
+/// @notice
+/// [Comment-202611022]
+/// In V3+, the CST side of the game is measured in a single unit: the bid CST reward that the last bidder earns
+/// while holding that position. See `docs/cosmic-signature-game-cst-bid-pricing.md` for the full rationale.
+/// The rules are:
+/// 1. The CST bid price declines at exactly the bid CST reward rate, starting at the CST Dutch auction beginning bid price.
+///    Comment-202611023 applies.
+/// 2. After a CST bid, the next auction begins at twice the price paid plus one main prize time increment of reward,
+///    but never above the reward of the initial duration until main prize. Comment-202611024 and Comment-202611025 apply.
+/// 3. The late-bid premium of a CST bid is calculated from at least one main prize time increment of reward.
+///    Comment-202611026 applies.
+/// 4. The raffle weight of a CST bid is proportional to the fraction of the asking price that the bid paid.
+///    Comment-202611027 applies.
+/// [/Comment-202611022]
 abstract contract BiddingV3 is
 	BiddingV2Base,
 	CosmicSignatureGameStorageV3Base,
@@ -57,7 +71,7 @@ abstract contract BiddingV3 is
 
 			// Comment-202503162 relates and/or applies.
 			uint256 ethBidPriceBase_ = super.getNextEthBidPriceAdvanced(int256(0));
-			uint256 ethBidPrice_ = _addRoundLateBidPricePremiumAmountIfNeeded(ethBidPriceBase_, int256(0));
+			uint256 ethBidPrice_ = ethBidPriceBase_ + _getRoundLateBidPricePremiumAmountIfNeeded(ethBidPriceBase_, int256(0));
 			uint256 paidEthPrice_ =
 				(randomWalkNftId_ < int256(0)) ?
 				ethBidPrice_ :
@@ -134,7 +148,10 @@ abstract contract BiddingV3 is
 
 			{
 				RoundStats storage roundStatsReference_ = roundStats[roundNum];
+
+				// Comment-202609098 applies.
 				BidRaffleWeightHelpers.saveForNextBid(roundStatsReference_, ethBidPriceBase_);
+
 				roundStatsReference_.totalSpentEthAmount += paidEthPrice_;
 				if (paidEthPrice_ > roundStatsReference_.maxEthBidPrice) {
 					roundStatsReference_.maxEthBidPrice = paidEthPrice_;
@@ -150,7 +167,6 @@ abstract contract BiddingV3 is
 			// Comment-202501061 applies.
 			nextEthBidPrice = CosmicSignatureHelpers.tryIncreaseValueExponentially(ethBidPriceBase_, ethBidPriceIncreaseDivisor) + 1;
 
-			uint256 newCstBidPriceDeclineMultiplier_ = _tryIncreaseCstBidPriceDeclineMultiplier();
 			_bidCommon(/*bidType_,*/ message_);
 			emit BidPlaced(
 				roundNum,
@@ -160,7 +176,12 @@ abstract contract BiddingV3 is
 				randomWalkNftId_,
 				message_,
 				bidCstRewardAmount_,
-				newCstBidPriceDeclineMultiplier_,
+
+				// Comment-202611028 applies.
+				// An ETH bid does not change this. But the first bid in a bidding round starts the CST Dutch auction,
+				// and this is the price it starts at.
+				_getCstDutchAuctionBeginningBidPrice(),
+
 				mainPrizeTime
 			);
 
@@ -183,8 +204,13 @@ abstract contract BiddingV3 is
 	// #region `getNextEthBidPriceAdvanced`
 
 	function getNextEthBidPriceAdvanced(int256 currentTimeOffset_) public view override (IBidding1V2, BiddingV2Base) virtual returns (uint256) {
-		uint256 ethBidPriceBase_ = super.getNextEthBidPriceAdvanced(currentTimeOffset_);
-		return _addRoundLateBidPricePremiumAmountIfNeeded(ethBidPriceBase_, currentTimeOffset_);
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			uint256 ethBidPriceBase_ = super.getNextEthBidPriceAdvanced(currentTimeOffset_);
+			return ethBidPriceBase_ + _getRoundLateBidPricePremiumAmountIfNeeded(ethBidPriceBase_, currentTimeOffset_);
+		}
 	}
 
 	// #endregion
@@ -210,7 +236,7 @@ abstract contract BiddingV3 is
 
 			// Comment-202503162 relates and/or applies.
 			uint256 cstBidPriceBase_ = _getNextCstBidPriceBaseAdvanced(int256(0));
-			uint256 paidCstPrice_ = /* (cstBidPriceBase_ > 0) ? */ _addRoundLateBidPricePremiumAmountIfNeeded(cstBidPriceBase_, int256(0)) /* : 0 */;
+			uint256 paidCstPrice_ = cstBidPriceBase_ + _getRoundLateBidPricePremiumAmountIfNeeded(_getCstBidPricePremiumBase(cstBidPriceBase_), int256(0));
 
 			// Comment-202412045 applies.
 			if ( ! (paidCstPrice_ <= cstPriceMaxLimit_) ) {
@@ -223,7 +249,23 @@ abstract contract BiddingV3 is
 			{
 				RoundStats storage roundStatsReference_ = roundStats[roundNum];
 				uint256 ethBidPriceBase_ = super.getNextEthBidPriceAdvanced(int256(0));
-				BidRaffleWeightHelpers.saveForNextBid(roundStatsReference_, ethBidPriceBase_);
+				uint256 cstDutchAuctionBeginningBidPrice_ = _getCstDutchAuctionBeginningBidPrice();
+
+				// Comment-202609098 applies.
+				// [Comment-202611027]
+				// The raffle weight of a CST bid is the concurrent ETH bid price base scaled by the fraction of
+				// the CST Dutch auction beginning bid price that the bid pays, i.e., the fraction of the asking price paid.
+				// So a CST bid placed when the CST bid price base has declined to zero gets a zero weight,
+				// which makes waiting for a cheap CST bid cost raffle chances. Comment-202611029 applies.
+				// The divisor can be zero only if the contract owner configures `bidCstRewardAmountMultiplier` so low that
+				// the maximum CST Dutch auction beginning bid price or one main prize time increment of reward rounds to zero.
+				// [/Comment-202611027]
+				uint256 bidRaffleWeight_ =
+					(cstDutchAuctionBeginningBidPrice_ > 0) ?
+					(ethBidPriceBase_ * cstBidPriceBase_ / cstDutchAuctionBeginningBidPrice_) :
+					0;
+
+				BidRaffleWeightHelpers.saveForNextBid(roundStatsReference_, bidRaffleWeight_);
 				++ roundStatsReference_.numCstBids;
 				roundStatsReference_.totalSpentCstAmount += paidCstPrice_;
 				if (paidCstPrice_ > roundStatsReference_.maxCstBidPrice) {
@@ -233,47 +275,22 @@ abstract contract BiddingV3 is
 			biddersInfo[roundNum][_msgSender()].totalSpentCstAmount += paidCstPrice_;
 			cstDutchAuctionBeginningTimeStamp = block.timestamp;
 
-			// // [Comment-202609292]
-			// // Doubling the effective paid CST price.
-			// //
-			// // Actually, this idea makes no sense because someone else (the previous bidder) gets bid CST reward.
-			// // Although the same bidder can bid again from the same or different account,
-			// // but it appears to be a bad idea to attempt to treat that case differently.
-			// // The rest of this comment describes this idea as if the bidder who bids was getting the reward
-			// // within the same transaction. Parts of it might still be relevant.
-			// //
-			// // Bid CST reward will begin increasing from zero after this bid.
-			// // Problem is that the logic kinda gets disrupted by ETH bids, because they also reset bid CST reward.
-			// // So when ETH bid price becomes high enough to discourage ETH bids, CST bids immediately become more appealing,
-			// // because ETH bids no longer reset CST bid rewards,
-			// // which results in lots of consequitive CST bids towards the end of the round.
-			// // One might want to maintain separate CST rewards for ETH and CST bids,
-			// // so that the bids didn't reset each other's rewards.
-			// // 
-			// // V2- simply doubles `cstBidPriceBase_` here.
-			// // That is in some way better because if bid CST reward gets reset by an ETH bid,
-			// // on next CST bid `cstBidPriceBase_` is lower, so CST bids get an instant priority boost,
-			// // which, in turn, goes away as soon as people stop bidding with ETH.
-			// // [/Comment-202609292]
-			// uint256 newCstDutchAuctionBeginningBidPrice_ =
-			// 	uint256(
-			// 		CosmicSignatureHelpers.max(
-			// 			(int256(cstBidPriceBase_) - int256(bidCstRewardAmount_)) * int256(CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER),
-			// 			int256(cstDutchAuctionBeginningBidPriceMinLimit)
-			// 		)
-			// 	);
-
+			// [Comment-202611024]
+			// The next CST Dutch auction begins at twice the sum of the CST bid price base paid and one main prize time increment
+			// of bid CST reward, but never above the maximum explained in Comment-202611025.
+			// The additive increment of reward makes a CST bid placed at a zero price restart the auction at two increments of reward,
+			// so a bidder waiting for free CST bids can place one at most every two main prize time increments,
+			// gets no raffle weight for it (Comment-202611027), and lets the last bidder earn a full increment of reward meanwhile.
+			// The doubling makes a sequence of prompt CST bids escalate geometrically, similarly to how ETH bids escalate.
+			// [/Comment-202611024]
 			uint256 newCstDutchAuctionBeginningBidPrice_ =
-				Math.max(cstBidPriceBase_ * CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, cstDutchAuctionBeginningBidPriceMinLimit);
-			cstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
-			if (lastCstBidderAddress == address(0)) {
-				// Comment-202501045 applies.
+				Math.min(
+					(cstBidPriceBase_ + _getBidCstRewardAmountPerMainPrizeTimeIncrement()) * CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER,
+					_getCstDutchAuctionBeginningBidPriceMaxLimit()
+				);
 
-				// Comment-202504212 applies.
-				nextRoundFirstCstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
-			}
+			cstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
 			lastCstBidderAddress = _msgSender();
-			uint256 newCstBidPriceDeclineMultiplier_ = _tryReduceCstBidPriceDeclineMultiplier();
 			_bidCommon(/*BidType.CST,*/ message_);
 			emit BidPlaced(
 				roundNum,
@@ -283,7 +300,10 @@ abstract contract BiddingV3 is
 				-1,
 				message_,
 				bidCstRewardAmount_,
-				newCstBidPriceDeclineMultiplier_,
+
+				// Comment-202611028 applies.
+				newCstDutchAuctionBeginningBidPrice_,
+
 				mainPrizeTime
 			);
 		}
@@ -293,13 +313,41 @@ abstract contract BiddingV3 is
 	// #region `getNextCstBidPriceAdvanced`
 
 	function getNextCstBidPriceAdvanced(int256 currentTimeOffset_) public view override (IBidding1V2, BiddingV2Base) virtual returns (uint256) {
-		uint256 cstBidPriceBase_ = _getNextCstBidPriceBaseAdvanced(currentTimeOffset_);
-		return /* (cstBidPriceBase_ > 0) ? */ _addRoundLateBidPricePremiumAmountIfNeeded(cstBidPriceBase_, currentTimeOffset_) /* : 0 */;
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			uint256 cstBidPriceBase_ = _getNextCstBidPriceBaseAdvanced(currentTimeOffset_);
+			return cstBidPriceBase_ + _getRoundLateBidPricePremiumAmountIfNeeded(_getCstBidPricePremiumBase(cstBidPriceBase_), currentTimeOffset_);
+		}
+	}
+
+	// #endregion
+	// #region `getNextCstBidPriceBase`
+
+	function getNextCstBidPriceBase() external view override returns (uint256) {
+		return _getNextCstBidPriceBaseAdvanced(int256(0));
+	}
+
+	// #endregion
+	// #region `getNextCstBidPriceBaseAdvanced`
+
+	function getNextCstBidPriceBaseAdvanced(int256 currentTimeOffset_) external view override returns (uint256) {
+		return _getNextCstBidPriceBaseAdvanced(currentTimeOffset_);
 	}
 
 	// #endregion
 	// #region `_getNextCstBidPriceBaseAdvanced`
 
+	/// @notice
+	/// [Comment-202611023]
+	/// The CST bid price declines by exactly the bid CST reward that the last bidder earns over the same time,
+	/// i.e., by `bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds` per second.
+	/// So the amount a CST bid burns plus all bid CST rewards minted since the CST Dutch auction began
+	/// equals the CST Dutch auction beginning bid price, regardless of when the bid is placed.
+	/// There is no separate decline rate parameter, so the CST side of the game scales with
+	/// `bidCstRewardAmountMultiplier` and `mainPrizeTimeIncrementInMicroSeconds` and never drifts away from them.
+	/// [/Comment-202611023]
 	/// @param currentTimeOffset_ Comment-202501107 applies.
 	/// @return The CST bid price without the late-bid premium.
 	function _getNextCstBidPriceBaseAdvanced(int256 currentTimeOffset_) private view returns (uint256) {
@@ -311,79 +359,74 @@ abstract contract BiddingV3 is
 			// Comment-202608052 applies.
 			int256 cstDutchAuctionElapsedDuration_ = int256(_getCstDutchAuctionElapsedDuration()) + currentTimeOffset_;
 
-			// Comment-202501307 relates and/or applies.
-			uint256 cstDutchAuctionBeginningBidPrice_ =
-				(lastCstBidderAddress == address(0)) ? nextRoundFirstCstDutchAuctionBeginningBidPrice : cstDutchAuctionBeginningBidPrice;
-
-			int256 nextCstBidPrice_ =
-				int256(cstDutchAuctionBeginningBidPrice_) -
-				
-				// [Comment-202610093]
-				// This formula would present an overflow risk if `cstBidPriceDeclineMultiplier` increase was unbounded.
-				// Here is what would need to happen for `cstBidPriceDeclineMultiplier` to become too large.
-				// A certain number of bidding rounds must complete, each resetting ETH bid price to a low value,
-				// so no unrealistic amounts of ETH are required. During the rounds, there must be more ETH than CST bids.
-				// There are also other formulas involving `cstBidPriceDeclineMultiplier`, but they require larger values to overflow.
-				// [/Comment-202610093]
-				cstDutchAuctionElapsedDuration_ * int256(cstBidPriceDeclineMultiplier);
-			return (nextCstBidPrice_ > int256(0)) ? uint256(nextCstBidPrice_) : 0;
+			uint256 cstDutchAuctionBeginningBidPrice_ = _getCstDutchAuctionBeginningBidPrice();
+			uint256 cstBidPriceDeclineAmount_ = _getBidCstRewardAmountForDuration(cstDutchAuctionElapsedDuration_);
+			return (cstDutchAuctionBeginningBidPrice_ > cstBidPriceDeclineAmount_) ? (cstDutchAuctionBeginningBidPrice_ - cstBidPriceDeclineAmount_) : 0;
 		}
 	}
 
 	// #endregion
-	// #region `_tryIncreaseCstBidPriceDeclineMultiplier`
+	// #region `_getCstDutchAuctionBeginningBidPrice`
 
-	function _tryIncreaseCstBidPriceDeclineMultiplier() private returns (uint256) {
-		// // [Comment-202609294]
-		// // This idea makes no sense for the same reason the Comment-202609292 idea does.
-		// // [/Comment-202609294]
-		// // #enable_smtchecker /*
-		// unchecked
-		// // #enable_smtchecker */
-		// {
-		// 	uint256 bidCstRewardAmountPerSecond_ = bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds;
-		// 	uint256 cstBidPriceDeclineEffectiveMultiplier_ = cstBidPriceDeclineMultiplier + bidCstRewardAmountPerSecond_;
-		// 	cstBidPriceDeclineEffectiveMultiplier_ = CosmicSignatureHelpers.tryIncreaseValueExponentially(cstBidPriceDeclineEffectiveMultiplier_, cstBidPriceDeclineMultiplierChangeDivisor);
-		// 	int256 newCstBidPriceDeclineMultiplier_ = int256(cstBidPriceDeclineEffectiveMultiplier_) - int256(bidCstRewardAmountPerSecond_);
-		// 	cstBidPriceDeclineMultiplier = uint256(newCstBidPriceDeclineMultiplier_);
-		// }
-
-		uint256 newCstBidPriceDeclineMultiplier_ =
-			Math.min(
-				CosmicSignatureHelpers.tryIncreaseValueExponentially(cstBidPriceDeclineMultiplier, cstBidPriceDeclineMultiplierChangeDivisor),
-				CosmicSignatureConstants.CST_BID_PRICE_DECLINE_MULTIPLIER_MAX_LIMIT
-			);
-		cstBidPriceDeclineMultiplier = newCstBidPriceDeclineMultiplier_;
-		return newCstBidPriceDeclineMultiplier_;
+	/// @return The price the current CST Dutch auction began at.
+	/// [Comment-202611025]
+	/// Each bidding round's first CST Dutch auction begins at the reward of the initial duration until main prize,
+	/// which is also the maximum any CST Dutch auction can begin at. So the CST bid price and the initial countdown
+	/// to `mainPrizeTime` start together on the round's first bid and would reach zero together.
+	/// The maximum bounds how long the CST side can stay expensive after a sequence of CST bids
+	/// to one initial duration until main prize.
+	/// V2- instead carried `nextRoundFirstCstDutchAuctionBeginningBidPrice` from round to round.
+	/// V3+ neither reads nor writes it, nor `cstDutchAuctionBeginningBidPriceMinLimit`.
+	/// [/Comment-202611025]
+	function _getCstDutchAuctionBeginningBidPrice() private view returns (uint256) {
+		// Comment-202605197 applies to `cstDutchAuctionBeginningBidPrice`.
+		return (lastCstBidderAddress == address(0)) ? _getCstDutchAuctionBeginningBidPriceMaxLimit() : cstDutchAuctionBeginningBidPrice;
 	}
 
 	// #endregion
-	// #region `_tryReduceCstBidPriceDeclineMultiplier`
+	// #region `_getCstDutchAuctionBeginningBidPriceMaxLimit`
 
-	function _tryReduceCstBidPriceDeclineMultiplier() private returns (uint256) {
-		// // Comment-202609294 applies.
-		// // #enable_smtchecker /*
-		// unchecked
-		// // #enable_smtchecker */
-		// {
-		// 	uint256 bidCstRewardAmountPerSecond_ = bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds;
-		// 	uint256 cstBidPriceDeclineEffectiveMultiplier_ = cstBidPriceDeclineMultiplier + bidCstRewardAmountPerSecond_;
-		// 	cstBidPriceDeclineEffectiveMultiplier_ = CosmicSignatureHelpers.tryReduceValueExponentially(cstBidPriceDeclineEffectiveMultiplier_, cstBidPriceDeclineMultiplierChangeDivisor);
-		// 	int256 newCstBidPriceDeclineMultiplier_ = int256(cstBidPriceDeclineEffectiveMultiplier_) - int256(bidCstRewardAmountPerSecond_);
-		//
-		// 	// todo-9 Does this logic guarantee that a subsequent call to `_tryIncreaseCstBidPriceDeclineMultiplier`
-		// 	// todo-9 will increase this value?
-		// 	if (newCstBidPriceDeclineMultiplier_ <= int256(0)) {
-		// 		newCstBidPriceDeclineMultiplier_ = int256(1);
-		// 	}
-		//
-		// 	cstBidPriceDeclineMultiplier = uint256(newCstBidPriceDeclineMultiplier_);
-		// }
+	/// @return The bid CST reward for holding the last bidder position during the initial duration until main prize.
+	/// Comment-202611025 applies.
+	/// @dev This equals `_getBidCstRewardAmountForDuration(getInitialDurationUntilMainPrize())`, up to rounding.
+	/// Comment-202611031 relates.
+	function _getCstDutchAuctionBeginningBidPriceMaxLimit() private view returns (uint256) {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			return bidCstRewardAmountMultiplier / initialDurationUntilMainPrizeDivisor;
+		}
+	}
 
-		uint256 newCstBidPriceDeclineMultiplier_ =
-			CosmicSignatureHelpers.tryReduceValueExponentially(cstBidPriceDeclineMultiplier, cstBidPriceDeclineMultiplierChangeDivisor);
-		cstBidPriceDeclineMultiplier = newCstBidPriceDeclineMultiplier_;
-		return newCstBidPriceDeclineMultiplier_;
+	// #endregion
+	// #region `_getBidCstRewardAmountPerMainPrizeTimeIncrement`
+
+	/// @return The bid CST reward for holding the last bidder position during one main prize time increment.
+	/// @dev This equals `_getBidCstRewardAmountForDuration(getMainPrizeTimeIncrement())`, up to rounding.
+	function _getBidCstRewardAmountPerMainPrizeTimeIncrement() private view returns (uint256) {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			return bidCstRewardAmountMultiplier / CosmicSignatureConstants.MICROSECONDS_PER_SECOND;
+		}
+	}
+
+	// #endregion
+	// #region `_getCstBidPricePremiumBase`
+
+	/// @notice
+	/// [Comment-202611026]
+	/// The late-bid premium of an ETH bid is calculated from the ETH bid price base, which is never zero.
+	/// The CST bid price base can be zero, and zero times any premium multiplier would still be zero,
+	/// so the premium of a CST bid is calculated from at least one main prize time increment of reward.
+	/// This way, a last-minute CST bid is never free, even if nobody placed a CST bid for a long time.
+	/// [/Comment-202611026]
+	/// @param cstBidPriceBase_ The CST bid price without the late-bid premium.
+	/// @return The amount the late-bid premium of a CST bid is calculated from.
+	function _getCstBidPricePremiumBase(uint256 cstBidPriceBase_) private view returns (uint256) {
+		return Math.max(cstBidPriceBase_, _getBidCstRewardAmountPerMainPrizeTimeIncrement());
 	}
 
 	// #endregion
@@ -398,32 +441,42 @@ abstract contract BiddingV3 is
 	// #endregion
 	// #region `_getCstDutchAuctionDuration`
 
+	/// @return The duration from the current CST Dutch auction beginning until the CST bid price base reaches zero.
+	/// This is the beginning bid price divided by the per-second decline, rounded up. Comment-202611023 applies.
 	function _getCstDutchAuctionDuration() private view returns (uint256) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
 		{
-			// Comment-202501307 relates and/or applies.
-			uint256 cstDutchAuctionBeginningBidPrice_ =
-				(lastCstBidderAddress == address(0)) ? nextRoundFirstCstDutchAuctionBeginningBidPrice : cstDutchAuctionBeginningBidPrice;
+			uint256 bidCstRewardAmountMultiplierCopy_ = bidCstRewardAmountMultiplier;
 
-			uint256 cstDutchAuctionDuration_ = (cstDutchAuctionBeginningBidPrice_ + (cstBidPriceDeclineMultiplier - 1)) / cstBidPriceDeclineMultiplier;
+			// Issue. If the contract owner sets `bidCstRewardAmountMultiplier` to zero, the CST bid price never declines,
+			// so the duration is infinite. Returning the maximum value instead of panicking keeps this getter usable.
+			if (bidCstRewardAmountMultiplierCopy_ == 0) {
+				return type(uint256).max;
+			}
+
+			uint256 cstDutchAuctionBeginningBidPrice_ = _getCstDutchAuctionBeginningBidPrice();
+			uint256 cstDutchAuctionDuration_ =
+				(cstDutchAuctionBeginningBidPrice_ * mainPrizeTimeIncrementInMicroSeconds + (bidCstRewardAmountMultiplierCopy_ - 1)) /
+				bidCstRewardAmountMultiplierCopy_;
 			return cstDutchAuctionDuration_;
 		}
 	}
 
 	// #endregion
-	// #region `_addRoundLateBidPricePremiumAmountIfNeeded`
+	// #region `_getRoundLateBidPricePremiumAmountIfNeeded`
 
 	/// @notice The premium affects prices bidders are required to pay and paid-amount stats only;
 	/// price updates and raffle weights use the base price.
-	/// @param bidPrice_ As mentioned in Comment-202607119, if it's zero the result will be zero as well.
-	function _addRoundLateBidPricePremiumAmountIfNeeded(uint256 bidPrice_, int256 currentTimeOffset_) private view returns (uint256 adjustedBidPrice_) {
+	/// @param roundLateBidPricePremiumBase_ The amount the premium is calculated from.
+	/// As mentioned in Comment-202607119, if it's zero the result will be zero as well.
+	/// @return roundLateBidPricePremiumAmount_ The premium amount to add to the bid price. This can be zero.
+	function _getRoundLateBidPricePremiumAmountIfNeeded(uint256 roundLateBidPricePremiumBase_, int256 currentTimeOffset_) private view returns (uint256 roundLateBidPricePremiumAmount_) {
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */
 		{
-			adjustedBidPrice_ = bidPrice_;
 			if (lastBidderAddress != address(0)) {
 				uint256 roundLateBidDuration_ = getRoundLateBidDuration();
 				int256 durationUntilMainPrize_ = getDurationUntilMainPrize() - currentTimeOffset_;
@@ -456,13 +509,11 @@ abstract contract BiddingV3 is
 					// Comment-202412033 relates.
 					// This can be zero.
 					// [/Comment-202607119]
-					uint256 roundLateBidPricePremiumAmount_ =
+					roundLateBidPricePremiumAmount_ =
 						( (uint256(roundLateBidElapsedDuration_) * roundLateBidPricePremiumAmountBaseMultiplier / mainPrizeTimeIncrementInMicroSeconds) ** roundLateBidPricePremiumAmountExponent *
-						  adjustedBidPrice_
+						  roundLateBidPricePremiumBase_
 						) >>
 						(roundLateBidPricePremiumAmountExponent * CosmicSignatureConstants.ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_RESOLUTION_EXPONENT);
-
-					adjustedBidPrice_ += roundLateBidPricePremiumAmount_;
 				}
 			}
 		}
@@ -494,11 +545,25 @@ abstract contract BiddingV3 is
 			uint256 lastBidTimeStampCopy_ = biddersInfo[roundNum][lastBidderAddress].lastBidTimeStamp;
 
 			int256 elapsedDuration_ = int256(block.timestamp) + currentTimeOffset_ - int256(lastBidTimeStampCopy_);
+			return _getBidCstRewardAmountForDuration(elapsedDuration_);
+		}
+	}
+
+	// #endregion
+	// #region `_getBidCstRewardAmountForDuration`
+
+	/// @param duration_ The duration the last bidder position was held for, in seconds. This can be negative.
+	/// @return The bid CST reward for holding the last bidder position for the given duration.
+	/// Zero if the duration is not positive.
+	function _getBidCstRewardAmountForDuration(int256 duration_) private view returns (uint256) {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
 			uint256 bidCstRewardAmount_ = 0;
-			if (elapsedDuration_ > int256(0)) {
+			if (duration_ > int256(0)) {
 				// Comment-202607167 applies.
-				bidCstRewardAmount_ = uint256(elapsedDuration_) * bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds;
-				// // #enable_asserts // #disable_smtchecker console.log("202609282", bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds, bidCstRewardAmount_ / uint256(elapsedDuration_));
+				bidCstRewardAmount_ = uint256(duration_) * bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds;
 			}
 			return bidCstRewardAmount_;
 		}

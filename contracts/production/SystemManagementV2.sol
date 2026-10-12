@@ -58,7 +58,7 @@ abstract contract SystemManagementV2 is
 		emit CstDutchAuctionDurationChangeDivisorChanged(newValue_);
 	}
 
-	function setCstDutchAuctionBeginningBidPriceMinLimit(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
+	function setCstDutchAuctionBeginningBidPriceMinLimit(uint256 newValue_) external override virtual onlyOwner _onlyRoundIsInactive {
 		cstDutchAuctionBeginningBidPriceMinLimit = newValue_;
 
 		// // Comment-202607016 applies.

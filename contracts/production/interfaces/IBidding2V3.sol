@@ -17,8 +17,14 @@ interface IBidding2V3 {
 	/// @param message Comment-202503155 applies.
 	/// @param bidCstRewardAmount Comment-202607273 applies.
 	/// It can be zero. It's always zero on the first bid in a round.
-	/// @param cstBidPriceDeclineMultiplier Comment-202608181 applies.
-	/// Comment-202608319 relates.
+	/// @param cstDutchAuctionBeginningBidPrice The price the CST Dutch auction in effect after this bid began at.
+	/// [Comment-202611028]
+	/// After a CST bid, this is the price the new CST Dutch auction begins at, and it begins at this bid's timestamp.
+	/// After an ETH bid, the current CST Dutch auction continues unchanged, so this is its beginning price.
+	/// Together with `cstDutchAuctionBeginningTimeStamp`, `bidCstRewardAmountMultiplier`,
+	/// and `mainPrizeTimeIncrementInMicroSeconds`, this lets clients calculate the CST bid price base
+	/// at any moment, as explained in Comment-202611023.
+	/// [/Comment-202611028]
 	/// @param mainPrizeTime Comment-202412152 applies.
 	event BidPlaced(
 		uint256 indexed roundNum,
@@ -28,7 +34,7 @@ interface IBidding2V3 {
 		int256 indexed randomWalkNftId,
 		string message,
 		uint256 bidCstRewardAmount,
-		uint256 cstBidPriceDeclineMultiplier,
+		uint256 cstDutchAuctionBeginningBidPrice,
 		uint256 mainPrizeTime
 	);
 }

@@ -99,37 +99,16 @@ library CosmicSignatureConstants {
 	uint256 internal constant DEFAULT_CST_DUTCH_AUCTION_DURATION_DIVISOR = (INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND + INITIAL_CST_DUTCH_AUCTION_DURATION / 2) / INITIAL_CST_DUTCH_AUCTION_DURATION;
 
 	/// @notice In V2, default `CosmicSignatureGameStorageV2Base.cstDutchAuctionDurationChangeDivisor`.
-	/// @dev Comment-202607301 relates.
 	uint256 internal constant DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR = 250;
 
 	/// @notice Comment-202411066 relates.
+	/// In V3+, Comment-202611024 applies.
 	uint256 internal constant CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER = 2;
 
 	/// @notice Initial `nextRoundFirstCstDutchAuctionBeginningBidPrice`.
 	/// In V2-, default `cstDutchAuctionBeginningBidPriceMinLimit`.
-	/// See also: `DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT_V3`.
+	/// In V3+, neither variable is used. Comment-202611025 applies.
 	uint256 internal constant DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT = 2 * DEFAULT_BID_CST_REWARD_AMOUNT;
-
-	/// @notice In V3+, default `cstDutchAuctionBeginningBidPriceMinLimit`.
-	/// See also: `DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT`.
-	uint256 internal constant DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT_V3 = INITIAL_BID_CST_REWARD_AMOUNT_PER_MINUTE;
-
-	/// @notice In V3+, initial `CosmicSignatureGameStorageV3Base.cstBidPriceDeclineMultiplier`.
-	uint256 internal constant INITIAL_CST_BID_PRICE_DECLINE_MULTIPLIER = (DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER + INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND / 2) / (INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND);
-
-	/// @notice In V3+, this caps automatic increases of `CosmicSignatureGameStorageV3Base.cstBidPriceDeclineMultiplier`.
-	/// Why the cap is needed, is explained in Comment-202610093.
-	/// At this cap, multiplying by nonnegative elapsed seconds overflows only after more than 100 years.
-	/// @dev I feel that it's unnecessary to make this configurable.
-	uint256 internal constant CST_BID_PRICE_DECLINE_MULTIPLIER_MAX_LIMIT = uint256(type(int256).max) / (100 * (366 days));
-
-	/// @notice In V3+, default `CosmicSignatureGameStorageV3Base.cstBidPriceDeclineMultiplierChangeDivisor`.
-	/// @dev
-	/// [Comment-202607301]
-	/// This is lesser than `DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR` --
-	/// to discourage a lot of bids of the same type in a row.
-	/// [/Comment-202607301]
-	uint256 internal constant DEFAULT_CST_BID_PRICE_DECLINE_MULTIPLIER_CHANGE_DIVISOR = 100;
 
 	/// @notice In V3+.
 	/// @dev
@@ -170,6 +149,8 @@ library CosmicSignatureConstants {
 	uint256 internal constant INITIAL_BID_CST_REWARD_AMOUNT_PER_MINUTE = 1 ether;
 
 	/// @notice In V3+, default `CosmicSignatureGameStorageV2Base.bidCstRewardAmountMultiplier`.
+	/// In V3+, this also controls the CST bid price decline and the CST Dutch auction beginning bid price,
+	/// as explained in Comment-202611022.
 	/// See also: `DEFAULT_BID_CST_REWARD_AMOUNT_RADICAND_MULTIPLIER`.
 	uint256 internal constant DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER = (INITIAL_BID_CST_REWARD_AMOUNT_PER_MINUTE * INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND + (1 minutes) / 2) / (1 minutes);
 

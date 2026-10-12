@@ -8,7 +8,7 @@
 const hre = require("hardhat");
 const { expect } = require("chai");
 const c = require("../../../src/CosmicSignatureConstants.js");
-const { maxBigInt, minBigInt, sqrtFloor, uint256ToInt256, int256ToUint256, u256 } = require("../../../src/BigIntMathHelpers.js");
+const { MAX_UINT256, maxBigInt, minBigInt, sqrtFloor, uint256ToInt256, int256ToUint256, u256 } = require("../../../src/BigIntMathHelpers.js");
 
 // #endregion
 // #region `GameModel`
@@ -18,7 +18,8 @@ Exact JS shadow model of the `CosmicSignatureGame` (V1, V2, and V3) deterministi
 
 The fuzz engine controls every block timestamp, so all prices, rewards, durations, champion
 transitions, and `mainPrizeTime` values are exactly predictable. This class mirrors:
-- `Bidding.sol` / `BiddingV2.sol` / `BiddingV3.sol` (`_bidWithEth`, `_bidWithCst`, `_bidCommon`, price getters, the V3 late bid price premium)
+- `Bidding.sol` / `BiddingV2.sol` / `BiddingV3.sol` (`_bidWithEth`, `_bidWithCst`, `_bidCommon`, price getters,
+  the V3 late bid price premium, the V3 CST Dutch auction rules of Comment-202611022, and the V3 bid raffle weights)
 - `BidStatistics.sol` (`_updateChampionsIfNeeded`, `_updateChronoWarriorIfNeeded`, `tryGetCurrentChampions`)
 - `MainPrizeCommon.sol` / `MainPrizeCommonV2.sol` (`_extendMainPrizeTime` clamping difference)
 - `MainPrize.sol` / `MainPrizeV2.sol` / `MainPrizeV3.sol` (`claimMainPrize` authorization + `_prepareNextRound` + the V3 multi-NFT main prize)
@@ -46,6 +47,7 @@ class GameModel {
 		this.cstDutchAuctionDurationDivisor = 0n; // V1 only
 		this.cstDutchAuctionDuration = 0n; // V2 only (stored duration)
 		this.cstDutchAuctionDurationChangeDivisor = 0n; // V2 only
+		// V2- only. V3+ neither reads nor writes it, and its setter reverts, so its value stays frozen (Comment-202611025).
 		this.cstDutchAuctionBeginningBidPriceMinLimit = 0n;
 		this.bidMessageLengthMaxLimit = 0n;
 		this.bidCstRewardAmount = 0n; // V1 only
@@ -66,8 +68,6 @@ class GameModel {
 		this.roundLateBidDurationDivisor = 0n; // V3 only
 		this.roundLateBidPricePremiumAmountBaseMultiplier = 0n; // V3 only
 		this.roundLateBidPricePremiumAmountExponent = 0n; // V3 only
-		this.cstBidPriceDeclineMultiplier = 0n; // V3 only
-		this.cstBidPriceDeclineMultiplierChangeDivisor = 0n; // V3 only
 		this.mainPrizeNumCosmicSignatureNfts = 0n; // V3 only
 		/** @type {string} */
 		this.charityAddress = "";
@@ -85,6 +85,7 @@ class GameModel {
 		this.nextEthBidPrice = 0n;
 		this.cstDutchAuctionBeginningTimeStamp = 0n;
 		this.cstDutchAuctionBeginningBidPrice = 0n;
+		// V2- only. V3+ neither reads nor writes it, so its value stays frozen (Comment-202611025).
 		this.nextRoundFirstCstDutchAuctionBeginningBidPrice = 0n;
 		/** @type {string} */
 		this.lastBidderAddress = hre.ethers.ZeroAddress;
@@ -110,7 +111,7 @@ class GameModel {
 		/**
 		Per-round bid statistics. Key: round number as string.
 		@type {Map<string, {
-			bidderAddresses: string[], bidRaffleCumulativeWeights: bigint[],
+			bidderAddresses: string[], bidTypes: ("eth" | "cst")[], bidRaffleCumulativeWeights: bigint[],
 			biddersInfo: Map<string, {totalSpentEthAmount: bigint, totalSpentCstAmount: bigint, lastBidTimeStamp: bigint}>,
 			numCstBids: bigint, totalSpentEthAmount: bigint, totalSpentCstAmount: bigint,
 			maxEthBidPrice: bigint, maxCstBidPrice: bigint,
@@ -144,8 +145,6 @@ class GameModel {
 			this.roundLateBidDurationDivisor = await game_.roundLateBidDurationDivisor();
 			this.roundLateBidPricePremiumAmountBaseMultiplier = await game_.roundLateBidPricePremiumAmountBaseMultiplier();
 			this.roundLateBidPricePremiumAmountExponent = await game_.roundLateBidPricePremiumAmountExponent();
-			this.cstBidPriceDeclineMultiplier = await game_.cstBidPriceDeclineMultiplier();
-			this.cstBidPriceDeclineMultiplierChangeDivisor = await game_.cstBidPriceDeclineMultiplierChangeDivisor();
 			this.mainPrizeNumCosmicSignatureNfts = await game_.mainPrizeNumCosmicSignatureNfts();
 		}
 		this.cstDutchAuctionBeginningBidPriceMinLimit = await game_.cstDutchAuctionBeginningBidPriceMinLimit();
@@ -195,7 +194,7 @@ class GameModel {
 		let round_ = this.rounds.get(key_);
 		if (round_ === undefined) {
 			round_ = {
-				bidderAddresses: [], bidRaffleCumulativeWeights: [], biddersInfo: new Map(),
+				bidderAddresses: [], bidTypes: [], bidRaffleCumulativeWeights: [], biddersInfo: new Map(),
 				numCstBids: 0n, totalSpentEthAmount: 0n, totalSpentCstAmount: 0n,
 				maxEthBidPrice: 0n, maxCstBidPrice: 0n,
 				enduranceChampionDuration: 0n, chronoWarriorDuration: 0n, flags: 0n,
@@ -260,6 +259,11 @@ class GameModel {
 
 	getBidRaffleCumulativeWeights(roundNum_) {
 		return this.rounds.get(roundNum_.toString())?.bidRaffleCumulativeWeights ?? [];
+	}
+
+	/** @returns {("eth" | "cst")[]} The type of each bid in the given round, in bid order. */
+	getBidTypes(roundNum_) {
+		return this.rounds.get(roundNum_.toString())?.bidTypes ?? [];
 	}
 
 	_appendBidRaffleWeight(bidRaffleWeight_) {
@@ -341,34 +345,46 @@ class GameModel {
 	}
 
 	/**
-	Mirrors V3 `_addRoundLateBidPricePremiumAmountIfNeeded` evaluated at block timestamp `ts_`.
+	Mirrors the V3 ETH bid price with the late bid premium evaluated at block timestamp `ts_`:
+	`bidPrice_` plus the premium calculated from it.
 	On V1/V2 (or with no bid in the round) returns `bidPrice_` unchanged.
+	The CST bid price calculates its premium from a different base; see `getNextCstBidPrice`.
 	@param {bigint} bidPrice_
 	@param {bigint} ts_
 	@param {bigint} [mainPrizeTimeOverride_] Overrides `this.mainPrizeTime` (used by the burst price ladder).
 	*/
 	addLateBidPremiumIfNeeded(bidPrice_, ts_, mainPrizeTimeOverride_) {
+		return u256(bidPrice_ + this.getLateBidPremiumAmountIfNeeded(bidPrice_, ts_, mainPrizeTimeOverride_));
+	}
+
+	/**
+	Mirrors V3 `_getRoundLateBidPricePremiumAmountIfNeeded` evaluated at block timestamp `ts_`.
+	On V1/V2 (or with no bid in the round) returns zero.
+	@param {bigint} premiumBase_ The amount the premium is calculated from.
+	@param {bigint} ts_
+	@param {bigint} [mainPrizeTimeOverride_] Overrides `this.mainPrizeTime` (used by the burst price ladder).
+	*/
+	getLateBidPremiumAmountIfNeeded(premiumBase_, ts_, mainPrizeTimeOverride_) {
 		if (this.version < 3 || this.lastBidderAddress === hre.ethers.ZeroAddress) {
-			return bidPrice_;
+			return 0n;
 		}
 		const roundLateBidDuration_ = this.getRoundLateBidDuration();
 		const durationUntilMainPrize_ = (mainPrizeTimeOverride_ ?? this.mainPrizeTime) - ts_;
 		let roundLateBidElapsedDuration_ = roundLateBidDuration_ - durationUntilMainPrize_;
 		if (roundLateBidElapsedDuration_ <= 0n) {
-			return bidPrice_;
+			return 0n;
 		}
 		if (durationUntilMainPrize_ < 0n) {
 			roundLateBidElapsedDuration_ = roundLateBidDuration_;
 		}
 		// The contract body is `unchecked`, but the admin action keeps the premium parameters within
 		// ranges where nothing wraps, so a wrap here is a harness/model failure.
-		const premiumAmount_ = u256(
+		return u256(
 			u256(
 				u256(roundLateBidElapsedDuration_ * this.roundLateBidPricePremiumAmountBaseMultiplier / this.mainPrizeTimeIncrementInMicroSeconds) **
 					this.roundLateBidPricePremiumAmountExponent
-			) * bidPrice_
+			) * premiumBase_
 		) >> (this.roundLateBidPricePremiumAmountExponent * c.ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_RESOLUTION_EXPONENT);
-		return u256(bidPrice_ + premiumAmount_);
 	}
 
 	/**
@@ -399,41 +415,89 @@ class GameModel {
 	}
 
 	/**
-	CST Dutch auction total duration (V1: derived; V2: stored; V3: derived from
-	the beginning price and `cstBidPriceDeclineMultiplier`).
+	CST Dutch auction total duration (V1: derived; V2: stored; V3: the duration until the CST bid price base
+	declines from the beginning price to zero, mirroring `_getCstDutchAuctionDuration`).
 	*/
 	getCstDutchAuctionDuration() {
 		if (this.isV1Like()) {
 			return this.mainPrizeTimeIncrementInMicroSeconds / this.cstDutchAuctionDurationDivisor;
 		}
 		if (this.version >= 3) {
-			const beginningPrice_ =
-				(this.lastCstBidderAddress === hre.ethers.ZeroAddress) ?
-				this.nextRoundFirstCstDutchAuctionBeginningBidPrice :
-				this.cstDutchAuctionBeginningBidPrice;
-			return u256(beginningPrice_ + (this.cstBidPriceDeclineMultiplier - 1n)) / this.cstBidPriceDeclineMultiplier;
+			if (this.bidCstRewardAmountMultiplier === 0n) {
+				return MAX_UINT256;
+			}
+			return u256(
+				this.getCstDutchAuctionBeginningBidPrice() * this.mainPrizeTimeIncrementInMicroSeconds +
+				(this.bidCstRewardAmountMultiplier - 1n)
+			) / this.bidCstRewardAmountMultiplier;
 		}
 		return this.cstDutchAuctionDuration;
 	}
 
 	/**
-	Mirrors `getNextCstBidPriceAdvanced(0)` evaluated at block timestamp `ts_` (V3 wraps its linear price
-	with the late bid premium).
+	The price the current CST Dutch auction began at. Mirrors V3 `_getCstDutchAuctionBeginningBidPrice`
+	and the equivalent inline expression of V2- `getNextCstBidPriceAdvanced`.
+	Before the round's first CST bid, V2- uses `nextRoundFirstCstDutchAuctionBeginningBidPrice`,
+	while V3+ uses the maximum (Comment-202611025).
 	*/
-	getNextCstBidPrice(ts_) {
-		return this.addLateBidPremiumIfNeeded(this.getNextCstBidPriceBase(ts_), ts_);
+	getCstDutchAuctionBeginningBidPrice() {
+		if (this.lastCstBidderAddress !== hre.ethers.ZeroAddress) {
+			return this.cstDutchAuctionBeginningBidPrice;
+		}
+		return (this.version >= 3) ? this.getCstDutchAuctionBeginningBidPriceMaxLimit() : this.nextRoundFirstCstDutchAuctionBeginningBidPrice;
 	}
 
-	/** Mirrors the premium-free CST bid price evaluated at block timestamp `ts_`. */
+	/** Mirrors V3 `_getCstDutchAuctionBeginningBidPriceMaxLimit` (Comment-202611025). */
+	getCstDutchAuctionBeginningBidPriceMaxLimit() {
+		return this.bidCstRewardAmountMultiplier / this.initialDurationUntilMainPrizeDivisor;
+	}
+
+	/** Mirrors V3 `_getBidCstRewardAmountPerMainPrizeTimeIncrement`. */
+	getBidCstRewardAmountPerMainPrizeTimeIncrement() {
+		return this.bidCstRewardAmountMultiplier / c.MICROSECONDS_PER_SECOND;
+	}
+
+	/**
+	Mirrors V3 `_getBidCstRewardAmountForDuration`: the bid CST reward for holding the last bidder position
+	for `duration_` seconds, which is also the CST bid price base decline over the same duration (Comment-202611023).
+	@param {bigint} duration_ May be non-positive, in which case the result is zero.
+	*/
+	getBidCstRewardAmountForDuration(duration_) {
+		if (duration_ <= 0n) {
+			return 0n;
+		}
+		// Contract body is `unchecked`: the product wraps mod 2^256 before the division.
+		return u256(duration_ * this.bidCstRewardAmountMultiplier) / this.mainPrizeTimeIncrementInMicroSeconds;
+	}
+
+	/** Mirrors V3 `_getCstBidPricePremiumBase` (Comment-202611026). */
+	getCstBidPricePremiumBase(cstBidPriceBase_) {
+		return maxBigInt(cstBidPriceBase_, this.getBidCstRewardAmountPerMainPrizeTimeIncrement());
+	}
+
+	/**
+	Mirrors `getNextCstBidPriceAdvanced(0)` evaluated at block timestamp `ts_`. V3 adds to the CST bid price base
+	the late bid premium calculated from at least one main prize time increment of bid CST reward (Comment-202611026).
+	*/
+	getNextCstBidPrice(ts_) {
+		const cstBidPriceBase_ = this.getNextCstBidPriceBase(ts_);
+		if (this.version < 3) {
+			return cstBidPriceBase_;
+		}
+		return u256(cstBidPriceBase_ + this.getLateBidPremiumAmountIfNeeded(this.getCstBidPricePremiumBase(cstBidPriceBase_), ts_));
+	}
+
+	/**
+	Mirrors the premium-free CST bid price evaluated at block timestamp `ts_`
+	(V3 `_getNextCstBidPriceBaseAdvanced(0)`, which `getNextCstBidPriceBase()` exposes).
+	*/
 	getNextCstBidPriceBase(ts_) {
-		const beginningPrice_ =
-			(this.lastCstBidderAddress === hre.ethers.ZeroAddress) ?
-			this.nextRoundFirstCstDutchAuctionBeginningBidPrice :
-			this.cstDutchAuctionBeginningBidPrice;
+		const beginningPrice_ = this.getCstDutchAuctionBeginningBidPrice();
 		const elapsed_ = ts_ - this.cstDutchAuctionBeginningTimeStamp;
 		if (this.version >= 3) {
-			const price_ = beginningPrice_ - elapsed_ * this.cstBidPriceDeclineMultiplier;
-			return (price_ <= 0n) ? 0n : price_;
+			// Comment-202611023 applies.
+			const declineAmount_ = this.getBidCstRewardAmountForDuration(elapsed_);
+			return (beginningPrice_ > declineAmount_) ? (beginningPrice_ - declineAmount_) : 0n;
 		}
 		const duration_ = this.getCstDutchAuctionDuration();
 		const remaining_ = duration_ - elapsed_;
@@ -459,12 +523,11 @@ class GameModel {
 			// this.getBidderInfo(this.roundNum, this.lastBidderAddress).lastBidTimeStamp;
 			this.biddersInfo(this.roundNum, this.lastBidderAddress).lastBidTimeStamp;
 		const elapsed_ = ts_ - lastBidTimeStamp_;
+		if (this.version >= 3) {
+			return this.getBidCstRewardAmountForDuration(elapsed_);
+		}
 		if (elapsed_ <= 0n) {
 			return 0n;
-		}
-		if (this.version >= 3) {
-			// Contract body is `unchecked`: the product wraps mod 2^256 before the division.
-			return u256(elapsed_ * this.bidCstRewardAmountMultiplier) / this.mainPrizeTimeIncrementInMicroSeconds;
 		}
 		// Contract body is `unchecked`: the product wraps mod 2^256 before the division.
 		const radicand_ = u256(elapsed_ * this.bidCstRewardAmountMultiplier) / this.mainPrizeTimeIncrementInMicroSeconds;
@@ -593,8 +656,11 @@ class GameModel {
 		}
 	}
 
-	/** Mirrors `_bidCommon` (after bid-type-specific logic). */
-	_bidCommon(bidderAddress_, ts_) {
+	/**
+	Mirrors `_bidCommon` (after bid-type-specific logic).
+	@param {"eth" | "cst"} bidType_ Recorded per bid so invariants can tell ETH bids from CST bids.
+	*/
+	_bidCommon(bidderAddress_, ts_, bidType_) {
 		const isFirstBid_ = this.lastBidderAddress === hre.ethers.ZeroAddress;
 		if (isFirstBid_) {
 			this.cstDutchAuctionBeginningTimeStamp = ts_;
@@ -606,6 +672,7 @@ class GameModel {
 		this.lastBidderAddress = bidderAddress_.toLowerCase();
 		const round_ = this._currentRound();
 		round_.bidderAddresses.push(bidderAddress_.toLowerCase());
+		round_.bidTypes.push(bidType_);
 		this._bidderInfoForUpdate(bidderAddress_).lastBidTimeStamp = ts_;
 		return isFirstBid_;
 	}
@@ -656,7 +723,8 @@ class GameModel {
 
 	/**
 	Applies a successful ETH bid (mirrors `_bidWithEth`).
-	@returns Same expectations as `planEthBid` plus V2 `newCstDutchAuctionDuration`.
+	@returns Same expectations as `planEthBid` plus V2 `newCstDutchAuctionDuration` and
+	V3 `cstDutchAuctionBeginningBidPrice` (the `BidPlaced` event field explained in Comment-202611028).
 	*/
 	applyEthBid(bidderAddress_, ts_, msgValue_, gasPrice_, randomWalkNftId_) {
 		const plan_ = this.planEthBid(ts_, msgValue_, gasPrice_, randomWalkNftId_);
@@ -670,30 +738,25 @@ class GameModel {
 		}
 		this.nextEthBidPrice = plan_.ethBidPriceBase + plan_.ethBidPriceBase / this.ethBidPriceIncreaseDivisor + 1n;
 		let newCstDutchAuctionDuration_ = null;
-		let newCstBidPriceDeclineMultiplier_ = null;
-		if (this.version >= 3) {
-			newCstBidPriceDeclineMultiplier_ =
-				minBigInt(
-					this.cstBidPriceDeclineMultiplier + this.cstBidPriceDeclineMultiplier / this.cstBidPriceDeclineMultiplierChangeDivisor,
-					c.CST_BID_PRICE_DECLINE_MULTIPLIER_MAX_LIMIT
-				);
-			this.cstBidPriceDeclineMultiplier = newCstBidPriceDeclineMultiplier_;
-		} else if (this.version >= 2) {
+		if (this.version === 2) {
 			newCstDutchAuctionDuration_ =
 				(this.cstDutchAuctionDuration + 1n) * this.cstDutchAuctionDurationChangeDivisor / (this.cstDutchAuctionDurationChangeDivisor + 1n);
 			this.cstDutchAuctionDuration = newCstDutchAuctionDuration_;
 		}
 		if (this.version >= 3) {
+			// Comment-202609098 applies.
 			this._appendBidRaffleWeight(plan_.ethBidPriceBase);
 			const round_ = this._currentRound();
 			round_.totalSpentEthAmount += plan_.paidEthPrice;
 			round_.maxEthBidPrice = maxBigInt(round_.maxEthBidPrice, plan_.paidEthPrice);
 		}
-		this._bidCommon(bidderAddress_, ts_);
+		this._bidCommon(bidderAddress_, ts_, "eth");
 		return {
 			...plan_,
 			newCstDutchAuctionDuration: newCstDutchAuctionDuration_,
-			newCstBidPriceDeclineMultiplier: newCstBidPriceDeclineMultiplier_,
+			// An ETH bid does not change the CST Dutch auction, so this is the current auction's beginning price,
+			// which on a round's first bid is the maximum (Comment-202611025).
+			cstDutchAuctionBeginningBidPrice: (this.version >= 3) ? this.getCstDutchAuctionBeginningBidPrice() : null,
 			mainPrizeTime: this.mainPrizeTime,
 			bidRaffleCumulativeWeight: this._currentRound().bidRaffleCumulativeWeights.at(-1) ?? null,
 		};
@@ -701,7 +764,10 @@ class GameModel {
 
 	/**
 	Applies a successful CST bid (mirrors `_bidWithCst`).
-	@returns {{paidCstPrice: bigint, bidCstRewardAmount: bigint, newCstDutchAuctionDuration: bigint | null, mainPrizeTime: bigint}}
+	@returns {{paidCstPrice: bigint, bidCstRewardAmount: bigint, newCstDutchAuctionDuration: bigint | null,
+	cstDutchAuctionBeginningBidPrice: bigint | null, mainPrizeTime: bigint}}
+	`cstDutchAuctionBeginningBidPrice` is the V3 `BidPlaced` event field explained in Comment-202611028:
+	the price the new CST Dutch auction begins at.
 	*/
 	applyCstBid(bidderAddress_, ts_) {
 		expect(
@@ -709,44 +775,56 @@ class GameModel {
 			"model: applying a first-in-round CST bid"
 		).to.equal(true);
 		const cstBidPriceBase_ = this.getNextCstBidPriceBase(ts_);
-		const paidCstPrice_ = this.addLateBidPremiumIfNeeded(cstBidPriceBase_, ts_);
+		const paidCstPrice_ = this.getNextCstBidPrice(ts_);
 		const reward_ = this.getBidCstRewardAmount(ts_);
 		const rewardSplit_ = this.getBidCstRewardSplit(reward_);
+		let newBeginningBidPrice_;
 		if (this.version >= 3) {
-			const bidRaffleWeight_ = this.getNextEthBidPriceBase(ts_);
+			const ethBidPriceBase_ = this.getNextEthBidPriceBase(ts_);
+			const cstDutchAuctionBeginningBidPrice_ = this.getCstDutchAuctionBeginningBidPrice();
+
+			// Comment-202611027 applies.
+			const bidRaffleWeight_ =
+				(cstDutchAuctionBeginningBidPrice_ > 0n) ?
+				(u256(ethBidPriceBase_ * cstBidPriceBase_) / cstDutchAuctionBeginningBidPrice_) :
+				0n;
+
 			this._appendBidRaffleWeight(bidRaffleWeight_);
 			const round_ = this._currentRound();
 			++ round_.numCstBids;
 			round_.totalSpentCstAmount += paidCstPrice_;
 			round_.maxCstBidPrice = maxBigInt(round_.maxCstBidPrice, paidCstPrice_);
+
+			// Comment-202611024 applies.
+			newBeginningBidPrice_ =
+				minBigInt(
+					u256((cstBidPriceBase_ + this.getBidCstRewardAmountPerMainPrizeTimeIncrement()) * c.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER),
+					this.getCstDutchAuctionBeginningBidPriceMaxLimit()
+				);
+		} else {
+			newBeginningBidPrice_ =
+				maxBigInt(cstBidPriceBase_ * c.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, this.cstDutchAuctionBeginningBidPriceMinLimit);
 		}
 		this._bidderInfoForUpdate(bidderAddress_).totalSpentCstAmount += paidCstPrice_;
 		this.cstDutchAuctionBeginningTimeStamp = ts_;
-		const newBeginningBidPrice_ =
-			maxBigInt(cstBidPriceBase_ * c.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, this.cstDutchAuctionBeginningBidPriceMinLimit);
 		this.cstDutchAuctionBeginningBidPrice = newBeginningBidPrice_;
-		if (this.lastCstBidderAddress === hre.ethers.ZeroAddress) {
+		if (this.version < 3 && this.lastCstBidderAddress === hre.ethers.ZeroAddress) {
+			// V2- carries the round's first CST Dutch auction beginning bid price to the next round; V3+ never writes it (Comment-202611025).
 			this.nextRoundFirstCstDutchAuctionBeginningBidPrice = newBeginningBidPrice_;
 		}
 		this.lastCstBidderAddress = bidderAddress_.toLowerCase();
 		let newCstDutchAuctionDuration_ = null;
-		let newCstBidPriceDeclineMultiplier_ = null;
-		if (this.version >= 3) {
-			newCstBidPriceDeclineMultiplier_ =
-				(this.cstBidPriceDeclineMultiplier + 1n) * this.cstBidPriceDeclineMultiplierChangeDivisor /
-				(this.cstBidPriceDeclineMultiplierChangeDivisor + 1n);
-			this.cstBidPriceDeclineMultiplier = newCstBidPriceDeclineMultiplier_;
-		} else if (this.version >= 2) {
+		if (this.version === 2) {
 			newCstDutchAuctionDuration_ = this.cstDutchAuctionDuration + this.cstDutchAuctionDuration / this.cstDutchAuctionDurationChangeDivisor;
 			this.cstDutchAuctionDuration = newCstDutchAuctionDuration_;
 		}
-		this._bidCommon(bidderAddress_, ts_);
+		this._bidCommon(bidderAddress_, ts_, "cst");
 		return {
 			paidCstPrice: paidCstPrice_,
 			bidCstRewardAmount: reward_,
 			bidCstRewardSplit: rewardSplit_,
 			newCstDutchAuctionDuration: newCstDutchAuctionDuration_,
-			newCstBidPriceDeclineMultiplier: newCstBidPriceDeclineMultiplier_,
+			cstDutchAuctionBeginningBidPrice: (this.version >= 3) ? newBeginningBidPrice_ : null,
 			mainPrizeTime: this.mainPrizeTime,
 			bidRaffleCumulativeWeight: this._currentRound().bidRaffleCumulativeWeights.at(-1) ?? null,
 		};
@@ -904,10 +982,8 @@ class GameModel {
 	/** Applies the V3 `reinitialize` state changes (run as the upgrade call). */
 	applyUpgradeToV3() {
 		this.version = 3;
-		// V3 stops using the V2 auction-duration fields but leaves their storage values intact.
-		this.cstDutchAuctionBeginningBidPriceMinLimit = c.DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT_V3;
-		this.cstBidPriceDeclineMultiplier = c.INITIAL_CST_BID_PRICE_DECLINE_MULTIPLIER;
-		this.cstBidPriceDeclineMultiplierChangeDivisor = c.DEFAULT_CST_BID_PRICE_DECLINE_MULTIPLIER_CHANGE_DIVISOR;
+		// V3 stops using the V2 auction-duration fields, `cstDutchAuctionBeginningBidPriceMinLimit`, and
+		// `nextRoundFirstCstDutchAuctionBeginningBidPrice`, but leaves their storage values intact (Comment-202611025).
 		this.roundLateBidDurationDivisor = c.DEFAULT_ROUND_LATE_BID_DURATION_DIVISOR;
 		this.roundLateBidPricePremiumAmountBaseMultiplier = c.DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_BASE_MULTIPLIER;
 		this.roundLateBidPricePremiumAmountExponent = c.DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_EXPONENT;

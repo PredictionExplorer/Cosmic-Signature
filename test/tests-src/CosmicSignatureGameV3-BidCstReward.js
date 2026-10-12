@@ -4,24 +4,74 @@
 // the reward accrues at `bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds` CST Wei
 // per second since the last bid, and when someone places a bid, the WHOLE reward is minted to the bidder
 // being outbid (`lastBidderAddress`). Nothing is minted on the first bid in a bidding round.
+// The same rate is the rate at which the CST bid price base declines (Comment-202611023), so the reward is the unit
+// the CST side of the game is measured in; the tests near the end check the economics that follow from that.
 
 const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
-const { DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER, SECONDS_PER_HOUR } = require("../../src/CosmicSignatureConstants.js");
+const { DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER, MICROSECONDS_PER_SECOND, SECONDS_PER_HOUR } = require("../../src/CosmicSignatureConstants.js");
+const { maxBigInt } = require("../../src/BigIntMathHelpers.js");
 const { generateRandomUInt256, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { activateCurrentRound, findParsedEvent, getLatestBlockTimestamp, blockTimestampOfReceipt } = require("../src/V2UpgradeTestHelpers.js");
 const {
 	deployV1CompleteRoundZeroAndUpgradeToV2AndV3,
 	assertDefaultV3Initialization,
 	findTimeStampWithAffordableCstBidPrice,
+	getRoundLateBidPricePremiumAmount,
 	getV3BidCstRewardAmount,
-	tryIncreaseValueExponentially,
-	tryReduceValueExponentially,
+	getV3BidCstRewardAmountPerMainPrizeTimeIncrement,
+	getV3CstDutchAuctionBeginningBidPriceMaxLimit,
+	getV3NewCstDutchAuctionBeginningBidPrice,
+	getV3CstBidPriceBase,
+	getV3CstBidRaffleWeight,
 } = require("../src/V3UpgradeTestHelpers.js");
 const { getPriceAndBidWithEthAt, getPriceAndBidWithCstAt, findParsedEvents } = require("../src/BidCstRewardTestHelpers.js");
 const { configureRewardAndDeployHostileBidder, hostileBidWithEthAt } = require("../src/AdversarialTestHelpers.js");
 const { testAcrossGameVersions, finishGameRound, bidWithEthAt } = require("../src/GameRoundTestHelpers.js");
+
+/**
+Reads the live parameters the V3 CST rules are derived from. Read these after the round is activated,
+because `mainPrizeTimeIncrementInMicroSeconds` grows on every main prize claim.
+*/
+async function readCstPricingParams(game_) {
+	const bidCstRewardAmountMultiplier_ = await game_.bidCstRewardAmountMultiplier();
+	const mainPrizeTimeIncrementInMicroSeconds_ = await game_.mainPrizeTimeIncrementInMicroSeconds();
+	const initialDurationUntilMainPrizeDivisor_ = await game_.initialDurationUntilMainPrizeDivisor();
+	return {
+		bidCstRewardAmountMultiplier: bidCstRewardAmountMultiplier_,
+		mainPrizeTimeIncrementInMicroSeconds: mainPrizeTimeIncrementInMicroSeconds_,
+		initialDurationUntilMainPrizeDivisor: initialDurationUntilMainPrizeDivisor_,
+		mainPrizeTimeIncrement: mainPrizeTimeIncrementInMicroSeconds_ / MICROSECONDS_PER_SECOND,
+		initialDurationUntilMainPrize: await game_.getInitialDurationUntilMainPrize(),
+
+		// The reward of one main prize time increment, called `R` in these tests.
+		rewardAmountPerMainPrizeTimeIncrement: getV3BidCstRewardAmountPerMainPrizeTimeIncrement(bidCstRewardAmountMultiplier_),
+
+		// The reward of the initial duration until main prize, called `C` in these tests.
+		cstDutchAuctionBeginningBidPriceMaxLimit:
+			getV3CstDutchAuctionBeginningBidPriceMaxLimit(bidCstRewardAmountMultiplier_, initialDurationUntilMainPrizeDivisor_),
+
+		roundLateBidDuration: await game_.getRoundLateBidDuration(),
+		roundLateBidPricePremiumAmountBaseMultiplier: await game_.roundLateBidPricePremiumAmountBaseMultiplier(),
+		roundLateBidPricePremiumAmountExponent: await game_.roundLateBidPricePremiumAmountExponent(),
+	};
+}
+
+/** JS mirror of `BiddingV3._getCstDutchAuctionBeginningBidPrice`: the price the current CST Dutch auction began at. */
+async function getCstDutchAuctionBeginningBidPrice(game_, params_) {
+	return ((await game_.lastCstBidderAddress()) === hre.ethers.ZeroAddress) ?
+		params_.cstDutchAuctionBeginningBidPriceMaxLimit :
+		await game_.cstDutchAuctionBeginningBidPrice();
+}
+
+/** Returns the raffle weight of the last bid placed in the round, derived from the cumulative weights. */
+async function getLastBidRaffleWeight(game_, roundNum_) {
+	const numBids_ = (await game_.roundStats(roundNum_)).numBids;
+	const cumulativeWeight_ = (await game_.getBidInfoAt(roundNum_, numBids_ - 1n)).raffleCumulativeWeight;
+	const prevCumulativeWeight_ = (numBids_ > 1n) ? (await game_.getBidInfoAt(roundNum_, numBids_ - 2n)).raffleCumulativeWeight : 0n;
+	return cumulativeWeight_ - prevCumulativeWeight_;
+}
 
 describe("CosmicSignatureGameV3-BidCstReward", function () {
 	it("reinitialize sets bidCstRewardAmountMultiplier so the reward accrues at ~1 CST per minute", async function () {
@@ -173,59 +223,58 @@ describe("CosmicSignatureGameV3-BidCstReward", function () {
 	it("a CST bid burns the price and mints the whole reward to the outbid bidder in a single transaction", async function () {
 		await testAcrossGameVersions(async (contracts_, game_) => {
 			const token_ = contracts_.cosmicSignatureToken;
-
-			// A high reward rate, so that the bidders can quickly afford CST bids: ~60 CST per minute.
-			const bidCstRewardAmountMultiplier_ = 60n * DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER;
-			await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setBidCstRewardAmountMultiplier(bidCstRewardAmountMultiplier_));
 			await activateCurrentRound(game_, contracts_.ownerSigner);
-			const mainPrizeTimeIncrementInMicroSeconds_ = await game_.mainPrizeTimeIncrementInMicroSeconds();
-			const rewardAt_ = (elapsedDuration_) =>
-				getV3BidCstRewardAmount(elapsedDuration_, bidCstRewardAmountMultiplier_, mainPrizeTimeIncrementInMicroSeconds_);
+			const params_ = await readCstPricingParams(game_);
+			const {
+				bidCstRewardAmountMultiplier: multiplier_,
+				mainPrizeTimeIncrementInMicroSeconds: increment_,
+				initialDurationUntilMainPrizeDivisor: divisor_,
+				mainPrizeTimeIncrement: mainPrizeTimeIncrement_,
+				initialDurationUntilMainPrize: initialDurationUntilMainPrize_,
+				cstDutchAuctionBeginningBidPriceMaxLimit: maxLimit_,
+			} = params_;
+			const rewardAt_ = (elapsedDuration_) => getV3BidCstRewardAmount(elapsedDuration_, multiplier_, increment_);
 			const bidder1_ = contracts_.signers[1];
 			const bidder2_ = contracts_.signers[2];
-			const cstBidPriceDeclineMultiplierChangeDivisor_ = await game_.cstBidPriceDeclineMultiplierChangeDivisor();
-			let expectedCstBidPriceDeclineMultiplier_ = await game_.cstBidPriceDeclineMultiplier();
 
-			// Accumulate CST for bidder2: it places the 2nd bid and gets outbid 400 seconds later,
-			// which mints it ~400 CST.
+			// The CST bid price base begins at the reward of the initial duration until main prize and declines at the reward
+			// rate (Comment-202611023), so a bidder must hold the last bidder position for a good part of that duration
+			// to afford a CST bid. bidder2 places the 2nd bid and gets outbid three quarters of the initial duration later,
+			// which mints it about three quarters of the maximum CST bid price.
 			for (const [bidder_, elapsedDuration_] of [
 				[bidder1_, 10n],
 				[bidder2_, 30n],
-				[bidder1_, 400n],
+				[bidder1_, initialDurationUntilMainPrize_ * 3n / 4n],
 			]) {
 				const { receipt_ } = await getPriceAndBidWithEthAt(game_, bidder_, (await getLatestBlockTimestamp()) + elapsedDuration_);
-				expectedCstBidPriceDeclineMultiplier_ = tryIncreaseValueExponentially(
-					expectedCstBidPriceDeclineMultiplier_,
-					cstBidPriceDeclineMultiplierChangeDivisor_
-				);
-				expect(await game_.cstBidPriceDeclineMultiplier()).equal(expectedCstBidPriceDeclineMultiplier_);
-				expect(findParsedEvent(receipt_, game_, "BidPlaced").args.cstBidPriceDeclineMultiplier)
-					.equal(expectedCstBidPriceDeclineMultiplier_);
+
+				// No CST bid has been placed in the round, so the auction began at the maximum; an ETH bid does not change that.
+				expect(findParsedEvent(receipt_, game_, "BidPlaced").args.cstDutchAuctionBeginningBidPrice).equal(maxLimit_);
 			}
 
 			const bidder1CstBalanceBefore_ = await token_.balanceOf(bidder1_.address);
 			const bidder2CstBalanceBefore_ = await token_.balanceOf(bidder2_.address);
 			const totalSupplyBefore_ = await token_.totalSupply();
 			const lastBidTimeStamp_ = await getLatestBlockTimestamp();
-			const cstBidTimeStamp_ = lastBidTimeStamp_ + 300n;
+			const cstBidTimeStamp_ = lastBidTimeStamp_ + mainPrizeTimeIncrement_;
 
-			// Make sure bidder2 can afford the CST bid price.
-			expect(await game_.getNextCstBidPriceAdvanced(cstBidTimeStamp_ - lastBidTimeStamp_)).lessThanOrEqual(bidder2CstBalanceBefore_);
+			// Make sure bidder2 can afford the CST bid price, which is premium-free this far before `mainPrizeTime`.
+			const cstBidPriceBase_ = await game_.getNextCstBidPriceBaseAdvanced(cstBidTimeStamp_ - lastBidTimeStamp_);
+			expect(cstBidPriceBase_).greaterThan(0n);
+			expect(await game_.getNextCstBidPriceAdvanced(cstBidTimeStamp_ - lastBidTimeStamp_)).equal(cstBidPriceBase_);
+			expect(cstBidPriceBase_).lessThanOrEqual(bidder2CstBalanceBefore_);
 
 			const { receipt_, cstBidPrice_ } = await getPriceAndBidWithCstAt(game_, bidder2_, cstBidTimeStamp_);
-			expect(cstBidPrice_).greaterThan(0n);
-			expectedCstBidPriceDeclineMultiplier_ = tryReduceValueExponentially(
-				expectedCstBidPriceDeclineMultiplier_,
-				cstBidPriceDeclineMultiplierChangeDivisor_
-			);
-			expect(await game_.cstBidPriceDeclineMultiplier()).equal(expectedCstBidPriceDeclineMultiplier_);
+			expect(cstBidPrice_).equal(cstBidPriceBase_);
+			const totalRewardAmount_ = rewardAt_(mainPrizeTimeIncrement_);
 
-			const totalRewardAmount_ = rewardAt_(300n);
-
+			// The next auction begins at twice the base paid plus one increment of reward (Comment-202611024).
+			const newBeginningPrice_ = getV3NewCstDutchAuctionBeginningBidPrice(cstBidPriceBase_, multiplier_, divisor_);
 			const bidPlaced_ = findParsedEvent(receipt_, game_, "BidPlaced");
 			expect(bidPlaced_.args.paidCstPrice).equal(cstBidPrice_);
 			expect(bidPlaced_.args.bidCstRewardAmount).equal(totalRewardAmount_);
-			expect(bidPlaced_.args.cstBidPriceDeclineMultiplier).equal(expectedCstBidPriceDeclineMultiplier_);
+			expect(bidPlaced_.args.cstDutchAuctionBeginningBidPrice).equal(newBeginningPrice_);
+			expect(await game_.cstDutchAuctionBeginningBidPrice()).equal(newBeginningPrice_);
 
 			// bidder1 was the last bidder: it gets the whole reward; bidder2 pays the price and gets nothing.
 			expect(await token_.balanceOf(bidder1_.address) - bidder1CstBalanceBefore_).equal(totalRewardAmount_);
@@ -251,13 +300,10 @@ describe("CosmicSignatureGameV3-BidCstReward", function () {
 				const { receipt_: receipt2_, cstBidPrice_: cstBidPrice2_ } = await getPriceAndBidWithCstAt(game_, bidder2_, cstBidTimeStamp2_);
 				const totalRewardAmount2_ = rewardAt_(cstBidTimeStamp2_ - cstBidTimeStamp_);
 				expect(await token_.balanceOf(bidder2_.address) - bidder2CstBalanceBefore2_).equal(totalRewardAmount2_ - cstBidPrice2_);
-				expectedCstBidPriceDeclineMultiplier_ = tryReduceValueExponentially(
-					expectedCstBidPriceDeclineMultiplier_,
-					cstBidPriceDeclineMultiplierChangeDivisor_
-				);
-				expect(await game_.cstBidPriceDeclineMultiplier()).equal(expectedCstBidPriceDeclineMultiplier_);
-				expect(findParsedEvent(receipt2_, game_, "BidPlaced").args.cstBidPriceDeclineMultiplier)
-					.equal(expectedCstBidPriceDeclineMultiplier_);
+				const cstBidPriceBase2_ = getV3CstBidPriceBase(newBeginningPrice_, cstBidTimeStamp2_ - cstBidTimeStamp_, multiplier_, increment_);
+				expect(cstBidPrice2_).equal(cstBidPriceBase2_);
+				expect(findParsedEvent(receipt2_, game_, "BidPlaced").args.cstDutchAuctionBeginningBidPrice)
+					.equal(getV3NewCstDutchAuctionBeginningBidPrice(cstBidPriceBase2_, multiplier_, divisor_));
 			}
 			await finishGameRound(contracts_, game_);
 		}, 3, 3);
@@ -321,6 +367,227 @@ describe("CosmicSignatureGameV3-BidCstReward", function () {
 				const totalRewardAmount_ = getV3BidCstRewardAmount(120n, newMultiplier_, mainPrizeTimeIncrementInMicroSeconds_);
 				expect(await token_.balanceOf(bidder1_.address) - bidder1CstBalanceBefore_).equal(totalRewardAmount_);
 			}
+			await finishGameRound(contracts_, game_);
+		}, 3, 3);
+	});
+
+	it("the amount a CST bid burns equals the beginning bid price minus all bid CST rewards minted since the auction began, up to rounding", async function () {
+		await testAcrossGameVersions(async (contracts_, game_) => {
+			const token_ = contracts_.cosmicSignatureToken;
+			await activateCurrentRound(game_, contracts_.ownerSigner);
+			const params_ = await readCstPricingParams(game_);
+			const {
+				bidCstRewardAmountMultiplier: multiplier_,
+				mainPrizeTimeIncrementInMicroSeconds: increment_,
+				initialDurationUntilMainPrizeDivisor: divisor_,
+				mainPrizeTimeIncrement: mainPrizeTimeIncrement_,
+				initialDurationUntilMainPrize: initialDurationUntilMainPrize_,
+				rewardAmountPerMainPrizeTimeIncrement: rewardPerIncrement_,
+				cstDutchAuctionBeginningBidPriceMaxLimit: maxLimit_,
+			} = params_;
+			const [bidder1_, bidder2_, bidder3_] = contracts_.signers.slice(1, 4);
+
+			/** The total of the bid CST rewards minted by the bids with the given receipts. */
+			const sumMintedRewards_ = (receipts_) =>
+				receipts_.reduce((sum_, receipt_) => sum_ + findParsedEvent(receipt_, game_, "BidPlaced").args.bidCstRewardAmount, 0n);
+
+			/**
+			Places a CST bid `delay_` seconds after the latest block and checks the conservation invariant of Comment-202611023
+			against the bids placed since the current auction began, whose receipts are given: the CST burned plus
+			all the rewards minted since the auction began equals the beginning bid price, except that each reward rounds down
+			separately, and that a bid placed after the base reached zero burns no base while the rewards keep accruing.
+			The late-bid premium, if any, is a toll on top of the base, which is burned too but is not part of the invariant.
+			*/
+			const bidWithCstAndCheckConservation_ = async (bidder_, delay_, receiptsSinceBeginning_) => {
+				const beginningPrice_ = await getCstDutchAuctionBeginningBidPrice(game_, params_);
+				const bidTimeStamp_ = (await getLatestBlockTimestamp()) + delay_;
+				const expectedBase_ =
+					getV3CstBidPriceBase(beginningPrice_, bidTimeStamp_ - (await game_.cstDutchAuctionBeginningTimeStamp()), multiplier_, increment_);
+				const expectedPremiumAmount_ =
+					getRoundLateBidPricePremiumAmount(
+						maxBigInt(expectedBase_, rewardPerIncrement_),
+						(await game_.mainPrizeTime()) - bidTimeStamp_,
+						params_.roundLateBidDuration,
+						increment_,
+						params_.roundLateBidPricePremiumAmountBaseMultiplier,
+						params_.roundLateBidPricePremiumAmountExponent
+					);
+				expect(await game_.getNextCstBidPriceBaseAdvanced(delay_)).equal(expectedBase_);
+				expect(await game_.getNextCstBidPriceAdvanced(delay_)).equal(expectedBase_ + expectedPremiumAmount_);
+				const totalSupplyBefore_ = await token_.totalSupply();
+				const { receipt_, cstBidPrice_ } = await getPriceAndBidWithCstAt(game_, bidder_, bidTimeStamp_);
+				expect(cstBidPrice_).equal(expectedBase_ + expectedPremiumAmount_);
+
+				// The reward is minted and the price burned in the same transaction, so the burned amount is derived from both.
+				const rewardAmount_ = findParsedEvent(receipt_, game_, "BidPlaced").args.bidCstRewardAmount;
+				const burnedAmount_ = rewardAmount_ - ((await token_.totalSupply()) - totalSupplyBefore_);
+				expect(burnedAmount_).equal(cstBidPrice_);
+				const burnTransfers_ = findParsedEvents(receipt_, token_, "Transfer").filter((transfer_) => transfer_.args.to === hre.ethers.ZeroAddress);
+				expect(burnTransfers_.reduce((sum_, transfer_) => sum_ + transfer_.args.value, 0n)).equal(cstBidPrice_);
+
+				const burnedBase_ = burnedAmount_ - expectedPremiumAmount_;
+				const mintedSinceBeginning_ = sumMintedRewards_([...receiptsSinceBeginning_, receipt_]);
+				const numMintsSinceBeginning_ = BigInt(receiptsSinceBeginning_.length + 1);
+				if (burnedBase_ > 0n) {
+					expect(burnedBase_ + mintedSinceBeginning_, "conservation").at.most(beginningPrice_);
+				}
+				expect(burnedBase_ + mintedSinceBeginning_ + numMintsSinceBeginning_ - 1n, "conservation").at.least(beginningPrice_);
+				return { receipt_, cstBidPriceBase_: burnedBase_, };
+			};
+
+			// The first auction begins at C with the round's first bid. bidder1 and bidder2 hold for half and a quarter
+			// of the initial duration, earning about C/2 and C/4; then bidder1 buys the remaining quarter of C,
+			// minus the half increment bidder3 earns, premium-free because every bid pushed `mainPrizeTime`.
+			await bidWithEthAt(game_, bidder1_, (await getLatestBlockTimestamp()) + 10n);
+			const receiptsSinceBeginning1_ = [];
+			receiptsSinceBeginning1_.push(await bidWithEthAt(game_, bidder2_, (await getLatestBlockTimestamp()) + initialDurationUntilMainPrize_ / 2n));
+			receiptsSinceBeginning1_.push(await bidWithEthAt(game_, bidder3_, (await getLatestBlockTimestamp()) + initialDurationUntilMainPrize_ / 4n));
+			expect(await token_.balanceOf(bidder1_.address)).at.least(maxLimit_ * 45n / 100n);
+			expect((await game_.mainPrizeTime()) - (await getLatestBlockTimestamp())).greaterThan(params_.roundLateBidDuration + mainPrizeTimeIncrement_);
+			const { cstBidPriceBase_: cstBidPriceBase1_ } =
+				await bidWithCstAndCheckConservation_(bidder1_, mainPrizeTimeIncrement_ / 2n, receiptsSinceBeginning1_);
+			expect(cstBidPriceBase1_).greaterThan(4n * rewardPerIncrement_);
+			expect(cstBidPriceBase1_).lessThan(maxLimit_ / 4n);
+
+			// The second auction begins at twice the base paid plus one increment, about 13R, and lasts as many increments.
+			// bidder3 holds for two increments, then bidder1 pays the base after four more, premium-free as well.
+			const beginningPrice2_ = await game_.cstDutchAuctionBeginningBidPrice();
+			expect(beginningPrice2_).equal(getV3NewCstDutchAuctionBeginningBidPrice(cstBidPriceBase1_, multiplier_, divisor_));
+			const receiptsSinceBeginning2_ = [];
+			receiptsSinceBeginning2_.push(await bidWithEthAt(game_, bidder3_, (await getLatestBlockTimestamp()) + 2n * mainPrizeTimeIncrement_));
+			expect((await game_.mainPrizeTime()) - (await getLatestBlockTimestamp())).greaterThan(params_.roundLateBidDuration + 4n * mainPrizeTimeIncrement_);
+			const { cstBidPriceBase_: cstBidPriceBase2_ } =
+				await bidWithCstAndCheckConservation_(bidder1_, 4n * mainPrizeTimeIncrement_, receiptsSinceBeginning2_);
+			expect(cstBidPriceBase2_).greaterThan(6n * rewardPerIncrement_);
+			expect(cstBidPriceBase2_).lessThan(8n * rewardPerIncrement_);
+
+			// The third auction is left to end. By then `mainPrizeTime` has passed, so the CST bid at a zero base pays
+			// the maximum premium calculated from R, which is burned, while the rewards minted meanwhile exceed
+			// the beginning bid price.
+			{
+				const duration3_ = (await game_.getCstDutchAuctionDurations())[0];
+				expect(await token_.balanceOf(bidder2_.address)).at.least(5n * rewardPerIncrement_);
+				const { receipt_, cstBidPriceBase_: cstBidPriceBase3_ } =
+					await bidWithCstAndCheckConservation_(bidder2_, duration3_ + 1_000n, []);
+				expect(cstBidPriceBase3_).equal(0n);
+				const paidCstPrice_ = findParsedEvent(receipt_, game_, "BidPlaced").args.paidCstPrice;
+				expect(paidCstPrice_).greaterThan(4n * rewardPerIncrement_ * 99n / 100n);
+				expect(paidCstPrice_).lessThan(4n * rewardPerIncrement_ * 101n / 100n);
+			}
+			await finishGameRound(contracts_, game_);
+		}, 3, 3);
+	});
+
+	it("holding the deadline with one CST bid per main prize time increment starts free and then escalates along the restart recursion, with the free bid weighing nothing in the raffle", async function () {
+		let fundingRoundDone_ = false;
+		await testAcrossGameVersions(async (contracts_, game_) => {
+			const token_ = contracts_.cosmicSignatureToken;
+			const [bidder1_, bidder2_] = contracts_.signers.slice(1, 3);
+			await activateCurrentRound(game_, contracts_.ownerSigner);
+			const params_ = await readCstPricingParams(game_);
+			const {
+				bidCstRewardAmountMultiplier: multiplier_,
+				mainPrizeTimeIncrementInMicroSeconds: increment_,
+				initialDurationUntilMainPrizeDivisor: divisor_,
+				mainPrizeTimeIncrement: mainPrizeTimeIncrement_,
+				initialDurationUntilMainPrize: initialDurationUntilMainPrize_,
+				rewardAmountPerMainPrizeTimeIncrement: rewardPerIncrement_,
+				cstDutchAuctionBeginningBidPriceMaxLimit: maxLimit_,
+				roundLateBidDuration: roundLateBidDuration_,
+			} = params_;
+
+			// The first V3 round only funds the bidders: each earns about 5C by holding for five initial durations,
+			// which the chains in the following rounds spend.
+			if ( ! fundingRoundDone_ ) {
+				await bidWithEthAt(game_, bidder1_, (await getLatestBlockTimestamp()) + 10n);
+				await bidWithEthAt(game_, bidder2_, (await getLatestBlockTimestamp()) + 5n * initialDurationUntilMainPrize_);
+				await bidWithEthAt(game_, bidder1_, (await getLatestBlockTimestamp()) + 5n * initialDurationUntilMainPrize_);
+				expect(await token_.balanceOf(bidder1_.address)).at.least(4n * maxLimit_);
+				expect(await token_.balanceOf(bidder2_.address)).at.least(4n * maxLimit_);
+				fundingRoundDone_ = true;
+				await finishGameRound(contracts_, game_);
+				return;
+			}
+			const roundNum_ = await game_.roundNum();
+
+			// The round's first bid starts the first auction at C, which declines to zero over about the initial duration.
+			// An immediate second ETH bid pushes `mainPrizeTime` by one increment, so that the auction ends before
+			// the premium window opens. An ETH bid's raffle weight is its ETH bid price base (Comment-202609098).
+			{
+				const ethBidPriceBase_ = await game_.getNextEthBidPriceAdvanced(10n);
+				await bidWithEthAt(game_, bidder1_, (await getLatestBlockTimestamp()) + 10n);
+				expect(await getLastBidRaffleWeight(game_, roundNum_)).equal(ethBidPriceBase_);
+			}
+			{
+				const ethBidPriceBase_ = await game_.nextEthBidPrice();
+				await bidWithEthAt(game_, bidder2_, (await getLatestBlockTimestamp()) + 1n);
+				expect(await getLastBidRaffleWeight(game_, roundNum_)).equal(ethBidPriceBase_);
+			}
+			const ethBidPriceBase_ = await game_.nextEthBidPrice();
+			const firstAuctionBeginningTimeStamp_ = await game_.cstDutchAuctionBeginningTimeStamp();
+			const firstAuctionEndTimeStamp_ = firstAuctionBeginningTimeStamp_ + (await game_.getCstDutchAuctionDurations())[0];
+			expect(firstAuctionEndTimeStamp_ + roundLateBidDuration_).at.most(await game_.mainPrizeTime());
+
+			// The JS mirror of the chain: the first CST bid exactly when the first auction ends, then one per increment.
+			// Each bid pushes `mainPrizeTime` by the same increment, so the bids hold the deadline where it is,
+			// and the bases follow `nextBase = 2 * base + R`: 0, R, 3R, 7R, 15R, up to rounding.
+			const numChainBids_ = 5;
+			const expectedBases_ = [];
+			{
+				let beginningPrice_ = maxLimit_;
+				let beginningTimeStamp_ = firstAuctionBeginningTimeStamp_;
+				let bidTimeStamp_ = firstAuctionEndTimeStamp_;
+				for (let bidIndex_ = 0; bidIndex_ < numChainBids_; ++ bidIndex_) {
+					const base_ = getV3CstBidPriceBase(beginningPrice_, bidTimeStamp_ - beginningTimeStamp_, multiplier_, increment_);
+					expectedBases_.push(base_);
+					beginningPrice_ = getV3NewCstDutchAuctionBeginningBidPrice(base_, multiplier_, divisor_);
+					beginningTimeStamp_ = bidTimeStamp_;
+					bidTimeStamp_ += mainPrizeTimeIncrement_;
+				}
+			}
+			expect(expectedBases_[0]).equal(0n);
+			for (let bidIndex_ = 1; bidIndex_ < numChainBids_; ++ bidIndex_) {
+				const expectedApproximateBase_ = ((1n << BigInt(bidIndex_)) - 1n) * rewardPerIncrement_;
+				expect(expectedBases_[bidIndex_], `chain bid ${bidIndex_}`).greaterThan(expectedBases_[bidIndex_ - 1]);
+				expect(expectedBases_[bidIndex_], `chain bid ${bidIndex_}`).at.least(expectedApproximateBase_ * 99n / 100n);
+				expect(expectedBases_[bidIndex_], `chain bid ${bidIndex_}`).at.most(expectedApproximateBase_ * 101n / 100n);
+			}
+			const expectedTotalPaid_ = expectedBases_.reduce((sum_, base_) => sum_ + base_, 0n);
+			expect(expectedTotalPaid_).at.least(26n * rewardPerIncrement_ * 99n / 100n);
+			expect(expectedTotalPaid_).at.most(26n * rewardPerIncrement_ * 101n / 100n);
+
+			// Execute the chain, alternating the bidders, and check every bid against the mirror.
+			// The raffle weight of a CST bid is the ETH bid price base scaled by the fraction of the asking price paid
+			// (Comment-202611027), so the free bid weighs nothing.
+			let totalPaid_ = 0n;
+			let bidTimeStamp_ = firstAuctionEndTimeStamp_;
+			for (let bidIndex_ = 0; bidIndex_ < numChainBids_; ++ bidIndex_) {
+				const description_ = `chain bid ${bidIndex_}`;
+				const bidder_ = (bidIndex_ % 2 === 0) ? bidder1_ : bidder2_;
+				const beginningPrice_ = await getCstDutchAuctionBeginningBidPrice(game_, params_);
+				const currentTimeOffset_ = bidTimeStamp_ - (await getLatestBlockTimestamp());
+				expect((await game_.mainPrizeTime()) - bidTimeStamp_, description_).at.least(roundLateBidDuration_);
+				expect(await game_.getNextCstBidPriceBaseAdvanced(currentTimeOffset_), description_).equal(expectedBases_[bidIndex_]);
+				expect(await game_.getNextCstBidPriceAdvanced(currentTimeOffset_), description_).equal(expectedBases_[bidIndex_]);
+				const { receipt_, cstBidPrice_ } = await getPriceAndBidWithCstAt(game_, bidder_, bidTimeStamp_);
+				expect(cstBidPrice_, description_).equal(expectedBases_[bidIndex_]);
+				totalPaid_ += cstBidPrice_;
+				const bidPlaced_ = findParsedEvent(receipt_, game_, "BidPlaced");
+				expect(bidPlaced_.args.paidCstPrice, description_).equal(expectedBases_[bidIndex_]);
+				expect(bidPlaced_.args.cstDutchAuctionBeginningBidPrice, description_)
+					.equal(getV3NewCstDutchAuctionBeginningBidPrice(expectedBases_[bidIndex_], multiplier_, divisor_));
+				const expectedBidRaffleWeight_ = getV3CstBidRaffleWeight(ethBidPriceBase_, expectedBases_[bidIndex_], beginningPrice_);
+				if (bidIndex_ === 0) {
+					expect(expectedBidRaffleWeight_).equal(0n);
+				} else {
+					expect(expectedBidRaffleWeight_, description_).greaterThan(0n);
+					expect(expectedBidRaffleWeight_, description_).lessThan(ethBidPriceBase_);
+				}
+				expect(await getLastBidRaffleWeight(game_, roundNum_), description_).equal(expectedBidRaffleWeight_);
+				bidTimeStamp_ += mainPrizeTimeIncrement_;
+			}
+			expect(totalPaid_).equal(expectedTotalPaid_);
+			expect((await game_.roundStats(roundNum_)).totalSpentCstAmount).equal(expectedTotalPaid_);
 			await finishGameRound(contracts_, game_);
 		}, 3, 3);
 	});

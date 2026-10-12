@@ -17,28 +17,6 @@ abstract contract CosmicSignatureGameStorageV3Base is
 	ICosmicSignatureGameStorageV3 {
 	// #region Bidding V3
 
-	/// @notice
-	/// [Comment-202608317]
-	/// In V2 only, `cstDutchAuctionDuration` and `cstDutchAuctionDurationChangeDivisor` are used.
-	/// In V3+, `cstBidPriceDeclineMultiplier` and `cstBidPriceDeclineMultiplierChangeDivisor` are used instead.
-	/// [/Comment-202608317]
-	/// [Comment-202608181]
-	/// By how much the base CST bid price declines per second.
-	/// We increase this on each ETH bid and reduce on each CST bid, based on `cstBidPriceDeclineMultiplierChangeDivisor`.
-	/// Comment-202608312 applies.
-	/// [/Comment-202608181]
-	/// Automatic increases of this variable are capped, as discussed in Comment-202610093.
-	/// Comment-202411064 applies.
-	/// Comment-202411172 applies.
-	/// @dev Comment-202608315 applies.
-	uint256 public cstBidPriceDeclineMultiplier;
-
-	/// @notice Comment-202608317 applies.
-	/// Comment-202608181 relates.
-	/// Comment-202411064 applies.
-	/// @dev Comment-202607301 relates and/or applies.
-	uint256 public cstBidPriceDeclineMultiplierChangeDivisor;
-
 	/// @notice This controls the duration before `mainPrizeTime` during which a bid price is to be increased.
 	/// The increase/premium accelerates exponentially as the current time approaches `mainPrizeTime`.
 	/// Comment-202501025 applies.

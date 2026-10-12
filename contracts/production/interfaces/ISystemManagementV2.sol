@@ -63,6 +63,8 @@ interface ISystemManagementV2 {
 
 	/// @notice Sets `cstDutchAuctionBeginningBidPriceMinLimit`.
 	/// Only the contract owner is permitted to call this method.
+	/// Because of Comment-202611025, this is implemented only in V2-. This unconditionally reverts in V3+.
+	/// Comment-202608014 relates.
 	/// @param newValue_ The new value.
 	function setCstDutchAuctionBeginningBidPriceMinLimit(uint256 newValue_) external;
 

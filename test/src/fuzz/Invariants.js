@@ -94,8 +94,11 @@ async function runInvariants(ctx_) {
 	expect(await game_.ethDutchAuctionBeginningBidPrice(), "ethDutchAuctionBeginningBidPrice vs model").to.equal(model.ethDutchAuctionBeginningBidPrice);
 	expect(await game_.cstDutchAuctionBeginningTimeStamp(), "cstDutchAuctionBeginningTimeStamp vs model").to.equal(model.cstDutchAuctionBeginningTimeStamp);
 	expect(await game_.cstDutchAuctionBeginningBidPrice(), "cstDutchAuctionBeginningBidPrice vs model").to.equal(model.cstDutchAuctionBeginningBidPrice);
+
+	// In V3+, this stays frozen at its V2 value (Comment-202611025); the model never changes it after the V3 upgrade.
 	expect(await game_.nextRoundFirstCstDutchAuctionBeginningBidPrice(), "nextRoundFirstCstDutchAuctionBeginningBidPrice vs model")
 		.to.equal(model.nextRoundFirstCstDutchAuctionBeginningBidPrice);
+
 	if (model.version >= 2) {
 		expect(await game_.cstDutchAuctionDuration(), "cstDutchAuctionDuration vs model").to.equal(model.cstDutchAuctionDuration);
 		expect(await game_.cstDutchAuctionDurationChangeDivisor(), "cstDutchAuctionDurationChangeDivisor vs model").to.equal(model.cstDutchAuctionDurationChangeDivisor);
@@ -108,8 +111,6 @@ async function runInvariants(ctx_) {
 		expect(await game_.roundLateBidDurationDivisor(), "roundLateBidDurationDivisor vs model").to.equal(model.roundLateBidDurationDivisor);
 		expect(await game_.roundLateBidPricePremiumAmountBaseMultiplier(), "roundLateBidPricePremiumAmountBaseMultiplier vs model").to.equal(model.roundLateBidPricePremiumAmountBaseMultiplier);
 		expect(await game_.roundLateBidPricePremiumAmountExponent(), "roundLateBidPricePremiumAmountExponent vs model").to.equal(model.roundLateBidPricePremiumAmountExponent);
-		expect(await game_.cstBidPriceDeclineMultiplier(), "cstBidPriceDeclineMultiplier vs model").to.equal(model.cstBidPriceDeclineMultiplier);
-		expect(await game_.cstBidPriceDeclineMultiplierChangeDivisor(), "cstBidPriceDeclineMultiplierChangeDivisor vs model").to.equal(model.cstBidPriceDeclineMultiplierChangeDivisor);
 		expect(await game_.mainPrizeNumCosmicSignatureNfts(), "mainPrizeNumCosmicSignatureNfts vs model").to.equal(model.mainPrizeNumCosmicSignatureNfts);
 		expect(await game_.getRoundLateBidDuration(), "getRoundLateBidDuration vs model").to.equal(model.getRoundLateBidDuration());
 	}
@@ -154,7 +155,10 @@ async function runInvariants(ctx_) {
 		await checkCfg_("ethDutchAuctionEndingBidPriceDivisor", model.ethDutchAuctionEndingBidPriceDivisor);
 		await checkCfg_("ethBidPriceIncreaseDivisor", model.ethBidPriceIncreaseDivisor);
 		await checkCfg_("ethBidRefundAmountInGasToSwallowMaxLimit", model.ethBidRefundAmountInGasToSwallowMaxLimit);
+
+		// In V3+, this stays frozen at its V2 value (Comment-202611025).
 		await checkCfg_("cstDutchAuctionBeginningBidPriceMinLimit", model.cstDutchAuctionBeginningBidPriceMinLimit);
+
 		await checkCfg_("bidMessageLengthMaxLimit", model.bidMessageLengthMaxLimit);
 		await checkCfg_("cstPrizeAmount", model.cstPrizeAmount);
 		await checkCfg_("chronoWarriorEthPrizeAmountPercentage", model.chronoWarriorEthPrizeAmountPercentage);
@@ -198,13 +202,22 @@ async function runInvariants(ctx_) {
 
 	if (model.version >= 3) {
 		const cumulativeWeights_ = model.getBidRaffleCumulativeWeights(model.roundNum);
+		const bidTypes_ = model.getBidTypes(model.roundNum);
+		expect(bidTypes_.length, "bid types vs bid raffle cumulative weights length").to.equal(cumulativeWeights_.length);
 		for ( let bidIndex_ = 0; bidIndex_ < cumulativeWeights_.length; ++ bidIndex_ ) {
 			const bidInfo_ = await game_.getBidInfoAt(model.roundNum, BigInt(bidIndex_));
 			expect(bidInfo_.raffleCumulativeWeight, `bid raffle cumulative weight ${bidIndex_} vs model`)
 				.to.equal(cumulativeWeights_[bidIndex_]);
-			if (bidIndex_ > 0 && cumulativeWeights_[bidIndex_ - 1] > 0n) {
-				expect(cumulativeWeights_[bidIndex_], `bid raffle cumulative weight ${bidIndex_} increases`)
-					.greaterThan(cumulativeWeights_[bidIndex_ - 1]);
+
+			// Comment-202611029 applies: an ETH bid's raffle weight is nonzero (so the round's first bid, which is an ETH bid,
+			// makes the total nonzero), while a CST bid's can be zero.
+			const prevCumulativeWeight_ = (bidIndex_ > 0) ? cumulativeWeights_[bidIndex_ - 1] : 0n;
+			if (bidTypes_[bidIndex_] === "cst") {
+				expect(cumulativeWeights_[bidIndex_], `bid raffle cumulative weight ${bidIndex_} (CST bid) does not decrease`)
+					.greaterThanOrEqual(prevCumulativeWeight_);
+			} else {
+				expect(cumulativeWeights_[bidIndex_], `bid raffle cumulative weight ${bidIndex_} (ETH bid) increases`)
+					.greaterThan(prevCumulativeWeight_);
 			}
 		}
 	}
@@ -223,6 +236,19 @@ async function runInvariants(ctx_) {
 		// Comment-202610021 applies to this contract-only comparison.
 		if (model.lastBidderAddress !== hre.ethers.ZeroAddress) {
 			expect(await game_.getNextCstBidPriceAdvanced(0n), "getNextCstBidPrice == Advanced(0)").to.equal(onChainCstPrice_);
+		}
+
+		if (model.version >= 3) {
+			// The CST bid price without the late-bid premium (Comment-202611023).
+			const onChainCstPriceBase_ = await game_.getNextCstBidPriceBase();
+			expect(onChainCstPriceBase_, "getNextCstBidPriceBase vs model").to.equal(model.getNextCstBidPriceBase(ts_));
+			expect(onChainCstPriceBase_ <= onChainCstPrice_, "getNextCstBidPriceBase <= getNextCstBidPrice").to.equal(true);
+			expect(onChainCstPriceBase_ <= model.getCstDutchAuctionBeginningBidPrice(), "getNextCstBidPriceBase <= CST Dutch auction beginning bid price").to.equal(true);
+
+			// Comment-202610021 applies to this contract-only comparison.
+			if (model.lastBidderAddress !== hre.ethers.ZeroAddress) {
+				expect(await game_.getNextCstBidPriceBaseAdvanced(0n), "getNextCstBidPriceBase == BaseAdvanced(0)").to.equal(onChainCstPriceBase_);
+			}
 		}
 
 		if (model.version >= 2) {

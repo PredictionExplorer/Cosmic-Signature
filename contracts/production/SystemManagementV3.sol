@@ -20,14 +20,8 @@ abstract contract SystemManagementV3 is
 		revert CosmicSignatureErrors.NotImplemented();
 	}
 
-	function setCstBidPriceDeclineMultiplier(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
-		cstBidPriceDeclineMultiplier = newValue_;
-		emit CstBidPriceDeclineMultiplierChanged(newValue_);
-	}
-
-	function setCstBidPriceDeclineMultiplierChangeDivisor(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
-		cstBidPriceDeclineMultiplierChangeDivisor = newValue_;
-		emit CstBidPriceDeclineMultiplierChangeDivisorChanged(newValue_);
+	function setCstDutchAuctionBeginningBidPriceMinLimit(uint256 /* newValue_ */) /* external */ public override (ISystemManagementV2, SystemManagementV2) virtual /* onlyOwner */ /* _onlyRoundIsInactive */ {
+		revert CosmicSignatureErrors.NotImplemented();
 	}
 
 	function setRoundLateBidDurationDivisor(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {

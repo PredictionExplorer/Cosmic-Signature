@@ -6,7 +6,11 @@ const hre = require("hardhat");
 const { SECONDS_PER_HOUR } = require("../../src/CosmicSignatureConstants.js");
 const { waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { activateCurrentRound, findParsedEvent, getLatestBlockTimestamp } = require("../src/V2UpgradeTestHelpers.js");
-const { findTimeStampWithAffordableCstBidPrice } = require("../src/V3UpgradeTestHelpers.js");
+const {
+	findTimeStampWithAffordableCstBidPrice,
+	getV3CstDutchAuctionBeginningBidPriceMaxLimit,
+	getV3CstBidRaffleWeight,
+} = require("../src/V3UpgradeTestHelpers.js");
 const { verifyBidRaffleClaimDraws, readBidRaffleData } = require("../src/BidRaffleTestHelpers.js");
 const { testAcrossGameVersions, finishGameRound } = require("../src/GameRoundTestHelpers.js");
 
@@ -23,7 +27,7 @@ async function getCumulativeWeightAt_(game_, roundNum_, bidIndex_) {
 }
 
 describe("CosmicSignatureGameV3-BidRaffle", function () {
-	it("records the base ETH bid price as every bid type's raffle weight", async function () {
+	it("weighs an ETH bid by its base ETH bid price and a CST bid by the fraction of the asking CST price it pays", async function () {
 		await testAcrossGameVersions(async (contracts_, game_) => {
 			await activateCurrentRound(game_, contracts_.ownerSigner);
 			const roundNum_ = await game_.roundNum();
@@ -92,12 +96,26 @@ describe("CosmicSignatureGameV3-BidRaffle", function () {
 			{
 				const bidder1CstBalance_ = await contracts_.cosmicSignatureToken.balanceOf(bidder1_.address);
 				expect(bidder1CstBalance_).greaterThan(0n);
-				const affordableCstBid_ = await findTimeStampWithAffordableCstBidPrice(
-					game_,
-					bidder1CstBalance_,
-					(await getLatestBlockTimestamp()) + 1n
-				);
-				const concurrentEthBidPrice_ = await game_.nextEthBidPrice();
+				const latestTimeStamp_ = await getLatestBlockTimestamp();
+				const affordableCstBid_ = await findTimeStampWithAffordableCstBidPrice(game_, bidder1CstBalance_, latestTimeStamp_ + 1n);
+
+				// Comment-202611027 applies. This is the round's first CST bid, so the CST Dutch auction it pays into
+				// began at the maximum beginning bid price, calculated from the live parameters (Comment-202611025).
+				expect(await game_.lastCstBidderAddress()).equal(hre.ethers.ZeroAddress);
+				const cstDutchAuctionBeginningBidPrice_ =
+					getV3CstDutchAuctionBeginningBidPriceMaxLimit(
+						await game_.bidCstRewardAmountMultiplier(),
+						await game_.initialDurationUntilMainPrizeDivisor()
+					);
+				const cstBidPriceBase_ = await game_.getNextCstBidPriceBaseAdvanced(affordableCstBid_.timeStamp - latestTimeStamp_);
+				expect(cstBidPriceBase_).greaterThan(0n);
+				expect(cstBidPriceBase_).lessThan(cstDutchAuctionBeginningBidPrice_);
+				const concurrentEthBidPriceBase_ = await game_.nextEthBidPrice();
+				const expectedBidRaffleWeight_ =
+					getV3CstBidRaffleWeight(concurrentEthBidPriceBase_, cstBidPriceBase_, cstDutchAuctionBeginningBidPrice_);
+				expect(expectedBidRaffleWeight_).greaterThan(0n);
+				expect(expectedBidRaffleWeight_).lessThan(concurrentEthBidPriceBase_);
+
 				await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(affordableCstBid_.timeStamp),]);
 				const receipt_ = await waitForTransactionReceipt(
 					game_.connect(bidder1_).bidWithCst(1n << 255n, "", 0n)
@@ -106,7 +124,7 @@ describe("CosmicSignatureGameV3-BidRaffle", function () {
 				expect(
 					(await getCumulativeWeightAt_(game_, roundNum_, 5n)) -
 					(await getCumulativeWeightAt_(game_, roundNum_, 4n))
-				).equal(concurrentEthBidPrice_);
+				).equal(expectedBidRaffleWeight_);
 			}
 
 			// expect(await game_.getTotalNumBids(roundNum_)).equal(6n);
@@ -156,6 +174,69 @@ describe("CosmicSignatureGameV3-BidRaffle", function () {
 			await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(await game_.mainPrizeTime()),]);
 			const claimReceipt_ = await waitForTransactionReceipt(game_.connect(bidders_.at(-1)).claimMainPrize());
 			await verifyBidRaffleClaimDraws(game_, roundNum_, claimReceipt_);
+		}, 3, 3);
+	});
+
+	it("gives a CST bid placed at a zero CST bid price base a zero raffle weight, which the raffle never draws", async function () {
+		await testAcrossGameVersions(async (contracts_, game_) => {
+			await activateCurrentRound(game_, contracts_.ownerSigner);
+			const roundNum_ = await game_.roundNum();
+			const ethBidders_ = contracts_.signers.slice(1, 4);
+
+			// This bidder places no other bid in the round, so a raffle prize paid to it could only come from the zero-weight bid.
+			const cstBidder_ = contracts_.signers[4];
+
+			for (const ethBidder_ of ethBidders_) {
+				const postedEthBidPrice_ = await quoteAndPinNextBid_(game_);
+				await waitForTransactionReceipt(
+					game_.connect(ethBidder_).bidWithEth(-1n, "", 0n, { value: postedEthBidPrice_, })
+				);
+			}
+			const numEthBids_ = BigInt(ethBidders_.length);
+			const totalWeightBeforeCstBid_ = await getCumulativeWeightAt_(game_, roundNum_, numEthBids_ - 1n);
+			expect(totalWeightBeforeCstBid_).greaterThan(0n);
+
+			// The CST bid price base reaches zero once the CST Dutch auction duration elapses (Comment-202611023).
+			// The round's first CST Dutch auction lasts about the initial duration until main prize, which each ETH bid above
+			// extended by a main prize time increment, so this timestamp precedes the late-bid premium window
+			// and the whole CST bid price is zero too.
+			const cstBidTimeStamp_ =
+				(await game_.cstDutchAuctionBeginningTimeStamp()) + (await game_.getCstDutchAuctionDurations())[0];
+			const currentTimeOffset_ = cstBidTimeStamp_ - (await getLatestBlockTimestamp());
+			expect(currentTimeOffset_).greaterThan(0n);
+			expect(cstBidTimeStamp_ + (await game_.getRoundLateBidDuration())).lessThan(await game_.mainPrizeTime());
+			expect(await game_.getNextCstBidPriceBaseAdvanced(currentTimeOffset_)).equal(0n);
+			expect(await game_.getNextCstBidPriceAdvanced(currentTimeOffset_)).equal(0n);
+			await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(cstBidTimeStamp_),]);
+			const receipt_ = await waitForTransactionReceipt(game_.connect(cstBidder_).bidWithCst(0n, "", 0n));
+			expect(findParsedEvent(receipt_, game_, "BidPlaced").args.paidCstPrice).equal(0n);
+
+			// Comment-202611027 applies: the weight is zero, so the cumulative weight does not grow.
+			expect(await getCumulativeWeightAt_(game_, roundNum_, numEthBids_)).equal(totalWeightBeforeCstBid_);
+			const { bidderAddresses: bidderAddresses_, totalWeight: totalWeight_ } = await readBidRaffleData(game_, roundNum_);
+			expect(bidderAddresses_).deep.equal([...ethBidders_.map((bidder_) => bidder_.address), cstBidder_.address,]);
+			expect(totalWeight_).equal(totalWeightBeforeCstBid_);
+
+			// Comment-202611029 applies: a zero-weight bid is never the first bid whose cumulative weight exceeds the target,
+			// so the replayed draws and the emitted winners can never name the CST bidder.
+			const claimReceipt_ = await finishGameRound(contracts_, game_);
+			await verifyBidRaffleClaimDraws(game_, roundNum_, claimReceipt_);
+			let numRaffleWinnerLogs_ = 0n;
+			for (const log_ of claimReceipt_.logs) {
+				let parsedLog_;
+				try { parsedLog_ = game_.interface.parseLog(log_); } catch { continue; }
+				if (
+					parsedLog_?.name === "RaffleWinnerBidderEthPrizeAllocated" ||
+					(parsedLog_?.name === "RaffleWinnerPrizePaid" && ! parsedLog_.args.winnerIsRandomWalkNftStaker)
+				) {
+					expect(parsedLog_.args.winnerAddress).not.equal(cstBidder_.address);
+					++ numRaffleWinnerLogs_;
+				}
+			}
+			expect(numRaffleWinnerLogs_).equal(
+				(await game_.numRaffleEthPrizesForBidders()) +
+				(await game_.numRaffleCosmicSignatureNftsForBidders())
+			);
 		}, 3, 3);
 	});
 

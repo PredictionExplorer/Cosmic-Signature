@@ -32,7 +32,12 @@ async function snapshotCarriedState(game_) {
 		cstDutchAuctionDurationChangeDivisor: await game_.cstDutchAuctionDurationChangeDivisor(),
 
 		cstDutchAuctionBeginningBidPrice: await game_.cstDutchAuctionBeginningBidPrice(),
+
+		// V3 neither reads nor writes these 2 V1/V2 variables (Comment-202611025), and its `reinitialize` leaves them alone,
+		// so they must survive the V3 upgrade frozen.
 		nextRoundFirstCstDutchAuctionBeginningBidPrice: await game_.nextRoundFirstCstDutchAuctionBeginningBidPrice(),
+		cstDutchAuctionBeginningBidPriceMinLimit: await game_.cstDutchAuctionBeginningBidPriceMinLimit(),
+
 		bidMessageLengthMaxLimit: await game_.bidMessageLengthMaxLimit(),
 		cstPrizeAmount: await game_.cstPrizeAmount(),
 		numRaffleEthPrizesForBidders: await game_.numRaffleEthPrizesForBidders(),
@@ -81,6 +86,7 @@ describe("CosmicSignatureGameV3-StorageLayout", function () {
 		await waitForTransactionReceipt(gameV2_.setCstPrizeAmount(777n * 10n ** 18n));
 		await waitForTransactionReceipt(gameV2_.setCstDutchAuctionDuration(11n * SECONDS_PER_HOUR));
 		await waitForTransactionReceipt(gameV2_.setCstDutchAuctionDurationChangeDivisor(234n));
+		await waitForTransactionReceipt(gameV2_.setCstDutchAuctionBeginningBidPriceMinLimit(345n * 10n ** 18n));
 		await waitForTransactionReceipt(gameV2_.setBidCstRewardAmountMultiplier(123_456_789n));
 		await waitForTransactionReceipt(gameV2_.setMainEthPrizeAmountPercentage(31n));
 		await waitForTransactionReceipt(gameV2_.setCharityEthDonationAmountPercentage(9n));
@@ -99,17 +105,14 @@ describe("CosmicSignatureGameV3-StorageLayout", function () {
 		expect(completedRoundStats_.numBids).equal(1n);
 		expect(Array.from(completedRoundStats_).slice(1)).deep.equal(Array(8).fill(0n));
 
-		// The V3 `reinitialize` overwrites these values and the five prize percentages configured above.
+		// The V3 `reinitialize` overwrites this value and the five prize percentages configured above.
 		expect(await gameV2_.bidCstRewardAmountMultiplier()).equal(123_456_789n);
-		expect(await gameV2_.cstDutchAuctionBeginningBidPriceMinLimit()).not.equal(10n ** 18n);
 
-		// The 6 new V3 slots are taken from the gap region, so on V2 their getters must not even exist.
+		// The 4 new V3 slots (308 through 311) are taken from the gap region, so on V2 their getters must not even exist.
 		// Champion durations now belong to `roundStats`, which is available in all versions.
 		const cosmicSignatureGameV3Factory_ =
 			await hre.ethers.getContractFactory("CosmicSignatureGameV3", contracts_.ownerSigner);
 		for (const newGetterName_ of [
-			"cstBidPriceDeclineMultiplier()",
-			"cstBidPriceDeclineMultiplierChangeDivisor()",
 			"roundLateBidDurationDivisor()",
 			"roundLateBidPricePremiumAmountBaseMultiplier()",
 			"roundLateBidPricePremiumAmountExponent()",

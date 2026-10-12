@@ -142,14 +142,6 @@ function buildSafeMutations(ctx_) {
 	add_("setEthDutchAuctionEndingBidPriceDivisor", BigInt(engine.randomIntRange(50, 400)), (m_, v_) => { m_.ethDutchAuctionEndingBidPriceDivisor = v_; });
 	add_("setEthDutchAuctionDurationDivisor", BigInt(engine.randomIntRange(2, 100)), (m_, v_) => { m_.ethDutchAuctionDurationDivisor = v_; });
 	add_("setEthBidRefundAmountInGasToSwallowMaxLimit", BigInt(engine.randomIntRange(0, 20000)), (m_, v_) => { m_.ethBidRefundAmountInGasToSwallowMaxLimit = v_; });
-	add_("setCstDutchAuctionBeginningBidPriceMinLimit", BigInt(engine.randomIntRange(1, 500)) * 10n ** 18n, (m_, v_) => {
-		m_.cstDutchAuctionBeginningBidPriceMinLimit = v_;
-
-		// // Comment-202607016 applies.
-		// if (v_ > m_.nextRoundFirstCstDutchAuctionBeginningBidPrice) {
-		// 	m_.nextRoundFirstCstDutchAuctionBeginningBidPrice = v_;
-		// }
-	});
 	add_("setBidMessageLengthMaxLimit", BigInt(engine.randomIntRange(64, 400)), (m_, v_) => { m_.bidMessageLengthMaxLimit = v_; });
 	add_("setCstPrizeAmount", BigInt(engine.randomIntRange(1, 2000)) * 10n ** 18n, (m_, v_) => { m_.cstPrizeAmount = v_; });
 	add_("setChronoWarriorEthPrizeAmountPercentage", BigInt(engine.randomIntRange(1, 10)), (m_, v_) => { m_.chronoWarriorEthPrizeAmountPercentage = v_; });
@@ -165,6 +157,17 @@ function buildSafeMutations(ctx_) {
 	add_("setDelayDurationBeforeRoundActivation", BigInt(engine.randomIntRange(60, 7200)), (m_, v_) => { m_.delayDurationBeforeRoundActivation = v_; });
 	add_("setMainPrizeTimeIncrementIncreaseDivisor", BigInt(engine.randomIntRange(50, 200)), (m_, v_) => { m_.mainPrizeTimeIncrementIncreaseDivisor = v_; });
 
+	if (model.version < 3) {
+		// V3 neither reads nor writes this parameter (Comment-202611025) and makes its setter revert with `NotImplemented`.
+		add_("setCstDutchAuctionBeginningBidPriceMinLimit", BigInt(engine.randomIntRange(1, 500)) * 10n ** 18n, (m_, v_) => {
+			m_.cstDutchAuctionBeginningBidPriceMinLimit = v_;
+
+			// // Comment-202607016 applies.
+			// if (v_ > m_.nextRoundFirstCstDutchAuctionBeginningBidPrice) {
+			// 	m_.nextRoundFirstCstDutchAuctionBeginningBidPrice = v_;
+			// }
+		});
+	}
 	if (model.version === 2) {
 		// V3 replaces these parameters and makes both setters revert with `NotImplemented`.
 		add_("setCstDutchAuctionDuration", BigInt(engine.randomIntRange(Number(SECONDS_PER_HOUR), 2 * Number(SECONDS_PER_DAY))), (m_, v_) => { m_.cstDutchAuctionDuration = v_; });
@@ -187,14 +190,6 @@ function buildSafeMutations(ctx_) {
 		);
 		add_("setRoundLateBidPricePremiumAmountExponent", BigInt(engine.randomIntRange(1, 10)), (m_, v_) => { m_.roundLateBidPricePremiumAmountExponent = v_; });
 		add_("setMainPrizeNumCosmicSignatureNfts", BigInt(engine.randomIntRange(1, 5)), (m_, v_) => { m_.mainPrizeNumCosmicSignatureNfts = v_; });
-		add_(
-			"setCstBidPriceDeclineMultiplier",
-			BigInt(engine.randomIntRange(1, 6000)) * (10n ** 18n) / 600n,
-			(m_, v_) => { m_.cstBidPriceDeclineMultiplier = v_; }
-		);
-		add_("setCstBidPriceDeclineMultiplierChangeDivisor", BigInt(engine.randomIntRange(20, 1000)), (m_, v_) => {
-			m_.cstBidPriceDeclineMultiplierChangeDivisor = v_;
-		});
 	}
 	return mutations_;
 }

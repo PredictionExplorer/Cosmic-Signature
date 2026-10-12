@@ -131,7 +131,12 @@ abstract contract CosmicSignatureGameStorageV2Base is ICosmicSignatureGameStorag
 	/// Comment-202501022 applies.
 	uint256 public cstDutchAuctionBeginningTimeStamp;
 
-	/// @notice Comment-202608317 applies.
+	/// @notice
+	/// [Comment-202608317]
+	/// In V2 only, `cstDutchAuctionDuration` and `cstDutchAuctionDurationChangeDivisor` are used.
+	/// In V3+, the CST bid price declines at the bid CST reward rate instead, as explained in Comment-202611023,
+	/// so V3+ neither reads nor writes these variables.
+	/// [/Comment-202608317]
 	/// [Comment-202606101]
 	/// How long CST Dutch auction lasts.
 	/// We reduce this on each ETH bid and increase on each CST bid, based on `cstDutchAuctionDurationChangeDivisor`.
@@ -158,17 +163,20 @@ abstract contract CosmicSignatureGameStorageV2Base is ICosmicSignatureGameStorag
 	uint256 public cstDutchAuctionDuration;
 
 	/// @notice Comment-202411066 applies.
+	/// In V3+, Comment-202611024 applies instead of the minimum limit part of Comment-202411066.
 	/// Comment-202605197 applies.
 	/// @dev Comment-202605199 applies.
 	uint256 public cstDutchAuctionBeginningBidPrice;
 
 	/// @notice Comment-202605201 applies.
 	/// Comment-202504212 applies.
+	/// In V3+, this is neither read nor written. Comment-202611025 applies.
 	uint256 public nextRoundFirstCstDutchAuctionBeginningBidPrice;
 
 	/// @notice Comment-202411066 relates.
 	/// Comment-202411064 applies.
 	/// Comment-202504212 relates.
+	/// In V3+, this is neither read nor written. Comment-202611025 applies.
 	uint256 public cstDutchAuctionBeginningBidPriceMinLimit;
 
 	/// @notice Comment-202605202 applies.
@@ -231,6 +239,10 @@ abstract contract CosmicSignatureGameStorageV2Base is ICosmicSignatureGameStorag
 	/// Comment-202412152 relates.
 	/// Comment-202508288 relates.
 	/// Comment-202411064 applies.
+	/// [Comment-202611031]
+	/// In V3+, this also sets the maximum CST Dutch auction beginning bid price,
+	/// which is the bid CST reward of the initial duration until main prize. Comment-202611025 applies.
+	/// [/Comment-202611031]
 	uint256 public initialDurationUntilMainPrizeDivisor;
 
 	/// @notice Comment-202412152 applies.
@@ -330,7 +342,6 @@ abstract contract CosmicSignatureGameStorageV2Base is ICosmicSignatureGameStorag
 	/// @notice Comment-202608317 applies.
 	/// Comment-202606101 relates.
 	/// Comment-202411064 applies.
-	/// @dev Comment-202607301 relates.
 	uint256 public cstDutchAuctionDurationChangeDivisor;
 
 	// #endregion

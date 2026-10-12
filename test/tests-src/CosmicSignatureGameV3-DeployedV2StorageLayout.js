@@ -128,16 +128,17 @@ describe("CosmicSignatureGameV3-DeployedV2StorageLayout", function () {
 		const deployedGapEnd_ = BigInt(deployedGap_.slot) + getGapLength_(deployedV2Layout_, deployedGap_);
 		const v3GapEnd_ = BigInt(v3Gap_.slot) + getGapLength_(v3Layout_, v3Gap_);
 		expect(v3GapEnd_).equal(deployedGapEnd_);
+		expect(Number(deployedGap_.slot)).equal(308);
+		expect(Number(v3Gap_.slot)).equal(312);
 		const newItems_ =
 			v3Layout_.storage.filter((item_) => BigInt(item_.slot) >= BigInt(deployedGap_.slot) && BigInt(item_.slot) < BigInt(v3Gap_.slot));
 		expect(newItems_.map((item_) => item_.label)).deep.equal([
-			"cstBidPriceDeclineMultiplier",
-			"cstBidPriceDeclineMultiplierChangeDivisor",
 			"roundLateBidDurationDivisor",
 			"roundLateBidPricePremiumAmountBaseMultiplier",
 			"roundLateBidPricePremiumAmountExponent",
 			"mainPrizeNumCosmicSignatureNfts",
 		]);
+		expect(newItems_.map((item_) => Number(item_.slot))).deep.equal([308, 309, 310, 311,]);
 		for (const item_ of newItems_) {
 			expect(v3Layout_.types[item_.type].label).equal("uint256");
 		}

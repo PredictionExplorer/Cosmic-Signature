@@ -16,21 +16,29 @@ import { ICosmicSignatureGameStorage } from "../interfaces/ICosmicSignatureGameS
 /// @notice
 /// [Comment-202609098]
 /// In V2-, every bid was one raffle ticket of an equal weight, regardless of the bid price paid.
-/// In V3+, each bid's raffle weight is the ETH bid price without the late-bid premium at the time of the bid.
-/// This is the undiscounted price for an ETH + Random Walk NFT bid and the concurrent price for a CST bid.
+/// In V3+, each bid's raffle weight is derived from the ETH bid price without the late-bid premium at the time of the bid.
+/// The weight of an ETH bid is that price, undiscounted for an ETH + Random Walk NFT bid.
+/// The weight of a CST bid is that price scaled by the fraction of the asking CST price the bid paid,
+/// as explained in Comment-202611027.
 /// [/Comment-202609098]
 library BidRaffleWeightHelpers {
 	// #region `saveForNextBid`
 
 	/// @notice Saves the cumulative raffle weight for the bid that will be appended next.
-	/// @param bidRaffleWeight_ Given Comment-202609098 and Comment-202503162, it's nonzero.
+	/// @param bidRaffleWeight_ The raffle weight of the bid.
+	/// [Comment-202611029]
+	/// This can be zero for a CST bid, as explained in Comment-202611027.
+	/// The first bid in a bidding round is an ETH bid, whose weight is nonzero given Comment-202609098 and Comment-202503162.
 	/// This guarantees that a nonempty bidding round has a nonzero total raffle weight,
 	/// which is used as a divisor when a raffle winner is picked.
+	/// A zero-weight bid is never picked, because its cumulative weight equals the previous bid's,
+	/// so it is never the first bid whose cumulative weight exceeds the target described in Comment-202609094.
+	/// [/Comment-202611029]
 	function saveForNextBid(
 		ICosmicSignatureGameStorage.RoundStats storage roundStats_,
 		uint256 bidRaffleWeight_
 	) internal {
-		// #enable_asserts assert(bidRaffleWeight_ > 0);
+		// #enable_asserts assert(bidRaffleWeight_ > 0 || roundStats_.numBids > 0);
 		// #enable_smtchecker /*
 		unchecked
 		// #enable_smtchecker */

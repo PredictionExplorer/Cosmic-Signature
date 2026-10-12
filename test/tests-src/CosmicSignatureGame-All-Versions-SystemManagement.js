@@ -109,7 +109,7 @@ describe("CosmicSignatureGame-All-Versions-SystemManagement", function () {
 					.revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "NotImplemented");
 			}
 
-			{
+			if (contractVersionNumber_ <= 2) {
 				const prevValue_ = await cosmicSignatureGameProxyForOwner_.cstDutchAuctionBeginningBidPriceMinLimit();
 				const newValue_ = 9n + generateRandomUInt256() % 3n;
 				await expect(cosmicSignatureGameProxyForOwner_.setCstDutchAuctionBeginningBidPriceMinLimit(newValue_))
@@ -117,6 +117,15 @@ describe("CosmicSignatureGame-All-Versions-SystemManagement", function () {
 					.withArgs(newValue_);
 				expect(await cosmicSignatureGameProxyForOwner_.cstDutchAuctionBeginningBidPriceMinLimit()).equal(newValue_);
 				await waitForTransactionReceipt(cosmicSignatureGameProxyForOwner_.setCstDutchAuctionBeginningBidPriceMinLimit(prevValue_));
+			} else {
+				// Comment-202608014 relates and/or applies.
+				// V3+ neither reads nor writes `cstDutchAuctionBeginningBidPriceMinLimit` (Comment-202611025),
+				// so its setter is not implemented and its getter keeps returning the value frozen at the upgrade.
+				const prevValue_ = await cosmicSignatureGameProxyForOwner_.cstDutchAuctionBeginningBidPriceMinLimit();
+				const newValue_ = 9n + generateRandomUInt256() % 3n;
+				await expect(cosmicSignatureGameProxyForOwner_.setCstDutchAuctionBeginningBidPriceMinLimit(newValue_))
+					.revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "NotImplemented");
+				expect(await cosmicSignatureGameProxyForOwner_.cstDutchAuctionBeginningBidPriceMinLimit()).equal(prevValue_);
 			}
 
 			{
@@ -179,26 +188,6 @@ describe("CosmicSignatureGame-All-Versions-SystemManagement", function () {
 				}
 
 				{
-					const prevValue_ = await cosmicSignatureGameProxyForOwner_.cstBidPriceDeclineMultiplier();
-					const newValue_ = 9n + generateRandomUInt256() % 3n;
-					await expect(cosmicSignatureGameProxyForOwner_.setCstBidPriceDeclineMultiplier(newValue_))
-						.emit(cosmicSignatureGameProxyForOwner_, "CstBidPriceDeclineMultiplierChanged")
-						.withArgs(newValue_);
-					expect(await cosmicSignatureGameProxyForOwner_.cstBidPriceDeclineMultiplier()).equal(newValue_);
-					await waitForTransactionReceipt(cosmicSignatureGameProxyForOwner_.setCstBidPriceDeclineMultiplier(prevValue_));
-				}
-
-				{
-					const prevValue_ = await cosmicSignatureGameProxyForOwner_.cstBidPriceDeclineMultiplierChangeDivisor();
-					const newValue_ = 9n + generateRandomUInt256() % 3n;
-					await expect(cosmicSignatureGameProxyForOwner_.setCstBidPriceDeclineMultiplierChangeDivisor(newValue_))
-						.emit(cosmicSignatureGameProxyForOwner_, "CstBidPriceDeclineMultiplierChangeDivisorChanged")
-						.withArgs(newValue_);
-					expect(await cosmicSignatureGameProxyForOwner_.cstBidPriceDeclineMultiplierChangeDivisor()).equal(newValue_);
-					await waitForTransactionReceipt(cosmicSignatureGameProxyForOwner_.setCstBidPriceDeclineMultiplierChangeDivisor(prevValue_));
-				}
-
-				{
 					const prevValue_ = await cosmicSignatureGameProxyForOwner_.mainPrizeNumCosmicSignatureNfts();
 					const newValue_ = 9n + generateRandomUInt256() % 3n;
 					await expect(cosmicSignatureGameProxyForOwner_.setMainPrizeNumCosmicSignatureNfts(newValue_))
@@ -211,8 +200,6 @@ describe("CosmicSignatureGame-All-Versions-SystemManagement", function () {
 				// The V3 setters store zero without validation. Some zero configurations make the respective
 				// bidding calculation unusable, but accepting and emitting them is the current external behavior.
 				const zeroValueSetterSpecs_ = [
-					["setCstBidPriceDeclineMultiplier", "cstBidPriceDeclineMultiplier", "CstBidPriceDeclineMultiplierChanged"],
-					["setCstBidPriceDeclineMultiplierChangeDivisor", "cstBidPriceDeclineMultiplierChangeDivisor", "CstBidPriceDeclineMultiplierChangeDivisorChanged"],
 					["setRoundLateBidDurationDivisor", "roundLateBidDurationDivisor", "RoundLateBidDurationDivisorChanged"],
 					["setRoundLateBidPricePremiumAmountBaseMultiplier", "roundLateBidPricePremiumAmountBaseMultiplier", "RoundLateBidPricePremiumAmountBaseMultiplierChanged"],
 					["setRoundLateBidPricePremiumAmountExponent", "roundLateBidPricePremiumAmountExponent", "RoundLateBidPricePremiumAmountExponentChanged"],
@@ -500,7 +487,12 @@ describe("CosmicSignatureGame-All-Versions-SystemManagement", function () {
 				await expect(cosmicSignatureGameProxyForOwner_.setCstDutchAuctionDuration(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "NotImplemented");
 				await expect(cosmicSignatureGameProxyForOwner_.setCstDutchAuctionDurationChangeDivisor(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "NotImplemented");
 			}
-			await expect(cosmicSignatureGameProxyForOwner_.setCstDutchAuctionBeginningBidPriceMinLimit(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "RoundIsActive");
+			if (contractVersionNumber_ <= 2) {
+				await expect(cosmicSignatureGameProxyForOwner_.setCstDutchAuctionBeginningBidPriceMinLimit(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "RoundIsActive");
+			} else {
+				// Comment-202608014 relates and/or applies.
+				await expect(cosmicSignatureGameProxyForOwner_.setCstDutchAuctionBeginningBidPriceMinLimit(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "NotImplemented");
+			}
 			await expect(cosmicSignatureGameProxyForOwner_.setBidMessageLengthMaxLimit(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "RoundIsActive");
 			if (contractVersionNumber_ <= 1) {
 				await expect(cosmicSignatureGameProxyForOwner_.setBidCstRewardAmount(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "RoundIsActive");
@@ -511,8 +503,6 @@ describe("CosmicSignatureGame-All-Versions-SystemManagement", function () {
 				await expect(cosmicSignatureGameProxyForOwner_.setRoundLateBidDurationDivisor(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "RoundIsActive");
 				await expect(cosmicSignatureGameProxyForOwner_.setRoundLateBidPricePremiumAmountBaseMultiplier(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "RoundIsActive");
 				await expect(cosmicSignatureGameProxyForOwner_.setRoundLateBidPricePremiumAmountExponent(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "RoundIsActive");
-				await expect(cosmicSignatureGameProxyForOwner_.setCstBidPriceDeclineMultiplier(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "RoundIsActive");
-				await expect(cosmicSignatureGameProxyForOwner_.setCstBidPriceDeclineMultiplierChangeDivisor(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "RoundIsActive");
 				await expect(cosmicSignatureGameProxyForOwner_.setMainPrizeNumCosmicSignatureNfts(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "RoundIsActive");
 			}
 			await expect(cosmicSignatureGameProxyForOwner_.setCstPrizeAmount(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForOwner_, "RoundIsActive");
@@ -572,7 +562,12 @@ describe("CosmicSignatureGame-All-Versions-SystemManagement", function () {
 				await expect(cosmicSignatureGameProxyForSigner_.setCstDutchAuctionDuration(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "NotImplemented");
 				await expect(cosmicSignatureGameProxyForSigner_.setCstDutchAuctionDurationChangeDivisor(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "NotImplemented");
 			}
-			await expect(cosmicSignatureGameProxyForSigner_.setCstDutchAuctionBeginningBidPriceMinLimit(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");
+			if (contractVersionNumber_ <= 2) {
+				await expect(cosmicSignatureGameProxyForSigner_.setCstDutchAuctionBeginningBidPriceMinLimit(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");
+			} else {
+				// Comment-202608014 relates and/or applies.
+				await expect(cosmicSignatureGameProxyForSigner_.setCstDutchAuctionBeginningBidPriceMinLimit(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "NotImplemented");
+			}
 			await expect(cosmicSignatureGameProxyForSigner_.setBidMessageLengthMaxLimit(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");
 			if (contractVersionNumber_ <= 1) {
 				await expect(cosmicSignatureGameProxyForSigner_.setBidCstRewardAmount(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");
@@ -583,8 +578,6 @@ describe("CosmicSignatureGame-All-Versions-SystemManagement", function () {
 				await expect(cosmicSignatureGameProxyForSigner_.setRoundLateBidDurationDivisor(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");
 				await expect(cosmicSignatureGameProxyForSigner_.setRoundLateBidPricePremiumAmountBaseMultiplier(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");
 				await expect(cosmicSignatureGameProxyForSigner_.setRoundLateBidPricePremiumAmountExponent(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");
-				await expect(cosmicSignatureGameProxyForSigner_.setCstBidPriceDeclineMultiplier(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");
-				await expect(cosmicSignatureGameProxyForSigner_.setCstBidPriceDeclineMultiplierChangeDivisor(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");
 				await expect(cosmicSignatureGameProxyForSigner_.setMainPrizeNumCosmicSignatureNfts(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");
 			}
 			await expect(cosmicSignatureGameProxyForSigner_.setCstPrizeAmount(randomNumber1_)).revertedWithCustomError(cosmicSignatureGameProxyForSigner_, "OwnableUnauthorizedAccount");

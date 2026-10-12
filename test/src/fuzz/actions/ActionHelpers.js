@@ -284,7 +284,10 @@ async function executeEthBid(ctx_, actor_, options_) {
 	expect(bidPlaced_.args.mainPrizeTime).to.equal(model.mainPrizeTime);
 	if (model.version >= 3) {
 		expect(bidPlaced_.args.bidCstRewardAmount).to.equal(expectations_.bidCstRewardAmount);
-		expect(bidPlaced_.args.cstBidPriceDeclineMultiplier).to.equal(expectations_.newCstBidPriceDeclineMultiplier);
+
+		// Comment-202611028 applies.
+		expect(bidPlaced_.args.cstDutchAuctionBeginningBidPrice, `ETH bid (${options_.flavor}): cstDutchAuctionBeginningBidPrice`)
+			.to.equal(expectations_.cstDutchAuctionBeginningBidPrice);
 	} else if (model.version >= 2) {
 		expect(bidPlaced_.args.bidCstRewardAmount).to.equal(expectations_.bidCstRewardAmount);
 		expect(bidPlaced_.args.cstDutchAuctionDuration).to.equal(expectations_.newCstDutchAuctionDuration);
@@ -420,7 +423,12 @@ async function executeCstBid(ctx_, actor_, options_) {
 	expect(bidPlaced_.args.mainPrizeTime).to.equal(model.mainPrizeTime);
 	if (model.version >= 3) {
 		expect(bidPlaced_.args.bidCstRewardAmount).to.equal(expectations_.bidCstRewardAmount);
-		expect(bidPlaced_.args.cstBidPriceDeclineMultiplier).to.equal(expectations_.newCstBidPriceDeclineMultiplier);
+
+		// Comment-202611028 applies.
+		expect(bidPlaced_.args.cstDutchAuctionBeginningBidPrice, `CST bid (${options_.flavor}): cstDutchAuctionBeginningBidPrice`)
+			.to.equal(expectations_.cstDutchAuctionBeginningBidPrice);
+		expect(await ctx_.game.contract.cstDutchAuctionBeginningBidPrice(), `CST bid (${options_.flavor}): cstDutchAuctionBeginningBidPrice storage`)
+			.to.equal(expectations_.cstDutchAuctionBeginningBidPrice);
 	} else if (model.version >= 2) {
 		expect(bidPlaced_.args.bidCstRewardAmount).to.equal(expectations_.bidCstRewardAmount);
 		expect(bidPlaced_.args.cstDutchAuctionDuration).to.equal(expectations_.newCstDutchAuctionDuration);

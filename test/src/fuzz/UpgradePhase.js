@@ -63,12 +63,12 @@ const CARRIED_OVER_GETTERS = [
 ];
 
 /**
-Getters that must survive the V2 -> V3 upgrade unchanged. V3 reinitializes the CST beginning-price
-minimum and reward multiplier and overwrites the five ETH prize percentages, while leaving the
-vestigial V2 duration fields untouched.
+Getters that must survive the V2 -> V3 upgrade unchanged. V3 `reinitialize` overwrites the five ETH prize percentages
+(and the reward multiplier, which is not a V1 getter), while leaving the vestigial V2 duration fields and
+the V2- CST beginning-price fields (`cstDutchAuctionBeginningBidPriceMinLimit` and
+`nextRoundFirstCstDutchAuctionBeginningBidPrice`, which V3 neither reads nor writes; Comment-202611025) untouched.
 */
 const OVERWRITTEN_GETTERS_ACROSS_V3 = new Set([
-	"cstDutchAuctionBeginningBidPriceMinLimit",
 	"chronoWarriorEthPrizeAmountPercentage",
 	"raffleTotalEthPrizeAmountForBiddersPercentage",
 	"cosmicSignatureNftStakingTotalEthRewardAmountPercentage",
@@ -220,10 +220,12 @@ async function performUpgradeToV3(ctx_) {
 
 		// The new V3 getters do not exist on V2 yet.
 		await expectUnknownSelector(v2Game_, hre.ethers.id("roundLateBidDurationDivisor()").slice(0, 10));
-		await expectUnknownSelector(v2Game_, hre.ethers.id("cstBidPriceDeclineMultiplier()").slice(0, 10));
-		await expectUnknownSelector(v2Game_, hre.ethers.id("cstBidPriceDeclineMultiplierChangeDivisor()").slice(0, 10));
+		await expectUnknownSelector(v2Game_, hre.ethers.id("roundLateBidPricePremiumAmountBaseMultiplier()").slice(0, 10));
+		await expectUnknownSelector(v2Game_, hre.ethers.id("roundLateBidPricePremiumAmountExponent()").slice(0, 10));
 		await expectUnknownSelector(v2Game_, hre.ethers.id("mainPrizeNumCosmicSignatureNfts()").slice(0, 10));
 		await expectUnknownSelector(v2Game_, hre.ethers.id("getRoundLateBidDuration()").slice(0, 10));
+		await expectUnknownSelector(v2Game_, hre.ethers.id("getNextCstBidPriceBase()").slice(0, 10));
+		await expectUnknownSelector(v2Game_, hre.ethers.id("getNextCstBidPriceBaseAdvanced(int256)").slice(0, 10));
 	}
 
 	// 4. The real upgrade (UUPS `upgradeToAndCall` + `reinitialize`), via the project helper.

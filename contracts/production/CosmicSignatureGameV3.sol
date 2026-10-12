@@ -47,10 +47,6 @@ contract CosmicSignatureGameV3 is
 		// todo-1 +++ Remember to list all new variables here, at least commented.
 
 		// Comment-202610175 applies.
-		cstDutchAuctionBeginningBidPriceMinLimit = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT_V3;
-		cstBidPriceDeclineMultiplier = CosmicSignatureConstants.INITIAL_CST_BID_PRICE_DECLINE_MULTIPLIER;
-		// // #enable_asserts // #disable_smtchecker console.log("202609284", cstBidPriceDeclineMultiplier);
-		cstBidPriceDeclineMultiplierChangeDivisor = CosmicSignatureConstants.DEFAULT_CST_BID_PRICE_DECLINE_MULTIPLIER_CHANGE_DIVISOR;
 		roundLateBidDurationDivisor = CosmicSignatureConstants.DEFAULT_ROUND_LATE_BID_DURATION_DIVISOR;
 		roundLateBidPricePremiumAmountBaseMultiplier = CosmicSignatureConstants.DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_BASE_MULTIPLIER;
 		roundLateBidPricePremiumAmountExponent = CosmicSignatureConstants.DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_EXPONENT;
@@ -86,6 +82,10 @@ contract CosmicSignatureGameV3 is
 
 	function setCstDutchAuctionDurationChangeDivisor(uint256 newValue_) /* external */ public override (SystemManagementV2, SystemManagementV3) /* virtual */ {
 		super.setCstDutchAuctionDurationChangeDivisor(newValue_);
+	}
+
+	function setCstDutchAuctionBeginningBidPriceMinLimit(uint256 newValue_) /* external */ public override (SystemManagementV2, SystemManagementV3) /* virtual */ {
+		super.setCstDutchAuctionBeginningBidPriceMinLimit(newValue_);
 	}
 
 	function _updateRoundStatsOnMainPrizeClaim(bool isSameBid_) internal override (BidStatisticsV2, BidStatisticsV3, MainPrizeV3) /* virtual */ {
