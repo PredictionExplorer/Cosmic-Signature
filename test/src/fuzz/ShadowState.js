@@ -16,7 +16,9 @@ Event-driven shadow ledgers for everything the fuzz campaign can touch:
 - mock/donation ERC-20 and ERC-721 ledgers;
 - staking wallet stake actions, `rewardAmountPerStakedNft`, counters;
 - PrizesWallet per-round/per-winner ETH balances, donated tokens/NFTs, round registrations;
-- RandomWalkNFT mint price ladder / last minter.
+- RandomWalkNFT mint price ladder / last minter;
+- the V3 CST Dutch auction in effect (beginning bid price, beginning timestamp, bid CST rewards minted since),
+  rebuilt from the game's `BidPlaced` events for the conservation invariant of Comment-202611023.
 
 Receipt logs are applied via `applyReceipt`, which dispatches on emitting contract address.
 ETH movements are applied explicitly by actions via `addEth` (plus automatic gas accounting
@@ -112,6 +114,31 @@ class ShadowState {
 
 		this.ethDonationWithInfoRecordCount = 0n;
 
+		/**
+		V3 CST Dutch auction ledger, rebuilt from the game's `BidPlaced` events alone (field 8 of a V3 event is the
+		beginning bid price of the auction in effect after the bid, Comment-202611028). For the auction in effect, it
+		records the beginning bid price `S`, the beginning timestamp `T0`, and the bid CST rewards minted since `T0`,
+		so the conservation invariant I2 of `docs/cosmic-signature-game-cst-bid-pricing.md` (Comment-202611023) can be
+		checked against the chain without the model's formulas. `roundNum` is null until the first V3 bid.
+		*/
+		this.cstDutchAuction = {
+			/** @type {bigint | null} The round whose bids are being tracked. */
+			roundNum: null,
+			/** @type {bigint | null} The first round tracked, which is the round the V3 upgrade happened before. */
+			firstTrackedRoundNum: null,
+			/** `S`: from the `BidPlaced` event that started the auction. */
+			beginningBidPrice: 0n,
+			/** `T0`: the block timestamp of that bid. */
+			beginningTimeStamp: 0n,
+			/** Whether a CST bid started the auction. Otherwise the round's first ETH bid did, at the maximum (Comment-202611025). */
+			startedByCstBid: false,
+			/** The sum of `BidPlaced.bidCstRewardAmount` of the bids placed since `T0`. */
+			rewardsMintedSinceBeginning: 0n,
+			/** The number of those bids; each mints one reward, possibly zero. */
+			numRewardsMintedSinceBeginning: 0n,
+			numCstBidsInRound: 0n,
+		};
+
 		/** Per-contract interface registry for receipt application. @type {Map<string, {name: string, iface: import("ethers").Interface}>} */
 		this.contractsByAddress = new Map();
 		this.addresses = {};
@@ -126,6 +153,21 @@ class ShadowState {
 	registerContracts(addresses_, contractsByAddress_) {
 		this.addresses = addresses_;
 		this.contractsByAddress = contractsByAddress_;
+	}
+
+	/**
+	Routes the game's events to the CST Dutch auction ledger. The `BidPlaced` event signature changes with the game
+	version, so the campaign calls this again with the new ABI after each upgrade.
+	@param {string} gameAddress_
+	@param {import("ethers").Interface} gameInterface_
+	*/
+	registerGame(gameAddress_, gameInterface_) {
+		this.contractsByAddress.set(gameAddress_.toLowerCase(), { name: "CosmicSignatureGame", iface: gameInterface_ });
+	}
+
+	/** A copy of the CST Dutch auction ledger, taken before a bid to describe the auction that bid consumed. */
+	snapshotCstDutchAuction() {
+		return { ...this.cstDutchAuction };
 	}
 
 	/**
@@ -369,6 +411,49 @@ class ShadowState {
 	}
 
 	// #endregion
+	// #region CST Dutch auction ledger
+
+	/**
+	Applies a V3 `BidPlaced` event. A round's first bid is an ETH bid that starts the round's first auction at the
+	maximum (Comment-202611025) and mints no reward. Every later bid mints one reward (possibly zero) to the bidder being
+	outbid; a CST bid then restarts the auction at the event's beginning bid price, while an ETH bid leaves it unchanged
+	(Comment-202611028), which this ledger verifies event against event.
+	@param {import("ethers").Result} args_
+	@param {bigint} blockTimeStamp_
+	*/
+	_cstDutchAuctionApplyBidPlaced(args_, blockTimeStamp_) {
+		const auction_ = this.cstDutchAuction;
+		const isCstBid_ = args_.paidCstPrice >= 0n;
+		if (auction_.roundNum !== args_.roundNum) {
+			expect(isCstBid_, "CST Dutch auction ledger: a round's first bid is a CST bid").to.equal(false);
+			expect(args_.bidCstRewardAmount, "CST Dutch auction ledger: a round's first bid minted a bid CST reward").to.equal(0n);
+			auction_.roundNum = args_.roundNum;
+			auction_.firstTrackedRoundNum ??= args_.roundNum;
+			auction_.numCstBidsInRound = 0n;
+			this._cstDutchAuctionRestart(args_.cstDutchAuctionBeginningBidPrice, blockTimeStamp_, false);
+			return;
+		}
+		auction_.rewardsMintedSinceBeginning += args_.bidCstRewardAmount;
+		auction_.numRewardsMintedSinceBeginning += 1n;
+		if (isCstBid_) {
+			auction_.numCstBidsInRound += 1n;
+			this._cstDutchAuctionRestart(args_.cstDutchAuctionBeginningBidPrice, blockTimeStamp_, true);
+		} else {
+			expect(args_.cstDutchAuctionBeginningBidPrice, "CST Dutch auction ledger: an ETH bid changed the CST Dutch auction beginning bid price")
+				.to.equal(auction_.beginningBidPrice);
+		}
+	}
+
+	_cstDutchAuctionRestart(beginningBidPrice_, beginningTimeStamp_, startedByCstBid_) {
+		const auction_ = this.cstDutchAuction;
+		auction_.beginningBidPrice = beginningBidPrice_;
+		auction_.beginningTimeStamp = beginningTimeStamp_;
+		auction_.startedByCstBid = startedByCstBid_;
+		auction_.rewardsMintedSinceBeginning = 0n;
+		auction_.numRewardsMintedSinceBeginning = 0n;
+	}
+
+	// #endregion
 	// #region Receipt application
 
 	/**
@@ -376,8 +461,9 @@ class ShadowState {
 	Unknown events from registered contracts are tolerated (they are verified by actions);
 	token/NFT `Transfer`s and wallet bookkeeping events mutate ledgers exactly.
 	@param {import("ethers").TransactionReceipt} receipt_
+	@param {bigint} blockTimeStamp_ The timestamp of the block the receipt belongs to.
 	*/
-	applyReceipt(receipt_) {
+	applyReceipt(receipt_, blockTimeStamp_) {
 		for (const log_ of receipt_.logs) {
 			const entry_ = this.contractsByAddress.get(log_.address.toLowerCase());
 			if (entry_ === undefined) {
@@ -392,13 +478,23 @@ class ShadowState {
 			if (parsed_ === null) {
 				continue;
 			}
-			this._applyParsedEvent(entry_.name, log_.address.toLowerCase(), parsed_);
+			this._applyParsedEvent(entry_.name, log_.address.toLowerCase(), parsed_, blockTimeStamp_);
 		}
 	}
 
-	_applyParsedEvent(contractName_, contractAddress_, parsed_) {
+	_applyParsedEvent(contractName_, contractAddress_, parsed_, blockTimeStamp_) {
 		const a_ = this.addresses;
 		switch (contractName_) {
+			case "CosmicSignatureGame": {
+				// Only the V3+ `BidPlaced` event carries the CST Dutch auction beginning bid price (Comment-202611028).
+				// Earlier versions' events are ignored, so this ledger starts with the first V3 bid, which is a round's
+				// first bid because the campaign upgrades between rounds.
+				if (parsed_.name === "BidPlaced" && parsed_.fragment.inputs.some((input_) => input_.name === "cstDutchAuctionBeginningBidPrice")) {
+					expect(typeof blockTimeStamp_, "ShadowState.applyReceipt: missing block timestamp").to.equal("bigint");
+					this._cstDutchAuctionApplyBidPlaced(parsed_.args, blockTimeStamp_);
+				}
+				break;
+			}
 			case "CosmicSignatureToken": {
 				if (parsed_.name === "Transfer") {
 					this._cstApplyTransfer(parsed_.args[0], parsed_.args[1], parsed_.args[2]);

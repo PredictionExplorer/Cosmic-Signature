@@ -21,7 +21,14 @@ const { GameModel } = require("./GameModel.js");
 const { ShadowState } = require("./ShadowState.js");
 const { GameAbiAdapter } = require("./GameAbiAdapter.js");
 const { FuzzEngine } = require("./FuzzEngine.js");
-const { runInvariants, hasMinimalCoverageFloors, assertCoverageFloors, printCoverageReport, mergeStatsInto } = require("./Invariants.js");
+const {
+	runInvariants,
+	hasMinimalCoverageFloors,
+	hasV3CstCornerPathFloors,
+	assertCoverageFloors,
+	printCoverageReport,
+	mergeStatsInto,
+} = require("./Invariants.js");
 const { performUpgradeToV2, performUpgradeToV3, performPrizesWalletSwap, upgradeAuthProbe } = require("./UpgradePhase.js");
 const {
 	biddingActions,
@@ -32,7 +39,7 @@ const {
 	stakingActions,
 } = require("./actions/CoreActions.js");
 const { randomWalkActions, tokenActions, prizesWalletActions, walletActions } = require("./actions/SecondaryActions.js");
-const { adminActions, daoActions } = require("./actions/AdminActions.js");
+const { adminActions, daoActions, restoreBidCstRewardAmountMultiplierIfDegenerate } = require("./actions/AdminActions.js");
 const { extraTokenActions, extraPrizesWalletActions } = require("./actions/ExtraActions.js");
 const { negativeProbes } = require("./actions/NegativeProbes.js");
 const {
@@ -71,6 +78,7 @@ function buildProfile(longTestModeCode_, envOverrides_) {
 			upgradeAfterRoundZeroPercent: 50,
 			upgradeToV3AfterOneMoreRoundPercent: 50,
 			swapPrizesWalletAfterV3UpgradePercent: 50,
+			degenerateCstRewardMultiplierPercent: 20,
 			enforceStrongCoverage: false,
 			// Quick CI profile: a single bounded campaign (no wall-clock soak).
 			maxSeconds: undefined,
@@ -91,6 +99,7 @@ function buildProfile(longTestModeCode_, envOverrides_) {
 			upgradeAfterRoundZeroPercent: 50,
 			upgradeToV3AfterOneMoreRoundPercent: 50,
 			swapPrizesWalletAfterV3UpgradePercent: 50,
+			degenerateCstRewardMultiplierPercent: 25,
 			enforceStrongCoverage: false,
 			// A single, larger bounded campaign (override with FUZZ_MAX_SECONDS to soak).
 			maxSeconds: 0,
@@ -112,6 +121,7 @@ function buildProfile(longTestModeCode_, envOverrides_) {
 			upgradeAfterRoundZeroPercent: 50,
 			upgradeToV3AfterOneMoreRoundPercent: 50,
 			swapPrizesWalletAfterV3UpgradePercent: 50,
+			degenerateCstRewardMultiplierPercent: 25,
 			enforceStrongCoverage: true,
 			// Default to a 20-minute soak (repeated independent bounded campaigns). Override with FUZZ_MAX_SECONDS.
 			maxSeconds: 1200,
@@ -135,6 +145,7 @@ function readEnvOverrides() {
 	num_("FUZZ_V3_ROUNDS", "v3Rounds");
 	num_("FUZZ_ACTORS", "numActors");
 	num_("FUZZ_MAX_SECONDS", "maxSeconds");
+	num_("FUZZ_DEGENERATE_CST_REWARD_MULTIPLIER_PERCENT", "degenerateCstRewardMultiplierPercent");
 	return overrides_;
 }
 
@@ -151,7 +162,8 @@ function chanceFromSeed(seedWrapper_, percent_) {
 /**
 Derives per-campaign fuzz modes from the campaign seed so ordinary runs probabilistically cover
 chaos, overflow-targeting, production-style round-zero upgrade timing, the V2 -> V3 upgrade timing,
-and the post-V3 PrizesWallet swap, without extra env toggles.
+the post-V3 PrizesWallet swap, and a V3 round with a degenerate `bidCstRewardAmountMultiplier`
+(`adminDegenerateBidCstRewardAmountMultiplier`), without extra env toggles.
 @param {object} profile_
 @param {{ value: bigint }} seedWrapper_
 */
@@ -176,6 +188,7 @@ function deriveCampaignProfile(profile_, seedWrapper_) {
 		upgradeAfterRoundZero: chanceFromSeed(seedWrapper_, profile_.upgradeAfterRoundZeroPercent ?? 0),
 		v2RoundsBeforeV3Upgrade: v2RoundsBeforeV3Upgrade_,
 		swapPrizesWalletAfterV3Upgrade: chanceFromSeed(seedWrapper_, profile_.swapPrizesWalletAfterV3UpgradePercent ?? 0),
+		degenerateCstRewardMultiplier: chanceFromSeed(seedWrapper_, profile_.degenerateCstRewardMultiplierPercent ?? 0),
 	};
 }
 
@@ -318,6 +331,10 @@ class FuzzCampaign {
 			contractsByAddress_
 		);
 
+		// The game's `BidPlaced` events feed the ledger's CST Dutch auction tracking; `rebindGame` re-registers the ABI
+		// after each upgrade.
+		this.ledger.registerGame(c_.cosmicSignatureGameProxyAddress, c_.cosmicSignatureGameProxy.interface);
+
 		// Revert-decoding interfaces.
 		this.engine.revertInterfaces = [
 			c_.cosmicSignatureGameProxy.interface,
@@ -442,6 +459,13 @@ class FuzzCampaign {
 			get daoVotersReady() { return self_.daoVotersReady; },
 			invariantRunCount: 0,
 
+			/**
+			State of `adminDegenerateBidCstRewardAmountMultiplier`: null until it runs, then
+			`{prevValue, value, roundNum, restored}` (see `restoreBidCstRewardAmountMultiplierIfDegenerate`).
+			@type {{prevValue: bigint, value: bigint, roundNum: bigint, restored: boolean} | null}
+			*/
+			degenerateBidCstRewardAmountMultiplier: null,
+
 			actorByAddress(address_) {
 				return self_.actorByAddressLower.get(address_.toLowerCase()) ?? null;
 			},
@@ -458,6 +482,7 @@ class FuzzCampaign {
 			},
 			rebindGame(contract_, version_) {
 				self_.game = new GameAbiAdapter(contract_, version_);
+				self_.ledger.registerGame(contract_.target, contract_.interface);
 			},
 
 			// PrizesWallet applicability helpers.
@@ -586,14 +611,43 @@ class FuzzCampaign {
 		let actionsSinceInvariant_ = 0;
 
 		while (this.model.roundNum - startRound_ < BigInt(targetRounds_)) {
+			// A degenerate `bidCstRewardAmountMultiplier` lasts one round; put the previous value back while the round
+			// is still inactive, both here and before every action (a mid-segment claim ends a round too).
+			await restoreBidCstRewardAmountMultiplierIfDegenerate(this.context);
+			await this._runDegenerateBidCstRewardAmountMultiplierIfPending(startRound_);
+
 			// Reactivate a post-claim round only when another segment will run.
 			await this._reactivateIfInactive();
 
+			// Once per V3 segment, each adversarial CST actor also runs at a random step where it is applicable, in a
+			// seed-picked order, so the V3 CST corner paths behind the coverage floors are reached by design rather than
+			// by weighted luck (the actors stay in the registry for additional random runs).
+			const pendingForcedActions_ = (this.model.version >= 3) ? this._pickForcedV3CstActions() : [];
+			const forcedActionNumAttempts_ = new Map();
+
 			for (let step_ = 0; step_ < profile_.actionsPerSegment; ++ step_) {
+				await restoreBidCstRewardAmountMultiplierIfDegenerate(this.context);
+				await this._runDegenerateBidCstRewardAmountMultiplierIfPending(startRound_);
 				const actor_ = this.engine.pick(this.actors);
 
-				// Negative probe injection.
-				if (this.engine.chancePercent(profile_.negativeProbePercent)) {
+				if (
+					pendingForcedActions_.length > 0 &&
+					(step_ >= profile_.actionsPerSegment - pendingForcedActions_.length || this.engine.chancePercent(25)) &&
+					pendingForcedActions_[0].isApplicable(this.context, actor_)
+				) {
+					// Forced adversarial CST actor run. A run that skips (no actor affords the move, or the round went inactive
+					// meanwhile) keeps the action pending for a later step, up to a bounded number of attempts, so that
+					// the CST coverage floors depend less on the seed.
+					const forcedAction_ = pendingForcedActions_[0];
+					const outcome_ = await this.engine.runAction(forcedAction_, this.context, actor_);
+					const numAttempts_ = (forcedActionNumAttempts_.get(forcedAction_) ?? 0) + 1;
+					forcedActionNumAttempts_.set(forcedAction_, numAttempts_);
+					if (outcome_ === "ok" || numAttempts_ >= FORCED_ACTION_MAX_NUM_ATTEMPTS) {
+						pendingForcedActions_.shift();
+					}
+					++ actionsSinceInvariant_;
+				} else if (this.engine.chancePercent(profile_.negativeProbePercent)) {
+					// Negative probe injection.
 					const probe_ = this.engine.pickAction(probeActions_.map((p_) => ({ ...p_, weight: 1 })), this.context, actor_);
 					if (probe_ !== null) {
 						await this.engine.runAction(probe_, this.context, actor_);
@@ -718,8 +772,7 @@ class FuzzCampaign {
 			expect(this.ledger.cstBalanceOf(actorLower_) - before_, "burst bid CST reward sum").to.equal(expectedRewardByActor_.get(actorLower_));
 		}
 		await this.ledger.verifyAllEth();
-		this.engine._statsFor("sameBlockBurst").succeeded += 1;
-		this.engine._statsFor("sameBlockBurst").attempted += 1;
+		this.engine.recordCoverage("sameBlockBurst");
 	}
 
 	async _reactivateIfInactive() {
@@ -728,6 +781,39 @@ class FuzzCampaign {
 		}
 		// Either wait for natural activation or explicitly advance; advancing keeps the campaign moving.
 		await this.engine.mineAt(this.model.roundActivationTime);
+	}
+
+	/** The two adversarial CST actors (`AdversarialActions.js`), in a seed-picked order. */
+	_pickForcedV3CstActions() {
+		const actions_ = ["adversarialCstCamper", "adversarialCstDeadlineHolder"].map(
+			(name_) => adversarialActions.find((candidate_) => candidate_.name === name_)
+		);
+		return this.engine.chancePercent(50) ? actions_ : actions_.reverse();
+	}
+
+	/**
+	In a campaign whose seed enabled it, runs `adminDegenerateBidCstRewardAmountMultiplier` once, at the first moment the
+	round is inactive at or after the seed-picked V3 segment (`degenerateCstRewardMultiplierSegmentIndex`). Segment zero
+	starts right after the post-upgrade activation, so for it the campaign calls this before activating.
+	(The action is also in the registry, but the post-claim inactive windows mid-segment are too short for it to be
+	picked reliably.)
+	@param {bigint} phaseStartRound_ The round the V3 phase started at.
+	*/
+	async _runDegenerateBidCstRewardAmountMultiplierIfPending(phaseStartRound_) {
+		const segmentIndex_ = this.degenerateCstRewardMultiplierSegmentIndex;
+		if (
+			segmentIndex_ === null ||
+			segmentIndex_ === undefined ||
+			this.model.version < 3 ||
+			this.context.degenerateBidCstRewardAmountMultiplier !== null ||
+			this.model.roundNum - phaseStartRound_ < BigInt(segmentIndex_)
+		) {
+			return;
+		}
+		const action_ = adminActions.find((candidate_) => candidate_.name === "adminDegenerateBidCstRewardAmountMultiplier");
+		if (action_.isApplicable(this.context)) {
+			await this.engine.runAction(action_, this.context, null);
+		}
 	}
 
 	// #endregion
@@ -755,7 +841,8 @@ class FuzzCampaign {
 			`earlyBidMode=${this.profile.earlyBidMode === true} ` +
 			`upgradeAfterRoundZero=${this.profile.upgradeAfterRoundZero === true} ` +
 			`v2RoundsBeforeV3Upgrade=${this.profile.v2RoundsBeforeV3Upgrade} ` +
-			`swapPrizesWalletAfterV3Upgrade=${this.profile.swapPrizesWalletAfterV3Upgrade === true}`
+			`swapPrizesWalletAfterV3Upgrade=${this.profile.swapPrizesWalletAfterV3Upgrade === true} ` +
+			`degenerateCstRewardMultiplier=${this.profile.degenerateCstRewardMultiplier === true}`
 		);
 		console.info(`  build flags: ${buildFlags_}`);
 		console.info("=".repeat(80) + "\n");
@@ -789,6 +876,13 @@ class FuzzCampaign {
 		if (this.profile.swapPrizesWalletAfterV3Upgrade) {
 			await performPrizesWalletSwap(this.context);
 		}
+
+		// A seed-enabled campaign plays one seed-picked V3 round with a degenerate `bidCstRewardAmountMultiplier`;
+		// the first V3 round is configured here, while the round is still frozen.
+		this.degenerateCstRewardMultiplierSegmentIndex =
+			this.profile.degenerateCstRewardMultiplier ? this.engine.randomIntRange(0, Math.max(0, this.profile.v3Rounds - 1)) : null;
+		await this._runDegenerateBidCstRewardAmountMultiplierIfPending(this.model.roundNum);
+
 		await this._activateRound();
 		await runInvariants(this.context);
 		console.info("  >>> Upgrade complete; continuing on V3 <<<\n");
@@ -820,6 +914,9 @@ class FuzzCampaign {
 
 const MINIMAL_COVERAGE_EXTRA_CAMPAIGN_CAP = 3;
 
+/** How many times a forced adversarial CST actor run may skip before the campaign gives up on forcing it. */
+const FORCED_ACTION_MAX_NUM_ATTEMPTS = 4;
+
 /**
 Runs the fuzz campaign(s). With `profile.maxSeconds` set, runs repeated independent bounded
 campaigns (fresh deployment + upgrade each time, seeds derived from `masterSeed_`) until the
@@ -844,9 +941,12 @@ async function runFuzzCampaigns(profile_, masterSeed_) {
 		mergeStatsInto(aggregateStats_, campaign_.engine.stats);
 	};
 
+	// The floors that every run must reach, which an extra campaign can rescue when a single bounded campaign misses them.
+	const hasRequiredFloors_ = () => hasMinimalCoverageFloors(aggregateStats_) && hasV3CstCornerPathFloors(aggregateStats_);
+
 	if ( ! timeBudgetMode_ ) {
 		await runCampaign_(undefined);
-		while ( ! hasMinimalCoverageFloors(aggregateStats_) && campaignIndex_ < MINIMAL_COVERAGE_EXTRA_CAMPAIGN_CAP ) {
+		while ( ! hasRequiredFloors_() && campaignIndex_ < MINIMAL_COVERAGE_EXTRA_CAMPAIGN_CAP ) {
 			++ campaignIndex_;
 			console.info(`  >>> Minimal coverage not reached; running extra campaign ${campaignIndex_}/${MINIMAL_COVERAGE_EXTRA_CAMPAIGN_CAP} <<<\n`);
 			await runCampaign_(campaignIndex_);
@@ -864,7 +964,7 @@ async function runFuzzCampaigns(profile_, masterSeed_) {
 		console.info(`  >>> Time budget remaining: ~${remainingSec_}s (completed ${campaignIndex_} campaign(s)) <<<\n`);
 	}
 	let extraCampaignCount_ = 0;
-	while ( ! hasMinimalCoverageFloors(aggregateStats_) && extraCampaignCount_ < MINIMAL_COVERAGE_EXTRA_CAMPAIGN_CAP ) {
+	while ( ! hasRequiredFloors_() && extraCampaignCount_ < MINIMAL_COVERAGE_EXTRA_CAMPAIGN_CAP ) {
 		++ extraCampaignCount_;
 		++ campaignIndex_;
 		console.info(`  >>> Minimal coverage not reached after time budget; running extra campaign ${extraCampaignCount_}/${MINIMAL_COVERAGE_EXTRA_CAMPAIGN_CAP} <<<\n`);

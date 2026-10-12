@@ -5,18 +5,23 @@
 // #endregion
 // #region Imports
 
+const { expect } = require("chai");
 const hre = require("hardhat");
+const { SECONDS_PER_DAY } = require("../../../../src/CosmicSignatureConstants.js");
 const { MAX_UINT256 } = require("../../../../src/BigIntMathHelpers.js");
+const { ENABLE_ASSERTS } = require("../../../../src/Helpers.js");
 
 // #endregion
 // #region Probe helper
 
 /**
 Runs an intentionally-reverting transaction. If `expected` is omitted, accepts any revert reason.
+`expectedArgs` (bigints, or addresses as strings in any case) additionally requires the custom error's decoded arguments
+to match exactly; the engine decodes them from the raw revert data through `engine.revertInterfaces`.
 The transaction reverts, so neither the model nor the ledger change (gas is accounted by the engine).
 @returns {Promise<string>} `revert:<name>` on success, "skip" if not set up.
 */
-async function runProbe(ctx_, { signer, buildTx, expected, ts, value }) {
+async function runProbe(ctx_, { signer, buildTx, expected, expectedArgs, ts, value }) {
 	// A probe that would send more ETH than the (finite-budget) sender holds is simply skipped,
 	// like a human who cannot afford it; the engine never auto-refills.
 	if ((value ?? 0n) > 0n && ! ctx_.engine.canAfford(signer.address, value)) {
@@ -31,6 +36,19 @@ async function runProbe(ctx_, { signer, buildTx, expected, ts, value }) {
 		throw new Error(
 			`negative probe expected one of {${expectedList_.join(", ")}} but got ${result_.revert.name}: ${result_.revert.message.slice(0, 300)}`
 		);
+	}
+	if (expectedArgs !== undefined) {
+		const context_ = `negative probe ${result_.revert.name}`;
+		expect(result_.revert.args, `${context_}: the error arguments could not be decoded: ${result_.revert.message.slice(0, 300)}`).to.not.equal(null);
+		expect(result_.revert.args.length, `${context_}: argument count`).to.equal(expectedArgs.length);
+		for (let index_ = 0; index_ < expectedArgs.length; ++ index_) {
+			const expectedArg_ = expectedArgs[index_];
+			if (typeof expectedArg_ === "string") {
+				expect(String(result_.revert.args[index_]).toLowerCase(), `${context_}: argument ${index_}`).to.equal(expectedArg_.toLowerCase());
+			} else {
+				expect(result_.revert.args[index_], `${context_}: argument ${index_}`).to.equal(expectedArg_);
+			}
+		}
 	}
 	return `revert:${result_.revert.name}`;
 }
@@ -169,9 +187,10 @@ const negativeProbes = [
 		},
 	},
 	{
+		// V2 only; `probe.v3CstBidBeforeFirstBid` predicts the exact V3 rejection.
 		name: "probe.cstBidBeforeEthBid",
 		isApplicable: (ctx_) =>
-			ctx_.model.version >= 2 &&
+			ctx_.model.version === 2 &&
 			ctx_.model.lastBidderAddress === hre.ethers.ZeroAddress,
 		run: (ctx_, actor_) => {
 			// Sometimes bid immediately, including before activation; otherwise sample up to
@@ -187,6 +206,122 @@ const negativeProbes = [
 				ts: ts_,
 				buildTx: (overrides_) => ctx_.game.connect(actor_.signer).bidWithCst(MAX_UINT256, "", 0n, overrides_),
 			});
+		},
+	},
+	{
+		// Comment-202501045 applies: a V3 CST bid before the round's first bid is rejected, but by whichever check comes
+		// first. `BiddingV3._bidWithCst` computes a bid CST reward for the zero address from that bidder record's zero
+		// `lastBidTimeStamp` (Comment-202501022), so with a positive reward the token call reverts before `_bidCommon`
+		// can: burning the base from a bidder who cannot cover it (`ERC20InsufficientBalance`), else minting the reward
+		// to the zero address (`ERC20InvalidReceiver`, Comment-202609074). A zero reward takes a multiplier so low that
+		// the base is zero too (the degenerate admin action), so the burn of zero passes; then, in an assert-enabled
+		// build, `BidRaffleWeightHelpers.saveForNextBid` panics because a round's first bid may not be weightless
+		// (Comment-202611029), and in a production build `_bidCommon` rejects the bid with `RoundIsInactive` or
+		// `WrongBidType` (Comment-202501044). The model predicts the exact outcome.
+		name: "probe.v3CstBidBeforeFirstBid",
+		isApplicable: (ctx_) => ctx_.model.version >= 3 && ctx_.model.lastBidderAddress === hre.ethers.ZeroAddress,
+		run: (ctx_, actor_) => {
+			const { engine, model, ledger } = ctx_;
+			// Sometimes bid immediately, possibly before activation; otherwise up to a day later, which usually lets the
+			// stale CST Dutch auction decline to a zero base.
+			const ts_ = engine.chancePercent(50) ? engine.nextTs() : engine.randomBigIntRange(engine.nextTs(), engine.nextTs() + SECONDS_PER_DAY);
+			const bidCstRewardAmount_ = model.getBidCstRewardAmount(ts_);
+			const cstBidPriceBase_ = model.getNextCstBidPriceBase(ts_);
+			const cstBalance_ = ledger.cstBalanceOf(actor_.address);
+			let expected_;
+			let expectedArgs_;
+			if (bidCstRewardAmount_ > 0n) {
+				if (cstBalance_ < cstBidPriceBase_) {
+					expected_ = "ERC20InsufficientBalance";
+					expectedArgs_ = [actor_.addressLower, cstBalance_, cstBidPriceBase_];
+				} else {
+					expected_ = "ERC20InvalidReceiver";
+					expectedArgs_ = [hre.ethers.ZeroAddress];
+				}
+			} else {
+				// A zero reward implies a zero `C` because the admin mutations never touch `initialDurationUntilMainPrizeDivisor`.
+				expect(cstBidPriceBase_, "probe.v3CstBidBeforeFirstBid: a zero reward with a positive base").to.equal(0n);
+				if (ENABLE_ASSERTS) {
+					expected_ = "Panic(0x1)";
+					expectedArgs_ = undefined;
+				} else if (ts_ < model.roundActivationTime) {
+					expected_ = "RoundIsInactive";
+					expectedArgs_ = [model.roundActivationTime, ts_];
+				} else {
+					expected_ = "WrongBidType";
+					expectedArgs_ = [];
+				}
+			}
+			return runProbe(ctx_, {
+				signer: actor_.signer,
+				ts: ts_,
+				buildTx: (overrides_) => ctx_.game.connect(actor_.signer).bidWithCst(MAX_UINT256, "", 0n, overrides_),
+				expected: expected_,
+				expectedArgs: expectedArgs_,
+			});
+		},
+	},
+	{
+		// `InsufficientReceivedBidAmount(price, limit)` with the model's exact premium-inclusive price at the planned
+		// timestamp (Comment-202611026). Skipped at a zero price, below which no limit exists.
+		name: "probe.v3CstBidPriceMaxLimitBelowExactPrice",
+		isApplicable: (ctx_) => ctx_.model.version >= 3 && ctx_.model.lastBidderAddress !== hre.ethers.ZeroAddress,
+		run: (ctx_, actor_) => {
+			const { engine, model } = ctx_;
+			const ts_ = engine.clampTs(engine.planTs(engine.boundaryCandidates()));
+			const price_ = model.getNextCstBidPrice(ts_);
+			if (price_ === 0n) {
+				return "skip";
+			}
+			const cstPriceMaxLimit_ = engine.chancePercent(50) ? (price_ - 1n) : engine.randomBigIntRange(0n, price_ - 1n);
+			return runProbe(ctx_, {
+				signer: actor_.signer,
+				ts: ts_,
+				buildTx: (overrides_) => ctx_.game.connect(actor_.signer).bidWithCst(cstPriceMaxLimit_, "", 0n, overrides_),
+				expected: "InsufficientReceivedBidAmount",
+				expectedArgs: [price_, cstPriceMaxLimit_],
+			});
+		},
+	},
+	{
+		// `BidCstRewardAmountMinLimitNotReached(reward, limit)` with the model's exact reward at the planned timestamp.
+		// The reward check is the first one in `BiddingV3._bidWithCst`, so the bidder needs no CST.
+		name: "probe.v3CstBidMinRewardAboveExactReward",
+		isApplicable: (ctx_) => ctx_.model.version >= 3 && ctx_.model.lastBidderAddress !== hre.ethers.ZeroAddress,
+		run: (ctx_, actor_) => {
+			const { engine, model } = ctx_;
+			const ts_ = engine.clampTs(engine.planTs(engine.boundaryCandidates()));
+			const bidCstRewardAmount_ = model.getBidCstRewardAmount(ts_);
+			const bidCstRewardAmountMinLimit_ = bidCstRewardAmount_ + (engine.chancePercent(50) ? 1n : engine.randomBigIntRange(1n, 10n ** 24n));
+			return runProbe(ctx_, {
+				signer: actor_.signer,
+				ts: ts_,
+				buildTx: (overrides_) => ctx_.game.connect(actor_.signer).bidWithCst(MAX_UINT256, "", bidCstRewardAmountMinLimit_, overrides_),
+				expected: "BidCstRewardAmountMinLimitNotReached",
+				expectedArgs: [bidCstRewardAmount_, bidCstRewardAmountMinLimit_],
+			});
+		},
+	},
+	{
+		// The three V2 CST Dutch auction setters are retired in V3 (Comment-202611025) and revert for everyone,
+		// the owner included, in any round state.
+		name: "probe.v3DisabledSettersNotImplemented",
+		infra: true,
+		isApplicable: (ctx_) => ctx_.model.version >= 3,
+		run: async (ctx_) => {
+			const owner_ = ctx_.contracts.ownerSigner;
+			const game_ = ctx_.game.connect(owner_).contract;
+			let outcome_;
+			for (const setterName_ of ["setCstDutchAuctionDuration", "setCstDutchAuctionDurationChangeDivisor", "setCstDutchAuctionBeginningBidPriceMinLimit"]) {
+				const newValue_ = ctx_.engine.randomBigIntRange(0n, 10n ** 24n);
+				outcome_ = await runProbe(ctx_, {
+					signer: owner_,
+					buildTx: (overrides_) => game_[setterName_](newValue_, overrides_),
+					expected: "NotImplemented",
+					expectedArgs: [],
+				});
+			}
+			return outcome_;
 		},
 	},
 	{

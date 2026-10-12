@@ -38,6 +38,11 @@ library BidRaffleWeightHelpers {
 		ICosmicSignatureGameStorage.RoundStats storage roundStats_,
 		uint256 bidRaffleWeight_
 	) internal {
+		// Issue. `BiddingV3._bidWithCst` calls this before `_bidCommon` rejects a CST bid attempted as a round's first bid.
+		// If the bid CST reward is nonzero, the token call reverts earlier. If it is zero, which for any sane
+		// `initialDurationUntilMainPrizeDivisor` implies a zero CST Dutch auction beginning bid price and so a zero weight,
+		// assert-enabled builds fail this assert, while production builds reject the bid with `RoundIsInactive` or
+		// `WrongBidType`, as intended. Comment-202501045 relates.
 		// #enable_asserts assert(bidRaffleWeight_ > 0 || roundStats_.numBids > 0);
 		// #enable_smtchecker /*
 		unchecked

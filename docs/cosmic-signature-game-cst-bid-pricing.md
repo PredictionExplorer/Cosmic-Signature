@@ -55,7 +55,7 @@ Retired: `cstBidPriceDeclineMultiplier` and `cstBidPriceDeclineMultiplierChangeD
 
 #### Invariants
 
-The tests in `test/tests-src/CosmicSignatureGameV3-Bidding.js`, `test/tests-src/CosmicSignatureGameV3-BidCstReward.js`, `test/tests-src/CosmicSignatureGameV3-BidRaffle.js`, and the model-based fuzz harness under `test/src/fuzz/` enforce the following properties.
+The following properties are enforced by `test/tests-src/CosmicSignatureGameV3-Bidding.js`, `CosmicSignatureGameV3-BidCstReward.js`, and `CosmicSignatureGameV3-BidRaffle.js` (rule by rule), `CosmicSignatureGameV3-CstPricingProperties.js` (seeded property and differential tests of the getters and of random bid sequences against the JS mirrors in `test/src/V3UpgradeTestHelpers.js`), `CosmicSignatureGameV3-CstAdversarial.js` (the economic scenarios of the table below, contract bidders, owner misconfiguration, raffle integrity, and a gas regression guard), and the model-based fuzz harness under `test/src/fuzz/` driven by `FuzzTest.js` (an independent conservation check from the emitted events, the invariants below, coverage counters for the CST corner paths, negative probes, and adversarial actors that hold the deadline with CST or camp on free bids).
 
 - **I1, bounded auction life.** Every CST Dutch auction lasts between 2 and 24 increments (more precisely, between `2R / rate` and `C / rate`), because `S` is at least `2R` and at most `C`. A free CST bid is therefore available at most once per two increments, and after any price war the CST side is back to zero within one initial duration until main prize.
 
@@ -92,8 +92,8 @@ The figures below assume a one-hour increment, 60 CST of reward per increment, a
 | A full raffle ticket in CST | 120 CST right after a free bid, up to 1440 CST right after the round seed | Half the asking price buys half a ticket |
 | Holding the deadline with CST, one bid per hour | 60, 180, 420, 900, 1380, 1380, ... CST | Net of the 60 CST the other side receives: 0, 120, 360, 840, 1320, ... The free loop of the first draft is gone |
 | CST-vs-CST end-game war, each response at its cheapest moment (48 to 52 minutes after the previous bid) | 71, 212, 496, 1064, 1394, 1394, ... CST | Net of the holder reward: 21, 164, 448, 1017, 1347, ... The cap makes the fifth and later moves flat at about 23 hours of holding each |
-| Alternation: a CST bid answered by ETH, answered by CST 82 minutes after the previous CST bid | The CST side pays 40, 120, 280, 600, 1360, ... CST; the ETH side pays its base plus one percent per bid into the pot | An ETH answer defuses the CST escalation once, then both sides escalate |
-| Snipe at the deadline | 300 CST after a free-bid restart, 240 CST on an idle auction, 4.99 times the base in ETH | No currency snipes for free |
+| Alternation: a CST bid answered by ETH, answered by CST 82 minutes after the previous CST bid | The CST side pays 40, 120, 280, 600, 1240, then 1360 CST per move at the cap (the cap minus the decline over 82 minutes); the ETH side pays its base plus one percent per bid into the pot | An ETH answer defuses the CST escalation once, then both sides escalate |
+| Snipe at the deadline | 240 CST on an idle auction (the premium of `R`); about 300 CST at the next deadline after a zero-base CST bid placed at a deadline; about five times the base in ETH | No currency snipes for free |
 | Longest CST dormancy after a war | 24 hours | Equal to the round's initial duration until main prize, by construction |
 
 An agent-based simulation with campers, ticket buyers, ETH builders, snipers, defusers, title hunters, and an adaptive adversary found no stationary cycle, free zero-weight bids reduced from about 96 per round to between 1 and 10, rounds that end, symmetric wars pushed back onto escalating ETH, and CST burned roughly equal to CST minted.
@@ -127,6 +127,8 @@ An agent-based simulation with campers, ticket buyers, ETH builders, snipers, de
 - The contract owner can configure degenerate values. A `bidCstRewardAmountMultiplier` below `1e6` makes `R` round to zero, and a zero multiplier makes `C` zero and the price constant. The weight and duration formulas are guarded against division by zero, so nothing bricks, but the CST side would be meaningless. The owner is trusted, as everywhere else in the game.
 
 - Integer rounding: `reward(e)` is floored per bid, so the conservation invariant I2 holds up to one Wei per bid, and `C` is `bidCstRewardAmountMultiplier / initialDurationUntilMainPrizeDivisor`, which differs from `reward(getInitialDurationUntilMainPrize())` by at most rounding.
+
+- The last CST bidder prize is unchanged by these rules. The round's last CST bidder receives `cstPrizeAmount` (1000 CST by default) and one Cosmic Signature NFT at the claim, regardless of what that bid paid, so a zero-price CST bid can win it if no CST bid follows. The position is contestable at any time: another free CST bid is possible two increments later, and inside the late-bid window a CST bid costs at least the premium of `R`, about 240 CST at the deadline. V2 guaranteed a minimum spend for this position through its 200 CST minimum; V3 does not. Whether this prize should depend on the CST paid is a separate design decision, left as is here.
 
 #### Frontend Notes
 

@@ -10,7 +10,7 @@
 const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
-const { DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER, MICROSECONDS_PER_SECOND, SECONDS_PER_HOUR } = require("../../src/CosmicSignatureConstants.js");
+const { DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER, SECONDS_PER_HOUR } = require("../../src/CosmicSignatureConstants.js");
 const { maxBigInt } = require("../../src/BigIntMathHelpers.js");
 const { generateRandomUInt256, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { activateCurrentRound, findParsedEvent, getLatestBlockTimestamp, blockTimestampOfReceipt } = require("../src/V2UpgradeTestHelpers.js");
@@ -20,58 +20,16 @@ const {
 	findTimeStampWithAffordableCstBidPrice,
 	getRoundLateBidPricePremiumAmount,
 	getV3BidCstRewardAmount,
-	getV3BidCstRewardAmountPerMainPrizeTimeIncrement,
-	getV3CstDutchAuctionBeginningBidPriceMaxLimit,
 	getV3NewCstDutchAuctionBeginningBidPrice,
 	getV3CstBidPriceBase,
 	getV3CstBidRaffleWeight,
+	readCstPricingParams,
+	readV3CstDutchAuctionBeginningBidPrice,
+	getLastBidRaffleWeight,
 } = require("../src/V3UpgradeTestHelpers.js");
 const { getPriceAndBidWithEthAt, getPriceAndBidWithCstAt, findParsedEvents } = require("../src/BidCstRewardTestHelpers.js");
 const { configureRewardAndDeployHostileBidder, hostileBidWithEthAt } = require("../src/AdversarialTestHelpers.js");
 const { testAcrossGameVersions, finishGameRound, bidWithEthAt } = require("../src/GameRoundTestHelpers.js");
-
-/**
-Reads the live parameters the V3 CST rules are derived from. Read these after the round is activated,
-because `mainPrizeTimeIncrementInMicroSeconds` grows on every main prize claim.
-*/
-async function readCstPricingParams(game_) {
-	const bidCstRewardAmountMultiplier_ = await game_.bidCstRewardAmountMultiplier();
-	const mainPrizeTimeIncrementInMicroSeconds_ = await game_.mainPrizeTimeIncrementInMicroSeconds();
-	const initialDurationUntilMainPrizeDivisor_ = await game_.initialDurationUntilMainPrizeDivisor();
-	return {
-		bidCstRewardAmountMultiplier: bidCstRewardAmountMultiplier_,
-		mainPrizeTimeIncrementInMicroSeconds: mainPrizeTimeIncrementInMicroSeconds_,
-		initialDurationUntilMainPrizeDivisor: initialDurationUntilMainPrizeDivisor_,
-		mainPrizeTimeIncrement: mainPrizeTimeIncrementInMicroSeconds_ / MICROSECONDS_PER_SECOND,
-		initialDurationUntilMainPrize: await game_.getInitialDurationUntilMainPrize(),
-
-		// The reward of one main prize time increment, called `R` in these tests.
-		rewardAmountPerMainPrizeTimeIncrement: getV3BidCstRewardAmountPerMainPrizeTimeIncrement(bidCstRewardAmountMultiplier_),
-
-		// The reward of the initial duration until main prize, called `C` in these tests.
-		cstDutchAuctionBeginningBidPriceMaxLimit:
-			getV3CstDutchAuctionBeginningBidPriceMaxLimit(bidCstRewardAmountMultiplier_, initialDurationUntilMainPrizeDivisor_),
-
-		roundLateBidDuration: await game_.getRoundLateBidDuration(),
-		roundLateBidPricePremiumAmountBaseMultiplier: await game_.roundLateBidPricePremiumAmountBaseMultiplier(),
-		roundLateBidPricePremiumAmountExponent: await game_.roundLateBidPricePremiumAmountExponent(),
-	};
-}
-
-/** JS mirror of `BiddingV3._getCstDutchAuctionBeginningBidPrice`: the price the current CST Dutch auction began at. */
-async function getCstDutchAuctionBeginningBidPrice(game_, params_) {
-	return ((await game_.lastCstBidderAddress()) === hre.ethers.ZeroAddress) ?
-		params_.cstDutchAuctionBeginningBidPriceMaxLimit :
-		await game_.cstDutchAuctionBeginningBidPrice();
-}
-
-/** Returns the raffle weight of the last bid placed in the round, derived from the cumulative weights. */
-async function getLastBidRaffleWeight(game_, roundNum_) {
-	const numBids_ = (await game_.roundStats(roundNum_)).numBids;
-	const cumulativeWeight_ = (await game_.getBidInfoAt(roundNum_, numBids_ - 1n)).raffleCumulativeWeight;
-	const prevCumulativeWeight_ = (numBids_ > 1n) ? (await game_.getBidInfoAt(roundNum_, numBids_ - 2n)).raffleCumulativeWeight : 0n;
-	return cumulativeWeight_ - prevCumulativeWeight_;
-}
 
 describe("CosmicSignatureGameV3-BidCstReward", function () {
 	it("reinitialize sets bidCstRewardAmountMultiplier so the reward accrues at ~1 CST per minute", async function () {
@@ -399,7 +357,7 @@ describe("CosmicSignatureGameV3-BidCstReward", function () {
 			The late-bid premium, if any, is a toll on top of the base, which is burned too but is not part of the invariant.
 			*/
 			const bidWithCstAndCheckConservation_ = async (bidder_, delay_, receiptsSinceBeginning_) => {
-				const beginningPrice_ = await getCstDutchAuctionBeginningBidPrice(game_, params_);
+				const beginningPrice_ = await readV3CstDutchAuctionBeginningBidPrice(game_, params_);
 				const bidTimeStamp_ = (await getLatestBlockTimestamp()) + delay_;
 				const expectedBase_ =
 					getV3CstBidPriceBase(beginningPrice_, bidTimeStamp_ - (await game_.cstDutchAuctionBeginningTimeStamp()), multiplier_, increment_);
@@ -564,7 +522,7 @@ describe("CosmicSignatureGameV3-BidCstReward", function () {
 			for (let bidIndex_ = 0; bidIndex_ < numChainBids_; ++ bidIndex_) {
 				const description_ = `chain bid ${bidIndex_}`;
 				const bidder_ = (bidIndex_ % 2 === 0) ? bidder1_ : bidder2_;
-				const beginningPrice_ = await getCstDutchAuctionBeginningBidPrice(game_, params_);
+				const beginningPrice_ = await readV3CstDutchAuctionBeginningBidPrice(game_, params_);
 				const currentTimeOffset_ = bidTimeStamp_ - (await getLatestBlockTimestamp());
 				expect((await game_.mainPrizeTime()) - bidTimeStamp_, description_).at.least(roundLateBidDuration_);
 				expect(await game_.getNextCstBidPriceBaseAdvanced(currentTimeOffset_), description_).equal(expectedBases_[bidIndex_]);

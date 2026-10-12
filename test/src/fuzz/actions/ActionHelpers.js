@@ -8,6 +8,7 @@
 const { expect } = require("chai");
 const hre = require("hardhat");
 const { MAX_UINT256 } = require("../../../../src/BigIntMathHelpers.js");
+const { checkV3CstBidInvariants } = require("../Invariants.js");
 
 // #endregion
 // #region Bid planning helpers
@@ -322,6 +323,12 @@ async function executeEthBid(ctx_, actor_, options_) {
 		const bidInfo_ = await ctx_.game.contract.getBidInfoAt(roundNumBefore_, bidIndex_);
 		expect(bidInfo_.raffleCumulativeWeight, `ETH bid (${options_.flavor}): raffle cumulative weight drift`)
 			.to.equal(expectations_.bidRaffleCumulativeWeight);
+
+		// Invariant I5 of `docs/cosmic-signature-game-cst-bid-pricing.md`, ETH side (Comment-202611029): an ETH bid's
+		// raffle weight is positive. Chain values only, so this does not depend on the model's weight arithmetic.
+		const prevCumulativeWeight_ =
+			(bidIndex_ > 0n) ? (await ctx_.game.contract.getBidInfoAt(roundNumBefore_, bidIndex_ - 1n)).raffleCumulativeWeight : 0n;
+		expect(bidInfo_.raffleCumulativeWeight > prevCumulativeWeight_, `ETH bid (${options_.flavor}): raffle weight is not positive`).to.equal(true);
 	}
 
 	if (options_.flavor === "donateToken") {
@@ -342,10 +349,13 @@ async function executeEthBid(ctx_, actor_, options_) {
 // #region CST bid execution
 
 /**
-Executes and fully verifies a CST bid.
+Executes and fully verifies a CST bid. In V3+, also checks the CST bid pricing invariants against the chain
+(`checkV3CstBidInvariants`).
 @param {object} options_
 @param {"plain" | "donateToken" | "donateNft"} options_.flavor
 @param {"max" | "exact" | "padded"} [options_.maxLimitMode]
+@param {bigint} [options_.plannedTs] The bid block timestamp (clamped to after the latest block); random by default.
+The adversarial CST actions use it to bid at auction-specific moments.
 @returns {Promise<string>} "ok" or "skip".
 */
 async function executeCstBid(ctx_, actor_, options_) {
@@ -364,10 +374,27 @@ async function executeCstBid(ctx_, actor_, options_) {
 		await ensureMockErc20For(ctx_, actor_, donationTokenAmount_);
 	}
 
-	const ts_ = engine.clampTs(engine.planTs(engine.boundaryCandidates()));
+	const ts_ = engine.clampTs(options_.plannedTs ?? engine.planTs(engine.boundaryCandidates()));
 	const price_ = model.getNextCstBidPrice(ts_);
 	if (ledger.cstBalanceOf(actor_.address) < price_) {
 		return "skip";
+	}
+
+	// Chain reads for `checkV3CstBidInvariants`, taken after the donation setup transactions (which mine blocks)
+	// and before the bid. Time-dependent views are read at the bid timestamp through their `Advanced` variants,
+	// whose offset is relative to the latest block, which `engine.lastTs` tracks exactly.
+	let chainBefore_ = null;
+	let auctionBefore_ = null;
+	if (model.version >= 3) {
+		const game_ = ctx_.game.contract;
+		chainBefore_ = {
+			cstBidPriceBase: await game_.getNextCstBidPriceBaseAdvanced(ts_ - engine.lastTs),
+			nextEthBidPrice: await game_.nextEthBidPrice(),
+			lastBidderAddress: (await game_.lastBidderAddress()).toLowerCase(),
+			lastCstBidderAddress: (await game_.lastCstBidderAddress()).toLowerCase(),
+			cstDutchAuctionBeginningBidPrice: await game_.cstDutchAuctionBeginningBidPrice(),
+		};
+		auctionBefore_ = ledger.snapshotCstDutchAuction();
 	}
 	let cstPriceMaxLimit_;
 	switch (options_.maxLimitMode ?? "padded") {
@@ -464,6 +491,15 @@ async function executeCstBid(ctx_, actor_, options_) {
 		const bidInfo_ = await ctx_.game.contract.getBidInfoAt(roundNumBefore_, bidIndex_);
 		expect(bidInfo_.raffleCumulativeWeight, `CST bid (${options_.flavor}): raffle cumulative weight drift`)
 			.to.equal(expectations_.bidRaffleCumulativeWeight);
+
+		// The model-free checks of the V3 CST bid pricing rules, and the corner path coverage counters.
+		await checkV3CstBidInvariants(ctx_, {
+			ts: ts_,
+			bidderAddressLower: actor_.addressLower,
+			auctionBefore: auctionBefore_,
+			chainBefore: chainBefore_,
+			bidPlacedArgs: bidPlaced_.args,
+		});
 	}
 
 	if (options_.flavor === "donateToken") {

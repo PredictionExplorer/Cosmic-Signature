@@ -16,12 +16,32 @@
 //
 // The campaign is model-based: a JS `GameModel` reimplements the deterministic on-chain math
 // exactly (prices, the V2 square-root CST bid reward and V3 linear reward paid entirely to the outbid bidder,
-// CST Dutch-auction duration drift,
+// the V2 CST Dutch-auction duration drift, the V3 CST Dutch auction priced in bid CST reward units
+// (Comment-202611022: decline at the reward rate, additive capped restart, premium floor, proportional raffle weight),
 // the V3 late-bid price premium, mainPrize timing, champion automaton, round advancement,
 // the V3 multi-NFT main prize), and `ShadowState` ledgers track every ETH/CST/NFT/donation flow.
 // Every action verifies its exact event set and exact ledger deltas; negative probes assert exact
-// custom errors. Adversarial actors (reentrancy, broken charity receiver, malicious token donations)
+// custom errors (and, for the V3 CST probes, exact error arguments). Adversarial actors (reentrancy,
+// broken charity receiver, malicious token donations, a CST deadline holder, a CST camper)
 // and Arbitrum-precompile chaos are mixed in. See `test/src/fuzz/` for the engine.
+//
+// V3 CST bid pricing (`docs/cosmic-signature-game-cst-bid-pricing.md`) is also checked independently of the model,
+// after every V3 CST bid, from chain reads and `BidPlaced` events alone (`Invariants.checkV3CstBidInvariants`):
+//   I1  the next auction begins within `[2R, C]`, computed from the live parameters;
+//   I2  conservation: `ShadowState` rebuilds each CST Dutch auction (`S`, `T0`, the rewards minted since `T0`)
+//       from the events, and the premium-free base paid plus those rewards equals `S` up to one Wei per reward
+//       while the base is positive;
+//   I4  a CST bid within one increment of the previous CST bid restarts an uncapped auction strictly higher;
+//   I5  a zero base buys zero raffle weight, a positive base a positive one (barring integer truncation,
+//       which is counted), and every ETH bid's weight is positive.
+// Corner paths (capped and uncapped restarts, zero-base bids, premiums at zero and positive bases, self-outbids,
+// a round's first CST bid, bids within one increment, degenerate-multiplier rounds) are counted and reported;
+// the ones the actors reach by design are coverage floors. V3 negative probes: the retired setters revert with
+// `NotImplemented`; a CST bid before a round's first bid reverts with the exact token or bid-type error the
+// contract order yields (Comment-202501045); `cstPriceMaxLimit_` below the exact price and
+// `bidCstRewardAmountMinLimit_` above the exact reward revert with the exact arguments. A seed-picked minority of
+// campaigns plays one V3 round with a degenerate `bidCstRewardAmountMultiplier` (zero, or below one million),
+// set and later restored by the owner between rounds.
 //
 // By default (LONG_TEST_MODE_CODE is 3) this runs a 20-minute wall-clock soak: repeated independent bounded
 // campaigns (fresh deploy -> V1 fuzz -> real V2 upgrade -> V2 fuzz -> real V3 upgrade -> V3 fuzz), with

@@ -7,6 +7,33 @@
 
 const { expect } = require("chai");
 const hre = require("hardhat");
+const { SECONDS_PER_HOUR } = require("../../../../src/CosmicSignatureConstants.js");
+const { MAX_UINT256, maxBigInt } = require("../../../../src/BigIntMathHelpers.js");
+const { executeCstBid } = require("./ActionHelpers.js");
+
+// #endregion
+// #region CST actor helpers
+
+/**
+Picks who places a V3 CST bid costing `price_` CST: `actor_` if they hold enough and can pay gas, otherwise the actor
+holding the most CST who can. The adversarial CST actions exist to reach specific CST Dutch auction states, so whoever
+can afford the move makes it, like any player would.
+@returns {object | null} An actor, or null if nobody can afford the bid.
+*/
+function pickCstBidderFor(ctx_, actor_, price_) {
+	const { engine, ledger } = ctx_;
+	const canPlace_ = (candidate_) => ledger.cstBalanceOf(candidate_.address) >= price_ && engine.canAfford(candidate_.address, 0n);
+	if (canPlace_(actor_)) {
+		return actor_;
+	}
+	let richest_ = null;
+	for (const candidate_ of ctx_.actors) {
+		if (canPlace_(candidate_) && (richest_ === null || ledger.cstBalanceOf(candidate_.address) > ledger.cstBalanceOf(richest_.address))) {
+			richest_ = candidate_;
+		}
+	}
+	return richest_;
+}
 
 // #endregion
 // #region Broken-staker helpers
@@ -225,6 +252,94 @@ const adversarialActions = [
 			engine.expectRevert(result_, "ReentrancyGuardReentrantCall", "adversarialMaliciousTokenDonation");
 			await ledger.verifyDirtyEth();
 			return "revert:ReentrancyGuardReentrantCall";
+		},
+	},
+	{
+		// A CST deadline holder: a sequence of CST bids each placed exactly one main prize time increment after the
+		// previous CST bid, which is what holding the deadline with CST alone looks like (every bid extends `mainPrizeTime`
+		// by one increment). If the auction in effect was not started by a recent CST bid, an opening CST bid starts the
+		// sequence. Under V2's rules such a sequence could be free; under V3's additive restart (Comment-202611024) the
+		// asking price escalates on every move until it reaches the cap, which `checkV3CstBidInvariants` asserts as
+		// invariant I4. Every bid is modeled and verified exactly like any other CST bid, and the sequence stops as soon
+		// as nobody can afford the next move.
+		name: "adversarialCstDeadlineHolder",
+		weight: 16,
+		isApplicable: (ctx_) => ctx_.model.version >= 3 && ctx_.model.lastBidderAddress !== hre.ethers.ZeroAddress,
+		run: async (ctx_, actor_) => {
+			const { engine, model } = ctx_;
+			const needsOpeningMove_ =
+				model.lastCstBidderAddress === hre.ethers.ZeroAddress ||
+				model.cstDutchAuctionBeginningTimeStamp + model.getMainPrizeTimeIncrement() <= engine.lastTs;
+			// An opening move alone holds nothing, so it is always followed by at least one more move.
+			const numMoves_ = engine.randomIntRange(needsOpeningMove_ ? 2 : 1, 3);
+			let outcome_ = "skip";
+			for (let moveIndex_ = 0; moveIndex_ < numMoves_; ++ moveIndex_) {
+				if (model.lastBidderAddress === hre.ethers.ZeroAddress) {
+					break;
+				}
+				let ts_;
+				if (
+					model.lastCstBidderAddress !== hre.ethers.ZeroAddress &&
+					model.cstDutchAuctionBeginningTimeStamp + model.getMainPrizeTimeIncrement() > engine.lastTs
+				) {
+					// The auction in effect was started by a CST bid less than one increment ago: hold.
+					ts_ = model.cstDutchAuctionBeginningTimeStamp + model.getMainPrizeTimeIncrement();
+				} else if (moveIndex_ === 0) {
+					// The opening move: take the last CST bidder position now.
+					ts_ = engine.nextTs();
+				} else {
+					break;
+				}
+				const bidder_ = pickCstBidderFor(ctx_, actor_, model.getNextCstBidPrice(ts_));
+				if (bidder_ === null) {
+					break;
+				}
+				const moveOutcome_ = await executeCstBid(ctx_, bidder_, { flavor: "plain", maxLimitMode: engine.pick(["exact", "padded"]), plannedTs: ts_ });
+				if (moveOutcome_ !== "ok") {
+					break;
+				}
+				outcome_ = "ok";
+			}
+			return outcome_;
+		},
+	},
+	{
+		// A CST camper: bids CST only once the premium-free price has declined to zero (Comment-202611023), which is the
+		// free-bid path: the bid buys the last bidder position and the reward stream but no raffle weight (Comment-202611027),
+		// and restarts the auction at two increments of reward (Comment-202611024). When the deadline is near, the bid still
+		// pays the late-bid premium floor (Comment-202611026), so the camper prefers a moment before the premium window
+		// when there is one. The bid is modeled and verified exactly like any other CST bid.
+		name: "adversarialCstCamper",
+		weight: 16,
+		isApplicable: (ctx_) =>
+			ctx_.model.version >= 3 &&
+			ctx_.model.lastBidderAddress !== hre.ethers.ZeroAddress &&
+			// A zero `bidCstRewardAmountMultiplier` (the degenerate admin action) makes the auction never end.
+			ctx_.model.getCstDutchAuctionDuration() < MAX_UINT256,
+		run: async (ctx_, actor_) => {
+			const { engine, model } = ctx_;
+			const cstDutchAuctionDuration_ = model.getCstDutchAuctionDuration();
+			if (model.lastBidderAddress === hre.ethers.ZeroAddress || cstDutchAuctionDuration_ >= MAX_UINT256) {
+				return "skip";
+			}
+			// The base is zero from the auction end on.
+			let ts_ = maxBigInt(model.cstDutchAuctionBeginningTimeStamp + cstDutchAuctionDuration_, engine.nextTs());
+			const premiumWindowBeginningTimeStamp_ = model.mainPrizeTime - model.getRoundLateBidDuration();
+			if (ts_ < premiumWindowBeginningTimeStamp_) {
+				// A free bid is possible; sometimes camp a while longer, staying before the premium window.
+				if (engine.chancePercent(50)) {
+					ts_ = engine.randomBigIntRange(ts_, premiumWindowBeginningTimeStamp_ - 1n);
+				}
+			} else if (engine.chancePercent(50)) {
+				// Only premium-bearing free-base bids remain; sometimes camp past the deadline.
+				ts_ += engine.randomBigIntRange(1n, 2n * SECONDS_PER_HOUR);
+			}
+			expect(model.getNextCstBidPriceBase(ts_), "CST camper: the base is not zero at the planned timestamp").to.equal(0n);
+			const bidder_ = pickCstBidderFor(ctx_, actor_, model.getNextCstBidPrice(ts_));
+			if (bidder_ === null) {
+				return "skip";
+			}
+			return executeCstBid(ctx_, bidder_, { flavor: "plain", maxLimitMode: engine.pick(["exact", "padded"]), plannedTs: ts_ });
 		},
 	},
 	{

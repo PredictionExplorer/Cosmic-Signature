@@ -6,7 +6,7 @@
 // #region Imports
 
 const { expect } = require("chai");
-const { SECONDS_PER_HOUR, SECONDS_PER_DAY } = require("../../../../src/CosmicSignatureConstants.js");
+const { MICROSECONDS_PER_SECOND, SECONDS_PER_HOUR, SECONDS_PER_DAY } = require("../../../../src/CosmicSignatureConstants.js");
 
 // #endregion
 // #region Owner setter mutation (between rounds only)
@@ -95,6 +95,43 @@ const adminActions = [
 				return `revert:${result_.revert.kind === "panic" ? "Panic" : result_.revert.name}`;
 			}
 			model.applyHalveEthDutchAuctionEndingBidPrice(ts_);
+			await ledger.verifyDirtyEth();
+			return "ok";
+		},
+	},
+	{
+		// A degenerate V3 `bidCstRewardAmountMultiplier` for one round: an accepted owner misconfiguration that
+		// `docs/cosmic-signature-game-cst-bid-pricing.md` ("Accepted Properties") documents. Zero makes `C` zero, so the
+		// CST bid price is constant zero, CST bids are free and weightless, and the auction duration is infinite
+		// (Comment-202611023); a value below one million makes `R` round to zero, so the premium floor and the additive
+		// restart vanish (Comment-202611024, Comment-202611026). The model predicts all of it exactly. Only campaigns whose
+		// seed enabled `profile.degenerateCstRewardMultiplier` run this, once, between V3 rounds; the campaign loop calls
+		// `restoreBidCstRewardAmountMultiplierIfDegenerate` to put the previous value back after that round ends.
+		name: "adminDegenerateBidCstRewardAmountMultiplier",
+		weight: 3,
+		infra: true,
+		isApplicable: (ctx_) =>
+			ctx_.engine.profile.degenerateCstRewardMultiplier === true &&
+			ctx_.model.version >= 3 &&
+			ctx_.isRoundInactiveNow() &&
+			ctx_.degenerateBidCstRewardAmountMultiplier === null,
+		run: async (ctx_) => {
+			const { engine, model, contracts, ledger } = ctx_;
+			const ts_ = engine.nextTs();
+			if (model.roundActivationTime <= ts_) {
+				return "skip"; // Would be active; the setter requires an inactive round.
+			}
+			const value_ = engine.chancePercent(50) ? 0n : engine.randomBigIntRange(1n, MICROSECONDS_PER_SECOND - 1n);
+			const owner_ = contracts.ownerSigner;
+			const result_ = await engine.execTx({
+				signer: owner_,
+				ts: ts_,
+				buildTx: (overrides_) => ctx_.game.connect(owner_).contract.setBidCstRewardAmountMultiplier(value_, overrides_),
+			});
+			engine.expectOk(result_, "adminDegenerateBidCstRewardAmountMultiplier");
+			ctx_.degenerateBidCstRewardAmountMultiplier = { prevValue: model.bidCstRewardAmountMultiplier, value: value_, roundNum: model.roundNum, restored: false };
+			model.bidCstRewardAmountMultiplier = value_;
+			engine.recordCoverage((value_ === 0n) ? "coverage.v3DegenerateRewardMultiplierZero" : "coverage.v3DegenerateRewardMultiplierBelowOneMillion");
 			await ledger.verifyDirtyEth();
 			return "ok";
 		},
@@ -192,6 +229,30 @@ function buildSafeMutations(ctx_) {
 		add_("setMainPrizeNumCosmicSignatureNfts", BigInt(engine.randomIntRange(1, 5)), (m_, v_) => { m_.mainPrizeNumCosmicSignatureNfts = v_; });
 	}
 	return mutations_;
+}
+
+/**
+Restores `bidCstRewardAmountMultiplier` after the round that `adminDegenerateBidCstRewardAmountMultiplier` configured
+has ended, at the first opportunity while a round is inactive (the setter requires that). The campaign loop calls this
+before every action and before re-activating a round, so the degenerate value usually lasts exactly one round; it lasts
+longer only when the following round became active before this ran, which is harmless.
+*/
+async function restoreBidCstRewardAmountMultiplierIfDegenerate(ctx_) {
+	const state_ = ctx_.degenerateBidCstRewardAmountMultiplier;
+	if (state_ === null || state_.restored || ctx_.model.roundNum <= state_.roundNum || ! ctx_.isRoundInactiveNow() ) {
+		return;
+	}
+	const { engine, model, contracts, ledger } = ctx_;
+	const owner_ = contracts.ownerSigner;
+	const result_ = await engine.execTx({
+		signer: owner_,
+		ts: engine.nextTs(),
+		buildTx: (overrides_) => ctx_.game.connect(owner_).contract.setBidCstRewardAmountMultiplier(state_.prevValue, overrides_),
+	});
+	engine.expectOk(result_, "restore bidCstRewardAmountMultiplier after the degenerate round");
+	model.bidCstRewardAmountMultiplier = state_.prevValue;
+	state_.restored = true;
+	await ledger.verifyDirtyEth();
 }
 
 // #endregion
@@ -391,4 +452,5 @@ module.exports = {
 	adminActions,
 	daoActions,
 	buildSafeMutations,
+	restoreBidCstRewardAmountMultiplierIfDegenerate,
 };

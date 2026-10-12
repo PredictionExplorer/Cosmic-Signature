@@ -6,6 +6,7 @@ const { MAX_UINT256 } = require("../../src/BigIntMathHelpers.js");
 const {
 	INITIAL_MAIN_PRIZE_TIME_INCREMENT,
 	MICROSECONDS_PER_SECOND,
+	SECONDS_PER_DAY,
 	CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER,
 	DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER,
 	DEFAULT_ROUND_LATE_BID_DURATION_DIVISOR,
@@ -21,9 +22,13 @@ const {
 	DEFAULT_CHARITY_ETH_DONATION_AMOUNT_PERCENTAGE_V3,
 } = require("../../src/CosmicSignatureConstants.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
-const { completeRoundZero, upgradeToV2, getLatestBlockTimestamp } = require("./V2UpgradeTestHelpers.js");
+const { waitForTransactionReceipt } = require("../../src/Helpers.js");
+const { completeRoundZero, upgradeToV2, getLatestBlockTimestamp, blockTimestampOfReceipt } = require("./V2UpgradeTestHelpers.js");
 
 const DEFAULT_PAID_ETH_PRIZE_AMOUNT_PERCENTAGE_V3 = 50n;
+
+/** An offset at which every CST Dutch auction has long ended. */
+const FAR_FUTURE_TIME_OFFSET = 100n * 366n * SECONDS_PER_DAY;
 
 async function deployV1CompleteRoundZeroAndUpgradeToV2AndV3() {
 	const contracts_ = { ...await loadFixtureDeployContractsForTesting(2n) };
@@ -237,6 +242,76 @@ function getV3CstBidRaffleWeight(ethBidPriceBase_, cstBidPriceBase_, cstDutchAuc
 	return (cstDutchAuctionBeginningBidPrice_ > 0n) ? (ethBidPriceBase_ * cstBidPriceBase_ / cstDutchAuctionBeginningBidPrice_) : 0n;
 }
 
+/**
+Reads the live parameters the V3 CST rules are derived from, together with the derived quantities the tests use.
+Read these after the round is activated and after any parameter change, because `mainPrizeTimeIncrementInMicroSeconds`
+grows on every main prize claim. `R` and `C` are the names `docs/cosmic-signature-game-cst-bid-pricing.md` uses.
+The derived durations are JS mirrors rather than contract getters, so that the tests do not depend on the getters they check.
+*/
+async function readCstPricingParams(game_) {
+	/** @type {bigint} */
+	const bidCstRewardAmountMultiplier_ = await game_.bidCstRewardAmountMultiplier();
+	/** @type {bigint} */
+	const mainPrizeTimeIncrementInMicroSeconds_ = await game_.mainPrizeTimeIncrementInMicroSeconds();
+	/** @type {bigint} */
+	const initialDurationUntilMainPrizeDivisor_ = await game_.initialDurationUntilMainPrizeDivisor();
+	/** @type {bigint} */
+	const roundLateBidDurationDivisor_ = await game_.roundLateBidDurationDivisor();
+	return {
+		bidCstRewardAmountMultiplier: bidCstRewardAmountMultiplier_,
+		mainPrizeTimeIncrementInMicroSeconds: mainPrizeTimeIncrementInMicroSeconds_,
+		initialDurationUntilMainPrizeDivisor: initialDurationUntilMainPrizeDivisor_,
+		mainPrizeTimeIncrement: mainPrizeTimeIncrementInMicroSeconds_ / MICROSECONDS_PER_SECOND,
+
+		// JS mirror of `MainPrizeCommonV2.getInitialDurationUntilMainPrize`.
+		initialDurationUntilMainPrize: mainPrizeTimeIncrementInMicroSeconds_ / initialDurationUntilMainPrizeDivisor_,
+
+		// `R`, the reward of one main prize time increment.
+		rewardAmountPerMainPrizeTimeIncrement: getV3BidCstRewardAmountPerMainPrizeTimeIncrement(bidCstRewardAmountMultiplier_),
+
+		// `C`, the reward of the initial duration until main prize (Comment-202611025).
+		cstDutchAuctionBeginningBidPriceMaxLimit:
+			getV3CstDutchAuctionBeginningBidPriceMaxLimit(bidCstRewardAmountMultiplier_, initialDurationUntilMainPrizeDivisor_),
+
+		roundLateBidDurationDivisor: roundLateBidDurationDivisor_,
+
+		// JS mirror of `BiddingV3.getRoundLateBidDuration`.
+		roundLateBidDuration: mainPrizeTimeIncrementInMicroSeconds_ / roundLateBidDurationDivisor_,
+
+		roundLateBidPricePremiumAmountBaseMultiplier: await game_.roundLateBidPricePremiumAmountBaseMultiplier(),
+		roundLateBidPricePremiumAmountExponent: await game_.roundLateBidPricePremiumAmountExponent(),
+		ethBidPriceIncreaseDivisor: await game_.ethBidPriceIncreaseDivisor(),
+	};
+}
+
+/**
+JS mirror of `BiddingV3._getCstDutchAuctionBeginningBidPrice`: the price the current CST Dutch auction began at,
+which is `C` until the round's first CST bid (Comment-202611025).
+@param {object} params_ From `readCstPricingParams`.
+*/
+async function readV3CstDutchAuctionBeginningBidPrice(game_, params_) {
+	return ((await game_.lastCstBidderAddress()) === hre.ethers.ZeroAddress) ?
+		params_.cstDutchAuctionBeginningBidPriceMaxLimit :
+		await game_.cstDutchAuctionBeginningBidPrice();
+}
+
+/** Returns the raffle weight of the last bid placed in the round, derived from the cumulative weights. */
+async function getLastBidRaffleWeight(game_, roundNum_) {
+	const numBids_ = (await game_.roundStats(roundNum_)).numBids;
+	const cumulativeWeight_ = (await game_.getBidInfoAt(roundNum_, numBids_ - 1n)).raffleCumulativeWeight;
+	const prevCumulativeWeight_ = (numBids_ > 1n) ? (await game_.getBidInfoAt(roundNum_, numBids_ - 2n)).raffleCumulativeWeight : 0n;
+	return cumulativeWeight_ - prevCumulativeWeight_;
+}
+
+/** Places a CST bid at exactly `timeStamp_`, allowing exactly `cstPriceMaxLimit_`. */
+async function bidWithCstAt(game_, bidder_, timeStamp_, cstPriceMaxLimit_) {
+	expect(timeStamp_).greaterThan(await getLatestBlockTimestamp());
+	await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(timeStamp_),]);
+	const receipt_ = await waitForTransactionReceipt(game_.connect(bidder_).bidWithCst(cstPriceMaxLimit_, "", 0n));
+	expect(await blockTimestampOfReceipt(receipt_)).equal(timeStamp_);
+	return receipt_;
+}
+
 /** Comment-202606059 applies. */
 function tryIncreaseValueExponentially(value_, divisor_) {
 	return value_ + value_ / divisor_;
@@ -249,6 +324,7 @@ function tryReduceValueExponentially(value_, divisor_) {
 
 module.exports = {
 	DEFAULT_PAID_ETH_PRIZE_AMOUNT_PERCENTAGE_V3,
+	FAR_FUTURE_TIME_OFFSET,
 	deployV1CompleteRoundZeroAndUpgradeToV2AndV3,
 	upgradeToV3,
 	assertDefaultV3Initialization,
@@ -263,6 +339,10 @@ module.exports = {
 	addRoundLateBidPricePremiumAmountToCstBidPriceBaseIfNeeded,
 	getV3CstDutchAuctionDuration,
 	getV3CstBidRaffleWeight,
+	readCstPricingParams,
+	readV3CstDutchAuctionBeginningBidPrice,
+	getLastBidRaffleWeight,
+	bidWithCstAt,
 	tryIncreaseValueExponentially,
 	tryReduceValueExponentially,
 };

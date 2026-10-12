@@ -4,6 +4,7 @@
 
 const { expect } = require("chai");
 const hre = require("hardhat");
+const { MICROSECONDS_PER_SECOND } = require("../../../src/CosmicSignatureConstants.js");
 
 // #endregion
 // #region Invariant suite
@@ -349,6 +350,176 @@ async function runInvariants(ctx_) {
 }
 
 // #endregion
+// #region V3 CST bid invariants
+
+/**
+Coverage counters for the V3 CST corner paths, recorded through `engine.recordCoverage` by `checkV3CstBidInvariants`
+and by the degenerate-multiplier admin action. The coverage report lists every one of them, reached or not;
+`V3_CST_CORNER_PATH_FLOORS` names the ones every run must reach.
+*/
+const V3_CST_CORNER_PATH_COUNTERS = [
+	// The next auction begins at the maximum `C` (Comment-202611025) or below it (Comment-202611024).
+	"coverage.v3CstBidCappedRestart",
+	"coverage.v3CstBidUncappedRestart",
+	// The premium-free price had declined to zero (a free bid, Comment-202611023).
+	"coverage.v3CstBidZeroBase",
+	// A late-bid premium was paid, calculated from one increment of reward or from the base (Comment-202611026).
+	"coverage.v3CstBidPremiumAtZeroBase",
+	"coverage.v3CstBidPremiumAtPositiveBase",
+	// The bidder outbid themselves, so they also received the bid CST reward.
+	"coverage.v3CstBidSelfOutbid",
+	// The round's first CST bid, which consumes the auction the round's first ETH bid started at `C`; and the same in a
+	// round that a V3 main prize claim prepared (`_prepareNextRound` resets `lastCstBidderAddress`).
+	"coverage.v3CstBidFirstInRound",
+	"coverage.v3CstBidFirstInRoundAfterV3Claim",
+	// At most one main prize time increment after the previous CST bid: the premise of invariant I4.
+	"coverage.v3CstBidWithinOneIncrementOfPrevCstBid",
+	// A positive base whose weight `ethBase * base / S` truncated to zero (needs a base below `S / ethBase` CST Wei).
+	"coverage.v3CstBidPositiveBaseTruncatedToZeroWeight",
+	// CST bids placed while `R` was zero, and the rounds the degenerate admin action configured.
+	"coverage.v3CstBidUnderDegenerateRewardMultiplier",
+	"coverage.v3DegenerateRewardMultiplierZero",
+	"coverage.v3DegenerateRewardMultiplierBelowOneMillion",
+];
+
+/**
+The V3 CST corner paths every run must reach. The campaign loop runs the CST camper and the CST deadline holder at
+least once per V3 segment, which reaches these four by design whenever an actor can afford the bids (measured: every
+one of 12 quick-profile campaigns, without extra campaigns); the campaign driver still runs extra campaigns until they
+are reached, like the minimal floors. The other counters depend on timing or wealth and are reported without floors.
+*/
+const V3_CST_CORNER_PATH_FLOORS = [
+	"coverage.v3CstBidUncappedRestart",
+	"coverage.v3CstBidZeroBase",
+	"coverage.v3CstBidFirstInRound",
+	"coverage.v3CstBidWithinOneIncrementOfPrevCstBid",
+];
+
+/**
+Checks the V3 CST bid pricing invariants I1, I2, I4, and I5 of `docs/cosmic-signature-game-cst-bid-pricing.md`
+right after a successful V3 CST bid, and records which corner paths the bid reached.
+Everything here comes from chain reads and `BidPlaced` events, never from the model's formulas, so a bug mirrored
+identically in the model and the contract cannot hide here.
+@param {object} ctx_
+@param {object} args_
+@param {bigint} args_.ts The bid block timestamp.
+@param {string} args_.bidderAddressLower
+@param {object} args_.auctionBefore `ledger.snapshotCstDutchAuction()` taken before the bid: the auction the bid consumed.
+@param {object} args_.chainBefore Chain reads taken right before the bid: `cstBidPriceBase` (the premium-free price the
+bid paid, `getNextCstBidPriceBaseAdvanced` at the bid timestamp), `nextEthBidPrice` (the concurrent ETH bid price base),
+`lastBidderAddress`, `lastCstBidderAddress` (lowercase), and `cstDutchAuctionBeginningBidPrice` (storage).
+@param {import("ethers").Result} args_.bidPlacedArgs The bid's `BidPlaced` event arguments.
+*/
+async function checkV3CstBidInvariants(ctx_, { ts, bidderAddressLower, auctionBefore, chainBefore, bidPlacedArgs }) {
+	const { engine } = ctx_;
+	const game_ = ctx_.game.contract;
+	const context_ = `V3 CST bid at ${ts}`;
+
+	// The live parameters the rules are derived from. Owner setters are blocked while a round is active,
+	// so these are the values the bid used.
+	const bidCstRewardAmountMultiplier_ = await game_.bidCstRewardAmountMultiplier();
+	const initialDurationUntilMainPrizeDivisor_ = await game_.initialDurationUntilMainPrizeDivisor();
+	const mainPrizeTimeIncrementInMicroSeconds_ = await game_.mainPrizeTimeIncrementInMicroSeconds();
+	const mainPrizeTimeIncrement_ = mainPrizeTimeIncrementInMicroSeconds_ / MICROSECONDS_PER_SECOND;
+
+	// `R` and `C` of the design document (Comment-202611024, Comment-202611025).
+	const rewardAmountPerMainPrizeTimeIncrement_ = bidCstRewardAmountMultiplier_ / MICROSECONDS_PER_SECOND;
+	const cstDutchAuctionBeginningBidPriceMaxLimit_ = bidCstRewardAmountMultiplier_ / initialDurationUntilMainPrizeDivisor_;
+
+	// The auction the bid consumed. Its beginning bid price `S` comes from the `BidPlaced` event that started it;
+	// cross-check it against storage, which holds `S` only once a CST bid has been placed in the round.
+	const beginningBidPrice_ = auctionBefore.beginningBidPrice;
+	expect(auctionBefore.roundNum, `${context_}: the CST Dutch auction ledger is not tracking this round`).to.equal(bidPlacedArgs.roundNum);
+	expect(auctionBefore.startedByCstBid, `${context_}: ledger vs lastCstBidderAddress`).to.equal(chainBefore.lastCstBidderAddress !== hre.ethers.ZeroAddress);
+	expect(beginningBidPrice_, `${context_}: event-derived beginning bid price vs chain`).to.equal(
+		auctionBefore.startedByCstBid ? chainBefore.cstDutchAuctionBeginningBidPrice : cstDutchAuctionBeginningBidPriceMaxLimit_
+	);
+
+	const cstBidPriceBase_ = chainBefore.cstBidPriceBase;
+	const paidCstPrice_ = bidPlacedArgs.paidCstPrice;
+	const premiumAmount_ = paidCstPrice_ - cstBidPriceBase_;
+	expect(premiumAmount_ >= 0n, `${context_}: paid ${paidCstPrice_} below the premium-free base ${cstBidPriceBase_}`).to.equal(true);
+	expect(cstBidPriceBase_ <= beginningBidPrice_, `${context_}: base ${cstBidPriceBase_} above the beginning bid price ${beginningBidPrice_}`).to.equal(true);
+	const newBeginningBidPrice_ = bidPlacedArgs.cstDutchAuctionBeginningBidPrice;
+
+	// I2, conservation (Comment-202611023). The bids since `T0` partition `[T0, ts]`, and each minted the floored reward
+	// of its interval, so the sum of the `n` minted rewards is the floored reward of the whole interval minus up to
+	// `n - 1` Wei. While the base is positive, that whole-interval reward is exactly `S - base`; once the base has reached
+	// zero, it is at least `S`. So the shortfall `S - base - rewards` is always below `n`, and non-negative while the
+	// base is positive.
+	const rewardsMintedSinceBeginning_ = auctionBefore.rewardsMintedSinceBeginning + bidPlacedArgs.bidCstRewardAmount;
+	const numRewardsMintedSinceBeginning_ = auctionBefore.numRewardsMintedSinceBeginning + 1n;
+	const conservationShortfall_ = beginningBidPrice_ - cstBidPriceBase_ - rewardsMintedSinceBeginning_;
+	const conservationContext_ =
+		`${context_}: I2 conservation: S ${beginningBidPrice_}, base ${cstBidPriceBase_}, ` +
+		`rewards ${rewardsMintedSinceBeginning_} over ${numRewardsMintedSinceBeginning_} bids since T0 ${auctionBefore.beginningTimeStamp}`;
+	expect(conservationShortfall_ < numRewardsMintedSinceBeginning_, `${conservationContext_}: base plus rewards fall short of S by ${conservationShortfall_}`).to.equal(true);
+	if (cstBidPriceBase_ > 0n) {
+		expect(conservationShortfall_ >= 0n, `${conservationContext_}: base plus rewards exceed S by ${-conservationShortfall_}`).to.equal(true);
+	}
+
+	// I1, bounded auction life: the next auction begins within `[2R, C]` (Comment-202611024, Comment-202611025).
+	// `C` is at least `2R` for every multiplier as long as `initialDurationUntilMainPrizeDivisor` stays at most 500000
+	// (it is about 41667 by default and the harness never changes it).
+	expect(newBeginningBidPrice_ >= 2n * rewardAmountPerMainPrizeTimeIncrement_, `${context_}: I1: new S ${newBeginningBidPrice_} below 2R ${2n * rewardAmountPerMainPrizeTimeIncrement_}`).to.equal(true);
+	expect(newBeginningBidPrice_ <= cstDutchAuctionBeginningBidPriceMaxLimit_, `${context_}: I1: new S ${newBeginningBidPrice_} above C ${cstDutchAuctionBeginningBidPriceMaxLimit_}`).to.equal(true);
+
+	// I4, no stationary hold. Within one increment of the previous CST bid, the base declined by at most `R`, and the
+	// restart adds `R` back before doubling, so an auction below the cap restarts strictly higher (Comment-202611024).
+	// Vacuous when `R` is zero (a degenerate multiplier makes a zero-base bid restart at zero).
+	if (auctionBefore.startedByCstBid && ts - auctionBefore.beginningTimeStamp <= mainPrizeTimeIncrement_) {
+		engine.recordCoverage("coverage.v3CstBidWithinOneIncrementOfPrevCstBid");
+		if (rewardAmountPerMainPrizeTimeIncrement_ > 0n && beginningBidPrice_ < cstDutchAuctionBeginningBidPriceMaxLimit_) {
+			expect(newBeginningBidPrice_ > beginningBidPrice_, `${context_}: I4: new S ${newBeginningBidPrice_} not above S ${beginningBidPrice_} within one increment`).to.equal(true);
+		}
+	}
+
+	// I5, proportional tickets (Comment-202611027, Comment-202611029). The weight is the concurrent ETH bid price base
+	// scaled by the fraction of the asking price paid: a zero base buys a zero weight, and a positive base buys a positive
+	// weight unless integer division truncates it, which needs a base below `S / ethBase` CST Wei (a sub-second window).
+	const numBids_ = (await game_.roundStats(bidPlacedArgs.roundNum)).numBids;
+	const bidIndex_ = numBids_ - 1n;
+	expect(bidIndex_ > 0n, `${context_}: a CST bid cannot be a round's first bid`).to.equal(true);
+	const bidRaffleWeight_ =
+		(await game_.getBidInfoAt(bidPlacedArgs.roundNum, bidIndex_)).raffleCumulativeWeight -
+		(await game_.getBidInfoAt(bidPlacedArgs.roundNum, bidIndex_ - 1n)).raffleCumulativeWeight;
+	if (cstBidPriceBase_ === 0n) {
+		expect(bidRaffleWeight_, `${context_}: I5: a zero base bought raffle weight`).to.equal(0n);
+	} else if (chainBefore.nextEthBidPrice * cstBidPriceBase_ >= beginningBidPrice_) {
+		expect(bidRaffleWeight_ > 0n, `${context_}: I5: base ${cstBidPriceBase_} of S ${beginningBidPrice_} bought no raffle weight`).to.equal(true);
+	} else {
+		expect(bidRaffleWeight_, `${context_}: I5: truncated weight is not zero`).to.equal(0n);
+		engine.recordCoverage("coverage.v3CstBidPositiveBaseTruncatedToZeroWeight");
+	}
+
+	// Corner path coverage.
+	engine.recordCoverage((newBeginningBidPrice_ === cstDutchAuctionBeginningBidPriceMaxLimit_) ? "coverage.v3CstBidCappedRestart" : "coverage.v3CstBidUncappedRestart");
+	if (cstBidPriceBase_ === 0n) {
+		engine.recordCoverage("coverage.v3CstBidZeroBase");
+	}
+	if (premiumAmount_ > 0n) {
+		engine.recordCoverage((cstBidPriceBase_ === 0n) ? "coverage.v3CstBidPremiumAtZeroBase" : "coverage.v3CstBidPremiumAtPositiveBase");
+	}
+	if (chainBefore.lastBidderAddress === bidderAddressLower) {
+		engine.recordCoverage("coverage.v3CstBidSelfOutbid");
+	}
+	if ( ! auctionBefore.startedByCstBid ) {
+		engine.recordCoverage("coverage.v3CstBidFirstInRound");
+		if (auctionBefore.roundNum > auctionBefore.firstTrackedRoundNum) {
+			engine.recordCoverage("coverage.v3CstBidFirstInRoundAfterV3Claim");
+		}
+	}
+	if (rewardAmountPerMainPrizeTimeIncrement_ === 0n) {
+		engine.recordCoverage("coverage.v3CstBidUnderDegenerateRewardMultiplier");
+	}
+}
+
+/** Whether every counter in `V3_CST_CORNER_PATH_FLOORS` was reached. */
+function hasV3CstCornerPathFloors(statsMap_) {
+	return V3_CST_CORNER_PATH_FLOORS.every((name_) => (statsMap_.get(name_)?.succeeded ?? 0) > 0);
+}
+
+// #endregion
 // #region End-of-campaign coverage floors
 
 /** Minimum aggregate attempted-action volume before the strong (breadth) floors are statistically meaningful. */
@@ -398,6 +569,12 @@ function assertCoverageFloors(statsMap_, profile_) {
 	expect(succeeded_("bidWithEth"), "bidWithEth never succeeded").to.be.greaterThan(0);
 	expect(hasMinimalCoverageFloors(statsMap_), "no main prize was ever claimed").to.equal(true);
 
+	// V3 CST corner paths that every run reaches (the driver runs extra campaigns until they are reached).
+	{
+		const missing_ = V3_CST_CORNER_PATH_FLOORS.filter((name_) => succeeded_(name_) <= 0);
+		expect(missing_.length, `these V3 CST corner paths were never reached: ${missing_.join(", ")}`).to.equal(0);
+	}
+
 	if ( ! profile_.enforceStrongCoverage || totalAttempted_ < STRONG_COVERAGE_MIN_ATTEMPTS ) {
 		return;
 	}
@@ -429,6 +606,7 @@ function assertCoverageFloors(statsMap_, profile_) {
 		"charityWalletSendAll", "marketingWalletPayReward",
 		"adminMutateParameters", "daoGovernanceCycle",
 		"adversarialReentrancyOnBidRefund", "adversarialMaliciousTokenDonation",
+		"adversarialCstDeadlineHolder", "adversarialCstCamper",
 		"upgradeAuthProbe",
 		"upgradeToV2", "upgradeToV3", "prizesWalletSwap",
 	];
@@ -445,12 +623,17 @@ did not. Action-level coverage; for Solidity line/branch coverage run `npx hardh
 @param {Map<string, {attempted: number, succeeded: number, skipped: number}>} statsMap_
 */
 function printCoverageReport(statsMap_) {
-	const all_ = [...statsMap_.keys()].sort();
+	const all_ = [...statsMap_.keys()].filter((name_) => ! name_.startsWith("coverage.")).sort();
 	const succeeded_ = all_.filter((name_) => (statsMap_.get(name_)?.succeeded ?? 0) > 0);
 	const neverOk_ = all_.filter((name_) => (statsMap_.get(name_)?.succeeded ?? 0) <= 0);
 	console.info(`\n  ACTION COVERAGE: ${succeeded_.length}/${all_.length} distinct actions succeeded at least once.`);
 	if (neverOk_.length > 0) {
 		console.info(`  Actions that never succeeded (selected but always skipped/reverted): ${neverOk_.join(", ")}`);
+	}
+	console.info("\n  V3 CST CORNER PATHS (times reached; * = required by a floor):");
+	for (const name_ of V3_CST_CORNER_PATH_COUNTERS) {
+		const marker_ = V3_CST_CORNER_PATH_FLOORS.includes(name_) ? "*" : " ";
+		console.info(`    ${marker_} ${name_.padEnd(58)} ${statsMap_.get(name_)?.succeeded ?? 0}`);
 	}
 }
 
@@ -473,6 +656,10 @@ function mergeStatsInto(aggregate_, statsMap_) {
 
 module.exports = {
 	runInvariants,
+	checkV3CstBidInvariants,
+	V3_CST_CORNER_PATH_COUNTERS,
+	V3_CST_CORNER_PATH_FLOORS,
+	hasV3CstCornerPathFloors,
 	assertCoverageFloors,
 	hasMinimalCoverageFloors,
 	printCoverageReport,

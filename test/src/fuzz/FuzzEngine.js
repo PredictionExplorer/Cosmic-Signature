@@ -18,48 +18,74 @@ const REASON_STRING_REGEXP = /reverted with reason string '((?:[^'\\]|\\.)*)'/;
 const PANIC_CODE_REGEXP = /reverted with panic code (0x[0-9a-fA-F]+)/;
 const UNRECOGNIZED_ERROR_REGEXP = /reverted with an unrecognized custom error \(return data: (0x[0-9a-fA-F]*)\)/;
 
+/** A CST Dutch auction end further away than this is not offered as a timestamp boundary candidate. */
+const CST_DUTCH_AUCTION_END_BOUNDARY_MAX_DURATION = 100n * 366n * SECONDS_PER_DAY;
+
 /**
-Decodes a Hardhat transaction revert into `{kind, name, message}`.
+Decodes raw custom error return data through the given interfaces.
+@param {unknown} revertData_ The `data` field of a Hardhat revert error object, if any.
+@param {Array<import("ethers").Interface>} interfaces_
+@returns {{name: string, args: unknown[]} | null} The error name and its decoded arguments
+(bigints for integers, checksummed strings for addresses), or null if no interface knows the error.
+*/
+function decodeCustomErrorArgs(revertData_, interfaces_) {
+	if (typeof revertData_ !== "string" || ! revertData_.startsWith("0x") || revertData_.length < 10) {
+		return null;
+	}
+	for (const iface_ of interfaces_) {
+		try {
+			const parsed_ = iface_.parseError(revertData_);
+			if (parsed_ !== null) {
+				return { name: parsed_.name, args: [...parsed_.args] };
+			}
+		} catch {
+			// Try the next interface.
+		}
+	}
+	return null;
+}
+
+/**
+Decodes a Hardhat transaction revert into `{kind, name, args, message}`.
+`args` are the custom error's decoded arguments when the error object carries raw revert data that one of
+`interfaces_` understands (Hardhat attaches it as `data`), or null otherwise. Negative probes use them to assert
+exact error arguments, not only error names.
 @param {Error} errorObject_
 @param {Array<import("ethers").Interface>} interfaces_ Interfaces to try for raw revert data.
 */
 function decodeRevert(errorObject_, interfaces_) {
 	const message_ = errorObject_.message ?? "";
+	const decoded_ = decodeCustomErrorArgs(errorObject_.data, interfaces_);
 	{
 		const match_ = CUSTOM_ERROR_REGEXP.exec(message_);
 		if (match_ !== null) {
-			return { kind: "custom", name: match_[1], message: message_ };
+			const args_ = (decoded_ !== null && decoded_.name === match_[1]) ? decoded_.args : null;
+			return { kind: "custom", name: match_[1], args: args_, message: message_ };
 		}
 	}
 	{
 		const match_ = PANIC_CODE_REGEXP.exec(message_);
 		if (match_ !== null) {
-			return { kind: "panic", name: `Panic(${match_[1]})`, message: message_ };
+			return { kind: "panic", name: `Panic(${match_[1]})`, args: null, message: message_ };
 		}
 	}
 	{
 		const match_ = REASON_STRING_REGEXP.exec(message_);
 		if (match_ !== null) {
-			return { kind: "reason", name: match_[1], message: message_ };
+			return { kind: "reason", name: match_[1], args: null, message: message_ };
 		}
 	}
 	{
 		const match_ = UNRECOGNIZED_ERROR_REGEXP.exec(message_);
 		if (match_ !== null) {
-			for (const iface_ of interfaces_) {
-				try {
-					const parsed_ = iface_.parseError(match_[1]);
-					if (parsed_ !== null) {
-						return { kind: "custom", name: parsed_.name, message: message_ };
-					}
-				} catch {
-					// Try the next interface.
-				}
+			const decodedFromMessage_ = decoded_ ?? decodeCustomErrorArgs(match_[1], interfaces_);
+			if (decodedFromMessage_ !== null) {
+				return { kind: "custom", name: decodedFromMessage_.name, args: decodedFromMessage_.args, message: message_ };
 			}
-			return { kind: "custom", name: `unknown:${match_[1].slice(0, 10)}`, message: message_ };
+			return { kind: "custom", name: `unknown:${match_[1].slice(0, 10)}`, args: null, message: message_ };
 		}
 	}
-	return { kind: "unknown", name: "unknown", message: message_ };
+	return { kind: "unknown", name: "unknown", args: null, message: message_ };
 }
 
 // #endregion
@@ -242,7 +268,12 @@ class FuzzEngine {
 				out_.push(model_.mainPrizeTime - roundLateBidDuration_ / 2n);
 				out_.push(model_.mainPrizeTime - roundLateBidDuration_ / 8n);
 			}
-			out_.push(model_.cstDutchAuctionBeginningTimeStamp + model_.getCstDutchAuctionDuration());
+			// With a zero V3 `bidCstRewardAmountMultiplier` (the degenerate admin action), the CST bid price never declines
+			// and the model reports the contract's `type(uint256).max` duration, which is not a usable timestamp.
+			const cstDutchAuctionDuration_ = model_.getCstDutchAuctionDuration();
+			if (cstDutchAuctionDuration_ <= CST_DUTCH_AUCTION_END_BOUNDARY_MAX_DURATION) {
+				out_.push(model_.cstDutchAuctionBeginningTimeStamp + cstDutchAuctionDuration_);
+			}
 		}
 
 		out_.push(model_.roundActivationTime + model_.getEthDutchAuctionDuration());
@@ -313,7 +344,7 @@ class FuzzEngine {
 			expect(BigInt(block_.timestamp), "engine: mined block timestamp differs from planned").to.equal(plannedTs_);
 			this.lastTs = plannedTs_;
 			this.ledger.applyGas(receipt_.from, receipt_.gasUsed * receipt_.gasPrice);
-			this.ledger.applyReceipt(receipt_);
+			this.ledger.applyReceipt(receipt_, plannedTs_);
 			return { ok: true, receipt: receipt_, ts: plannedTs_, gasPrice: gasPrice_ };
 		} catch (errorObject_) {
 			checkTransactionErrorObject(errorObject_);
@@ -409,7 +440,7 @@ class FuzzEngine {
 			expect(BigInt((await this.provider.getBlock(receipt_.blockNumber)).timestamp)).to.equal(plannedTs_);
 			this.ledger.applyGas(receipt_.from, receipt_.gasUsed * receipt_.gasPrice);
 			if (receipt_.status === 1) {
-				this.ledger.applyReceipt(receipt_);
+				this.ledger.applyReceipt(receipt_, plannedTs_);
 			}
 			items_[index_].signer.reset();
 			results_.push({ status: receipt_.status, receipt: receipt_ });
@@ -491,6 +522,17 @@ class FuzzEngine {
 			this.stats.set(actionName_, entry_);
 		}
 		return entry_;
+	}
+
+	/**
+	Records that a code path worth counting (not an action) was reached, as one attempted and succeeded entry,
+	so it shows in the action breakdown, the coverage report, and the aggregate coverage floors.
+	@param {string} name_ A `coverage.`-prefixed name, or the name of a synthetic action such as `sameBlockBurst`.
+	*/
+	recordCoverage(name_) {
+		const entry_ = this._statsFor(name_);
+		++ entry_.attempted;
+		++ entry_.succeeded;
 	}
 
 	recordTrace(record_) {
