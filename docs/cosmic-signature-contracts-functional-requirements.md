@@ -94,10 +94,12 @@ Starting with round 1, the first bid beginning ETH bid price equals 2x of the fi
 If an ETH bid is accompanied by a Random Walk NFT, the bid price becomes a half of its normal value (the logic must ensure that the price is nonzero, as discussed in Comment-202503162).
 
 Every **CST bid price** is formed using a Dutch auction. The first CST Dutch auction in a given round begins when a user places the first ETH bid.\
-The first beginning CST bid price of round zero equals a configurable beginning minimum. The first beginning CST bid price in a nonzero round equals the second beginning CST bid price in the previous round, or remains unchanged if that round had no CST bid. When someone places a CST bid, the new beginning price is calculated as 2x of the base price without any late-bid premium, but no lower than the aforementioned minimum. After each CST bid, the Dutch auction repeats.\
-The base CST bid price declines linearly and can reach zero. In V2-, CST Dutch auction duration over which the price declines down to zero is configurable, and in V2 it's automatically reduced on each ETH and increased on each CST bid to encourage the same number of ETH and CST bids. In V3+, the price declines a configurable amount per second, which is similarly changed on bids, but in the opposite directions.
+In V2-, the first beginning CST bid price of round zero equals a configurable beginning minimum, and the first beginning CST bid price in a nonzero round equals the second beginning CST bid price in the previous round, or remains unchanged if that round had no CST bid. When someone places a CST bid, the new beginning price is calculated as 2x of the paid price, but no lower than the aforementioned minimum.\
+In V3+, the first CST Dutch auction in every round begins at the bid CST reward of the initial duration until main prize (`bidCstRewardAmountMultiplier / initialDurationUntilMainPrizeDivisor`), which is also the maximum beginning price. When someone places a CST bid, the next auction begins at 2x of the sum of the base price without any late-bid premium and the bid CST reward of one `mainPrizeTime` increment, but no higher than that maximum. The V2- beginning minimum and the next-round beginning price are not used (Comment-202611024, Comment-202611025).\
+After each CST bid, the Dutch auction repeats.\
+The base CST bid price declines linearly and can reach zero. In V2-, CST Dutch auction duration over which the price declines down to zero is configurable, and in V2 it's automatically reduced on each ETH and increased on each CST bid to encourage the same number of ETH and CST bids. In V3+, the base price declines by exactly the bid CST reward accrued over the same time (Comment-202611023), so the duration equals the beginning price divided by the bid CST reward rate, and bids of either type do not change the rate.
 
-In V3+, if someone bids within a configurable duration before `mainPrizeTime`, a premium is added to the bid price.
+In V3+, if someone bids within a configurable duration before `mainPrizeTime`, a premium is added to the bid price. For a CST bid, the premium is calculated from the base price or the bid CST reward of one `mainPrizeTime` increment, whichever is greater, so a last-minute CST bid is never free (Comment-202611026).
 
 Again, a Dutch auction is used for: (1) the first ETH bid price in a nonzero round; (2) each CST bid's base price. Round zero first ETH bid price is a constant. Any round non-first ETH bid's base price increases exponentially from the previous ETH bid's undiscounted base price. Late-bid premiums and swallowed ETH overpayments do not increase these price anchors.
 
@@ -122,9 +124,11 @@ When another bid is placed, V1 calculaates `mainPrizeTime` as `max(mainPrizeTime
 
 - In V2, each bid changes CST Dutch auction duration, as described in a separate section.
 
-- In V3+, each bid changes CST bid price decline rate, as described in a separate section.
+- In V3+, the CST bid price declines at the bid CST reward rate, which bids do not change, and an ETH bid does not affect the current CST Dutch auction, as described in a separate section.
 
-- Each bid changes the next bid price of the same bid type, as described in a separate section. In V2+, an ETH bid also causes a small instant reduction of CST bid price, as mentionrd in Comment-202608312.
+- Each bid changes the next bid price of the same bid type, as described in a separate section. In V2, an ETH bid also causes a small instant reduction of CST bid price, as mentioned in Comment-202608312.
+
+- In V3+, each bid gets a raffle weight derived from the ETH bid price without the late-bid premium. A CST bid's weight is scaled by the fraction of the asking CST price it paid, so a CST bid at a zero base price has zero weight (Comment-202611027). See `${workspaceFolder}/docs/cosmic-signature-game-prizes.md` for details.
 
 - Each bid advances `mainPrizeTime`, as described in a separate section.
 
@@ -172,7 +176,7 @@ Some prize winners are picked randomly. We have done our best to generate high q
 
 ### Exponential Duration Increase
 
-At the end of each round, the following configurable durations automatically increase exponentially by a configurable fraction: ETH Dutch auction duration; initial duration until main prize (used to calculate `mainPrizeTime` on the first bid in a round); `mainPrizeTime` increment (by how much `mainPrizeTime` gets extended on each subsequent bid in a round); in V3+, the duration before `mainPrizeTime` during which a premium is added to the bid price. In V1, CST Dutch auction duration is increased as well; in V2, it's reduced on each ETH bid and increased on each CST bid by a separate configurable fraction.
+At the end of each round, the following configurable durations automatically increase exponentially by a configurable fraction: ETH Dutch auction duration; initial duration until main prize (used to calculate `mainPrizeTime` on the first bid in a round); `mainPrizeTime` increment (by how much `mainPrizeTime` gets extended on each subsequent bid in a round); in V3+, the duration before `mainPrizeTime` during which a premium is added to the bid price. In V1, CST Dutch auction duration is increased as well; in V2, it's reduced on each ETH bid and increased on each CST bid by a separate configurable fraction. In V3+, CST Dutch auction duration is not a parameter: it equals the beginning price divided by the bid CST reward rate, which `mainPrizeTime` increment scales, so it grows together with that increment.
 
 ### Cosmic Signature and Random Walk NFT Staking
 
@@ -270,8 +274,6 @@ According to Comment-202610044, a user also can force-send ETH to the Game contr
 
 - V2: reduce CST Dutch auction duration.
 
-- V3+: increase CST bid price decline per second, up to its cap (Comment-202610093).
-
 - If the user sent us more ETH than required: transfer the excess back to them. But don't do it if the refund amount is less than or equal than what it would cost to transfer it.
 
 #### A user places a CST bid.
@@ -287,9 +289,9 @@ According to Comment-202610044, a user also can force-send ETH to the Game contr
 
 - V2+: If the provided bid CST reward min limit is greater than the current bid CST reward: revert.
 
-- Calculate the current CST bid price.
+- Calculate the current CST bid price. In V3+, this is the base price: the CST Dutch auction beginning price minus the bid CST reward accrued since the auction began, or zero if that would be negative.
 
-- V3+: If a bid was already placed within the current round and the current time is close to `mainPrizeTime`: add a premium to the above price.
+- V3+: If a bid was already placed within the current round and the current time is close to `mainPrizeTime`: add a premium to the above price. The premium is calculated from the base price or the bid CST reward of one `mainPrizeTime` increment, whichever is greater (Comment-202611026).
 
 - If the provided max price the user is willing to pay or the user's CST balance is less than required: revert.
 
@@ -298,13 +300,15 @@ According to Comment-202610044, a user also can force-send ETH to the Game contr
 - V2-: Mint a bid CST reward to the current bidder.\
   V3+: If this is not the first bid in the current bidding round: mint a bid CST reward to the previous bidder.
 
+- V3+: Record the bid's raffle weight: the undiscounted ETH bid price without the premium, scaled by the fraction of the CST Dutch auction beginning price that the base price paid. It is zero if the base price is zero (Comment-202611027).
+
 - Update Endurance Champion and Chrono-Warrior. (We have already checked that this is not the first bid in the current bidding round, so it's unnecessary to check that again.)
 
 - Update `mainPrizeTime`.
 
 - V2: increase CST Dutch auction duration.
 
-- V3+: reduce CST bid price decline per second.
+- Begin a new CST Dutch auction. V2-: at 2x of the paid price, but no lower than the configurable minimum. V3+: at 2x of the sum of the base price and the bid CST reward of one `mainPrizeTime` increment, but no higher than the bid CST reward of the initial duration until main prize (Comment-202611024, Comment-202611025).
 
 #### A user claims the current bidding round main prize.
 

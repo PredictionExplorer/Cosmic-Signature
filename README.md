@@ -13,6 +13,7 @@ This document provides an overview and links to detailed docs. To avoid stale co
 
 - Endurance Champion and Chrono-Warrior: [docs/endurance-chrono-README.md](docs/endurance-chrono-README.md).
 - Prizes: [docs/cosmic-signature-game-prizes.md](docs/cosmic-signature-game-prizes.md).
+- CST bid pricing in V3+, including the reasoning behind the rules: [docs/cosmic-signature-game-cst-bid-pricing.md](docs/cosmic-signature-game-cst-bid-pricing.md).
 - Contract class diagram and calls: [docs/cosmic-signature-contracts-class-diagram-and-calls.svg](docs/cosmic-signature-contracts-class-diagram-and-calls.svg).
 - Contracts and their functional requirements: [docs/cosmic-signature-contracts-functional-requirements.md](docs/cosmic-signature-contracts-functional-requirements.md).
 - Numbered comments, such as `Comment-202501022`, used throughout the codebase: [docs/numbered-comments.md](docs/numbered-comments.md).

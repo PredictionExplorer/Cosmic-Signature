@@ -21,12 +21,12 @@ Each change is attributed to the lowest version whose source shows it. A change 
 #### Summary
 
 - The late-bid premium makes ETH and CST bids up to about 5x more expensive near `mainPrizeTime`. It is a one-time toll. See [ETH Bidding](#eth-bidding).
-- The CST Dutch auction now declines at a fixed rate of `cstBidPriceDeclineMultiplier` wei per second instead of over a fixed `cstDutchAuctionDuration`. The minimum beginning price after a CST bid drops from 200 to 1 CST, and the price itself can reach 0. See [CST Bidding](#cst-bidding-and-the-cst-dutch-auction).
+- The CST Dutch auction is measured in bid CST reward. The CST bid price base declines at exactly the bid CST reward rate instead of over a fixed `cstDutchAuctionDuration`. Every round's first CST Dutch auction begins at the reward of the initial duration until main prize, `C` (about 1440 CST with the defaults), and after a CST bid the next auction begins at `min(2 * (base + R), C)`, where `R` is one main prize time increment of reward (60 CST). The price can reach 0, but a zero-price CST bid gets zero raffle weight, and the late-bid premium of a CST bid is calculated from at least `R`. The V2 minimum limit and the next-round beginning price are no longer used. See [CST Bidding](#cst-bidding-and-the-cst-dutch-auction) and [cosmic-signature-game-cst-bid-pricing.md](cosmic-signature-game-cst-bid-pricing.md).
 - The bid CST reward is linear in the time since the previous bid. 100% of it goes to the previous bidder, and nothing is minted on the first bid. See [Bid CST Reward](#bid-cst-reward).
-- Bidder raffles are weighted by each bid's ETH price instead of one ticket per bid. See [Bidder Raffle Weights](#bidder-raffle-weights).
+- Bidder raffles are weighted by each bid's ETH price instead of one ticket per bid. A CST bid's weight is scaled by the fraction of the asking CST price it paid. See [Bidder Raffle Weights](#bidder-raffle-weights).
 - The main prize is 3 Cosmic Signature NFTs. The ETH split changes from 25/8/7/6/4 to 20/15/5/5/5 (main, Chrono-Warrior, charity, staking, raffle). See [Main Prize Claim](#main-prize-claim-and-prize-distribution).
 - The new `roundStats` mapping holds per-round statistics. See [Round Statistics](#round-statistics).
-- ABI: several getters were removed or retyped, every Game custom error except `ZeroAddress(string)` lost its `errStr` parameter (Comment-202609299), `MainPrizeClaimed` changed, and `BidPlaced` keeps its topic but field 8 has a new meaning. See [ABI Changes](#abi-changes).
+- ABI: several getters were removed or retyped, every Game custom error except `ZeroAddress(string)` lost its `errStr` parameter (Comment-202609299), `MainPrizeClaimed` changed, and `BidPlaced` keeps its topic but field 8 has a new meaning (`cstDutchAuctionBeginningBidPrice`). See [ABI Changes](#abi-changes).
 - A new `PrizesWallet` is deployed. The old one stays usable for past rounds. See [Upgrade](#upgrade).
 
 #### Upgrade
@@ -34,34 +34,32 @@ Each change is attributed to the lowest version whose source shows it. A change 
 ##### Procedure
 
 - V3 is deployed by a UUPS `upgradeToAndCall(newImplementation, reinitialize())` on the existing proxy. The task config `tasks/config/upgrade-cosmic-signature-game-config-arbitrumOne-CosmicSignatureGameV3.json` passes `newInitializerMethodName = "reinitialize"`.
-- The live V2 `_authorizeUpgrade` requires `onlyOwner` and `_onlyRoundIsInactive`. So the upgrade happens between rounds, and no round mixes V2 and V3 bids. As of the rehearsal fork (block 512486253), round 3 activates at Unix time 1791800077 (2026-10-12 10:14 UTC). The owner can change this, so re-read `roundActivationTime()` before upgrading. The upgrade and `setPrizesWallet` must both land before activation for round 3 to be the first V3 round. Otherwise both revert until round 3 is claimed, and round 4 is the first V3 round.
+- The live V2 `_authorizeUpgrade` requires `onlyOwner` and `_onlyRoundIsInactive`. So the upgrade happens between rounds, and no round mixes V2 and V3 bids. As of the rehearsal fork (block 512486253), round 3 was to activate at Unix time 1791800077 (2026-10-12 10:14 UTC); as of 2026-10-11, the live `roundActivationTime()` read 1792022400 (2026-10-15 00:00 UTC). The owner can change this, so re-read `roundActivationTime()` before upgrading. The upgrade and `setPrizesWallet` must both land before activation for round 3 to be the first V3 round. Otherwise both revert until round 3 is claimed, and round 4 is the first V3 round.
 - `reinitialize()` is guarded only by OpenZeppelin `reinitializer(3)`. It has no `onlyOwner` (Comment-202606128), and its other modifiers only assert. It must run atomically as the upgrade call payload. A second call reverts with `InvalidInitialization`.
 - `reinitialize()` emits only `Initialized(3)` (plus the proxy's `Upgraded`). By design, clients must read the parameter getters on `Initialized` rather than expect individual `*Changed` events (Comment-202610175).
 - The procedure is in `tasks/docs/Cosmic-Signature-Game-Contract-Upgrade-And-Re-Registration.md`.
 
 ##### Values Written by `reinitialize()`
 
-The "Live V2" column comes from a fork rehearsal of the real upgrade at Arbitrum One block 512486253 (timestamp 1791355354, 2026-10-07). The rehearsal scripts are not committed; see [Consequence for Tests](#consequence-for-tests) for the committed, reproducible checks. Slots 308-313 were part of the storage gap, so they read 0 before the upgrade.
+The "Live V2" column comes from a fork rehearsal of the real upgrade at Arbitrum One block 512486253 (timestamp 1791355354, 2026-10-07). The rehearsal scripts are not committed; see [Consequence for Tests](#consequence-for-tests) for the committed, reproducible checks. Slots 308-311 were part of the storage gap, so they read 0 before the upgrade.
 
 | Variable | Constant | Live V2 | V3 |
 | --- | --- | --- | --- |
-| `cstDutchAuctionBeginningBidPriceMinLimit` | `DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT_V3` | 200e18 (200 CST) | 1e18 (1 CST) |
-| `cstBidPriceDeclineMultiplier` (new, slot 308) | `INITIAL_CST_BID_PRICE_DECLINE_MULTIPLIER` | 0 | 16,666,666,666,666,667 (about 1 CST per minute) |
-| `cstBidPriceDeclineMultiplierChangeDivisor` (new, 309) | `DEFAULT_CST_BID_PRICE_DECLINE_MULTIPLIER_CHANGE_DIVISOR` | 0 | 100 |
-| `roundLateBidDurationDivisor` (new, 310) | `DEFAULT_ROUND_LATE_BID_DURATION_DIVISOR` | 0 | 3,000,000 |
-| `roundLateBidPricePremiumAmountBaseMultiplier` (new, 311) | `DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_BASE_MULTIPLIER` | 0 | 29,228,998,656 (3567993 << 13) |
-| `roundLateBidPricePremiumAmountExponent` (new, 312) | `DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_EXPONENT` | 0 | 8 |
+| `roundLateBidDurationDivisor` (new, slot 308) | `DEFAULT_ROUND_LATE_BID_DURATION_DIVISOR` | 0 | 3,000,000 |
+| `roundLateBidPricePremiumAmountBaseMultiplier` (new, 309) | `DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_BASE_MULTIPLIER` | 0 | 29,228,998,656 (3567993 << 13) |
+| `roundLateBidPricePremiumAmountExponent` (new, 310) | `DEFAULT_ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_EXPONENT` | 0 | 8 |
 | `bidCstRewardAmountMultiplier` | `DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER` | 1.08e46 (square-root radicand multiplier) | 6e25 (linear multiplier) |
 | `chronoWarriorEthPrizeAmountPercentage` | `DEFAULT_CHRONO_WARRIOR_ETH_PRIZE_AMOUNT_PERCENTAGE_V3` | 8 | 15 |
 | `raffleTotalEthPrizeAmountForBiddersPercentage` | `DEFAULT_RAFFLE_TOTAL_ETH_PRIZE_AMOUNT_FOR_BIDDERS_PERCENTAGE_V3` | 4 | 5 |
 | `cosmicSignatureNftStakingTotalEthRewardAmountPercentage` | `DEFAULT_COSMIC_SIGNATURE_NFT_STAKING_TOTAL_ETH_REWARD_AMOUNT_PERCENTAGE_V3` | 6 | 5 |
 | `mainEthPrizeAmountPercentage` | `DEFAULT_MAIN_ETH_PRIZE_AMOUNT_PERCENTAGE_V3` | 25 | 20 |
-| `mainPrizeNumCosmicSignatureNfts` (new, 313) | `DEFAULT_MAIN_PRIZE_NUM_COSMIC_SIGNATURE_NFTS` | 0 (V2 always awarded 1) | 3 |
+| `mainPrizeNumCosmicSignatureNfts` (new, 311) | `DEFAULT_MAIN_PRIZE_NUM_COSMIC_SIGNATURE_NFTS` | 0 (V2 always awarded 1) | 3 |
 | `charityEthDonationAmountPercentage` | `DEFAULT_CHARITY_ETH_DONATION_AMOUNT_PERCENTAGE_V3` | 7 | 5 |
 
-- `reinitialize()` overwrites these values unconditionally, so any value the owner tuned on V2 is lost.
-- `reinitialize()` does not touch `nextRoundFirstCstDutchAuctionBeginningBidPrice` (live: 200 CST), `cstDutchAuctionDuration` (live: 30198), `cstDutchAuctionDurationChangeDivisor` (live: 250), `mainPrizeTimeIncrementInMicroSeconds` (live: 3,709,083,600), timeouts, or any address variable.
-- After the upgrade, the rehearsal observed `getRoundLateBidDuration() == 1236` and `getCstDutchAuctionDurations()` first value 12000 (200 CST at the initial multiplier). `getDurationUntilMainPrize()` changed from 0 to -160103 because V2 clamped negative durations to 0, while V3 returns the signed raw value (the former `getDurationUntilMainPrizeRaw`). `getBidCstRewardAmount()` returned about 2.9e25, which is meaningless before the first bid of a round (Comment-202501022).
+- `reinitialize()` overwrites these 10 values unconditionally, so any value the owner tuned on V2 is lost.
+- `reinitialize()` does not touch `nextRoundFirstCstDutchAuctionBeginningBidPrice` (live: 200 CST), `cstDutchAuctionBeginningBidPriceMinLimit` (live: 200 CST), `cstDutchAuctionDuration` (live: 30198), `cstDutchAuctionDurationChangeDivisor` (live: 250), `mainPrizeTimeIncrementInMicroSeconds` (live: 3,709,083,600), `initialDurationUntilMainPrizeDivisor`, timeouts, or any address variable. The 4 CST variables listed first are frozen: V3 neither reads nor writes them (Comment-202608317, Comment-202611025).
+- After the upgrade, the rehearsal observed `getRoundLateBidDuration() == 1236`. `getDurationUntilMainPrize()` changed from 0 to -160103 because V2 clamped negative durations to 0, while V3 returns the signed raw value (the former `getDurationUntilMainPrizeRaw`). `getBidCstRewardAmount()` returned about 2.9e25, which is meaningless before the first bid of a round (Comment-202501022).
+- The rehearsal ran an earlier CST pricing draft, so its CST values are not reported here. From the code: before a round's first bid, `getCstDutchAuctionDurations()` returns as its first value `ceil(C * mainPrizeTimeIncrementInMicroSeconds / bidCstRewardAmountMultiplier)`, where `C = bidCstRewardAmountMultiplier / initialDurationUntilMainPrizeDivisor`. At the live increment and with the default divisor of 41667, that is 89018 s (about 24.7 hours), and `C` is about 1440 CST.
 
 ##### `PrizesWallet` Replacement
 
@@ -90,15 +88,15 @@ OpenZeppelin compares `oz-retyped-from` with the old layout's type name; the nam
 
 ##### V1 -> V2 -> V3 Compatibility
 
-The Game storage layout stays compatible across all three versions. Every variable keeps its slot and type: V2 adds slot 307 from the start of V1's gap, and V3 adds slots 308-313 from V2's gap. In the source layouts the gap always ends at slot 1073742130 (307 + 2^30 - 1).
+The Game storage layout stays compatible across all three versions. Every variable keeps its slot and type: V2 adds slot 307 from the start of V1's gap, and V3 adds slots 308-311 from V2's gap. In the source layouts the gap always ends at slot 1073742130 (307 + 2^30 - 1).
 
 | Slots | V1 (`main` source) | Live V2 | V3 |
 | --- | --- | --- | --- |
 | 0-255 | `OwnableUpgradeableWithReservedStorageGaps` gap | same | same |
 | 256-306 | Game variables | same slots. Slot 277 was renamed `cstDutchAuctionDurationDivisor` -> `cstDutchAuctionDuration`, and slot 283 `bidCstRewardAmount` -> `bidCstRewardAmountMultiplier` | same as V2, plus the slot-259 change below |
 | 307 | gap start | `cstDutchAuctionDurationChangeDivisor` | same |
-| 308-313 | gap | gap | 6 new variables |
-| gap | `uint256[1 << 30]` at 307 | `uint256[(1 << 30) - 1]` at 308 | `uint256[(1 << 30) - 1 - 6]` at 314 |
+| 308-311 | gap | gap | 4 new variables |
+| gap | `uint256[1 << 30]` at 307 | `uint256[(1 << 30) - 1]` at 308 | `uint256[(1 << 30) - 1 - 4]` at 312 |
 
 Sources of the layouts compared:
 
@@ -122,18 +120,16 @@ The struct shape is `V1+`. Only V3 code writes the fields after `bidsInfo` and `
 
 ##### New V3 Variables (`V3`)
 
-`CosmicSignatureGameStorageV3Base` declares 6 new public `uint256` variables at slots 308-313:
+`CosmicSignatureGameStorageV3Base` declares 4 new public `uint256` variables at slots 308-311:
 
-1. `cstBidPriceDeclineMultiplier`
-2. `cstBidPriceDeclineMultiplierChangeDivisor`
-3. `roundLateBidDurationDivisor`
-4. `roundLateBidPricePremiumAmountBaseMultiplier`
-5. `roundLateBidPricePremiumAmountExponent`
-6. `mainPrizeNumCosmicSignatureNfts`
+1. `roundLateBidDurationDivisor`
+2. `roundLateBidPricePremiumAmountBaseMultiplier`
+3. `roundLateBidPricePremiumAmountExponent`
+4. `mainPrizeNumCosmicSignatureNfts`
 
-`CosmicSignatureGameStorageV3.__gap_persistent` shrinks by 6 to `uint256[(1 << 30) - 1 - 6]` at slot 314. 314 + 1073741817 = 308 + 1073741823, so the end of the gap does not move.
+`CosmicSignatureGameStorageV3.__gap_persistent` shrinks by 4 to `uint256[(1 << 30) - 1 - 4]` at slot 312. 312 + 1073741819 = 308 + 1073741823, so the end of the gap does not move.
 
-There is no `bidCstRewardAmountPerMinute` variable. The bid CST reward still uses `bidCstRewardAmountMultiplier`.
+There is no `bidCstRewardAmountPerMinute` variable. The bid CST reward still uses `bidCstRewardAmountMultiplier`. There is no CST price decline rate variable either: the CST bid price base declines at the bid CST reward rate, `bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds` per second (Comment-202611023).
 
 ##### Layout Changes in the V1 and V2 Sources
 
@@ -152,7 +148,7 @@ The Game must be called through the `CosmicSignatureGameV3` contract ABI. The in
 | --- | --- | --- | --- | --- |
 | `getDurationUntilMainPrize() returns (uint256)`, clamped at 0 | `getDurationUntilMainPrize() returns (int256)`, negative after `mainPrizeTime` | `V1+` | Same, `0x36750d2c` | Yes: a negative value decodes as about 2^256 |
 | `getDurationUntilMainPrizeRaw() returns (int256)` | Removed. Use `getDurationUntilMainPrize()`. | `V1+` | `0x37b99cc7` removed | No (reverts) |
-| `getCstDutchAuctionDurations() returns (uint256, int256)` | `returns (uint256, uint256)` | Types `V1+`, meaning `V3` | Same, `0xb700db5f` | Elapsed value: no, it is never negative. First value: decodes correctly but has a new meaning, `ceil(beginningPrice / cstBidPriceDeclineMultiplier)` instead of the `cstDutchAuctionDuration` variable ([details](#cst-bidding-and-the-cst-dutch-auction)) |
+| `getCstDutchAuctionDurations() returns (uint256, int256)` | `returns (uint256, uint256)` | Types `V1+`, meaning `V3` | Same, `0xb700db5f` | Elapsed value: no, it is never negative. First value: decodes correctly but has a new meaning, `ceil(beginningPrice * mainPrizeTimeIncrementInMicroSeconds / bidCstRewardAmountMultiplier)`, the time for the CST bid price base to reach 0, instead of the `cstDutchAuctionDuration` variable ([details](#cst-bidding-and-the-cst-dutch-auction)) |
 | `getTotalNumBids(uint256)` | Removed. Use `roundStats(r)` value 0 (`numBids`). | `V1+` | `0xfd77310f` removed | No (reverts) |
 | `getBidderAddressAt(uint256, uint256)` | Removed. Use `getBidInfoAt(r, i).bidderAddress`. | `V1+` | `0x000ac9f1` removed | No (reverts) |
 | `getBidderTotalSpentAmounts(uint256, address)` | Removed. Use `biddersInfo(r, a)` (`totalSpentEthAmount`, `totalSpentCstAmount`, `lastBidTimeStamp`). | `V1+` | `0xfd9b3747` removed | No (reverts) |
@@ -162,32 +158,33 @@ The Game must be called through the `CosmicSignatureGameV3` contract ABI. The in
 | `constructor` ABI entry | Removed. The constructor moved to abstract `CosmicSignatureGameV2Base` and still calls `_disableInitializers()`. | `V2+` | n/a | n/a |
 | `bidWithCst*(uint256 priceMaxLimit_, ...)` | Parameter renamed to `cstPriceMaxLimit_` | `V1+` | Same | No |
 | (none) | `getRoundLateBidDuration()` | `V3` | `0x60ef8841` | n/a |
-| (none) | Getters `cstBidPriceDeclineMultiplier()`, `cstBidPriceDeclineMultiplierChangeDivisor()`, `roundLateBidDurationDivisor()`, `roundLateBidPricePremiumAmountBaseMultiplier()`, `roundLateBidPricePremiumAmountExponent()`, `mainPrizeNumCosmicSignatureNfts()` | `V3` | New | n/a |
-| (none) | Setters `setCstBidPriceDeclineMultiplier`, `setCstBidPriceDeclineMultiplierChangeDivisor`, `setRoundLateBidDurationDivisor`, `setRoundLateBidPricePremiumAmountBaseMultiplier`, `setRoundLateBidPricePremiumAmountExponent`, `setMainPrizeNumCosmicSignatureNfts`, all taking `(uint256)` | `V3` | New | n/a |
-| `setCstDutchAuctionDuration(uint256)`, `setCstDutchAuctionDurationChangeDivisor(uint256)` | Same signatures. They always revert with `NotImplemented()`. | `V3` | Same | n/a |
+| (none) | `getNextCstBidPriceBase() returns (uint256)` and `getNextCstBidPriceBaseAdvanced(int256 currentTimeOffset_) returns (uint256)`: the CST bid price without the late-bid premium. `getNextCstBidPrice[Advanced]` returns this plus the premium. | `V3` | `0xbff599df`, `0x7a2ac4d7` | n/a |
+| (none) | Getters `roundLateBidDurationDivisor()`, `roundLateBidPricePremiumAmountBaseMultiplier()`, `roundLateBidPricePremiumAmountExponent()`, `mainPrizeNumCosmicSignatureNfts()` | `V3` | New | n/a |
+| (none) | Setters `setRoundLateBidDurationDivisor`, `setRoundLateBidPricePremiumAmountBaseMultiplier`, `setRoundLateBidPricePremiumAmountExponent`, `setMainPrizeNumCosmicSignatureNfts`, all taking `(uint256)` | `V3` | New | n/a |
+| `setCstDutchAuctionDuration(uint256)`, `setCstDutchAuctionDurationChangeDivisor(uint256)`, `setCstDutchAuctionBeginningBidPriceMinLimit(uint256)` | Same signatures. They always revert with `NotImplemented()`. | `V3` | Same | n/a |
 
 The live V2 -> V3 function removals are exactly 6 selectors: `getDurationUntilMainPrizeRaw`, `getTotalNumBids`, `getBidderAddressAt`, `getBidderTotalSpentAmounts`, `bidderAddresses`, and `initializeV2`. `bidsInfo` and `championDurations` never existed in any deployed or branch Game ABI.
 
 Functions that keep their selector but change meaning (`V3`, see [Behavior Changes](#behavior-changes)):
 
-- `getNextEthBidPrice[Advanced]` and `getNextCstBidPrice[Advanced]` include the late-bid premium. The CST price uses the decline-multiplier model.
+- `getNextEthBidPrice[Advanced]` and `getNextCstBidPrice[Advanced]` include the late-bid premium. The CST bid price base declines at the bid CST reward rate (Comment-202611023).
 - `getBidCstRewardAmount[Advanced]` is linear and is paid to the previous bidder.
-- `bidCstRewardAmountMultiplier()` is a linear multiplier, no longer a square-root radicand multiplier, and `reinitialize()` resets it.
+- `bidCstRewardAmountMultiplier()` is a linear multiplier, no longer a square-root radicand multiplier, and `reinitialize()` resets it. It now also sets the CST bid price decline rate and the CST Dutch auction beginning bid prices (Comment-202611022).
 - `nextEthBidPrice()` is the premium-free base, so inside the late window it is not the price to pay.
-- `cstDutchAuctionBeginningBidPrice()` is `max(2 * base, minLimit)`, no longer based on the paid price.
+- `cstDutchAuctionBeginningBidPrice()` is `min(2 * (base + R), C)` after a CST bid (Comment-202611024), no longer `2 * paidPrice` bounded by the minimum limit. While `lastCstBidderAddress() == 0`, it is ignored and the current CST Dutch auction began at `C` instead (Comment-202611025).
 - `biddersInfo()` and `roundStats()` spent totals and maximum prices include the premium.
-- `cstDutchAuctionDuration()` and `cstDutchAuctionDurationChangeDivisor()` are frozen at their last V2 values, because V3 neither reads nor writes them (Comment-202608317).
+- `cstDutchAuctionDuration()` and `cstDutchAuctionDurationChangeDivisor()` are frozen at their last V2 values, because V3 neither reads nor writes them (Comment-202608317). The same applies to `nextRoundFirstCstDutchAuctionBeginningBidPrice()` and `cstDutchAuctionBeginningBidPriceMinLimit()` (Comment-202611025).
 
 ##### Events
 
 | Live V2 | V3 | Version | Topic0 | Silently wrong? |
 | --- | --- | --- | --- | --- |
-| `BidPlaced(uint256 indexed roundNum, address indexed lastBidderAddress, int256 paidEthPrice, int256 paidCstPrice, int256 indexed randomWalkNftId, string message, uint256 bidCstRewardAmount, uint256 cstDutchAuctionDuration, uint256 mainPrizeTime)` | Same types. Field 8 is now `cstBidPriceDeclineMultiplier`. | `V3` | Same, `0x1d1f406c...02ec` | Yes. (1) Field 8 is now the decline multiplier after this bid (CST wei per second), not a duration. (2) `bidCstRewardAmount` is now minted to the previous bidder, not to `lastBidderAddress`, and is 0 on the first bid. (3) `paidEthPrice` and `paidCstPrice` include the late-bid premium. |
+| `BidPlaced(uint256 indexed roundNum, address indexed lastBidderAddress, int256 paidEthPrice, int256 paidCstPrice, int256 indexed randomWalkNftId, string message, uint256 bidCstRewardAmount, uint256 cstDutchAuctionDuration, uint256 mainPrizeTime)` | Same types. Field 8 is now `cstDutchAuctionBeginningBidPrice`. | `V3` | Same, `0x1d1f406c...02ec` | Yes. (1) Field 8 is now the beginning price of the CST Dutch auction in effect after this bid (CST wei, Comment-202611028), not a duration. After a CST bid it is the price the new auction begins at; after an ETH bid it is the beginning price of the unchanged current auction, which on a round's first bid is `C`. (2) `bidCstRewardAmount` is now minted to the previous bidder, not to `lastBidderAddress`, and is 0 on the first bid. (3) `paidEthPrice` and `paidCstPrice` include the late-bid premium. |
 | `MainPrizeClaimed(uint256 indexed roundNum, address indexed beneficiaryAddress, uint256 ethPrizeAmount, uint256 cstPrizeAmount, uint256 indexed prizeCosmicSignatureNftId, uint256 timeoutTimeToWithdrawSecondaryPrizes)` | `MainPrizeClaimed(uint256 indexed roundNum, address indexed beneficiaryAddress, uint256 ethPrizeAmount, uint256 cstPrizeAmount, uint256 indexed prizeFirstCosmicSignatureNftId, uint256 prizeNumCosmicSignatureNfts, uint256 timeoutTimeToWithdrawSecondaryPrizes)` | `V3` | `0x8c551ec2...d591` -> `0x9314e785...3788` | No (missed) |
 | `FundTransferFailed(string errStr, address indexed destinationAddress, uint256 amount)`, emitted when the charity transfer fails | `EthTransferToCharityFailed(address indexed charityAddress, uint256 amount)` | `V1+` | `0x154fb6c6...215a` -> `0x1b957971...6348` | No (missed) |
 | `ArbitrumError(string errStr)` | `ArbSysArbBlockNumberCallFailed()`, `ArbSysArbBlockHashCallFailed()`, `ArbGasInfoGetGasBacklogCallFailed()`, `ArbGasInfoGetL1PricingUnitsSinceUpdateCallFailed()`. They are declared in `ArbitrumHelpers` and emitted by the Game during `claimMainPrize`. | `V1+` | `0xa0f59128...392d` -> `0xa8d743ae`, `0xde09184d`, `0x20bc709a`, `0x1031a982` (in that order) | No (missed) |
-| (none) | `CstBidPriceDeclineMultiplierChanged` (`0x5a775510`), `CstBidPriceDeclineMultiplierChangeDivisorChanged` (`0xdca564ea`), `RoundLateBidDurationDivisorChanged` (`0x7acba37d`), `RoundLateBidPricePremiumAmountBaseMultiplierChanged` (`0x169f25ec`), `RoundLateBidPricePremiumAmountExponentChanged` (`0xcb78cca7`), `MainPrizeNumCosmicSignatureNftsChanged` (`0x616bfcaa`), all taking `(uint256 newValue)` | `V3` | New | n/a |
-| `CstDutchAuctionDurationChanged`, `CstDutchAuctionDurationChangeDivisorChanged` | Still in the ABI, but they can no longer be emitted | `V3` | Same | n/a |
+| (none) | `RoundLateBidDurationDivisorChanged` (`0x7acba37d`), `RoundLateBidPricePremiumAmountBaseMultiplierChanged` (`0x169f25ec`), `RoundLateBidPricePremiumAmountExponentChanged` (`0xcb78cca7`), `MainPrizeNumCosmicSignatureNftsChanged` (`0x616bfcaa`), all taking `(uint256 newValue)` | `V3` | New | n/a |
+| `CstDutchAuctionDurationChanged`, `CstDutchAuctionDurationChangeDivisorChanged`, `CstDutchAuctionBeginningBidPriceMinLimitChanged` | Still in the ABI, but they can no longer be emitted | `V3` | Same | n/a |
 
 The non-redeployed `StakingWalletCosmicSignatureNft` still emits the old `FundTransferFailed` event.
 
@@ -222,36 +219,36 @@ All items in this section are `V3` unless labeled otherwise. The section describ
 
 ##### ETH Bidding
 
-- **Late-bid premium.** A premium is added to every non-first bid, ETH or CST, inside the late window before `mainPrizeTime`. It is computed in `BiddingV3._addRoundLateBidPricePremiumAmountIfNeeded` (Comment-202607119):
+- **Late-bid premium.** A premium is added to every non-first bid, ETH or CST, inside the late window before `mainPrizeTime`. It is computed in `BiddingV3._getRoundLateBidPricePremiumAmountIfNeeded` (Comment-202607119):
   - `L = getRoundLateBidDuration() = mainPrizeTimeIncrementInMicroSeconds / roundLateBidDurationDivisor` (seconds).
   - `d = getDurationUntilMainPrize() - currentTimeOffset_`. Then `e = L - d`, and if `d < 0`, `e = L`. There is no premium when `e <= 0`.
-  - `premium = ((e * roundLateBidPricePremiumAmountBaseMultiplier / mainPrizeTimeIncrementInMicroSeconds) ** roundLateBidPricePremiumAmountExponent * basePrice) >> (roundLateBidPricePremiumAmountExponent * ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_RESOLUTION_EXPONENT)`. `ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_RESOLUTION_EXPONENT` is 13.
-  - With the defaults, `L` is 1200 s at the initial 1-hour increment, 1236 s at the live increment, and grows 1% per round. The premium is about 1.6% of the base price halfway through the window, 40% at 3/4, 172% at 90%, and about 4x from `mainPrizeTime` on, for a total price of about 5x the base. The premium never applies to the first bid of a round.
-- **Toll semantics.** The premium is charged once and recorded as paid: in `BidPlaced.paidEthPrice` / `paidCstPrice`, `biddersInfo.totalSpentEthAmount` / `totalSpentCstAmount`, and `roundStats.totalSpentEthAmount`, `maxEthBidPrice`, `totalSpentCstAmount`, `maxCstBidPrice`. Everything else uses the premium-free base price: `nextEthBidPrice = base + base / ethBidPriceIncreaseDivisor + 1`, the raffle weight, on the first bid `ethDutchAuctionBeginningBidPrice = base * 2`, and after a CST bid the new CST beginning price (`2 * base`). The `nextEthBidPrice()` storage getter therefore no longer equals the price to pay inside the window.
-- **Price getters.** `getNextEthBidPrice[Advanced]` and `getNextCstBidPrice[Advanced]` now return the base plus the premium. So after the first bid the ETH price rises every second inside the window and stays at about 5x after `mainPrizeTime`; in live V2 it was constant between bids. The CST price can also rise inside the window, not only fall. A bid that sends exactly the quoted price can revert with `InsufficientReceivedBidAmount` if it is mined later.
+  - `premium = ((e * roundLateBidPricePremiumAmountBaseMultiplier / mainPrizeTimeIncrementInMicroSeconds) ** roundLateBidPricePremiumAmountExponent * premiumBase) >> (roundLateBidPricePremiumAmountExponent * ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_RESOLUTION_EXPONENT)`. `ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_RESOLUTION_EXPONENT` is 13. `premiumBase` is the ETH bid price base for an ETH bid and `max(cstBase, R)` for a CST bid, where `R` is one main prize time increment of bid CST reward (Comment-202611026; see [CST Bidding](#cst-bidding-and-the-cst-dutch-auction)).
+  - With the defaults, `L` is 1200 s at the initial 1-hour increment, 1236 s at the live increment, and grows 1% per round. The premium is about 1.6% of `premiumBase` halfway through the window, 40% at 3/4, 172% at 90%, and about 4x from `mainPrizeTime` on, for a total ETH price of about 5x the base. The premium never applies to the first bid of a round.
+- **Toll semantics.** The premium is charged once and recorded as paid: in `BidPlaced.paidEthPrice` / `paidCstPrice`, `biddersInfo.totalSpentEthAmount` / `totalSpentCstAmount`, and `roundStats.totalSpentEthAmount`, `maxEthBidPrice`, `totalSpentCstAmount`, `maxCstBidPrice`. Everything else uses the premium-free base price: `nextEthBidPrice = base + base / ethBidPriceIncreaseDivisor + 1`, the raffle weight, on the first bid `ethDutchAuctionBeginningBidPrice = base * 2`, and after a CST bid the new CST beginning price (`min(2 * (base + R), C)`). The `nextEthBidPrice()` storage getter therefore no longer equals the price to pay inside the window.
+- **Price getters.** `getNextEthBidPrice[Advanced]` and `getNextCstBidPrice[Advanced]` now return the base plus the premium, and the new `getNextCstBidPriceBase[Advanced]` return the CST base alone. So after the first bid the ETH price rises every second inside the window and stays at about 5x after `mainPrizeTime`; in live V2 it was constant between bids. The CST price can also rise inside the window, not only fall. A bid that sends exactly the quoted price can revert with `InsufficientReceivedBidAmount` if it is mined later.
 - **Random Walk NFT discount.** `paidEthPrice = ceil((base + premium) / 2)`, so the 50% discount also applies to the premium. The raffle weight is the full undiscounted base. `getEthPlusRandomWalkNftBidPrice` is unchanged.
 - **Overpayment** handling is unchanged. An excess above `ethBidRefundAmountInGasToSwallowMaxLimit * tx.gasprice` is refunded. A smaller excess is swallowed and counted as paid. A failed refund now reverts with the bidder's raw revert data (`V1+`).
 - All Game versions allow several bids in the same second.
 
 ##### CST Bidding and the CST Dutch Auction
 
-- **Decline multiplier model** (`BiddingV3._getNextCstBidPriceBaseAdvanced`):
-  - `base = max(0, beginningPrice - (now + offset - cstDutchAuctionBeginningTimeStamp) * cstBidPriceDeclineMultiplier)`.
-  - `beginningPrice` is `nextRoundFirstCstDutchAuctionBeginningBidPrice` until the round's first CST bid, then `cstDutchAuctionBeginningBidPrice`.
-  - The price to pay is `base + premium`.
-  - Live V2 used `beginningPrice * remaining / cstDutchAuctionDuration` instead.
-- **Multiplier updates.** An ETH bid sets `m = min(m + m / cstBidPriceDeclineMultiplierChangeDivisor, CST_BID_PRICE_DECLINE_MULTIPLIER_MAX_LIMIT)`. A CST bid sets `m = (m + 1) * div / (div + 1)`.
-  - The divisor defaults to 100, so each bid changes `m` by about 1%. Live V2 adjusted `cstDutchAuctionDuration` with divisor 250 instead.
-  - The cap `CST_BID_PRICE_DECLINE_MULTIPLIER_MAX_LIMIT` is `int256.max / (100 * 366 days)`, about 1.83e67 (Comment-202610093).
-  - `m` is never reset between rounds. Each new value appears only in `BidPlaced` field 8, with no `*Changed` event.
-  - Because the price is `B - elapsed * m`, raising `m` on an ETH bid instantly lowers the current CST price by about `elapsed * m / div`.
-- **Beginning price after a CST bid** is `max(2 * base, cstDutchAuctionBeginningBidPriceMinLimit)`. Live V2 used `2 * paidPrice`, which had no premium to exclude. The first CST bid of a round also stores this value in `nextRoundFirstCstDutchAuctionBeginningBidPrice`. The minimum limit drops from 200 CST to 1 CST.
-- **First V3 round.** `nextRoundFirstCstDutchAuctionBeginningBidPrice` keeps its live value of 200 CST. The first CST auction of the first V3 round therefore starts at 200 CST when the round's first ETH bid is placed. That bid has already raised `m` to 16,833,333,333,333,333 (`_tryIncreaseCstBidPriceDeclineMultiplier` runs before `_bidCommon` starts the auction), so the price reaches 0 after about 11,882 s (3.3 hours), or sooner if more ETH bids follow. The value 12000 that `getCstDutchAuctionDurations()` reports before that bid uses the initial multiplier.
-- **Zero price.** The base price can reach 0, and a CST bid at price 0 is valid. It still mints the bid CST reward to the previous bidder. If the reward is nonzero, the zero burn is executed as a zero mint to the bidder (Comment-202606074, unchanged).
-  - This is accepted by design: competing bidders are expected to bid before the price approaches zero. Near `mainPrizeTime`, premium growth is expected to outweigh the base-price decline. These are market assumptions, not contract guarantees; a zero base price still has zero premium and receives the usual raffle weight.
-- **`getCstDutchAuctionDurations()`** now returns `(ceil(beginningPrice / cstBidPriceDeclineMultiplier), now - cstDutchAuctionBeginningTimeStamp)`. The first value is the number of seconds from the auction start until the base price reaches 0. It changes on every bid, because `m` changes and, on a CST bid, the beginning price changes. It also changes on main prize claim, when `lastCstBidderAddress` is reset. It panics with a division by zero if `cstBidPriceDeclineMultiplier == 0`. The elapsed value is meaningless before the round's first bid (Comment-202501022).
-- **Frozen getters.** `cstDutchAuctionDuration()` and `cstDutchAuctionDurationChangeDivisor()` keep their last V2 values forever. V3 neither reads nor writes them (Comment-202608317).
-- **Independent rate adjustments.** The bid CST reward rate falls about 1% per round as `mainPrizeTimeIncrementInMicroSeconds` grows. The CST decline multiplier instead changes on every bid and can vary substantially within a round. Omitting another once-per-round adjustment is deliberate; competition is expected to compensate through the decline rate or CST prices, without an enforced relationship between the rates. At the rehearsal's increment, the reward was about 0.97 CST per minute and the initial decline rate about 1 CST per minute.
+The CST side is measured in one unit, the bid CST reward (Comment-202611022). Let `reward(e) = e * bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds` for `e > 0` seconds and 0 otherwise (the bid CST reward function, `BiddingV3._getBidCstRewardAmountForDuration`), `R = bidCstRewardAmountMultiplier / 1e6` (the reward of one main prize time increment, 60 CST with the defaults, `_getBidCstRewardAmountPerMainPrizeTimeIncrement`), and `C = bidCstRewardAmountMultiplier / initialDurationUntilMainPrizeDivisor` (the reward of the initial duration until main prize, about 1440 CST with the defaults, `_getCstDutchAuctionBeginningBidPriceMaxLimit`). `R` and `C` are computed, not stored. The rationale is in [cosmic-signature-game-cst-bid-pricing.md](cosmic-signature-game-cst-bid-pricing.md).
+
+- **Decline at the reward rate** (`BiddingV3._getNextCstBidPriceBaseAdvanced`, Comment-202611023):
+  - `base = max(0, beginningPrice - reward(now + offset - cstDutchAuctionBeginningTimeStamp))`.
+  - `beginningPrice` is `C` while `lastCstBidderAddress == 0`, i.e. from main prize claim until the round's first CST bid, and `cstDutchAuctionBeginningBidPrice` afterwards (`_getCstDutchAuctionBeginningBidPrice`, Comment-202611025). `cstDutchAuctionBeginningTimeStamp` is set by the round's first bid and by every CST bid.
+  - The price to pay is `base + premium(max(base, R))` (Comment-202611026). `getNextCstBidPriceBase[Advanced]` returns the base alone, and `getNextCstBidPrice[Advanced]` the price to pay.
+  - So the base a CST bid burns plus all bid CST rewards minted since the auction began equals `beginningPrice`, up to integer rounding per bid. ETH bids do not change the CST price. There is no decline rate parameter, no per-bid rate adjustment, and no rate cap.
+  - Live V2 used `beginningPrice * remaining / cstDutchAuctionDuration` instead, with the duration adjusted on every bid.
+- **Beginning price after a CST bid** is `min(2 * (base + R), C)` (Comment-202611024), where `base` excludes the premium. Live V2 used `max(2 * paidPrice, cstDutchAuctionBeginningBidPriceMinLimit)` and stored the round's first restart price in `nextRoundFirstCstDutchAuctionBeginningBidPrice` for the next round. V3 writes neither variable, and `setCstDutchAuctionBeginningBidPriceMinLimit` reverts with `NotImplemented()`.
+  - A CST bid at base 0 restarts the auction at `2R` (120 CST), which reaches 0 after exactly 2 increments. Prompt CST bids escalate to 120, 360, 840, then `C` (about 1440 CST) with the defaults.
+- **Every round's first CST Dutch auction begins at `C`** on the round's first ETH bid (Comment-202611025), and `C` is also the maximum any auction can begin at. The base reaches 0 after `ceil(C * mainPrizeTimeIncrementInMicroSeconds / bidCstRewardAmountMultiplier)` seconds, which is the initial duration until main prize up to rounding: 86400 s at the initial increment, 89018 s at the live increment with the default `initialDurationUntilMainPrizeDivisor`. Nothing is carried from round to round.
+- **First V3 round.** The frozen `nextRoundFirstCstDutchAuctionBeginningBidPrice` (live: 200 CST) is ignored. The first CST Dutch auction of the first V3 round begins at `C` on the round's first ETH bid, like every later round.
+- **Zero price.** The base price can reach 0, and a CST bid at a paid price of 0 is valid outside the late-bid window. It still mints the bid CST reward to the previous bidder. If the reward is nonzero, the zero burn is executed as a zero mint to the bidder (Comment-202606074, unchanged).
+  - A zero-price CST bid gets zero raffle weight (Comment-202611027), restarts the auction at `2R`, so the next zero-price CST bid is at least 2 increments away (Comment-202611024), and inside the late-bid window costs the premium of `R`, about `4R` (240 CST) at `mainPrizeTime` (Comment-202611026). These are contract rules, not market assumptions.
+- **`getCstDutchAuctionDurations()`** now returns `(ceil(beginningPrice * mainPrizeTimeIncrementInMicroSeconds / bidCstRewardAmountMultiplier), now - cstDutchAuctionBeginningTimeStamp)`. The first value is the number of seconds from the auction start until the base price reaches 0. It changes on every CST bid and on main prize claim, when `lastCstBidderAddress` is reset and `mainPrizeTimeIncrementInMicroSeconds` grows; ETH bids do not change it. If `bidCstRewardAmountMultiplier == 0`, the first value is `type(uint256).max` instead of a division-by-zero panic. The elapsed value is meaningless before the round's first bid (Comment-202501022).
+- **Frozen getters.** `cstDutchAuctionDuration()` and `cstDutchAuctionDurationChangeDivisor()` (Comment-202608317), as well as `nextRoundFirstCstDutchAuctionBeginningBidPrice()` and `cstDutchAuctionBeginningBidPriceMinLimit()` (Comment-202611025), keep their last V2 values forever. V3 neither reads nor writes them.
+- **Scaling.** The reward rate, the CST decline rate, `R`, and `C` all derive from `bidCstRewardAmountMultiplier`, `mainPrizeTimeIncrementInMicroSeconds`, and `initialDurationUntilMainPrizeDivisor`, so the CST price cannot drift away from the reward as `mainPrizeTimeIncrementInMicroSeconds` grows about 1% per round. At the live increment, the reward and the decline are both about 0.97 CST per minute, while `R` stays 60 CST per increment and `C` stays about 1440 CST.
 
 ##### Bid CST Reward
 
@@ -259,6 +256,7 @@ All items in this section are `V3` unless labeled otherwise. The section describ
   - With the default multiplier of 6e25, the reward is exactly 1 CST per minute at the initial 1-hour increment, and about 0.97 CST per minute at the live increment.
   - Live V2 used `sqrt(elapsed * multiplier / increment)`. For the first bid, it measured `elapsed` from `roundActivationTime`.
   - `bidCstRewardAmountMultiplier` remains the core reward parameter. Its slot, getter, setter, and event are unchanged, but its unit is now linear.
+- **Price decline unit.** The reward is unchanged in amount and recipient, but it is now also the unit of the CST Dutch auction: the CST bid price base declines by exactly `reward(elapsed)` (Comment-202611023), one increment of reward `R` is added before the restart price is doubled and is the minimum late-bid premium base of a CST bid (Comment-202611024, Comment-202611026), and the reward of the initial duration until main prize, `C`, is every round's first and the maximum beginning price (Comment-202611025). See [CST Bidding](#cst-bidding-and-the-cst-dutch-auction).
 - **Recipient.** 100% of the reward is minted to the previous bidder, `lastBidderAddress` before this bid, on both ETH and CST bids. There is no split. Live V2 minted it to the caller.
   - A bidder who outbids themselves receives the reward themselves.
   - The final bidder of a round is never rewarded for their last holding period.
@@ -269,13 +267,13 @@ All items in this section are `V3` unless labeled otherwise. The section describ
 
 ##### Bidder Raffle Weights
 
-Live V2 picked raffle winners uniformly per bid. V3 weights each bid by its premium-free ETH price at bid time:
+Live V2 picked raffle winners uniformly per bid. V3 weights each bid by the premium-free ETH bid price at bid time, `ethBase` (Comment-202609098):
 
-- An ETH bid's weight is its base price.
-- An ETH plus Random Walk NFT bid's weight is its undiscounted base price.
-- A CST bid's weight is the concurrent ETH base price.
+- An ETH bid's weight is `ethBase`.
+- An ETH plus Random Walk NFT bid's weight is the undiscounted `ethBase`.
+- A CST bid's weight is `ethBase * cstBase / beginningPrice`, where `cstBase` is the premium-free CST price the bid paid and `beginningPrice` is the price the current CST Dutch auction began at (Comment-202611027). So the weight is the ETH weight scaled by the fraction of the asking CST price paid, and a CST bid at base 0 has weight 0. The weight is also 0 if `beginningPrice` is 0, which requires a degenerate `bidCstRewardAmountMultiplier`.
 
-Each pick selects the first bid whose `raffleCumulativeWeight` exceeds `random % totalWeight`. Both the ETH raffle and the CST plus NFT raffle work this way (`MainPrizeV3._pickRaffleWinnerAddress`, Comment-202609098). Details are in [cosmic-signature-game-prizes.md](cosmic-signature-game-prizes.md), section "Bidder Raffle Weight in V3+".
+Each pick selects the first bid whose `raffleCumulativeWeight` exceeds `random % totalWeight`. A zero-weight bid has the same cumulative weight as its predecessor, so it is never selected, and the total weight of a nonempty round is positive because the round's first bid is ETH (Comment-202611029). Both the ETH raffle and the CST plus NFT raffle work this way (`MainPrizeV3._pickRaffleWinnerAddress`, Comment-202609098). Details are in [cosmic-signature-game-prizes.md](cosmic-signature-game-prizes.md), section "Bidder Raffle Weight in V3+".
 
 ##### Main Prize Claim and Prize Distribution
 
@@ -357,11 +355,12 @@ Each pick selects the first bid whose `raffleCumulativeWeight` exceeds `random %
 
 ##### Owner Configuration
 
-- **New setters** (`V3`): the 6 setters listed in [Functions](#functions). Each is `onlyOwner` and `_onlyRoundIsInactive`, and emits its `*Changed(uint256)` event. As with existing setters, the owner is trusted to choose valid parameters; argument validation is deliberately omitted. Misconfigured behavior is unsupported. In particular, `mainPrizeNumCosmicSignatureNfts` must be nonzero, which an assert-enabled build checks; its behavior at zero is otherwise undefined.
+- **New setters** (`V3`): the 4 setters listed in [Functions](#functions). Each is `onlyOwner` and `_onlyRoundIsInactive`, and emits its `*Changed(uint256)` event. As with existing setters, the owner is trusted to choose valid parameters; argument validation is deliberately omitted. Misconfigured behavior is unsupported. In particular, `mainPrizeNumCosmicSignatureNfts` must be nonzero, which an assert-enabled build checks; its behavior at zero is otherwise undefined.
 - **Arithmetic assumptions.** Comment-202607119 describes the premium calculation with the default parameters. It does not guarantee overflow safety for arbitrary owner-supplied parameters.
-- **Disabled setters** (`V3`). `setCstDutchAuctionDuration` and `setCstDutchAuctionDurationChangeDivisor` revert with `NotImplemented()` for any caller, before any ownership check. Their events can no longer be emitted (Comment-202608014).
-- **Changed meaning.** `setBidCstRewardAmountMultiplier` now takes a linear multiplier. `setCstDutchAuctionBeginningBidPriceMinLimit` now bounds `2 * base` instead of `2 * paidPrice`.
-- **`mainPrizeTimeIncrementInMicroSeconds`** now also scales the late-bid window (`getRoundLateBidDuration`) and the premium curve. It already scaled the bid CST reward in live V2, inside the square root, and now scales it linearly. It does not scale `cstBidPriceDeclineMultiplier`.
+- **Disabled setters** (`V3`). `setCstDutchAuctionDuration`, `setCstDutchAuctionDurationChangeDivisor`, and `setCstDutchAuctionBeginningBidPriceMinLimit` revert with `NotImplemented()` for any caller, before any ownership check. Their events can no longer be emitted (Comment-202608014, Comment-202611025).
+- **Changed meaning.** `setBidCstRewardAmountMultiplier` now takes a linear multiplier, and the value also sets the CST bid price decline rate, `R`, and `C` (Comment-202611022). A value below 1e6 makes `R` zero, and 0 makes `C` zero and the CST price constant; the weight and duration formulas then avoid division by zero, but the CST side is meaningless.
+- **`mainPrizeTimeIncrementInMicroSeconds`** now also scales the late-bid window (`getRoundLateBidDuration`) and the premium curve. It already scaled the bid CST reward in live V2, inside the square root, and now scales it linearly. Because the CST bid price declines at the reward rate, it also scales the CST Dutch auction duration (Comment-202611023); `R` and `C` do not depend on it.
+- **`initialDurationUntilMainPrizeDivisor`** now also sets `C`, every round's first and the maximum CST Dutch auction beginning bid price (Comment-202611031).
 
 #### Changes in V1 and V2 Sources
 
@@ -426,8 +425,8 @@ Checklist conclusions:
   - `getNextCstBidPriceAdvanced` and `getBidCstRewardAmountAdvanced` resolve to `BiddingV3`. `BiddingV2Base` declares them abstract.
   - `_bidWithEth` and `_bidWithCst` resolve to `BiddingV3`, `_distributePrizes` to `MainPrizeV3`, and `reinitialize` and `_checkIfPrevVersionWasInitialized` to `CosmicSignatureGameV3`. Each implements an abstract declaration in a `V2Base` contract.
   - `_updateRoundStatsOnMainPrizeClaim`: `CosmicSignatureGameV3` -> `MainPrizeV3` -> `BidStatisticsV3` (writes the statistics) -> `BidStatisticsV2` (no-op). The statistics are written exactly once.
-  - `getCstDutchAuctionDurations` and `getRoundLateBidDuration` resolve to `BiddingV3`, and the 6 new setters to `SystemManagementV3`.
-  - `setCstDutchAuctionDuration` and `setCstDutchAuctionDurationChangeDivisor`: `CosmicSignatureGameV3` -> `SystemManagementV3`, which reverts. The V2 implementation is never reached.
+  - `getCstDutchAuctionDurations`, `getRoundLateBidDuration`, `getNextCstBidPriceBase`, and `getNextCstBidPriceBaseAdvanced` resolve to `BiddingV3`, and the 4 new setters to `SystemManagementV3`.
+  - `setCstDutchAuctionDuration`, `setCstDutchAuctionDurationChangeDivisor`, and `setCstDutchAuctionBeginningBidPriceMinLimit`: `CosmicSignatureGameV3` -> `SystemManagementV3`, which reverts. The V2 implementation is never reached.
   - `_authorizeUpgrade` resolves to the non-virtual `CosmicSignatureGameV2Base._authorizeUpgrade` (`onlyOwner`, `_onlyRoundIsInactive`). A future V3 -> V4 upgrade has the same constraints, and V3 cannot change them.
   - The external entry points in shared bases call the virtual implementations above: `receive`, `bidWith*`, `getNextEthBidPrice`, `getNextCstBidPrice`, `getBidCstRewardAmount`, and `claimMainPrize`.
 - **Exceptions:** none found. Every function with more than one definition in the V3 linearization resolves as listed, and no unintended V2 implementation is reachable. `BiddingV3` does not inherit `BidStatisticsV3` (that base is commented out), and it does not need to.
@@ -470,17 +469,17 @@ Checklist for Nick. "Upgrade block" means the block of the `Upgraded` event on t
 
 - [ ] Keep the live V2 (`main`) ABI for blocks before the upgrade and use the V3 ABI from then on.
 - [ ] `BidPlaced` has the same topic in both versions, so switch decoding by block number.
-  - From the upgrade block on, field 8 is `cstBidPriceDeclineMultiplier` (CST wei per second).
+  - From the upgrade block on, field 8 is `cstDutchAuctionBeginningBidPrice` (CST wei): the beginning price of the CST Dutch auction in effect after the bid (Comment-202611028). After a CST bid, the new auction begins at that price at the bid's timestamp. After an ETH bid, the current auction is unchanged; on the round's first bid the value is `C`.
+  - The CST price curve of the current auction follows from field 8, `cstDutchAuctionBeginningTimeStamp` (the timestamp of the round's first bid or of the latest CST bid), `bidCstRewardAmountMultiplier`, and `mainPrizeTimeIncrementInMicroSeconds`: `base(t) = max(0, beginningPrice - (t - beginningTimeStamp) * bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds)` (Comment-202611023).
   - `bidCstRewardAmount` belongs to the bidder of the previous `BidPlaced` in the same round. It is 0 on the first bid. If you match CST `Transfer` logs instead, take the nonzero mint immediately before that `BidPlaced` log: a zero-price CST bid also emits a zero-value mint to the bidder (Comment-202606074), there is no mint when the reward is 0, and a transaction can contain several bids.
   - Comment-202607273 and the reward getter NatSpec distinguish the V2- recipient (the new bidder) from the V3+ recipient (the previous bidder).
-  - Rename or add the database column for field 8. Never mix duration and multiplier values in one series.
+  - Rename or add the database column for field 8. Never mix duration and beginning-price values in one series.
 - [ ] Subscribe to the new `MainPrizeClaimed` topic (`0x9314e785...`) and keep the old one for history. Store `prizeFirstCosmicSignatureNftId` and `prizeNumCosmicSignatureNfts`.
 - [ ] Do not treat `MainPrizeClaimed` as the last prize event of a claim. Finalize a claim at the end of the transaction, or at `RoundActivationTimeChanged`.
 - [ ] Take NFT IDs from each `*PrizePaid` event and the `MainPrizeClaimed` range. The beneficiary's NFTs are now the highest IDs of the claim.
 - [ ] Update CST `Transfer` matching for the new mint order at claim time, and for reward mints going to the previous bidder.
-- [ ] Add `EthTransferToCharityFailed`, the 4 `Arb*CallFailed` events, and the 6 new `*Changed` events. `ArbitrumError` and the Game's `FundTransferFailed` event will not appear again.
+- [ ] Add `EthTransferToCharityFailed`, the 4 `Arb*CallFailed` events, and the 4 new `*Changed` events. `ArbitrumError` and the Game's `FundTransferFailed` event will not appear again.
 - [ ] On `Initialized`, snapshot every parameter getter at that block; initialization deliberately omits individual `*Changed` events (Comment-202610175; see [the table](#values-written-by-reinitialize)).
-- [ ] Track `cstBidPriceDeclineMultiplier` through `BidPlaced`, because automatic bid updates emit that event instead of `CstBidPriceDeclineMultiplierChanged` (Comment-202608319).
 - [ ] Record the first V3 round number: `roundNum()` at the upgrade block. The upgrade can only land while the round is inactive; do not hard-code the round number from the rehearsal.
 
 ##### Contract Calls and ABI
@@ -492,13 +491,13 @@ Checklist for Nick. "Upgrade block" means the block of the `Upgraded` event on t
   - `getBidderAddressAt(r, i)` -> `getBidInfoAt(r, i).bidderAddress`
   - `getBidderTotalSpentAmounts(r, a)` -> `biddersInfo(r, a)`
   - `bidderAddresses(r)` -> `roundStats(r)`
-- [ ] `getCstDutchAuctionDurations()` now returns `(uint256, uint256)`. The first value is the total time for the CST price to fall to 0 from the auction start, and it changes on each bid and on main prize claim.
-- [ ] Stop reading `cstDutchAuctionDuration()` and `cstDutchAuctionDurationChangeDivisor()`, which are frozen.
+- [ ] `getCstDutchAuctionDurations()` now returns `(uint256, uint256)`. The first value is the total time for the CST bid price base to fall to 0 from the auction start, and it changes on each CST bid and on main prize claim.
+- [ ] Stop reading `cstDutchAuctionDuration()`, `cstDutchAuctionDurationChangeDivisor()`, `nextRoundFirstCstDutchAuctionBeginningBidPrice()`, and `cstDutchAuctionBeginningBidPriceMinLimit()`, which are frozen. Read `cstDutchAuctionBeginningBidPrice()` only while `lastCstBidderAddress() != 0`; otherwise the current auction began at `C = bidCstRewardAmountMultiplier() / initialDurationUntilMainPrizeDivisor()`.
 - [ ] Decode errors with the new selectors. Map error names to messages client-side, because revert data has no string.
   - A failed refund or ETH prize transfer to a contract wallet returns raw or empty revert data.
   - A CST bid can fail with CST token errors (`ERC20InsufficientBalance`, `ERC20InvalidReceiver`).
   - Keep the old error ABIs for history and for the non-redeployed contracts.
-- [ ] Admin tooling: add the 6 new setters and remove `setCstDutchAuctionDuration` and `setCstDutchAuctionDurationChangeDivisor`. `setBidCstRewardAmountMultiplier` now takes linear units.
+- [ ] Admin tooling: add the 4 new setters and remove `setCstDutchAuctionDuration`, `setCstDutchAuctionDurationChangeDivisor`, and `setCstDutchAuctionBeginningBidPriceMinLimit`. `setBidCstRewardAmountMultiplier` now takes linear units and also scales the CST Dutch auction.
 
 ##### UI and Economics
 
@@ -511,8 +510,8 @@ Checklist for Nick. "Upgrade block" means the block of the `Upgraded` event on t
   - For ETH bids, quote with `getNextEthBidPriceAdvanced(+N seconds)` and send a margin. For ETH plus Random Walk NFT bids, quote `getEthPlusRandomWalkNftBidPrice(getNextEthBidPriceAdvanced(+N))`, because the discount also applies to the premium. The excess is refunded above `ethBidRefundAmountInGasToSwallowMaxLimit * gasprice`.
   - For CST bids, set `cstPriceMaxLimit_` with headroom.
 - [ ] Never derive the next ETH price from the last paid price.
-- [ ] Update CST auction charts and progress bars for the fixed-rate decline. The price can reach 0, the minimum restart price is 1 CST, and inside the late window the premium can make the CST price rise. Hide the CST price and progress before the round's first bid.
-- [ ] Raffle odds for V3 rounds: a bid's weight is `raffleCumulativeWeight[i] - raffleCumulativeWeight[i-1]` (from `getBidInfoAt(r, i)`), the total is `raffleCumulativeWeight[numBids-1]`, and a bidder's odds per pick are their summed weights divided by the total. For rounds before the first V3 round the weights read 0, so keep the old formula: bid count divided by `numBids`.
+- [ ] Update CST auction charts and progress bars. The base declines at the bid CST reward rate from the beginning price (`cstDutchAuctionBeginningBidPrice()`, or `C` while `lastCstBidderAddress() == 0`), reaches 0 after the first value of `getCstDutchAuctionDurations()`, and restarts at `min(2 * (base + R), C)` after a CST bid. Show the base (`getNextCstBidPriceBase()`) and the premium (`getNextCstBidPrice() - getNextCstBidPriceBase()`) separately; inside the late window the premium is at least the premium of `R`, so the CST price can rise. Hide the CST price and progress before the round's first bid.
+- [ ] Raffle odds for V3 rounds: a bid's weight is `raffleCumulativeWeight[i] - raffleCumulativeWeight[i-1]` (from `getBidInfoAt(r, i)`), the total is `raffleCumulativeWeight[numBids-1]`, and a bidder's odds per pick are their summed weights divided by the total. A CST bid's weight is the concurrent ETH base scaled by `base / beginningPrice`, so a zero-price CST bid has weight 0; when quoting a CST bid, show that fraction as the ticket size. For rounds before the first V3 round the weights read 0, so keep the old formula: bid count divided by `numBids`.
 - [ ] Prize text: 3 NFTs for the main prize, and the ETH split 20/15/5/5/5. Read percentages and `mainPrizeNumCosmicSignatureNfts()` from the chain instead of hard-coding them.
 
 ##### `PrizesWallet`

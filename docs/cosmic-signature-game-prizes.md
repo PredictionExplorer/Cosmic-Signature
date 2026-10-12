@@ -36,16 +36,16 @@ The rest of this document lists prizes from groups 1 and 2.
 
 #### Bidder Raffle Weight in V3+
 
-In V2-, every bid has equal weight in bidder raffles. In V3+, a bid's weight is the ETH bid price without the late-bid premium when the bid is placed (Comment-202609098):
+In V2-, every bid has equal weight in bidder raffles. In V3+, a bid's weight is derived from the ETH bid price without the late-bid premium when the bid is placed (Comment-202609098):
 
 - A plain ETH bid has the base ETH bid price as its weight.
 - An ETH plus Random Walk NFT bid has the full undiscounted base ETH bid price as its weight.
-- A CST bid has the concurrent base ETH bid price as its weight.
+- A CST bid has the concurrent base ETH bid price scaled by the fraction of the asking CST price the bid paid as its weight: `ethBidPriceBase * cstBidPriceBase / cstDutchAuctionBeginningBidPrice`, where `cstBidPriceBase` is the CST bid price without the late-bid premium and `cstDutchAuctionBeginningBidPrice` is the price the current CST Dutch auction began at (Comment-202611027). A CST bid placed after the CST bid price base has declined to zero therefore has zero weight. The weight is also zero if the beginning price is zero, which requires a degenerate `bidCstRewardAmountMultiplier`.
 - A swallowed ETH overpayment does not increase the weight.
 
-The late-bid premium increases payment only. It does not increase raffle weight, the next ETH price, or the CST auction beginning price carried into the next round.
+The late-bid premium increases payment only. It does not increase raffle weight, the next ETH price, or the next CST Dutch auction beginning price.
 
-Each `BidInfo.raffleCumulativeWeight`, available through `getBidInfoAt`, is the sum of that bid's weight and all preceding bid weights in the round. A raffle draw selects a random weight unit and binary-searches these cumulative values. A bidder's total weight is the sum of their bids' weights.
+Each `BidInfo.raffleCumulativeWeight`, available through `getBidInfoAt`, is the sum of that bid's weight and all preceding bid weights in the round. A raffle draw selects a random weight unit and binary-searches these cumulative values for the first bid whose cumulative weight exceeds it. A zero-weight bid has the same cumulative weight as the preceding bid, so it is never selected. The first bid in a round is an ETH bid with a nonzero weight, so the total weight of a nonempty round is nonzero (Comment-202611029). A bidder's total weight is the sum of their bids' weights.
 
 #### Variables
 
