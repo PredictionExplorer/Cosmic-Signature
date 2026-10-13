@@ -34,7 +34,7 @@ Each change is attributed to the lowest version whose source shows it. A change 
 ##### Procedure
 
 - V3 is deployed by a UUPS `upgradeToAndCall(newImplementation, reinitialize())` on the existing proxy. The task config `tasks/config/upgrade-cosmic-signature-game-config-arbitrumOne-CosmicSignatureGameV3.json` passes `newInitializerMethodName = "reinitialize"`.
-- The live V2 `_authorizeUpgrade` requires `onlyOwner` and `_onlyRoundIsInactive`. So the upgrade happens between rounds, and no round mixes V2 and V3 bids. As of the rehearsal fork (block 512486253), round 3 activates at Unix time 1791800077 (2026-10-12 10:14 UTC). The owner can change this, so re-read `roundActivationTime()` before upgrading. The upgrade and `setPrizesWallet` must both land before activation for round 3 to be the first V3 round. Otherwise both revert until round 3 is claimed, and round 4 is the first V3 round.
+- The live V2 `_authorizeUpgrade` requires `onlyOwner` and `_onlyRoundIsInactive`. So the upgrade happens between rounds, and no round mixes V2 and V3 bids. The 2026-10-12 review recorded round 3 activation at Unix time 1792627200 (2026-10-22 00:00 UTC); re-read `roundActivationTime()` before upgrading. The upgrade and `setPrizesWallet` must land while the round is inactive. If it has activated but nobody has bid yet, the owner can postpone activation; otherwise, wait for the next round.
 - `reinitialize()` is guarded only by OpenZeppelin `reinitializer(3)`. It has no `onlyOwner` (Comment-202606128), and its other modifiers only assert. It must run atomically as the upgrade call payload. A second call reverts with `InvalidInitialization`.
 - `reinitialize()` emits only `Initialized(3)` (plus the proxy's `Upgraded`). By design, clients must read the parameter getters on `Initialized` rather than expect individual `*Changed` events (Comment-202610175).
 - The procedure is in `tasks/docs/Cosmic-Signature-Game-Contract-Upgrade-And-Re-Registration.md`.
@@ -76,15 +76,17 @@ Slot 259 changed from `bidderAddresses` to `roundStats` (see [Storage Layout](#s
 
 | Annotation on `roundStats` in `CosmicSignatureGameStorageV2Base` | Result |
 | --- | --- |
-| Development sources: `oz-retyped-from` is active, but `oz-renamed-from` is commented out | Fails against deployed V2 because the rename is not acknowledged |
+| Only `/// @custom:oz-retyped-from mapping(uint256 => ICosmicSignatureGameStorage.BidderAddresses)` | Fails against deployed V2 because the rename is not acknowledged |
 | Only `/// @custom:oz-renamed-from bidderAddresses` | Fails: incompatible struct, members renamed and retyped |
 | `/// @custom:oz-renamed-from bidderAddresses` plus `/// @custom:oz-retyped-from mapping(uint256 => ICosmicSignatureGameStorage.BidderAddresses)` | Passes |
 
-Enable the rename annotation on the deployment branch. It remains commented during development because the tests' V1 already has `roundStats`, so adding a rename from `bidderAddresses` in V2 would fail V1 -> V2 validation. Follow `tasks/docs/Cosmic-Signature-Game-Contract-Upgrade-And-Re-Registration.md`, including its instructions for obsolete annotations on other variables (ToDo-202607169-1). Commit the exact deployment sources, configuration, reports, and OpenZeppelin manifest on that branch.
+Both annotations are active in the V2 and V3 sources. The refactored V1 also carries the rename annotation, so V1 -> V2 tests compare matching `renamedFrom` values. No deployment-only annotation edits are needed for V2 -> V3. Follow `tasks/docs/Cosmic-Signature-Game-Contract-Upgrade-And-Re-Registration.md` for the deployment procedure.
+
+Keep the existing rename annotations consistent across deployments (ToDo-202607169-1). Removing one can pass validation, but restoring it after deploying without it fails because the manifest no longer records it.
 
 OpenZeppelin compares `oz-retyped-from` with the old layout's type name; the named type need not exist in the new sources. A nonmatching annotation leaves the normal type check in place. It also tolerates the same `oz-renamed-from` on both sides of an upgrade, which explains why unchanged V2 annotations do not break V2 -> V3 tests.
 
-`test/tests-src/CosmicSignatureGameV3-DeployedV2StorageLayout.js` checks these cases against the deployed V2 layout. The separate `CosmicSignatureGameV3-StorageLayout.js` validates upgrades from the refactored sources; it does not replace the deployed-layout checks.
+`test/tests-src/CosmicSignatureGameV3-DeployedV2StorageLayout.js` requires the compiled V3 layout to pass against the deployed V2 layout without injected annotations and checks the annotation cases above. The separate `CosmicSignatureGameV3-StorageLayout.js` validates upgrades from the refactored sources; it does not replace the deployed-layout checks.
 
 #### Storage Layout
 

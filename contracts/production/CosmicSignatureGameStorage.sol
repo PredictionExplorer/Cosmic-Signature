@@ -66,6 +66,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Issue. It could make sense to combine `roundStats` and `biddersInfo`,
 	/// but doing so would break storage layout compatibility, so Comment-202609134 applies.
 	/// [/Comment-202610054]
+	/// ToDo-202607169-1 applies.
+	/// @custom:oz-renamed-from bidderAddresses
 	mapping(uint256 roundNum => RoundStats) public roundStats;
 
 	/// @dev Comment-202411098 applies.

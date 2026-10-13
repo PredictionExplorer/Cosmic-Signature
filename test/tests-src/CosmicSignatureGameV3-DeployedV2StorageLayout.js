@@ -56,14 +56,6 @@ function getMappingValueStructTypeId(mappingTypeId_) {
 	return mappingTypeId_.match(/t_struct\([^)]*\)\d+_storage/)[0];
 }
 
-/** Simulates enabling the rename annotation on the deployed V2 upgrade branch. */
-function annotateRoundStatsAsRenamedFromBidderAddresses(v3Layout_) {
-	const annotatedLayout_ = structuredClone(v3Layout_);
-	const roundStatsItem_ = findStorageItemAtSlot(annotatedLayout_, RENAMED_VARIABLE_SLOT);
-	roundStatsItem_.renamedFrom = "bidderAddresses";
-	return annotatedLayout_;
-}
-
 describe("CosmicSignatureGameV3-DeployedV2StorageLayout", function () {
 	it("keeps every deployed V2 storage variable at the same location", async function () {
 		const deployedV2Layout_ = loadDeployedV2Layout();
@@ -143,33 +135,44 @@ describe("CosmicSignatureGameV3-DeployedV2StorageLayout", function () {
 		}
 	});
 
-	it("passes OpenZeppelin validation against the deployed V2 only with the roundStats annotations", async function () {
+	it("validates the deployed V2 upgrade with source annotations and checks later upgrades", async function () {
 		const deployedV2Layout_ = loadDeployedV2Layout();
 		const v3Layout_ = await getV3Layout();
 		const validationOptions_ = withValidationDefaults({ unsafeAllowRenames: false, unsafeSkipStorageCheck: false, });
 
-		// Unless both `@custom:oz-renamed-from bidderAddresses` and
-		// `@custom:oz-retyped-from mapping(uint256 => ICosmicSignatureGameStorage.BidderAddresses)`
-		// are present near `roundStats`, OpenZeppelin rejects the upgrade, and only because of `roundStats`.
-		// Renaming alone is not enough, because the struct members were renamed and `items` was retyped.
 		const report_ = getStorageUpgradeReport(deployedV2Layout_, v3Layout_, validationOptions_);
+		expect(report_.pass, report_.explain(false)).equal(true);
+
+		// The manifest will record these annotations for validation of later upgrades.
 		const roundStatsItem_ = findStorageItemAtSlot(v3Layout_, RENAMED_VARIABLE_SLOT);
-		if (roundStatsItem_.renamedFrom === undefined || roundStatsItem_.retypedFrom === undefined) {
-			expect(report_.pass).equal(false);
-			for (const operation_ of report_.ops) {
-				expect(operation_.updated?.label ?? operation_.original?.label).equal("roundStats");
-			}
-		} else {
-			expect(report_.pass, report_.explain(false)).equal(true);
+		expect(roundStatsItem_.renamedFrom).equal("bidderAddresses");
+		expect(roundStatsItem_.retypedFrom).equal("mapping(uint256 => ICosmicSignatureGameStorage.BidderAddresses)");
+		expect(findStorageItemAtSlot(v3Layout_, "277")).include({ label: "cstDutchAuctionDuration", renamedFrom: "cstDutchAuctionDurationDivisor", });
+		expect(findStorageItemAtSlot(v3Layout_, "283")).include({ label: "bidCstRewardAmountMultiplier", renamedFrom: "bidCstRewardAmount", });
+
+		// Without the rename annotation, validation fails only at `roundStats`.
+		const unannotatedV3Layout_ = structuredClone(v3Layout_);
+		delete findStorageItemAtSlot(unannotatedV3Layout_, RENAMED_VARIABLE_SLOT).renamedFrom;
+		const unannotatedReport_ = getStorageUpgradeReport(deployedV2Layout_, unannotatedV3Layout_, validationOptions_);
+		expect(unannotatedReport_.pass).equal(false);
+		for (const operation_ of unannotatedReport_.ops) {
+			expect(operation_.updated?.label ?? operation_.original?.label).equal("roundStats");
 		}
 
-		const annotatedV3Layout_ = annotateRoundStatsAsRenamedFromBidderAddresses(v3Layout_);
-		const annotatedReport_ = getStorageUpgradeReport(deployedV2Layout_, annotatedV3Layout_, validationOptions_);
-		expect(annotatedReport_.pass, annotatedReport_.explain(false)).equal(true);
-
+		// Renaming alone does not acknowledge the struct's renamed and retyped members.
 		const renamedOnlyV3Layout_ = structuredClone(v3Layout_);
-		findStorageItemAtSlot(renamedOnlyV3Layout_, RENAMED_VARIABLE_SLOT).renamedFrom = "bidderAddresses";
 		delete findStorageItemAtSlot(renamedOnlyV3Layout_, RENAMED_VARIABLE_SLOT).retypedFrom;
 		expect(getStorageUpgradeReport(deployedV2Layout_, renamedOnlyV3Layout_, validationOptions_).pass).equal(false);
+
+		// These rename annotations can be removed, but restoring them after deploying without them fails validation.
+		const deployedWithoutRenamesLayout_ = structuredClone(v3Layout_);
+		for (const slot_ of ["277", "283",]) {
+			delete findStorageItemAtSlot(deployedWithoutRenamesLayout_, slot_).renamedFrom;
+		}
+		const restoredRenamesReport_ = getStorageUpgradeReport(deployedWithoutRenamesLayout_, v3Layout_, validationOptions_);
+		expect(restoredRenamesReport_.pass).equal(false);
+		expect(restoredRenamesReport_.ops.map((operation_) => operation_.updated.label).sort()).deep.equal(["bidCstRewardAmountMultiplier", "cstDutchAuctionDuration",]);
+		expect(getStorageUpgradeReport(v3Layout_, v3Layout_, validationOptions_).pass).equal(true);
+		expect(getStorageUpgradeReport(v3Layout_, deployedWithoutRenamesLayout_, validationOptions_).pass).equal(true);
 	});
 });
