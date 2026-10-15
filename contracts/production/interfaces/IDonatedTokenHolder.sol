@@ -15,9 +15,9 @@ interface IDonatedTokenHolder {
 	/// [Comment-202507146]
 	/// Authorizes the `DonatedTokenHolder` contract deployer to spend the `DonatedTokenHolder` contract's
 	/// token balance held in the `tokenAddress_` contract.
-	/// @param tokenAddress_ Comment-202502248 applies.
 	/// [/Comment-202507146]
 	/// Only the contract deployer is permitted to call this method.
+	/// @param tokenAddress_ Comment-202502248 applies.
 	/// @dev This method must be `_onlyDeployer` because otherwise a hacker would be able to call it
 	/// for an arbitrary ERC-20 token contract and then transfer a token amount to us, all without placing a bid.
 	/// Although after, or even before donating by placing a bid, the donor or any hackers can still make a few more transfers to us

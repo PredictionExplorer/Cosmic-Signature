@@ -6,7 +6,7 @@ const { sleepForMilliSeconds, waitForTransactionReceipt } = require("../../../sr
 
 async function waitUntilMainPrizeTime(cosmicSignatureGameProxy_) {
 	for (;;) {
-		let durationUntilMainPrize_ = await cosmicSignatureGameProxy_.getDurationUntilMainPrizeRaw({blockTag: "pending",});
+		let durationUntilMainPrize_ = await cosmicSignatureGameProxy_.getDurationUntilMainPrize({blockTag: "pending",});
 		console.info("%s", `${durationUntilMainPrize_} seconds until main prize.`);
 		if (durationUntilMainPrize_ <= 0n) {
 			break;
@@ -47,7 +47,7 @@ async function claimMainPrize(cosmicSignatureGameProxy_, prizesWallet_, bidderSi
 // /** Comment-202509229 applies. */
 // async function forward_time_to_main_prize_time() {
 // 	const cosmicSignatureGame = await getCosmicSignatureGameContract();
-// 	let durationUntilMainPrize = await cosmicSignatureGame.getDurationUntilMainPrizeRaw(/*todo-9 {blockTag: "pending",}*/);
+// 	let durationUntilMainPrize = await cosmicSignatureGame.getDurationUntilMainPrize(/*todo-9 {blockTag: "pending",}*/);
 // 	console.info("%s", `Duration until main prize before: ${durationUntilMainPrize}`);
 // 	if (durationUntilMainPrize > 0n) {
 // 		if (durationUntilMainPrize > 1n) {
@@ -57,7 +57,7 @@ async function claimMainPrize(cosmicSignatureGameProxy_, prizesWallet_, bidderSi
 //
 // 		// This is supposed to be zero.
 // 		// But this can also be negative.
-// 		durationUntilMainPrize = await cosmicSignatureGame.getDurationUntilMainPrizeRaw(/*todo-9 {blockTag: "pending",}*/);
+// 		durationUntilMainPrize = await cosmicSignatureGame.getDurationUntilMainPrize(/*todo-9 {blockTag: "pending",}*/);
 //
 // 		console.info("%s", `Duration until main prize after: ${durationUntilMainPrize}`);
 // 	}

@@ -13,7 +13,7 @@ contract FakeArbGasInfo is FakeArbBase {
 			revert ("FakeArbGasInfo.getGasBacklog is disabled.");
 		}
 		if ((modeCode & 0x200) != 0) {
-			assembly {
+			assembly ("memory-safe") {
 				return (0, 0)
 			}
 		}
@@ -30,7 +30,7 @@ contract FakeArbGasInfo is FakeArbBase {
 			revert ("FakeArbGasInfo.getL1PricingUnitsSinceUpdate is disabled.");
 		}
 		if ((modeCode & 0x2000) != 0) {
-			assembly {
+			assembly ("memory-safe") {
 				return (0, 0)
 			}
 		}

@@ -1,5 +1,11 @@
 {
 	"name": "Cosmic-Signature",
+	"scripts": {
+		"hardhat-test-quick": "cd test/runners && ./test-quick.bash -b",
+		"hardhat-test-medium": "cd test/runners && ./test-medium.bash -b",
+		"hardhat-test-full": "cd test/runners && ./test.bash -b",
+		"hardhat-coverage": "cd test/runners && ./coverage.bash -b"
+	},
 	"devDependencies": {
 		"@arbitrum/nitro-contracts": "~3.2.0",
 		"@eslint/js": "^9.39.2",
@@ -11,6 +17,7 @@
 		"@openzeppelin/hardhat-upgrades": "~3.9.1",
 		"@stylistic/eslint-plugin": "^5.10.0",
 		"eslint": "^9.39.4",
+		"eslint-plugin-chai-friendly": "^1.2.1",
 		"hardhat": "~2.27.2",
 		"hardhat-preprocessor": "~0.1.5",
 		"hardhat-tracer": "~3.4.0",

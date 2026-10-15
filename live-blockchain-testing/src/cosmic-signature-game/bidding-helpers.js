@@ -35,19 +35,13 @@ async function bidWithEth(cosmicSignatureGameProxy_, bidderSigner_) {
 	const nextEthBidPrices_ = new Array(5);
 
 	// [Comment-202510017]
-	// Issue. We need to request ETH bid prices for a few upcoming seconds only if we are to make the 1st bid in a bidding round.
-	// Otherwise all the prices would be the same.
-	// But keeping it simple.
+	// Issue. To keep these V1 tests simple, we request ETH bid price projections for the current and a few upcoming seconds
+	// even after the first bid in a round, when the price no longer changes with time.
 	// [/Comment-202510017]
 	for (let nextEthBidPriceIndex_ = nextEthBidPrices_.length; ; ) {
 		-- nextEthBidPriceIndex_;
-
-		// [Comment-202509215]
-		// Issue. Passing `currentTimeOffset_ = nextEthBidPriceIndex_`.
-		// It's correct to do so only if a block does not span multilpe seconds.
-		// [/Comment-202509215]
-		nextEthBidPrices_[nextEthBidPriceIndex_] = await cosmicSignatureGameProxy_.getNextEthBidPriceAdvanced(BigInt(nextEthBidPriceIndex_), {blockTag: "pending",});
-
+		nextEthBidPrices_[nextEthBidPriceIndex_] =
+			await cosmicSignatureGameProxy_.getNextEthBidPriceAdvanced(BigInt(nextEthBidPriceIndex_), {blockTag: "pending",});
 		if (nextEthBidPriceIndex_ <= 0) {
 			break;
 		}
@@ -62,7 +56,14 @@ async function bidWithEth(cosmicSignatureGameProxy_, bidderSigner_) {
 	let log_ = transactionReceipt_.logs.find((log_) => (log_.topics[0] == cosmicSignatureGameProxyBidPlacedTopicHash_));
 	let parsedLog_ = cosmicSignatureGameProxy_.interface.parseLog(log_);
 	expect(parsedLog_.args.lastBidderAddress).equal(bidderSigner_.address);
+
+	// [Comment-202509215]
+	// Issue. These bid price projections cover only a few seconds.
+	// A longer transaction inclusion delay can make the actual paid bid price differ from every projection.
+	// This is more likely on blockchains with block intervals longer than the projection window.
+	// [/Comment-202509215]
 	expect(parsedLog_.args.paidEthPrice).oneOf(nextEthBidPrices_);
+
 	expect(parsedLog_.args.paidCstPrice).equals(-1n);
 	expect(parsedLog_.args.randomWalkNftId).equal(-1n);
 	expect(parsedLog_.args.message).equal("bidWithEth");
@@ -76,10 +77,8 @@ async function bidWithEthPlusRandomWalkNft(cosmicSignatureGameProxy_, bidderSign
 	// Comment-202510017 applies.
 	for (let nextEthBidPriceIndex_ = nextEthBidPrices_.length; ; ) {
 		-- nextEthBidPriceIndex_;
-
-		// Comment-202509215 applies.
-		nextEthBidPrices_[nextEthBidPriceIndex_] = await cosmicSignatureGameProxy_.getNextEthBidPriceAdvanced(BigInt(nextEthBidPriceIndex_), {blockTag: "pending",});
-
+		nextEthBidPrices_[nextEthBidPriceIndex_] =
+			await cosmicSignatureGameProxy_.getNextEthBidPriceAdvanced(BigInt(nextEthBidPriceIndex_), {blockTag: "pending",});
 		if (nextEthBidPriceIndex_ <= 0) {
 			break;
 		}
@@ -103,7 +102,10 @@ async function bidWithEthPlusRandomWalkNft(cosmicSignatureGameProxy_, bidderSign
 	let log_ = transactionReceipt_.logs.find((log_) => (log_.topics[0] == cosmicSignatureGameProxyBidPlacedTopicHash_));
 	let parsedLog_ = cosmicSignatureGameProxy_.interface.parseLog(log_);
 	expect(parsedLog_.args.lastBidderAddress).equal(bidderSigner_.address);
+
+	// Comment-202509215 applies.
 	expect(parsedLog_.args.paidEthPrice).oneOf(nextEthPlusRandomWalkNftBidPrices_);
+
 	expect(parsedLog_.args.paidCstPrice).equals(-1n);
 	expect(parsedLog_.args.randomWalkNftId).equal(randomWalkNftId_);
 	expect(parsedLog_.args.message).equal("bidWithEthPlusRandomWalkNft");
@@ -118,10 +120,8 @@ async function bidWithEthAndDonateNft(cosmicSignatureGameProxy_, prizesWallet_, 
 	// Comment-202510017 applies.
 	for (let nextEthBidPriceIndex_ = nextEthBidPrices_.length; ; ) {
 		-- nextEthBidPriceIndex_;
-
-		// Comment-202509215 applies.
-		nextEthBidPrices_[nextEthBidPriceIndex_] = await cosmicSignatureGameProxy_.getNextEthBidPriceAdvanced(BigInt(nextEthBidPriceIndex_), {blockTag: "pending",});
-
+		nextEthBidPrices_[nextEthBidPriceIndex_] =
+			await cosmicSignatureGameProxy_.getNextEthBidPriceAdvanced(BigInt(nextEthBidPriceIndex_), {blockTag: "pending",});
 		if (nextEthBidPriceIndex_ <= 0) {
 			break;
 		}
@@ -136,7 +136,10 @@ async function bidWithEthAndDonateNft(cosmicSignatureGameProxy_, prizesWallet_, 
 	let log_ = transactionReceipt_.logs.find((log_) => (log_.topics[0] == cosmicSignatureGameProxyBidPlacedTopicHash_));
 	let parsedLog_ = cosmicSignatureGameProxy_.interface.parseLog(log_);
 	expect(parsedLog_.args.lastBidderAddress).equal(bidderSigner_.address);
+
+	// Comment-202509215 applies.
 	expect(parsedLog_.args.paidEthPrice).oneOf(nextEthBidPrices_);
+
 	expect(parsedLog_.args.paidCstPrice).equals(-1n);
 	expect(parsedLog_.args.randomWalkNftId).equal(-1n);
 	expect(parsedLog_.args.message).equal("bidWithEthAndDonateNft");
@@ -157,10 +160,8 @@ async function bidWithEthPlusRandomWalkNftAndDonateNft(cosmicSignatureGameProxy_
 	// Comment-202510017 applies.
 	for (let nextEthBidPriceIndex_ = nextEthBidPrices_.length; ; ) {
 		-- nextEthBidPriceIndex_;
-
-		// Comment-202509215 applies.
-		nextEthBidPrices_[nextEthBidPriceIndex_] = await cosmicSignatureGameProxy_.getNextEthBidPriceAdvanced(BigInt(nextEthBidPriceIndex_), {blockTag: "pending",});
-
+		nextEthBidPrices_[nextEthBidPriceIndex_] =
+			await cosmicSignatureGameProxy_.getNextEthBidPriceAdvanced(BigInt(nextEthBidPriceIndex_), {blockTag: "pending",});
 		if (nextEthBidPriceIndex_ <= 0) {
 			break;
 		}
@@ -184,7 +185,10 @@ async function bidWithEthPlusRandomWalkNftAndDonateNft(cosmicSignatureGameProxy_
 	let log_ = transactionReceipt_.logs.find((log_) => (log_.topics[0] == cosmicSignatureGameProxyBidPlacedTopicHash_));
 	let parsedLog_ = cosmicSignatureGameProxy_.interface.parseLog(log_);
 	expect(parsedLog_.args.lastBidderAddress).equal(bidderSigner_.address);
+
+	// Comment-202509215 applies.
 	expect(parsedLog_.args.paidEthPrice).oneOf(nextEthPlusRandomWalkNftBidPrices_);
+
 	expect(parsedLog_.args.paidCstPrice).equals(-1n);
 	expect(parsedLog_.args.randomWalkNftId).equal(randomWalkNftId_);
 	expect(parsedLog_.args.message).equal("bidWithEthPlusRandomWalkNftAndDonateNft");
@@ -204,10 +208,8 @@ async function bidWithCstAndDonateToken(cosmicSignatureGameProxy_, prizesWallet_
 	const timeStamp1_ = performance.now();
 	for (let nextCstBidPriceIndex_ = nextCstBidPrices_.length; ; ) {
 		-- nextCstBidPriceIndex_;
-
-		// Comment-202509215 applies.
-		nextCstBidPrices_[nextCstBidPriceIndex_] = await cosmicSignatureGameProxy_.getNextCstBidPriceAdvanced(BigInt(nextCstBidPriceIndex_), {blockTag: "pending",});
-
+		nextCstBidPrices_[nextCstBidPriceIndex_] =
+			await cosmicSignatureGameProxy_.getNextCstBidPriceAdvanced(BigInt(nextCstBidPriceIndex_), {blockTag: "pending",});
 		// console.info("%s", hre.ethers.formatEther(nextCstBidPrices_[nextCstBidPriceIndex_]));
 		if (nextCstBidPriceIndex_ <= 0) {
 			break;
@@ -230,7 +232,10 @@ async function bidWithCstAndDonateToken(cosmicSignatureGameProxy_, prizesWallet_
 	let parsedLog_ = cosmicSignatureGameProxy_.interface.parseLog(log_);
 	expect(parsedLog_.args.lastBidderAddress).equal(bidderSigner_.address);
 	expect(parsedLog_.args.paidEthPrice).equals(-1n);
+
+	// Comment-202509215 applies.
 	expect(parsedLog_.args.paidCstPrice).oneOf(nextCstBidPrices_);
+
 	expect(parsedLog_.args.randomWalkNftId).equal(-1n);
 	expect(parsedLog_.args.message).equal("bidWithCstAndDonateToken");
 	log_ = transactionReceipt_.logs.find((log_) => (log_.topics[0] == prizesWalletTokenDonatedTopicHash_));

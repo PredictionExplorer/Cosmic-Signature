@@ -13,24 +13,28 @@ pragma solidity =0.8.34;
 library CosmicSignatureEvents {
 	// #region Charity
 
+	/// @notice Emitted when an ETH transfer to charity fails without reverting the transaction.
+	/// This is similar to `CosmicSignatureErrors.EthTransferToCharityFailed`.
+	event EthTransferToCharityFailed(address indexed charityAddress, uint256 amount);
+
 	/// @notice Emitted after a donation has been transferred to charity.
 	/// This is used only for ETH.
 	/// @param charityAddress Charity address.
 	/// @param amount Amount transferred to charity.
 	/// It can potentially be zero.
+	/// @dev
+	/// [Comment-202609146]
+	/// Issue. One might want to rename `Fund` to `Eth`.
+	/// But this is used in some already deployed contracts, so Comment-202609134 applies.
+	/// Comment-202609144 relates.
+	/// [/Comment-202609146]
 	event FundsTransferredToCharity(address indexed charityAddress, uint256 amount);
-
-	// #endregion
-	// #region Arbitrum
-
-	/// @notice Emitted after a call to an Arbitrum precompiled contract fails.
-	/// @param errStr Description of the error.
-	event ArbitrumError(string errStr);
 
 	// #endregion
 	// #region Monetary Transfers
 
 	/// @notice This is similar to `CosmicSignatureErrors.FundTransferFailed`.
+	/// @dev Comment-202609144 applies.
 	event FundTransferFailed(string errStr, address indexed destinationAddress, uint256 amount);
 
 	// #endregion

@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 
 # [Comment-202503282]
-# This code is similar to "${workspaceFolder}/test/runners/test-1.bash".
+# This code is similar to "${workspaceFolder}/test/runners/test.bash".
 # Comments there apply.
 # [/Comment-202503282]
 
@@ -30,4 +30,13 @@
 	SafeTryHardhatClean 'true' 'true' '1'
 	SafeTryHardhatClean 'true' 'false' '0'
 	SafeTryHardhatClean 'false' 'false' '0'
+	
+	if [ ${OutcomeCode} -lt 2 ]; then
+		'npx' 'hardhat' 'clean' '--global'
+		if [ $? -ne 0 ]; then
+			read '-r' '-n' '1' '-s' '-p' 'Error. Hardhat Clean Global failed. We will skip any remaining cleans. Press any key to finish.'
+			OutcomeCode=2
+		fi
+		echo
+	fi
 )

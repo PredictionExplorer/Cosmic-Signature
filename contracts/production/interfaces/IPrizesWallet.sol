@@ -147,7 +147,7 @@ interface IPrizesWallet is IAddressValidator {
 	/// @param tokenAddress The ERC-20 contract address.
 	/// @param amount Token amount.
 	/// This is the same value as the one near Comment-202507143,
-	/// but if it was initially zero it was replaced with the actual balance received from `tokenAddress`.
+	/// but if it was initially zero it was replaced with the value returned by `tokenAddress_.balanceOf`.
 	event DonatedTokenClaimed(
 		uint256 indexed roundNum,
 		address indexed beneficiaryAddress,
@@ -188,6 +188,9 @@ interface IPrizesWallet is IAddressValidator {
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
 	function setTimeoutDurationToWithdrawPrizes(uint256 newValue_) external;
+
+	// #enable_asserts /// @dev Comment-202610038 applies.
+	// #enable_asserts function setBypassSomeAsserts(bool newValue_) external;
 
 	/// @notice Calling this method is equivalent to calling `registerRoundEnd` once and then `depositEth` zero or more times.
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.

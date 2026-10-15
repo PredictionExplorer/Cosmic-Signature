@@ -1,15 +1,25 @@
+// #region
+
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity =0.8.34;
+
+// #endregion
+// #region
 
 import { CryptographyHelpers } from "./CryptographyHelpers.sol";
 import { ArbitrumHelpers } from "./ArbitrumHelpers.sol";
 
+// #endregion
+// #region
+
 library RandomNumberHelpers {
+	// #region `RandomNumberSeedWrapper`
+
 	struct RandomNumberSeedWrapper {
 		/// @dev
 		/// [Comment-202502075]
-		/// This is a random number seed.
-		/// We generate a random number by incrementing its seed and calculating a hash sum of the result.
+		/// This is a random number seed, which initial value is to be generated randomly.
+		/// We generate a random number by incrementing the seed and calculating a hash sum of the result.
 		/// It's important that calculations involving this variable ignored overflows.
 		/// That includes cases when we pass it to a method by value and then the method makes calculations involving the passed value.
 		/// [/Comment-202502075]
@@ -17,10 +27,13 @@ library RandomNumberHelpers {
 		/// Optimization idea.
 		/// Use the initially generated random number seed as a random number.
 		/// Then, without incrementing it, calculate its hash sum, assign the result to itself, and use it as a random number.
-		/// Only then start incrementing random number seed.
+		/// Only then start incrementing the seed.
 		/// [/Comment-202502077]
 		uint256 value;
 	}
+
+	// #endregion
+	// #region `generateRandomNumberSeed`
 
 	/// @notice
 	/// [Comment-202504067]
@@ -38,56 +51,64 @@ library RandomNumberHelpers {
 	/// [/Comment-202503254]
 	/// Comment-202502077 applies to the return value.
 	function generateRandomNumberSeed() internal /*view*/ returns (uint256) {
-		// [Comment-202506276]
-		// I've seen L1 and L2 block hashes being equal.
-		// So it would be incorrect to bitwise xor them with each other.
-		// Therefore let's shift this.
-		// [/Comment-202506276]
-		uint256 randomNumberSeed_ = uint256(blockhash(block.number - 1)) >> 1;
-
-		// // [Comment-202505294]
-		// // Issue. On Hardhat Network, under certain conditions this assertion fails.
-		// // Comment-202508265 relates.
-		// // [/Comment-202505294]
-		// // #enable_asserts assert(block.basefee > 0);
-
-		randomNumberSeed_ ^= block.basefee << 64;
-
-		// Let's expect that calls to Arbitrum precompiles can fail.
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
 		{
+			// [Comment-202506276]
+			// I've seen L1 and L2 block hashes being equal.
+			// So it would be incorrect to bitwise xor them with each other.
+			// Therefore shifting this.
+			// [/Comment-202506276]
+			uint256 randomNumberSeed_ = uint256(blockhash(block.number - 1)) >> 1;
+
+			// // [Comment-202505294]
+			// // Issue. On Hardhat Network, under certain conditions this assertion fails.
+			// // Comment-202508265 relates.
+			// // [/Comment-202505294]
+			// // #enable_asserts assert(block.basefee > 0);
+
+			randomNumberSeed_ ^= block.basefee << 64;
+
+			// Let's expect that calls to Arbitrum precompiles can fail.
 			{
-				(bool isSuccess_, uint256 arbBlockNumber_) = ArbitrumHelpers.tryGetArbBlockNumber();
-				if (isSuccess_) {
-					bytes32 arbBlockHash_;
-					(isSuccess_, arbBlockHash_) = ArbitrumHelpers.tryGetArbBlockHash(arbBlockNumber_ - 1);
+				{
+					(bool isSuccess_, uint256 arbBlockNumber_) = ArbitrumHelpers.tryGetArbBlockNumber();
 					if (isSuccess_) {
-						// Comment-202506276 relates and/or applies.
-						randomNumberSeed_ ^= uint256(arbBlockHash_);
+						bytes32 arbBlockHash_;
+						(isSuccess_, arbBlockHash_) = ArbitrumHelpers.tryGetArbBlockHash(arbBlockNumber_ - 1);
+						if (isSuccess_) {
+							// Comment-202506276 relates and/or applies.
+							randomNumberSeed_ ^= uint256(arbBlockHash_);
+						}
+					}
+				}
+
+				{
+					// Comment-202506298 applies.
+					(bool isSuccess_, uint256 gasBacklog_) = ArbitrumHelpers.tryGetGasBacklog();
+					
+					if (isSuccess_) {
+						randomNumberSeed_ ^= gasBacklog_ << (64 * 2);
+					}
+				}
+
+				{
+					// Comment-202506298 applies.
+					(bool isSuccess_, uint256 l1PricingUnitsSinceUpdate_) = ArbitrumHelpers.tryGetL1PricingUnitsSinceUpdate();
+
+					if (isSuccess_) {
+						randomNumberSeed_ ^= l1PricingUnitsSinceUpdate_ << (64 * 3);
 					}
 				}
 			}
 
-			{
-				// Comment-202506298 applies.
-				(bool isSuccess_, uint256 gasBacklog_) = ArbitrumHelpers.tryGetGasBacklog();
-				
-				if (isSuccess_) {
-					randomNumberSeed_ ^= gasBacklog_ << (64 * 2);
-				}
-			}
-
-			{
-				// Comment-202506298 applies.
-				(bool isSuccess_, uint256 l1PricingUnitsSinceUpdate_) = ArbitrumHelpers.tryGetL1PricingUnitsSinceUpdate();
-
-				if (isSuccess_) {
-					randomNumberSeed_ ^= l1PricingUnitsSinceUpdate_ << (64 * 3);
-				}
-			}
+			return randomNumberSeed_;
 		}
-
-		return randomNumberSeed_;
 	}
+
+	// #endregion
+	// #region `generateRandomNumber`
 
 	/// @notice
 	/// [Comment-202504065]
@@ -98,6 +119,9 @@ library RandomNumberHelpers {
 		return generateRandomNumber(seedWrapper_.value);
 	}
 
+	// #endregion
+	// #region `generateRandomNumber`
+
 	/// @notice
 	/// [Comment-202504063]
 	/// Similar logic exists in multiple places.
@@ -105,4 +129,8 @@ library RandomNumberHelpers {
 	function generateRandomNumber(uint256 seed_) internal pure returns (uint256) {
 		return CryptographyHelpers.calculateHashSumOf(seed_);
 	}
+
+	// #endregion
 }
+
+// #endregion

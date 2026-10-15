@@ -16,7 +16,7 @@ contract FakeArbSys is FakeArbBase {
 			revert ("FakeArbSys.arbBlockNumber is disabled.");
 		}
 		if ((modeCode & 0x2) != 0) {
-			assembly {
+			assembly ("memory-safe") {
 				return (0, 0)
 			}
 		}
@@ -33,7 +33,7 @@ contract FakeArbSys is FakeArbBase {
 			revert ("FakeArbSys.arbBlockHash is disabled.");
 		}
 		if ((modeCode & 0x20) != 0) {
-			assembly {
+			assembly ("memory-safe") {
 				return (0, 0)
 			}
 		}

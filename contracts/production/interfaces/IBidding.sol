@@ -3,17 +3,13 @@ pragma solidity =0.8.34;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
-import { IBiddingBase } from "./IBiddingBase.sol";
-import { IMainPrizeBase } from "./IMainPrizeBase.sol";
-import { IBidStatistics } from "./IBidStatistics.sol";
 
 /// @notice
 /// [Comment-202605251]
 /// This contract supports bid price formation, processing arriving bids,
 /// as well as donated third party ERC-20 token amounts and ERC-721 NFTs that accompany the bids.
 /// [/Comment-202605251]
-interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase, IBidStatistics {
+interface IBidding {
 	/// @notice
 	/// [Comment-202605275]
 	/// Emitted when the first bid is placed in a bidding round.
@@ -57,9 +53,14 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// [/Comment-202605253]
 	/// [Comment-202503147]
 	/// Calling this method is equivalent to calling `bidWithEth` with default parameters.
-	/// Comments there apply.
+	/// Comment-202503149 applies.
 	/// [/Comment-202503147]
 	/// See also: `ICosmicSignatureGame.fallback`, `IEthDonations.donateEth`.
+	/// @dev
+	/// [Comment-202609158]
+	/// Issue. This method increases contract bytecode size, but appears to provide little value.
+	/// So consider eliminating it. Then also in bidding methods declare the `message_` param `calldata`.
+	/// [/Comment-202609158]
 	receive() external payable;
 
 	/// @notice
@@ -137,25 +138,24 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// [Comment-202605259]
 	/// Calculates the current price that a bidder is required to pay to place an ETH bid.
 	/// [/Comment-202605259]
+	/// [Comment-202503162]
+	/// An ETH bid with or without a Random Walk NFT price is guaranteed to be a nonzero.
+	/// `getEthPlusRandomWalkNftBidPrice` is guaranteed to return a nonzero, provided it's passed a nonzero.
+	/// A CST bid price can potentially be zero.
+	/// [/Comment-202503162]
 	/// See also: `getNextEthBidPrice`.
 	/// @param currentTimeOffset_ Comment-202501107 applies.
 	/// @return
 	/// [Comment-202605261]
 	/// The next ETH bid price.
 	/// [/Comment-202605261]
-	/// @dev
-	/// [Comment-202503162]
-	/// An ETH bid with or without a Random Walk NFT price is guaranteed to be a nonzero.
-	/// `getEthPlusRandomWalkNftBidPrice` is guaranteed to return a nonzero, provided it's passed a nonzero.
-	/// A CST bid price can potentially be zero.
-	/// [/Comment-202503162]
 	function getNextEthBidPriceAdvanced(int256 currentTimeOffset_) external view returns (uint256);
 
 	/// @notice
 	/// [Comment-202605262]
 	/// Calculates and returns an ETH + Random Walk NFT bid price, given an ETH only bid price.
 	/// [/Comment-202605262]
-	/// @dev Comment-202503162 applies.
+	/// Comment-202503162 applies.
 	function getEthPlusRandomWalkNftBidPrice(uint256 ethBidPrice_) external pure returns (uint256);
 
 	/// @return
@@ -175,7 +175,7 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// [/Comment-202503168]
 	/// Comment-202503151 applies.
 	function bidWithCstAndDonateToken(
-		uint256 priceMaxLimit_,
+		uint256 cstPriceMaxLimit_,
 		string memory message_,
 		IERC20 tokenAddress_,
 		uint256 amount_
@@ -188,7 +188,7 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// Comment-202503168 applies.
 	/// Comment-202503153 applies.
 	function bidWithCstAndDonateNft(
-		uint256 priceMaxLimit_,
+		uint256 cstPriceMaxLimit_,
 		string memory message_,
 		IERC721 nftAddress_,
 		uint256 nftId_
@@ -200,14 +200,14 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// This method would revert if no bids have been placed in the current bidding round yet.
 	/// [/Comment-202605266]
 	/// Comment-202503168 relates.
-	/// @param priceMaxLimit_ .
+	/// @param cstPriceMaxLimit_ .
 	/// [Comment-202605268]
 	/// The maximum price the bidder is willing to pay.
 	/// It's OK if it's zero.
 	/// [/Comment-202605268]
 	/// Comment-202503162 relates and/or applies.
 	/// @param message_ Comment-202503155 applies.
-	function bidWithCst(uint256 priceMaxLimit_, string memory message_) external;
+	function bidWithCst(uint256 cstPriceMaxLimit_, string memory message_) external;
 
 	/// @notice
 	/// [Comment-202605269]
@@ -219,9 +219,11 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// @notice
 	/// [Comment-202605271]
 	/// Calculates the current price that a bidder is required to pay to place a CST bid.
-	/// The price declines linearly over CST Dutch auction duration.
-	/// In V2+, it also slightly declines on each ETH bid, as mentioned in Comment-202606101.
+	/// The base price declines linearly over CST Dutch auction duration.
+	/// But in V2+, it also slightly declines on each ETH bid, as mentioned in Comment-202608312.
+	/// In V3+, the returned price includes any late bid premium; Comment-202607117 applies.
 	/// [/Comment-202605271]
+	/// Comment-202503162 applies.
 	/// See also: `getNextCstBidPrice`.
 	/// @param currentTimeOffset_ .
 	/// [Comment-202501107]
@@ -250,7 +252,6 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// It can potentially be zero.
 	/// [/Comment-202605272]
 	/// Comment-202501022 applies.
-	/// @dev Comment-202503162 applies.
 	function getNextCstBidPriceAdvanced(int256 currentTimeOffset_) external view returns (uint256);
 
 	/// @return
@@ -258,5 +259,5 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// A tuple containing the total and elapsed durations of the current CST Dutch auction.
 	/// [/Comment-202605273]
 	/// Comment-202501022 applies to the returned elapsed duration.
-	function getCstDutchAuctionDurations() external view returns (uint256, int256);
+	function getCstDutchAuctionDurations() external view returns (uint256, uint256);
 }

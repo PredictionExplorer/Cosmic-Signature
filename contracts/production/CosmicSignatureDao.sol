@@ -51,12 +51,13 @@ contract CosmicSignatureDao is
 		GovernorSettings(
 			CosmicSignatureConstants.DAO_DEFAULT_VOTING_DELAY,
 			CosmicSignatureConstants.DAO_DEFAULT_VOTING_PERIOD,
-			CosmicSignatureConstants.DEFAULT_BID_CST_REWARD_AMOUNT
+			CosmicSignatureConstants.DAO_DEFAULT_PROPOSAL_THRESHOLD
 		)
 
 		// [Comment-202502249]
 		// Issue. Surprisingly, this doesn't validate that the provided address is a nonzero.
 		// So we have to do it.
+		// todo-2 Recheck if they have implemented the validation.
 		// [/Comment-202502249]
 		GovernorVotes(tokenAddress_)
 

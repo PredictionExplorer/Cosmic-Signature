@@ -8,6 +8,29 @@ All division is truncating (like Solidity `uint256` division for non-negative op
 /** Maximum `uint256` value (`2 ** 256 - 1`). */
 const MAX_UINT256 = (1n << 256n) - 1n;
 
+/** Maximum `int256` value (`2 ** 255 - 1`). */
+const MAX_INT256 = (1n << 255n) - 1n;
+
+/**
+[Comment-202610213]
+Issue. Unlike this JavaScript implementation, the OpenZeppelin Solidity one supports only unsigned integers.
+[/Comment-202610213]
+@param {bigint} a_
+@param {bigint} b_
+*/
+function maxBigInt(a_, b_) {
+	return (a_ >= b_) ? a_ : b_;
+}
+
+/**
+Comment-202610213 applies.
+@param {bigint} a_
+@param {bigint} b_
+*/
+function minBigInt(a_, b_) {
+	return (a_ <= b_) ? a_ : b_;
+}
+
 /**
 Floor integer square root, matching OpenZeppelin `Math.sqrt` exactly.
 @param {bigint} value_
@@ -31,23 +54,6 @@ function sqrtFloor(value_) {
 }
 
 /**
-Solidity-style `Math.max`.
-@param {bigint} a_
-@param {bigint} b_
-*/
-function maxBigInt(a_, b_) {
-	return (a_ >= b_) ? a_ : b_;
-}
-
-/**
-@param {bigint} a_
-@param {bigint} b_
-*/
-function minBigInt(a_, b_) {
-	return (a_ <= b_) ? a_ : b_;
-}
-
-/**
 Interprets a uint256 value as int256 (two's complement), like Solidity `int256(uint256Value)`.
 @param {bigint} value_
 */
@@ -63,6 +69,11 @@ function int256ToUint256(value_) {
 	return BigInt.asUintN(256, value_);
 }
 
+/** Converts a value to uint256 with modular wraparound. */
+function asUint256(value_) {
+	return BigInt.asUintN(256, value_);
+}
+
 /**
 Converts a value to uint256, failing if the conversion would wrap unless the caller explicitly
 documents that wraparound as an accepted path.
@@ -71,7 +82,7 @@ documents that wraparound as an accepted path.
 @param {boolean} [allowWrap_]
 */
 function u256(value_, label_ = "uint256 arithmetic", allowWrap_ = false) {
-	const wrapped_ = BigInt.asUintN(256, value_);
+	const wrapped_ = asUint256(value_);
 	if ( ! allowWrap_ && wrapped_ !== value_ ) {
 		throw new Error(`${label_} unexpectedly wrapped uint256 arithmetic: ${value_}`);
 	}
@@ -80,10 +91,12 @@ function u256(value_, label_ = "uint256 arithmetic", allowWrap_ = false) {
 
 module.exports = {
 	MAX_UINT256,
-	sqrtFloor,
+	MAX_INT256,
 	maxBigInt,
 	minBigInt,
+	sqrtFloor,
 	uint256ToInt256,
 	int256ToUint256,
+	asUint256,
 	u256,
 };

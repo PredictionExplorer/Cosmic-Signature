@@ -1,8 +1,12 @@
+// #region
+
 "use strict";
 
+// #endregion
 // #region Imports
 
 const { expect } = require("chai");
+const { SECONDS_PER_HOUR, SECONDS_PER_DAY } = require("../../../../src/CosmicSignatureConstants.js");
 
 // #endregion
 // #region Owner setter mutation (between rounds only)
@@ -69,8 +73,8 @@ const adminActions = [
 			// Needs the ETH Dutch auction to have fully elapsed at the action timestamp.
 			const minTs_ = model.roundActivationTime + model.getEthDutchAuctionDuration() + 2n;
 			const ts_ = engine.clampTs(minTs_ + engine.randomBigIntRange(1n, 600n));
-			// The action must still happen while the round is inactive (commented modifier in code, but the
-			// "too early" check uses elapsed-since-activation, which is fine here); also requires no bid placed.
+			// The action is selected while the round is inactive, but its transaction is mined after the
+			// auction ends. No bid may have been placed; the method does not require an inactive round.
 			if (ts_ >= model.roundActivationTime && model.roundActivationTime > engine.lastTs) {
 				// `_onlyBeforeBidPlacedInRound` holds (no bids). The method itself does not require inactivity.
 			}
@@ -83,11 +87,9 @@ const adminActions = [
 			});
 			if ( ! result_.ok ) {
 				// Acceptable owner-action reverts (atomic, no state change), so the model is left untouched:
-				//  - "Too early" (InvalidOperationInCurrentState) if the auction had not fully elapsed in this block.
-				//  - An arithmetic overflow / division-by-zero panic: the contract itself documents that the
-				//    `ethDutchAuctionEndingBidPriceDivisor *= 2` and the divisor recomputation can overflow in
-				//    extreme parameter states (Comment-202508192). The owner is trusted, so this is a known,
-				//    harmless footgun rather than a bug.
+				//  - `InvalidOperationInCurrentState` if the auction had not fully elapsed in this block.
+				//  - A panic from checked divisor doubling (Comment-202508192) or division by zero.
+				//    Other arithmetic checks are enabled only in SMTChecker builds.
 				const acceptable_ = result_.revert.name === "InvalidOperationInCurrentState" || result_.revert.kind === "panic";
 				expect(acceptable_, `halveEthDutchAuctionEndingBidPrice unexpected revert: ${result_.revert.name} (${result_.revert.message.slice(0, 160)})`).to.equal(true);
 				return `revert:${result_.revert.kind === "panic" ? "Panic" : result_.revert.name}`;
@@ -159,17 +161,40 @@ function buildSafeMutations(ctx_) {
 	add_("setMainEthPrizeAmountPercentage", BigInt(engine.randomIntRange(10, 40)), (m_, v_) => { m_.mainEthPrizeAmountPercentage = v_; });
 	add_("setCharityEthDonationAmountPercentage", BigInt(engine.randomIntRange(1, 10)), (m_, v_) => { m_.charityEthDonationAmountPercentage = v_; });
 	add_("setMarketingWalletCstContributionAmount", BigInt(engine.randomIntRange(0, 5000)) * 10n ** 18n, (m_, v_) => { m_.marketingWalletCstContributionAmount = v_; });
-	add_("setTimeoutDurationToClaimMainPrize", BigInt(engine.randomIntRange(1, 5)) * 86_400n, (m_, v_) => { m_.timeoutDurationToClaimMainPrize = v_; });
+	add_("setTimeoutDurationToClaimMainPrize", BigInt(engine.randomIntRange(1, 5)) * SECONDS_PER_DAY, (m_, v_) => { m_.timeoutDurationToClaimMainPrize = v_; });
 	add_("setDelayDurationBeforeRoundActivation", BigInt(engine.randomIntRange(60, 7200)), (m_, v_) => { m_.delayDurationBeforeRoundActivation = v_; });
 	add_("setMainPrizeTimeIncrementIncreaseDivisor", BigInt(engine.randomIntRange(50, 200)), (m_, v_) => { m_.mainPrizeTimeIncrementIncreaseDivisor = v_; });
 
 	if (model.version === 2) {
-		add_("setCstDutchAuctionDuration", BigInt(engine.randomIntRange(3600, 2 * 86400)), (m_, v_) => { m_.cstDutchAuctionDuration = v_; });
+		// V3 replaces these parameters and makes both setters revert with `NotImplemented`.
+		add_("setCstDutchAuctionDuration", BigInt(engine.randomIntRange(Number(SECONDS_PER_HOUR), 2 * Number(SECONDS_PER_DAY))), (m_, v_) => { m_.cstDutchAuctionDuration = v_; });
 		add_("setCstDutchAuctionDurationChangeDivisor", BigInt(engine.randomIntRange(50, 1000)), (m_, v_) => { m_.cstDutchAuctionDurationChangeDivisor = v_; });
+	}
+	if (model.version >= 2) {
 		add_("setBidCstRewardAmountMultiplier", model.bidCstRewardAmountMultiplier * BigInt(engine.randomIntRange(50, 200)) / 100n, (m_, v_) => { m_.bidCstRewardAmountMultiplier = v_; });
 	} else {
 		add_("setCstDutchAuctionDurationDivisor", BigInt(engine.randomIntRange(2, 100)), (m_, v_) => { m_.cstDutchAuctionDurationDivisor = v_; });
 		add_("setBidCstRewardAmount", BigInt(engine.randomIntRange(0, 500)) * 10n ** 18n, (m_, v_) => { m_.bidCstRewardAmount = v_; });
+	}
+	if (model.version >= 3) {
+		// Safe ranges: the late-bid-premium window stays between ~6 minutes and ~1 hour, and the
+		// premium arithmetic stays far from wrapping (the model's `u256` guard would fail otherwise).
+		add_("setRoundLateBidDurationDivisor", BigInt(engine.randomIntRange(1_000_000, 10_000_000)), (m_, v_) => { m_.roundLateBidDurationDivisor = v_; });
+		add_(
+			"setRoundLateBidPricePremiumAmountBaseMultiplier",
+			model.roundLateBidPricePremiumAmountBaseMultiplier * BigInt(engine.randomIntRange(50, 200)) / 100n,
+			(m_, v_) => { m_.roundLateBidPricePremiumAmountBaseMultiplier = v_; }
+		);
+		add_("setRoundLateBidPricePremiumAmountExponent", BigInt(engine.randomIntRange(1, 10)), (m_, v_) => { m_.roundLateBidPricePremiumAmountExponent = v_; });
+		add_("setMainPrizeNumCosmicSignatureNfts", BigInt(engine.randomIntRange(1, 5)), (m_, v_) => { m_.mainPrizeNumCosmicSignatureNfts = v_; });
+		add_(
+			"setCstBidPriceDeclineMultiplier",
+			BigInt(engine.randomIntRange(1, 6000)) * (10n ** 18n) / 600n,
+			(m_, v_) => { m_.cstBidPriceDeclineMultiplier = v_; }
+		);
+		add_("setCstBidPriceDeclineMultiplierChangeDivisor", BigInt(engine.randomIntRange(20, 1000)), (m_, v_) => {
+			m_.cstBidPriceDeclineMultiplierChangeDivisor = v_;
+		});
 	}
 	return mutations_;
 }

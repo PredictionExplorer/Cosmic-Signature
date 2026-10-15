@@ -4,7 +4,7 @@ pragma solidity =0.8.34;
 /// @title Charity Wallet.
 /// @author The Cosmic Signature Development Team.
 /// @notice This contract holds an ETH balance to be donated to charity.
-/// `CosmicSignatureGame` deposits a configurable percentage of its ETH to this wallet at the end of each bidding round.
+/// `CosmicSignatureGame` deposits a configurable percentage of its ETH to this wallet on main prize claim.
 /// As noted in Comment-202409273, this contract lets anybody to periodically transfer accumulated donations
 /// to the designated charity.
 interface ICharityWallet {

@@ -8,7 +8,7 @@ import { IPrizesWallet } from "./IPrizesWallet.sol";
 import { IStakingWalletRandomWalkNft } from "./IStakingWalletRandomWalkNft.sol";
 import { IStakingWalletCosmicSignatureNft } from "./IStakingWalletCosmicSignatureNft.sol";
 
-/// @title Cosmic Signature Game Configuration Events.
+/// @title Cosmic Signature Game V2 Configuration Events.
 /// @author The Cosmic Signature Development Team.
 /// @notice Comment-202605235 applies.
 interface ISystemEventsV2 {

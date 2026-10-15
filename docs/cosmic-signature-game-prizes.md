@@ -18,9 +18,9 @@ This document lists all prizes awarded by our game.
 
 #### Prize Groups
 
-1. Prizes awarded to the bidder when placing a bid.
+1. Prizes awarded when a bid is placed.
 
-2. Prizes awarded to main prize winner and other bidders at the end of each bidding round. This is done by the `MainPrize._distributePrizes` method. Prizes in this group are broken down into main ETH prize and secondary, a.k.a. special prizes.
+2. Prizes awarded to main prize winner and other bidders at the end of each bidding round (on main prize claim). This is done by the `MainPrize._distributePrizes` method and its later-version implementations. Prizes in this group are broken down into main ETH prize and secondary, a.k.a. special prizes.
 
 3. Additional prizes that do not belong to the above groups.
 
@@ -34,9 +34,22 @@ This document lists all prizes awarded by our game.
 
 The rest of this document lists prizes from groups 1 and 2.
 
+#### Bidder Raffle Weight in V3+
+
+In V2-, every bid has equal weight in bidder raffles. In V3+, a bid's weight is the ETH bid price without the late-bid premium when the bid is placed (Comment-202609098):
+
+- A plain ETH bid has the base ETH bid price as its weight.
+- An ETH plus Random Walk NFT bid has the full undiscounted base ETH bid price as its weight.
+- A CST bid has the concurrent base ETH bid price as its weight.
+- A swallowed ETH overpayment does not increase the weight.
+
+The late-bid premium increases payment only. It does not increase raffle weight, the next ETH price, or the CST auction beginning price carried into the next round.
+
+Each `BidInfo.raffleCumulativeWeight`, available through `getBidInfoAt`, is the sum of that bid's weight and all preceding bid weights in the round. A raffle draw selects a random weight unit and binary-searches these cumulative values. A bidder's total weight is the sum of their bids' weights.
+
 #### Variables
 
-- `secondsSinceLastBid` -- the number of seconds since the previous bid. If there were no bids in the current bidding round yet, then since `roundActivationTime`. It can be zero.
+- `secondsSinceLastBid` -- the number of seconds since the previous bid. It can be zero. Used only in V2+. For the first bid in V2, it is measured since `roundActivationTime`. The first bid in V3+ mints no bid CST reward, so the value to be used for this variable is not calculated for the first bid.
 
 - `gameEthBalance` -- the `CosmicSignatureGame` contract ETH balance at the end of the bidding round.
 
@@ -48,9 +61,9 @@ The rest of this document lists prizes from groups 1 and 2.
 
 | Prize Winner | Prize Type | Prize Count | Prize Amount | Notes |
 |----------------|-------------|--------------|----------------|--------|
-| Main Prize Winner (Last Bidder) | Main ETH Prize | 1 | `gameEthBalance * mainEthPrizeAmountPercentage / 100` |  |
+| Main Prize Winner | Main ETH Prize | 1 | `gameEthBalance * mainEthPrizeAmountPercentage / 100` | Normally the last bidder; after the claim timeout, anyone can claim. |
 |  | CST | 1 | `cstPrizeAmount` |  |
-|  | Cosmic Signature NFT | 1 | 1 |  |
+|  | Cosmic Signature NFT | 1 | V2-: 1<br>V3+: `mainPrizeNumCosmicSignatureNfts` |  |
 |  |  |  |  |  |
 | Last CST Bidder | CST | 0 or 1 | `cstPrizeAmount` | If nobody placed a CST bid, nobody would get this prize. |
 |  | Cosmic Signature NFT | 0 or 1 | 1 | If nobody placed a CST bid, nobody would get this prize. |
@@ -62,12 +75,12 @@ The rest of this document lists prizes from groups 1 and 2.
 |  | CST | 1 | `cstPrizeAmount` |  |
 |  | Cosmic Signature NFT | 1 | 1 |  |
 |  |  |  |  |  |
-| Bidders | CST | 1 per bid | V1: `bidCstRewardAmount`<br>V2+: `sqrt(secondsSinceLastBid * bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds)` | On each bid, the bidder gets CST. |
+| Bidders | CST | 0 or 1 per bid | V1: `bidCstRewardAmount`<br>V2: `sqrt(secondsSinceLastBid * bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds)`<br>V3+: `secondsSinceLastBid * bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds` | In V2-, the bidder placing the bid gets the reward. In V3+, the previous bidder in the current round gets the reward: the first bid mints none; no bid CST reward is earned for the last bid. |
 |  |  |  |  |  |
-| Bidders Picked Via ETH Prize Raffle | ETH | `numRaffleEthPrizesForBidders` | `gameEthBalance * raffleTotalEthPrizeAmountForBiddersPercentage / 100 / numRaffleEthPrizesForBidders` | Bids are picked randomly. |
+| Bidders Picked Via ETH Prize Raffle | ETH | `numRaffleEthPrizesForBidders` | `gameEthBalance * raffleTotalEthPrizeAmountForBiddersPercentage / 100 / numRaffleEthPrizesForBidders` | Bids are picked randomly: with equal weights in V2-, and with the bidder raffle weights described above in V3+. |
 |  |  |  |  |  |
-| Bidders Picked Via CST And CS NFT Prize Raffle | CST | `numRaffleCosmicSignatureNftsForBidders` | `cstPrizeAmount` | Bids are picked randomly. Each winner gets both CST and CS NFT. |
-|  | Cosmic Signature NFT | `numRaffleCosmicSignatureNftsForBidders` | 1 | Bids are picked randomly. Each winner gets both CST and CS NFT. |
+| Bidders Picked Via CST And CS NFT Prize Raffle | CST | `numRaffleCosmicSignatureNftsForBidders` | `cstPrizeAmount` | Bids are picked randomly and are weighted in V3+. Each winner gets both CST and CS NFT. |
+|  | Cosmic Signature NFT | `numRaffleCosmicSignatureNftsForBidders` | 1 | Bids are picked randomly and are weighted in V3+. Each winner gets both CST and CS NFT. |
 |  |  |  |  |  |
 | Random Walk NFT Stakers | CST | 0 or `numRaffleCosmicSignatureNftsForRandomWalkNftStakers` | `cstPrizeAmount` | Staked RW NFTs are picked randomly. Each winner gets both CST and CS NFT. If there are no staked RW NFTs, nobody would get this prize. |
 |  | Cosmic Signature NFT | 0 or `numRaffleCosmicSignatureNftsForRandomWalkNftStakers` | 1 | Staked RW NFTs are picked randomly. Each winner gets both CST and CS NFT. If there are no staked RW NFTs, nobody would get this prize. |
@@ -81,7 +94,7 @@ The rest of this document lists prizes from groups 1 and 2.
 #### Group 2 Prizes -- an Alternative View
 
 - ETH Transferred Directly To The Winner
-	- Main Prize Winner (Last Bidder)
+	- Main Prize Winner (normally the Last Bidder)
 	- `CharityWallet`
 
 - ETH Transferred To `PrizesWallet`
@@ -96,7 +109,7 @@ The rest of this document lists prizes from groups 1 and 2.
 	- `MarketingWallet`
 
 - CS NFT
-	- Main Prize Winner (Last Bidder)
+	- Main Prize Winner (normally the Last Bidder) (in V3+, multiple NFTs)
 	- Last CST Bidder (not guaranteed to exist)
 	- Endurance Champion
 	- Chrono-Warrior
@@ -105,6 +118,6 @@ The rest of this document lists prizes from groups 1 and 2.
 
 #### Notes
 
-- Prize Count often equals the number of winners, each getting 1 prize of the given type. But if Prize Count is greater than 1, a winner can get multiple prizes of the given type, which would reduce the number of winners.
+- Prize Count likely equals the number of winners, each getting 1 prize of the given type. But if Prize Count is greater than 1, a winner can get multiple prizes of the given type, which would reduce the number of winners.
 
 - In a division result, any fractional part is truncated. Therefore, for example, 299 / 100 equals 2.

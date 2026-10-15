@@ -1,8 +1,12 @@
+// #region
+
 "use strict";
 
+// #endregion
 // #region Imports
 
 const { expect } = require("chai");
+const { SECONDS_PER_HOUR, SECONDS_PER_DAY } = require("../../../src/CosmicSignatureConstants.js");
 const { generateRandomUInt256FromSeedWrapper } = require("../../../src/Helpers.js");
 const { checkTransactionErrorObject } = require("../../../src/ContractTestingHelpers.js");
 
@@ -64,7 +68,7 @@ function decodeRevert(errorObject_, interfaces_) {
 /**
 Campaign orchestrator: seeded RNG, exact block-timestamp control, transaction execution
 with per-transaction gas accounting (including mined-but-reverted transactions),
-participant funding with ledger-recorded refills, statistics, and a failure trace.
+finite participant budgets, statistics, and a failure trace.
 */
 class FuzzEngine {
 	// #region Construction
@@ -201,11 +205,11 @@ class FuzzEngine {
 		} else if (roll_ < 55) {
 			delta_ = this.randomBigIntRange(6n, 120n); // small
 		} else if (roll_ < 80) {
-			delta_ = this.randomBigIntRange(121n, 3_600n); // medium
+			delta_ = this.randomBigIntRange(121n, SECONDS_PER_HOUR); // medium
 		} else if (roll_ < 92) {
-			delta_ = this.randomBigIntRange(3_601n, 36n * 3_600n); // large
+			delta_ = this.randomBigIntRange((SECONDS_PER_HOUR + 1n), 36n * SECONDS_PER_HOUR); // large
 		} else if (roll_ < 96) {
-			delta_ = this.randomBigIntRange(2n * 86_400n, 14n * 86_400n); // huge
+			delta_ = this.randomBigIntRange(2n * SECONDS_PER_DAY, 14n * SECONDS_PER_DAY); // huge
 		} else {
 			// Boundary snapping.
 			const future_ = boundaryCandidates_.filter((candidate_) => candidate_ > this.lastTs + 2n);
@@ -226,14 +230,24 @@ class FuzzEngine {
 	boundaryCandidates() {
 		const model_ = this.model;
 		const out_ = [model_.roundActivationTime];
+
+		// Comment-202610021 applies.
 		if (model_.lastBidderAddress !== "0x0000000000000000000000000000000000000000") {
 			out_.push(model_.mainPrizeTime);
 			out_.push(model_.mainPrizeTime + model_.timeoutDurationToClaimMainPrize);
+			if (model_.version >= 3) {
+				// Sample the opening, midpoint, and steep part of the V3 premium window.
+				const roundLateBidDuration_ = model_.getRoundLateBidDuration();
+				out_.push(model_.mainPrizeTime - roundLateBidDuration_);
+				out_.push(model_.mainPrizeTime - roundLateBidDuration_ / 2n);
+				out_.push(model_.mainPrizeTime - roundLateBidDuration_ / 8n);
+			}
+			out_.push(model_.cstDutchAuctionBeginningTimeStamp + model_.getCstDutchAuctionDuration());
 		}
-		out_.push(model_.cstDutchAuctionBeginningTimeStamp + model_.getCstDutchAuctionDuration());
+
 		out_.push(model_.roundActivationTime + model_.getEthDutchAuctionDuration());
 		if (this.ledger.randomWalkNft.lastMinter !== "0x0000000000000000000000000000000000000000") {
-			out_.push(this.ledger.randomWalkNft.lastMintTime + 30n * 86_400n);
+			out_.push(this.ledger.randomWalkNft.lastMintTime + 30n * SECONDS_PER_DAY);
 		}
 		for (const timeout_ of this.ledger.prizesWallet.roundTimeouts.values()) {
 			out_.push(timeout_);
@@ -283,7 +297,7 @@ class FuzzEngine {
 	@param {(overrides: {gasPrice: bigint}) => Promise<import("ethers").TransactionResponse>} args_.buildTx
 	@param {bigint} [args_.ts] Planned block timestamp; defaults to `lastTs + 1`.
 	@param {bigint} [args_.gasPrice] Explicit legacy gas price; defaults to a random one.
-	@param {bigint} [args_.valueNeeded] ETH the signer must afford (refill check).
+	@param {bigint} [args_.valueNeeded] ETH the signer must afford in addition to the gas reserve.
 	@returns {Promise<{ok: true, receipt: import("ethers").TransactionReceipt, ts: bigint, gasPrice: bigint}
 		| {ok: false, revert: {kind: string, name: string, message: string}, ts: bigint, gasPrice: bigint, minedTs: bigint | null}>}
 	*/
@@ -349,8 +363,8 @@ class FuzzEngine {
 
 	/**
 	Executes several transactions inside one block (same timestamp), via automine toggling.
-	Items run in submission (FIFO) order. Each item's `onResult({status, receipt})` is invoked
-	in order so callers can apply model/ledger updates sequentially.
+	Transactions are submitted sequentially; Comment-202611021 applies.
+	Results are returned in submission order for sequential model updates; the ledger is updated here.
 	@param {bigint} ts_ Planned block timestamp.
 	@param {Array<{signer: any, buildTx: (overrides: {gasPrice: bigint}) => Promise<any>, gasPrice?: bigint, valueNeeded?: bigint}>} items_
 	@returns {Promise<Array<{status: number, receipt: import("ethers").TransactionReceipt}>>}
@@ -372,15 +386,17 @@ class FuzzEngine {
 				throw new Error(`harness affordability (burst): ${this.ledger.labelOf(senderAddress_)} cannot cover its ${need_} wei of burst items`);
 			}
 		}
-		await this.provider.send("evm_setAutomine", [false]);
+
 		/** @type {string[]} */
 		const txHashes_ = [];
+
+		await this.provider.send("evm_setAutomine", [false]);
 		try {
+			await this.provider.send("evm_setNextBlockTimestamp", [Number(plannedTs_)]);
 			for (const item_ of items_) {
 				const txResponse_ = await item_.buildTx({ gasPrice: item_.gasPrice });
 				txHashes_.push(txResponse_.hash);
 			}
-			await this.provider.send("evm_setNextBlockTimestamp", [Number(plannedTs_)]);
 			await this.provider.send("evm_mine");
 		} finally {
 			await this.provider.send("evm_setAutomine", [true]);
@@ -512,7 +528,13 @@ class FuzzEngine {
 			return "skip";
 		}
 		++ entry_.attempted;
-		const traceRecord_ = { action: action_.name, actor: actor_?.label ?? null, lastTs: this.lastTs };
+		const traceRecord_ = {
+			action: action_.name,
+			actor: actor_?.label ?? null,
+			version: ctx_.model?.version ?? null,
+			roundNum: ctx_.model?.roundNum ?? null,
+			lastTs: this.lastTs,
+		};
 		let outcome_;
 		try {
 			outcome_ = await action_.run(ctx_, actor_);

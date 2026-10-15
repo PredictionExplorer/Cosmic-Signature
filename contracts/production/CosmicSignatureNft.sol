@@ -18,6 +18,11 @@ import { ICosmicSignatureNft } from "./interfaces/ICosmicSignatureNft.sol";
 // #endregion
 // #region
 
+/// @dev
+/// [Comment-202609176]
+/// Issue. It appears to be safe to suppress some arithmetic overflow checks in this contract,
+/// but it will not be done, due to Comment-202609134.
+/// [/Comment-202609176]
 contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICosmicSignatureNft {
 	// #region State
 
@@ -141,10 +146,9 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 	// #region `setNftName`
 
 	function setNftName(uint256 nftId_, string calldata nftName_) external override {
-		// require(
-		// 	_isAuthorized(_ownerOf(nftId_), _msgSender(), nftId_),
-		// 	CosmicSignatureErrors.CallerIsNotAuthorizedToManageNft("The caller is not authorized to manage this NFT.", nftId_)
-		// );
+		// if ( ! _isAuthorized(_ownerOf(nftId_), _msgSender(), nftId_) ) {
+		// 	revert CosmicSignatureErrors.CallerIsNotAuthorizedToManageNft("The caller is not authorized to manage this NFT.", nftId_);
+		// }
 		checkCallerIsAuthorizedFor(nftId_);
 		if (bytes(nftName_).length > CosmicSignatureConstants.COSMIC_SIGNATURE_NFT_NFT_NAME_LENGTH_MAX_LIMIT) {
 			revert CosmicSignatureErrors.TooLongNftName("NFT name is too long.", bytes(nftName_).length);

@@ -23,17 +23,19 @@ With that note out of the way, here are a few words about explicitly compiling t
 3. Install the Solidity Compiler.\
    This Hardhat project uses the binary solc compiler (not solc-js) 0.8.34.\
    We recommend using solc-select:
+
    ```bash
    pip3 install solc-select
    solc-select use 0.8.34 --always-install
-   ```   
-   For more info on solc setup and about other solc setup options see Comment-202409011.
+   ```
 
-#### Environment Varibles
+   For more info on solc setup, see Comment-202409011.
+
+#### Environment Variables
 
 We recommend that prior to initializing Hardhat the `HARDHAT_MODE_CODE` environment variable was set. Our scripts already do it, so you rarely if ever need to. See Comment-202510221 for details.
 
-Other environment varibles are listed further.
+Other environment variables are listed further.
 
 #### Compilation Commands
 
@@ -45,13 +47,13 @@ Other environment varibles are listed further.
    `ENABLE_HARDHAT_PREPROCESSOR` enables or disables a preprocessor for conditional compilation.\
    `ENABLE_ASSERTS`.\
    `ENABLE_SMTCHECKER`.\
-   They are documented in comments in `${workspaceFolder}/hardhat.config.js`.\
+   They are documented in comments in `${workspaceFolder}/src/Helpers.js`.\
    The variables (or lack thereof) affect the compiler output folders. Relevant logic is located near Comment-202503272 and Comment-202503302.\
    To compile with SMTChecker, execute `${workspaceFolder}/smtchecker/compile-1.bash`. (Be sure to review a manual file in the same folder.)\
-   To compile (and immediately run tests) with other sensible combinations of the variables, execute `${workspaceFolder}/test/runners/test-1.bash`.
+   To compile (and immediately run tests) with other sensible combinations of the variables, execute `${workspaceFolder}/test/runners/test.bash`.
 
 #### Notes
 
-- ABI files of all contracts are exported to the `${workspaceFolder}/artifacts` folder.
+- Contract artifacts, including ABIs, are written under `${workspaceFolder}/artifacts` in configuration-dependent subfolders (Comment-202503272).
 
 - The Solidity compiler is configured in `${workspaceFolder}/hardhat.config.js`, in the `hardhatUserConfig.solidity` object.

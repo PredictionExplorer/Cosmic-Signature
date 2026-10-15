@@ -8,6 +8,8 @@ The old version of this document is named `live-blockchain-tests-old.md`. I reco
 
 This test allows to smoke-test the newly deployed Cosmic Signature contracts and their integration with the `RandomWalkNFT` contract that was deployed in the past. You will have to later abandon the newly deployed contracts and deploy them again to be used in the production.
 
+These live tests currently use V1 bidding interfaces; they do not exercise V2+.
+
 The following blockchains are supported: Hardhat Network (a local blockchain), Arbitrum Sepolia (a testnet), Arbitrum One (a mainnet).
 
 All scripts assume that they are executed from the folder they are located in. So you must `cd` to the script's folder and execute the script like `./my-script.bash`.

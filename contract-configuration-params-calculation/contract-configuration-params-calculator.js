@@ -11,6 +11,7 @@ const { input } = require("./input.js");
 
 calculateDivisor(input.ethDutchAuctionDuration, "ethDutchAuctionDurationDivisor");
 calculateDivisor(input.cstDutchAuctionDuration, "cstDutchAuctionDurationDivisor");
+calculateDivisor(input.roundLateBidDuration, "roundLateBidDurationDivisor");
 calculateDivisor(input.initialDurationUntilMainPrize, "initialDurationUntilMainPrizeDivisor");
 
 function calculateDivisor(desiredValue_, divisorName_) {

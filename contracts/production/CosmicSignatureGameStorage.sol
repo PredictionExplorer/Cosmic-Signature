@@ -35,7 +35,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	// #endregion
 	// #region Bid Statistics
 
-	// /// todo-9 Rename to `lastBidTypeCode`.
+	// /// @dev todo-9 Rename to `lastBidTypeCode`.
 	// BidType public lastBidType;
 
 	/// @notice
@@ -44,28 +44,34 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [/Comment-202605182]
 	/// @dev
 	/// [Comment-202502044]
-	/// Issue. This is the same as the last `bidderAddresses` item. So it could make sense to eliminate this variable.
-	/// But let's leave it alone.
+	/// Issue. This equals `bidderAddress` in the last `roundStats[roundNum].bidsInfo` item.
+	/// So it could make sense to eliminate this variable. But let's leave it alone.
 	/// [/Comment-202502044]
 	address public lastBidderAddress;
 
 	/// @notice
 	/// [Comment-202605183]
 	/// The address of the account that placed the last CST bid.
-	/// This will remain zero if nobody bids with CST.
+	/// This will remain zero if nobody bids with CST during the current bidding round.
 	/// [/Comment-202605183]
 	address public lastCstBidderAddress;
 
 	/// @dev
 	/// [Comment-202411098]
-	/// Issue. One might want to not save info about past bidding rounds.
+	/// Our logic not necessarily uses some of this info, especially about past bidding rounds.
 	/// But the project founders consider using this info for other purposes.
-	/// Comment-202502045 relates.
 	/// [/Comment-202411098]
 	/// Comment-202502044 relates.
-	mapping(uint256 roundNum => BidderAddresses) public bidderAddresses;
+	/// [Comment-202610054]
+	/// Issue. It could make sense to combine `roundStats` and `biddersInfo`,
+	/// but doing so would break storage layout compatibility, so Comment-202609134 applies.
+	/// [/Comment-202610054]
+	/// ToDo-202607169-1 applies.
+	/// @custom:oz-renamed-from bidderAddresses
+	mapping(uint256 roundNum => RoundStats) public roundStats;
 
 	/// @dev Comment-202411098 applies.
+	/// Comment-202610054 applies.
 	mapping(uint256 roundNum => mapping(address bidderAddress => BidderInfo)) public biddersInfo;
 
 	/// @notice
@@ -128,9 +134,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [Comment-202605187]
 	/// Delay duration from when the main prize gets claimed until the next bidding round activates.
 	/// [/Comment-202605187]
-	/// [Comment-202411064]
-	/// This is a configurable parameter.
-	/// [/Comment-202411064]
+	/// Comment-202411064 applies.
 	/// [Comment-202412312]
 	/// We do not automatically increase this.
 	/// Comment-202411067 relates.
@@ -149,7 +153,9 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// The current bidding round activation time.
 	/// Starting at this point in time, people will be allowed to place bids.
 	/// [/Comment-202605188]
-	/// Comment-202411064 applies.
+	/// [Comment-202411064]
+	/// This is a configurable parameter.
+	/// [/Comment-202411064]
 	/// [Comment-202411172]
 	/// At the same time, this is a variable that the logic changes.
 	/// [/Comment-202411172]
@@ -181,7 +187,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// @notice
 	/// [Comment-202503084]
 	/// ETH Dutch auction beginning bid price.
-	/// We calculate this based on `ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER`.
+	/// We calculate this based on `CosmicSignatureConstants.ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER`.
 	/// [/Comment-202503084]
 	/// [Comment-202605192]
 	/// After contract deployment, this variable remains zero until we assign a valid value to it.
@@ -206,7 +212,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// We increase this based on `ethBidPriceIncreaseDivisor`.
 	/// [/Comment-202411065]
 	/// [Comment-202501022]
-	/// This value is valid only after the 1st ETH bid has been placed in the current bidding round.
+	/// This value is valid only after the first ETH bid has been placed in the current bidding round.
 	/// [/Comment-202501022]
 	uint256 public nextEthBidPrice;
 
@@ -225,27 +231,32 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Comment-202501022 applies.
 	uint256 public cstDutchAuctionBeginningTimeStamp;
 
-	/// @notice
+	/// @notice In V1.
 	/// [Comment-202501025]
 	/// We divide `mainPrizeTimeIncrementInMicroSeconds` by this.
 	/// [/Comment-202501025]
-	/// Comment-202411064 applies.
 	/// Comment-202508288 relates.
+	/// Comment-202411064 applies.
 	/// @dev Comment-202606057 relates.
 	uint256 public cstDutchAuctionDurationDivisor;
 
 	/// @notice
 	/// [Comment-202411066]
 	/// CST Dutch auction beginning bid price.
-	/// We calculate this based on `CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER`.
-	/// We don't let this fall below `cstDutchAuctionBeginningBidPriceMinLimit`.
+	/// We calculate this based on `CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER`.
+	/// We don't let this fall below `cstDutchAuctionBeginningBidPriceMinLimit`,
+	/// which relieves us from the annoyance of possible marginal cases, such as a bidding round lasting forever.
 	/// [/Comment-202411066]
+	/// In V3+, Comment-202611053 relates and/or applies.
 	/// [Comment-202605197]
 	/// This variable becomes valid when someone places a CST bid in the current bidding round.
 	/// [/Comment-202605197]
 	/// @dev
 	/// [Comment-202605199]
-	/// This value is based on an actual price someone pays, therefore Comment-202412033 applies.
+	/// This value is based on an actually paid CST base price or the applicable price floors.
+	/// The arithmetic involving it cannot overflow.
+	/// In V3+, Comment-202611052 relates.
+	/// Comment-202412033 relates.
 	/// [/Comment-202605199]
 	uint256 public cstDutchAuctionBeginningBidPrice;
 
@@ -285,7 +296,13 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [/Comment-202605204]
 	uint256 public bidMessageLengthMaxLimit;
 
-	/// @notice We mint this CST amount as a bidder reward for placing a bid.
+	/// @notice In V1.
+	/// [Comment-202607273]
+	/// We mint this CST amount as a bidder reward for placing a bid.
+	/// In V2-, the bidder placing the bid receives the reward.
+	/// In V3+, the previous bidder receives it.
+	/// Comment-202605279 relates.
+	/// [/Comment-202607273]
 	/// Comment-202411064 applies.
 	/// @dev Comment-202606053 relates.
 	uint256 public bidCstRewardAmount;
@@ -456,7 +473,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	/// @notice
 	/// [Comment-202605225]
-	/// At the end of each bidding round, we mint this CST amount for `marketingWallet`.
+	/// On main prize claim, we mint this CST amount to `marketingWallet`.
 	/// [/Comment-202605225]
 	/// Comment-202411064 applies.
 	uint256 public marketingWalletCstContributionAmount;

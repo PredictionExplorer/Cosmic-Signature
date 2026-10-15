@@ -12,8 +12,8 @@ import { OwnableUpgradeableWithReservedStorageGaps } from "../production/Ownable
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { AddressValidator } from "../production/AddressValidator.sol";
 import { CosmicSignatureGameStorage } from "../production/CosmicSignatureGameStorage.sol";
-import { BiddingBase } from "../production/BiddingBase.sol";
-import { MainPrizeBase } from "../production/MainPrizeBase.sol";
+import { BiddingCommon } from "../production/BiddingCommon.sol";
+import { MainPrizeCommon } from "../production/MainPrizeCommon.sol";
 import { SystemManagement } from "../production/SystemManagement.sol";
 import { EthDonations } from "../production/EthDonations.sol";
 import { NftDonations } from "../production/NftDonations.sol";
@@ -21,12 +21,12 @@ import { BidStatistics } from "../production/BidStatistics.sol";
 import { BiddingOpenBid } from "./BiddingOpenBid.sol";
 import { SecondaryPrizes } from "../production/SecondaryPrizes.sol";
 import { MainPrize } from "../production/MainPrize.sol";
-import { ICosmicSignatureGameOpenBid } from "./interfaces/ICosmicSignatureGameOpenBid.sol";
+import { ICosmicSignatureGameV2 } from "../production/interfaces/ICosmicSignatureGameV2.sol";
 
 // #endregion
 // #region
 
-/// todo-1 +++ Compare both open-bid source files to their non-open-bid counterparts.
+/// @notice A `CosmicSignatureGame` next version prototype.
 /// @custom:oz-upgrades-unsafe-allow missing-initializer
 contract CosmicSignatureGameOpenBid is
 	ReentrancyGuardTransientUpgradeable,
@@ -34,8 +34,8 @@ contract CosmicSignatureGameOpenBid is
 	UUPSUpgradeable,
 	AddressValidator,
 	CosmicSignatureGameStorage,
-	BiddingBase,
-	MainPrizeBase,
+	BiddingCommon,
+	MainPrizeCommon,
 	SystemManagement,
 	EthDonations,
 	NftDonations,
@@ -43,7 +43,7 @@ contract CosmicSignatureGameOpenBid is
 	BiddingOpenBid,
 	SecondaryPrizes,
 	MainPrize,
-	ICosmicSignatureGameOpenBid {
+	ICosmicSignatureGameV2 {
 	// #region `constructor`
 
 	/// @notice Constructor.
@@ -62,7 +62,7 @@ contract CosmicSignatureGameOpenBid is
 	// }
 
 	// #endregion
-	// #region `initializeV2`
+	// #region `reinitialize`
 
 	/// @dev Comment-202606128 applies.
 	/// [Comment-202606084]
@@ -73,9 +73,11 @@ contract CosmicSignatureGameOpenBid is
 	/// with a modifier like `_onlyIfPrevVersionWasInitialized`.
 	/// But if you decide to use this code pattern, it will be up to the contract owner performing the upgrade to not break things.
 	/// Comment-202606126 relates.
+	/// It would be nice to suppress the arithmetic overflow check here, but it would be difficult,
+	/// so let's leave it alone in this test-only contract.
 	/// [/Comment-202606084]
-	function initializeV2() external override /*onlyOwner*/ reinitializer(uint64(uint256(_getInitializedVersion()) + 1)) {
-		// // #enable_asserts // #disable_smtchecker console.log("CosmicSignatureGameOpenBid.initializeV2");
+	function reinitialize() external override /*virtual*/ /*onlyOwner*/ reinitializer(uint64(uint256(_getInitializedVersion()) + 1)) {
+		// // #enable_asserts // #disable_smtchecker console.log("CosmicSignatureGameOpenBid.reinitialize");
 
 		// Normally, `reinitializer` prevents a redundant initialization, but we disabled that validation near Comment-202606084.
 		if ( ! (timesEthBidPrice == 0) ) {

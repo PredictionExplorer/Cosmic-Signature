@@ -1,14 +1,18 @@
+// #region
+
 "use strict";
 
+// #endregion
 // #region Imports
 
-const { ZERO_ADDRESS } = require("../GameModel.js");
+const hre = require("hardhat");
+const { MAX_UINT256 } = require("../../../../src/BigIntMathHelpers.js");
 
 // #endregion
 // #region Probe helper
 
 /**
-Runs an intentionally-reverting transaction and asserts the exact error.
+Runs an intentionally-reverting transaction. If `expected` is omitted, accepts any revert reason.
 The transaction reverts, so neither the model nor the ledger change (gas is accounted by the engine).
 @returns {Promise<string>} `revert:<name>` on success, "skip" if not set up.
 */
@@ -19,11 +23,11 @@ async function runProbe(ctx_, { signer, buildTx, expected, ts, value }) {
 		return "skip";
 	}
 	const result_ = await ctx_.engine.execTx({ signer, buildTx, ts, valueNeeded: value ?? 0n });
-	const expectedList_ = Array.isArray(expected) ? expected : [expected];
+	const expectedList_ = expected === undefined ? null : (Array.isArray(expected) ? expected : [expected]);
 	if (result_.ok) {
-		throw new Error(`negative probe expected revert in {${expectedList_.join(", ")}} but the tx succeeded`);
+		throw new Error(`negative probe expected ${expectedList_ === null ? "a revert" : `revert in {${expectedList_.join(", ")}}`} but the tx succeeded`);
 	}
-	if ( ! expectedList_.includes(result_.revert.name) ) {
+	if (expectedList_ !== null && ! expectedList_.includes(result_.revert.name)) {
 		throw new Error(
 			`negative probe expected one of {${expectedList_.join(", ")}} but got ${result_.revert.name}: ${result_.revert.message.slice(0, 300)}`
 		);
@@ -39,7 +43,7 @@ const negativeProbes = [
 
 	{
 		name: "probe.insufficientEthBid",
-		isApplicable: (ctx_) => ctx_.model.lastBidderAddress !== ZERO_ADDRESS,
+		isApplicable: (ctx_) => ctx_.model.lastBidderAddress !== hre.ethers.ZeroAddress,
 		run: (ctx_, actor_) => runProbe(ctx_, {
 			signer: actor_.signer,
 			value: 1n,
@@ -49,7 +53,7 @@ const negativeProbes = [
 	},
 	{
 		name: "probe.tooLongMessage",
-		isApplicable: (ctx_) => ctx_.model.lastBidderAddress !== ZERO_ADDRESS,
+		isApplicable: (ctx_) => ctx_.model.lastBidderAddress !== hre.ethers.ZeroAddress,
 		run: (ctx_, actor_) => {
 			const ts_ = ctx_.engine.clampTs(ctx_.engine.planTs(ctx_.engine.boundaryCandidates()));
 			const price_ = ctx_.model.getNextEthBidPrice(ts_);
@@ -65,7 +69,7 @@ const negativeProbes = [
 	},
 	{
 		name: "probe.usedRandomWalkNftBid",
-		isApplicable: (ctx_, actor_) => ctx_.model.lastBidderAddress !== ZERO_ADDRESS && firstUsedRwNftOwnedBy(ctx_, actor_) !== null,
+		isApplicable: (ctx_, actor_) => ctx_.model.lastBidderAddress !== hre.ethers.ZeroAddress && firstUsedRwNftOwnedBy(ctx_, actor_) !== null,
 		run: (ctx_, actor_) => {
 			const nftId_ = firstUsedRwNftOwnedBy(ctx_, actor_);
 			if (nftId_ === null) {
@@ -85,7 +89,7 @@ const negativeProbes = [
 	},
 	{
 		name: "probe.foreignRandomWalkNftBid",
-		isApplicable: (ctx_, actor_) => ctx_.model.lastBidderAddress !== ZERO_ADDRESS && foreignBiddableRwNft(ctx_, actor_) !== null,
+		isApplicable: (ctx_, actor_) => ctx_.model.lastBidderAddress !== hre.ethers.ZeroAddress && foreignBiddableRwNft(ctx_, actor_) !== null,
 		run: (ctx_, actor_) => {
 			const nftId_ = foreignBiddableRwNft(ctx_, actor_);
 			if (nftId_ === null) {
@@ -106,7 +110,7 @@ const negativeProbes = [
 	{
 		name: "probe.cstBidPriceTooLow",
 		isApplicable: (ctx_) => {
-			if (ctx_.model.lastBidderAddress === ZERO_ADDRESS) {
+			if (ctx_.model.lastBidderAddress === hre.ethers.ZeroAddress) {
 				return false;
 			}
 			const ts_ = ctx_.engine.lastTs + 1n;
@@ -128,7 +132,7 @@ const negativeProbes = [
 	},
 	{
 		name: "probe.minRewardTooHigh",
-		isApplicable: (ctx_) => ctx_.model.version === 2 && ctx_.model.lastBidderAddress !== ZERO_ADDRESS,
+		isApplicable: (ctx_) => ctx_.model.version >= 2 && ctx_.model.lastBidderAddress !== hre.ethers.ZeroAddress,
 		run: (ctx_, actor_) => {
 			const ts_ = ctx_.engine.clampTs(ctx_.engine.planTs(ctx_.engine.boundaryCandidates()));
 			const reward_ = ctx_.model.getBidCstRewardAmount(ts_);
@@ -146,8 +150,8 @@ const negativeProbes = [
 	{
 		name: "probe.bidWhileRoundInactive",
 		isApplicable: (ctx_) =>
-			ctx_.model.version === 2 &&
-			ctx_.model.lastBidderAddress === ZERO_ADDRESS &&
+			ctx_.model.version >= 2 &&
+			ctx_.model.lastBidderAddress === hre.ethers.ZeroAddress &&
 			ctx_.engine.lastTs + 1n < ctx_.model.roundActivationTime,
 		run: (ctx_, actor_) => {
 			const ts_ = ctx_.engine.clampTs(ctx_.engine.lastTs + 1n);
@@ -167,28 +171,28 @@ const negativeProbes = [
 	{
 		name: "probe.cstBidBeforeEthBid",
 		isApplicable: (ctx_) =>
-			ctx_.model.version === 2 &&
-			ctx_.model.lastBidderAddress === ZERO_ADDRESS,
+			ctx_.model.version >= 2 &&
+			ctx_.model.lastBidderAddress === hre.ethers.ZeroAddress,
 		run: (ctx_, actor_) => {
-			const ts_ = ctx_.engine.clampTs(ctx_.model.roundActivationTime + ctx_.model.getCstDutchAuctionDuration() + 1n);
-			if (ts_ < ctx_.model.roundActivationTime) {
-				return "skip";
-			}
-			if (ctx_.model.getNextCstBidPrice(ts_) !== 0n) {
-				return "skip";
-			}
+			// Sometimes bid immediately, including before activation; otherwise sample up to
+			// one CST Dutch auction duration after activation, without using an indeterminate price.
+			const earliestTimeStamp_ = ctx_.engine.lastTs + 1n;
+			const latestTimeStamp_ = ctx_.engine.clampTs(ctx_.model.roundActivationTime + ctx_.model.getCstDutchAuctionDuration());
+			const ts_ = ctx_.engine.randomIntRange(0, 1) === 0 ? earliestTimeStamp_ :
+				ctx_.engine.randomBigIntRange(earliestTimeStamp_, latestTimeStamp_);
+
+			// Comment-202501045 allows different revert reasons; only rejection is guaranteed.
 			return runProbe(ctx_, {
 				signer: actor_.signer,
 				ts: ts_,
-				buildTx: (overrides_) => ctx_.game.connect(actor_.signer).bidWithCst((1n << 256n) - 1n, "", 0n, overrides_),
-				expected: "WrongBidType",
+				buildTx: (overrides_) => ctx_.game.connect(actor_.signer).bidWithCst(MAX_UINT256, "", 0n, overrides_),
 			});
 		},
 	},
 	{
 		name: "probe.cstBidMinRewardTooHigh",
 		isApplicable: (ctx_, actor_) => {
-			if (ctx_.model.version !== 2 || ctx_.model.lastBidderAddress === ZERO_ADDRESS) {
+			if (ctx_.model.version < 2 || ctx_.model.lastBidderAddress === hre.ethers.ZeroAddress) {
 				return false;
 			}
 			const ts_ = ctx_.engine.clampTs(ctx_.engine.planTs(ctx_.engine.boundaryCandidates()));
@@ -205,14 +209,14 @@ const negativeProbes = [
 			return runProbe(ctx_, {
 				signer: actor_.signer,
 				ts: ts_,
-				buildTx: (overrides_) => ctx_.game.connect(actor_.signer).bidWithCst((1n << 256n) - 1n, "", reward_ + 1n, overrides_),
+				buildTx: (overrides_) => ctx_.game.connect(actor_.signer).bidWithCst(MAX_UINT256, "", reward_ + 1n, overrides_),
 				expected: "BidCstRewardAmountMinLimitNotReached",
 			});
 		},
 	},
 	{
 		name: "probe.halveEthNonOwner",
-		isApplicable: (ctx_) => ctx_.model.version === 2,
+		isApplicable: (ctx_) => ctx_.model.version >= 2,
 		run: (ctx_, actor_) => runProbe(ctx_, {
 			signer: actor_.signer,
 			buildTx: (overrides_) => ctx_.game.connect(actor_.signer).contract.halveEthDutchAuctionEndingBidPrice(overrides_),
@@ -221,7 +225,7 @@ const negativeProbes = [
 	},
 	{
 		name: "probe.halveEthAfterBid",
-		isApplicable: (ctx_) => ctx_.model.version === 2 && ctx_.model.lastBidderAddress !== ZERO_ADDRESS,
+		isApplicable: (ctx_) => ctx_.model.version >= 2 && ctx_.model.lastBidderAddress !== hre.ethers.ZeroAddress,
 		run: (ctx_) => runProbe(ctx_, {
 			signer: ctx_.contracts.ownerSigner,
 			buildTx: (overrides_) =>
@@ -237,7 +241,7 @@ const negativeProbes = [
 		name: "probe.claimTooEarly",
 		isApplicable: (ctx_) => {
 			const model_ = ctx_.model;
-			if (model_.lastBidderAddress === ZERO_ADDRESS) {
+			if (model_.lastBidderAddress === hre.ethers.ZeroAddress) {
 				return false;
 			}
 			return ctx_.actorByAddress(model_.lastBidderAddress) !== null && (ctx_.engine.lastTs + 1n) < model_.mainPrizeTime;
@@ -263,7 +267,7 @@ const negativeProbes = [
 		name: "probe.claimDeniedNonLastBidder",
 		isApplicable: (ctx_) => {
 			const model_ = ctx_.model;
-			if (model_.lastBidderAddress === ZERO_ADDRESS) {
+			if (model_.lastBidderAddress === hre.ethers.ZeroAddress) {
 				return false;
 			}
 			return ctx_.pickActorNot(model_.lastBidderAddress) !== null &&
@@ -288,7 +292,7 @@ const negativeProbes = [
 	},
 	{
 		name: "probe.claimNoBids",
-		isApplicable: (ctx_) => ctx_.model.lastBidderAddress === ZERO_ADDRESS,
+		isApplicable: (ctx_) => ctx_.model.lastBidderAddress === hre.ethers.ZeroAddress,
 		run: (ctx_, actor_) => runProbe(ctx_, {
 			signer: actor_.signer,
 			buildTx: (overrides_) => ctx_.game.connect(actor_.signer).claimMainPrize(overrides_),
@@ -397,7 +401,7 @@ const negativeProbes = [
 	},
 	{
 		// The owner may upgrade only while the round is inactive (`_authorizeUpgrade`'s `_onlyRoundIsInactive`).
-		// An owner-initiated upgrade during an active round must revert `RoundIsActive`.
+		// An owner-initiated upgrade during an active round must revert with `RoundIsActive`.
 		name: "probe.upgradeWhileRoundActive",
 		infra: true,
 		isApplicable: (ctx_) => ! ctx_.isRoundInactiveNow() && ctx_.model.roundActivationTime > 0n,
@@ -476,6 +480,8 @@ const negativeProbes = [
 			});
 		},
 	},
+
+	// #endregion
 ];
 
 // #endregion

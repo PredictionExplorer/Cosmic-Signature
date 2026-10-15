@@ -3,17 +3,10 @@
 const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
+const { INITIAL_CST_DUTCH_AUCTION_DURATION, DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR, DEFAULT_BID_CST_REWARD_AMOUNT_RADICAND_MULTIPLIER, DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2, SECONDS_PER_DAY } = require("../../src/CosmicSignatureConstants.js");
 const { waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
-const {
-	DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER,
-	DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR,
-	DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2,
-	INITIAL_CST_DUTCH_AUCTION_DURATION,
-	completeRoundZero,
-	expectUnknownSelector,
-	upgradeToV2,
-} = require("../src/V2UpgradeTestHelpers.js");
+const { completeRoundZero, upgradeToV2, expectUnknownSelector } = require("../src/V2UpgradeTestHelpers.js");
 
 async function snapshotCarriedState(game_) {
 	return {
@@ -68,12 +61,12 @@ async function assertCarriedStateUnchanged(game_, snapshot_) {
 
 describe("CosmicSignatureGameV2-StorageLayout", function () {
 	it("preserves carried state, repurposes only documented slots, and removes old selectors", async function () {
-		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
+		const contracts_ = { ...await loadFixtureDeployContractsForTesting(2n) };
 		await completeRoundZero(contracts_);
 
 		const gameV1_ = contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner);
 
-		await waitForTransactionReceipt(gameV1_.setDelayDurationBeforeRoundActivation(48n * 60n * 60n));
+		await waitForTransactionReceipt(gameV1_.setDelayDurationBeforeRoundActivation(2n * SECONDS_PER_DAY));
 		await waitForTransactionReceipt(gameV1_.setBidMessageLengthMaxLimit(123n));
 		await waitForTransactionReceipt(gameV1_.setCstPrizeAmount(777n * 10n ** 18n));
 		await waitForTransactionReceipt(gameV1_.setMarketingWalletCstContributionAmount(333n * 10n ** 18n));
@@ -83,7 +76,7 @@ describe("CosmicSignatureGameV2-StorageLayout", function () {
 		const oldCstDutchAuctionDurationDivisor_ = await gameV1_.cstDutchAuctionDurationDivisor();
 		const oldBidCstRewardAmount_ = await gameV1_.bidCstRewardAmount();
 		expect(oldCstDutchAuctionDurationDivisor_).not.equal(INITIAL_CST_DUTCH_AUCTION_DURATION);
-		expect(oldBidCstRewardAmount_).not.equal(DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER);
+		expect(oldBidCstRewardAmount_).not.equal(DEFAULT_BID_CST_REWARD_AMOUNT_RADICAND_MULTIPLIER);
 
 		const cosmicSignatureGameV2Factory_ =
 			await hre.ethers.getContractFactory("CosmicSignatureGameV2", contracts_.ownerSigner);
@@ -101,11 +94,13 @@ describe("CosmicSignatureGameV2-StorageLayout", function () {
 
 		expect(await gameV2_.cstDutchAuctionDuration()).equal(INITIAL_CST_DUTCH_AUCTION_DURATION);
 		expect(await gameV2_.cstDutchAuctionDurationChangeDivisor()).equal(DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR);
-		expect(await gameV2_.bidCstRewardAmountMultiplier()).equal(DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER);
+		expect(await gameV2_.bidCstRewardAmountMultiplier()).equal(DEFAULT_BID_CST_REWARD_AMOUNT_RADICAND_MULTIPLIER);
 		expect(await gameV2_.timeoutDurationToClaimMainPrize()).equal(DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2);
 
 		await expectUnknownSelector(gameV2_, hre.ethers.id("cstDutchAuctionDurationDivisor()").slice(0, 10));
 		await expectUnknownSelector(gameV2_, hre.ethers.id("bidCstRewardAmount()").slice(0, 10));
+
+		// This is a legacy variable that existed in the initially deployed V1. It does not exist in the current codebase.
 		await expectUnknownSelector(gameV2_, hre.ethers.id("cstRewardAmountForBidding()").slice(0, 10));
 	});
 });

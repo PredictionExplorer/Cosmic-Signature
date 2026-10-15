@@ -8,6 +8,7 @@
 const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
+const { DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES } = require("../../../src/CosmicSignatureConstants.js");
 const { generateRandomUInt256FromSeedWrapper } = require("../../../src/Helpers.js");
 const { assertAddressIsValid, assertEvent } = require("../../../src/ContractTestingHelpers.js");
 
@@ -15,11 +16,6 @@ const { assertAddressIsValid, assertEvent } = require("../../../src/ContractTest
 // #region `createPrizesWalletSimulator`
 
 /*async*/ function createPrizesWalletSimulator() {
-	// #region
-
-	const DEFAULT_TIMEOUT_DURATION_TO_WITHDRAW_PRIZES = 5n * 7n * 24n * 60n * 60n;
-
-	// #endregion
 	// #region
 
 	const prizesWalletSimulator_ = {

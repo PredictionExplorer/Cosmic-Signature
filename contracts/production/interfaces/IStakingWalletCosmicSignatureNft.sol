@@ -95,7 +95,7 @@ interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 	/// Why the balance can remain a nonzero after all payouts have been made?
 	/// Our logic is simple, but it can lose some Weis.
 	/// The loss happens when we discard a division remainder near Comment-202410161.
-	/// Any better logic would require orders of magnitude more weis in transaction fees.
+	/// Any better logic would cost orders of magnitude more weis in transaction fees.
 	/// [/Comment-202503043]
 	/// As mentioned above, only the contract owner is permitted to call this method. But if it was making a transfer
 	/// to an internally stored charity address, it would probably make sense to let anybody call it,

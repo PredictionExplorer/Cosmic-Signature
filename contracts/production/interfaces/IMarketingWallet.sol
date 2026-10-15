@@ -8,7 +8,7 @@ import { ICosmicSignatureToken } from "./ICosmicSignatureToken.sol";
 /// @author The Cosmic Signature Development Team.
 /// @notice This wallet holds CST funds and facilitates their distribution to fund marketing activities,
 /// such as rewarding people for marketing the project on social media.
-/// The `CosmicSignatureGame` contract mints a configurable CST amount for this wallet at the end of each bidding round.
+/// The `CosmicSignatureGame` contract mints a configurable CST amount to this wallet on main prize claim.
 interface IMarketingWallet is IAddressValidator {
 	/// @notice Emitted when `treasurerAddress` is changed.
 	/// @param newValue The new value.

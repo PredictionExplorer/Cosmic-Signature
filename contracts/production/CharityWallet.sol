@@ -10,6 +10,7 @@ import { ICharityWallet } from "./interfaces/ICharityWallet.sol";
 contract CharityWallet is ReentrancyGuardTransient, Ownable, ICharityWallet {
 	/// @notice The current designated charity address.
 	/// It can be zero.
+	/// Comment-202411064 applies.
 	address public charityAddress = address(0);
 
 	constructor() Ownable(_msgSender()) {
@@ -38,14 +39,21 @@ contract CharityWallet is ReentrancyGuardTransient, Ownable, ICharityWallet {
 
 	function _send(uint256 amount_) private {
 		address charityAddressCopy_ = charityAddress;
+
+		// [Comment-202609203]
+		// Issue. It would be nice to replace `require` with `if`, but it will not be done, due to Comment-202609134.
+		// [/Comment-202609203]
 		require(charityAddressCopy_ != address(0), CosmicSignatureErrors.ZeroAddress("Charity address not set."));
+
 		// emit DonationSent(charityAddressCopy_, amount_);
 		emit CosmicSignatureEvents.FundsTransferredToCharity(charityAddressCopy_, amount_);
 
 		// Comment-202502043 applies.
+		// Comment-202609144 relates and/or applies.
 		(bool isSuccess_, ) = charityAddressCopy_.call{value: amount_}("");
 
 		if ( ! isSuccess_ ) {
+			// Comment-202609144 applies.
 			revert CosmicSignatureErrors.FundTransferFailed("ETH transfer to charity failed.", charityAddressCopy_, amount_);
 		}
 	}

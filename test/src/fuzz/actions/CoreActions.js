@@ -1,11 +1,15 @@
+// #region
+
 "use strict";
 
+// #endregion
 // #region Imports
 
 const { expect } = require("chai");
-const { ENABLE_SMTCHECKER } = require("../../../../src/Helpers.js");
-const { ZERO_ADDRESS } = require("../GameModel.js");
+const hre = require("hardhat");
+const { SECONDS_PER_HOUR, SECONDS_PER_DAY } = require("../../../../src/CosmicSignatureConstants.js");
 const { MAX_UINT256 } = require("../../../../src/BigIntMathHelpers.js");
+const { ENABLE_ASSERTS, ENABLE_SMTCHECKER } = require("../../../../src/Helpers.js");
 const {
 	pickBiddableRandomWalkNft,
 	pickStakeableRandomWalkNft,
@@ -64,31 +68,31 @@ const biddingActions = [
 	{
 		name: "bidWithEthMinRewardExact",
 		weight: 3,
-		isApplicable: (ctx_) => ctx_.model.version === 2,
+		isApplicable: (ctx_) => ctx_.model.version >= 2,
 		run: (ctx_, actor_) => executeEthBid(ctx_, actor_, { flavor: "plain", valueMode: "exact", minRewardMode: "exact" }),
 	},
 	{
 		name: "bidWithCst",
 		weight: 10,
-		isApplicable: (ctx_) => ctx_.model.lastBidderAddress !== ZERO_ADDRESS,
+		isApplicable: (ctx_) => ctx_.model.lastBidderAddress !== hre.ethers.ZeroAddress,
 		run: (ctx_, actor_) => executeCstBid(ctx_, actor_, { flavor: "plain", maxLimitMode: "padded" }),
 	},
 	{
 		name: "bidWithCstExactLimit",
 		weight: 4,
-		isApplicable: (ctx_) => ctx_.model.lastBidderAddress !== ZERO_ADDRESS,
+		isApplicable: (ctx_) => ctx_.model.lastBidderAddress !== hre.ethers.ZeroAddress,
 		run: (ctx_, actor_) => executeCstBid(ctx_, actor_, { flavor: "plain", maxLimitMode: "exact" }),
 	},
 	{
 		name: "bidWithCstAndDonateToken",
 		weight: 3,
-		isApplicable: (ctx_) => ctx_.model.lastBidderAddress !== ZERO_ADDRESS,
+		isApplicable: (ctx_) => ctx_.model.lastBidderAddress !== hre.ethers.ZeroAddress,
 		run: (ctx_, actor_) => executeCstBid(ctx_, actor_, { flavor: "donateToken", maxLimitMode: "max" }),
 	},
 	{
 		name: "bidWithCstAndDonateNft",
 		weight: 3,
-		isApplicable: (ctx_) => ctx_.model.lastBidderAddress !== ZERO_ADDRESS,
+		isApplicable: (ctx_) => ctx_.model.lastBidderAddress !== hre.ethers.ZeroAddress,
 		run: (ctx_, actor_) => executeCstBid(ctx_, actor_, { flavor: "donateNft", maxLimitMode: "max" }),
 	},
 ];
@@ -118,17 +122,19 @@ async function executeClaim(ctx_, claimer_, ts_) {
 	const numStakedCs_ = ledger.csStaking.numStakedNfts;
 	const numStakedRw_ = ledger.rwStaking.numStakedNfts;
 
-	const result_ = await engine.execTx({
+	const result_ = await withPrizesWalletAssertBypass(ctx_, () => engine.execTx({
 		signer: claimer_.signer,
 		buildTx: (overrides_) => ctx_.game.connect(claimer_.signer).claimMainPrize(overrides_),
 		ts: ts_,
-	});
+	}));
 	const receipt_ = engine.expectOk(result_, "claimMainPrize");
 	if (receipt_.gasUsed > engine.maxClaimGasUsed) {
 		engine.maxClaimGasUsed = receipt_.gasUsed;
 	}
 
-	const breakdown_ = model.applyClaim(claimer_.address, ts_, gameEthBalanceBefore_, numStakedCs_, numStakedRw_);
+	// The bypass setter can advance the timestamp beyond the originally planned claim time.
+	const breakdown_ = model.applyClaim(claimer_.address, result_.ts, gameEthBalanceBefore_, numStakedCs_, numStakedRw_);
+
 	verifyClaimReceipt(ctx_, { claimerAddress: claimer_.address, receipt: receipt_, breakdown: breakdown_, rwStakerOwnersBefore: rwStakerOwners_ });
 	await ledger.verifyDirtyEth();
 	if (engine.profile.verbosity >= 2) {
@@ -143,7 +149,7 @@ Claims the main prize as the last bidder. Times the claim at/after `mainPrizeTim
 */
 async function claimAsLastBidder(ctx_) {
 	const { engine, model } = ctx_;
-	if (model.lastBidderAddress === ZERO_ADDRESS) {
+	if (model.lastBidderAddress === hre.ethers.ZeroAddress) {
 		return "skip";
 	}
 	const claimer_ = ctx_.actorByAddress(model.lastBidderAddress);
@@ -152,7 +158,7 @@ async function claimAsLastBidder(ctx_) {
 	}
 	let ts_ = model.mainPrizeTime;
 	if (engine.chancePercent(50)) {
-		ts_ = model.mainPrizeTime + engine.randomBigIntRange(0n, 7n * 86_400n);
+		ts_ = model.mainPrizeTime + engine.randomBigIntRange(0n, 7n * SECONDS_PER_DAY);
 	}
 	return executeClaim(ctx_, claimer_, engine.clampTs(ts_));
 }
@@ -162,14 +168,14 @@ Claims as a non-last bidder after the claim timeout (mirrors the "anyone after t
 */
 async function claimAfterTimeout(ctx_) {
 	const { engine, model } = ctx_;
-	if (model.lastBidderAddress === ZERO_ADDRESS) {
+	if (model.lastBidderAddress === hre.ethers.ZeroAddress) {
 		return "skip";
 	}
 	const claimer_ = ctx_.pickActorNot(model.lastBidderAddress);
 	if (claimer_ === null) {
 		return "skip";
 	}
-	const ts_ = engine.clampTs(model.mainPrizeTime + model.timeoutDurationToClaimMainPrize + engine.randomBigIntRange(1n, 3_600n));
+	const ts_ = engine.clampTs(model.mainPrizeTime + model.timeoutDurationToClaimMainPrize + engine.randomBigIntRange(1n, SECONDS_PER_HOUR));
 	return executeClaim(ctx_, claimer_, ts_);
 }
 
@@ -177,14 +183,14 @@ async function claimAfterTimeout(ctx_) {
 Comment-202606235 coverage. A malicious/compromised owner sets `delayDurationBeforeRoundActivation` to
 `type(uint256).max` mid-round (the setter has no round-state guard, Comment-202503106). On V1 this makes
 `block.timestamp + delayDurationBeforeRoundActivation` in `_prepareNextRound` overflow and revert, bricking the
-prize. V2 wraps that body in `unchecked`, so the last bidder's claim still succeeds and `roundActivationTime` merely
+prize. V2+ wraps that body in `unchecked`, so the last bidder's claim still succeeds and `roundActivationTime` merely
 wraps modulo 2^256. This action drives that exact path through the full claim verification, then restores a sane
-	delay so subsequent rounds activate normally (no lock-in). V2-only: V1 inherits the checked
-	`MainPrize._prepareNextRound`, where this claim would revert.
+delay so subsequent rounds activate normally (no lock-in). V2+-only: V1 inherits the checked
+`MainPrize._prepareNextRound`, where this claim would revert. SMTChecker builds also keep the addition checked.
 */
 async function claimWithOverflowingDelay(ctx_) {
 	const { engine, model, ledger } = ctx_;
-	if (model.lastBidderAddress === ZERO_ADDRESS) {
+	if (model.lastBidderAddress === hre.ethers.ZeroAddress) {
 		return "skip";
 	}
 	const claimer_ = ctx_.actorByAddress(model.lastBidderAddress);
@@ -207,16 +213,16 @@ async function claimWithOverflowingDelay(ctx_) {
 	// The last bidder still claims successfully; the unchecked addition wraps instead of reverting.
 	let ts_ = model.mainPrizeTime;
 	if (engine.chancePercent(50)) {
-		ts_ = model.mainPrizeTime + engine.randomBigIntRange(0n, 7n * 86_400n);
+		ts_ = model.mainPrizeTime + engine.randomBigIntRange(0n, 7n * SECONDS_PER_DAY);
 	}
 	const claimTs_ = engine.clampTs(ts_);
 	let outcome_;
 	if (ENABLE_SMTCHECKER > 0) {
-		const claimResult_ = await engine.execTx({
+		const claimResult_ = await withPrizesWalletAssertBypass(ctx_, () => engine.execTx({
 			signer: claimer_.signer,
 			buildTx: (overrides_) => ctx_.game.connect(claimer_.signer).claimMainPrize(overrides_),
 			ts: claimTs_,
-		});
+		}));
 		expect(claimResult_.ok, "SMTChecker build keeps overflow checked, so this claim must revert").to.equal(false);
 		expect(claimResult_.revert.name, "overflowing V2 claim wrong SMTChecker-mode revert").to.equal("Panic(0x11)");
 		outcome_ = `revert:${claimResult_.revert.name}`;
@@ -253,7 +259,7 @@ then stops the phase) — a graceful, realistic outcome rather than an infinite 
 */
 async function forceCompleteRound(ctx_) {
 	const { engine, model } = ctx_;
-	if (model.lastBidderAddress === ZERO_ADDRESS) {
+	if (model.lastBidderAddress === hre.ethers.ZeroAddress) {
 		let seeded_ = false;
 		for (const actor_ of actorsByWealthDesc(ctx_)) {
 			const bidOutcome_ = await executeEthBid(ctx_, actor_, { flavor: "plain", valueMode: "exact" });
@@ -262,7 +268,7 @@ async function forceCompleteRound(ctx_) {
 				break;
 			}
 		}
-		if ( ! seeded_ || model.lastBidderAddress === ZERO_ADDRESS) {
+		if ( ! seeded_ || model.lastBidderAddress === hre.ethers.ZeroAddress) {
 			return false;
 		}
 	}
@@ -285,12 +291,13 @@ async function forceCompleteRound(ctx_) {
 /**
 Same-block claim contention: the eligible last bidder and a second actor both submit `claimMainPrize`
 in one block. Only the first (FIFO) succeeds and ends the round; the second must revert (the round has
-already advanced, so it sees no bids). Exercises the main prize's same-block exclusivity.
+already advanced, so it sees no bids).
+Comment-202611021 applies.
 @returns {Promise<boolean>} Whether the race ran (and the winning claim was applied).
 */
 async function runClaimRace(ctx_) {
 	const { engine, model, ledger } = ctx_;
-	if (model.lastBidderAddress === ZERO_ADDRESS) {
+	if (model.lastBidderAddress === hre.ethers.ZeroAddress) {
 		return false;
 	}
 	const claimer_ = ctx_.actorByAddress(model.lastBidderAddress);
@@ -305,7 +312,7 @@ async function runClaimRace(ctx_) {
 		return false;
 	}
 	// At/after `mainPrizeTime` so the last bidder is allowed to claim.
-	const ts_ = engine.clampTs((model.mainPrizeTime > engine.lastTs) ? model.mainPrizeTime : (engine.lastTs + 1n));
+	let ts_ = engine.clampTs((model.mainPrizeTime > engine.lastTs) ? model.mainPrizeTime : (engine.lastTs + 1n));
 	const rwStakerOwners_ = currentRandomWalkStakerOwners(ledger);
 	const gameEthBalanceBefore_ = ledger.expectedEth(ctx_.game.address);
 	const numStakedCs_ = ledger.csStaking.numStakedNfts;
@@ -315,7 +322,12 @@ async function runClaimRace(ctx_) {
 		{ signer: claimer_.signer, buildTx: (overrides_) => ctx_.game.connect(claimer_.signer).claimMainPrize(overrides_) },
 		{ signer: other_.signer, buildTx: (overrides_) => ctx_.game.connect(other_.signer).claimMainPrize(overrides_) },
 	];
-	const results_ = await engine.execBurst(ts_, items_);
+	const results_ = await withPrizesWalletAssertBypass(ctx_, () => {
+		// The bypass setter may have mined another block.
+		ts_ = engine.clampTs(ts_);
+
+		return engine.execBurst(ts_, items_);
+	});
 	expect(results_[0].status, "claim race: the first (last-bidder) claim must succeed").to.equal(1);
 	expect(results_[1].status, "claim race: the second simultaneous claim must revert").to.equal(0);
 	if (results_[0].receipt.gasUsed > engine.maxClaimGasUsed) {
@@ -330,29 +342,55 @@ async function runClaimRace(ctx_) {
 	return true;
 }
 
+/**
+Comment-202610038 applies. Bypass missing history only for a replacement wallet's first claim.
+A reverted claim leaves the history empty, so the next attempt still needs the bypass.
+*/
+async function withPrizesWalletAssertBypass(ctx_, claim_) {
+	const { engine, model, ledger, contracts } = ctx_;
+	if ( ! ENABLE_ASSERTS || model.roundNum === 0n || ledger.prizesWallet.mainPrizeBeneficiaries.size !== 0 ) {
+		return claim_();
+	}
+	const prizesWallet_ = contracts.prizesWallet.connect(contracts.ownerSigner);
+	const enableResult_ = await engine.execTx({
+		signer: contracts.ownerSigner,
+		buildTx: (overrides_) => prizesWallet_.setBypassSomeAsserts(true, overrides_),
+	});
+	engine.expectOk(enableResult_, "enable PrizesWallet assertion bypass");
+	try {
+		return await claim_();
+	} finally {
+		const disableResult_ = await engine.execTx({
+			signer: contracts.ownerSigner,
+			buildTx: (overrides_) => prizesWallet_.setBypassSomeAsserts(false, overrides_),
+		});
+		engine.expectOk(disableResult_, "disable PrizesWallet assertion bypass");
+	}
+}
+
 const claimActions = [
 	{
 		name: "claimMainPrize",
 		weight: 7,
-		isApplicable: (ctx_) => ctx_.model.lastBidderAddress !== ZERO_ADDRESS && ctx_.actorByAddress(ctx_.model.lastBidderAddress) !== null,
+		isApplicable: (ctx_) => ctx_.model.lastBidderAddress !== hre.ethers.ZeroAddress && ctx_.actorByAddress(ctx_.model.lastBidderAddress) !== null,
 		run: (ctx_) => claimAsLastBidder(ctx_),
 	},
 	{
 		name: "claimMainPrizeAfterTimeout",
 		weight: 2,
-		isApplicable: (ctx_) => ctx_.model.lastBidderAddress !== ZERO_ADDRESS,
+		isApplicable: (ctx_) => ctx_.model.lastBidderAddress !== hre.ethers.ZeroAddress,
 		run: (ctx_) => claimAfterTimeout(ctx_),
 	},
 	{
 		// Comment-202606235: the last bidder claims after the owner overflowed the next-round activation math.
-		// V2-only (V1 uses checked arithmetic, where this claim would revert).
+		// V2+-only (V1 uses checked arithmetic, where this claim would revert).
 		// SMTChecker preprocessing deliberately disables the unchecked block, so that build expects
 		// and records Panic(0x11) instead of treating it as an unexpected fuzz failure.
 		name: "claimMainPrizeWithOverflowingDelay",
 		weight: 1,
 		isApplicable: (ctx_) =>
-			ctx_.model.version === 2 &&
-			ctx_.model.lastBidderAddress !== ZERO_ADDRESS &&
+			ctx_.model.version >= 2 &&
+			ctx_.model.lastBidderAddress !== hre.ethers.ZeroAddress &&
 			ctx_.actorByAddress(ctx_.model.lastBidderAddress) !== null,
 		run: (ctx_) => claimWithOverflowingDelay(ctx_),
 	},

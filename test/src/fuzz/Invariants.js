@@ -3,8 +3,7 @@
 // #region Imports
 
 const { expect } = require("chai");
-const { ZERO_ADDRESS } = require("./GameModel.js");
-const { MAX_UINT256 } = require("../../../src/BigIntMathHelpers.js");
+const hre = require("hardhat");
 
 // #endregion
 // #region Invariant suite
@@ -88,19 +87,40 @@ async function runInvariants(ctx_) {
 	expect(await game_.mainPrizeTimeIncrementInMicroSeconds(), "mainPrizeTimeIncrement vs model").to.equal(model.mainPrizeTimeIncrementInMicroSeconds);
 	expect((await game_.lastBidderAddress()).toLowerCase(), "lastBidderAddress vs model").to.equal(model.lastBidderAddress);
 	expect((await game_.lastCstBidderAddress()).toLowerCase(), "lastCstBidderAddress vs model").to.equal(model.lastCstBidderAddress);
-	expect((await game_.enduranceChampionAddress()).toLowerCase(), "enduranceChampionAddress vs model").to.equal(model.enduranceChampionAddress);
-	expect((await game_.chronoWarriorAddress()).toLowerCase(), "chronoWarriorAddress vs model").to.equal(model.chronoWarriorAddress);
+	expect(await game_.enduranceChampionAddress(), "enduranceChampionAddress vs model").to.equal(hre.ethers.getAddress(model.enduranceChampionAddress));
+	expect(await game_.chronoWarriorAddress(), "chronoWarriorAddress vs model").to.equal(hre.ethers.getAddress(model.chronoWarriorAddress));
 	expect(await game_.chronoWarriorDuration(), "chronoWarriorDuration vs model").to.equal(model.chronoWarriorDurationUint());
 	expect(await game_.nextEthBidPrice(), "nextEthBidPrice vs model").to.equal(model.nextEthBidPrice);
 	expect(await game_.ethDutchAuctionBeginningBidPrice(), "ethDutchAuctionBeginningBidPrice vs model").to.equal(model.ethDutchAuctionBeginningBidPrice);
 	expect(await game_.cstDutchAuctionBeginningTimeStamp(), "cstDutchAuctionBeginningTimeStamp vs model").to.equal(model.cstDutchAuctionBeginningTimeStamp);
-	if (model.version === 2) {
+	expect(await game_.cstDutchAuctionBeginningBidPrice(), "cstDutchAuctionBeginningBidPrice vs model").to.equal(model.cstDutchAuctionBeginningBidPrice);
+	expect(await game_.nextRoundFirstCstDutchAuctionBeginningBidPrice(), "nextRoundFirstCstDutchAuctionBeginningBidPrice vs model")
+		.to.equal(model.nextRoundFirstCstDutchAuctionBeginningBidPrice);
+	if (model.version >= 2) {
 		expect(await game_.cstDutchAuctionDuration(), "cstDutchAuctionDuration vs model").to.equal(model.cstDutchAuctionDuration);
 		expect(await game_.cstDutchAuctionDurationChangeDivisor(), "cstDutchAuctionDurationChangeDivisor vs model").to.equal(model.cstDutchAuctionDurationChangeDivisor);
 		expect(await game_.bidCstRewardAmountMultiplier(), "bidCstRewardAmountMultiplier vs model").to.equal(model.bidCstRewardAmountMultiplier);
 	} else {
 		expect(await game_.cstDutchAuctionDurationDivisor(), "cstDutchAuctionDurationDivisor vs model").to.equal(model.cstDutchAuctionDurationDivisor);
 		expect(await game_.bidCstRewardAmount(), "bidCstRewardAmount vs model").to.equal(model.bidCstRewardAmount);
+	}
+	if (model.version >= 3) {
+		expect(await game_.roundLateBidDurationDivisor(), "roundLateBidDurationDivisor vs model").to.equal(model.roundLateBidDurationDivisor);
+		expect(await game_.roundLateBidPricePremiumAmountBaseMultiplier(), "roundLateBidPricePremiumAmountBaseMultiplier vs model").to.equal(model.roundLateBidPricePremiumAmountBaseMultiplier);
+		expect(await game_.roundLateBidPricePremiumAmountExponent(), "roundLateBidPricePremiumAmountExponent vs model").to.equal(model.roundLateBidPricePremiumAmountExponent);
+		expect(await game_.cstBidPriceDeclineMultiplier(), "cstBidPriceDeclineMultiplier vs model").to.equal(model.cstBidPriceDeclineMultiplier);
+		expect(await game_.cstBidPriceDeclineMultiplierChangeDivisor(), "cstBidPriceDeclineMultiplierChangeDivisor vs model").to.equal(model.cstBidPriceDeclineMultiplierChangeDivisor);
+		expect(await game_.mainPrizeNumCosmicSignatureNfts(), "mainPrizeNumCosmicSignatureNfts vs model").to.equal(model.mainPrizeNumCosmicSignatureNfts);
+		expect(await game_.getRoundLateBidDuration(), "getRoundLateBidDuration vs model").to.equal(model.getRoundLateBidDuration());
+	}
+
+	// Check completed rounds too. V1/V2 rounds must retain zero in their new V3-only fields after upgrade.
+	for (const roundNumString_ of new Set([...model.rounds.keys(), model.roundNum.toString()])) {
+		const roundNum_ = BigInt(roundNumString_);
+		const onChainStats_ = await game_.roundStats(roundNum_);
+		for (const [field_, expectedValue_] of Object.entries(model.roundStats(roundNum_))) {
+			expect(onChainStats_[field_], `roundStats[${roundNumString_}].${field_} vs model`).to.equal(expectedValue_);
+		}
 	}
 
 	{
@@ -110,11 +130,9 @@ async function runInvariants(ctx_) {
 		expect(await game_.getDurationUntilRoundActivation(), "getDurationUntilRoundActivation vs model")
 			.to.equal(-durationElapsedSinceRoundActivation_);
 
-		const durationUntilMainPrizeRaw_ = model.mainPrizeTime - BigInt(ts_);
-		expect(await game_.getDurationUntilMainPrizeRaw(), "getDurationUntilMainPrizeRaw vs model")
-			.to.equal(durationUntilMainPrizeRaw_);
+		const durationUntilMainPrize_ = model.mainPrizeTime - BigInt(ts_);
 		expect(await game_.getDurationUntilMainPrize(), "getDurationUntilMainPrize vs model")
-			.to.equal((durationUntilMainPrizeRaw_ > 0n) ? durationUntilMainPrizeRaw_ : 0n);
+			.to.equal(durationUntilMainPrize_);
 
 		const [cstDutchAuctionDuration_, cstDutchAuctionElapsedDuration_] = await game_.getCstDutchAuctionDurations();
 		expect(cstDutchAuctionDuration_, "getCstDutchAuctionDurations duration vs model").to.equal(model.getCstDutchAuctionDuration());
@@ -152,19 +170,42 @@ async function runInvariants(ctx_) {
 		await checkCfg_("marketingWalletCstContributionAmount", model.marketingWalletCstContributionAmount);
 		await checkCfg_("charityEthDonationAmountPercentage", model.charityEthDonationAmountPercentage);
 		expect((await game_.charityAddress()).toLowerCase(), "config drift: charityAddress").to.equal(model.charityAddress);
+		expect((await game_.prizesWallet()).toLowerCase(), "config drift: prizesWallet").to.equal(model.prizesWalletAddress);
+		expect(model.prizesWalletAddress, "harness drift: contracts.prizesWalletAddress vs model").to.equal(contracts.prizesWalletAddress.toLowerCase());
 	}
 
 	// Bid statistics tail.
 	{
-		const onChainNumBids_ = await game_.getTotalNumBids(model.roundNum);
-		expect(onChainNumBids_, "getTotalNumBids vs model").to.equal(model.getTotalNumBids(model.roundNum));
-		if (model.lastBidderAddress !== ZERO_ADDRESS && onChainNumBids_ > 0n) {
-			const tail_ = await game_.getBidderAddressAt(model.roundNum, onChainNumBids_ - 1n);
-			expect(tail_.toLowerCase(), "bid log tail == lastBidderAddress").to.equal(model.lastBidderAddress);
-			const bidderInfo_ = model.getBidderInfo(model.roundNum, model.lastBidderAddress);
-			const [ethSpent_, cstSpent_] = await game_.getBidderTotalSpentAmounts(model.roundNum, model.lastBidderAddress);
-			expect(ethSpent_, "getBidderTotalSpentAmounts ETH vs model").to.equal(bidderInfo_.totalSpentEthAmount);
-			expect(cstSpent_, "getBidderTotalSpentAmounts CST vs model").to.equal(bidderInfo_.totalSpentCstAmount);
+		// const onChainNumBids_ = await game_.getTotalNumBids(model.roundNum);
+		// expect(onChainNumBids_, "getTotalNumBids vs model").to.equal(model.getTotalNumBids(model.roundNum));
+		const onChainNumBids_ = (await game_.roundStats(model.roundNum)).numBids;
+		expect(onChainNumBids_, "roundStats.numBids vs model").to.equal(model.roundStats(model.roundNum).numBids);
+		if (model.lastBidderAddress !== hre.ethers.ZeroAddress && onChainNumBids_ > 0n) {
+			const tailBidInfo_ = await game_.getBidInfoAt(model.roundNum, onChainNumBids_ - 1n);
+			expect(tailBidInfo_.bidderAddress.toLowerCase(), "bid log tail == lastBidderAddress")
+				.to.equal(model.lastBidderAddress);
+			// const bidderInfo_ = model.getBidderInfo(model.roundNum, model.lastBidderAddress);
+			// const [ethSpent_, cstSpent_] = await game_.getBidderTotalSpentAmounts(model.roundNum, model.lastBidderAddress);
+			// expect(ethSpent_, "getBidderTotalSpentAmounts ETH vs model").to.equal(bidderInfo_.totalSpentEthAmount);
+			// expect(cstSpent_, "getBidderTotalSpentAmounts CST vs model").to.equal(bidderInfo_.totalSpentCstAmount);
+			const bidderInfo_ = model.biddersInfo(model.roundNum, model.lastBidderAddress);
+			const onChainBidderInfo_ = await game_.biddersInfo(model.roundNum, model.lastBidderAddress);
+			for (const [field_, expectedValue_] of Object.entries(bidderInfo_)) {
+				expect(onChainBidderInfo_[field_], `biddersInfo.${field_} vs model`).to.equal(expectedValue_);
+			}
+		}
+	}
+
+	if (model.version >= 3) {
+		const cumulativeWeights_ = model.getBidRaffleCumulativeWeights(model.roundNum);
+		for ( let bidIndex_ = 0; bidIndex_ < cumulativeWeights_.length; ++ bidIndex_ ) {
+			const bidInfo_ = await game_.getBidInfoAt(model.roundNum, BigInt(bidIndex_));
+			expect(bidInfo_.raffleCumulativeWeight, `bid raffle cumulative weight ${bidIndex_} vs model`)
+				.to.equal(cumulativeWeights_[bidIndex_]);
+			if (bidIndex_ > 0 && cumulativeWeights_[bidIndex_ - 1] > 0n) {
+				expect(cumulativeWeights_[bidIndex_], `bid raffle cumulative weight ${bidIndex_} increases`)
+					.greaterThan(cumulativeWeights_[bidIndex_ - 1]);
+			}
 		}
 	}
 
@@ -178,36 +219,45 @@ async function runInvariants(ctx_) {
 
 		const onChainCstPrice_ = await game_.getNextCstBidPrice();
 		expect(onChainCstPrice_, "getNextCstBidPrice vs model").to.equal(model.getNextCstBidPrice(ts_));
-		expect(await game_.getNextCstBidPriceAdvanced(0n), "getNextCstBidPrice == Advanced(0)").to.equal(onChainCstPrice_);
 
-		if (model.version === 2) {
+		// Comment-202610021 applies to this contract-only comparison.
+		if (model.lastBidderAddress !== hre.ethers.ZeroAddress) {
+			expect(await game_.getNextCstBidPriceAdvanced(0n), "getNextCstBidPrice == Advanced(0)").to.equal(onChainCstPrice_);
+		}
+
+		if (model.version >= 2) {
 			const onChainReward_ = await game_.getBidCstRewardAmount();
 			expect(onChainReward_, "getBidCstRewardAmount vs model").to.equal(model.getBidCstRewardAmount(ts_));
-			expect(await game_.getBidCstRewardAmountAdvanced(0n), "getBidCstRewardAmount == Advanced(0)").to.equal(onChainReward_);
+
+			// Comment-202610021 applies to this contract-only comparison.
+			if (model.lastBidderAddress !== hre.ethers.ZeroAddress) {
+				expect(await game_.getBidCstRewardAmountAdvanced(0n), "getBidCstRewardAmount == Advanced(0)").to.equal(onChainReward_);
+			}
 		}
 	}
 
-	// `tryGetCurrentChampions` matches the model projection.
+	// Current champion information at this block's timestamp matches the model.
 	{
 		const champions_ = await game_.tryGetCurrentChampions();
-		const projected_ = model.tryGetCurrentChampions(ts_);
-		expect(champions_[0].toLowerCase(), "tryGetCurrentChampions endurance addr").to.equal(projected_.enduranceChampionAddress);
-		expect(champions_[1], "tryGetCurrentChampions endurance duration").to.equal(projected_.enduranceChampionDuration);
-		expect(champions_[2].toLowerCase(), "tryGetCurrentChampions chrono addr").to.equal(projected_.chronoWarriorAddress);
-		expect(champions_[3], "tryGetCurrentChampions chrono duration").to.equal(projected_.chronoWarriorDuration);
+		const currentChampions_ = model.tryGetCurrentChampions(ts_);
+		expect(champions_[0], "tryGetCurrentChampions endurance addr").to.equal(hre.ethers.getAddress(currentChampions_.enduranceChampionAddress));
+		expect(champions_[1], "tryGetCurrentChampions endurance duration").to.equal(currentChampions_.enduranceChampionDuration);
+		expect(champions_[2], "tryGetCurrentChampions chrono addr").to.equal(hre.ethers.getAddress(currentChampions_.chronoWarriorAddress));
+		expect(champions_[3], "tryGetCurrentChampions chrono duration").to.equal(currentChampions_.chronoWarriorDuration);
 	}
 
-	// Chrono sentinel rule: (addr == 0) == (duration is sentinel).
-	{
-		const chronoAddr_ = await game_.chronoWarriorAddress();
-		const chronoDur_ = await game_.chronoWarriorDuration();
-		const sentinel_ = MAX_UINT256;
-		if (chronoAddr_ === ZERO_ADDRESS) {
-			expect(chronoDur_, "zero chrono addr => sentinel duration").to.equal(sentinel_);
-		} else {
-			expect(chronoDur_ <= (1n << 255n) - 1n, "nonzero chrono addr => non-sentinel duration").to.equal(true);
-		}
-	}
+	// // Comment-202610021 applies to this contract-only check.
+	// // Chrono sentinel rule: (addr == 0) == (duration is sentinel).
+	// {
+	// 	const chronoAddr_ = await game_.chronoWarriorAddress();
+	// 	const chronoDur_ = await game_.chronoWarriorDuration();
+	// 	const sentinel_ = MAX_UINT256;
+	// 	if (chronoAddr_ === hre.ethers.ZeroAddress) {
+	// 		expect(chronoDur_, "zero chrono addr => sentinel duration").to.equal(sentinel_);
+	// 	} else {
+	// 		expect(chronoDur_ <= (1n << 255n) - 1n, "nonzero chrono addr => non-sentinel duration").to.equal(true);
+	// 	}
+	// }
 
 	// #endregion
 	// #region Secondary prize amount views
@@ -334,7 +384,8 @@ function assertCoverageFloors(statsMap_, profile_) {
 	// ... and every meaningful user action the protocol supports must have actually SUCCEEDED at least
 	// once across the soak — covering bids (ETH / Random Walk NFT / CST), staking and unstaking, ETH and
 	// donation flows, prize and donated-asset withdrawals (the winner receiving donated NFTs/ERC-20s),
-	// CST/NFT transfers and signatures, RW mint/withdraw, and the V1->V2 upgrade auth probe.
+	// CST/NFT transfers and signatures, RW mint/withdraw, the V1 -> V2 -> V3 upgrade chain, and
+	// the post-V3 PrizesWallet swap.
 	const mustSucceed_ = [
 		"bidWithEth", "bidWithEthExactPrice", "bidWithEthSwallow", "bidWithEthRefund",
 		"bidWithEthPlusRandomWalkNft", "bidWithEthReceive", "bidWithEthAndDonateToken", "bidWithEthAndDonateNft",
@@ -353,6 +404,7 @@ function assertCoverageFloors(statsMap_, profile_) {
 		"adminMutateParameters", "daoGovernanceCycle",
 		"adversarialReentrancyOnBidRefund", "adversarialMaliciousTokenDonation",
 		"upgradeAuthProbe",
+		"upgradeToV2", "upgradeToV3", "prizesWalletSwap",
 	];
 	const neverSucceeded_ = mustSucceed_.filter((name_) => succeeded_(name_) <= 0);
 	expect(

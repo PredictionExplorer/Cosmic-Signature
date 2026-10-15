@@ -11,7 +11,15 @@ See its manual in another document.
 
 - Review the script output in the terminal.
 
-- Note that any storage variable renames will be reported as errors. This utility does not support any decorators similar to `@custom:oz-renamed-from`.
+### ToDo-1
 
-- If you later develop another version of the upgradeable contract you will need to add a script for it.\
-See online docs for more info.
+- If you later develop another version of the upgradeable contract you will need to add a script for it.
+
+### Notes
+
+- This utility appears to be less capable than the OpenZeppelin's upgradeable contract validation logic executed by `HardhatRuntimeEnvironment.upgrades.upgradeProxy`.
+
+- Any storage variable renames will be reported as errors. This utility does not support any annotations similar to `@custom:oz-renamed-from`.\
+  ToDo-202607169-1 relates.
+
+- This utility is not aware of the special gap array that we tagged with Comment-202412142. Therefore it will report an error if the first item in the gap array was replaced with a new storage variable.

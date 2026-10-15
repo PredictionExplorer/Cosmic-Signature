@@ -1,4 +1,6 @@
+// Comment-202609302 applies.
 // SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.26;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
@@ -8,12 +10,14 @@ import { IRandomWalkNFT } from "./interfaces/IRandomWalkNFT.sol";
 
 /// @dev
 /// [Comment-202409149]
-/// This contract has already been deployed, so it makes little sense to refactor it.
+/// This contract was deployed long ago, so it makes little sense to refactor it.
 /// But I did refactor it a little.
 /// Some refactorings accommodate breaking changes in OpenZeppelin.
 /// Comment-202503251 relates.
 /// Comment-202502063 relates.
+/// Comment-202609134 applies.
 /// [/Comment-202409149]
+/// Comment-202609176 applies.
 ///
 /// Issue. There is a little vulnerability here, described in Comment-202503253.
 contract RandomWalkNFT is ERC721Enumerable, Ownable, IRandomWalkNFT {

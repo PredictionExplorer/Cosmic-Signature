@@ -3,7 +3,7 @@
 // #region Imports
 
 const { expect } = require("chai");
-const c = require("../FuzzConstants.js");
+const c = require("../../../../src/CosmicSignatureConstants.js");
 
 // #endregion
 // #region Random Walk NFT economy
@@ -48,7 +48,7 @@ const randomWalkActions = [
 				return "skip";
 			}
 			const withdrawalTime_ = ledger.randomWalkNft.lastMintTime + c.RANDOMWALK_NFT_WITHDRAWAL_WAIT_SECONDS;
-			const ts_ = engine.clampTs(withdrawalTime_ + engine.randomBigIntRange(1n, 3_600n));
+			const ts_ = engine.clampTs(withdrawalTime_ + engine.randomBigIntRange(1n, c.SECONDS_PER_HOUR));
 			const rwBalanceBefore_ = ledger.expectedEth(contracts.randomWalkNftAddress);
 			const withdrawalAmount_ = rwBalanceBefore_ / 2n;
 			const result_ = await engine.execTx({
@@ -337,7 +337,7 @@ const prizesWalletActions = [
 				return "skip";
 			}
 			const { round, winner, amount, timeout } = target_;
-			const ts_ = engine.clampTs(timeout + engine.randomBigIntRange(1n, 3_600n));
+			const ts_ = engine.clampTs(timeout + engine.randomBigIntRange(1n, c.SECONDS_PER_HOUR));
 			const result_ = await engine.execTx({
 				signer: actor_.signer,
 				buildTx: (overrides_) =>

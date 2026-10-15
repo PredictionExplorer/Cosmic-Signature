@@ -1,0 +1,520 @@
+// #region
+
+// SPDX-License-Identifier: CC0-1.0
+pragma solidity =0.8.34;
+
+// #endregion
+// #region
+
+// // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
+import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
+import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
+import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
+import { CosmicSignatureHelpers } from "./libraries/CosmicSignatureHelpers.sol";
+import { BidRaffleWeightHelpers } from "./libraries/BidRaffleWeightHelpers.sol";
+import { IBidding1V2 } from "./interfaces/IBidding1V2.sol";
+import { BiddingV2Base } from "./BiddingV2Base.sol";
+import { CosmicSignatureGameStorageV3Base } from "./CosmicSignatureGameStorageV3Base.sol";
+import { IBiddingV3 } from "./interfaces/IBiddingV3.sol";
+
+// #endregion
+// #region
+
+abstract contract BiddingV3 is
+	BiddingV2Base,
+	CosmicSignatureGameStorageV3Base,
+	// BidStatisticsV3,
+	IBiddingV3 {
+	// #region `_bidWithEth`
+
+	function _bidWithEth(int256 randomWalkNftId_, string memory message_, uint256 bidCstRewardAmountMinLimit_) internal override /* virtual */ /* nonReentrant() */ /* _onlyRoundIsActive() */ {
+		// #region
+
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			// #region //
+
+			// BidType bidType_;
+
+			// #endregion
+			// #region
+
+			uint256 bidCstRewardAmount_ = 0;
+			if (lastBidderAddress != address(0)) {
+				// This can be zero.
+				bidCstRewardAmount_ = getBidCstRewardAmountAdvanced(int256(0));
+
+				// Comment-202412045 applies.
+				if ( ! (bidCstRewardAmount_ >= bidCstRewardAmountMinLimit_) ) {
+					revert CosmicSignatureErrors.BidCstRewardAmountMinLimitNotReached(bidCstRewardAmount_, bidCstRewardAmountMinLimit_);
+				}
+			}
+
+			// #endregion
+			// #region
+
+			// Comment-202503162 relates and/or applies.
+			uint256 ethBidPriceBase_ = super.getNextEthBidPriceAdvanced(int256(0));
+			uint256 ethBidPrice_ = _addRoundLateBidPricePremiumAmountIfNeeded(ethBidPriceBase_, int256(0));
+			uint256 paidEthPrice_ =
+				(randomWalkNftId_ < int256(0)) ?
+				ethBidPrice_ :
+				getEthPlusRandomWalkNftBidPrice(ethBidPrice_);
+
+			// #endregion
+			// #region
+
+			int256 overpaidEthPrice_ = int256(msg.value) - int256(paidEthPrice_);
+			if (overpaidEthPrice_ == int256(0)) {
+				// Comment-202605286 applies.
+			} else if (overpaidEthPrice_ > int256(0)) {
+				// Comment-202605288 applies.
+				{
+					// Comment-202606216 applies.
+					// // #enable_asserts assert(tx.gasprice > 0);
+
+					// // Comment-202607014 applies.
+					// uint256 txGasPrice_ = tx.gasprice;
+					// uint256 ethBidRefundAmountToSwallowMaxLimit_ =
+					// 	(txGasPrice_ > 0) ?
+					// 	(ethBidRefundAmountInGasToSwallowMaxLimit * txGasPrice_) :
+					// 	type(uint256).max;
+
+					uint256 ethBidRefundAmountToSwallowMaxLimit_ = ethBidRefundAmountInGasToSwallowMaxLimit * tx.gasprice;
+					if (uint256(overpaidEthPrice_) <= ethBidRefundAmountToSwallowMaxLimit_) {
+						overpaidEthPrice_ = int256(0);
+						paidEthPrice_ = msg.value;
+					}
+				}
+			} else {
+				// Comment-202412045 applies.
+				revert CosmicSignatureErrors.InsufficientReceivedBidAmount(/* "The current ETH bid price is greater than the amount you transferred.", */ paidEthPrice_, msg.value);
+			}
+
+			// #endregion
+			// #region
+
+			if (randomWalkNftId_ < int256(0)) {
+				// #region //
+
+				// // #enable_asserts assert(bidType_ == BidType.ETH);
+
+				// #endregion
+			} else {
+				// #region
+
+				if ( ! (usedRandomWalkNfts[uint256(randomWalkNftId_)] == 0) ) {
+					revert CosmicSignatureErrors.UsedRandomWalkNft(
+						// "This Random Walk NFT has already been used for bidding.",
+						uint256(randomWalkNftId_)
+					);
+				}
+
+				// Comment-202502091 applies.
+				if ( ! (_msgSender() == randomWalkNft.ownerOf(uint256(randomWalkNftId_))) ) {
+
+					revert CosmicSignatureErrors.CallerIsNotNftOwner(
+						// "You are not the owner of this Random Walk NFT.",
+						randomWalkNft,
+						uint256(randomWalkNftId_),
+						_msgSender()
+					);
+				}
+
+				usedRandomWalkNfts[uint256(randomWalkNftId_)] = 1;
+				// bidType_ = BidType.RandomWalk;
+
+				// #endregion
+			}
+
+			// #endregion
+			// #region
+
+			{
+				RoundStats storage roundStatsReference_ = roundStats[roundNum];
+				BidRaffleWeightHelpers.saveForNextBid(roundStatsReference_, ethBidPriceBase_);
+				roundStatsReference_.totalSpentEthAmount += paidEthPrice_;
+				if (paidEthPrice_ > roundStatsReference_.maxEthBidPrice) {
+					roundStatsReference_.maxEthBidPrice = paidEthPrice_;
+				}
+			}
+			biddersInfo[roundNum][_msgSender()].totalSpentEthAmount += paidEthPrice_;
+			if (lastBidderAddress == address(0)) {
+				ethDutchAuctionBeginningBidPrice = ethBidPriceBase_ * CosmicSignatureConstants.ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
+			} else {
+				_mintBidCstRewardAmountIfNeeded(lastBidderAddress, bidCstRewardAmount_);
+			}
+
+			// Comment-202501061 applies.
+			nextEthBidPrice = CosmicSignatureHelpers.tryIncreaseValueExponentially(ethBidPriceBase_, ethBidPriceIncreaseDivisor) + 1;
+
+			uint256 newCstBidPriceDeclineMultiplier_ = _tryIncreaseCstBidPriceDeclineMultiplier();
+			_bidCommon(/*bidType_,*/ message_);
+			emit BidPlaced(
+				roundNum,
+				_msgSender(),
+				int256(paidEthPrice_),
+				-1,
+				randomWalkNftId_,
+				message_,
+				bidCstRewardAmount_,
+				newCstBidPriceDeclineMultiplier_,
+				mainPrizeTime
+			);
+
+			// #endregion
+			// #region
+
+			// Comment-202505096 applies.
+			if (overpaidEthPrice_ > int256(0)) {
+				// Comment-202506219 applies.
+				CosmicSignatureHelpers.transferEthTo(payable(_msgSender()), uint256(overpaidEthPrice_));
+			}
+
+			// #endregion
+		}
+
+		// #endregion
+	}
+
+	// #endregion
+	// #region `getNextEthBidPriceAdvanced`
+
+	function getNextEthBidPriceAdvanced(int256 currentTimeOffset_) public view override (IBidding1V2, BiddingV2Base) virtual returns (uint256) {
+		uint256 ethBidPriceBase_ = super.getNextEthBidPriceAdvanced(currentTimeOffset_);
+		return _addRoundLateBidPricePremiumAmountIfNeeded(ethBidPriceBase_, currentTimeOffset_);
+	}
+
+	// #endregion
+	// #region `_bidWithCst`
+
+	function _bidWithCst(uint256 cstPriceMaxLimit_, string memory message_, uint256 bidCstRewardAmountMinLimit_) internal override /* virtual */ /* nonReentrant() */ /* _onlyRoundIsActive() */ {
+		// Comment-202412251 applies.
+		// #enable_asserts assert(_msgSender() != marketingWallet);
+
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			// Comment-202501045 applies.
+
+			// This can be zero.
+			uint256 bidCstRewardAmount_ = getBidCstRewardAmountAdvanced(int256(0));
+
+			// Comment-202412045 applies.
+			if ( ! (bidCstRewardAmount_ >= bidCstRewardAmountMinLimit_) ) {
+				revert CosmicSignatureErrors.BidCstRewardAmountMinLimitNotReached(bidCstRewardAmount_, bidCstRewardAmountMinLimit_);
+			}
+
+			// Comment-202503162 relates and/or applies.
+			uint256 cstBidPriceBase_ = _getNextCstBidPriceBaseAdvanced(int256(0));
+			uint256 paidCstPrice_ = /* (cstBidPriceBase_ > 0) ? */ _addRoundLateBidPricePremiumAmountIfNeeded(cstBidPriceBase_, int256(0)) /* : 0 */;
+
+			// Comment-202412045 applies.
+			if ( ! (paidCstPrice_ <= cstPriceMaxLimit_) ) {
+				revert CosmicSignatureErrors.InsufficientReceivedBidAmount(/* "The current CST bid price is greater than the maximum you allowed.", */ paidCstPrice_, cstPriceMaxLimit_);
+			}
+
+			// Comment-202609074 applies to `lastBidderAddress`.
+			_burnCstBidPriceAndMintBidCstRewardAmountIfNeeded(lastBidderAddress, paidCstPrice_, bidCstRewardAmount_);
+
+			{
+				RoundStats storage roundStatsReference_ = roundStats[roundNum];
+				uint256 ethBidPriceBase_ = super.getNextEthBidPriceAdvanced(int256(0));
+				BidRaffleWeightHelpers.saveForNextBid(roundStatsReference_, ethBidPriceBase_);
+				++ roundStatsReference_.numCstBids;
+				roundStatsReference_.totalSpentCstAmount += paidCstPrice_;
+				if (paidCstPrice_ > roundStatsReference_.maxCstBidPrice) {
+					roundStatsReference_.maxCstBidPrice = paidCstPrice_;
+				}
+			}
+			biddersInfo[roundNum][_msgSender()].totalSpentCstAmount += paidCstPrice_;
+			cstDutchAuctionBeginningTimeStamp = block.timestamp;
+			uint256 newCstBidPriceDeclineMultiplier_ = _tryReduceCstBidPriceDeclineMultiplier();
+
+			// // [Comment-202609292]
+			// // Doubling the effective paid CST price.
+			// //
+			// // Actually, this idea makes no sense because someone else (the previous bidder) gets bid CST reward.
+			// // Although the same bidder can bid again from the same or different account,
+			// // but it appears to be a bad idea to attempt to treat that case differently.
+			// // The rest of this comment describes this idea as if the bidder who bids was getting the reward
+			// // within the same transaction. Parts of it might still be relevant.
+			// //
+			// // Bid CST reward will begin increasing from zero after this bid.
+			// // Problem is that the logic kinda gets disrupted by ETH bids, because they also reset bid CST reward.
+			// // So when ETH bid price becomes high enough to discourage ETH bids, CST bids immediately become more appealing,
+			// // because ETH bids no longer reset CST bid rewards,
+			// // which results in lots of consequitive CST bids towards the end of the round.
+			// // One might want to maintain separate CST rewards for ETH and CST bids,
+			// // so that the bids didn't reset each other's rewards.
+			// // 
+			// // V2- simply doubles `cstBidPriceBase_` here.
+			// // That is in some way better because if bid CST reward gets reset by an ETH bid,
+			// // on next CST bid `cstBidPriceBase_` is lower, so CST bids get an instant priority boost,
+			// // which, in turn, goes away as soon as people stop bidding with ETH.
+			// // [/Comment-202609292]
+			// uint256 newCstDutchAuctionBeginningBidPrice_ =
+			// 	uint256(
+			// 		CosmicSignatureHelpers.max(
+			// 			(int256(cstBidPriceBase_) - int256(bidCstRewardAmount_)) * int256(CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER),
+			// 			int256(Math.max(cstDutchAuctionBeginningBidPriceMinLimit, newCstBidPriceDeclineMultiplier_ * CosmicSignatureConstants.CST_DUTCH_AUCTION_DURATION_MIN_LIMIT))
+			// 		)
+			// 	);
+
+			uint256 newCstDutchAuctionBeginningBidPrice_ =
+				Math.max(
+					cstBidPriceBase_ * CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER,
+					Math.max(cstDutchAuctionBeginningBidPriceMinLimit, newCstBidPriceDeclineMultiplier_ * CosmicSignatureConstants.CST_DUTCH_AUCTION_DURATION_MIN_LIMIT)
+				);
+			cstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
+			if (lastCstBidderAddress == address(0)) {
+				// Comment-202501045 applies.
+
+				// Comment-202504212 applies.
+				nextRoundFirstCstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
+			}
+			lastCstBidderAddress = _msgSender();
+			_bidCommon(/*BidType.CST,*/ message_);
+			emit BidPlaced(
+				roundNum,
+				_msgSender(),
+				-1,
+				int256(paidCstPrice_),
+				-1,
+				message_,
+				bidCstRewardAmount_,
+				newCstBidPriceDeclineMultiplier_,
+				mainPrizeTime
+			);
+		}
+	}
+
+	// #endregion
+	// #region `getNextCstBidPriceAdvanced`
+
+	function getNextCstBidPriceAdvanced(int256 currentTimeOffset_) public view override (IBidding1V2, BiddingV2Base) virtual returns (uint256) {
+		uint256 cstBidPriceBase_ = _getNextCstBidPriceBaseAdvanced(currentTimeOffset_);
+		return /* (cstBidPriceBase_ > 0) ? */ _addRoundLateBidPricePremiumAmountIfNeeded(cstBidPriceBase_, currentTimeOffset_) /* : 0 */;
+	}
+
+	// #endregion
+	// #region `_getNextCstBidPriceBaseAdvanced`
+
+	/// @param currentTimeOffset_ Comment-202501107 applies.
+	/// @return The CST bid price without the late-bid premium.
+	function _getNextCstBidPriceBaseAdvanced(int256 currentTimeOffset_) private view returns (uint256) {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			// This can be negative.
+			// Comment-202608052 applies.
+			int256 cstDutchAuctionElapsedDuration_ = int256(_getCstDutchAuctionElapsedDuration()) + currentTimeOffset_;
+
+			// Comment-202501307 relates and/or applies.
+			uint256 cstDutchAuctionBeginningBidPrice_ =
+				(lastCstBidderAddress == address(0)) ? nextRoundFirstCstDutchAuctionBeginningBidPrice : cstDutchAuctionBeginningBidPrice;
+
+			// Comment-202611052 applies.
+			int256 nextCstBidPrice_ =
+				int256(cstDutchAuctionBeginningBidPrice_) - cstDutchAuctionElapsedDuration_ * int256(cstBidPriceDeclineMultiplier);
+
+			return (nextCstBidPrice_ > int256(0)) ? uint256(nextCstBidPrice_) : 0;
+		}
+	}
+
+	// #endregion
+	// #region `_tryIncreaseCstBidPriceDeclineMultiplier`
+
+	function _tryIncreaseCstBidPriceDeclineMultiplier() private returns (uint256) {
+		// // [Comment-202609294]
+		// // This idea makes no sense for the same reason the Comment-202609292 idea does.
+		// // [/Comment-202609294]
+		// // ToDo-9 Implement the Comment-202611053 duration guard.
+		// // #enable_smtchecker /*
+		// unchecked
+		// // #enable_smtchecker */
+		// {
+		// 	uint256 bidCstRewardAmountPerSecond_ = bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds;
+		// 	uint256 cstBidPriceDeclineEffectiveMultiplier_ = cstBidPriceDeclineMultiplier + bidCstRewardAmountPerSecond_;
+		// 	cstBidPriceDeclineEffectiveMultiplier_ = CosmicSignatureHelpers.tryIncreaseValueExponentially(cstBidPriceDeclineEffectiveMultiplier_, cstBidPriceDeclineMultiplierChangeDivisor);
+		// 	int256 newCstBidPriceDeclineMultiplier_ = int256(cstBidPriceDeclineEffectiveMultiplier_) - int256(bidCstRewardAmountPerSecond_);
+		// 	cstBidPriceDeclineMultiplier = uint256(newCstBidPriceDeclineMultiplier_);
+		// }
+
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			uint256 newCstBidPriceDeclineMultiplier_ =
+				CosmicSignatureHelpers.tryIncreaseValueExponentially(cstBidPriceDeclineMultiplier, cstBidPriceDeclineMultiplierChangeDivisor);
+
+			// Comment-202501307 relates and/or applies.
+			uint256 cstDutchAuctionBeginningBidPrice_ =
+				(lastCstBidderAddress == address(0)) ? nextRoundFirstCstDutchAuctionBeginningBidPrice : cstDutchAuctionBeginningBidPrice;
+
+			if (newCstBidPriceDeclineMultiplier_ * CosmicSignatureConstants.CST_DUTCH_AUCTION_DURATION_MIN_LIMIT <= cstDutchAuctionBeginningBidPrice_) {
+				cstBidPriceDeclineMultiplier = newCstBidPriceDeclineMultiplier_;
+				return newCstBidPriceDeclineMultiplier_;
+			}
+			return cstBidPriceDeclineMultiplier;
+		}
+	}
+
+	// #endregion
+	// #region `_tryReduceCstBidPriceDeclineMultiplier`
+
+	function _tryReduceCstBidPriceDeclineMultiplier() private returns (uint256) {
+		// // Comment-202609294 applies.
+		// // #enable_smtchecker /*
+		// unchecked
+		// // #enable_smtchecker */
+		// {
+		// 	uint256 bidCstRewardAmountPerSecond_ = bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds;
+		// 	uint256 cstBidPriceDeclineEffectiveMultiplier_ = cstBidPriceDeclineMultiplier + bidCstRewardAmountPerSecond_;
+		// 	cstBidPriceDeclineEffectiveMultiplier_ = CosmicSignatureHelpers.tryReduceValueExponentially(cstBidPriceDeclineEffectiveMultiplier_, cstBidPriceDeclineMultiplierChangeDivisor);
+		// 	int256 newCstBidPriceDeclineMultiplier_ = int256(cstBidPriceDeclineEffectiveMultiplier_) - int256(bidCstRewardAmountPerSecond_);
+		//
+		// 	// todo-9 Does this logic guarantee that a subsequent call to `_tryIncreaseCstBidPriceDeclineMultiplier`
+		// 	// todo-9 will increase this value?
+		// 	if (newCstBidPriceDeclineMultiplier_ <= int256(0)) {
+		// 		newCstBidPriceDeclineMultiplier_ = int256(1);
+		// 	}
+		//
+		// 	cstBidPriceDeclineMultiplier = uint256(newCstBidPriceDeclineMultiplier_);
+		// }
+
+		uint256 newCstBidPriceDeclineMultiplier_ =
+			CosmicSignatureHelpers.tryReduceValueExponentially(cstBidPriceDeclineMultiplier, cstBidPriceDeclineMultiplierChangeDivisor);
+		cstBidPriceDeclineMultiplier = newCstBidPriceDeclineMultiplier_;
+		return newCstBidPriceDeclineMultiplier_;
+	}
+
+	// #endregion
+	// #region `getCstDutchAuctionDurations`
+
+	function getCstDutchAuctionDurations() external view override /* virtual */ returns (uint256, uint256) {
+		uint256 cstDutchAuctionDuration_ = _getCstDutchAuctionDuration();
+		uint256 cstDutchAuctionElapsedDuration_ = _getCstDutchAuctionElapsedDuration();
+		return (cstDutchAuctionDuration_, cstDutchAuctionElapsedDuration_);
+	}
+
+	// #endregion
+	// #region `_getCstDutchAuctionDuration`
+
+	function _getCstDutchAuctionDuration() private view returns (uint256) {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			// Comment-202501307 relates and/or applies.
+			uint256 cstDutchAuctionBeginningBidPrice_ =
+				(lastCstBidderAddress == address(0)) ? nextRoundFirstCstDutchAuctionBeginningBidPrice : cstDutchAuctionBeginningBidPrice;
+
+			uint256 cstDutchAuctionDuration_ = (cstDutchAuctionBeginningBidPrice_ + (cstBidPriceDeclineMultiplier - 1)) / cstBidPriceDeclineMultiplier;
+			return cstDutchAuctionDuration_;
+		}
+	}
+
+	// #endregion
+	// #region `_addRoundLateBidPricePremiumAmountIfNeeded`
+
+	/// @notice The premium affects prices bidders are required to pay and paid-amount stats only;
+	/// price updates and raffle weights use the base price.
+	/// @param bidPrice_ As mentioned in Comment-202607119, if it's zero the result will be zero as well.
+	function _addRoundLateBidPricePremiumAmountIfNeeded(uint256 bidPrice_, int256 currentTimeOffset_) private view returns (uint256 adjustedBidPrice_) {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			adjustedBidPrice_ = bidPrice_;
+			if (lastBidderAddress != address(0)) {
+				uint256 roundLateBidDuration_ = getRoundLateBidDuration();
+				int256 durationUntilMainPrize_ = getDurationUntilMainPrize() - currentTimeOffset_;
+
+				// It could be more correct to add 1 to this so that we reached bid price max premium 1 second before `mainPrizeTime`,
+				// but it would make little difference.
+				int256 roundLateBidElapsedDuration_ = int256(roundLateBidDuration_) - durationUntilMainPrize_;
+
+				if (roundLateBidElapsedDuration_ > int256(0)) {
+					if (durationUntilMainPrize_ < int256(0)) {
+						// #enable_asserts assert(uint256(roundLateBidElapsedDuration_) > roundLateBidDuration_);
+						roundLateBidElapsedDuration_ = int256(roundLateBidDuration_);
+					} else {
+						// #enable_asserts assert(uint256(roundLateBidElapsedDuration_) <= roundLateBidDuration_);
+					}
+
+					// [Comment-202607119]
+					// Prototyping the formula in JavaScript.
+					// These expressions are equivalent:
+					// (2n ** 13n) ** 8n == 2n ** (13n * 8n) == 1n << (13n * 8n)
+					// This is our max premium exponentiation base:
+					// Math.trunc((20 * 60) * 3567993 * 2 ** 13 / (60 * 60 * 1e6)) == 9742
+					// We multiply and then divide by `2 ** 13` to increase resolution of integer math.
+					// Max premium multiplier to multiply bid price by:
+					// 9742 ** 8 / 2 ** (13 * 8) == ~4
+					// Let's say, our bid price is 1_000_000_000. Calculating max premium:
+					// (9742n ** 8n * 1_000_000_000n) >> (13n * 8n) == 4_000_050_302n
+					//
+					// [Comment-202610216]
+					// This cannot overflow.
+					// Comment-202605199 relates.
+					// [/Comment-202610216]
+					// This can be zero.
+					// [/Comment-202607119]
+					uint256 roundLateBidPricePremiumAmount_ =
+						( (uint256(roundLateBidElapsedDuration_) * roundLateBidPricePremiumAmountBaseMultiplier / mainPrizeTimeIncrementInMicroSeconds) ** roundLateBidPricePremiumAmountExponent *
+						  adjustedBidPrice_
+						) >>
+						(roundLateBidPricePremiumAmountExponent * CosmicSignatureConstants.ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_RESOLUTION_EXPONENT);
+
+					// Comment-202610216 applies.
+					adjustedBidPrice_ += roundLateBidPricePremiumAmount_;
+				}
+			}
+		}
+	}
+
+	// #endregion
+	// #region `getRoundLateBidDuration`
+
+	function getRoundLateBidDuration() public view override returns (uint256) {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			uint256 roundLateBidDuration_ = mainPrizeTimeIncrementInMicroSeconds / roundLateBidDurationDivisor;
+			return roundLateBidDuration_;
+		}
+	}
+
+	// #endregion
+	// #region `getBidCstRewardAmountAdvanced`
+
+	function getBidCstRewardAmountAdvanced(int256 currentTimeOffset_) public view override (IBidding1V2, BiddingV2Base) virtual returns (uint256) {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			// Comment-202501022 applies.
+			// And that's OK, because no bid CST reward is minted on the first bid in a bidding round.
+			uint256 lastBidTimeStampCopy_ = biddersInfo[roundNum][lastBidderAddress].lastBidTimeStamp;
+
+			int256 elapsedDuration_ = int256(block.timestamp) + currentTimeOffset_ - int256(lastBidTimeStampCopy_);
+			uint256 bidCstRewardAmount_ = 0;
+			if (elapsedDuration_ > int256(0)) {
+				// Comment-202607167 applies.
+				bidCstRewardAmount_ = uint256(elapsedDuration_) * bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds;
+				// // #enable_asserts // #disable_smtchecker console.log("202609282", bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds, bidCstRewardAmount_ / uint256(elapsedDuration_));
+			}
+			return bidCstRewardAmount_;
+		}
+	}
+
+	// #endregion
+}
+
+// #endregion

@@ -1,134 +1,61 @@
 # Cosmic Signature
 
-**Cosmic Signature** is an on-chain, last-bidder-wins game built on **Arbitrum**.
-Players compete by placing bids with **ETH** or **Cosmic Signature Token (CST)**, extending the round deadline. When the timer expires, the last bidder wins the **main prize**. Along the way, participants earn **special prizes**, including **Cosmic Signature NFTs **, ETH, and CST rewards.
+**Cosmic Signature** is an on-chain, last-bidder-wins game on **Arbitrum**.
+Players bid with **ETH** or **Cosmic Signature Token (CST)**. Each bid extends the bidding round deadline. When the deadline passes, the last bidder can claim the **main prize**, and other participants receive **secondary prizes**: ETH, CST, and **Cosmic Signature NFTs**.
 
-The ecosystem includes staking, donations to the game, charity allocations, and DAO governance to create a complete, community-driven game economy.
+The ecosystem also includes NFT staking, donations, charity and marketing allocations, and CST-based DAO governance.
 
----
-
-## Table of Contents
-1. [Overview](#overview)
-2. [Key Features](#key-features)
-3. [Contract Modules](#contract-modules)
-4. [Prizes](#prizes)
-5. [Architecture & Flow](#architecture--flow)
-6. [Installation & Development](#installation--development)
-7. [Configuration & Constants](#configuration--constants)
-8. [Deployment & Upgrades](#deployment--upgrades)
-9. [Security Notes](#security-notes)
-10. [License](#license)
+This document provides an overview and links to detailed docs. To avoid stale copies, game rules, prize amounts, and parameter values are described only in the linked docs and in the contract source code.
 
 ---
 
-## Overview
-- **Network:** Arbitrum (testnet: Arbitrum Sepolia, mainnet: Arbitrum One).
-- **Game type:** Last-bidder-wins auction with token asset generation.
-- **Bidding assets:** ETH and CST.
-- **NFT integration:** Random Walk NFT (discount bidding), Cosmic Signature NFT (ecosystem rewards).
-- **Governance:** CST token powers the DAO.
-- **Charity & Marketing:** Automatic ETH and CST allocations to dedicated wallets.
+## Documentation
+
+- Endurance Champion and Chrono-Warrior: [docs/endurance-chrono-README.md](docs/endurance-chrono-README.md).
+- Prizes: [docs/cosmic-signature-game-prizes.md](docs/cosmic-signature-game-prizes.md).
+- Contract class diagram and calls: [docs/cosmic-signature-contracts-class-diagram-and-calls.svg](docs/cosmic-signature-contracts-class-diagram-and-calls.svg).
+- Contracts and their functional requirements: [docs/cosmic-signature-contracts-functional-requirements.md](docs/cosmic-signature-contracts-functional-requirements.md).
+- Numbered comments, such as `Comment-202501022`, used throughout the codebase: [docs/numbered-comments.md](docs/numbered-comments.md).
+- Testing the DAO with the Tally app: [docs/testing-cosmic-signature-dao-with-the-tally-app.md](docs/testing-cosmic-signature-dao-with-the-tally-app.md).
+- Audit considerations: [docs/cosmic-signature-contracts-audit-considerations.md](docs/cosmic-signature-contracts-audit-considerations.md).
+- Default parameter values: `contracts/production/libraries/CosmicSignatureConstants.sol`. Some of them are calculated in [contract-configuration-params-calculation/](contract-configuration-params-calculation/).
+- Changes made in the latest Game contract version, including what frontend and backend developers need to change: [docs/v3-vs-v2-changes.md](docs/v3-vs-v2-changes.md).
 
 ---
 
-## Key Features
-- **Rounds:**
-  Each round has 3 stages: inactive, active before first bid, and active after first bid.
-- **Bidding mechanics:**
-  - ETH starts as a Dutch auction, then increases incrementally.
-  - CST always follows a Dutch auction, restarting after each bid.
-  - Random Walk NFT halves ETH bid cost (one-time use per NFT).
-- **Prizes:** ETH, CST, and NFTs awarded to multiple winners at round end.
-- **Staking:**
-  - CosmicSignature NFT staking: ETH reward distribution.
-  - RWLK staking: raffle eligibility for CosmicSignature NFT prizes.
-- **DAO governance:** CST holders vote on key ecosystem decisions.
-- **Charity & marketing:** Funds automatically allocated each round.
+## Contracts
 
----
+All production contracts are in [contracts/production/](contracts/production/).
 
-## Contract Modules
 | Contract | Description |
 |----------|-------------|
-| **CosmicSignatureGame** | Core game logic: bidding, deadlines, main prize claims, prize distribution. |
-| **Bidding, BidStatistics, SecondaryPrizes, MainPrize** | Submodules handling bid pricing, statistics, and prize mechanics. |
-| **CosmicSignatureToken (CST)** | ERC-20 token; minted by the game for rewards and DAO voting power. |
-| **CosmicSignatureNft (COSMIC)** | ERC-721 NFT; official NFT minted as rewards. |
-| **RandomWalkNFT (RWLK)** | External ERC-721 NFT (not part of repo); used for discounted ETH bids. |
-| **PrizesWallet** | Custody of secondary prizes and donations with withdrawal timeouts. |
-| **CharityWallet** | Holds ETH allocations for donation to DAO-approved charity. |
-| **MarketingWallet** | Holds CST allocations for marketing initiatives. |
-| **CosmicSignatureDao** | Governance contract powered by CST. |
-| **StakingWalletCosmicSignatureNft** | ETH reward distribution to NFT stakers. |
-| **StakingWalletRandomWalkNft** | Staking with random NFT raffle eligibility. |
-| **SystemManagement** | Owner-only configuration and system parameter updates. |
+| `CosmicSignatureGame` | The Game contract: bidding, main prize claim, prize distribution, statistics, and owner-only configuration. It is an upgradeable (UUPS) proxy. Its implementation versions are `CosmicSignatureGame` (V1), `CosmicSignatureGameV2`, and `CosmicSignatureGameV3`, each composed of abstract contracts such as `Bidding*`, `BidStatistics*`, `MainPrize*`, `SecondaryPrizes*`, and `SystemManagement*`. |
+| `CosmicSignatureToken` (CST) | ERC-20 token minted and burned by the Game. It provides DAO voting power. |
+| `CosmicSignatureNft` (COSMIC) | ERC-721 NFT minted by the Game as prizes. |
+| `RandomWalkNFT` (RWLK) | A previously deployed third-party ERC-721 NFT. Bidding with it halves the ETH bid price, once per NFT. |
+| `PrizesWallet` | Holds some ETH prizes and donated ERC-20 tokens and ERC-721 NFTs until winners withdraw or claim them. |
+| `StakingWalletCosmicSignatureNft` | Cosmic Signature NFT staking. Stakers share an ETH reward. |
+| `StakingWalletRandomWalkNft` | Random Walk NFT staking. Stakers are eligible for raffle prizes. |
+| `CharityWallet` | Receives ETH donations for charity. |
+| `MarketingWallet` | Receives CST for marketing. |
+| `CosmicSignatureDao` | CST-based governance. |
 
 ---
 
-## Prizes
-At round end, prizes are distributed as follows:
+## Development
 
-- **Main Prize Winner (Last Bidder)**
-  - ETH share (main prize percentage)
-  - 1 Cosmic Signature NFT
-  - CST bonus
-
-- **Last CST Bidder**
-  - 1 Cosmic Signature NFT
-  - CST bonus
-
-- **Endurance Champion**
-  - 1 Cosmic Signature NFT
-  - CST bonus
-
-- **Chrono-Warrior**
-  - ETH share (chrono-warrior prize percentage)
-  - 1 Cosmic Signature NFT
-  - CST bonus
-
-- **Bidders (raffles)**
-  - An instant CST reward for each bid
-  - Randomly awarded ETH raffle prizes
-  - Randomly awarded Cosmic Signature NFTs and CST bonuses
-
-- **Stakers**
-  - RW NFT stakers: raffle for Cosmic Signature NFTs and CST bonuses
-  - CosmicSignature NFT stakers: ETH reward share
-
-- **Ecosystem**
-  - Marketing Wallet: CST allocation
-  - Charity Wallet: ETH allocation
-
-   Definition and examples of Chrono-Warrior & Endurance Champion are located [here](docs/endurance-chrono-README.md)
----
-
-## Architecture & Flow
-1. **Round starts inactive**.
-2. At `roundActivationTime`, bidding opens. First bid must be ETH.
-3. Each new bid:
-   - Updates prices (Dutch auction or incremental).
-   - Updates `mainPrizeTime`.
-   - Rewards bidder with CST.
-   - May update Endurance Champion & Chrono-Warrior stats.
-4. When `mainPrizeTime` passes:
-   - Last bidder can claim the main prize.
-   - If unclaimed after timeout, anyone can claim.
-5. Claiming ends the round: prizes distributed, next round initialized.
-
----
-
-## Installation & Development
 ### Prerequisites
-- Node.js v20+
-- npm
-- Git
+
+- Node.js v20+ and npm.
+- The binary `solc` compiler of the version specified in `hardhat.config.js`. See Comment-202409011 in that file for how to install it.
 
 ### Setup
+
 ```bash
 git clone <this-repo>
 cd Cosmic-Signature
 npm ci
-````
+```
 
 ### Compile
 
@@ -136,10 +63,14 @@ npm ci
 npx hardhat compile
 ```
 
+See also: [contracts-compiling/](contracts-compiling/)
+
 ### Run Tests
 
+Test runners are in [test/runners/](test/runners/). They test multiple combinations of conditional compilation options. For example:
+
 ```bash
-npx hardhat test
+npm run hardhat-test-full
 ```
 
 ### Local Development Node
@@ -150,42 +81,16 @@ bash scripts/hardhat-node.bash
 
 ---
 
-## Configuration & Constants
+## Deployment and Upgrades
 
-* **Deployment config files:** `tasks/config/deploy-cosmic-signature-contracts-<network>.json`
-* Key parameters:
+- Deployment: [tasks/docs/Cosmic-Signature-Contracts-Deployment-And-Registration.md](tasks/docs/Cosmic-Signature-Contracts-Deployment-And-Registration.md).
+- Game contract upgrade: [tasks/docs/Cosmic-Signature-Game-Contract-Upgrade-And-Re-Registration.md](tasks/docs/Cosmic-Signature-Game-Contract-Upgrade-And-Re-Registration.md).
+- `PrizesWallet` replacement: [tasks/docs/Prizes-Wallet-Contract-Upgrade-And-Re-Registration.md](tasks/docs/Prizes-Wallet-Contract-Upgrade-And-Re-Registration.md).
 
-  * `roundActivationTime` – round start time
-  * `mainPrizeTime` – deadline to claim main prize
-  * Bid pricing fractions, Dutch auction durations
-  * Prize distribution percentages (main, chrono, charity, stakers, etc.)
-
-A few constants and formulas are documented in **contract-configuration-params-calculation/**.
-
----
-
-## Deployment & Upgrades
-
-* **Deployment instructions:** [Cosmic-Signature-Contracts-Deployment-And-Registration.md](tasks/docs/Cosmic-Signature-Contracts-Deployment-And-Registration.md)
-* **Upgrade instructions:** [Cosmic-Signature-Game-Contract-Upgrade-And-Re-Registration.md](tasks/docs/Cosmic-Signature-Game-Contract-Upgrade-And-Re-Registration.md)
-
-Scripts for deployment and registration are located in:
-
-* `tasks/runners/` (e.g. `run-deploy-cosmic-signature-contracts-arbitrumSepolia.bash`)
-* Reports with deployed addresses are written to `output/`.
-
----
-
-## Security Notes
-
-* **Access control:** Owner-only for sensitive system management.
-* **Reentrancy protection:** Applied to external state-changing functions.
-* **Prize custody:** Secondary prizes escrowed in `PrizesWallet` until claimed.
-* **Charity transfers:** Best-effort, non-blocking (won’t revert prize claim if transfer to Charity Wallet fails).
-* **Randomness:** Multiple Arbitrum precompiles + fallback sources for unpredictable random numbers.
+Deployment and upgrade scripts are in [tasks/runners/](tasks/runners/). Their configuration files are in [tasks/config/](tasks/config/). Reports with deployed contract addresses are written to `tasks/output/`.
 
 ---
 
 ## License
 
-CC0 1.0 — see [LICENSE](LICENSE).
+CC0 1.0 -- see [LICENSE](LICENSE).

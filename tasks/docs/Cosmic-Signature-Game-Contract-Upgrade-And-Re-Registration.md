@@ -8,17 +8,32 @@ Review `Cosmic-Signature-Contracts-Deployment-And-Registration.md`. Assuming you
 
 The same blockchains are supported.
 
-#### Validate the deployed and to be deployed contracts
+#### Make Copies of Old Files
 
-Review, possibly edit, and then execute `${workspaceFolder}/slither/slither-check-upgradeability-*.bash`. See a document in the same folder.
+- Switch to the Git branch you used when deploying or upgrading to the previous version of the contract and copy `../output/` and `../runners/.openzeppelin/` to a folder outside the Git repo.
+
+- Switch back to the `main` branch.
+
+#### Before You Make Any Changes in the Project
+
+- See respective section in `Cosmic-Signature-Contracts-Deployment-And-Registration.md`.
+
+#### Add Old Files
+
+- Move the copies back to `../output/` and `../runners/.openzeppelin/` in the new branch.\
+The upgrade task reads the proxy address from the deployment report, and OpenZeppelin validates the new implementation against the manifest.
+
+#### Validate the Deployed and to be Deployed Contracts
+
+- Review, possibly edit, and then execute `${workspaceFolder}/slither/slither-check-upgradeability-*.bash`. In fact, it's a lousy tool that will likely report errors. See a document in the same folder.
 
 #### Create API Keys
 
-See respective section in `Cosmic-Signature-Contracts-Deployment-And-Registration.md`.
+- See respective section in `Cosmic-Signature-Contracts-Deployment-And-Registration.md`.
 
 #### Create Blockchain Accounts
 
-Assuming you still have the accounts outlined in `Cosmic-Signature-Contracts-Deployment-And-Registration.md`. It's OK if you changed the game contarct owner after the deployment.
+- Assuming you still have the accounts discussed in `Cosmic-Signature-Contracts-Deployment-And-Registration.md`. It's OK if you changed the game contract owner after the deployment.
 
 #### Edit Configuration Files
 
@@ -31,14 +46,9 @@ The production config files and scripts contain the words `arbitrumOne` and `Cos
 
 #### Create Hardhat Configuration Variables
 
-See respective section in `Cosmic-Signature-Contracts-Deployment-And-Registration.md`.
-Make sure `deployerPrivateKey_<network-name>` matches the current contract owner (unless you provided it in the config file).
+- See respective section in `Cosmic-Signature-Contracts-Deployment-And-Registration.md`. Make sure `deployerPrivateKey_<network-name>` matches the current contract owner (unless you provided it in the config file).
 
-#### One More Thing
-
-- Make sure the report file created during the initial V1 deployment still exists.
-
-- Only if you are dealing with a mainnet or a testnet, make sure the `.openzeppelin` subfolder still exists.
+#### When Testing
 
 - `CosmicSignatureGameV2` requires that `CosmicSignatureGame` was deployed first and at least 1 bidding round has already completed. So, when testing things, before upgrading, you must place a bid and claim the main prize.
 
@@ -46,26 +56,31 @@ Make sure `deployerPrivateKey_<network-name>` matches the current contract owner
 
 - Execute `../runners/run-upgrade-cosmic-signature-game-<network-name>-<cosmic-signature-game-contract-name>.bash`. It will upgrade the game contract.
 
-- Observe the newly created `../output/upgrade-cosmic-signature-game-report-<network-name>-<cosmic-signature-game-contract-name>.json` file. It contains the newly deployed implementation contract address. Save it outside the Git repo, but leave the original in-place, so that other scripts could use it. In fact, the current logic only checks that the file does not exist yet. It's not used near Comment-202606198.
+- Observe the newly created `../output/upgrade-cosmic-signature-game-report-<network-name>-<cosmic-signature-game-contract-name>.json` file. It contains the newly deployed implementation contract address. The upgrade task checks that its to-be-created report file does not exist yet. It does not access the previous version of the file near Comment-202606198. The file will be read by the registration task.
 
-- Only if you are dealing with a mainnet or a testnet, execute `../runners/run-register-upgraded-cosmic-signature-game-<network-name>-<cosmic-signature-game-contract-name>.bash`. It will verify and register the source code of the previously deployed game contract implementation on ArbiScan.
+- Only if you are dealing with a mainnet or a testnet, execute `../runners/run-register-upgraded-cosmic-signature-game-<network-name>-<cosmic-signature-game-contract-name>.bash`. It will verify and register the source code of the deployed game contract implementation on ArbiScan.
 
-- Only if you are dealing with a mainnet or a testnet, on ArbiScan, examine the proxy and implementation contract addresses. Make sure the evidence of the re-registration is there.
+- Only if you are dealing with a mainnet or a testnet, on ArbiScan, examine the proxy and implementation contract addresses. Make sure the evidence of the re-registration is there. Review what variables the new contract's `reinitialize` method modified and confirm on ArbiScan that the variables have the expected values.
 
 #### Caveats
 
 - See respective section in `Cosmic-Signature-Contracts-Deployment-And-Registration.md`.
 
-- You might want to test the initial deployment of all contracts and then upgrading the game contract to `CosmicSignatureGameV2` and then to `CosmicSignatureGameOpenBid`. This is just for a test. It would be incorrect to do it in the production, event if `CosmicSignatureGameOpenBid` was a real useful contract. See Comment-202606084 and Comment-202606126 for details.\
-OpenZeppelin would actually disallow the upgrade from `CosmicSignatureGameV2` to `CosmicSignatureGameOpenBid`. Storage check would fail. Therefore, in `upgrade-cosmic-signature-game-config-<network-name>-CosmicSignatureGameOpenBid.json` you must temporarily set `unsafeSkipStorageCheck` to `true`.
+- The upgrade transaction will revert unless the current bidding round is inactive. To increase the inactivity duration, while the current bidding round is active, increase `delayDurationBeforeRoundActivation`, and while no bid has been placed in the current bidding round yet, increase `roundActivationTime` by calling respective setters.
 
-- I made 2 changes in V1's `CosmicSignatureGameStorage`.\
+- The contract upgrade configuration supports the `unsafeAllowRenames` and `unsafeSkipStorageCheck` params. But avoid setting any of them to `true`.
+
+- You might want to test the initial deployment of all contracts and then upgrading the game contract to `CosmicSignatureGameV2`, `CosmicSignatureGameV3`, ..., and then to `CosmicSignatureGameOpenBid`. This is just for a test. It would be incorrect to upgrade to `CosmicSignatureGameOpenBid` after an arbitrary version in the production, even if it was a real useful contract. See Comment-202606084 and Comment-202606126 for details.\
+OpenZeppelin would actually disallow the upgrade from V2+ to `CosmicSignatureGameOpenBid`. Storage check would fail. Therefore, in `upgrade-cosmic-signature-game-config-<network-name>-CosmicSignatureGameOpenBid.json` you must set `unsafeSkipStorageCheck` to `true`.
+
+- This instruction is historical. It's not necessarily appropriate in the current codebase.\
+When developing V2, I made 2 refactorings in V1's `CosmicSignatureGameStorage`.\
 (1) I renamed `cstRewardAmountForBidding` to `bidCstRewardAmount` (which I further renamed in V2).\
-(2) I reduced `__gap_persistent` length, because OpenZeppelin's upgradeable contract validation logic executed by `upgradeProxy` was crashing due to an overflow. Storage layout remains compatible because the given storage variable is the last. Testing with `CosmicSignatureGameOpenBid` has not run into this case because it added a storage variable after the gap.\
-The old state of affairs still exists in the tracking info stored in `.openzeppelin`. Therefore, when upgrading to V2 in the production, OpenZeppelin's upgradeable contract validation logic would complain. To silence it, before upgrading, in `../config/upgrade-cosmic-signature-game-config-arbitrumOne-CosmicSignatureGameV2.json`, temporarily set `unsafeAllowRenames` and `unsafeSkipStorageCheck` to `true`.
+(2) I reduced `__gap_persistent` length a few orders of magnitude, because OpenZeppelin's upgradeable contract validation logic executed by `HardhatRuntimeEnvironment.upgrades.upgradeProxy` was crashing due to an overflow. But storage layout remains compatible because the given storage variable is the last. Testing with `CosmicSignatureGameOpenBid` has not run into this case because it added a storage variable after the gap (which is actually a violation of Comment-202412148).\
+The problem is that the initially deployed `CosmicSignatureGame` storage layout still exists in the tracking info stored in `../runners/.openzeppelin`. Therefore, when upgrading to V2 in the production, OpenZeppelin's upgradeable contract validation logic will complain. To silence it, before upgrading, make the following edits. In `../config/upgrade-cosmic-signature-game-config-arbitrumOne-CosmicSignatureGameV2.json`, set `unsafeSkipStorageCheck` to `true`. In `CosmicSignatureGameStorageV2Base`, near `bidCstRewardAmountMultiplier`, comment out `@custom:oz-renamed-from` and uncomment another that specifies `cstRewardAmountForBidding`.
 
 #### Afterwards
 
-- Revert any temporary edits you made in config files.
+- If necessary, restore `delayDurationBeforeRoundActivation` and/or change `roundActivationTime`.
 
 - See respective section in `Cosmic-Signature-Contracts-Deployment-And-Registration.md`.

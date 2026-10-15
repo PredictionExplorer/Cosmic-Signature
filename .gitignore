@@ -68,11 +68,8 @@
 /eslint/eslint-1-report.txt
 /eslint/eslint-1-report.bak.txt
 
-# [Comment-202606197/]
-/tasks/output/
-
+# /tasks/output/
 /live-blockchain-testing/output/
-
 /certora/.venv/
 /certora/emv*
 

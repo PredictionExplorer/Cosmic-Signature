@@ -13,6 +13,7 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
+import { CosmicSignatureHelpers } from "./libraries/CosmicSignatureHelpers.sol";
 import { AddressValidator } from "./AddressValidator.sol";
 import { DonatedTokenHolder } from "./DonatedTokenHolder.sol";
 import { IPrizesWallet } from "./interfaces/IPrizesWallet.sol";
@@ -50,6 +51,7 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 
 	/// @notice Details about ERC-20 token donations made to the Game.
 	/// Contains 1 item for each bidding round number.
+	/// The item remains unpopulated until someone makes an ERC-20 token donation during the given bidding round.
 	DonatedToken[1 << 64] public donatedTokens;
 
 	uint256 public nextDonatedNftIndex = 0;
@@ -57,6 +59,14 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 	/// @notice Contains info about NFT donations.
 	/// Contains zero or more items for each bidding round.
 	DonatedNft[1 << 64] public donatedNfts;
+
+	// #enable_asserts /// @notice Comment-202411064 applies.
+	// #enable_asserts /// @dev
+	// #enable_asserts /// [Comment-202610038]
+	// #enable_asserts /// In the assert-enabled build, this facilitates testing `PrizesWallet` redeployment
+	// #enable_asserts /// and re-registration with the Game after at least 1 bidding round completes.
+	// #enable_asserts /// [/Comment-202610038]
+	// #enable_asserts bool public bypassSomeAsserts = false;
 
 	// #endregion
 	// #region `constructor`
@@ -97,19 +107,37 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 	}
 
 	// #endregion
+	// #region `setBypassSomeAsserts`
+
+	// #enable_asserts function setBypassSomeAsserts(bool newValue_) external override onlyOwner {
+	// #enable_asserts 	bypassSomeAsserts = newValue_;
+	// #enable_asserts 
+	// #enable_asserts 	// [Comment-202610177]
+	// #enable_asserts 	// There is no event to emit here.
+	// #enable_asserts 	// Comment-202605235 relates.
+	// #enable_asserts 	// Comment-202610175 relates.
+	// #enable_asserts 	// [/Comment-202610177]
+	// #enable_asserts }
+
+	// #endregion
 	// #region `registerRoundEndAndDepositEthMany`
 
 	function registerRoundEndAndDepositEthMany(uint256 roundNum_, address mainPrizeBeneficiaryAddress_, EthDeposit[] calldata ethDeposits_) external payable override nonReentrant _onlyGame returns (uint256) {
-		uint256 roundTimeoutTimeToWithdrawPrizes_ = _registerRoundEnd(roundNum_, mainPrizeBeneficiaryAddress_);
-		// #enable_asserts uint256 ethDepositAmountSum_ = 0;
-		for (uint256 ethDepositIndex_ = ethDeposits_.length; ethDepositIndex_ > 0; ) {
-			-- ethDepositIndex_;
-			EthDeposit calldata ethDepositReference_ = ethDeposits_[ethDepositIndex_];
-			// #enable_asserts ethDepositAmountSum_ += ethDepositReference_.amount;
-			_depositEth(roundNum_, ethDepositIndex_, ethDepositReference_.prizeWinnerAddress, ethDepositReference_.amount);
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			uint256 roundTimeoutTimeToWithdrawPrizes_ = _registerRoundEnd(roundNum_, mainPrizeBeneficiaryAddress_);
+			// #enable_asserts uint256 ethDepositAmountSum_ = 0;
+			for (uint256 ethDepositIndex_ = ethDeposits_.length; ethDepositIndex_ > 0; ) {
+				-- ethDepositIndex_;
+				EthDeposit calldata ethDepositReference_ = ethDeposits_[ethDepositIndex_];
+				// #enable_asserts ethDepositAmountSum_ += ethDepositReference_.amount;
+				_depositEth(roundNum_, ethDepositIndex_, ethDepositReference_.prizeWinnerAddress, ethDepositReference_.amount);
+			}
+			// #enable_asserts assert(ethDepositAmountSum_ == msg.value);
+			return roundTimeoutTimeToWithdrawPrizes_;
 		}
-		// #enable_asserts assert(ethDepositAmountSum_ == msg.value);
-		return roundTimeoutTimeToWithdrawPrizes_;
 	}
 
 	// #endregion
@@ -131,21 +159,19 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 
 		{
 			// #enable_asserts assert(mainPrizeBeneficiaryAddresses[roundNum_] == address(0));
-			// #enable_asserts assert(roundNum_ == 0 || mainPrizeBeneficiaryAddresses[roundNum_ - 1] != address(0));
+			// #enable_asserts assert(bypassSomeAsserts || roundNum_ == 0 || mainPrizeBeneficiaryAddresses[roundNum_ - 1] != address(0));
 			// #enable_asserts assert(roundTimeoutTimesToWithdrawPrizes[roundNum_] == 0);
-			// #enable_asserts assert(roundNum_ == 0 || roundTimeoutTimesToWithdrawPrizes[roundNum_ - 1] != 0);
+			// #enable_asserts assert(bypassSomeAsserts || roundNum_ == 0 || roundTimeoutTimesToWithdrawPrizes[roundNum_ - 1] != 0);
 			// #enable_asserts assert(mainPrizeBeneficiaryAddress_ != address(0));
+
 			mainPrizeBeneficiaryAddresses[roundNum_] = mainPrizeBeneficiaryAddress_;
 
 			// [Comment-202606264]
 			// We got another issue here that Comment-202606235 is talking about.
 			// Therefore this must be within an `unchecked` block,
-			// so I have wrapped all code in the `_prepareNextRound` method in an `unchecked` block.
+			// so I have wrapped all code in the `_registerRoundEnd` method in an `unchecked` block.
 			// The contract owner can still set `timeoutDurationToWithdrawPrizes` to a small value or zero before a round ends
 			// to shorten winner exclusivity timeout. That is an accepted benevolent-owner risk rather than a min/max clamp.
-			// Note that if `PrizesWallet` (with or without this fix) is deployed and registered with the Game
-			// after at least 1 bidding round completes, `_registerRoundEnd` will later be called for the first time
-			// with`roundNum_ > 0`, which will cause some asserts to fail, which is OK.
 			// `PrizesWallet` has already been deployed, but it's unnecessary to add a new `PrizesWalletV2` with this fix.
 			// [/Comment-202606264]
 			uint256 roundTimeoutTimeToWithdrawPrizes_ = block.timestamp + timeoutDurationToWithdrawPrizes;
@@ -180,11 +206,16 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 
 	function _depositEth(uint256 roundNum_, uint256 prizeWinnerIndex_, address prizeWinnerAddress_, uint256 amount_) private {
 		// #enable_asserts assert(prizeWinnerAddress_ != address(0));
+		
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			// This cannot overflow because ETH total supply is limited.
+			_ethBalanceAmounts[roundNum_][uint256(uint160(prizeWinnerAddress_))] += amount_;
 
-		// This cannot overflow because ETH total supply is limited.
-		_ethBalanceAmounts[roundNum_][uint256(uint160(prizeWinnerAddress_))] += amount_;
-
-		emit EthReceived(roundNum_, prizeWinnerIndex_, prizeWinnerAddress_, amount_);
+			emit EthReceived(roundNum_, prizeWinnerIndex_, prizeWinnerAddress_, amount_);
+		}
 	}
 
 	// #endregion
@@ -199,17 +230,16 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 
 	function withdrawEth(uint256 roundNum_, address prizeWinnerAddress_) external override nonReentrant {
 		uint256 roundTimeoutTimeToWithdrawPrizes_ = roundTimeoutTimesToWithdrawPrizes[roundNum_];
-		require(
-			block.timestamp >= roundTimeoutTimeToWithdrawPrizes_ && roundTimeoutTimeToWithdrawPrizes_ > 0,
-			CosmicSignatureErrors.EthWithdrawalDenied(
-				"Only the ETH prize winner is permitted to withdraw the prize before a timeout expires.",
+		if ( ! (block.timestamp >= roundTimeoutTimeToWithdrawPrizes_ && roundTimeoutTimeToWithdrawPrizes_ > 0) ) {
+			revert CosmicSignatureErrors.EthWithdrawalDenied(
+				// "Only the ETH prize winner is permitted to withdraw the prize before a timeout expires.",
 				roundNum_,
 				prizeWinnerAddress_,
 				_msgSender(),
 				roundTimeoutTimeToWithdrawPrizes_,
 				block.timestamp
-			)
-		);
+			);
+		}
 		_withdrawEth(roundNum_, prizeWinnerAddress_);
 	}
 
@@ -220,12 +250,7 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 		// It's OK if this is zero.
 		uint256 ethBalanceAmountToWithdraw_ = _prepareWithdrawEth(roundNum_, prizeWinnerAddress_);
 
-		// Comment-202502043 applies.
-		(bool isSuccess_, ) = _msgSender().call{value: ethBalanceAmountToWithdraw_}("");
-
-		if ( ! isSuccess_ ) {
-			revert CosmicSignatureErrors.FundTransferFailed("ETH withdrawal failed.", _msgSender(), ethBalanceAmountToWithdraw_);
-		}
+		CosmicSignatureHelpers.transferEthTo(payable(_msgSender()), ethBalanceAmountToWithdraw_);
 	}
 
 	// #endregion
@@ -239,26 +264,25 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 	// #region `_withdrawEthMany`
 
 	function _withdrawEthMany(uint256[] calldata roundNums_) private {
-		uint256 roundNumIndex_ = roundNums_.length;
-		if (roundNumIndex_ <= 0) {
-			return;
-		}
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			uint256 roundNumIndex_ = roundNums_.length;
+			if (roundNumIndex_ <= 0) {
+				return;
+			}
 
-		// It's OK if this is zero.
-		uint256 ethBalanceAmountToWithdraw_ = 0;
-		
-		do {
-			-- roundNumIndex_;
+			// It's OK if this is zero.
+			uint256 ethBalanceAmountToWithdraw_ = 0;
+			
+			do {
+				-- roundNumIndex_;
 
-			// This cannot overflow because ETH total supply is limited.
-			ethBalanceAmountToWithdraw_ += _prepareWithdrawEth(roundNums_[roundNumIndex_], _msgSender());
-		} while (roundNumIndex_ > 0);
-
-		// Comment-202502043 applies.
-		(bool isSuccess_, ) = _msgSender().call{value: ethBalanceAmountToWithdraw_}("");
-
-		if ( ! isSuccess_ ) {
-			revert CosmicSignatureErrors.FundTransferFailed("ETH withdrawal failed.", _msgSender(), ethBalanceAmountToWithdraw_);
+				// This cannot overflow because ETH total supply is limited.
+				ethBalanceAmountToWithdraw_ += _prepareWithdrawEth(roundNums_[roundNumIndex_], _msgSender());
+			} while (roundNumIndex_ > 0);
+			CosmicSignatureHelpers.transferEthTo(payable(_msgSender()), ethBalanceAmountToWithdraw_);
 		}
 	}
 
@@ -329,17 +353,16 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 		// [/Comment-202411286]
 		if (_msgSender() != mainPrizeBeneficiaryAddresses[roundNum_]) {
 			uint256 roundTimeoutTimeToWithdrawPrizes_ = roundTimeoutTimesToWithdrawPrizes[roundNum_];
-			require(
-				block.timestamp >= roundTimeoutTimeToWithdrawPrizes_ && roundTimeoutTimeToWithdrawPrizes_ > 0,
-				CosmicSignatureErrors.DonatedTokenClaimDenied(
-					"Only the bidding round main prize beneficiary is permitted to claim this ERC-20 token donation before a timeout expires.",
+			if ( ! (block.timestamp >= roundTimeoutTimeToWithdrawPrizes_ && roundTimeoutTimeToWithdrawPrizes_ > 0) ) {
+				revert CosmicSignatureErrors.DonatedTokenClaimDenied(
+					// "Only the bidding round main prize beneficiary is permitted to claim this ERC-20 token donation before a timeout expires.",
 					roundNum_,
 					_msgSender(),
 					tokenAddress_,
 					roundTimeoutTimeToWithdrawPrizes_,
 					block.timestamp
-				)
-			);
+				);
+			}
 		}
 
 		DonatedToken storage donatedTokenReference_ = donatedTokens[roundNum_];
@@ -375,10 +398,15 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 	// #region `_claimManyDonatedTokens`
 
 	function _claimManyDonatedTokens(DonatedTokenToClaim[] calldata donatedTokensToClaim_) private {
-		for (uint256 donatedTokenToClaimIndex_ = donatedTokensToClaim_.length; donatedTokenToClaimIndex_ > 0; ) {
-			-- donatedTokenToClaimIndex_;
-			DonatedTokenToClaim calldata donatedTokenToClaimReference_ = donatedTokensToClaim_[donatedTokenToClaimIndex_];
-			_claimDonatedToken(donatedTokenToClaimReference_.roundNum, donatedTokenToClaimReference_.tokenAddress, donatedTokenToClaimReference_.amount);
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			for (uint256 donatedTokenToClaimIndex_ = donatedTokensToClaim_.length; donatedTokenToClaimIndex_ > 0; ) {
+				-- donatedTokenToClaimIndex_;
+				DonatedTokenToClaim calldata donatedTokenToClaimReference_ = donatedTokensToClaim_[donatedTokenToClaimIndex_];
+				_claimDonatedToken(donatedTokenToClaimReference_.roundNum, donatedTokenToClaimReference_.tokenAddress, donatedTokenToClaimReference_.amount);
+			}
 		}
 	}
 
@@ -403,19 +431,24 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 		nonReentrant
 		_onlyGame {
 		// #enable_asserts assert(donorAddress_ != address(0));
-		uint256 nextDonatedNftIndexCopy_ = nextDonatedNftIndex;
-		DonatedNft storage newDonatedNftReference_ = donatedNfts[nextDonatedNftIndexCopy_];
-		newDonatedNftReference_.roundNum = roundNum_;
-		newDonatedNftReference_.nftAddress = nftAddress_;
-		newDonatedNftReference_.nftId = nftId_;
-		emit NftDonated(roundNum_, donorAddress_, nftAddress_, nftId_, nextDonatedNftIndexCopy_);
-		++ nextDonatedNftIndexCopy_;
-		nextDonatedNftIndex = nextDonatedNftIndexCopy_;
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			uint256 nextDonatedNftIndexCopy_ = nextDonatedNftIndex;
+			DonatedNft storage newDonatedNftReference_ = donatedNfts[nextDonatedNftIndexCopy_];
+			newDonatedNftReference_.roundNum = roundNum_;
+			newDonatedNftReference_.nftAddress = nftAddress_;
+			newDonatedNftReference_.nftId = nftId_;
+			emit NftDonated(roundNum_, donorAddress_, nftAddress_, nftId_, nextDonatedNftIndexCopy_);
+			++ nextDonatedNftIndexCopy_;
+			nextDonatedNftIndex = nextDonatedNftIndexCopy_;
 
-		// [Comment-202502245]
-		// This would revert if `nftAddress_` is zero or there is no ERC-721-compatible contract there.
-		// [/Comment-202502245]
-		nftAddress_.transferFrom(donorAddress_, address(this), nftId_);
+			// [Comment-202502245]
+			// This would revert if `nftAddress_` is zero or there is no ERC-721-compatible contract there.
+			// [/Comment-202502245]
+			nftAddress_.transferFrom(donorAddress_, address(this), nftId_);
+		}
 	}
 
 	// #endregion
@@ -433,24 +466,23 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 		DonatedNft memory donatedNftCopy_ = donatedNftReference_;
 		if (address(donatedNftCopy_.nftAddress) == address(0)) {
 			if (index_ >= nextDonatedNftIndex) {
-				revert CosmicSignatureErrors.InvalidDonatedNftIndex("Invalid donated NFT index.", _msgSender(), index_);
+				revert CosmicSignatureErrors.InvalidDonatedNftIndex(/* "Invalid donated NFT index.", */ _msgSender(), index_);
 			}
-			revert CosmicSignatureErrors.DonatedNftAlreadyClaimed("Donated NFT already claimed.", _msgSender(), index_);
+			revert CosmicSignatureErrors.DonatedNftAlreadyClaimed(/* "Donated NFT already claimed.", */ _msgSender(), index_);
 		}
 
 		// Comment-202411286 applies.
 		if (_msgSender() != mainPrizeBeneficiaryAddresses[donatedNftCopy_.roundNum]) {
 			uint256 roundTimeoutTimeToWithdrawPrizes_ = roundTimeoutTimesToWithdrawPrizes[donatedNftCopy_.roundNum];
-			require(
-				block.timestamp >= roundTimeoutTimeToWithdrawPrizes_ && roundTimeoutTimeToWithdrawPrizes_ > 0,
-				CosmicSignatureErrors.DonatedNftClaimDenied(
-					"Only the bidding round main prize beneficiary is permitted to claim this NFT before a timeout expires.",
+			if ( ! (block.timestamp >= roundTimeoutTimeToWithdrawPrizes_ && roundTimeoutTimeToWithdrawPrizes_ > 0) ) {
+				revert CosmicSignatureErrors.DonatedNftClaimDenied(
+					// "Only the bidding round main prize beneficiary is permitted to claim this NFT before a timeout expires.",
 					_msgSender(),
 					index_,
 					roundTimeoutTimeToWithdrawPrizes_,
 					block.timestamp
-				)
-			);
+				);
+			}
 		}
 
 		delete donatedNftReference_.roundNum;
@@ -471,9 +503,14 @@ contract PrizesWallet is ReentrancyGuardTransient, Ownable, AddressValidator, IP
 	// #region `_claimManyDonatedNfts`
 
 	function _claimManyDonatedNfts(uint256[] calldata indexes_) private {
-		for (uint256 indexIndex_ = indexes_.length; indexIndex_ > 0; ) {
-			-- indexIndex_;
-			_claimDonatedNft(indexes_[indexIndex_]);
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			for (uint256 indexIndex_ = indexes_.length; indexIndex_ > 0; ) {
+				-- indexIndex_;
+				_claimDonatedNft(indexes_[indexIndex_]);
+			}
 		}
 	}
 

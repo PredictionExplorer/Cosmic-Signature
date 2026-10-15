@@ -4,6 +4,7 @@ const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
 const { anyUint } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
+const { asUint256 } = require("../../src/BigIntMathHelpers.js");
 const { shuffleArray, generateRandomUInt32, generateRandomUInt256, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { loadFixtureDeployContractsForTesting, assertAddressIsValid } = require("../../src/ContractTestingHelpers.js");
 
@@ -256,9 +257,9 @@ describe("StakingWalletRandomWalkNft", function () {
 			// const timeStamp1_ = performance.now();
 			const minNumLuckyStakerPicks_ = Math.min( ... numLuckyStakerPicks_ );
 			// const timeStamp2_ = performance.now();
-			// console.info("%s", `202507263 ${(timeStamp2_ - timeStamp1_).toFixed(1)} ${minNumLuckyStakerPicks_} ${numLuckyStakerPicks_}`);
+			// console.info("%s", `202507263 ${(timeStamp2_ - timeStamp1_).toFixed(1)} ${minNumLuckyStakerPicks_} ${numLuckyStakerPicks_.join(",")}`);
 			if (minNumLuckyStakerPicks_ <= 0) {
-				throw new Error(`The random picking of stakers is not necessarily random. At least 1 staker has not been picked. ${numLuckyStakerPicks_}`);
+				throw new Error(`The random picking of stakers is not necessarily random. At least 1 staker has not been picked. ${numLuckyStakerPicks_.join(",")}`);
 			}
 		}
 	});
@@ -288,13 +289,19 @@ describe("StakingWalletRandomWalkNft", function () {
 			await waitForTransactionReceipt(contracts_.stakingWalletRandomWalkNft.connect(contracts_.signers[stakerIndex_]).stake(nftId_));
 		}
 
+		// A little unrelated test: seed increments must wrap; picks fill the array from the end.
+		const wraparoundPicks_ = await contracts_.stakingWalletRandomWalkNft.pickRandomStakerAddressesIfPossible(2n, hre.ethers.MaxUint256);
+		const maxSeedPick_ = await contracts_.stakingWalletRandomWalkNft.pickRandomStakerAddressesIfPossible(1n, hre.ethers.MaxUint256);
+		const zeroSeedPick_ = await contracts_.stakingWalletRandomWalkNft.pickRandomStakerAddressesIfPossible(1n, 0n);
+		expect(wraparoundPicks_).deep.equal([zeroSeedPick_[0], maxSeedPick_[0]]);
+
 		let randomNumberSeed_ = generateRandomUInt256();
 		let numStakersToPick_ = 0n;
 		/** @type {number[]} */
 		const numLuckyStakerPicks_ = (new Array(numStakers_)).fill(0);
 		for ( let iterationCounter_ = 1; ; ) {
 			numStakersToPick_ += numStakersToPickIncrement_;
-			randomNumberSeed_ = BigInt.asUintN(256, randomNumberSeed_ + (1n << 64n));
+			randomNumberSeed_ = asUint256(randomNumberSeed_ + (1n << 64n));
 			const luckyStakerAddresses_ = await contracts_.stakingWalletRandomWalkNft.pickRandomStakerAddressesIfPossible(numStakersToPick_, randomNumberSeed_);
 			for (const luckyStakerAddress_ of luckyStakerAddresses_) {
 				assertAddressIsValid(luckyStakerAddress_);
@@ -303,12 +310,12 @@ describe("StakingWalletRandomWalkNft", function () {
 			const minNumLuckyStakerPicks_ = Math.min( ... numLuckyStakerPicks_ );
 			const maxNumLuckyStakerPicks_ = Math.max( ... numLuckyStakerPicks_ );
 			const minToMaxNumLuckyStakerPicksRatio_ = minNumLuckyStakerPicks_ / maxNumLuckyStakerPicks_;
-			// console.info("%s", `202507269 ${iterationCounter_} ${minNumLuckyStakerPicks_} ${maxNumLuckyStakerPicks_} ${minToMaxNumLuckyStakerPicksRatio_} ${numLuckyStakerPicks_}`);
+			// console.info("%s", `202507269 ${iterationCounter_} ${minNumLuckyStakerPicks_} ${maxNumLuckyStakerPicks_} ${minToMaxNumLuckyStakerPicksRatio_} ${numLuckyStakerPicks_.join(",")}`);
 			if (minToMaxNumLuckyStakerPicksRatio_ >= minToMaxNumLuckyStakerPicksRatioMinLimit_) {
 				break;
 			}
 			if (( ++ iterationCounter_ ) > numIterationsMaxLimit_) {
-				throw new Error(`The random picking of stakers is not necessarily random. Some stakers were picked significantly fewer or more times than the others. ${minNumLuckyStakerPicks_} ${maxNumLuckyStakerPicks_} ${minToMaxNumLuckyStakerPicksRatio_} ${numLuckyStakerPicks_}`);
+				throw new Error(`The random picking of stakers is not necessarily random. Some stakers were picked significantly fewer or more times than the others. ${minNumLuckyStakerPicks_} ${maxNumLuckyStakerPicks_} ${minToMaxNumLuckyStakerPicksRatio_} ${numLuckyStakerPicks_.join(",")}`);
 			}
 		}
 	});
@@ -341,7 +348,7 @@ describe("StakingWalletRandomWalkNft", function () {
 	});
 
 	it("An unauthorized caller unstakes a Random Walk NFT", async function () {
-		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		const stakingWalletRandomWalkNftNftStakedTopicHash_ = contracts_.stakingWalletRandomWalkNft.interface.getEvent("NftStaked").topicHash;
 
@@ -368,7 +375,7 @@ describe("StakingWalletRandomWalkNft", function () {
 	});
 
 	it("Unstaking an invalid stakeActionId", async function () {
-		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		const stakingWalletRandomWalkNftNftStakedTopicHash_ = contracts_.stakingWalletRandomWalkNft.interface.getEvent("NftStaked").topicHash;
 
@@ -406,7 +413,7 @@ describe("StakingWalletRandomWalkNft", function () {
 	});
 
 	it("Double-unstaking Random Walk NFTs", async function () {
-		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		const stakingWalletRandomWalkNftNftStakedTopicHash_ = contracts_.stakingWalletRandomWalkNft.interface.getEvent("NftStaked").topicHash;
 

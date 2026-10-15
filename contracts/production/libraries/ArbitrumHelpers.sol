@@ -3,9 +3,13 @@ pragma solidity =0.8.34;
 
 import { ArbSys } from "@arbitrum/nitro-contracts/src/precompiles/ArbSys.sol";
 import { ArbGasInfo } from "@arbitrum/nitro-contracts/src/precompiles/ArbGasInfo.sol";
-import { CosmicSignatureEvents } from "./CosmicSignatureEvents.sol";
 
 library ArbitrumHelpers {
+	event ArbSysArbBlockNumberCallFailed();
+	event ArbSysArbBlockHashCallFailed();
+	event ArbGasInfoGetGasBacklogCallFailed();
+	event ArbGasInfoGetL1PricingUnitsSinceUpdateCallFailed();
+
 	ArbSys internal constant arbSys = ArbSys(address(0x64));
 	ArbGasInfo internal constant arbGasInfo = ArbGasInfo(address(0x6C));
 
@@ -19,7 +23,7 @@ library ArbitrumHelpers {
 			// but Solidity doesn't appear to guarantee that the transaction won't be reversed after certain errors.
 			// Comment-202502043 relates.
 			// [/Comment-202506296]
-			(isSuccess_, returnData_) = address(arbSys).call(abi.encodeWithSelector(ArbSys.arbBlockNumber.selector));
+			(isSuccess_, returnData_) = address(arbSys).call(abi.encodeCall(ArbSys.arbBlockNumber, ()));
 
 			if (isSuccess_) {
 				if (returnData_.length == 256 / 8) {
@@ -28,10 +32,10 @@ library ArbitrumHelpers {
 				} else {
 					isSuccess_ = false;
 				}
-			}		
+			}
 		}
 		if ( ! isSuccess_ ) {
-			emit CosmicSignatureEvents.ArbitrumError("ArbSys.arbBlockNumber call failed.");
+			emit ArbSysArbBlockNumberCallFailed();
 		}
 	}
 
@@ -40,7 +44,7 @@ library ArbitrumHelpers {
 			bytes memory returnData_;
 
 			// Comment-202506296 applies.
-			(isSuccess_, returnData_) = address(arbSys).call(abi.encodeWithSelector(ArbSys.arbBlockHash.selector, arbBlockNumber_));
+			(isSuccess_, returnData_) = address(arbSys).call(abi.encodeCall(ArbSys.arbBlockHash, (arbBlockNumber_)));
 
 			if (isSuccess_) {
 				if (returnData_.length == 32) {
@@ -49,10 +53,10 @@ library ArbitrumHelpers {
 				} else {
 					isSuccess_ = false;
 				}
-			}		
+			}
 		}
 		if ( ! isSuccess_ ) {
-			emit CosmicSignatureEvents.ArbitrumError("ArbSys.arbBlockHash call failed.");
+			emit ArbSysArbBlockHashCallFailed();
 		}
 	}
 
@@ -64,7 +68,7 @@ library ArbitrumHelpers {
 			// This method (almost?) always returns a different value for each transaction.
 			// [/Comment-202506298]
 			// Comment-202506296 applies.
-			(isSuccess_, returnData_) = address(arbGasInfo).call(abi.encodeWithSelector(ArbGasInfo.getGasBacklog.selector));
+			(isSuccess_, returnData_) = address(arbGasInfo).call(abi.encodeCall(ArbGasInfo.getGasBacklog, ()));
 
 			if (isSuccess_) {
 				if (returnData_.length == 256 / 8) {
@@ -75,10 +79,10 @@ library ArbitrumHelpers {
 				} else {
 					isSuccess_ = false;
 				}
-			}		
+			}
 		}
 		if ( ! isSuccess_ ) {
-			emit CosmicSignatureEvents.ArbitrumError("ArbGasInfo.getGasBacklog call failed.");
+			emit ArbGasInfoGetGasBacklogCallFailed();
 		}
 	}
 
@@ -88,7 +92,7 @@ library ArbitrumHelpers {
 
 			// Comment-202506298 applies.
 			// Comment-202506296 applies.
-			(isSuccess_, returnData_) = address(arbGasInfo).call(abi.encodeWithSelector(ArbGasInfo.getL1PricingUnitsSinceUpdate.selector));
+			(isSuccess_, returnData_) = address(arbGasInfo).call(abi.encodeCall(ArbGasInfo.getL1PricingUnitsSinceUpdate, ()));
 
 			if (isSuccess_) {
 				if (returnData_.length == 256 / 8) {
@@ -97,10 +101,10 @@ library ArbitrumHelpers {
 				} else {
 					isSuccess_ = false;
 				}
-			}		
+			}
 		}
 		if ( ! isSuccess_ ) {
-			emit CosmicSignatureEvents.ArbitrumError("ArbGasInfo.getL1PricingUnitsSinceUpdate call failed.");
+			emit ArbGasInfoGetL1PricingUnitsSinceUpdateCallFailed();
 		}
 	}
 }

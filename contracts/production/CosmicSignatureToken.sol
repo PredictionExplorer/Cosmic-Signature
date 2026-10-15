@@ -19,10 +19,16 @@ import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 // #endregion
 // #region
 
+/// @dev
+/// [Comment-202609134]
+/// Issue. It's possible to make some improvements in this and some other contracts, but it will not be done,
+/// because the contracts have already been deployed.
+/// Comment-202409149 relates.
+/// [/Comment-202609134]
 contract CosmicSignatureToken is
 	ERC20,
 
-	// Comment-202409177 relates.
+	// Comment-202610173 relates.
 	ERC20Burnable,
 
 	ERC20Permit,
@@ -135,8 +141,7 @@ contract CosmicSignatureToken is
 				// [Comment-202606074]
 				// Issue. The caller has negated the value to burn. Problem is that if it was zero, it remains zero,
 				// so we will mint, rather than burn zero.
-				// This issue can be fixed by replacing negation with bitwise not, but it will not be done
-				// because `CosmicSignatureToken` has already been deployed.
+				// This issue can be fixed by replacing negation with bitwise not, but Comment-202609134 applies.
 				// [/Comment-202606074]
 				if (value_ >= int256(0)) {
 					_mint(specReference_.account, uint256(value_));
@@ -188,13 +193,15 @@ contract CosmicSignatureToken is
 
 	// /// @dev todo-9 Idea. But maybe we don't need this.
 	// /// `oldAllowance_` is the allowance the caller has seen before they sent a transaction request to call this method.
-	// /// Event if the allowance decreases before the transaction gets executed this method will do the right thing.
+	// /// Even if the allowance decreases before the transaction gets executed this method will do the right thing.
 	// /// This method offers no benefit if either `oldAllowance_` or `newAllowance_` is zero.
 	// /// It's incorrect to call this method if `newAllowance_` is the maximum possible value.
 	// /// todo-9 ??? Maybe rename `oldAllowance_` and `newAllowance_` to `oldValue_` and `newValue_`.
 	// function safeApprove(address spender_, uint256 oldAllowance_, uint256 newAllowance_) external /*override*/ {
-	// 	// todo-9 Is it really necessary to validate this? Better `require` this?
+	// 	// todo-9 Is it really necessary to `assert` this? Better `revert` if this is `false`?
 	// 	// #enable_asserts assert(newAllowance_ < type(uint256).max);
+	//
+	// 	// todo-9 Should we suppress any overflow checking in the mode in which SMTChecker is disabled?
 	//
 	// 	uint256 allowance_ = allowance(_msgSender(), spender_);
 	// 	if (allowance_ < oldAllowance_) {

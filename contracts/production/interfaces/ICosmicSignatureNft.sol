@@ -102,7 +102,7 @@ interface ICosmicSignatureNft is IERC721Enumerable, IAddressValidator {
 	/// It shall be less than `totalSupply()`. Otherwise the return value is indeterminate.
 	function getNftMetaData(uint256 nftId_) external view returns (NftMetaData memory);
 
-	/// @notice Allows the given NFT owner or authorized caller to set a custom name for an NFT.
+	/// @notice Allows the given NFT owner or an authorized caller to set a custom name for an NFT.
 	/// @param nftId_ NFT ID.
 	/// It shall be less than `totalSupply()`. Otherwise the transaction would revert.
 	/// @param nftName_ The custom name to set for the NFT.

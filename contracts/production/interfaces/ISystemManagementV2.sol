@@ -1,25 +1,17 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity =0.8.34;
 
-import { IAddressValidator } from "./IAddressValidator.sol";
 import { ICosmicSignatureToken } from "./ICosmicSignatureToken.sol";
 import { IRandomWalkNFT } from "./IRandomWalkNFT.sol";
 import { ICosmicSignatureNft } from "./ICosmicSignatureNft.sol";
 import { IPrizesWallet } from "./IPrizesWallet.sol";
 import { IStakingWalletRandomWalkNft } from "./IStakingWalletRandomWalkNft.sol";
 import { IStakingWalletCosmicSignatureNft } from "./IStakingWalletCosmicSignatureNft.sol";
-import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
-import { IBiddingBaseV2 } from "./IBiddingBaseV2.sol";
-import { IMainPrizeBaseV2 } from "./IMainPrizeBaseV2.sol";
 
-/// @title Cosmic Signature Game Configuration Management.
+/// @title Cosmic Signature Game V2 Configuration Management.
 /// @author The Cosmic Signature Development Team.
 /// @notice This contract contains `CosmicSignatureGameV2` configurable parameter setters to be called only by the contract owner.
-interface ISystemManagementV2 is
-	IAddressValidator,
-	ICosmicSignatureGameStorage,
-	IBiddingBaseV2,
-	IMainPrizeBaseV2 {
+interface ISystemManagementV2 {
 	/// @notice Sets `delayDurationBeforeRoundActivation`.
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
@@ -56,11 +48,16 @@ interface ISystemManagementV2 is
 
 	/// @notice Sets `cstDutchAuctionDuration`.
 	/// Only the contract owner is permitted to call this method.
+	/// [Comment-202608014]
+	/// Because of Comment-202608317, this is implemented only in V2. This unconditionally reverts in V3+.
+	/// Issue. Ideally, this should not even exist in V3+.
+	/// [/Comment-202608014]
 	/// @param newValue_ The new value.
 	function setCstDutchAuctionDuration(uint256 newValue_) external;
 
 	/// @notice Sets `cstDutchAuctionDurationChangeDivisor`.
 	/// Only the contract owner is permitted to call this method.
+	/// Comment-202608014 applies.
 	/// @param newValue_ The new value.
 	function setCstDutchAuctionDurationChangeDivisor(uint256 newValue_) external;
 
