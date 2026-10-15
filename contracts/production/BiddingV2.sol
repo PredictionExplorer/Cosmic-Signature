@@ -205,7 +205,7 @@ abstract contract BiddingV2 is
 			}
 			lastCstBidderAddress = _msgSender();
 
-			// Unlike the formula near Comment-202610093, this one cannot overflow within a reasonable timeframe.
+			// This cannot overflow within a reasonable timeframe.
 			uint256 newCstDutchAuctionDuration_ = CosmicSignatureHelpers.tryIncreaseValueExponentially(cstDutchAuctionDuration, cstDutchAuctionDurationChangeDivisor);
 
 			cstDutchAuctionDuration = newCstDutchAuctionDuration_;

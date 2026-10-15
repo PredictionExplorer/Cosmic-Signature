@@ -5,6 +5,7 @@ const hre = require("hardhat");
 const {
 	INITIAL_MAIN_PRIZE_TIME_INCREMENT,
 	MICROSECONDS_PER_SECOND,
+	CST_DUTCH_AUCTION_DURATION_MIN_LIMIT,
 	DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT_V3,
 	DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER,
 	INITIAL_CST_BID_PRICE_DECLINE_MULTIPLIER,
@@ -168,6 +169,12 @@ function getV3CstDutchAuctionDuration(cstDutchAuctionBeginningBidPrice_, cstBidP
 	return (cstDutchAuctionBeginningBidPrice_ + (cstBidPriceDeclineMultiplier_ - 1n)) / cstBidPriceDeclineMultiplier_;
 }
 
+/** JS mirror of `BiddingV3._tryIncreaseCstBidPriceDeclineMultiplier`. */
+function getV3CstBidPriceDeclineMultiplierAfterEthBid(beginningPrice_, multiplier_, changeDivisor_) {
+	const increasedMultiplier_ = tryIncreaseValueExponentially(multiplier_, changeDivisor_);
+	return (increasedMultiplier_ * CST_DUTCH_AUCTION_DURATION_MIN_LIMIT <= beginningPrice_) ? increasedMultiplier_ : multiplier_;
+}
+
 /** Comment-202606059 applies. */
 function tryIncreaseValueExponentially(value_, divisor_) {
 	return value_ + value_ / divisor_;
@@ -188,6 +195,7 @@ module.exports = {
 	getV3BidCstRewardAmount,
 	getV3CstBidPrice,
 	getV3CstDutchAuctionDuration,
+	getV3CstBidPriceDeclineMultiplierAfterEthBid,
 	tryIncreaseValueExponentially,
 	tryReduceValueExponentially,
 };

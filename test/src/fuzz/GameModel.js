@@ -8,7 +8,7 @@
 const hre = require("hardhat");
 const { expect } = require("chai");
 const c = require("../../../src/CosmicSignatureConstants.js");
-const { maxBigInt, minBigInt, sqrtFloor, uint256ToInt256, int256ToUint256, u256 } = require("../../../src/BigIntMathHelpers.js");
+const { maxBigInt, sqrtFloor, uint256ToInt256, int256ToUint256, u256 } = require("../../../src/BigIntMathHelpers.js");
 
 // #endregion
 // #region `GameModel`
@@ -672,11 +672,16 @@ class GameModel {
 		let newCstDutchAuctionDuration_ = null;
 		let newCstBidPriceDeclineMultiplier_ = null;
 		if (this.version >= 3) {
+			const increasedCstBidPriceDeclineMultiplier_ =
+				this.cstBidPriceDeclineMultiplier + this.cstBidPriceDeclineMultiplier / this.cstBidPriceDeclineMultiplierChangeDivisor;
+			const cstDutchAuctionBeginningBidPrice_ =
+				(this.lastCstBidderAddress === hre.ethers.ZeroAddress) ?
+				this.nextRoundFirstCstDutchAuctionBeginningBidPrice :
+				this.cstDutchAuctionBeginningBidPrice;
 			newCstBidPriceDeclineMultiplier_ =
-				minBigInt(
-					this.cstBidPriceDeclineMultiplier + this.cstBidPriceDeclineMultiplier / this.cstBidPriceDeclineMultiplierChangeDivisor,
-					c.CST_BID_PRICE_DECLINE_MULTIPLIER_MAX_LIMIT
-				);
+				(increasedCstBidPriceDeclineMultiplier_ * c.CST_DUTCH_AUCTION_DURATION_MIN_LIMIT <= cstDutchAuctionBeginningBidPrice_) ?
+				increasedCstBidPriceDeclineMultiplier_ :
+				this.cstBidPriceDeclineMultiplier;
 			this.cstBidPriceDeclineMultiplier = newCstBidPriceDeclineMultiplier_;
 		} else if (this.version >= 2) {
 			newCstDutchAuctionDuration_ =
@@ -722,21 +727,27 @@ class GameModel {
 		}
 		this._bidderInfoForUpdate(bidderAddress_).totalSpentCstAmount += paidCstPrice_;
 		this.cstDutchAuctionBeginningTimeStamp = ts_;
+		let newCstBidPriceDeclineMultiplier_ = null;
+		let beginningBidPriceMinLimit_ = this.cstDutchAuctionBeginningBidPriceMinLimit;
+		if (this.version >= 3) {
+			newCstBidPriceDeclineMultiplier_ =
+				(this.cstBidPriceDeclineMultiplier + 1n) * this.cstBidPriceDeclineMultiplierChangeDivisor /
+				(this.cstBidPriceDeclineMultiplierChangeDivisor + 1n);
+			this.cstBidPriceDeclineMultiplier = newCstBidPriceDeclineMultiplier_;
+			beginningBidPriceMinLimit_ = maxBigInt(
+				beginningBidPriceMinLimit_,
+				newCstBidPriceDeclineMultiplier_ * c.CST_DUTCH_AUCTION_DURATION_MIN_LIMIT
+			);
+		}
 		const newBeginningBidPrice_ =
-			maxBigInt(cstBidPriceBase_ * c.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, this.cstDutchAuctionBeginningBidPriceMinLimit);
+			maxBigInt(cstBidPriceBase_ * c.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, beginningBidPriceMinLimit_);
 		this.cstDutchAuctionBeginningBidPrice = newBeginningBidPrice_;
 		if (this.lastCstBidderAddress === hre.ethers.ZeroAddress) {
 			this.nextRoundFirstCstDutchAuctionBeginningBidPrice = newBeginningBidPrice_;
 		}
 		this.lastCstBidderAddress = bidderAddress_.toLowerCase();
 		let newCstDutchAuctionDuration_ = null;
-		let newCstBidPriceDeclineMultiplier_ = null;
-		if (this.version >= 3) {
-			newCstBidPriceDeclineMultiplier_ =
-				(this.cstBidPriceDeclineMultiplier + 1n) * this.cstBidPriceDeclineMultiplierChangeDivisor /
-				(this.cstBidPriceDeclineMultiplierChangeDivisor + 1n);
-			this.cstBidPriceDeclineMultiplier = newCstBidPriceDeclineMultiplier_;
-		} else if (this.version >= 2) {
+		if (this.version === 2) {
 			newCstDutchAuctionDuration_ = this.cstDutchAuctionDuration + this.cstDutchAuctionDuration / this.cstDutchAuctionDurationChangeDivisor;
 			this.cstDutchAuctionDuration = newCstDutchAuctionDuration_;
 		}

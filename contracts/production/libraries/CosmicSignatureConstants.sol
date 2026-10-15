@@ -102,6 +102,34 @@ library CosmicSignatureConstants {
 	/// @dev Comment-202607301 relates.
 	uint256 internal constant DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR = 250;
 
+	/// @notice
+	/// [Comment-202611053]
+	/// In V3+, minimum allowed CST Dutch auction duration when a CST bid restarts it.
+	/// Without this limit, a potentially possible CST bid at a low price can restart the Dutch auction at a beginning price
+	/// that becomes too low or zero in a second or two, allowing many low or free CST bids short one after another
+	/// before the reductions of `cstBidPriceDeclineMultiplier` lengthen the auction enough. To clarify,
+	/// when CST Dutch auction duration is too short and there are few bidders, the bidders will likely be unable
+	/// to place bids fast enough before bid price becomes too low.
+	/// On a CST bid, the next CST Dutch auction beginning bid price is at least `cstBidPriceDeclineMultiplier` times this duration.
+	/// ETH bids skip `cstBidPriceDeclineMultiplier` increases that would make CST Dutch auction duration under this limit.
+	/// The first CST Dutch auction of a round can still be shorter because `nextRoundFirstCstDutchAuctionBeginningBidPrice` floor
+	/// was calculated when `cstBidPriceDeclineMultiplier` could be smaller.
+	/// [/Comment-202611053]
+	/// @dev
+	/// [Comment-202611052]
+	/// According to Comment-202611053, ETH bids limit increases of `cstBidPriceDeclineMultiplier`
+	/// using the applicable CST Dutch auction beginning bid price
+	/// (`cstDutchAuctionBeginningBidPrice` or `nextRoundFirstCstDutchAuctionBeginningBidPrice`),
+	/// which, according to Comment-202605199, itself is limited.
+	/// The `CST_DUTCH_AUCTION_DURATION_MIN_LIMIT`-based price floor
+	/// cannot itself cause unbounded `cstBidPriceDeclineMultiplier` growth. Therefore, under realistic conditions,
+	/// the arithmetic involving `cstBidPriceDeclineMultiplier` cannot overflow.
+	/// Comment-202605199 relates.
+	/// Comment-202412033 relates.
+	/// [/Comment-202611052]
+	/// I feel that it's unnecessary to make this configurable.
+	uint256 internal constant CST_DUTCH_AUCTION_DURATION_MIN_LIMIT = 3 minutes;
+
 	/// @notice Comment-202411066 relates.
 	uint256 internal constant CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER = 2;
 
@@ -116,12 +144,6 @@ library CosmicSignatureConstants {
 
 	/// @notice In V3+, initial `CosmicSignatureGameStorageV3Base.cstBidPriceDeclineMultiplier`.
 	uint256 internal constant INITIAL_CST_BID_PRICE_DECLINE_MULTIPLIER = (DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER + INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND / 2) / (INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND);
-
-	/// @notice In V3+, this caps automatic increases of `CosmicSignatureGameStorageV3Base.cstBidPriceDeclineMultiplier`.
-	/// Why the cap is needed, is explained in Comment-202610093.
-	/// At this cap, multiplying by nonnegative elapsed seconds overflows only after more than 100 years.
-	/// @dev I feel that it's unnecessary to make this configurable.
-	uint256 internal constant CST_BID_PRICE_DECLINE_MULTIPLIER_MAX_LIMIT = uint256(type(int256).max) / (100 * (366 days));
 
 	/// @notice In V3+, default `CosmicSignatureGameStorageV3Base.cstBidPriceDeclineMultiplierChangeDivisor`.
 	/// @dev

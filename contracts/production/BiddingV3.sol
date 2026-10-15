@@ -232,6 +232,7 @@ abstract contract BiddingV3 is
 			}
 			biddersInfo[roundNum][_msgSender()].totalSpentCstAmount += paidCstPrice_;
 			cstDutchAuctionBeginningTimeStamp = block.timestamp;
+			uint256 newCstBidPriceDeclineMultiplier_ = _tryReduceCstBidPriceDeclineMultiplier();
 
 			// // [Comment-202609292]
 			// // Doubling the effective paid CST price.
@@ -259,12 +260,15 @@ abstract contract BiddingV3 is
 			// 	uint256(
 			// 		CosmicSignatureHelpers.max(
 			// 			(int256(cstBidPriceBase_) - int256(bidCstRewardAmount_)) * int256(CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER),
-			// 			int256(cstDutchAuctionBeginningBidPriceMinLimit)
+			// 			int256(Math.max(cstDutchAuctionBeginningBidPriceMinLimit, newCstBidPriceDeclineMultiplier_ * CosmicSignatureConstants.CST_DUTCH_AUCTION_DURATION_MIN_LIMIT))
 			// 		)
 			// 	);
 
 			uint256 newCstDutchAuctionBeginningBidPrice_ =
-				Math.max(cstBidPriceBase_ * CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, cstDutchAuctionBeginningBidPriceMinLimit);
+				Math.max(
+					cstBidPriceBase_ * CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER,
+					Math.max(cstDutchAuctionBeginningBidPriceMinLimit, newCstBidPriceDeclineMultiplier_ * CosmicSignatureConstants.CST_DUTCH_AUCTION_DURATION_MIN_LIMIT)
+				);
 			cstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
 			if (lastCstBidderAddress == address(0)) {
 				// Comment-202501045 applies.
@@ -273,7 +277,6 @@ abstract contract BiddingV3 is
 				nextRoundFirstCstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
 			}
 			lastCstBidderAddress = _msgSender();
-			uint256 newCstBidPriceDeclineMultiplier_ = _tryReduceCstBidPriceDeclineMultiplier();
 			_bidCommon(/*BidType.CST,*/ message_);
 			emit BidPlaced(
 				roundNum,
@@ -315,17 +318,10 @@ abstract contract BiddingV3 is
 			uint256 cstDutchAuctionBeginningBidPrice_ =
 				(lastCstBidderAddress == address(0)) ? nextRoundFirstCstDutchAuctionBeginningBidPrice : cstDutchAuctionBeginningBidPrice;
 
+			// Comment-202611052 applies.
 			int256 nextCstBidPrice_ =
-				int256(cstDutchAuctionBeginningBidPrice_) -
-				
-				// [Comment-202610093]
-				// This formula would present an overflow risk if `cstBidPriceDeclineMultiplier` increase was unbounded.
-				// Here is what would need to happen for `cstBidPriceDeclineMultiplier` to become too large.
-				// A certain number of bidding rounds must complete, each resetting ETH bid price to a low value,
-				// so no unrealistic amounts of ETH are required. During the rounds, there must be more ETH than CST bids.
-				// There are also other formulas involving `cstBidPriceDeclineMultiplier`, but they require larger values to overflow.
-				// [/Comment-202610093]
-				cstDutchAuctionElapsedDuration_ * int256(cstBidPriceDeclineMultiplier);
+				int256(cstDutchAuctionBeginningBidPrice_) - cstDutchAuctionElapsedDuration_ * int256(cstBidPriceDeclineMultiplier);
+
 			return (nextCstBidPrice_ > int256(0)) ? uint256(nextCstBidPrice_) : 0;
 		}
 	}
@@ -337,6 +333,7 @@ abstract contract BiddingV3 is
 		// // [Comment-202609294]
 		// // This idea makes no sense for the same reason the Comment-202609292 idea does.
 		// // [/Comment-202609294]
+		// // ToDo-9 Implement the Comment-202611053 duration guard.
 		// // #enable_smtchecker /*
 		// unchecked
 		// // #enable_smtchecker */
@@ -348,13 +345,23 @@ abstract contract BiddingV3 is
 		// 	cstBidPriceDeclineMultiplier = uint256(newCstBidPriceDeclineMultiplier_);
 		// }
 
-		uint256 newCstBidPriceDeclineMultiplier_ =
-			Math.min(
-				CosmicSignatureHelpers.tryIncreaseValueExponentially(cstBidPriceDeclineMultiplier, cstBidPriceDeclineMultiplierChangeDivisor),
-				CosmicSignatureConstants.CST_BID_PRICE_DECLINE_MULTIPLIER_MAX_LIMIT
-			);
-		cstBidPriceDeclineMultiplier = newCstBidPriceDeclineMultiplier_;
-		return newCstBidPriceDeclineMultiplier_;
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			uint256 newCstBidPriceDeclineMultiplier_ =
+				CosmicSignatureHelpers.tryIncreaseValueExponentially(cstBidPriceDeclineMultiplier, cstBidPriceDeclineMultiplierChangeDivisor);
+
+			// Comment-202501307 relates and/or applies.
+			uint256 cstDutchAuctionBeginningBidPrice_ =
+				(lastCstBidderAddress == address(0)) ? nextRoundFirstCstDutchAuctionBeginningBidPrice : cstDutchAuctionBeginningBidPrice;
+
+			if (newCstBidPriceDeclineMultiplier_ * CosmicSignatureConstants.CST_DUTCH_AUCTION_DURATION_MIN_LIMIT <= cstDutchAuctionBeginningBidPrice_) {
+				cstBidPriceDeclineMultiplier = newCstBidPriceDeclineMultiplier_;
+				return newCstBidPriceDeclineMultiplier_;
+			}
+			return cstBidPriceDeclineMultiplier;
+		}
 	}
 
 	// #endregion
@@ -452,8 +459,10 @@ abstract contract BiddingV3 is
 					// Let's say, our bid price is 1_000_000_000. Calculating max premium:
 					// (9742n ** 8n * 1_000_000_000n) >> (13n * 8n) == 4_000_050_302n
 					//
-					// This cannot overflow with the default parameters.
-					// Comment-202412033 relates.
+					// [Comment-202610216]
+					// This cannot overflow.
+					// Comment-202605199 relates.
+					// [/Comment-202610216]
 					// This can be zero.
 					// [/Comment-202607119]
 					uint256 roundLateBidPricePremiumAmount_ =
@@ -462,6 +471,7 @@ abstract contract BiddingV3 is
 						) >>
 						(roundLateBidPricePremiumAmountExponent * CosmicSignatureConstants.ROUND_LATE_BID_PRICE_PREMIUM_AMOUNT_RESOLUTION_EXPONENT);
 
+					// Comment-202610216 applies.
 					adjustedBidPrice_ += roundLateBidPricePremiumAmount_;
 				}
 			}

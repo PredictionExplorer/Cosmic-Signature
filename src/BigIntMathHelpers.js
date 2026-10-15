@@ -12,8 +12,9 @@ const MAX_UINT256 = (1n << 256n) - 1n;
 const MAX_INT256 = (1n << 255n) - 1n;
 
 /**
-Solidity-style `Math.max`.
-Although it appears that the OpenZeppelin implementation supports only unsigned integers.
+[Comment-202610213]
+Issue. Unlike this JavaScript implementation, the OpenZeppelin Solidity one supports only unsigned integers.
+[/Comment-202610213]
 @param {bigint} a_
 @param {bigint} b_
 */
@@ -22,6 +23,7 @@ function maxBigInt(a_, b_) {
 }
 
 /**
+Comment-202610213 applies.
 @param {bigint} a_
 @param {bigint} b_
 */

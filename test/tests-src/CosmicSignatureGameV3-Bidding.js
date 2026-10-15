@@ -5,9 +5,14 @@
 const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
-const { DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER, CST_BID_PRICE_DECLINE_MULTIPLIER_MAX_LIMIT, SECONDS_PER_HOUR, SECONDS_PER_DAY } = require("../../src/CosmicSignatureConstants.js");
-const { MAX_INT256, uint256ToInt256 } = require("../../src/BigIntMathHelpers.js");
-const { ENABLE_SMTCHECKER, generateRandomUInt32, waitForTransactionReceipt } = require("../../src/Helpers.js");
+const {
+	CST_DUTCH_AUCTION_DURATION_MIN_LIMIT,
+	DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER,
+	SECONDS_PER_HOUR,
+	SECONDS_PER_DAY,
+} = require("../../src/CosmicSignatureConstants.js");
+const { maxBigInt } = require("../../src/BigIntMathHelpers.js");
+const { generateRandomUInt32, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const {
 	activateCurrentRound,
 	findParsedEvent,
@@ -21,6 +26,7 @@ const {
 	addRoundLateBidPricePremiumAmountIfNeeded,
 	getV3CstBidPrice,
 	getV3CstDutchAuctionDuration,
+	getV3CstBidPriceDeclineMultiplierAfterEthBid,
 	tryIncreaseValueExponentially,
 	tryReduceValueExponentially,
 } = require("../src/V3UpgradeTestHelpers.js");
@@ -93,12 +99,16 @@ async function assertRoundBidStats(game_, roundNum_, expectedStats_) {
 }
 
 describe("CosmicSignatureGameV3-Bidding", function () {
-	it("adjusts the CST decline multiplier for every bid entry point, including zero-price CST bids after long waits", async function () {
+	it("adjusts the CST decline multiplier within its duration bound for every bid entry point, including zero-price CST bids after long waits", async function () {
 		await testAcrossGameVersions(async (contracts_, game_) => {
 			const bidder_ = contracts_.signers[1];
 			const gameForBidder_ = game_.connect(bidder_);
 			const changeDivisor_ = 20n + BigInt(generateRandomUInt32() % 181);
 			await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setCstBidPriceDeclineMultiplierChangeDivisor(changeDivisor_));
+
+			// Exercise the configured price floor when it exceeds the new duration-based floor.
+			await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setCstDutchAuctionBeginningBidPriceMinLimit(100n * 10n ** 18n));
+
 			const mockToken_ = await (await hre.ethers.getContractFactory("FuzzTestMockErc20", bidder_)).deploy();
 			await mockToken_.waitForDeployment();
 			await waitForTransactionReceipt(mockToken_.mint(bidder_.address, 2n));
@@ -123,7 +133,11 @@ describe("CosmicSignatureGameV3-Bidding", function () {
 				() => gameForBidder_.bidWithEthAndDonateNft(-1n, "", 0n, mockNft_, nftIds_[0], {value: 10n ** 18n,}),
 			];
 			for (const submitBid_ of ethBidSubmissions_) {
-				const expectedMultiplier_ = tryIncreaseValueExponentially(await game_.cstBidPriceDeclineMultiplier(), changeDivisor_);
+				const expectedMultiplier_ = getV3CstBidPriceDeclineMultiplierAfterEthBid(
+					await game_.nextRoundFirstCstDutchAuctionBeginningBidPrice(),
+					await game_.cstBidPriceDeclineMultiplier(),
+					changeDivisor_
+				);
 				const receipt_ = await waitForTransactionReceipt(submitBid_());
 				expect(await game_.cstBidPriceDeclineMultiplier()).equal(expectedMultiplier_);
 				expect(findParsedEvent(receipt_, game_, "BidPlaced").args.cstBidPriceDeclineMultiplier).equal(expectedMultiplier_);
@@ -151,6 +165,7 @@ describe("CosmicSignatureGameV3-Bidding", function () {
 				expect(bidPlaced_.args.paidCstPrice).equal(0n);
 				expect(bidPlaced_.args.cstBidPriceDeclineMultiplier).equal(expectedMultiplier_);
 				expect(await game_.cstBidPriceDeclineMultiplier()).equal(expectedMultiplier_);
+				expect(auctionBefore_.beginningPriceMinLimit).greaterThan(expectedMultiplier_ * CST_DUTCH_AUCTION_DURATION_MIN_LIMIT);
 				expect(await game_.cstDutchAuctionBeginningBidPrice()).equal(auctionBefore_.beginningPriceMinLimit);
 				expect(await game_.cstDutchAuctionBeginningTimeStamp()).equal(await blockTimestampOfReceipt(receipt_));
 				await assertRoundBidStats(game_, await game_.roundNum(), {
@@ -167,53 +182,179 @@ describe("CosmicSignatureGameV3-Bidding", function () {
 		}, 3, 3);
 	});
 
-	it("caps the CST decline multiplier and delays signed-price overflow beyond 100 years", async function () {
-		const maxSafeElapsedDuration_ = 100n * 366n * SECONDS_PER_DAY;
-		expect(MAX_INT256 / maxSafeElapsedDuration_).equal(CST_BID_PRICE_DECLINE_MULTIPLIER_MAX_LIMIT);
-		expect(maxSafeElapsedDuration_ * CST_BID_PRICE_DECLINE_MULTIPLIER_MAX_LIMIT).at.most(MAX_INT256);
-		expect((maxSafeElapsedDuration_ + 1n) * CST_BID_PRICE_DECLINE_MULTIPLIER_MAX_LIMIT).greaterThan(MAX_INT256);
-
+	it("restarts a free CST bid at the reduced multiplier's three-minute floor and raises prices on prompt follow-up bids", async function () {
 		await testAcrossGameVersions(async (contracts_, game_) => {
 			const ownerGame_ = game_.connect(contracts_.ownerSigner);
 			const bidder_ = contracts_.signers[1];
-			const changeDivisor_ = await game_.cstBidPriceDeclineMultiplierChangeDivisor();
-			await waitForTransactionReceipt(ownerGame_.setCstBidPriceDeclineMultiplier(CST_BID_PRICE_DECLINE_MULTIPLIER_MAX_LIMIT - 1n));
-			expect(tryIncreaseValueExponentially(CST_BID_PRICE_DECLINE_MULTIPLIER_MAX_LIMIT - 1n, changeDivisor_)).greaterThan(CST_BID_PRICE_DECLINE_MULTIPLIER_MAX_LIMIT);
+			const bidderGame_ = game_.connect(bidder_);
+			const initialMultiplier_ = (await game_.nextRoundFirstCstDutchAuctionBeginningBidPrice()) / (2n * CST_DUTCH_AUCTION_DURATION_MIN_LIMIT);
+			await waitForTransactionReceipt(ownerGame_.setCstBidPriceDeclineMultiplier(initialMultiplier_));
 
-			// Isolate the auction overflow from premium arithmetic on the resulting enormous price.
-			await waitForTransactionReceipt(ownerGame_.setRoundLateBidPricePremiumAmountBaseMultiplier(0n));
-
+			// The free bid rewards this same bidder, funding the subsequent paid bids without token impersonation.
+			await waitForTransactionReceipt(ownerGame_.setBidCstRewardAmountMultiplier(1000n * DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER));
 			await activateCurrentRound(game_, contracts_.ownerSigner);
-			for (let bidIndex_ = 0; bidIndex_ < 2; ++ bidIndex_) {
-				const receipt_ = await bidWithEthAt(game_, bidder_, (await getLatestBlockTimestamp()) + 10n);
-				expect(await game_.cstBidPriceDeclineMultiplier()).equal(CST_BID_PRICE_DECLINE_MULTIPLIER_MAX_LIMIT);
-				expect(findParsedEvent(receipt_, game_, "BidPlaced").args.cstBidPriceDeclineMultiplier).equal(CST_BID_PRICE_DECLINE_MULTIPLIER_MAX_LIMIT);
-			}
+			await bidWithEthAt(game_, bidder_, (await getLatestBlockTimestamp()) + 1n);
+			const initialAuction_ = await readCstAuctionState(game_);
+			const initialDuration_ = await assertCstAuctionDurations(game_);
+			await setNextBlockTimeToAtLeast(initialAuction_.beginningTimeStamp + initialDuration_);
+			const freeBidReceipt_ = await waitForTransactionReceipt(bidderGame_.bidWithCst(0n, "", 0n));
+			expect(findParsedEvent(freeBidReceipt_, game_, "BidPlaced").args.paidCstPrice).equal(0n);
 
-			// A CST bid must still reduce the capped multiplier; an ETH bid can then restore it.
-			const reducedMultiplier_ = tryReduceValueExponentially(CST_BID_PRICE_DECLINE_MULTIPLIER_MAX_LIMIT, changeDivisor_);
-			expect(reducedMultiplier_).lessThan(CST_BID_PRICE_DECLINE_MULTIPLIER_MAX_LIMIT);
-			await setNextBlockTimeToAtLeast((await getLatestBlockTimestamp()) + 1n);
-			const cstReceipt_ = await waitForTransactionReceipt(game_.connect(bidder_).bidWithCst(0n, "", 0n));
-			const cstBidPlaced_ = findParsedEvent(cstReceipt_, game_, "BidPlaced");
-			expect(cstBidPlaced_.args.paidCstPrice).equal(0n);
-			expect(cstBidPlaced_.args.cstBidPriceDeclineMultiplier).equal(reducedMultiplier_);
+			const reducedMultiplier_ = tryReduceValueExponentially(initialAuction_.declineMultiplier, initialAuction_.changeDivisor);
+			const beginningPrice_ = reducedMultiplier_ * CST_DUTCH_AUCTION_DURATION_MIN_LIMIT;
+			expect(beginningPrice_).greaterThan(initialAuction_.beginningPriceMinLimit);
 			expect(await game_.cstBidPriceDeclineMultiplier()).equal(reducedMultiplier_);
-			const ethReceipt_ = await bidWithEthAt(game_, bidder_, (await getLatestBlockTimestamp()) + 1n);
-			expect(await game_.cstBidPriceDeclineMultiplier()).equal(CST_BID_PRICE_DECLINE_MULTIPLIER_MAX_LIMIT);
-			expect(findParsedEvent(ethReceipt_, game_, "BidPlaced").args.cstBidPriceDeclineMultiplier).equal(CST_BID_PRICE_DECLINE_MULTIPLIER_MAX_LIMIT);
+			expect(await game_.cstDutchAuctionBeginningBidPrice()).equal(beginningPrice_);
+			expect(await game_.nextRoundFirstCstDutchAuctionBeginningBidPrice()).equal(beginningPrice_);
+			expect(await assertCstAuctionDurations(game_)).equal(CST_DUTCH_AUCTION_DURATION_MIN_LIMIT);
+			const restartTimeStamp_ = await blockTimestampOfReceipt(freeBidReceipt_);
+			const remainingDurationUntilPremium_ = (await game_.mainPrizeTime()) - (await game_.getRoundLateBidDuration()) - restartTimeStamp_;
+			expect(remainingDurationUntilPremium_).greaterThan(CST_DUTCH_AUCTION_DURATION_MIN_LIMIT);
+			expect(await game_.getNextCstBidPriceAdvanced(CST_DUTCH_AUCTION_DURATION_MIN_LIMIT - 1n)).equal(reducedMultiplier_);
+			expect(await game_.getNextCstBidPriceAdvanced(CST_DUTCH_AUCTION_DURATION_MIN_LIMIT)).equal(0n);
 
-			// Comment-202610093 applies. Query future prices without advancing the blockchain clock.
-			const elapsedDuration_ = (await getLatestBlockTimestamp()) - (await game_.cstDutchAuctionBeginningTimeStamp());
-			const safeTimeOffset_ = maxSafeElapsedDuration_ - elapsedDuration_;
-			expect(await game_.getNextCstBidPriceAdvanced(safeTimeOffset_)).equal(0n);
-			if (ENABLE_SMTCHECKER > 0) {
-				await expect(game_.getNextCstBidPriceAdvanced(safeTimeOffset_ + 1n)).revertedWithPanic(0x11);
-			} else {
-				const beginningPrice_ = await game_.cstDutchAuctionBeginningBidPrice();
-				const wrappedPrice_ = uint256ToInt256(beginningPrice_ - (maxSafeElapsedDuration_ + 1n) * CST_BID_PRICE_DECLINE_MULTIPLIER_MAX_LIMIT);
-				expect(wrappedPrice_).greaterThan(0n);
-				expect(await game_.getNextCstBidPriceAdvanced(safeTimeOffset_ + 1n)).equal(wrappedPrice_);
+			await mineAtOrAfter(restartTimeStamp_ + 1n);
+			const priceAfterOneSecond_ = beginningPrice_ - reducedMultiplier_;
+			expect(await game_.getNextCstBidPrice()).equal(priceAfterOneSecond_);
+			await expect(bidderGame_.bidWithCst.staticCall(0n, "", 0n))
+				.revertedWithCustomError(game_, "InsufficientReceivedBidAmount").withArgs(priceAfterOneSecond_, 0n);
+
+			// Bid before half the minimum duration, then again sooner: doubling the paid base price now dominates.
+			for (const elapsedDuration_ of [CST_DUTCH_AUCTION_DURATION_MIN_LIMIT / 2n - 1n, 30n, 1n]) {
+				const auctionBefore_ = await readCstAuctionState(game_);
+				const bidTimeStamp_ = auctionBefore_.beginningTimeStamp + elapsedDuration_;
+				const paidCstPrice_ = auctionBefore_.beginningPrice - elapsedDuration_ * auctionBefore_.declineMultiplier;
+				const newMultiplier_ = tryReduceValueExponentially(auctionBefore_.declineMultiplier, auctionBefore_.changeDivisor);
+				const newBeginningPrice_ = paidCstPrice_ * 2n;
+				expect(newBeginningPrice_).greaterThan(auctionBefore_.beginningPrice);
+				expect(newBeginningPrice_).greaterThan(newMultiplier_ * CST_DUTCH_AUCTION_DURATION_MIN_LIMIT);
+				expect(await contracts_.cosmicSignatureToken.balanceOf(bidder_.address)).at.least(paidCstPrice_);
+				await setNextBlockTimeToAtLeast(bidTimeStamp_);
+				const receipt_ = await waitForTransactionReceipt(bidderGame_.bidWithCst(paidCstPrice_, "", 0n));
+				expect(findParsedEvent(receipt_, game_, "BidPlaced").args.paidCstPrice).equal(paidCstPrice_);
+				expect(await game_.cstBidPriceDeclineMultiplier()).equal(newMultiplier_);
+				expect(await game_.cstDutchAuctionBeginningBidPrice()).equal(newBeginningPrice_);
+				expect(await game_.nextRoundFirstCstDutchAuctionBeginningBidPrice()).equal(beginningPrice_);
+				expect(await assertCstAuctionDurations(game_)).greaterThan(CST_DUTCH_AUCTION_DURATION_MIN_LIMIT);
+			}
+			await finishGameRound(contracts_, game_);
+			expect(await game_.nextRoundFirstCstDutchAuctionBeginningBidPrice()).equal(beginningPrice_);
+		}, 3, 3);
+	});
+
+	it("accepts the exact CST duration boundary, rejects further increases, and selects current or carried-over price anchors", async function () {
+		let previousRoundBeginningPrice_;
+		await testAcrossGameVersions(async (contracts_, game_) => {
+			const ownerGame_ = game_.connect(contracts_.ownerSigner);
+			const bidder_ = contracts_.signers[1];
+			const beginningPriceBeforeFirstCstBid_ = await game_.nextRoundFirstCstDutchAuctionBeginningBidPrice();
+			const changeDivisor_ = 100n;
+			const multiplier_ = beginningPriceBeforeFirstCstBid_ / (CST_DUTCH_AUCTION_DURATION_MIN_LIMIT * (changeDivisor_ + 1n)) * (changeDivisor_ + 1n);
+			const boundaryPrice_ = multiplier_ * CST_DUTCH_AUCTION_DURATION_MIN_LIMIT;
+			await waitForTransactionReceipt(ownerGame_.setCstBidPriceDeclineMultiplier(multiplier_));
+			await waitForTransactionReceipt(ownerGame_.setCstBidPriceDeclineMultiplierChangeDivisor(changeDivisor_));
+			await waitForTransactionReceipt(ownerGame_.setCstDutchAuctionBeginningBidPriceMinLimit(boundaryPrice_));
+			await waitForTransactionReceipt(ownerGame_.setBidCstRewardAmountMultiplier(1000n * DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER));
+			await activateCurrentRound(game_, contracts_.ownerSigner);
+
+			const rejectedCandidate_ = tryIncreaseValueExponentially(multiplier_, changeDivisor_);
+			expect(rejectedCandidate_ * CST_DUTCH_AUCTION_DURATION_MIN_LIMIT).greaterThan(beginningPriceBeforeFirstCstBid_);
+			if (previousRoundBeginningPrice_ !== undefined) {
+				// The previous round's current-auction anchor would incorrectly allow this increase.
+				expect(rejectedCandidate_ * CST_DUTCH_AUCTION_DURATION_MIN_LIMIT).lessThan(previousRoundBeginningPrice_);
+			}
+			const firstReceipt_ = await bidWithEthAt(game_, bidder_, (await getLatestBlockTimestamp()) + 1n);
+			expect(findParsedEvent(firstReceipt_, game_, "BidPlaced").args.cstBidPriceDeclineMultiplier).equal(multiplier_);
+			expect(await game_.cstBidPriceDeclineMultiplier()).equal(multiplier_);
+			expect(await game_.nextRoundFirstCstDutchAuctionBeginningBidPrice()).equal(beginningPriceBeforeFirstCstBid_);
+
+			// Another ETH bid before the first CST bid must use the same carried-over anchor.
+			const secondReceipt_ = await bidWithEthAt(game_, bidder_, (await getLatestBlockTimestamp()) + 1n);
+			expect(findParsedEvent(secondReceipt_, game_, "BidPlaced").args.cstBidPriceDeclineMultiplier).equal(multiplier_);
+			await setNextBlockTimeToAtLeast((await game_.cstDutchAuctionBeginningTimeStamp()) + (await assertCstAuctionDurations(game_)));
+			await waitForTransactionReceipt(game_.connect(bidder_).bidWithCst(0n, "", 0n));
+			const reducedMultiplier_ = tryReduceValueExponentially(multiplier_, changeDivisor_);
+			expect(await game_.cstBidPriceDeclineMultiplier()).equal(reducedMultiplier_);
+			expect(await game_.cstDutchAuctionBeginningBidPrice()).equal(boundaryPrice_);
+			expect(await game_.nextRoundFirstCstDutchAuctionBeginningBidPrice()).equal(boundaryPrice_);
+			expect(tryIncreaseValueExponentially(reducedMultiplier_, changeDivisor_) * CST_DUTCH_AUCTION_DURATION_MIN_LIMIT).equal(boundaryPrice_);
+
+			const equalityReceipt_ = await bidWithEthAt(game_, bidder_, (await getLatestBlockTimestamp()) + 1n);
+			expect(findParsedEvent(equalityReceipt_, game_, "BidPlaced").args.cstBidPriceDeclineMultiplier).equal(multiplier_);
+			expect(await game_.cstBidPriceDeclineMultiplier()).equal(multiplier_);
+			expect(await assertCstAuctionDurations(game_)).equal(CST_DUTCH_AUCTION_DURATION_MIN_LIMIT);
+
+			const ethBidPriceBefore_ = await game_.nextEthBidPrice();
+			const rejectionReceipt_ = await bidWithEthAt(game_, bidder_, (await getLatestBlockTimestamp()) + 1n);
+			expect(findParsedEvent(rejectionReceipt_, game_, "BidPlaced").args.cstBidPriceDeclineMultiplier).equal(multiplier_);
+			expect(await game_.cstBidPriceDeclineMultiplier()).equal(multiplier_);
+			expect(await game_.nextEthBidPrice()).equal(ethBidPriceBefore_ + ethBidPriceBefore_ / (await game_.ethBidPriceIncreaseDivisor()) + 1n);
+			expect(await game_.cstDutchAuctionBeginningBidPrice()).equal(boundaryPrice_);
+			expect(await assertCstAuctionDurations(game_)).equal(CST_DUTCH_AUCTION_DURATION_MIN_LIMIT);
+
+			// A prompt paid CST bid doubles the current anchor without changing the next-round anchor.
+			const bidTimeStamp_ = (await getLatestBlockTimestamp()) + 1n;
+			const cstPrice_ = boundaryPrice_ - (bidTimeStamp_ - await game_.cstDutchAuctionBeginningTimeStamp()) * multiplier_;
+			expect(await contracts_.cosmicSignatureToken.balanceOf(bidder_.address)).at.least(cstPrice_);
+			await setNextBlockTimeToAtLeast(bidTimeStamp_);
+			const cstReceipt_ = await waitForTransactionReceipt(game_.connect(bidder_).bidWithCst(cstPrice_, "", 0n));
+			expect(findParsedEvent(cstReceipt_, game_, "BidPlaced").args.paidCstPrice).equal(cstPrice_);
+			expect(await game_.cstDutchAuctionBeginningBidPrice()).equal(cstPrice_ * 2n);
+			expect(await game_.nextRoundFirstCstDutchAuctionBeginningBidPrice()).equal(boundaryPrice_);
+			await bidWithEthAt(game_, bidder_, (await getLatestBlockTimestamp()) + 1n);
+			expect(await game_.cstBidPriceDeclineMultiplier()).equal(multiplier_);
+			expect(rejectedCandidate_ * CST_DUTCH_AUCTION_DURATION_MIN_LIMIT).greaterThan(boundaryPrice_);
+			expect(rejectedCandidate_ * CST_DUTCH_AUCTION_DURATION_MIN_LIMIT).lessThan(cstPrice_ * 2n);
+			const acceptedReceipt_ = await bidWithEthAt(game_, bidder_, (await getLatestBlockTimestamp()) + 1n);
+			expect(findParsedEvent(acceptedReceipt_, game_, "BidPlaced").args.cstBidPriceDeclineMultiplier).equal(rejectedCandidate_);
+			expect(await game_.cstBidPriceDeclineMultiplier()).equal(rejectedCandidate_);
+			previousRoundBeginningPrice_ = await game_.cstDutchAuctionBeginningBidPrice();
+			await finishGameRound(contracts_, game_);
+			expect(await game_.nextRoundFirstCstDutchAuctionBeginningBidPrice()).equal(boundaryPrice_);
+		}, 3, 3);
+	});
+
+	it("rejects a CST duration below three minutes despite rounded-up duration and retains the fixed price floor on repeated free bids", async function () {
+		await testAcrossGameVersions(async (contracts_, game_) => {
+			const ownerGame_ = game_.connect(contracts_.ownerSigner);
+			const bidder_ = contracts_.signers[1];
+			const changeDivisor_ = 100n;
+			const beginningPriceBeforeFirstCstBid_ = await game_.nextRoundFirstCstDutchAuctionBeginningBidPrice();
+			const initialMultiplier_ = beginningPriceBeforeFirstCstBid_ / (2n * CST_DUTCH_AUCTION_DURATION_MIN_LIMIT);
+			const multiplierAfterEthBid_ = tryIncreaseValueExponentially(initialMultiplier_, changeDivisor_);
+			const multiplierAfterCstBid_ = tryReduceValueExponentially(multiplierAfterEthBid_, changeDivisor_);
+			const rejectedCandidate_ = tryIncreaseValueExponentially(multiplierAfterCstBid_, changeDivisor_);
+			const minimumPrice_ = rejectedCandidate_ * CST_DUTCH_AUCTION_DURATION_MIN_LIMIT - 1n;
+			await waitForTransactionReceipt(ownerGame_.setCstBidPriceDeclineMultiplier(initialMultiplier_));
+			await waitForTransactionReceipt(ownerGame_.setCstBidPriceDeclineMultiplierChangeDivisor(changeDivisor_));
+			await waitForTransactionReceipt(ownerGame_.setCstDutchAuctionBeginningBidPriceMinLimit(minimumPrice_));
+			await activateCurrentRound(game_, contracts_.ownerSigner);
+			expect(multiplierAfterEthBid_ * CST_DUTCH_AUCTION_DURATION_MIN_LIMIT).lessThan(beginningPriceBeforeFirstCstBid_);
+			await bidWithEthAt(game_, bidder_, (await getLatestBlockTimestamp()) + 1n);
+			expect(await game_.cstBidPriceDeclineMultiplier()).equal(multiplierAfterEthBid_);
+			await setNextBlockTimeToAtLeast((await game_.cstDutchAuctionBeginningTimeStamp()) + (await assertCstAuctionDurations(game_)));
+			await waitForTransactionReceipt(game_.connect(bidder_).bidWithCst(0n, "", 0n));
+			expect(await game_.cstBidPriceDeclineMultiplier()).equal(multiplierAfterCstBid_);
+			expect(await game_.cstDutchAuctionBeginningBidPrice()).equal(minimumPrice_);
+			expect(getV3CstDutchAuctionDuration(minimumPrice_, rejectedCandidate_)).equal(CST_DUTCH_AUCTION_DURATION_MIN_LIMIT);
+			expect(rejectedCandidate_ * CST_DUTCH_AUCTION_DURATION_MIN_LIMIT).equal(minimumPrice_ + 1n);
+
+			const receipt_ = await bidWithEthAt(game_, bidder_, (await getLatestBlockTimestamp()) + 1n);
+			expect(findParsedEvent(receipt_, game_, "BidPlaced").args.cstBidPriceDeclineMultiplier).equal(multiplierAfterCstBid_);
+			expect(await game_.cstBidPriceDeclineMultiplier()).equal(multiplierAfterCstBid_);
+			let duration_ = await assertCstAuctionDurations(game_);
+			expect(duration_).greaterThan(CST_DUTCH_AUCTION_DURATION_MIN_LIMIT);
+
+			// The fixed price floor prevents consecutive free bids from keeping the duration pinned to three minutes.
+			for (let bidIndex_ = 0; bidIndex_ < 3; ++ bidIndex_) {
+				const multiplierBefore_ = await game_.cstBidPriceDeclineMultiplier();
+				await setNextBlockTimeToAtLeast((await game_.cstDutchAuctionBeginningTimeStamp()) + duration_);
+				await waitForTransactionReceipt(game_.connect(bidder_).bidWithCst(0n, "", 0n));
+				expect(await game_.cstBidPriceDeclineMultiplier()).equal(tryReduceValueExponentially(multiplierBefore_, changeDivisor_));
+				expect(await game_.cstDutchAuctionBeginningBidPrice()).equal(minimumPrice_);
+				const newDuration_ = await assertCstAuctionDurations(game_);
+				expect(newDuration_).greaterThan(duration_);
+				duration_ = newDuration_;
 			}
 			await finishGameRound(contracts_, game_);
 		}, 3, 3);
@@ -259,7 +400,7 @@ describe("CosmicSignatureGameV3-Bidding", function () {
 		await mineAtOrAfter((await getLatestBlockTimestamp()) + 10n * SECONDS_PER_DAY);
 		await waitForTransactionReceipt(game_.connect(bidder2_).bidWithCst(0n, "", 0n));
 
-		// The first CST bid rewards bidder1 and sets the next-round beginning price to the minimum.
+		// The first CST bid rewards bidder1 and sets the next-round beginning price to the greater floor.
 		// A paid second CST bid makes the current and next-round beginning prices different.
 		const paidCstPrice_ = await game_.getNextCstBidPriceAdvanced(1n);
 		expect(paidCstPrice_).greaterThan(0n);
@@ -293,7 +434,9 @@ describe("CosmicSignatureGameV3-Bidding", function () {
 		expect(auction_).include(await readCstAuctionState(game_));
 		expect(await assertCstAuctionDurations(game_)).equal(nextDuration_);
 		await bidWithEthAt(game_, bidder2_, (await getLatestBlockTimestamp()) + 10n);
-		expect(await game_.cstBidPriceDeclineMultiplier()).equal(tryIncreaseValueExponentially(auction_.declineMultiplier, auction_.changeDivisor));
+		expect(await game_.cstBidPriceDeclineMultiplier()).equal(
+		getV3CstBidPriceDeclineMultiplierAfterEthBid(auction_.nextRoundBeginningPrice, auction_.declineMultiplier, auction_.changeDivisor)
+	);
 		expect(await game_.nextRoundFirstCstDutchAuctionBeginningBidPrice()).equal(auction_.nextRoundBeginningPrice);
 		expect(await game_.cstDutchAuctionBeginningTimeStamp()).equal(await getLatestBlockTimestamp());
 		await assertCstAuctionDurations(game_);
@@ -816,8 +959,11 @@ describe("CosmicSignatureGameV3-Bidding", function () {
 				expectedStats_.totalSpentCstAmount += adjustedPrice_;
 				if (adjustedPrice_ > expectedStats_.maxCstBidPrice) expectedStats_.maxCstBidPrice = adjustedPrice_;
 				await assertRoundBidStats(game_, roundNum_, expectedStats_);
-				const minLimit_ = await game_.cstDutchAuctionBeginningBidPriceMinLimit();
-				const newBeginningPrice_ = (cstBidPriceBase_ * 2n > minLimit_) ? cstBidPriceBase_ * 2n : minLimit_;
+				const minLimit_ = maxBigInt(
+					await game_.cstDutchAuctionBeginningBidPriceMinLimit(),
+					(await game_.cstBidPriceDeclineMultiplier()) * CST_DUTCH_AUCTION_DURATION_MIN_LIMIT
+				);
+				const newBeginningPrice_ = maxBigInt(cstBidPriceBase_ * 2n, minLimit_);
 				expect(await game_.cstDutchAuctionBeginningBidPrice()).equal(newBeginningPrice_);
 				expect(await game_.getNextCstBidPrice()).equal(newBeginningPrice_);
 				if (bidIndex_ === 0) {

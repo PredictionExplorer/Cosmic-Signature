@@ -16,7 +16,7 @@ const {
 	assertDefaultV3Initialization,
 	findTimeStampWithAffordableCstBidPrice,
 	getV3BidCstRewardAmount,
-	tryIncreaseValueExponentially,
+	getV3CstBidPriceDeclineMultiplierAfterEthBid,
 	tryReduceValueExponentially,
 } = require("../src/V3UpgradeTestHelpers.js");
 const { getPriceAndBidWithEthAt, getPriceAndBidWithCstAt, findParsedEvents } = require("../src/BidCstRewardTestHelpers.js");
@@ -194,7 +194,8 @@ describe("CosmicSignatureGameV3-BidCstReward", function () {
 				[bidder1_, 400n],
 			]) {
 				const { receipt_ } = await getPriceAndBidWithEthAt(game_, bidder_, (await getLatestBlockTimestamp()) + elapsedDuration_);
-				expectedCstBidPriceDeclineMultiplier_ = tryIncreaseValueExponentially(
+				expectedCstBidPriceDeclineMultiplier_ = getV3CstBidPriceDeclineMultiplierAfterEthBid(
+					await game_.nextRoundFirstCstDutchAuctionBeginningBidPrice(),
 					expectedCstBidPriceDeclineMultiplier_,
 					cstBidPriceDeclineMultiplierChangeDivisor_
 				);

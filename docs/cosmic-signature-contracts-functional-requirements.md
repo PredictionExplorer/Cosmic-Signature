@@ -95,7 +95,7 @@ If an ETH bid is accompanied by a Random Walk NFT, the bid price becomes a half 
 
 Every **CST bid price** is formed using a Dutch auction. The first CST Dutch auction in a given round begins when a user places the first ETH bid.\
 The first beginning CST bid price of round zero equals a configurable beginning minimum. The first beginning CST bid price in a nonzero round equals the second beginning CST bid price in the previous round, or remains unchanged if that round had no CST bid. When someone places a CST bid, the new beginning price is calculated as 2x of the base price without any late-bid premium, but no lower than the aforementioned minimum. After each CST bid, the Dutch auction repeats.\
-The base CST bid price declines linearly and can reach zero. In V2-, CST Dutch auction duration over which the price declines down to zero is configurable, and in V2 it's automatically reduced on each ETH and increased on each CST bid to encourage the same number of ETH and CST bids. In V3+, the price declines a configurable amount per second, which is similarly changed on bids, but in the opposite directions.
+The base CST bid price declines linearly and can reach zero. In V2-, CST Dutch auction duration over which the price declines down to zero is configurable, and in V2 it's automatically reduced on each ETH and increased on each CST bid to encourage the same number of ETH and CST bids. In V3+, the price declines a configurable amount per second, which is similarly changed on bids, but in the opposite directions. After a CST bid, the new beginning price is also forced to be at least the decline rate times `CST_DUTCH_AUCTION_DURATION_MIN_LIMIT` (3 minutes), mitigating potentially possible bursts of free CST bids. An ETH bid increases the decline rate only if the resulting auction duration would remain at least that minimum. See Comment-202611053 for details.
 
 In V3+, if someone bids within a configurable duration before `mainPrizeTime`, a premium is added to the bid price.
 
@@ -270,7 +270,7 @@ According to Comment-202610044, a user also can force-send ETH to the Game contr
 
 - V2: reduce CST Dutch auction duration.
 
-- V3+: increase CST bid price decline per second, up to its cap (Comment-202610093).
+- V3+: increase CST bid price decline per second only if the resulting auction duration would remain at least `CST_DUTCH_AUCTION_DURATION_MIN_LIMIT` (Comment-202611053).
 
 - If the user sent us more ETH than required: transfer the excess back to them. But don't do it if the refund amount is less than or equal than what it would cost to transfer it.
 

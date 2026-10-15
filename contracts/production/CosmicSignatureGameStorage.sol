@@ -247,12 +247,16 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// We don't let this fall below `cstDutchAuctionBeginningBidPriceMinLimit`,
 	/// which relieves us from the annoyance of possible marginal cases, such as a bidding round lasting forever.
 	/// [/Comment-202411066]
+	/// In V3+, Comment-202611053 relates and/or applies.
 	/// [Comment-202605197]
 	/// This variable becomes valid when someone places a CST bid in the current bidding round.
 	/// [/Comment-202605197]
 	/// @dev
 	/// [Comment-202605199]
-	/// This value is based on an actual price someone pays, therefore Comment-202412033 applies.
+	/// This value is based on an actually paid CST base price or the applicable price floors.
+	/// The arithmetic involving it cannot overflow.
+	/// In V3+, Comment-202611052 relates.
+	/// Comment-202412033 relates.
 	/// [/Comment-202605199]
 	uint256 public cstDutchAuctionBeginningBidPrice;
 
