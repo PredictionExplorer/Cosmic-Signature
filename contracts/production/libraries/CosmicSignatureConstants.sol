@@ -109,7 +109,8 @@ library CosmicSignatureConstants {
 	/// that becomes too low or zero in a second or two, allowing many low or free CST bids short one after another
 	/// before the reductions of `cstBidPriceDeclineMultiplier` lengthen the auction enough. To clarify,
 	/// when CST Dutch auction duration is too short and there are few bidders, the bidders will likely be unable
-	/// to place bids fast enough before bid price becomes too low.
+	/// to place bids fast enough before bid price becomes too low, so a longer minimum allowed CST Dutch auction duration
+	/// gives them more time.
 	/// On a CST bid, the next CST Dutch auction beginning bid price is at least `cstBidPriceDeclineMultiplier` times this duration.
 	/// ETH bids skip `cstBidPriceDeclineMultiplier` increases that would make CST Dutch auction duration under this limit.
 	/// The first CST Dutch auction of a round can still be shorter because `nextRoundFirstCstDutchAuctionBeginningBidPrice` floor
