@@ -19,14 +19,15 @@ library CosmicSignatureHelpers {
 	/// @notice
 	/// [Comment-202606059]
 	/// Given a variable `var` and a divisor `div`. Both are treated as unsigned integers.
-	/// Assuming `div > 0 && var >= div`.
+	/// Assuming `div > 0` and no arithmetic overflow.
 	/// `var` increase formula: `var += var / div`
 	/// `var` reduction formula: `var = (var + 1) * div / (div + 1)`
-	/// The formulas are lossless, meaning an increases + a reduction or a reduction + an increase will produce the original value.
-	/// The reduction formula can reach the minimum of `var == div`.
+	/// An increase followed by a reduction with the same divisor restores the original value.
+	/// The reverse order is not always lossless because of integer rounding:
+	/// with `var == 201` and `div == 100`, reduction gives 200 and the following increase gives 202.
+	/// Starting at `var >= div`, repeated reductions can reach the minimum of `var == div`.
 	/// If `var <= div`, the reduction formula will not change `var`.
 	/// If `var < div`, the increase formula will not change `var`.
-	/// In other words, the losslessness breaks at that point.
 	/// Obviously, the formulas can overflow. The reduction formula is more susceptible to overflow.
 	/// [/Comment-202606059]
 	function tryIncreaseValueExponentially(uint256 var_, uint256 div_) internal pure returns (uint256) {

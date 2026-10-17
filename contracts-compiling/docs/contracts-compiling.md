@@ -1,24 +1,22 @@
 ### Compiling Cosmic Signature Contracts
 
-As a matter of fact, you should never need to explicitly compile the contracts. Tasks and scripts in this project will automatically compile changed source code as needed. But if you suspect that for some reason the auto-compile doesn't work well, you can delete compiled artifacts by executing `../runners/clean.bash` and then run other tasks and scripts. In this case it's pretty much guaranteed that the autocompile will do a good job, and if somehow it does not, you will see errors.
+The Hardhat test command and the deployment and upgrade tasks compile changed sources as needed. Explicit compilation is useful for inspecting a build without deploying or testing. Use `--force` when a fresh compiler run is required, including SMTChecker runs (Comment-202409012).
 
-With that note out of the way, here are a few words about explicitly compiling the contarcts.
+Run the commands below from the repository root unless a different working directory is shown. The Bash wrappers assume their own directory is the working directory and use Linux paths such as `/usr/bin/bash` and `/usr/bin/clear`.
 
 #### Prerequisites
 
 1. Clone the GitHub repo if you haven't already.
    ```bash
    git clone https://github.com/PredictionExplorer/Cosmic-Signature.git
+   cd Cosmic-Signature
    ```
 
 2. Install Node.js dependencies.
    ```bash
    npm ci
    ```
-   or
-   ```bash
-   npm install
-   ```
+   `npm ci` uses the committed lockfile. The project uses Hardhat 2 and Ethers 6.
 
 3. Install the Solidity Compiler.\
    This Hardhat project uses the binary solc compiler (not solc-js) 0.8.34.\
@@ -31,6 +29,8 @@ With that note out of the way, here are a few words about explicitly compiling t
 
    For more info on solc setup, see Comment-202409011.
 
+   `hardhat.config.js` first looks for `~/.solc-select/artifacts/solc-0.8.34/solc-0.8.34`, then `~/.local/bin/solc`. Verify that the selected native executable reports `0.8.34+commit.80d5c536`; the configuration does not validate the executable's actual version. A compiler installed elsewhere is not selected merely because it is on `PATH`.
+
 #### Environment Variables
 
 We recommend that prior to initializing Hardhat the `HARDHAT_MODE_CODE` environment variable was set. Our scripts already do it, so you rarely if ever need to. See Comment-202510221 for details.
@@ -39,8 +39,13 @@ Other environment variables are listed further.
 
 #### Compilation Commands
 
-1. **Basic compilation**.\
-   Execute one of the compile scripts under the `../runners` folder.
+1. **Production compilation**.
+
+   ```bash
+   HARDHAT_MODE_CODE=1 ENABLE_HARDHAT_PREPROCESSOR=false npx hardhat compile
+   ```
+
+   Add `--force` for a full rebuild. The equivalent wrappers are `compile.bash` and `compile-force.bash` under `contracts-compiling/runners/`; run them from that directory. `clean.bash` clears the project's configured build variants and Hardhat's global cache, so it is a broader cleanup than a force compile.
 
 2. **Compilation with parameters**.\
    Following are optional environment variables that affect the compilation:\
@@ -49,11 +54,22 @@ Other environment variables are listed further.
    `ENABLE_SMTCHECKER`.\
    They are documented in comments in `${workspaceFolder}/src/Helpers.js`.\
    The variables (or lack thereof) affect the compiler output folders. Relevant logic is located near Comment-202503272 and Comment-202503302.\
-   To compile with SMTChecker, execute `${workspaceFolder}/smtchecker/compile-1.bash`. (Be sure to review a manual file in the same folder.)\
-   To compile (and immediately run tests) with other sensible combinations of the variables, execute `${workspaceFolder}/test/runners/test.bash`.
+   `ENABLE_SMTCHECKER=1` changes preprocessing but does not run the solver; `2` also enables the solver. Both require `ENABLE_HARDHAT_PREPROCESSOR=true`. To run SMTChecker, change to `smtchecker/` and run `python3 compile-1.py`; review `compile-1-manual.txt` first. The current model-checker contract list selects only `CharityWallet`, not V3 or every production contract.\
+   To exercise the four test build variants with the quick profile, run `npm run hardhat-test-quick` from the repository root. The medium and full profiles are `npm run hardhat-test-medium` and `npm run hardhat-test-full`; they are longer runs, not prerequisites for compiling.
+
+   On systems without `/usr/bin/bash` (including a default macOS installation), invoke the shared runner through the installed Bash instead:
+
+   ```bash
+   cd test/runners
+   TERM=dumb LONG_TEST_MODE_CODE=1 bash test.bash -b
+   ```
+
+   This selects the same quick profile and four build variants as the npm quick command. `-b` makes failure reporting noninteractive.
 
 #### Notes
 
 - Contract artifacts, including ABIs, are written under `${workspaceFolder}/artifacts` in configuration-dependent subfolders (Comment-202503272).
 
 - The Solidity compiler is configured in `${workspaceFolder}/hardhat.config.js`, in the `hardhatUserConfig.solidity` object.
+
+- The current settings are `viaIR: true`, optimizer enabled with 400 runs, and EVM target `osaka`. Production artifacts are in `artifacts/production`; preprocessed artifacts are in the corresponding `artifacts/debug-*` directory. Keep the compiler, settings, dependencies, source revision, and preprocessing flags with any release or verification result.

@@ -41,7 +41,8 @@ abstract contract CosmicSignatureGameStorageV3Base is
 	uint256 public cstBidPriceDeclineMultiplierChangeDivisor;
 
 	/// @notice This controls the duration before `mainPrizeTime` during which a bid price is to be increased.
-	/// The increase/premium accelerates exponentially as the current time approaches `mainPrizeTime`.
+	/// The premium follows a power curve as the current time approaches `mainPrizeTime`,
+	/// using `roundLateBidPricePremiumAmountExponent`, and is capped at its deadline value afterwards.
 	/// Comment-202501025 applies.
 	/// Comment-202508288 relates.
 	/// Comment-202411064 applies.

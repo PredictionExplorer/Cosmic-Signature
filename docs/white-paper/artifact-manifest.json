@@ -1,0 +1,11 @@
+{
+  "paperVersion": "1.3",
+  "language": "en",
+  "canonicalSource": "cosmic-signature-white-paper-v1.3.md",
+  "pdf": "cosmic-signature-white-paper-v1.3.pdf",
+  "sourceSha256": "a6d82c09e6595a9f5cdbe8b0c7f814a4ed03f725fb311d32f942d2fd7173ab81",
+  "pdfSha256": "9cea05345283887e0cab9b27215c595e57e876d33a86ad15687d58cbb0934205",
+  "buildScriptSha256": "0a6f578327002f76fa26209c67db1b66ca3089c60c83066699c41bc2625bb593",
+  "pandoc": "pandoc 3.9.0.2",
+  "tectonic": "Tectonic 0.16.9"
+}

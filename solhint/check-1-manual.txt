@@ -1,5 +1,13 @@
     How to execute SolHint.
 
+Run the wrapper from the solhint directory. It uses Linux utilities, including gio trash.
+Alternatively, from the repository root run:
+
+   HARDHAT_MODE_CODE=1 ENABLE_HARDHAT_PREPROCESSOR=false npx hardhat check
+
+This checks lint rules, not runtime correctness or formal verification. Preserve the full
+report before filtering display output so suppressed warnings remain available for review.
+
 @ If necessary, edit `../.solhint.json`.
 
 @ Execute `./check-1.bash`.

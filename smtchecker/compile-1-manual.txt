@@ -1,5 +1,16 @@
     How to execute SMTChecker.
 
+Run from the smtchecker directory: python3 compile-1.py (or ./compile-1.bash on systems with /usr/bin/bash).
+The Python runner changes to the repository root, sets HARDHAT_MODE_CODE=1,
+ENABLE_HARDHAT_PREPROCESSOR=true, ENABLE_ASSERTS=true, ENABLE_SMTCHECKER=2,
+then force-compiles. Logs go to smtchecker/compile-1-output/<timestamp>.txt.
+Install the native Solidity 0.8.34 compiler as described in contracts-compiling/docs/contracts-compiling.md.
+The current hardhat.config.js modelChecker.contracts list selects only CharityWallet.
+The configuration also uses trusted external calls and a per-query timeout of 24 hours.
+A successful compile is not a statement that every target was proved: inspect unproved targets,
+unsupported features, solver results, and assumptions. The test suite's ENABLE_SMTCHECKER=1
+variant only preprocesses solver-friendly code and does not run SMTChecker.
+
 @ Review https://github.com/PredictionExplorer/hardhat-preprocessor-integration-prototype/blob/main/contracts/Lock.sol
   for what you can possibly do in the code. Although that prototype goes beyond what makes sense to do in production code,
   and it's not necessarily OK to deploy as is, without preprocessing.

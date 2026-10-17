@@ -6,6 +6,8 @@ There is commented code that deploys and registers a new `PrizesWallet`. The rel
 
 The old `PrizesWallet` will remain live afterwards. Prize winners will still be able to withdraw their prizes from it.
 
+`PrizesWallet` is not upgraded through the Game's UUPS proxy. This procedure deploys a separate wallet and changes the Game's pointer while the round is inactive. It does not migrate old balances, donations, or retrieval deadlines. The commented blocks remain disabled in the standard V3 upgrade task, so a Game upgrade alone keeps the existing wallet.
+
 #### How to Upgrade `PrizesWallet`
 
 - Uncomment the blocks of code near Comment-202607153 and Comment-202607156.
@@ -27,6 +29,8 @@ The old `PrizesWallet` will remain live afterwards. Prize winners will still be 
 - Update `PrizesWallet` address.
 
 - It could make sense for the web site to keep showing and/or using both the old and the new `PrizesWallet`s until people withdraw their assets from the old one.
+
+  Preserve the association between historical rounds and their wallet address in indexers and retrieval interfaces. The new wallet's getters do not contain the old wallet's records. The local `PrizesWallet-Replacement` test suite checks retrieval from the old wallet after the Game moves to a replacement.
 
 #### Notes
 

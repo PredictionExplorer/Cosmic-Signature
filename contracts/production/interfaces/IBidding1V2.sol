@@ -16,7 +16,7 @@ interface IBidding1V2 {
 
 	/// @notice Comment-202605253 applies.
 	/// Comment-202503147 applies.
-	/// See also: `ICosmicSignatureGameV2.fallback`, `IEthDonations.donateEth`.
+	/// See also: `IEthDonations.donateEth`. The Game has no fallback function.
 	/// @dev Comment-202609158 applies.
 	receive() external payable;
 

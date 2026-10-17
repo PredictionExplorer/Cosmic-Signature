@@ -8,9 +8,15 @@ The old version of this document is named `live-blockchain-tests-old.md`. I reco
 
 This test allows to smoke-test the newly deployed Cosmic Signature contracts and their integration with the `RandomWalkNFT` contract that was deployed in the past. You will have to later abandon the newly deployed contracts and deploy them again to be used in the production.
 
-These live tests currently use V1 bidding interfaces; they do not exercise V2+.
+These live tests currently use V1 bidding interfaces and V1 configuration methods; they do not exercise V2+, the V3 initializer, or the deployed V2-to-V3 storage transition. Use the local V3 suites and the [upgrade guide](../../tasks/docs/Cosmic-Signature-Game-Contract-Upgrade-And-Re-Registration.md) for those checks. The local node started by this workflow is not a mainnet fork.
 
-The following blockchains are supported: Hardhat Network (a local blockchain), Arbitrum Sepolia (a testnet), Arbitrum One (a mainnet).
+The configuration can select Hardhat Network on localhost, Arbitrum Sepolia, or Arbitrum One. The checked-in runner enables preprocessing and assertions, so it is suitable for the local/testnet workflow; the Hardhat configuration rejects that build on a mainnet. For a separately planned mainnet smoke test of disposable V1 contracts, select that network in the configuration and invoke the JavaScript entry point from `live-blockchain-testing/runners/` with preprocessing explicitly disabled:
+
+```bash
+HARDHAT_MODE_CODE=2 ENABLE_HARDHAT_PREPROCESSOR=false node ../src/live-blockchain-tests.js
+```
+
+This sends real transactions. It is not the procedure for testing the existing production V2 proxy or deploying V3.
 
 All scripts assume that they are executed from the folder they are located in. So you must `cd` to the script's folder and execute the script like `./my-script.bash`.
 
@@ -22,7 +28,7 @@ All scripts assume that they are executed from the folder they are located in. S
 
 - In `cosmicSignatureContractsDeployment.randomWalkNftAddress`, you have an option to provide an already deployed `RandomWalkNFT` contract address.
 
-- In `cosmicSignatureGamePlaying.randomWalkNftIds`, you have an option to provide a few Random Walk NFTs that you own.
+- In `cosmicSignatureGamePlaying.randomWalkNftIds`, you have an option to provide Random Walk NFTs already held by the generated test signers: the first by bidder2, the second by bidder3, alternating thereafter. The test does not transfer them from your personal account. When the list is exhausted, the test mints more NFTs.
 
 #### Create Hardhat Configuration Variables
 
@@ -31,28 +37,30 @@ All scripts assume that they are executed from the folder they are located in. S
 This will be used to generate private keys of a few accounts.\
 See Comment-202508313 for more info.
 
-#### Try Running The Test (it will fail)
+#### First Run And Account Funding
 
 - If you are to run the test on Hardhat Network, in another terminal, launch `${workspaceFolder}/scripts/hardhat-node.bash`.
 
-- Execute `../runners/live-blockchain-tests.bash`.\
-It will quickly fail because the owner account has no ETH, but before failing it will log important info, including the owner account private key and address.
+- From `live-blockchain-testing/runners/`, execute `./live-blockchain-tests.bash`.\
+With a fresh, unfunded seed it fails when a funded transaction is needed, but first logs the seed and generated private keys and addresses. Keep this output private. An already funded account or an existing deployment report changes this behavior; the script is not a dry run.
 
 - Internally, the test uses a few accounts. Their private keys are generated based on the `accountPrivateKeySeed` Hardhat configuration variable that you have created. One of them is nicknamed "owner". That's the one you need to transfer some ETH to.\
 There is a script named `../runners/fund-default-owner-account-with-eth.bash`. It transfers some ETH within the Hardhat Network running on localhost. Destination is the owner account whose private key seed exists in the Git repo (insecure). You can copy and modify the script to transfer ETH to your secure owner. But on a public blockchain you will need to manually transfer ETH to the owner account.
 
 #### Run The Test
 
-- Execute `../runners/live-blockchain-tests.bash`.\
-It will run for about a minute.
+- From `live-blockchain-testing/runners/`, execute `./live-blockchain-tests.bash`.\
+Runtime depends on compilation, network mining, configured round timings, and the number of rounds; there is no fixed one-minute completion guarantee.
 
 - The test saves deployed contract addresses to the `../output/deploy-cosmic-signature-contracts-report-<network-name>-<cosmic-signature-game-contract-name>.json` file. If something goes wrong you might need to use some of those addresses to get your assets back.
+
+- An existing report causes the deployment step to be skipped and its addresses to be reused without checking that their bytecode still matches the source. The sibling generated deployment-configuration JSON contains the test owner's private key. Keep that file, the seed, and logs out of public reports and commits.
 
 #### Get Your Assets Back
 
 - Besides the owner, there are a few more involved accounts. The test logs their private keys and addresses. You can use that info to get the assets they hold.
 
-- If everything worked as designed, you will need to get back ETH from each of the involved accounts. In addition, if you used your production Random Walk NFTs, transfer them from bidder2 back to yourself.
+- If everything worked as designed, retrieve ETH and any tokens or NFTs from each involved account. Donated Random Walk NFTs are retrieved by the main-prize recipient (bidder2 in this scenario); inspect bidder3 as well if a test stopped before donating its NFT.
 
 - If not everything worked as designed, you might need to start with withdrawing ETH and donated NFTs from `PrizesWallet` and ETH from the Game contract. The test logs what was deposited to `PrizesWallet` and the Game contract ETH balance. By default, the test is configured to deploy `SelfDestructibleCosmicSignatureGame`. Call `finalizeTesting` on it to get your ETH back.\
 Comment-202509304 relates and/or applies.

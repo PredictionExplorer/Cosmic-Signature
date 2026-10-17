@@ -1,5 +1,7 @@
 # Certora Formal Verification Best Practices
 
+> **Historical design notes and pseudocode.** The examples and project-specific proposals below are not a current executable specification or a statement of implemented guarantees. Names such as `highestBid`, `currentRoundId`, `prizesDue`, and `emergencyStop` do not describe the current V3 API. In particular, prices can decline during calibration, ERC-20 allowances need not be bounded by balances, NFT anchoring does not create a separate CST staking balance, and block-derived randomness is not an independently unpredictable oracle. Do not turn those examples into claims about the protocol. For the actual verification status and obsolete compiler configuration, see [README.md](README.md). The historical external-project examples and links are background references, not evidence of Cosmic Signature's coverage.
+
 ## Overview
 This guide distills industry experience and Certora recommendations into a concise play‑book for writing **CVL** specifications that *prove* the correctness of complex Ethereum contracts. It is intended for engineers and LLM agents who already know the basics of Certora's Verification Language.
 

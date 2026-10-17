@@ -12,7 +12,7 @@ The same blockchains are supported.
 
 - Switch to the Git branch you used when deploying or upgrading to the previous version of the contract and copy `../output/` and `../runners/.openzeppelin/` to a folder outside the Git repo.
 
-- Switch back to the `main` branch.
+- Switch to the reviewed source revision selected for the next upgrade, and create the deployment branch from that revision. Do not assume the default branch is the intended V3 candidate.
 
 #### Before You Make Any Changes in the Project
 
@@ -25,7 +25,7 @@ The upgrade task reads the proxy address from the deployment report, and OpenZep
 
 #### Validate the Deployed and to be Deployed Contracts
 
-- Review, possibly edit, and then execute `${workspaceFolder}/slither/slither-check-upgradeability-*.bash`. In fact, it's a lousy tool that will likely report errors. See a document in the same folder.
+- Review the applicable Slither upgradeability script and run it from `slither/`. Its findings need interpretation, especially for renamed variables and reserved gaps; see [its manual](../../slither/slither-check-upgradeability-manual.md). This source comparison supplements OpenZeppelin validation and does not establish compatibility with deployed storage by itself.
 
 #### Create API Keys
 
@@ -50,7 +50,16 @@ The production config files and scripts contain the words `arbitrumOne` and `Cos
 
 #### When Testing
 
-- `CosmicSignatureGameV2` requires that `CosmicSignatureGame` was deployed first and at least 1 bidding round has already completed. So, when testing things, before upgrading, you must place a bid and claim the main prize.
+- The intended sequence is initialized V1, a completed first round, initialized V2, then V3. The round-number and preceding-version checks in `reinitialize` are assertions compiled only into assert-enabled builds. They are not production guards. Follow that sequence when preparing local fixtures; do not infer that a production revert prevents an incorrectly sequenced upgrade.
+
+#### V2-to-V3 Release Checks
+
+- Pin the V3 source commit and the deployed V2 proxy, implementation, chain ID, and observation block. Local V2 source has been refactored since deployment; comparing only two current source files is insufficient.
+- Keep `newInitializerMethodName` set to `reinitialize`. The task passes it as `upgradeProxy`'s `call`, so the upgrade and initialization occur atomically. `reinitialize` is external without `onlyOwner`; omitting that atomic call leaves its one-time invocation available to another caller.
+- The committed V3 configurations set both `unsafeAllowRenames` and `unsafeSkipStorageCheck` to `false`. Retain storage validation. The historical V1-to-V2 exception described below is not an instruction to bypass validation for V3.
+- Review the assignments in `CosmicSignatureGameV3.reinitialize`: it overwrites the CST beginning-price floor, the reward multiplier, and five ETH allocation percentages as well as initializing the six new V3 storage values. Other existing configuration is carried forward; current source defaults do not describe every live value.
+- Run `npm run hardhat-test-quick` from the repository root. In particular, review the `CosmicSignatureGameV3-DeployedV2StorageLayout`, `CosmicSignatureGameV3-StorageLayout`, and `CosmicSignatureGame-All-Versions-Upgrade` suites. The first uses a committed deployed-V2 layout, not a live fork; the second upgrades local fixtures. No mainnet-fork rehearsal is configured by these scripts.
+- Before submitting the real upgrade, separately rehearse the intended transaction against a pinned Arbitrum fork with the actual proxy state and owner. The ordinary localhost runner starts an empty local chain and does not perform this rehearsal automatically.
 
 #### Run Scripts
 
@@ -66,7 +75,7 @@ The production config files and scripts contain the words `arbitrumOne` and `Cos
 
 - See respective section in `Cosmic-Signature-Contracts-Deployment-And-Registration.md`.
 
-- The upgrade transaction will revert unless the current bidding round is inactive. To increase the inactivity duration, while the current bidding round is active, increase `delayDurationBeforeRoundActivation`, and while no bid has been placed in the current bidding round yet, increase `roundActivationTime` by calling respective setters.
+- The upgrade is owner-authorized and requires the current bidding round to be inactive (`block.timestamp < roundActivationTime`). To increase the inactivity duration, while the current bidding round is active, increase `delayDurationBeforeRoundActivation`, and while no bid has been placed in the current bidding round yet, increase `roundActivationTime` by calling respective setters. Confirm the transaction receipt, implementation slot, and initialized values after submission; an implementation address in a report alone does not establish every postcondition.
 
 - The contract upgrade configuration supports the `unsafeAllowRenames` and `unsafeSkipStorageCheck` params. But avoid setting any of them to `true`.
 

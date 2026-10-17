@@ -7,7 +7,13 @@ https://github.com/crytic/slither/wiki/Upgradeability-Checks
 - Make sure Slither works.\
 See its manual in another document.
 
-- Execute the `slither-check-upgradeability-*.bash` scripts.
+- From `slither/`, execute the appropriate `slither-check-upgradeability-*.bash` script. The V3 wrapper compares `CosmicSignatureGameV2` with `CosmicSignatureGameV3`, both compiled from the current source. It does not read the deployed proxy or its historical compiler layout.
+
+  An equivalent command from the repository root, using the tools on `PATH`, is:
+
+  ```bash
+  HARDHAT_MODE_CODE=1 ENABLE_HARDHAT_PREPROCESSOR=false slither-check-upgradeability . --hardhat-artifacts-directory artifacts/production CosmicSignatureGameV2 --new-contract-name CosmicSignatureGameV3
+  ```
 
 - Review the script output in the terminal.
 
@@ -17,7 +23,7 @@ See its manual in another document.
 
 ### Notes
 
-- This utility appears to be less capable than the OpenZeppelin's upgradeable contract validation logic executed by `HardhatRuntimeEnvironment.upgrades.upgradeProxy`.
+- Keep OpenZeppelin storage validation enabled in the upgrade task. Slither's source comparison is supplementary; it does not replace that validation or the deployed-V2-layout regression suite. See [the upgrade guide](../tasks/docs/Cosmic-Signature-Game-Contract-Upgrade-And-Re-Registration.md).
 
 - Any storage variable renames will be reported as errors. This utility does not support any annotations similar to `@custom:oz-renamed-from`.\
   ToDo-202607169-1 relates.

@@ -56,6 +56,7 @@ library CosmicSignatureErrors {
 	error InsufficientReceivedBidAmount(/* string errStr, */ uint256 bidPrice, uint256 receivedAmount);
 
 	/// @notice Thrown when the actual CST reward amount for placing a bid is below the bidder's specified minimum.
+	/// In V3 this reward is for the previous bidder, not the caller; the first bid skips this check.
 	/// @param bidCstRewardAmount The CST reward amount that would have been minted.
 	/// @param bidCstRewardAmountMinLimit The minimum CST reward amount the bidder required.
 	error BidCstRewardAmountMinLimitNotReached(/* string errStr, */ uint256 bidCstRewardAmount, uint256 bidCstRewardAmountMinLimit);

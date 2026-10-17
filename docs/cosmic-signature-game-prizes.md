@@ -4,6 +4,21 @@
 
 This document lists all prizes awarded by our game.
 
+V3 describes the upcoming implementation in this branch. A Game upgrade preserves the separately deployed token, NFT, and wallets unless they are explicitly replaced. The [white paper](white-paper/cosmic-signature-white-paper-v1.3.md) records the reviewed source and deployed V2 baseline. Values below are defaults or formulas over contract settings, not promises that settings never change.
+
+#### Default ETH Split and Mint Totals
+
+| Allocation | V2 default | V3 reinitialization value |
+|------------|------------|--------------------------|
+| Main prize | 25% | 20% |
+| Chrono-Warrior | 8% | 15% |
+| Bidder ETH raffle | 4% | 5% |
+| Cosmic Signature NFT staking | 6% | 5% |
+| Charity address | 7% | 5% |
+| Retained balance before rounding or skipped transfers | 50% | 50% |
+
+`CosmicSignatureGameV3.reinitialize` sets the V3 percentages and the main prize NFT count to 3. Other retained settings, including the raffle counts, CST recognition amount, and marketing amount, remain their configured values. With the standard 10 bidder NFT selections, 10 Random Walk staking selections, and at least one CST bid, V3 mints 26 NFTs and 27,000 fixed CST. The main recipient receives 3 NFTs but only one 1,000 CST recognition allocation. A round without CST bids omits 1 NFT and 1,000 CST; a round without staked Random Walk NFTs omits 10 NFTs and 10,000 CST at those standard settings. Time-dependent bid CST rewards are additional.
+
 #### Prize Types
 
 - ETH.
@@ -28,7 +43,7 @@ This document lists all prizes awarded by our game.
 
 - ETH donations made to the `CosmicSignatureGame` contract. They will be shared by all winners in the current and future bidding rounds.
 
-- Third party ERC-20 token amount and ERC-721 NFT donations that accompany bids. They will be claimable by the current bidding round main prize winner.
+- Third party ERC-20 token amount and ERC-721 NFT donations that accompany bids. The registered main prize claimant has priority to retrieve them after finalization, until the `PrizesWallet` timeout opens retrieval to anyone.
 
 ---
 
@@ -46,6 +61,8 @@ In V2-, every bid has equal weight in bidder raffles. In V3+, a bid's weight is 
 The late-bid premium increases payment only. It does not increase raffle weight, the next ETH price, or the CST auction beginning price carried into the next round.
 
 Each `BidInfo.raffleCumulativeWeight`, available through `getBidInfoAt`, is the sum of that bid's weight and all preceding bid weights in the round. A raffle draw selects a random weight unit and binary-searches these cumulative values. A bidder's total weight is the sum of their bids' weights.
+
+Selections are with replacement: a bid or address can receive multiple allocations. The separate Random Walk staking selection samples currently staked NFTs with replacement, rather than using bidder weights. These are block-derived selections, not oracle-certified randomness.
 
 #### Variables
 
@@ -105,7 +122,7 @@ Each `BidInfo.raffleCumulativeWeight`, available through `getBidInfoAt`, is the 
 	- CS NFT Stakers (not guaranteed to exist)
 
 - CST
-	- All CS NFT Winners (see below)
+	- Each recipient role or selection below receives one `cstPrizeAmount`, including the main recipient who receives multiple NFTs in V3+
 	- `MarketingWallet`
 
 - CS NFT
@@ -121,3 +138,13 @@ Each `BidInfo.raffleCumulativeWeight`, available through `getBidInfoAt`, is the 
 - Prize Count likely equals the number of winners, each getting 1 prize of the given type. But if Prize Count is greater than 1, a winner can get multiple prizes of the given type, which would reduce the number of winners.
 
 - In a division result, any fractional part is truncated. Therefore, for example, 299 / 100 equals 2.
+
+- Amounts are calculated before the distribution transfers. Dividing the bidder ETH allocation into equal shares leaves its rounding remainder in the Game. Dividing the Cosmic Signature staking deposit leaves its rounding remainder in that staking wallet.
+
+- If no Cosmic Signature NFTs are staked, the staking deposit's division-by-zero panic is caught and that allocation stays in the Game. A failed transfer to the configured charity address also leaves its allocation in the Game and emits a failure event. Other transfer or mint failures can revert finalization, including a main recipient that rejects its direct ETH payment.
+
+- Sending ETH to `CharityWallet` does not immediately send it to its ultimate beneficiary. Anybody can later call `send`; the wallet owner selects the beneficiary. `MarketingWallet` payments require its treasurer, who is appointed by its owner. These roles belong to the DAO only if the relevant ownership has been transferred to it.
+
+- `PrizesWallet` records the round's main claimant and an absolute retrieval deadline at finalization, using its then-current timeout duration (5 weeks by default). After that deadline, another caller can retrieve an unclaimed allocation for themselves. ERC-721 donations are held by the wallet; ERC-20 donations are held in a separate `DonatedTokenHolder` per round and retrieved through the wallet. Changing the timeout duration does not alter already recorded deadlines.
+
+- Cosmic Signature staking ETH is paid when the original staker unstakes, without the escrow retrieval timeout. If the payout fails, the unstake reverts. Once no NFTs remain staked, the owner can send residual ETH from that staking wallet to a chosen address.

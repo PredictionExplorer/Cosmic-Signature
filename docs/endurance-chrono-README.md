@@ -52,13 +52,13 @@ When a bid is placed, before it becomes the last bid, the contract evaluates the
 
 3. In V3+, the final durations are saved to `roundStats(roundNum).enduranceChampionDuration` and `roundStats(roundNum).chronoWarriorDuration`. If step 2 changed the Chrono-Warrior, the same bid has earned both titles, and the `1 << 2` bit (`SAME_BID_EARNED_ENDURANCE_CHAMPION_AND_CHRONO_WARRIOR_TITLES`) is set in `roundStats(roundNum).flags`. Only step 2 can award both titles to the same bid, because every earlier Chrono-Warrior was an Endurance Champion bid that was subsequently replaced.
 
-Because the final bid's last bid duration and the final Endurance Champion's Chrono-Warrior duration both end at the claim time, the time of the claim transaction can affect who gets the titles.
+Because the final bid's last bid duration and the final Endurance Champion's Chrono-Warrior duration both end at the claim time, the time of the claim transaction can affect who gets the titles. These durations are not capped at `mainPrizeTime`. Bidding also remains possible after that deadline until a main prize claim succeeds; a later bid changes the last bidder and extends the deadline under the applicable version's rules.
 
 The `EnduranceChampionPrizePaid` and `ChronoWarriorPrizePaid` events report the winners.
 
 #### Example
 
-Times are in seconds. Alice places 2 bids, which are evaluated separately.
+Times are in seconds. Alice places 2 bids, which are evaluated separately. This example assumes a timing configuration under which Alice can claim at time 1900; it illustrates title calculations, not the deployed round schedule.
 
 | Time | Event | Evaluation | Endurance Champion After | Chrono-Warrior After |
 |------|-------|------------|--------------------------|----------------------|
@@ -88,5 +88,7 @@ The real-time standings can change at any second, even when nobody bids. For exa
 #### Notes
 
 - Between bidding rounds, use `roundStats` (V3+) or the prize events to find out past results. On a main prize claim, some champion state variables are reset for the next round, while others remain stale until updated during the next round.
+
+- Equal winner addresses do not establish that the same bid earned both titles. In V3+, use the same-bid flag for that distinction. Pre-V3 `roundStats` entries preserve the bid count and bidder addresses, but their champion-duration fields and flags are zero; reconstruct those historical results from events and bid timestamps.
 
 - See relevant tests near Comment-202610172.

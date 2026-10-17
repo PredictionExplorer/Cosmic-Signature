@@ -8,7 +8,9 @@ The following blockchains are supported: Hardhat Network (a local blockchain), A
 
 All scripts assume that they are executed from the folder they are located in. So you must `cd` to the script's folder and execute the script like `./my-script.bash`.
 
-Start with testing on Hardhat Network. You can start it by executing `${workspaceFolder}/scripts/hardhat-node.bash`.
+Start with testing on Hardhat Network. From the repository root, `HARDHAT_MODE_CODE=2 npx hardhat node` starts the local node. Alternatively, change to `scripts/` and run `./hardhat-node.bash`. The wrappers use Linux executable paths; the direct Hardhat command avoids that platform assumption.
+
+This is the fresh-deployment procedure. The committed deployment configurations select `CosmicSignatureGame` (V1); upgrading an existing V2 proxy to V3 uses the [upgrade procedure](Cosmic-Signature-Game-Contract-Upgrade-And-Re-Registration.md), not a fresh deployment of the entire system. Install dependencies and the native compiler as described in [the compilation guide](../../contracts-compiling/docs/contracts-compiling.md).
 
 #### Before You Make Any Changes in the Project
 
@@ -36,6 +38,8 @@ Set `randomWalkNftAddress` to where the contract has been deployed. If you leave
 Set `charityAddress` to your charity address. Or leave it empty or zero and later set it by making a call to `CharityWallet`.\
 You probably don't need to change any other arguments.
 
+  Review `transferContractOwnershipToCosmicSignatureDao` explicitly: when true, `deployContractsAdvanced` transfers ownership of `MarketingWallet` and `CharityWallet` only. It does not transfer Game upgrade authority to the DAO. Review `roundActivationTime` as well: values at or below `-1000000000` keep the contract default, values at or above `1000000000` are absolute timestamps, and values between those boundaries are offsets from the selected block timestamp.
+
 #### Create Hardhat Configuration Variables
 
 Save some arguments to Hardhat Configuration Variables. If you are dealing with a local blockchain, skip this section.
@@ -47,6 +51,8 @@ Save some arguments to Hardhat Configuration Variables. If you are dealing with 
 #### Run Scripts
 
 - Execute `../runners/run-deploy-cosmic-signature-contracts-<network-name>.bash`. It will deploy all Cosmic Signature contracts.
+
+- The deployment task logs the resolved configuration, including the deployer private key. Keep the terminal output private; do not attach it unredacted to a report or commit it. Keeping the key out of the JSON file does not keep it out of this log.
 
 - Observe the newly created `../output/deploy-cosmic-signature-contracts-report-<network-name>.json` file. It contains addresses of all deployed contracts. Other scripts are going to use it.
 

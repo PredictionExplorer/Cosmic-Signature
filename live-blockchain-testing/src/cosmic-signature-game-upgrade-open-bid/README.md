@@ -1,5 +1,11 @@
 ### Note
 
+`CosmicSignatureGameOpenBid` is a V1-based test prototype, not the production V3 implementation. Its sibling JavaScript scripts are entirely commented out, so the historical demo commands below do not perform the described operations. Use the active Hardhat upgrade tests for prototype testing and the [current upgrade guide](../../../tasks/docs/Cosmic-Signature-Game-Contract-Upgrade-And-Re-Registration.md) for the production upgrade.
+
+In the present prototype, the extra ETH method takes `(int256 randomWalkNftId_, bool isOpenBid_, string message_)`; the old two-argument ETH method reverts. An open bid without a Random Walk NFT accepts at least `currentPrice * timesEthBidPrice`, retains the whole payment, and increases the next price from that paid amount. The Random Walk path does not implement the open-price flag. `setTimesEthBidPrice` is owner-only and has no inactive-round modifier. These prototype behaviors must not be attributed to V3.
+
+### Historical example (preserved)
+
 This document is old, although it's still to some degree correct.
 Here is a modern substitute: "${workspaceFolder}/tasks/docs/Cosmic-Signature-Game-Contract-Upgrade-And-Re-Registration.md".
 

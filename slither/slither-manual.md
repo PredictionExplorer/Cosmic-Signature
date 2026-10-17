@@ -8,6 +8,16 @@ https://github.com/crytic/slither/wiki/Usage
 
 ### How to Use
 
+Run the project wrapper from `slither/`: `bash slither-1.bash`. It points Slither at `..` and uses `artifacts/production`, so invoking it from the repository root changes its target. Install the Node dependencies and the native Solidity compiler described in [the compilation guide](../contracts-compiling/docs/contracts-compiling.md) first. Use a production build with `ENABLE_HARDHAT_PREPROCESSOR=false`.
+
+The wrapper expects Linux utilities (`/usr/bin/clear` and `gio trash`) and searches a developer-specific virtual environment before falling back to `PATH`. If those utilities are unavailable, this equivalent analysis command from the repository root avoids the cleanup wrapper:
+
+```bash
+HARDHAT_MODE_CODE=1 ENABLE_HARDHAT_PREPROCESSOR=false slither --filter-paths '/contracts/tests/|/node_modules/' --hardhat-artifacts-directory artifacts/production --show-ignored-findings --checklist . > slither/slither-1-output.md
+```
+
+The report is a static-analysis result for the compiled revision, not a proof of correctness. Inspect findings and command errors; a nonzero Slither status can report findings as well as tool failure.
+
 - Make sure Python is already installed.
 ```
 python3  --version
@@ -46,7 +56,6 @@ slither path/to/hardhat-project
 
 - Slither supports a number of command line parameters, some of which the `slither-1.bash` script provides.
 
-- Don't run Slither from the command line; run the script instead.\
-It will generate a Markdown report file named <!-- Comment-202409112 applies. --> `slither-1-output.md`.
+- The script (or the equivalent command above) generates a Markdown report file named <!-- Comment-202409112 applies. --> `slither-1-output.md` in the `slither/` directory.
 
 - Open the file in VS Code and press Ctrl+Shift+V to open Markdown Preview. In there, you can click links to navigate to relevant locations in Solidity source files.

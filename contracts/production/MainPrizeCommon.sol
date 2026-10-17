@@ -59,14 +59,13 @@ abstract contract MainPrizeCommon is
 		// #enable_smtchecker */
 		{
 			// [Comment-202606175]
-			// This logic ensures that `mainPrizeTime` becomes in the future, even if it's already in the past.
-			// There is also a main prize claim timeout on top of that.
-			// Issue. As a result, someone can, at least in theory, make a free or, at least, less expensive than the bidding reward CST bid
-			// before the timeout expires. The timeout is long enough to allow that. They can keep doing it forever.
-			// In V2+, this problem is mitigated by the increase of CST Dutch auction duration on each CST bid,
-			// but even then it can take like a year until it's no longer possible to place such a bid within the timeout window.
-			// Therefore, V2+ does not ensure that `mainPrizeTime` becomes in the future.
-			// Note that the V2+ logic makes it theoretically possible to place a bid and claim main prize within a single transaction.
+			// With a positive increment, V1 moves `mainPrizeTime` into the future even if it has already passed.
+			// Issue. A sufficiently late CST bid can cost zero and restart the waiting period for the main prize claim.
+			// V2 instead adds to the stored deadline and increases CST Dutch auction duration on each CST bid.
+			// V3 retains the stored-deadline rule, but replaces that duration adjustment with a reduced decline rate
+			// and a duration-based beginning-price floor. Zero-cost CST bids remain possible after enough elapsed time.
+			// V2+ does not ensure that a bid moves `mainPrizeTime` into the future.
+			// If the resulting deadline has already arrived, the new last bidder can bid and claim within one transaction.
 			// [/Comment-202606175]
 			uint256 mainPrizeTimeIncrement_ = getMainPrizeTimeIncrement();
 			uint256 mainPrizeCorrectedTime_ = Math.max(mainPrizeTime, block.timestamp);

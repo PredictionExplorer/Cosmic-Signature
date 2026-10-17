@@ -42,15 +42,16 @@ interface IEthDonations {
 	/// Note that a user can force-send ETH to us by `selfdestruct`ing a contract,
 	/// which would result in the same outcome as a donation, except a respective event won't be emitted.
 	/// [/Comment-202610044]
-	/// See also: `donateEthWithInfo`, `IBidding.receive`, `IBidding1V2.receive`, `ICosmicSignatureGame.fallback`, `ICosmicSignatureGameV2.fallback`.
+	/// See also: `donateEthWithInfo`, `IBidding.receive`, `IBidding1V2.receive`.
+	/// Plain ETH transfers call the bidding receive function; the Game has no fallback function.
 	function donateEth() external payable;
 
 	/// @notice This method is similar to `donateEth`.
 	/// Comments there apply.
 	/// In addition, it allows the caller to provide additional information.
-	/// @param data_ Additional info in JSON format.
+	/// @param data_ Additional information. JSON is a convention, not a format validated by this contract.
 	/// It's OK if it's empty.
-	/// We do not limit this string length, but the frontend will truncate a too long message.
+	/// The contract imposes no string-length limit beyond transaction execution limits.
 	function donateEthWithInfo(string calldata data_) external payable;
 
 	/// @return `ethDonationWithInfoRecords.length`.
