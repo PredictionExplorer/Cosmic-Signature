@@ -186,7 +186,7 @@ live setting. The owner can change this delay separately.
 
 ## 4.1 ETH Gestures
 
-After the opening, each ETH Gesture sets the next ETH base cost to
+Every ETH Gesture, including the opening Gesture, sets the next ETH base cost to
 `base + floor(base / ethBidPriceIncreaseDivisor) + 1 wei`. The default divisor
 is 100. CST Gestures do not advance this ETH base-cost sequence.
 
@@ -225,8 +225,13 @@ ETH candidate rate = m + floor(m / d)
 CST updated rate   = floor((m + 1) * d / (d + 1))
 ```
 
-An ETH Gesture adopts its candidate only if `candidate * 180 <= B`.
-A CST Gesture adopts its reduced rate and restarts the window at:
+Every ETH Gesture, including the opening Gesture, attempts the rate increase
+and adopts its candidate only if `candidate * 180 <= B`. After the opening
+Gesture has started the CST window, further ETH Gestures do not restart it:
+the updated rate applies to the entire elapsed interval `t - a`, so an accepted
+increase can immediately lower the CST base cost. A CST Gesture adopts its
+updated rate (which integer rounding can leave
+unchanged) and restarts the window at:
 
 ```text
 new B = max(2 * premium-free CST base cost,
@@ -278,7 +283,8 @@ Gesture has yet opened the cycle; in either case the premium is zero.
 
 Here `M = 29,228,998,656` and `k = 8` at V3 initialization. The approximate
 shape is `due / p = 1 + 4 * (e / L)^8`. The exact integer formula is
-authoritative.
+authoritative. The table shows the smooth approximation, rather than exact
+smallest-unit amounts from a particular cycle.
 
 | Fraction of late window elapsed | Approximate total cost relative to base |
 | --- | --- |
@@ -287,6 +293,12 @@ authoritative.
 | 75% | 1.40 times |
 | 90% | 2.72 times |
 | 100% and overtime | 5.00 times |
+
+For example, with a 1 ETH base cost, the exact total at the deadline is
+5.000050302627095474 ETH at the original one-hour increment. At the snapshot
+increment of 3,709,083,600 microseconds, it is 4.993485445647992173 ETH. The
+integer window length and intermediate rounding account for the difference;
+five times the base is an approximation, not an exact fixed multiplier.
 
 The Random Walk NFT reduction applies after adding the premium. The premium is
 a one-time cost: subsequent ETH base costs, restarted CST base costs, and
@@ -534,9 +546,11 @@ administrative powers, not powers conferred on every CST holder.
 
 Each Cosmic Signature NFT stores a 32-byte seed at creation. Its `NftMinted`
 event records the cycle; the cycle is not a field in the token's stored data.
-The NFT contract derives seeds from the finalization seed through hashing and
-stores them. The protocol does not enforce seed uniqueness; a hash-based
-construction does not constitute a uniqueness check.
+The NFT contract uses Keccak-256 to derive each seed from a supplied counter,
+which starts from a value derived during finalization and increments for each
+NFT. It stores the resulting seed. This Keccak-256 step is distinct from the
+renderer's SHA3-256 stream below. The protocol does not enforce seed uniqueness;
+a hash-based construction does not constitute a uniqueness check.
 
 The renderer initializes a SHA3-256 pseudorandom stream from the seed to explore
 gravitational three-body trajectories and select an orbit. Participation affects
@@ -689,7 +703,8 @@ selections, Anchoring, and supporting contracts. Its default Participation CST
 was a flat 100 CST paid to the participant making each Gesture. Its CST window
 duration was derived from the cycle increment. Overtime Gestures set the new
 deadline from the later of the old deadline and the current timestamp, then
-added an increment. The main finalization exclusivity timeout was one day.
+added an increment. The launch default for the main finalization exclusivity
+timeout was one day.
 
 ## 10.2 V2 changed timing and Participation CST
 
@@ -789,6 +804,9 @@ participant. `MainPrizeClaimed` gains an NFT count and changes signature.
 Several legacy getters are removed, most Game custom errors lose their text
 argument, and failure events become more specific. Consumers must distinguish
 historical V2 data from V3 data even when an event signature is unchanged.
+Use the ordered `Upgraded` event on the proxy as the version boundary. A V2
+finalization can occur earlier in the same block as the V3 upgrade, so the
+block number alone is not sufficient to select the correct interpretation.
 
 The [V2-to-V3 technical change register][delta] covers these interfaces,
 storage, shared-source changes, rounding details, and failure semantics. A

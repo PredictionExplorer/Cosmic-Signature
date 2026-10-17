@@ -472,13 +472,13 @@ The call signatures V3 uses for these contracts are unchanged. This is an interf
 
 #### Frontend and Backend Changes
 
-Checklist for Nick. "Upgrade block" means the block of the `Upgraded` event on the proxy. The proxy address does not change.
+Checklist for Nick. The version boundary is the `Upgraded` event on the proxy, ordered by block number, transaction index, and log index. The proxy address does not change. A V2 claim can finalize a round earlier in the same block, leaving the next round inactive for the V3 upgrade; those earlier events still have V2 semantics.
 
 ##### Indexer and Events
 
-- [ ] Keep the live V2 (`main`) ABI for blocks before the upgrade and use the V3 ABI from then on.
-- [ ] `BidPlaced` has the same topic in both versions, so switch decoding by block number.
-  - From the upgrade block on, field 8 is `cstBidPriceDeclineMultiplier` (CST wei per second).
+- [ ] Preserve each deployed V1/V2 ABI for its historical execution interval, and use the V3 ABI after the ordered V3 `Upgraded` event. Do not reinterpret every event in the upgrade block as V3.
+- [ ] `BidPlaced` has the same topic in V2 and V3, so switch its interpretation at that event boundary, including transaction and log order.
+  - For V3 events, field 8 is `cstBidPriceDeclineMultiplier` (CST wei per second).
   - `bidCstRewardAmount` belongs to the bidder of the previous `BidPlaced` in the same round. It is 0 on the first bid. If you match CST `Transfer` logs instead, take the nonzero mint immediately before that `BidPlaced` log: a zero-price CST bid also emits a zero-value mint to the bidder (Comment-202606074), there is no mint when the reward is 0, and a transaction can contain several bids.
   - Comment-202607273 and the reward getter NatSpec distinguish the V2- recipient (the new bidder) from the V3+ recipient (the previous bidder).
   - Rename or add the database column for field 8. Never mix duration and multiplier values in one series.
@@ -487,9 +487,9 @@ Checklist for Nick. "Upgrade block" means the block of the `Upgraded` event on t
 - [ ] Take NFT IDs from each `*PrizePaid` event and the `MainPrizeClaimed` range. The beneficiary's NFTs are now the highest IDs of the claim.
 - [ ] Update CST `Transfer` matching for the new mint order at claim time, and for reward mints going to the previous bidder.
 - [ ] Add `EthTransferToCharityFailed`, the 4 `Arb*CallFailed` events, and the 6 new `*Changed` events. `ArbitrumError` and the Game's `FundTransferFailed` event will not appear again.
-- [ ] On `Initialized`, snapshot every parameter getter at that block; initialization deliberately omits individual `*Changed` events (Comment-202610175; see [the table](#values-written-by-reinitialize)).
+- [ ] On `Initialized`, refresh every parameter getter; initialization deliberately omits individual `*Changed` events (Comment-202610175; see [the table](#values-written-by-reinitialize)). A block-tagged read reports end-of-block state, which can include later transactions. Label it accordingly; use ordered state replay or transaction tracing if the exact post-initialization state is required.
 - [ ] Track `cstBidPriceDeclineMultiplier` through `BidPlaced`, because automatic bid updates emit that event instead of `CstBidPriceDeclineMultiplierChanged` (Comment-202608319).
-- [ ] Record the first V3 round number: `roundNum()` at the upgrade block. The upgrade can only land while the round is inactive; do not hard-code the round number from the rehearsal.
+- [ ] Record the round number at the upgrade execution boundary, using ordered events/state replay or tracing as needed. A block-tagged `roundNum()` read reports end-of-block state. The upgrade can only land while the round is inactive; do not hard-code the round number from the rehearsal.
 
 ##### Contract Calls and ABI
 

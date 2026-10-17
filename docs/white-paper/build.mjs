@@ -61,6 +61,10 @@ function main() {
       const points = Math.min(620, Math.ceil(lines * 12 + 30 + (heading ? 40 : 0)));
       return `\n\\needspace{${points}pt}\n\n${heading ?? ''}${table}`;
     });
+    // Keep a section title with its immediately following subsection title
+    // and the start of the text, rather than stranding the parent heading.
+    pdfSource = pdfSource.replace(/(^#{1,5} [^\n]+\n\n)(?=^#{2,6} )/gm,
+      '\\needspace{10\\baselineskip}\n\n$1');
     const inputPath = join(temporary, `${stem}.md`);
     writeFileSync(inputPath, pdfSource);
     execFileSync('pandoc', [inputPath, '--from=markdown', '--pdf-engine=tectonic',

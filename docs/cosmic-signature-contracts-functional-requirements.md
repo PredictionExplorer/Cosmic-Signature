@@ -172,7 +172,7 @@ One allocation is an ETH transfer to `CosmicSignatureGameStorage.charityAddress`
 
 ### Random Number Generation
 
-Some recipients are selected using `RandomNumberHelpers`, which hashes available block and Arbitrum precompile values, then derives further values from the seed. This is block-derived randomness, not a verifiable random oracle. Values need not change after every transaction, and a sequencer or transaction submitter may influence ordering, timing, or whether to execute. The contracts do not prove unpredictability or prevent simulation and selective submission. The white paper documents the inputs and these limitations.
+Some recipients are selected using `RandomNumberHelpers`, which mixes available block and Arbitrum precompile values into a seed using shifts and XOR, then hashes incremented seed values. This is block-derived randomness, not a verifiable random oracle. Values need not change after every transaction, and a sequencer or transaction submitter may influence ordering, timing, or whether to execute. The contracts do not prove unpredictability or prevent simulation and selective submission. The white paper documents the inputs and these limitations.
 
 ### Exponential Duration Increase
 

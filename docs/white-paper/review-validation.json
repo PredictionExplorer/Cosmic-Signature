@@ -204,10 +204,59 @@
     "note": "Atomic upgrade and first/subsequent ETH gestures used forked state. Finalization, explicit wallet replacement between cycles and retrieval from old wallet passed with repository precompile test doubles. Hardhat Osaka EVM; not a full Nitro/sequencer simulation."
   },
   "publication": {
-    "englishPdfPages": 20,
+    "englishPdfPages": 21,
     "renderedAllPages": true,
     "marginViolations": 0,
     "relativeLinksChecked": true,
     "sourcePdfDigestCheckPassed": true
+  },
+  "preMergeFormulaAndHistoryReview": {
+    "reviewedPrHead": "d1e2a38ee7b81e784570207e556ed69b60c5abc0",
+    "passed": true,
+    "checks": 136,
+    "method": "Local Hardhat view calls with explicitly seeded test storage. V3 compiled runtime and actual verified V2 deployed runtime, compared with independently evaluated paper equations. This does not simulate real upgrade transactions.",
+    "premiumExamples": [
+      {
+        "incrementMicroseconds": "3600000000",
+        "windowSeconds": "1200",
+        "baseWei": "1000000000000000000",
+        "totalCostWei": "5000050302627095474"
+      },
+      {
+        "incrementMicroseconds": "3709083600",
+        "windowSeconds": "1236",
+        "baseWei": "1000000000000000000",
+        "totalCostWei": "4993485445647992173"
+      }
+    ],
+    "groups": [
+      "ETH opening, before/at/after window endpoints",
+      "Initial countdown and seconds conversion",
+      "Late premium, integer rounding and overtime",
+      "V3 linear reward including zero and negative offset",
+      "Verified deployed V2 square-root reward",
+      "CST decline, zero floor and ceiling-divided duration",
+      "Random Walk ceiling division"
+    ],
+    "historyChecks": {
+      "proxyDeployment": {
+        "block": 455767589,
+        "dateUTC": "2026-04-24T06:42:34Z"
+      },
+      "v2Upgrade": {
+        "block": 475913365,
+        "dateUTC": "2026-06-21T19:38:53Z"
+      },
+      "method": "Fresh public RPC transaction receipts and block timestamps; verified V1/V2 source bodies and target V3 initializer; pinned frontend paper 1.0 source."
+    },
+    "documentationCorrections": [
+      "Use ordered Upgraded event boundaries, not whole-block ABI switches; distinguish end-of-block state reads from post-initialization state.",
+      "Reconcile the report scope statement with its completed local fork rehearsal and simulated precompiles.",
+      "Explicit opening-Gesture ETH next-price and guarded CST-rate updates; later ETH rate changes apply without restarting the window.",
+      "Label the premium table as an approximation and give exact compiled-contract endpoint examples.",
+      "Distinguish shifts/XOR seed mixing, Keccak-256 NFT derivation and the renderer SHA3-256 stream."
+    ],
+    "solidityChangedDuringSecondReview": false,
+    "englishPdfPages": 21
   }
 }

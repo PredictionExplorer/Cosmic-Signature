@@ -121,6 +121,33 @@ The fixed-block getters, code hashes and sources in the documentation snapshot
 were independently checked. Rehearse again with the final operator configuration
 and suitable RPC infrastructure before deployment.
 
+## Pre-merge formula and history review
+
+A second review of PR #204 checked the paper against the actual verified V1/V2
+sources and the proposed V3 implementation, rather than treating the existing
+change register as evidence. Fresh transaction receipts and block timestamps
+confirmed the April 24 proxy deployment and June 21 V2 upgrade. The prior paper
+1.0 history was rechecked against its pinned frontend source.
+
+An independent local check made **136 compiled-contract view comparisons**:
+V3's compiled runtime and the verified deployed V2 runtime were loaded into
+Hardhat with explicit test storage, then queried at opening-window boundaries,
+premium boundaries and overtime, reward timing boundaries, CST zero-cost
+boundaries, and odd/even NFT-reduction amounts. Expected results came from the
+paper's equations. This isolates arithmetic; it is not another live-state
+upgrade simulation. Exact results and endpoint examples are in the
+[validation record](white-paper/review-validation.json).
+
+The equations, allocation totals, and V1/V2/V3 chronology were confirmed.
+Corrections clarify that opening ETH Gestures also step the next ETH base cost
+and attempt the CST rate adjustment; later ETH rate changes do not restart the
+CST window; and the smooth premium table differs from integer endpoint values.
+The indexer guidance now uses the ordered proxy upgrade event, because V2 logs
+can precede the upgrade in the same block. Block-tagged state reads are labeled
+as end-of-block observations. The randomness description and the contradictory
+fork-rehearsal scope sentence were corrected. This second review changes no
+Solidity or test logic.
+
 ## Per-file review coverage
 
 Original-file inventory: `9d1a644744e0ee588ef5af1947f6decdf8bdb3f3`. This checklist covers all **118 tracked Solidity files**, all **26 original Markdown files**, and **11 original text-note and diagram files**. Newly authored white-paper files and the new review report are additional deliverables, not counted as original files.
@@ -316,6 +343,6 @@ Diagram review inspected the XML labels and relationships to establish V1 scope;
 - The deployed-V2 storage-layout regression and local V3 carried-state test were read fully. Other regression files were inspected for the relevant initialization, replacement, and test-profile behavior; their complete contents were not all audited by the documentation reviewer.
 - The 22 committed Certora `.spec` files received declaration/inventory and configuration-compatibility inspection. They were not exhaustively reviewed as proofs and were not executed. Their stale compiler targets and interfaces are explicitly documented.
 - Generator claims use the pinned renderer revision and targeted source/CI evidence. The renderer and backend repositories were not modified; this does not establish that all hosted assets have been regenerated.
-- No mainnet fork rehearsal or real upgrade was performed as part of this documentation work. Local test execution and deployment-state reads are recorded separately from source-read coverage.
+- No live upgrade transaction was performed. The local Arbitrum fork rehearsal used simulated precompiles for finalization, as described in Validation above. Local execution and deployment-state reads are recorded separately from source-read coverage.
 
-Source inventories used to prepare this checklist: the core, peripheral, finalization, and operational-documentation review records. Root supplied a separate full-read attestation for its 18 Solidity files and the original README. No file is marked complete solely because a search matched its name.
+Source inventories used to prepare this checklist: the core, peripheral, finalization, and operational-documentation review records. No file is marked complete solely because a search matched its name.
