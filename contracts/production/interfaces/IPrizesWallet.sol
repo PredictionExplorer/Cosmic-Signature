@@ -186,7 +186,7 @@ interface IPrizesWallet is IAddressValidator {
 
 	/// @notice Sets `timeoutDurationToWithdrawPrizes`.
 	/// Only the contract owner is permitted to call this method.
-	/// The new duration applies when subsequent round-end deadlines are recorded; existing deadlines do not change.
+	/// The new duration applies when subsequent claim deadlines are recorded; existing deadlines do not change.
 	/// @param newValue_ The new value.
 	function setTimeoutDurationToWithdrawPrizes(uint256 newValue_) external;
 

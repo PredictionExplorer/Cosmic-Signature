@@ -4,11 +4,11 @@
 
 This document goes a little bit beyond purely functional requirements. It's intended to provide important details to the auditor.
 
-It describes the production source in this branch, distinguishing V1, V2, and V3 behavior. V3 is the upcoming Game implementation, not a statement that it is already deployed. Upgrading the Game proxy does not upgrade the separately deployed token, NFT, DAO, or wallet contracts. In particular, source changes to `PrizesWallet` apply to a newly deployed wallet, not automatically to the existing wallet. The [white paper](white-paper/cosmic-signature-white-paper-v1.3.md) records the reviewed release and deployment baseline.
+It describes the production source in this branch, distinguishing V1, V2, and V3 behavior. Upgrading the Game proxy does not upgrade the separately deployed token, NFT, DAO, or wallet contracts. The [white paper](white-paper/cosmic-signature-white-paper-v1.3.md) records the reviewed release and deployment baseline.
 
 ### Glossary
 
-- User. An account interacting with the contracts, either directly or through a smart contract. Contract callers are supported where they satisfy the relevant authorization and payment requirements.
+- User. An Ethereum account interacting with the contracts, either directly or through a smart contract. Contract callers are supported where they satisfy the relevant authorization and payment requirements.
 
 ### Contracts
 
@@ -34,11 +34,11 @@ It describes the production source in this branch, distinguishing V1, V2, and V3
 
 - `CosmicSignatureGameV2`, `CosmicSignatureGameV3`, and other V2 and V3 abstract contracts that the new Game contracts inherit from. These are further versions of the Game contract to upgrade to.
 
-- `CosmicSignatureToken`. The Official ERC-20 Token for the Cosmic Signature Ecosystem. Its symbol is CST. It's used by our DAO for voting power after delegation. Only the immutable Game address can mint or invoke the Game-specific burn methods. The inherited `ERC20Burnable` methods also let holders burn their own CST and approved spenders burn CST within their allowance. It supports permits and timestamp-based voting checkpoints.
+- `CosmicSignatureToken`. The Official ERC-20 Token for the Cosmic Signature Ecosystem. Its symbol is CST. Only the Game proxy contract is permitted to mint or invoke the Game-specific burn methods. The inherited `ERC20Burnable` also lets CST holders burn their own CST. It supports permits and timestamp-based voting checkpoints. It's used by our DAO for voting power.
 
-- `RandomWalkNFT`. This is an existing external ERC-721 collection with symbol RWLK. The Game checks ownership for its one-time bid discount, and the Random Walk staking wallet holds NFTs for its selection pool. The source copy contains adaptations for current dependencies; it is not a new deployment of the existing collection. Its independent mint and withdrawal mechanism is outside the Game upgrade, but its integration remains part of this review.
+- `RandomWalkNFT`. This is an existing external ERC-721 collection with symbol RWLK. The Game checks ownership for its one-time bid discount, and `StakingWalletRandomWalkNft` holds NFTs for its selection pool. The source code copy has been refactored to adapt for the current versions of dependencies; it is not a new deployment of the existing collection. Its mint mechanism is independent of the Game.
 
-- `CosmicSignatureNft`. The Official ERC-721 NFT for the Cosmic Signature Ecosystem. Its symbol is COSMIC. Only the immutable Game address can mint new NFTs. Each token stores a seed and an optional name. The owner or an approved operator may set a name of at most 32 bytes. The contract owner can change metadata and generation-script URIs; there is no setter for an existing seed.
+- `CosmicSignatureNft`. The Official ERC-721 NFT for the Cosmic Signature Ecosystem. Its symbol is COSMIC. Only the Game proxy contract is permitted to mint new NFTs. Each token stores a seed and an optional name. The owner or an approved operator may set a name. The contract owner can change metadata and generation-script URIs.
 
 - `PrizesWallet`. A wallet to hold the Cosmic Signature Game prizes and donations. It supports depositing ETH, donating third party ERC-20 token amounts and ERC-721 NFTs, and allows prize winners (and after a timeout anybody) to withdraw their prizes.
 
@@ -48,13 +48,11 @@ It describes the production source in this branch, distinguishing V1, V2, and V3
 
 - `StakingWalletCosmicSignatureNft`. Staking Wallet for Cosmic Signature NFTs. It holds ETH to be distributed to stakers. It tracks the cumulative amount of ETH rewards earned by each staked NFT and pays it to the staker on NFT unstake.
 
-- `MarketingWallet`. This wallet holds CST funds and facilitates their distribution to fund marketing activities, such as rewarding people for marketing the project on social media. The `CosmicSignatureGame` contract mints a configurable CST amount to this wallet on main prize claim. Only its treasurer can use the payment methods. The treasurer initially is the deployer and can be changed by the wallet owner; DAO appointment requires the DAO to own this wallet.
+- `MarketingWallet`. This wallet holds CST funds and facilitates their distribution to fund marketing activities, such as rewarding people for marketing the project on social media. The `CosmicSignatureGame` contract mints a configurable CST amount to this wallet on main prize claim. Only its treasurer is permitted to use the payment methods. The treasurer initially is the deployer and can be changed by the wallet owner, which eventually will be the DAO.
 
-- `CharityWallet`. This contract holds an ETH balance to be donated to charity. Its owner chooses the beneficiary; DAO control requires ownership to have been transferred to the DAO. `CosmicSignatureGame` attempts to deposit a configurable percentage of its ETH to the configured charity address on main prize claim, normally this wallet. As noted in Comment-202409273, anybody can separately call the wallet to transfer all or a specified part of its accumulated ETH to its designated beneficiary. A zero beneficiary disables sending; a failed beneficiary transfer reverts that separate transaction.
+- `CharityWallet`. This contract holds an ETH balance to be donated to charity. `CosmicSignatureGame` deposits a configurable percentage of its ETH to this wallet on main prize claim. As noted in Comment-202409273, this contract lets anybody to transfer accumulated donations to the designated charity. Only the contract owner is permitted to configure charity address. Eventually, the contract ownership will be transferred to the DAO.
 
 - `CosmicSignatureDao`. This contract implements the governance mechanism for the Cosmic Signature ecosystem. `${workspaceFolder}/test/tests-src/CosmicSignatureDao.js` shows what our DAO can be used for.
-
-The DAO uses delegated CST at timestamp snapshots. Its defaults are a 100 CST proposal threshold, a 2-day voting delay, a 2-week voting period, and quorum of 3% of snapshot total supply. For and Abstain count toward quorum; For must exceed Against. Successful proposals execute directly through the Governor, without a separate timelock module. The Governor cannot call another contract's owner-only methods unless that contract is owned by the Governor. Governance can change the Governor's settings through proposals.
 
 ### Storage Variables
 
@@ -62,7 +60,7 @@ The DAO uses delegated CST at timestamp snapshots. Its defaults are a 100 CST pr
 
 - `mainPrizeTime`. The time when the last bidder will be granted the premission to claim the main prize.
 
-- `charityAddress`. In `CharityWallet`, this is the ultimate beneficiary. In `CosmicSignatureGameStorage`, it is the recipient of the Game's charity allocation, normally our own `CharityWallet`. Each is separately configurable by its contract's owner. See Comment-202411078 for details.
+- `charityAddress`. In `CharityWallet`, this is the ultimate beneficiary. In `CosmicSignatureGameStorage` and its V2+ counterpart, it is the recipient of the Game's charity ETH allocation, which has been configured to be our own `CharityWallet`. See Comment-202411078 for details.
 
 - There are many other storage variables out there.
 

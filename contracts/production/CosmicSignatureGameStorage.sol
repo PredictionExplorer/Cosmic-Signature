@@ -403,6 +403,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Comment-202411064 applies.
 	/// Comment-202412312 applies.
 	/// See also: `PrizesWallet.timeoutDurationToWithdrawPrizes`.
+	/// @dev Comment-202606175 relates.
 	uint256 public timeoutDurationToClaimMainPrize;
 
 	/// @notice

@@ -21,7 +21,8 @@ interface ICosmicSignatureNft is IERC721Enumerable, IAddressValidator {
 		/// If the user doesn't provide a name for the NFT, this value will stay empty.
 		string name;
 
-		/// @notice The seed derived for the NFT. The contract does not check for duplicate seeds.
+		/// @notice The seed generated randomly for the NFT. The contract does not check for duplicate seeds.
+		/// todo-ai-5 I rephrased the above a little. It's unnecessary to specify here how exactly the seed is generated.
 		/// @dev One might prefer this parameter to be a byte-array or `bytes32`, but for now it's simpler to treat it as a number,
 		/// even though `bytes32` would probably not be any less efficient. It would make sense to change this parameter type
 		/// if we need more than 32 bytes.
@@ -54,7 +55,7 @@ interface ICosmicSignatureNft is IERC721Enumerable, IAddressValidator {
 	/// @notice Emitted when a new NFT is minted.
 	/// @param roundNum The current bidding round number.
 	/// @param nftOwnerAddress The address that received the NFT.
-	/// @param nftSeed The seed derived for the NFT.
+	/// @param nftSeed The seed generated randomly for the NFT.
 	/// @param nftId The newly minted NFT ID.
 	event NftMinted(uint256 indexed roundNum, address indexed nftOwnerAddress, uint256 nftSeed, uint256 indexed nftId);
 
@@ -80,7 +81,7 @@ interface ICosmicSignatureNft is IERC721Enumerable, IAddressValidator {
 	/// @param nftOwnerAddress_ The address that will receive the NFT.
 	/// @param randomNumberSeed_ A value used to derive the NFT seed.
 	/// [Comment-202501148]
-	/// Random number seed and NFT seed are different things. The former is used to generate the latter.
+	/// Random number seed and NFT seed are different things. The latter is derived from the former.
 	/// [/Comment-202501148]
 	/// Assuming that the caller hasn't used this particular value.
 	/// @return The newly minted NFT ID.
@@ -94,9 +95,9 @@ interface ICosmicSignatureNft is IERC721Enumerable, IAddressValidator {
 	/// @param randomNumberSeed_ The starting value used to derive the NFT seeds.
 	/// Comment-202501148 applies.
 	/// Assuming that the caller hasn't used this particular value or subsequent values.
-	/// @return The first newly minted NFT ID. Further minted NFT IDs are sequential.
-	/// If `nftOwnerAddresses_` is empty the return value is zero and no NFT is minted.
-	function mintMany(uint256 roundNum_, address[] calldata nftOwnerAddresses_, uint256 randomNumberSeed_) external returns (uint256);
+	/// @return firstNftId_ The first newly minted NFT ID. Further minted NFT IDs are sequential.
+	/// If `nftOwnerAddresses_` is empty the return value is zero.
+	function mintMany(uint256 roundNum_, address[] calldata nftOwnerAddresses_, uint256 randomNumberSeed_) external returns (uint256 firstNftId_);
 
 	/// @param nftId_ NFT ID.
 	/// An unminted ID below `1 << 64` returns an empty name and zero seed; an out-of-bounds ID reverts.

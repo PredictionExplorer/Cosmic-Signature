@@ -222,7 +222,7 @@ The decline rate changes on Gestures. With change divisor `d` (default 100):
 
 ```text
 ETH candidate rate = m + floor(m / d)
-CST updated rate   = floor((m + 1) * d / (d + 1))
+CST updated rate   = m - floor(m / (d + 1))
 ```
 
 Every ETH Gesture, including the opening Gesture, attempts the rate increase
@@ -727,7 +727,7 @@ Its principal changes were:
   initialization and changes with participation. At divisor 250, ETH Gestures
   reduce it by approximately 0.398%, while CST Gestures increase it by
   approximately 0.4%, subject to integer rounding. The exact updates are
-  `floor((duration + 1) * 250 / 251)` and
+  `duration - floor(duration / 251)` and
   `duration + floor(duration / 250)`, respectively. This duration carries
   between cycles instead of growing with the cycle increment as it did in V1.
 - **Stored-deadline extension.** Later Gestures add to the existing deadline,

@@ -8,7 +8,15 @@
 const hre = require("hardhat");
 const { expect } = require("chai");
 const c = require("../../../src/CosmicSignatureConstants.js");
-const { maxBigInt, sqrtFloor, uint256ToInt256, int256ToUint256, u256 } = require("../../../src/BigIntMathHelpers.js");
+const {
+	maxBigInt,
+	tryIncreaseValueExponentially,
+	tryReduceValueExponentially,
+	sqrtFloor,
+	uint256ToInt256,
+	int256ToUint256,
+	u256,
+} = require("../../../src/BigIntMathHelpers.js");
 
 // #endregion
 // #region `GameModel`
@@ -386,7 +394,7 @@ class GameModel {
 		for (let index_ = 0; index_ < count_; ++ index_) {
 			const price_ = this.addLateBidPremiumIfNeeded(base_, ts_, mainPrizeTime_);
 			prices_.push(price_);
-			base_ = base_ + base_ / this.ethBidPriceIncreaseDivisor + 1n;
+			base_ = tryIncreaseValueExponentially(base_, this.ethBidPriceIncreaseDivisor) + 1n;
 			// All burst bids are non-first bids, so `_extendMainPrizeTime` runs for each of them.
 			mainPrizeTime_ = this.isV1Like() ? (maxBigInt(mainPrizeTime_, ts_) + increment_) : (mainPrizeTime_ + increment_);
 		}
@@ -668,12 +676,12 @@ class GameModel {
 		if (this.lastBidderAddress === hre.ethers.ZeroAddress) {
 			this.ethDutchAuctionBeginningBidPrice = plan_.ethBidPriceBase * c.ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
 		}
-		this.nextEthBidPrice = plan_.ethBidPriceBase + plan_.ethBidPriceBase / this.ethBidPriceIncreaseDivisor + 1n;
+		this.nextEthBidPrice = tryIncreaseValueExponentially(plan_.ethBidPriceBase, this.ethBidPriceIncreaseDivisor) + 1n;
 		let newCstDutchAuctionDuration_ = null;
 		let newCstBidPriceDeclineMultiplier_ = null;
 		if (this.version >= 3) {
 			const increasedCstBidPriceDeclineMultiplier_ =
-				this.cstBidPriceDeclineMultiplier + this.cstBidPriceDeclineMultiplier / this.cstBidPriceDeclineMultiplierChangeDivisor;
+				tryIncreaseValueExponentially(this.cstBidPriceDeclineMultiplier, this.cstBidPriceDeclineMultiplierChangeDivisor);
 			const cstDutchAuctionBeginningBidPrice_ =
 				(this.lastCstBidderAddress === hre.ethers.ZeroAddress) ?
 				this.nextRoundFirstCstDutchAuctionBeginningBidPrice :
@@ -685,7 +693,7 @@ class GameModel {
 			this.cstBidPriceDeclineMultiplier = newCstBidPriceDeclineMultiplier_;
 		} else if (this.version >= 2) {
 			newCstDutchAuctionDuration_ =
-				(this.cstDutchAuctionDuration + 1n) * this.cstDutchAuctionDurationChangeDivisor / (this.cstDutchAuctionDurationChangeDivisor + 1n);
+				tryReduceValueExponentially(this.cstDutchAuctionDuration, this.cstDutchAuctionDurationChangeDivisor);
 			this.cstDutchAuctionDuration = newCstDutchAuctionDuration_;
 		}
 		if (this.version >= 3) {
@@ -731,8 +739,7 @@ class GameModel {
 		let beginningBidPriceMinLimit_ = this.cstDutchAuctionBeginningBidPriceMinLimit;
 		if (this.version >= 3) {
 			newCstBidPriceDeclineMultiplier_ =
-				(this.cstBidPriceDeclineMultiplier + 1n) * this.cstBidPriceDeclineMultiplierChangeDivisor /
-				(this.cstBidPriceDeclineMultiplierChangeDivisor + 1n);
+				tryReduceValueExponentially(this.cstBidPriceDeclineMultiplier, this.cstBidPriceDeclineMultiplierChangeDivisor);
 			this.cstBidPriceDeclineMultiplier = newCstBidPriceDeclineMultiplier_;
 			beginningBidPriceMinLimit_ = maxBigInt(
 				beginningBidPriceMinLimit_,
@@ -748,7 +755,7 @@ class GameModel {
 		this.lastCstBidderAddress = bidderAddress_.toLowerCase();
 		let newCstDutchAuctionDuration_ = null;
 		if (this.version === 2) {
-			newCstDutchAuctionDuration_ = this.cstDutchAuctionDuration + this.cstDutchAuctionDuration / this.cstDutchAuctionDurationChangeDivisor;
+			newCstDutchAuctionDuration_ = tryIncreaseValueExponentially(this.cstDutchAuctionDuration, this.cstDutchAuctionDurationChangeDivisor);
 			this.cstDutchAuctionDuration = newCstDutchAuctionDuration_;
 		}
 		this._bidCommon(bidderAddress_, ts_);
@@ -867,7 +874,8 @@ class GameModel {
 		this.chronoWarriorBidIndex = null;
 		this.chronoWarriorDuration = -1n;
 		this.roundNum += 1n;
-		this.mainPrizeTimeIncrementInMicroSeconds += this.mainPrizeTimeIncrementInMicroSeconds / this.mainPrizeTimeIncrementIncreaseDivisor;
+		this.mainPrizeTimeIncrementInMicroSeconds =
+			tryIncreaseValueExponentially(this.mainPrizeTimeIncrementInMicroSeconds, this.mainPrizeTimeIncrementIncreaseDivisor);
 		// Comment-202606235: V2+ intentionally accepts this owner-adversarial wrap so a bad delay cannot brick claims.
 		this.roundActivationTime = u256(
 			ts_ + this.delayDurationBeforeRoundActivation,

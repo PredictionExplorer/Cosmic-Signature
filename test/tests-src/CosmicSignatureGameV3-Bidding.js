@@ -11,7 +11,7 @@ const {
 	SECONDS_PER_HOUR,
 	SECONDS_PER_DAY,
 } = require("../../src/CosmicSignatureConstants.js");
-const { maxBigInt } = require("../../src/BigIntMathHelpers.js");
+const { maxBigInt, tryIncreaseValueExponentially, tryReduceValueExponentially } = require("../../src/BigIntMathHelpers.js");
 const { generateRandomUInt32, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const {
 	activateCurrentRound,
@@ -27,8 +27,6 @@ const {
 	getV3CstBidPrice,
 	getV3CstDutchAuctionDuration,
 	getV3CstBidPriceDeclineMultiplierAfterEthBid,
-	tryIncreaseValueExponentially,
-	tryReduceValueExponentially,
 } = require("../src/V3UpgradeTestHelpers.js");
 const { configureRewardAndDeployHostileBidder } = require("../src/AdversarialTestHelpers.js");
 const { testAcrossGameVersions, finishGameRound, bidWithEthAt } = require("../src/GameRoundTestHelpers.js");
@@ -288,7 +286,7 @@ describe("CosmicSignatureGameV3-Bidding", function () {
 			const rejectionReceipt_ = await bidWithEthAt(game_, bidder_, (await getLatestBlockTimestamp()) + 1n);
 			expect(findParsedEvent(rejectionReceipt_, game_, "BidPlaced").args.cstBidPriceDeclineMultiplier).equal(multiplier_);
 			expect(await game_.cstBidPriceDeclineMultiplier()).equal(multiplier_);
-			expect(await game_.nextEthBidPrice()).equal(ethBidPriceBefore_ + ethBidPriceBefore_ / (await game_.ethBidPriceIncreaseDivisor()) + 1n);
+			expect(await game_.nextEthBidPrice()).equal(tryIncreaseValueExponentially(ethBidPriceBefore_, await game_.ethBidPriceIncreaseDivisor()) + 1n);
 			expect(await game_.cstDutchAuctionBeginningBidPrice()).equal(boundaryPrice_);
 			expect(await assertCstAuctionDurations(game_)).equal(CST_DUTCH_AUCTION_DURATION_MIN_LIMIT);
 
@@ -549,7 +547,7 @@ describe("CosmicSignatureGameV3-Bidding", function () {
 					).equal(expectedBidRaffleWeight_);
 					cumulativeWeightBeforeBid_ = bidInfo_.raffleCumulativeWeight;
 					if (executedBids_[executionIndex_].bidType !== "CST") {
-						expectedBidRaffleWeight_ += expectedBidRaffleWeight_ / ethBidPriceIncreaseDivisor_ + 1n;
+						expectedBidRaffleWeight_ = tryIncreaseValueExponentially(expectedBidRaffleWeight_, ethBidPriceIncreaseDivisor_) + 1n;
 					}
 				}
 				expect(await game_.ethDutchAuctionBeginningBidPrice(), combinationDescription_).equal(ethDutchAuctionBeginningBidPrice_);
@@ -741,7 +739,7 @@ describe("CosmicSignatureGameV3-Bidding", function () {
 
 					// The next price grows from the base after the bid closes the premium window.
 					const ethBidPriceIncreaseDivisor_ = await game_.ethBidPriceIncreaseDivisor();
-					const newEthBidPriceBase_ = ethBidPriceBase_ + ethBidPriceBase_ / ethBidPriceIncreaseDivisor_ + 1n;
+					const newEthBidPriceBase_ = tryIncreaseValueExponentially(ethBidPriceBase_, ethBidPriceIncreaseDivisor_) + 1n;
 					expect(await game_.nextEthBidPrice()).equal(newEthBidPriceBase_);
 					expect((await game_.mainPrizeTime()) - (await getLatestBlockTimestamp())).greaterThan(roundLateBidDuration_);
 					expect(await game_.getNextEthBidPrice()).equal(newEthBidPriceBase_);
@@ -912,7 +910,7 @@ describe("CosmicSignatureGameV3-Bidding", function () {
 				expectedStats_.totalSpentEthAmount += paidPrice_;
 				if (paidPrice_ > expectedStats_.maxEthBidPrice) expectedStats_.maxEthBidPrice = paidPrice_;
 				await assertRoundBidStats(game_, roundNum_, expectedStats_);
-				const newEthBidPriceBase_ = ethBidPriceBase_ + ethBidPriceBase_ / increaseDivisor_ + 1n;
+				const newEthBidPriceBase_ = tryIncreaseValueExponentially(ethBidPriceBase_, increaseDivisor_) + 1n;
 				expect(await game_.nextEthBidPrice()).equal(newEthBidPriceBase_);
 				expect(await game_.getNextEthBidPrice()).equal(newEthBidPriceBase_);
 				expect(await game_.ethDutchAuctionBeginningBidPrice()).equal(ethAuctionBeginningPrice_);

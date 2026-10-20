@@ -287,8 +287,9 @@ abstract contract BiddingV2 is
 			uint256 bidCstRewardAmount_ = 0;
 			if (elapsedDuration_ > int256(0)) {
 				// [Comment-202607167]
-				// If elapsed time grows in proportion to the main prize time increment, the reward for that interval is unchanged.
-				// This does not guarantee a constant CST supply: total issuance and burns depend on participation and other rewards.
+				// If elapsed duration grows in proportion to `mainPrizeTimeIncrementInMicroSeconds`,
+				// the reward for that interval is unchanged. The purpose of that logic
+				// is to attempt to be neither inflationary nor deflationary for CST, but it does not guarantee a constant CST supply.
 				// [/Comment-202607167]
 				uint256 radicand_ = uint256(elapsedDuration_) * bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds;
 

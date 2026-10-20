@@ -324,7 +324,7 @@ contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, S
 
 			// [Comment-202507296]
 			// If `charityAddress_ == address(this)`, the low-level transfer fails because this contract
-			// has no payable receive or fallback function. The failure branch below emits an event and returns `false`.
+			// has no payable `receive` or `fallback` function.
 			// [/Comment-202507296]
 			// Comment-202502043 applies.
 			// Comment-202609144 relates and/or applies.

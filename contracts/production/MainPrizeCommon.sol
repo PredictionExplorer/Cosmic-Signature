@@ -59,13 +59,20 @@ abstract contract MainPrizeCommon is
 		// #enable_smtchecker */
 		{
 			// [Comment-202606175]
-			// With a positive increment, V1 moves `mainPrizeTime` into the future even if it has already passed.
-			// Issue. A sufficiently late CST bid can cost zero and restart the waiting period for the main prize claim.
-			// V2 instead adds to the stored deadline and increases CST Dutch auction duration on each CST bid.
-			// V3 retains the stored-deadline rule, but replaces that duration adjustment with a reduced decline rate
-			// and a duration-based beginning-price floor. Zero-cost CST bids remain possible after enough elapsed time.
-			// V2+ does not ensure that a bid moves `mainPrizeTime` into the future.
-			// If the resulting deadline has already arrived, the new last bidder can bid and claim within one transaction.
+			// On a bid, V1 moves the `mainPrizeTime` deadline into the future even if the deadline has already passed.
+			// There is also `timeoutDurationToClaimMainPrize` on top of that.
+			// V2+ instead adds to the deadline and thereby does not ensure that it will end up in the future.
+			// V2+ also increases CST Dutch auction duration on a typical CST bid (V2 vs. V3+ use different logic for that).
+			// In all versions, zero or negative net cost CST bids are possible after enough elapsed duration.
+			// In V2+, if a bid does not move the deadline into the future,
+			// the new last bidder can bid and claim the main prize within one transaction.
+			// Issue. The problem with V1 is that a sufficiently late CST bid can cost net zero or negative
+			// and still push the deadline when anybody is permitted to claim the main prize to a point in the future
+			// before which the next CST bid net price will become zero or negative. This flaw makes it possible for a bidder
+			// to keep a bidding round going indefinitely.
+			// The V2+ logic mitigates this issue; it's possible to keep a round going only for a limited duration.
+			// That said, in either Game version, attempting anything like that makes little sense for the last bidder,
+			// so this possibility is only theoretical. It's unlikely that someone will ever attempt this.
 			// [/Comment-202606175]
 			uint256 mainPrizeTimeIncrement_ = getMainPrizeTimeIncrement();
 			uint256 mainPrizeCorrectedTime_ = Math.max(mainPrizeTime, block.timestamp);

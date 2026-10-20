@@ -5,15 +5,9 @@ https://github.com/crytic/slither/wiki/Upgradeability-Checks
 ### How to Use
 
 - Make sure Slither works.\
-See its manual in another document.
+  See its manual in another document.
 
-- From `slither/`, execute the appropriate `slither-check-upgradeability-*.bash` script. The V3 wrapper compares `CosmicSignatureGameV2` with `CosmicSignatureGameV3`, both compiled from the current source. It does not read the deployed proxy or its historical compiler layout.
-
-  An equivalent command from the repository root, using the tools on `PATH`, is:
-
-  ```bash
-  HARDHAT_MODE_CODE=1 ENABLE_HARDHAT_PREPROCESSOR=false slither-check-upgradeability . --hardhat-artifacts-directory artifacts/production CosmicSignatureGameV2 --new-contract-name CosmicSignatureGameV3
-  ```
+- From `slither/`, execute the appropriate `slither-check-upgradeability-*.bash` script. Note that the V3 wrapper compares `CosmicSignatureGameV2` with `CosmicSignatureGameV3`, both compiled from the current source. It does not read the deployed proxy or its historical compiler layout.
 
 - Review the script output in the terminal.
 

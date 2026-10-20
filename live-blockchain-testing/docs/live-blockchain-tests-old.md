@@ -1,7 +1,5 @@
 #### About This Document
 
-This is an archived V1-era procedure. Its historical command paths and runtime-mode API are not current, and it does not test the V2-to-V3 upgrade. Use [the maintained smoke-test guide](live-blockchain-tests.md) for its supported V1 scope and the [upgrade guide](../../tasks/docs/Cosmic-Signature-Game-Contract-Upgrade-And-Re-Registration.md) for V3. The quotations and todos below are preserved as history.
-
 This stuff is old and, for the most part, no longer relevant. Although the general idea remains mostly the same.
 The rewritten version of this document is named `live-blockchain-tests.md`.
 

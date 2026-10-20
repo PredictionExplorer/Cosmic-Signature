@@ -1,7 +1,5 @@
 Note: this document is legacy. Parts of still make some sense, but it does need a rewrite.
 
-Archived commands only: the sibling JavaScript files are commented out and old task/configuration paths are not current. These commands do not rehearse the V2-to-V3 production upgrade. See README.md in this folder and tasks/docs/Cosmic-Signature-Game-Contract-Upgrade-And-Re-Registration.md at the repository root.
-
 Execute the following commands:
 
 	Open a terminal and:

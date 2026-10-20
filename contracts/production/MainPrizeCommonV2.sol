@@ -52,7 +52,7 @@ abstract contract MainPrizeCommonV2 is
 		unchecked
 		// #enable_smtchecker */
 		{
-			// Comment-202606175 relates and/or applies.
+			// Comment-202606175 applies.
 			uint256 mainPrizeTimeIncrement_ = getMainPrizeTimeIncrement();
 			mainPrizeTime += mainPrizeTimeIncrement_;
 		}

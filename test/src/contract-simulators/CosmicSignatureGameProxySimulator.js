@@ -38,7 +38,7 @@ const {
 	DEFAULT_MARKETING_WALLET_CST_CONTRIBUTION_AMOUNT,
 	DEFAULT_CHARITY_ETH_DONATION_AMOUNT_PERCENTAGE,
 } = require("../../../src/CosmicSignatureConstants.js");
-const { uint256ToInt256 } = require("../../../src/BigIntMathHelpers.js");
+const { tryIncreaseValueExponentially, uint256ToInt256 } = require("../../../src/BigIntMathHelpers.js");
 const { generateRandomUInt256FromSeedWrapper } = require("../../../src/Helpers.js");
 const { assertAddressIsValid, assertEvent, generateRandomUInt256Seed } = require("../../../src/ContractTestingHelpers.js");
 
@@ -590,7 +590,7 @@ async function createCosmicSignatureGameProxySimulator(
 			} else {
 				// console.info("%s", "202505126");
 			}
-			this.nextEthBidPrice = ethBidPrice_ + ethBidPrice_ / this.ethBidPriceIncreaseDivisor + 1n;
+			this.nextEthBidPrice = tryIncreaseValueExponentially(ethBidPrice_, this.ethBidPriceIncreaseDivisor) + 1n;
 
 			// [Comment-202505086/]
 			this.cosmicSignatureTokenSimulator.mint(bidderAddress_, this.bidCstRewardAmount, contracts_, transactionReceipt_, eventIndexWrapper_);
@@ -1293,7 +1293,7 @@ async function createCosmicSignatureGameProxySimulator(
 			this.chronoWarriorAddress = hre.ethers.ZeroAddress;
 			this.chronoWarriorDuration = (-1n);
 			++ this.roundNum;
-			this.setMainPrizeTimeIncrementInMicroSeconds(this.mainPrizeTimeIncrementInMicroSeconds + this.mainPrizeTimeIncrementInMicroSeconds / this.mainPrizeTimeIncrementIncreaseDivisor, contracts_, transactionReceipt_, eventIndexWrapper_);
+			this.setMainPrizeTimeIncrementInMicroSeconds(tryIncreaseValueExponentially(this.mainPrizeTimeIncrementInMicroSeconds, this.mainPrizeTimeIncrementIncreaseDivisor), contracts_, transactionReceipt_, eventIndexWrapper_);
 			this.setRoundActivationTime(BigInt(transactionBlock_.timestamp) + this.delayDurationBeforeRoundActivation, contracts_, transactionReceipt_, eventIndexWrapper_);
 		},
 

@@ -245,7 +245,7 @@ All items in this section are `V3` unless labeled otherwise. The section describ
   - `beginningPrice` is `nextRoundFirstCstDutchAuctionBeginningBidPrice` until the round's first CST bid, then `cstDutchAuctionBeginningBidPrice`.
   - The price to pay is `base + premium`.
   - Live V2 used `beginningPrice * remaining / cstDutchAuctionDuration` instead.
-- **Multiplier updates.** An ETH bid proposes `candidate = m + m / div` and adopts it only if `candidate * CST_DUTCH_AUCTION_DURATION_MIN_LIMIT <= beginningPrice`; otherwise, `m` stays unchanged. A CST bid sets `m = (m + 1) * div / (div + 1)`.
+- **Multiplier updates.** An ETH bid proposes `candidate = m + m / div` and adopts it only if `candidate * CST_DUTCH_AUCTION_DURATION_MIN_LIMIT <= beginningPrice`; otherwise, `m` stays unchanged. A CST bid sets `m -= m / (div + 1)`.
   - `div = cstBidPriceDeclineMultiplierChangeDivisor` defaults to 100, so an allowed adjustment changes `m` by about 1%. Live V2 adjusted `cstDutchAuctionDuration` with divisor 250 instead.
   - `m` is never reset between rounds. `BidPlaced` field 8 always reports the resulting value, including when it stays unchanged; automatic adjustments emit no `*Changed` event.
   - Because the base price is `max(0, B - elapsed * m)`, an adopted increase can instantly lower it, until it reaches zero. There is no reduction when the guard rejects the increase, when elapsed time is zero, or when the base price is already zero. The CST auction timestamp is not restarted by an ETH bid after the round's first bid.

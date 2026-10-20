@@ -12,6 +12,10 @@ interface ICosmicSignatureGameV2 {
 
 	/// @notice Makes additional initializations after an upgrade.
 	/// The upgrade task calls this on the proxy as the payload of `upgradeToAndCall`, in the same transaction as the upgrade.
-	/// It has no owner check of its own, so it must not be left for a separate transaction after the upgrade.
+	/// According to Comment-202606128, it has no owner check of its own,
+	/// so it must not be left for a separate transaction after the upgrade.
+	/// todo-ai-5 I believe that new implementation contract deployment is one transaction,
+	/// todo-ai-5 while updating implementation contract address in the proxy and calling `reinitialize` on the proxy is another, right?
+	/// todo-ai-5 Improve the above wording to make it clear.
 	function reinitialize() external;
 }
