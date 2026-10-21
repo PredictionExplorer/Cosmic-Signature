@@ -134,11 +134,12 @@ abstract contract CosmicSignatureGameStorageV2Base is ICosmicSignatureGameStorag
 	/// @notice Comment-202608317 applies.
 	/// [Comment-202606101]
 	/// How long CST Dutch auction lasts.
-	/// We reduce this on a typical ETH bid and increase on a typical CST bid, based on `cstDutchAuctionDurationChangeDivisor`.
+	/// A typical ETH bid reduces this and a typical CST bid increases this, based on `cstDutchAuctionDurationChangeDivisor`.
 	/// [Comment-202608312]
-	/// As a result, bidders are encouraged to place the same number of ETH and CST bids.
+	/// As a result, bidders are encouraged to place about the same number of ETH and CST bids.
 	/// But an unintended consequence is that a typical ETH bid causes a small instant reduction of CST bid price, which is OK.
 	/// [/Comment-202608312]
+	/// Comment-202608181 relates.
 	/// [/Comment-202606101]
 	/// Comment-202411064 applies.
 	/// Comment-202411172 applies.

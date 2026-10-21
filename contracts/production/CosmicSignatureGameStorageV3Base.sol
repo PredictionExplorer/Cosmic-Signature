@@ -24,8 +24,9 @@ abstract contract CosmicSignatureGameStorageV3Base is
 	/// [/Comment-202608317]
 	/// [Comment-202608181]
 	/// By how much the base CST bid price declines per second.
-	/// We increase this on a typical ETH bid and reduce on a typical CST bid, based on `cstBidPriceDeclineMultiplierChangeDivisor`.
+	/// A typical ETH bid increases this and a typical CST bid reduces this, based on `cstBidPriceDeclineMultiplierChangeDivisor`.
 	/// Comment-202608312 applies.
+	/// Comment-202606101 relates.
 	/// [/Comment-202608181]
 	/// Comment-202611053 relates and/or applies.
 	/// Comment-202411064 applies.
