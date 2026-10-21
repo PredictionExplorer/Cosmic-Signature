@@ -17,6 +17,7 @@ task("deploy-cosmic-signature-contracts", "Deploys Cosmic Signature contracts to
 	const deployConfigJsonString = await nodeFsModule.promises.readFile(deployConfigFilePath, "utf8");
 	const deployConfigObject = JSON.parse(deployConfigJsonString);
 	if (deployConfigObject.deployerPrivateKey.length <= 0) {
+		// [Comment-202610253/]
 		deployConfigObject.deployerPrivateKey = vars.get(`deployerPrivateKey_${hre.network.name}`);
 	}
 	{

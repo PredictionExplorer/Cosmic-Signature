@@ -8,8 +8,9 @@ class State {
 	By default, we initialize this variable from a hardcoded value, which exists in the Git repo.
 	Therefore, when running this script against a mainnet, be sure to use your own secret value.
 	Save one as a Hardhat configuration variable by executing one of the followintg commands:
-	   export HARDHAT_VAR_accountPrivateKeySeed=0x...
-	   npx hardhat vars set accountPrivateKeySeed 0x...
+	   ` export HARDHAT_VAR_accountPrivateKeySeed=0x...`
+	   ` npx hardhat vars set accountPrivateKeySeed 0x...`
+	(Be sure to begin the command with a space char. It prevents the command saving to the command history.)
 	Substitute the `0x...` with a hard to guess uint256 value.
 	You can execute `${workspaceFolder}/scripts/generate-random-uint256.bash` to generate one.
 	[/Comment-202508313]
