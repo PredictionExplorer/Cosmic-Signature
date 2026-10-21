@@ -45,9 +45,13 @@ cd scripts
 
 Save some arguments to Hardhat Configuration Variables. If you are dealing with a local blockchain, skip this section.
 
-- `npx hardhat vars set deployerPrivateKey_<network-name> 0x_YOUR_DEPLOYER_PRIVATE_KEY_HERE`
+- `export HARDHAT_VAR_deployerPrivateKey_<network-name>=0x_YOUR_DEPLOYER_PRIVATE_KEY_HERE`\
+  or\
+  `npx hardhat vars set deployerPrivateKey_<network-name> 0x_YOUR_DEPLOYER_PRIVATE_KEY_HERE`
 
-- `npx hardhat vars set etherScanApiKey_<network-name> YOUR_ETHERSCAN_API_KEY_HERE`
+- `export HARDHAT_VAR_etherScanApiKey_<network-name>=YOUR_ETHERSCAN_API_KEY_HERE`\
+  or\
+  `npx hardhat vars set etherScanApiKey_<network-name> YOUR_ETHERSCAN_API_KEY_HERE`
 
 #### Run Scripts
 
@@ -81,7 +85,7 @@ Save some arguments to Hardhat Configuration Variables. If you are dealing with 
 
 - Switch back to the `main` branch.
 
-- Consider deleting secrets.
+- Consider deleting secrets if you persisted them.
 
 	- `npx hardhat vars delete deployerPrivateKey_<network-name>`
 

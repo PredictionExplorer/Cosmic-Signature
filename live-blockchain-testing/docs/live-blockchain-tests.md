@@ -27,6 +27,8 @@ All scripts assume that they are executed from the folder they are located in. S
 #### Create Hardhat Configuration Variables
 
 - Execute `${workspaceFolder}/scripts/generate-random-uint256.bash` and pick one of the generated random numbers. Create a Hardhat configuration variable:\
+  `export HARDHAT_VAR_accountPrivateKeySeed=0x_THE_GENERATED_UINT256_HERE`\
+  or\
   `npx hardhat vars set accountPrivateKeySeed 0x_THE_GENERATED_UINT256_HERE`\
   This will be used to generate private keys of a few accounts.\
   See Comment-202508313 for more info.
@@ -73,6 +75,6 @@ All scripts assume that they are executed from the folder they are located in. S
 
 - Move or delete the files under the `../output` subfolder. Some of them contain private keys.
 
-- Consider deleting secrets.
+- Consider deleting secrets if you persisted them.
 
 	- `npx hardhat vars delete accountPrivateKeySeed`
