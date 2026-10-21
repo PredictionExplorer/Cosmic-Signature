@@ -36,7 +36,7 @@ All scripts assume that they are executed from the folder they are located in. S
 - If you are to run the test on Hardhat Network, in another terminal, launch `${workspaceFolder}/scripts/hardhat-node.bash`.
 
 - From `live-blockchain-testing/runners/`, execute `./live-blockchain-tests.bash`.\
-  It will quickly fail because the owner account has no ETH, but first it will log important info, including the owner account private key and address.
+  It will quickly fail because the owner account has no ETH, but first it will log important info to stdout, including the owner account private key and address.
 
 - Internally, the test uses a few accounts. Their private keys are generated based on the `accountPrivateKeySeed` Hardhat configuration variable that you have created. One of them is nicknamed "owner". That's the one you need to transfer some ETH to.\
   There is a script named `../runners/fund-default-owner-account-with-eth.bash`. It transfers some ETH within the Hardhat Network running on localhost. Destination is the owner account whose private key seed exists in the Git repo (insecure). You can copy and modify the script to transfer ETH to your secure owner. But on a public blockchain you will need to manually transfer ETH to the owner account.
