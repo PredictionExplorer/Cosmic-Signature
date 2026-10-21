@@ -658,6 +658,775 @@
           ]
         }
       }
+    },
+    "ec935abedcd355f9eff8d90307579057a631f5c2dfdb5ce77477e9c54e30e8af": {
+      "address": "0xc1b97E1b0baC86248653B18706dbC5c8898c5c06",
+      "txHash": "0xd851cd14275f3b0fbb37c46c64fbf54b62414044ff17039228ed6f72fe9a1140",
+      "layout": {
+        "solcVersion": "0.8.34",
+        "storage": [
+          {
+            "label": "__gap_persistent",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_array(t_uint256)256_storage",
+            "contract": "OwnableUpgradeableWithReservedStorageGaps",
+            "src": "contracts/production/OwnableUpgradeableWithReservedStorageGaps.sol:17"
+          },
+          {
+            "label": "ethDonationWithInfoRecords",
+            "offset": 0,
+            "slot": "256",
+            "type": "t_array(t_struct(EthDonationWithInfoRecord)33959_storage)dyn_storage",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:30"
+          },
+          {
+            "label": "lastBidderAddress",
+            "offset": 0,
+            "slot": "257",
+            "type": "t_address",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:40"
+          },
+          {
+            "label": "lastCstBidderAddress",
+            "offset": 0,
+            "slot": "258",
+            "type": "t_address",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:43"
+          },
+          {
+            "label": "roundStats",
+            "offset": 0,
+            "slot": "259",
+            "type": "t_mapping(t_uint256,t_struct(RoundStats)34000_storage)",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:51",
+            "retypedFrom": "mapping(uint256 => ICosmicSignatureGameStorage.BidderAddresses)",
+            "renamedFrom": "bidderAddresses"
+          },
+          {
+            "label": "biddersInfo",
+            "offset": 0,
+            "slot": "260",
+            "type": "t_mapping(t_uint256,t_mapping(t_address,t_struct(BidderInfo)34010_storage))",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:55"
+          },
+          {
+            "label": "enduranceChampionAddress",
+            "offset": 0,
+            "slot": "261",
+            "type": "t_address",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:61"
+          },
+          {
+            "label": "enduranceChampionStartTimeStamp",
+            "offset": 0,
+            "slot": "262",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:64"
+          },
+          {
+            "label": "enduranceChampionDuration",
+            "offset": 0,
+            "slot": "263",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:67"
+          },
+          {
+            "label": "prevEnduranceChampionDuration",
+            "offset": 0,
+            "slot": "264",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:69"
+          },
+          {
+            "label": "chronoWarriorAddress",
+            "offset": 0,
+            "slot": "265",
+            "type": "t_address",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:75"
+          },
+          {
+            "label": "chronoWarriorDuration",
+            "offset": 0,
+            "slot": "266",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:78"
+          },
+          {
+            "label": "roundNum",
+            "offset": 0,
+            "slot": "267",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:85"
+          },
+          {
+            "label": "delayDurationBeforeRoundActivation",
+            "offset": 0,
+            "slot": "268",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:92"
+          },
+          {
+            "label": "roundActivationTime",
+            "offset": 0,
+            "slot": "269",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:100"
+          },
+          {
+            "label": "ethDutchAuctionDurationDivisor",
+            "offset": 0,
+            "slot": "270",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:106"
+          },
+          {
+            "label": "ethDutchAuctionBeginningBidPrice",
+            "offset": 0,
+            "slot": "271",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:111"
+          },
+          {
+            "label": "ethDutchAuctionEndingBidPriceDivisor",
+            "offset": 0,
+            "slot": "272",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:116"
+          },
+          {
+            "label": "nextEthBidPrice",
+            "offset": 0,
+            "slot": "273",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:120"
+          },
+          {
+            "label": "ethBidPriceIncreaseDivisor",
+            "offset": 0,
+            "slot": "274",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:124"
+          },
+          {
+            "label": "ethBidRefundAmountInGasToSwallowMaxLimit",
+            "offset": 0,
+            "slot": "275",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:128"
+          },
+          {
+            "label": "cstDutchAuctionBeginningTimeStamp",
+            "offset": 0,
+            "slot": "276",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:132"
+          },
+          {
+            "label": "cstDutchAuctionDuration",
+            "offset": 0,
+            "slot": "277",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:159",
+            "renamedFrom": "cstDutchAuctionDurationDivisor"
+          },
+          {
+            "label": "cstDutchAuctionBeginningBidPrice",
+            "offset": 0,
+            "slot": "278",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:165"
+          },
+          {
+            "label": "nextRoundFirstCstDutchAuctionBeginningBidPrice",
+            "offset": 0,
+            "slot": "279",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:169"
+          },
+          {
+            "label": "cstDutchAuctionBeginningBidPriceMinLimit",
+            "offset": 0,
+            "slot": "280",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:174"
+          },
+          {
+            "label": "usedRandomWalkNfts",
+            "offset": 0,
+            "slot": "281",
+            "type": "t_mapping(t_uint256,t_uint256)",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:178"
+          },
+          {
+            "label": "bidMessageLengthMaxLimit",
+            "offset": 0,
+            "slot": "282",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:184"
+          },
+          {
+            "label": "bidCstRewardAmountMultiplier",
+            "offset": 0,
+            "slot": "283",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:196",
+            "renamedFrom": "bidCstRewardAmount"
+          },
+          {
+            "label": "cstPrizeAmount",
+            "offset": 0,
+            "slot": "284",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:203"
+          },
+          {
+            "label": "chronoWarriorEthPrizeAmountPercentage",
+            "offset": 0,
+            "slot": "285",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:207"
+          },
+          {
+            "label": "raffleTotalEthPrizeAmountForBiddersPercentage",
+            "offset": 0,
+            "slot": "286",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:211"
+          },
+          {
+            "label": "numRaffleEthPrizesForBidders",
+            "offset": 0,
+            "slot": "287",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:215"
+          },
+          {
+            "label": "numRaffleCosmicSignatureNftsForBidders",
+            "offset": 0,
+            "slot": "288",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:219"
+          },
+          {
+            "label": "numRaffleCosmicSignatureNftsForRandomWalkNftStakers",
+            "offset": 0,
+            "slot": "289",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:223"
+          },
+          {
+            "label": "cosmicSignatureNftStakingTotalEthRewardAmountPercentage",
+            "offset": 0,
+            "slot": "290",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:227"
+          },
+          {
+            "label": "initialDurationUntilMainPrizeDivisor",
+            "offset": 0,
+            "slot": "291",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:236"
+          },
+          {
+            "label": "mainPrizeTime",
+            "offset": 0,
+            "slot": "292",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:241"
+          },
+          {
+            "label": "mainPrizeTimeIncrementInMicroSeconds",
+            "offset": 0,
+            "slot": "293",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:248"
+          },
+          {
+            "label": "mainPrizeTimeIncrementIncreaseDivisor",
+            "offset": 0,
+            "slot": "294",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:253"
+          },
+          {
+            "label": "timeoutDurationToClaimMainPrize",
+            "offset": 0,
+            "slot": "295",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:260"
+          },
+          {
+            "label": "mainEthPrizeAmountPercentage",
+            "offset": 0,
+            "slot": "296",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:264"
+          },
+          {
+            "label": "token",
+            "offset": 0,
+            "slot": "297",
+            "type": "t_contract(CosmicSignatureToken)25093",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:271"
+          },
+          {
+            "label": "randomWalkNft",
+            "offset": 0,
+            "slot": "298",
+            "type": "t_contract(RandomWalkNFT)30578",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:278"
+          },
+          {
+            "label": "nft",
+            "offset": 0,
+            "slot": "299",
+            "type": "t_contract(CosmicSignatureNft)24680",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:285"
+          },
+          {
+            "label": "prizesWallet",
+            "offset": 0,
+            "slot": "300",
+            "type": "t_contract(PrizesWallet)30027",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:291"
+          },
+          {
+            "label": "stakingWalletRandomWalkNft",
+            "offset": 0,
+            "slot": "301",
+            "type": "t_contract(StakingWalletRandomWalkNft)31812",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:297"
+          },
+          {
+            "label": "stakingWalletCosmicSignatureNft",
+            "offset": 0,
+            "slot": "302",
+            "type": "t_contract(StakingWalletCosmicSignatureNft)31292",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:300"
+          },
+          {
+            "label": "marketingWallet",
+            "offset": 0,
+            "slot": "303",
+            "type": "t_address",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:308"
+          },
+          {
+            "label": "marketingWalletCstContributionAmount",
+            "offset": 0,
+            "slot": "304",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:312"
+          },
+          {
+            "label": "charityAddress",
+            "offset": 0,
+            "slot": "305",
+            "type": "t_address",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:319"
+          },
+          {
+            "label": "charityEthDonationAmountPercentage",
+            "offset": 0,
+            "slot": "306",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:323"
+          },
+          {
+            "label": "cstDutchAuctionDurationChangeDivisor",
+            "offset": 0,
+            "slot": "307",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV2Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV2Base.sol:337"
+          },
+          {
+            "label": "cstBidPriceDeclineMultiplier",
+            "offset": 0,
+            "slot": "308",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV3Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV3Base.sol:36"
+          },
+          {
+            "label": "cstBidPriceDeclineMultiplierChangeDivisor",
+            "offset": 0,
+            "slot": "309",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV3Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV3Base.sol:42"
+          },
+          {
+            "label": "roundLateBidDurationDivisor",
+            "offset": 0,
+            "slot": "310",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV3Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV3Base.sol:51"
+          },
+          {
+            "label": "roundLateBidPricePremiumAmountBaseMultiplier",
+            "offset": 0,
+            "slot": "311",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV3Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV3Base.sol:55"
+          },
+          {
+            "label": "roundLateBidPricePremiumAmountExponent",
+            "offset": 0,
+            "slot": "312",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV3Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV3Base.sol:59"
+          },
+          {
+            "label": "mainPrizeNumCosmicSignatureNfts",
+            "offset": 0,
+            "slot": "313",
+            "type": "t_uint256",
+            "contract": "CosmicSignatureGameStorageV3Base",
+            "src": "contracts/production/CosmicSignatureGameStorageV3Base.sol:66"
+          },
+          {
+            "label": "__gap_persistent",
+            "offset": 0,
+            "slot": "314",
+            "type": "t_array(t_uint256)1073741817_storage",
+            "contract": "CosmicSignatureGameStorageV3",
+            "src": "contracts/production/CosmicSignatureGameStorageV3.sol:20"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_struct(InitializableStorage)395_storage": {
+            "label": "struct Initializable.InitializableStorage",
+            "members": [
+              {
+                "label": "_initialized",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_initializing",
+                "type": "t_bool",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(OwnableStorage)323_storage": {
+            "label": "struct OwnableUpgradeable.OwnableStorage",
+            "members": [
+              {
+                "label": "_owner",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64",
+            "numberOfBytes": "8"
+          },
+          "t_array(t_struct(EthDonationWithInfoRecord)33959_storage)dyn_storage": {
+            "label": "struct ICosmicSignatureGameStorage.EthDonationWithInfoRecord[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_uint256)1073741817_storage": {
+            "label": "uint256[1073741817]",
+            "numberOfBytes": "34359738144"
+          },
+          "t_array(t_uint256)256_storage": {
+            "label": "uint256[256]",
+            "numberOfBytes": "8192"
+          },
+          "t_contract(CosmicSignatureNft)24680": {
+            "label": "contract CosmicSignatureNft",
+            "numberOfBytes": "20"
+          },
+          "t_contract(CosmicSignatureToken)25093": {
+            "label": "contract CosmicSignatureToken",
+            "numberOfBytes": "20"
+          },
+          "t_contract(PrizesWallet)30027": {
+            "label": "contract PrizesWallet",
+            "numberOfBytes": "20"
+          },
+          "t_contract(RandomWalkNFT)30578": {
+            "label": "contract RandomWalkNFT",
+            "numberOfBytes": "20"
+          },
+          "t_contract(StakingWalletCosmicSignatureNft)31292": {
+            "label": "contract StakingWalletCosmicSignatureNft",
+            "numberOfBytes": "20"
+          },
+          "t_contract(StakingWalletRandomWalkNft)31812": {
+            "label": "contract StakingWalletRandomWalkNft",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_struct(BidderInfo)34010_storage)": {
+            "label": "mapping(address => struct ICosmicSignatureGameStorage.BidderInfo)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_mapping(t_address,t_struct(BidderInfo)34010_storage))": {
+            "label": "mapping(uint256 => mapping(address => struct ICosmicSignatureGameStorage.BidderInfo))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_struct(BidInfo)33967_storage)": {
+            "label": "mapping(uint256 => struct ICosmicSignatureGameStorage.BidInfo)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_struct(RoundStats)34000_storage)": {
+            "label": "mapping(uint256 => struct ICosmicSignatureGameStorage.RoundStats)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_uint256)": {
+            "label": "mapping(uint256 => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_string_storage": {
+            "label": "string",
+            "numberOfBytes": "32"
+          },
+          "t_struct(BidInfo)33967_storage": {
+            "label": "struct ICosmicSignatureGameStorage.BidInfo",
+            "members": [
+              {
+                "label": "bidderAddress",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "raffleCumulativeWeight",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_struct(BidderInfo)34010_storage": {
+            "label": "struct ICosmicSignatureGameStorage.BidderInfo",
+            "members": [
+              {
+                "label": "totalSpentEthAmount",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "totalSpentCstAmount",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "lastBidTimeStamp",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "2"
+              }
+            ],
+            "numberOfBytes": "96"
+          },
+          "t_struct(EthDonationWithInfoRecord)33959_storage": {
+            "label": "struct ICosmicSignatureGameStorage.EthDonationWithInfoRecord",
+            "members": [
+              {
+                "label": "roundNum",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "donorAddress",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "amount",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "data",
+                "type": "t_string_storage",
+                "offset": 0,
+                "slot": "3"
+              }
+            ],
+            "numberOfBytes": "128"
+          },
+          "t_struct(RoundStats)34000_storage": {
+            "label": "struct ICosmicSignatureGameStorage.RoundStats",
+            "members": [
+              {
+                "label": "numBids",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "bidsInfo",
+                "type": "t_mapping(t_uint256,t_struct(BidInfo)33967_storage)",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "numCstBids",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "totalSpentEthAmount",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "totalSpentCstAmount",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "4"
+              },
+              {
+                "label": "maxEthBidPrice",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "5"
+              },
+              {
+                "label": "maxCstBidPrice",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "6"
+              },
+              {
+                "label": "enduranceChampionDuration",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "7"
+              },
+              {
+                "label": "chronoWarriorDuration",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "8"
+              },
+              {
+                "label": "flags",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "9"
+              }
+            ],
+            "numberOfBytes": "320"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.Ownable": [
+            {
+              "contract": "OwnableUpgradeable",
+              "label": "_owner",
+              "type": "t_address",
+              "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:24",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73",
+              "offset": 8,
+              "slot": "0"
+            }
+          ]
+        }
+      }
     }
   }
 }
