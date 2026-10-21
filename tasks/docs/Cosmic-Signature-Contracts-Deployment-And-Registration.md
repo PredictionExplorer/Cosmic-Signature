@@ -36,18 +36,31 @@ cd scripts
 
 - `../config/deploy-cosmic-signature-contracts-config-<network-name>.json`\
   These files are in the Git repo, so don't include any secrets in them.\
-  For a local blockchain, it's OK to set `deployerPrivateKey` to a well known account private key. For a testnet or mainnet, leave it empty, so that it was taken from a Hardhat configuration variable.\
+  For a local blockchain, it's OK to set `deployerPrivateKey` to a well known account private key. For a testnet or mainnet, leave it empty and supply the key through the temporary environment described below.\
   Set `randomWalkNftAddress` to where the contract has been deployed. If you leave it empty or zero, it will be deployed, which is typically the right thing to do on a local blockchain.\
   Set `charityAddress` to your charity address. Or leave it empty or zero and later set it by making a call to `CharityWallet`.\
   You probably don't need to change any other arguments.
 
-#### Create Hardhat Configuration Variables
+#### Supply Credentials For This Terminal Session
 
-Save some arguments to Hardhat Configuration Variables. If you are dealing with a local blockchain, skip this section.
+Skip this section for a local blockchain. Do not save real private keys or API keys with `hardhat vars set`: Hardhat stores them in plaintext in a global file. Do not put credentials in JSON files, command arguments, shell startup files, or `.env` files.
 
-- `npx hardhat vars set deployerPrivateKey_<network-name> 0x_YOUR_DEPLOYER_PRIVATE_KEY_HERE`
+Keep a secure backup of the account before funding it. Open a dedicated Bash session and enter credentials at hidden prompts. This Arbitrum One example keeps the literal values out of command history; use the `arbitrumSepolia` suffix instead for that network. The `HARDHAT_VAR_` names override Hardhat's stored variables when each process starts.
 
-- `npx hardhat vars set etherScanApiKey_<network-name> YOUR_ETHERSCAN_API_KEY_HERE`
+```bash
+/bin/bash
+set +x
+unset DEBUG
+trap 'unset HARDHAT_VAR_deployerPrivateKey_arbitrumOne HARDHAT_VAR_etherScanApiKey_arbitrumOne' EXIT
+read -r -s -p 'Deployer private key: ' HARDHAT_VAR_deployerPrivateKey_arbitrumOne
+printf '\n'
+export HARDHAT_VAR_deployerPrivateKey_arbitrumOne
+read -r -s -p 'Etherscan API key: ' HARDHAT_VAR_etherScanApiKey_arbitrumOne
+printf '\n'
+export HARDHAT_VAR_etherScanApiKey_arbitrumOne
+```
+
+Run the intended scripts in this same session, then `exit`. Never print these variables, use `hardhat vars get`, or enable shell tracing while credentials are loaded. Environment variables avoid a persistent credential file, but the running process and its children can read them; they are not an encrypted keystore. The current tasks use a software-wallet key. A hardware wallet or multisig requires a separate signer integration; never export a hardware wallet's recovery phrase for these scripts.
 
 #### Run Scripts
 
@@ -63,7 +76,7 @@ Save some arguments to Hardhat Configuration Variables. If you are dealing with 
 
 #### Notes
 
-- Near Comment-202610237, the deployment task logs the resolved configuration, including the deployer private key. Therefore, keep the terminal output private.
+- Near Comment-202610237, the deployment task logs only the public deployer address. Resolved credentials are never serialized with the configuration or included in the deployment report.
 
 #### Caveats
 
@@ -81,8 +94,11 @@ Save some arguments to Hardhat Configuration Variables. If you are dealing with 
 
 - Switch back to the `main` branch.
 
-- Consider deleting secrets.
+- Clear the temporary credentials and close the dedicated session.
 
-	- `npx hardhat vars delete deployerPrivateKey_<network-name>`
+  ```bash
+  unset HARDHAT_VAR_deployerPrivateKey_arbitrumOne HARDHAT_VAR_etherScanApiKey_arbitrumOne
+  exit
+  ```
 
-	- `npx hardhat vars delete etherScanApiKey_<network-name>`
+- If an earlier workflow saved credentials with `hardhat vars set`, first confirm their secure backup, then use `npx hardhat vars delete deployerPrivateKey_<network-name>` and `npx hardhat vars delete etherScanApiKey_<network-name>`. Deleting a stored entry does not revoke a key or erase copies from older logs or backups. Never inspect the values with `vars get` when checking cleanup.

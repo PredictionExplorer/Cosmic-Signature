@@ -24,21 +24,30 @@ All scripts assume that they are executed from the folder they are located in. S
 
 - In `cosmicSignatureGamePlaying.randomWalkNftIds`, you have an option to provide Random Walk NFTs already held by the generated test signers.
 
-#### Create Hardhat Configuration Variables
+#### Supply The Account Seed For This Terminal Session
 
-- Execute `${workspaceFolder}/scripts/generate-random-uint256.bash` and pick one of the generated random numbers. Create a Hardhat configuration variable:\
-  `npx hardhat vars set accountPrivateKeySeed 0x_THE_GENERATED_UINT256_HERE`\
-  This will be used to generate private keys of a few accounts.\
-  See Comment-202508313 for more info.
+- For accounts that will hold funds, generate a cryptographically random uint256 seed with a secure password manager and keep a secure backup before funding them. Enter the hex value at a hidden prompt; do not paste it into a command, save it with `hardhat vars set`, or write it to a configuration file. The seed derives every test account, so treat it like a private key. See Comment-202508313 for more info.
+
+  ```bash
+  /bin/bash
+  set +x
+  unset DEBUG
+  trap 'unset HARDHAT_VAR_accountPrivateKeySeed' EXIT
+  read -r -s -p 'Secret account seed (0x followed by 64 hex digits): ' HARDHAT_VAR_accountPrivateKeySeed
+  printf '\n'
+  export HARDHAT_VAR_accountPrivateKeySeed
+  ```
+
+- Run both the initial and later test runs in this same session, or supply the same backed-up seed again. The public default seed remains suitable only for disposable local accounts. Environment variables are not encryption and are readable by the process and its children.
 
 #### First (Failing) Run And Account Funding
 
 - If you are to run the test on Hardhat Network, in another terminal, launch `${workspaceFolder}/scripts/hardhat-node.bash`.
 
 - From `live-blockchain-testing/runners/`, execute `./live-blockchain-tests.bash`.\
-  It will quickly fail because the owner account has no ETH, but first it will log important info, including the owner account private key and address.
+  It will quickly fail because the owner account has no ETH, but first it will log the account names and public addresses. It does not log the seed or private keys.
 
-- Internally, the test uses a few accounts. Their private keys are generated based on the `accountPrivateKeySeed` Hardhat configuration variable that you have created. One of them is nicknamed "owner". That's the one you need to transfer some ETH to.\
+- Internally, the test uses a few accounts. Their private keys are generated from `HARDHAT_VAR_accountPrivateKeySeed`. One of them is nicknamed "owner". That's the one you need to transfer some ETH to.\
   There is a script named `../runners/fund-default-owner-account-with-eth.bash`. It transfers some ETH within the Hardhat Network running on localhost. Destination is the owner account whose private key seed exists in the Git repo (insecure). You can copy and modify the script to transfer ETH to your secure owner. But on a public blockchain you will need to manually transfer ETH to the owner account.
 
 #### Run The Test
@@ -52,7 +61,7 @@ All scripts assume that they are executed from the folder they are located in. S
 
 #### Get Your Assets Back
 
-- Besides the owner, there are a few more involved accounts. The test logs their private keys and addresses. You can use that info to get the assets they hold.
+- Besides the owner, there are a few more involved accounts. Keep the secure seed backup until every account's assets have been retrieved. The account names and addresses are logged; the same seed recreates their signers for another test run. Do not rely on logs or output JSON files to recover private keys.
 
 - If everything worked as designed, retrieve ETH from each involved account. Donated Random Walk NFTs are retrieved by the main-prize winner (bidder2 in this scenario).
 
@@ -71,8 +80,13 @@ All scripts assume that they are executed from the folder they are located in. S
 
 - Move or delete the `.openzeppelin` subfolder.
 
-- Move or delete the files under the `../output` subfolder. Some of them contain private keys.
+- Preserve the deployment reports needed for retrieval. New generated deployment configurations contain an empty `deployerPrivateKey`; the actual key is passed directly in memory. Files and logs from older runs may contain private keys and need separate cleanup after confirming secure account recovery.
 
-- Consider deleting secrets.
+- Clear the temporary seed and close the dedicated session:
 
-	- `npx hardhat vars delete accountPrivateKeySeed`
+  ```bash
+  unset HARDHAT_VAR_accountPrivateKeySeed
+  exit
+  ```
+
+- If an earlier run saved the seed with `hardhat vars set`, confirm its secure backup and remove that stored entry with `npx hardhat vars delete accountPrivateKeySeed`. This does not erase older logs or backups. Do not print the stored value to inspect it.

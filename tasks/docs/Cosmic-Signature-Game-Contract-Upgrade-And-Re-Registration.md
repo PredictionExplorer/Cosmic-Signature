@@ -38,15 +38,15 @@ The same blockchains are supported.
 #### Edit Configuration Files
 
 - `../config/deploy-cosmic-signature-contracts-config-<network-name>.json`\
-  Make sure `deployerPrivateKey` matches the current contract owner. But leave it empty for the testnet or mainnet.
+  Leave `deployerPrivateKey` empty for the testnet or mainnet. The temporary signing key supplied below must belong to the current contract owner.
 
 - `../config/upgrade-cosmic-signature-game-config-<network-name>-<cosmic-signature-game-contract-name>.json`\
   It's unlikely that you need to edit it (but review the Caveats section).\
   The production config files and scripts contain the words `arbitrumOne` and `CosmicSignatureGameV2` (or V3+ when upgrading to respective versions) in their names.
 
-#### Create Hardhat Configuration Variables
+#### Supply Credentials For This Terminal Session
 
-- See respective section in `Cosmic-Signature-Contracts-Deployment-And-Registration.md`. Make sure `deployerPrivateKey_<network-name>` matches the current contract owner (unless you provided it in the config file).
+- Follow the hidden-prompt environment instructions in `Cosmic-Signature-Contracts-Deployment-And-Registration.md`. Make sure `HARDHAT_VAR_deployerPrivateKey_<network-name>` belongs to the current contract owner. Do not persist the key with `hardhat vars set` or place it in the configuration file.
 
 #### When Testing
 

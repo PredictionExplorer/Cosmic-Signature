@@ -1,7 +1,7 @@
 // // Comment-202509229 applies.
 
 // // Invocation example:
-// // PRIVKEY=0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba npx hardhat run scripts/selfdestructible-cosmic-signature-game/deploy.js
+// // After supplying PRIVKEY at a hidden prompt: npx hardhat run scripts/selfdestructible-cosmic-signature-game/deploy.js
 
 // "use strict";
 
@@ -14,7 +14,7 @@
 // 		console.error(
 // 			"%s",
 // 			// todo-9 "scripts/deploy.js" no longer exists.
-// 			"Error. Please provide private key on the command line as ENVIRONMENT variable 'PRIVKEY', example : PRIVKEY=\"0x21982349...\" npx hardhat run scripts/deploy.js",
+// 			"Error. Supply PRIVKEY at a hidden prompt before starting this script; see live-blockchain-tests-old.md. Never put a literal key in a command.",
 // 		);
 // 		process.exit(1);
 // 	}

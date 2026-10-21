@@ -21,7 +21,7 @@
 // 		console.error(
 // 			"%s",
 // 			// todo-9 "scripts/deploy.js" no longer exists.
-// 			"Error. Please provide private key on the command line as ENVIRONMENT variable 'PRIVKEY', example : PRIVKEY=\"0x21982349...\" npx hardhat run scripts/deploy.js",
+// 			"Error. Supply PRIVKEY at a hidden prompt before starting this script; see live-blockchain-tests-old.md. Never put a literal key in a command.",
 // 		);
 // 		process.exit(1);
 // 	}

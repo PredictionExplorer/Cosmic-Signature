@@ -4,13 +4,12 @@ class State {
 	/**
 	[Comment-202508313]
 	We will use this variable as a seed to generate private keys of a few accounts.
-	We will log the actual generated private keys and addresses.
+	We log only the generated account names and public addresses, never the seed or private keys.
 	By default, we initialize this variable from a hardcoded value, which exists in the Git repo.
 	Therefore, when running this script against a mainnet, be sure to use your own secret value.
-	Save one as a Hardhat configuration variable by executing the followintg command:
-	   npx hardhat vars set accountPrivateKeySeed 0x...
-	Substitute the "0x..." with a hard to guess uint256 value.
-	You can execute `${workspaceFolder}/scripts/generate-random-uint256.bash` to generate one.
+	Keep a cryptographically random uint256 seed in a secure backup and enter it at a hidden prompt
+	into the temporary HARDHAT_VAR_accountPrivateKeySeed environment variable before starting Hardhat.
+	See live-blockchain-testing/docs/live-blockchain-tests.md. Do not persist a real seed with `hardhat vars set`.
 	[/Comment-202508313]
 	@type {bigint}
 	*/

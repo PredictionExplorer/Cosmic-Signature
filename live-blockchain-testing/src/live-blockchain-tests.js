@@ -137,11 +137,18 @@ function createAccountSigners() {
 
 	{
 		const accountPrivateKeySeedAsString_ = vars.get("accountPrivateKeySeed", "");
-		const accountPrivateKeySeed_ = (accountPrivateKeySeedAsString_.length > 0) ? BigInt(accountPrivateKeySeedAsString_) : defaultAccountPrivateKeySeed;
+		let accountPrivateKeySeed_;
+		try {
+			accountPrivateKeySeed_ = (accountPrivateKeySeedAsString_.length > 0) ? BigInt(accountPrivateKeySeedAsString_) : defaultAccountPrivateKeySeed;
+			if (accountPrivateKeySeed_ < 0n || accountPrivateKeySeed_ >= (1n << 256n)) {
+				throw new Error("The account private-key seed is outside the uint256 range.");
+			}
+		} catch {
+			throw new Error("The account private-key seed is invalid; its contents are not logged.");
+		}
 		state.accountPrivateKeySeed = accountPrivateKeySeed_;
-		console.info("%s", `${nodeOsModule.EOL}accountPrivateKeySeed = ${uint256ToPaddedHexString(accountPrivateKeySeed_)}`);
 		if (accountPrivateKeySeed_ == defaultAccountPrivateKeySeed) {
-			console.warn("%s", "Warning. That's the default hardcoded value. Your money, fake or real, may be at risk!");
+			console.warn("%s", "Warning. Using the public default account seed. Your money, fake or real, may be at risk!");
 		}
 	}
 
@@ -161,7 +168,7 @@ function createAccountSigner(accountPrivateKeySeedSaltEntry_) {
 	const accountPrivateKeySeed_ = state.accountPrivateKeySeed ^ accountPrivateKeySeedSalt_;
 	const accountPrivateKey_ = generateAccountPrivateKeyFromSeed(accountPrivateKeySeed_);
 	const accountSigner_ = new hre.ethers.Wallet(accountPrivateKey_, hre.ethers.provider);
-	console.info("%s", `${accountName_}: privateKey = ${accountPrivateKey_}, address = ${accountSigner_.address}`);
+	console.info("%s", `${accountName_}: address = ${accountSigner_.address}`);
 	state[`${accountName_}Signer`] = accountSigner_;
 	if (accountName_.startsWith("bidder")) {
 		state.accountEthPrizeRoundNums[accountSigner_.address] = [];

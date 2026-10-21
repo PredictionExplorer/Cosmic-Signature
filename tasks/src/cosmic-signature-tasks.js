@@ -11,29 +11,36 @@ const { waitForTransactionReceipt, safeErc1967GetChangedImplementationAddress } 
 // Comment-202409255 relates.
 const { deployContractsAdvanced, /*setRoundActivationTimeIfNeeded,*/ } = require("../../src/ContractDeploymentHelpers.js");
 
-task("deploy-cosmic-signature-contracts", "Deploys Cosmic Signature contracts to a blockchain", async (args, hre) => {
+function parseTaskJson(jsonString, description) {
+	try {
+		return JSON.parse(jsonString);
+	} catch {
+		throw new Error(`Invalid ${description} JSON; its contents are not logged.`);
+	}
+}
+
+function createDeployerSigner(hre, deployerPrivateKey) {
+	try {
+		return new hre.ethers.Wallet(deployerPrivateKey, hre.ethers.provider);
+	} catch {
+		throw new Error("The deployer private key is missing or invalid; its contents are not logged.");
+	}
+}
+
+async function deployCosmicSignatureContracts(args, hre, deployerPrivateKeyOverride) {
 	console.info("%s", `${nodeOsModule.EOL}deploy-cosmic-signature-contracts task is running.${nodeOsModule.EOL}`);
 	const deployConfigFilePath = args.deployconfigfilepath;
 	const deployConfigJsonString = await nodeFsModule.promises.readFile(deployConfigFilePath, "utf8");
-	const deployConfigObject = JSON.parse(deployConfigJsonString);
-	if (deployConfigObject.deployerPrivateKey.length <= 0) {
-		deployConfigObject.deployerPrivateKey = vars.get(`deployerPrivateKey_${hre.network.name}`);
-	}
-	{
-		console.info("%s", "Using configuration:");
-		// const deployerPrivateKey = deployConfigObject.deployerPrivateKey;
-		// deployConfigObject.deployerPrivateKey = "******";
-
-		// [Comment-202610237/]
-		console.info("%o", deployConfigObject);
-
-		console.info();
-		// deployConfigObject.deployerPrivateKey = deployerPrivateKey;
-	}
+	const deployConfigObject = parseTaskJson(deployConfigJsonString, "deployment configuration");
 	if (nodeFsModule.existsSync(deployConfigObject.reportFilePath)) {
 		throw new Error(`"${deployConfigObject.reportFilePath}" already exists.`);
 	}
-	const deployerSigner = new hre.ethers.Wallet(deployConfigObject.deployerPrivateKey, hre.ethers.provider);
+	const deployerPrivateKey = deployerPrivateKeyOverride ?? (deployConfigObject.deployerPrivateKey || vars.get(`deployerPrivateKey_${hre.network.name}`));
+	const deployerSigner = createDeployerSigner(hre, deployerPrivateKey);
+
+	// [Comment-202610237/]
+	// Log only public signer information, never the configuration or its resolved credentials.
+	console.info("%s", `Deployer address: ${deployerSigner.address}`);
 
 	await hre.run("compile");
 
@@ -119,15 +126,19 @@ task("deploy-cosmic-signature-contracts", "Deploys Cosmic Signature contracts to
 	}
 
 	console.info("%s", `deploy-cosmic-signature-contracts task is done.${nodeOsModule.EOL}`);
+}
+
+task("deploy-cosmic-signature-contracts", "Deploys Cosmic Signature contracts to a blockchain", async (args, hre) => {
+	await deployCosmicSignatureContracts(args, hre);
 })
 	.addParam("deployconfigfilepath", "Deployment configuration file (JSON) path");
 
 task("register-cosmic-signature-contracts", "Verifies and registers deployed Cosmic Signature contracts", async (args, hre) => {
 	const deployConfigFilePath = args.deployconfigfilepath;
 	const deployConfigJsonString = await nodeFsModule.promises.readFile(deployConfigFilePath, "utf8");
-	const deployConfigObject = JSON.parse(deployConfigJsonString);
+	const deployConfigObject = parseTaskJson(deployConfigJsonString, "deployment configuration");
 	const deployCosmicSignatureContractsReportJsonString = await nodeFsModule.promises.readFile(deployConfigObject.reportFilePath, "utf8");
-	const deployCosmicSignatureContractsReportObject = JSON.parse(deployCosmicSignatureContractsReportJsonString);
+	const deployCosmicSignatureContractsReportObject = parseTaskJson(deployCosmicSignatureContractsReportJsonString, "deployment report");
 	hre.config.etherscan.apiKey = vars.get(`etherScanApiKey_${hre.network.name}`);
 
 	console.info("%s", `${nodeOsModule.EOL}Registering CosmicSignatureToken.`);
@@ -223,18 +234,16 @@ task("upgrade-cosmic-signature-game", "Upgrades the CosmicSignatureGame contract
 	console.info();
 	const upgradeConfigFilePath = args.upgradeconfigfilepath;
 	const upgradeConfigJsonString = await nodeFsModule.promises.readFile(upgradeConfigFilePath, "utf8");
-	const upgradeConfigObject = JSON.parse(upgradeConfigJsonString);
+	const upgradeConfigObject = parseTaskJson(upgradeConfigJsonString, "upgrade configuration");
 	if (nodeFsModule.existsSync(upgradeConfigObject.reportFilePath)) {
 		throw new Error(`"${upgradeConfigObject.reportFilePath}" already exists.`);
 	}
 	const deployConfigJsonString = await nodeFsModule.promises.readFile(upgradeConfigObject.deploymentConfigurationFilePath, "utf8");
-	const deployConfigObject = JSON.parse(deployConfigJsonString);
-	if (deployConfigObject.deployerPrivateKey.length <= 0) {
-		deployConfigObject.deployerPrivateKey = vars.get(`deployerPrivateKey_${hre.network.name}`);
-	}
+	const deployConfigObject = parseTaskJson(deployConfigJsonString, "deployment configuration");
+	const deployerPrivateKey = deployConfigObject.deployerPrivateKey || vars.get(`deployerPrivateKey_${hre.network.name}`);
 	const deployCosmicSignatureContractsReportJsonString = await nodeFsModule.promises.readFile(deployConfigObject.reportFilePath, "utf8");
-	const deployCosmicSignatureContractsReportObject = JSON.parse(deployCosmicSignatureContractsReportJsonString);
-	const deployerSigner = new hre.ethers.Wallet(deployConfigObject.deployerPrivateKey, hre.ethers.provider);
+	const deployCosmicSignatureContractsReportObject = parseTaskJson(deployCosmicSignatureContractsReportJsonString, "deployment report");
+	const deployerSigner = createDeployerSigner(hre, deployerPrivateKey);
 
 	await hre.run("compile");
 	console.info();
@@ -322,9 +331,9 @@ task("upgrade-cosmic-signature-game", "Upgrades the CosmicSignatureGame contract
 task("register-upgraded-cosmic-signature-game", "Verifies and registers a newly upgraded CosmicSignatureGame contract", async (args, hre) => {
 	const upgradeConfigFilePath = args.upgradeconfigfilepath;
 	const upgradeConfigJsonString = await nodeFsModule.promises.readFile(upgradeConfigFilePath, "utf8");
-	const upgradeConfigObject = JSON.parse(upgradeConfigJsonString);
+	const upgradeConfigObject = parseTaskJson(upgradeConfigJsonString, "upgrade configuration");
 	const upgradeCosmicSignatureGameReportJsonString = await nodeFsModule.promises.readFile(upgradeConfigObject.reportFilePath, "utf8");
-	const upgradeCosmicSignatureGameReportObject = JSON.parse(upgradeCosmicSignatureGameReportJsonString);
+	const upgradeCosmicSignatureGameReportObject = parseTaskJson(upgradeCosmicSignatureGameReportJsonString, "upgrade report");
 	hre.config.etherscan.apiKey = vars.get(`etherScanApiKey_${hre.network.name}`);
 
 	console.info("%s", `${nodeOsModule.EOL}Registering ${upgradeConfigObject.newCosmicSignatureGameContractName} implementation.`);
@@ -355,3 +364,7 @@ task("register-upgraded-cosmic-signature-game", "Verifies and registers a newly 
 	console.info("%s", `${nodeOsModule.EOL}Done.`);
 })
 	.addParam("upgradeconfigfilepath", "Upgrade configuration file (JSON) path");
+
+module.exports = {
+	deployCosmicSignatureContracts,
+};

@@ -1,6 +1,7 @@
 {
 	"name": "Cosmic-Signature",
 	"scripts": {
+		"test:credentials": "node --test tasks/tests/credential-handling.test.cjs",
 		"hardhat-test-quick": "cd test/runners && ./test-quick.bash -b",
 		"hardhat-test-medium": "cd test/runners && ./test-medium.bash -b",
 		"hardhat-test-full": "cd test/runners && ./test.bash -b",
