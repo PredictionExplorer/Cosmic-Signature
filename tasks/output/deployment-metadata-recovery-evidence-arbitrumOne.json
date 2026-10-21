@@ -1,0 +1,290 @@
+{
+  "description": "Reconstructed deployment metadata, not recovered originals. The initial report is derived from creation receipts and original proxy pairing events. The manifest imports the verified current V2 implementation and proxy; it does not recreate the original manifest full history. Local restoration only; no blockchain transaction was signed or sent.",
+  "restoredAtUtc": "2026-10-21T03:24:15.874Z",
+  "files": [
+    {
+      "path": "tasks/output/deploy-cosmic-signature-contracts-report-arbitrumOne.json",
+      "sha256": "bae558c0c784b14cdf4191db30786f768e4dea6ef7c865340cbdb65ae3e4b640"
+    },
+    {
+      "path": "tasks/runners/.openzeppelin/arbitrum-one.json",
+      "sha256": "8b0df274a86bf669e17d7d24f91ff0ee800bdc49f879118d716aa8f818614e06"
+    }
+  ],
+  "initialReportReconstruction": {
+    "description": "Reconstructed original-deployment report from public Arbitrum creation receipts and initial proxy configuration events. This is a reconstruction, not a recovered original file. No transaction was signed or sent.",
+    "chainId": 42161,
+    "observedBlock": {
+      "number": 516794499,
+      "hash": "0x93602b4c63a6a07e6284b3033ec6f8dbf7f9f7a0bb310b073e6f38cca26c3654",
+      "timestamp": 1792552868
+    },
+    "proxy": "0x6a714Ae7B5b6eA520F6BCA23d2E609C4Fd5863F2",
+    "currentImplementation": "0x50eB3d05d2C463949DE9238D419385594f7AdB97",
+    "owner": "0x14c82Ce4E5713E88C9462680E9c02BF4a3089871",
+    "historicalEventRange": {
+      "fromBlock": 455767589,
+      "toBlock": 455770000
+    },
+    "creationReceiptsAndCodeHashes": {
+      "proxy": {
+        "address": "0x6a714Ae7B5b6eA520F6BCA23d2E609C4Fd5863F2",
+        "transactionHash": "0xb9db34c4f095e2c207e5048fdff5d539b4dcb4f56dc455f2c74dc2d8e056532f",
+        "blockNumber": 455767589,
+        "blockHash": "0x5136ef6c519a172f680aff210dc4002a6db350c4536706d5e0948ec011e769b1",
+        "deployer": "0x14c82Ce4E5713E88C9462680E9c02BF4a3089871",
+        "runtimeBytecodeKeccak256": "0x864cc9ad53b338b82da1f7cab85ab0b3d5c8861acb422b6fec63cf36234f36a6"
+      },
+      "implementation": {
+        "address": "0x50eB3d05d2C463949DE9238D419385594f7AdB97",
+        "transactionHash": "0xe5344188b4e76856fe9103e583fcf554b010de1b4d50ca292926d1cbd3ed4733",
+        "blockNumber": 475913340,
+        "blockHash": "0x0282fcb9fe2a6c68f0303de45f2907aca8c19a301e5a6301ef166bf72c4c914a",
+        "deployer": "0x14c82Ce4E5713E88C9462680E9c02BF4a3089871",
+        "runtimeBytecodeKeccak256": "0x959e357be1ecba7274be0dfa6fde72cf646557a673f2cb89590bcb07b22ca396"
+      },
+      "v1Implementation": {
+        "address": "0x7739148013777c485AD9f3d971e1005Eca686661",
+        "transactionHash": "0xb2144b5d2534ecd5abdd86a680d5a5d7bb19bcd8067e7ddbfd4ed125f75ae3a5",
+        "blockNumber": 455767564,
+        "blockHash": "0xb7d8d6bbed351c0ac7be488851ec21120a452c5d5876cc505cee8b1057489b11",
+        "deployer": "0x14c82Ce4E5713E88C9462680E9c02BF4a3089871",
+        "runtimeBytecodeKeccak256": "0x68a15f93036a4fe180f1fc71c3f8a3ad9f530f9ee68e8d2f961ad83719445e2c"
+      },
+      "token": {
+        "address": "0xAD91843e6A58Ba560F577E676986AFb1dba6FBA0",
+        "transactionHash": "0x0d666c20601911d09393f2595257645a770196bc823b82b3e85946caa0fb12a7",
+        "blockNumber": 455767598,
+        "blockHash": "0xb835314c71ab89a690620d99933e7aaf10eadb3cda74b8bce61aee926bc92a47",
+        "deployer": "0x14c82Ce4E5713E88C9462680E9c02BF4a3089871",
+        "runtimeBytecodeKeccak256": "0x444f572b0d8ad2c38eb453aeaa9b97f995a87c472e45b45b9669149effd29983"
+      },
+      "nft": {
+        "address": "0xbb84Be3500A63581d3F2d5AC3bdF8685AAedad25",
+        "transactionHash": "0x962d27f3965eee2caa58cd943e45ab563fbdda9b031b23de8f198586845d88b3",
+        "blockNumber": 455767604,
+        "blockHash": "0x1f765019feb60deea7cf61757a070a71b6da025e263f993abde866c28a15c4d8",
+        "deployer": "0x14c82Ce4E5713E88C9462680E9c02BF4a3089871",
+        "runtimeBytecodeKeccak256": "0x1f416c82f4f297accb6b83380733b7efcb330a4e06c08c65bcb1447b5aea10c9"
+      },
+      "randomWalkNft": {
+        "address": "0x895a6F444BE4ba9d124F61DF736605792B35D66b",
+        "transactionHash": "0x4d412b140c37a3dccc96cc30e93491d7e40628c57841be259f5aa34c036a305f",
+        "blockNumber": 2910155,
+        "blockHash": "0xbf5e85f47c5620be345a58b112823bac16c5027a3306349725ccf674e2540f07",
+        "deployer": "0xad65de4D008311Bb97e8b2376b4172ea55f4d8Ae",
+        "runtimeBytecodeKeccak256": "0xc6f5b00b0ac1f4dffb426a42928a9189c70bf4c618fce238f07e2897075fe9b9"
+      },
+      "prizesWallet": {
+        "address": "0xE1b619e9B39ea4109D2F429Ea5eAA307759b0011",
+        "transactionHash": "0x3787fb02ae231679e6e90d17d2d75685514bc64360df14d220a1074e48f06ea5",
+        "blockNumber": 455767610,
+        "blockHash": "0x8368714f7465e4373240a6dfb7a58bea7f74fcf652fa8d1e9669f24040c66c79",
+        "deployer": "0x14c82Ce4E5713E88C9462680E9c02BF4a3089871",
+        "runtimeBytecodeKeccak256": "0x098b2a40d2f724e4a3f98c425c65b9bfa35261f6ded6a7917f3fa27ef4a52f93"
+      },
+      "stakingWalletCosmicSignatureNft": {
+        "address": "0x6308A405B4FF1eA890870Efe2a6D036750B81F7C",
+        "transactionHash": "0x6fd5e47e4a3c26db2cf84f2982417cca16a859e03129264818ca85bcefb822ef",
+        "blockNumber": 455767622,
+        "blockHash": "0x2c197731ebb98c98be460e3d1c32e7799efb70c989456204db3d7eb560b98903",
+        "deployer": "0x14c82Ce4E5713E88C9462680E9c02BF4a3089871",
+        "runtimeBytecodeKeccak256": "0x8914a2bccd4d1f0b8554879f42b6fe99a81537a1126958e40eeb36d0c9b36425"
+      },
+      "stakingWalletRandomWalkNft": {
+        "address": "0x5EB3396092841E6c5b0b51141699F6711E830529",
+        "transactionHash": "0xdded7447b3475a2dbc3c5bf4565fbd9aed7d5936bf9a448baabe70ead46433cc",
+        "blockNumber": 455767616,
+        "blockHash": "0x92ce2e5ac40bc4a24c4bc0805c4859df926199132beff6c9bf6abf33ae91ac79",
+        "deployer": "0x14c82Ce4E5713E88C9462680E9c02BF4a3089871",
+        "runtimeBytecodeKeccak256": "0x2069412d0d3391ea9c8701cdd129344f97dbf9a5048b092eb0610b742a64d757"
+      },
+      "marketingWallet": {
+        "address": "0xa3802c799f5e3D3D3562A9B513a41C6aAF92e25e",
+        "transactionHash": "0x371bd9b3887ac1464802374bcb6b0334da2f693a42b1e4ff0c54ef7616dca6a8",
+        "blockNumber": 455767628,
+        "blockHash": "0x49a774b0493be93b713b09eddcf92afba2828c55ca0d0e64cdcbf9e2b182f8e8",
+        "deployer": "0x14c82Ce4E5713E88C9462680E9c02BF4a3089871",
+        "runtimeBytecodeKeccak256": "0x0540a032a9474fafa0779407d4c7a5c63062e53ac2ed6c43f8371d85e8e4e631"
+      },
+      "charityAddress": {
+        "address": "0x96bB0ADB414d5350f435E52f94946B6C7A0760a9",
+        "transactionHash": "0xcf7c60b268d0e4aa1633eaab8e98d31777d3891117b36589c049e0b204fd3880",
+        "blockNumber": 455767634,
+        "blockHash": "0xb2ef7aff8d560e925ea6cfef1b0a9fc8097ab7388fa9e5290d15e91b7f3267f8",
+        "deployer": "0x14c82Ce4E5713E88C9462680E9c02BF4a3089871",
+        "runtimeBytecodeKeccak256": "0x03f75f1f52df458fe6dbcaded7eec79d3ba6fea3ee7af4040d12062bdd5497ef"
+      },
+      "cosmicCouncil": {
+        "address": "0xF3D52E1c681949be7E624778dB13DaD7F8c729db",
+        "transactionHash": "0x15ad91bfb67c60af028ea567e2115b44eb3596450fc4abd82b9e9198a64c5367",
+        "blockNumber": 455767650,
+        "blockHash": "0x78bebe6a27cc47a1c97fb5be6b0b0398b5f577e36cb4b35734b08dda7c4d966c",
+        "deployer": "0x14c82Ce4E5713E88C9462680E9c02BF4a3089871",
+        "runtimeBytecodeKeccak256": "0x7f53b2d740ec4db29d1c5620208cbd0bf3b3f348c1caa0222654c0a4806410c0"
+      }
+    },
+    "initialConfigurationEvents": {
+      "CosmicSignatureTokenAddressChanged": {
+        "address": "0xAD91843e6A58Ba560F577E676986AFb1dba6FBA0",
+        "transactionHash": "0x7d53e20704fb7f783cb3d7b1e7b77b2e2f5e091abe57b16a35d8fb0c2bca6611",
+        "blockNumber": 455767658,
+        "logIndex": 4
+      },
+      "RandomWalkNftAddressChanged": {
+        "address": "0x895a6F444BE4ba9d124F61DF736605792B35D66b",
+        "transactionHash": "0x387ae24aba273cb985374c1a52e73f86700462eccad3a9d97a32178c92dc7a90",
+        "blockNumber": 455767666,
+        "logIndex": 12
+      },
+      "CosmicSignatureNftAddressChanged": {
+        "address": "0xbb84Be3500A63581d3F2d5AC3bdF8685AAedad25",
+        "transactionHash": "0x48543c48bd9527af7166bd5fd3ec5d0b2d39c7c77f2fe408f546247f4857886e",
+        "blockNumber": 455767674,
+        "logIndex": 8
+      },
+      "PrizesWalletAddressChanged": {
+        "address": "0xE1b619e9B39ea4109D2F429Ea5eAA307759b0011",
+        "transactionHash": "0xa9b2e3df84149e419fe0eba45352320ed107f3ddca3a420f411f8e05b49e6342",
+        "blockNumber": 455767680,
+        "logIndex": 3
+      },
+      "StakingWalletRandomWalkNftAddressChanged": {
+        "address": "0x5EB3396092841E6c5b0b51141699F6711E830529",
+        "transactionHash": "0xcffad185a2c8c1370e37c97cda7999864c1d62d4576e743567887a87a2b68f3c",
+        "blockNumber": 455767684,
+        "logIndex": 0
+      },
+      "StakingWalletCosmicSignatureNftAddressChanged": {
+        "address": "0x6308A405B4FF1eA890870Efe2a6D036750B81F7C",
+        "transactionHash": "0xe702d21f92f6c6856723d3846d7d56f0277f7fd76d203d1d6ce189dde5b5032a",
+        "blockNumber": 455767694,
+        "logIndex": 0
+      },
+      "MarketingWalletAddressChanged": {
+        "address": "0xa3802c799f5e3D3D3562A9B513a41C6aAF92e25e",
+        "transactionHash": "0x8c88c29709968c23dcb9fbbc1860d43cf507b6ccb7973d4d6a1395de324896a0",
+        "blockNumber": 455767700,
+        "logIndex": 3
+      },
+      "CharityAddressChanged": {
+        "address": "0x96bB0ADB414d5350f435E52f94946B6C7A0760a9",
+        "transactionHash": "0x7af00d1b3cc8c605dd279484caa02db1be0a147e072894c98d4518919bb54b4b",
+        "blockNumber": 455767706,
+        "logIndex": 5
+      }
+    },
+    "reportFile": "deploy-cosmic-signature-contracts-report-arbitrumOne.json",
+    "reportSha256": "bae558c0c784b14cdf4191db30786f768e4dea6ef7c865340cbdb65ae3e4b640",
+    "verification": {
+      "creationReceipts": 12,
+      "originalPeripheralPairings": 8,
+      "currentPeripheralAddressesMatchOriginal": true,
+      "daoTokenMatches": true,
+      "originalV1ImplementationPreservedInReport": true,
+      "currentOnChainImplementationIsV2": true
+    }
+  },
+  "manifestReconstruction": {
+    "description": "Recovered current V2 OpenZeppelin network file using forceImport; read-only live RPC and a VoidSigner; no deployment or upgrade transactions.",
+    "sourceCommit": "3f52eaaf2258ec30f61fad07bb07cb2e3b4ca8a6",
+    "chainId": 42161,
+    "observationBlock": 516794557,
+    "observationBlockHash": "0xc4277539410e00ec05a2bd87b8b7960446b55aa252d249be78c4e60013393fc5",
+    "proxy": "0x6a714Ae7B5b6eA520F6BCA23d2E609C4Fd5863F2",
+    "implementation": "0x50eB3d05d2C463949DE9238D419385594f7AdB97",
+    "owner": "0x14c82Ce4E5713E88C9462680E9c02BF4a3089871",
+    "implementationRuntimeKeccak256": "0x959e357be1ecba7274be0dfa6fde72cf646557a673f2cb89590bcb07b22ca396",
+    "compiler": "0.8.34+commit.80d5c536",
+    "compilerSettings": {
+      "evmVersion": "osaka",
+      "viaIR": true,
+      "optimizer": {
+        "enabled": true,
+        "runs": 400
+      }
+    },
+    "creationBytecodeExact": true,
+    "creationTransactionInputExact": true,
+    "runtimeExactAfterVerifiedImmutableSubstitution": true,
+    "sourcifyExactMatch": true,
+    "layoutStructurallyIdenticalToHistoricalFixture": true,
+    "baselineLayoutStorageEntries": 54,
+    "baselineLayoutNamespaces": [
+      "erc7201:openzeppelin.storage.Ownable",
+      "erc7201:openzeppelin.storage.Initializable"
+    ],
+    "manifestPath": "/tmp/cosmic-v3-deployment-recovery-20261020/.openzeppelin/arbitrum-one.json",
+    "manifestVersion": "3.2",
+    "manifestImplVersionKeys": [
+      "71b50bb1bea12df75afdc9a8f6fa30e05f1babcae560334e88a0d65612e31c40"
+    ],
+    "rpcReadMethods": [
+      "eth_chainId",
+      "eth_getBlockByNumber",
+      "eth_getStorageAt",
+      "eth_call",
+      "eth_getCode",
+      "eth_getTransactionByHash",
+      "web3_clientVersion"
+    ],
+    "rpcRequests": 13,
+    "liveTransactionMethodsAllowed": false,
+    "privateKeysUsed": false,
+    "allLayoutTypeDefinitionsMatchHistoricalFixture": true,
+    "layoutTypeDefinitionsCompared": 24,
+    "historicalRenameAnnotations": [
+      {
+        "slot": "277",
+        "label": "cstDutchAuctionDuration",
+        "renamedFrom": "cstDutchAuctionDurationDivisor"
+      },
+      {
+        "slot": "283",
+        "label": "bidCstRewardAmountMultiplier",
+        "renamedFrom": "bidCstRewardAmount"
+      }
+    ]
+  },
+  "v3Validation": {
+    "sourceCommit": "f9ad6f00fdb2c0bd77ef046bcb142a5bd1df9512",
+    "manifestPath": "/tmp/cosmic-v3-deployment-recovery-20261020/.openzeppelin/arbitrum-one.json",
+    "sourceInputsExact": true,
+    "sourceInputs": 186,
+    "validationPassed": true,
+    "options": {
+      "kind": "uups",
+      "unsafeAllowRenames": false,
+      "unsafeSkipStorageCheck": false
+    },
+    "runtimeBytes": 20970,
+    "manifestUnchangedByValidation": true,
+    "rpcMethods": [
+      "eth_chainId",
+      "eth_getStorageAt"
+    ],
+    "rpcRequests": 5,
+    "liveTransactionMethodsAllowed": false,
+    "privateKeysUsed": false
+  },
+  "restoredLocationPreflight": {
+    "validationPassed": true,
+    "network": "arbitrumOne",
+    "workingDirectory": "/Users/tarasbobrovytsky/Dev/Cosmic-Signature/tasks/runners",
+    "reportPath": "/Users/tarasbobrovytsky/Dev/Cosmic-Signature/tasks/output/deploy-cosmic-signature-contracts-report-arbitrumOne.json",
+    "manifestPath": "/Users/tarasbobrovytsky/Dev/Cosmic-Signature/tasks/runners/.openzeppelin/arbitrum-one.json",
+    "proxy": "0x6a714Ae7B5b6eA520F6BCA23d2E609C4Fd5863F2",
+    "implementation": "0x50eB3d05d2C463949DE9238D419385594f7AdB97",
+    "owner": "0x14c82Ce4E5713E88C9462680E9c02BF4a3089871",
+    "initializerCalldata": "0x6c2eb350",
+    "v3ReportAbsent": true,
+    "manifestUnchanged": true,
+    "rpcMethods": [
+      "eth_call",
+      "eth_chainId",
+      "eth_getStorageAt"
+    ],
+    "privateKeysUsed": false,
+    "transactionsSent": false
+  }
+}
