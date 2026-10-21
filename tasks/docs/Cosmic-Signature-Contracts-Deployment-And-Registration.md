@@ -63,7 +63,7 @@ Save some arguments to Hardhat Configuration Variables. If you are dealing with 
 
 #### Notes
 
-- Near Comment-202610237, the deployment task logs the resolved configuration, including the deployer private key. Therefore, keep the terminal output private.
+- Near Comment-202610237, the deployment task logs the resolved configuration to stdout, including the deployer private key. Therefore, keep the terminal output private.
 
 #### Caveats
 
