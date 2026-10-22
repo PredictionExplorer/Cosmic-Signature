@@ -12,7 +12,13 @@ async function runDeployCosmicSignatureContracts(
 	deployCosmicSignatureContractsReportFilePath_
 ) {
 	const deployCosmicSignatureContractsTaskConfiguration_ = {
+		// [Comment-202610256]
+		// Issue. This saves a private key to a file. It would instead be more secure
+		// to pass it through an environment variable named like `HARDHAT_VAR_...`.
+		// Respective Hardhat configuration variable name is specified near Comment-202610253.
+		// [/Comment-202610256]
 		deployerPrivateKey: deployerPrivateKey_,
+
 		cosmicSignatureGameContractName: cosmicSignatureGameContractName_,
 		randomWalkNftAddress: randomWalkNftAddress_,
 		charityAddress: "",

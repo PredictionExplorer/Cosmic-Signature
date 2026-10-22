@@ -1,5 +1,7 @@
 ### Cosmic Signature - Quick Start Guide
 
+> **Archived quick start.** The commands, file counts, suite names, coverage labels, and issue descriptions below are historical and are not instructions or findings for the current V3 code. `BiddingMechanicsAllPass.conf` is absent, the final documentation paths refer to old locations, and the prover configurations require reconciliation with the current compiler and interfaces. Use [the parent status page](../README.md) and [current compilation instructions](../../contracts-compiling/docs/contracts-compiling.md). The old division-by-zero claim needs its caller context: `StakingWalletCosmicSignatureNft.deposit` still panics when the count is zero, but `MainPrizeV3` explicitly catches that panic and retains the unpaid allocation in the Game. It is not an unhandled failure of the normal zero-staker claim path.
+
 #### What is This?
 
 Cosmic Signature is an NFT gaming project with:

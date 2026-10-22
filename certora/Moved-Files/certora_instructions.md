@@ -1,5 +1,7 @@
 # Running Certora Verification for Cosmic Signature
 
+> **Archived instructions.** Do not execute these commands as a current V3 release check. The named bidding and prize suites are not present; existing configurations and the archived runner select `solc8.29`, incompatible with current `=0.8.34` pragmas. The suite counts, coverage ratings, and "critical issues" below are historical claims, not findings established for this revision. The zero-NFT division panic in `StakingWalletCosmicSignatureNft.deposit` is explicitly caught by `MainPrizeV3`, which retains that unpaid allocation in the Game. Review the full call path before treating the archived excerpt as an unresolved claim failure. See [the current status](../README.md) and [compilation guide](../../contracts-compiling/docs/contracts-compiling.md).
+
 ## Prerequisites
 
 1. **Certora Prover License**: 
@@ -165,4 +167,4 @@ Based on the formal verification plan, current coverage:
 
 3. Review results on Certora's web dashboard
 
-4. Prioritize verifying the critical gaps identified in the formal verification plan 
+4. Prioritize verifying the critical gaps identified in the formal verification plan

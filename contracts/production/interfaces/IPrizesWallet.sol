@@ -12,8 +12,8 @@ import { DonatedTokenHolder } from "../DonatedTokenHolder.sol";
 /// and allows prize winners (and after a timeout anybody) to withdraw their prizes.
 ///
 /// @dev It's OK if the same NFT is donated and claimed multiple times.
-/// Nothing would be broken if an ERC-20 or ERC-721 contract acts malitiosly.
-/// For example, a malitios NFT contract can allow donating an NFT multiple times without claiming it.
+/// ERC-20 and ERC-721 calls can revert or return misleading asset data; compatibility is not guaranteed.
+/// For example, a malicious NFT contract can report repeated transfers of the same NFT without transferring custody.
 /// 
 /// It would be incorrect to derive this contract from `ERC721Holder` (which implements `IERC721Receiver'),
 /// because if someone makes it an owner of an NFT by making a direct call to the NFT contract,
@@ -186,6 +186,7 @@ interface IPrizesWallet is IAddressValidator {
 
 	/// @notice Sets `timeoutDurationToWithdrawPrizes`.
 	/// Only the contract owner is permitted to call this method.
+	/// The new duration applies when subsequent claim deadlines are recorded; existing deadlines do not change.
 	/// @param newValue_ The new value.
 	function setTimeoutDurationToWithdrawPrizes(uint256 newValue_) external;
 
@@ -241,6 +242,7 @@ interface IPrizesWallet is IAddressValidator {
 	function withdrawEth(uint256 roundNum_) external;
 
 	/// @notice Anybody is welcomed to call this method after a timeout expires to withdraw an unclaimed ETH prize.
+	/// The caller receives the ETH, not `prizeWinnerAddress_`.
 	/// @param roundNum_ Bidding round number.
 	/// @param prizeWinnerAddress_ Prize winner address.
 	/// It's OK if it's zero.

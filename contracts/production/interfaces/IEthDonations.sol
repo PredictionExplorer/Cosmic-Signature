@@ -43,14 +43,17 @@ interface IEthDonations {
 	/// which would result in the same outcome as a donation, except a respective event won't be emitted.
 	/// [/Comment-202610044]
 	/// See also: `donateEthWithInfo`, `IBidding.receive`, `IBidding1V2.receive`, `ICosmicSignatureGame.fallback`, `ICosmicSignatureGameV2.fallback`.
+	/// todo-ai-5 Above and maybe in a few other similar places, I have restored the listings of the `fallback` methods.
+	/// todo-ai-5 I am aware that thay are commented out, but I want to mention them. Explain this in the commit message.
+	/// todo-ai-5 Their commented existense indicates that I did not simply forget to add them, but rather chose not to.
 	function donateEth() external payable;
 
 	/// @notice This method is similar to `donateEth`.
 	/// Comments there apply.
 	/// In addition, it allows the caller to provide additional information.
-	/// @param data_ Additional info in JSON format.
+	/// @param data_ Additional information. It could be JSON. The contract does not validate it.
 	/// It's OK if it's empty.
-	/// We do not limit this string length, but the frontend will truncate a too long message.
+	/// The contract imposes no string-length limit.
 	function donateEthWithInfo(string calldata data_) external payable;
 
 	/// @return `ethDonationWithInfoRecords.length`.

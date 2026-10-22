@@ -4,13 +4,15 @@ class State {
 	/**
 	[Comment-202508313]
 	We will use this variable as a seed to generate private keys of a few accounts.
-	We will log the actual generated private keys and addresses.
+	We will log the actual generated private keys and addresses to stdout.
 	By default, we initialize this variable from a hardcoded value, which exists in the Git repo.
 	Therefore, when running this script against a mainnet, be sure to use your own secret value.
-	Save one as a Hardhat configuration variable by executing the followintg command:
-	   npx hardhat vars set accountPrivateKeySeed 0x...
-	Substitute the "0x..." with a hard to guess uint256 value.
-	You can execute "${workspaceFolder}/scripts/generate-random-uint256.bash" to generate one.
+	Save one as a Hardhat configuration variable by executing one of the followintg commands:
+	   ` export HARDHAT_VAR_accountPrivateKeySeed=0x...`
+	   ` npx hardhat vars set accountPrivateKeySeed 0x...`
+	(Be sure to begin the command with a space char. It prevents the command saving to the command history.)
+	Substitute the `0x...` with a hard to guess uint256 value.
+	You can execute `${workspaceFolder}/scripts/generate-random-uint256.bash` to generate one.
 	[/Comment-202508313]
 	@type {bigint}
 	*/

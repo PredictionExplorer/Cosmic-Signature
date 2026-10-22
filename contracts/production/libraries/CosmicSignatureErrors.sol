@@ -56,6 +56,9 @@ library CosmicSignatureErrors {
 	error InsufficientReceivedBidAmount(/* string errStr, */ uint256 bidPrice, uint256 receivedAmount);
 
 	/// @notice Thrown when the actual CST reward amount for placing a bid is below the bidder's specified minimum.
+	/// todo-ai-5 I have deleted a newly added line at this point. Too many convoluted comments describing things far away. If I refactor that logic I would have no idea that I am breaking this comment.
+	/// todo-ai-5 Those details are unnecessary here. But if they were a better approach would be to link a relevant numbered comment here.
+	/// todo-ai-5 The same reasoning could apply in some other places where I made edits.
 	/// @param bidCstRewardAmount The CST reward amount that would have been minted.
 	/// @param bidCstRewardAmountMinLimit The minimum CST reward amount the bidder required.
 	error BidCstRewardAmountMinLimitNotReached(/* string errStr, */ uint256 bidCstRewardAmount, uint256 bidCstRewardAmountMinLimit);
