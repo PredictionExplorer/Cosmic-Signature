@@ -1,0 +1,145 @@
+{
+  "scope": "V4 issuance integration and immutable art auction; local verification only, no production transaction",
+  "baseCommit": "37fdc5e01fee9b4a1ef59fff35726d96775b3680",
+  "sourceSha256": {
+    "contracts/production/CosmicSignatureGameV4.sol": "7bb635a3dfffec7dc15c010c1d56c2951deb720b26ded42b8407b0586b80f990",
+    "contracts/production/MainPrizeV4.sol": "1376200f8b0de82396e2813769e65a33fc54095261b6a903a145c425be2c2ae5",
+    "contracts/production/CosmicSignatureGameStorageV4Base.sol": "e55716e5892853839e5244ac018546a728502c2ad4136d4062d32b7e73b10a8c",
+    "contracts/production/CosmicSignatureGameStorageV4.sol": "4b98cbc445ef8de76abe4f6d9dfd49f79e1a57bd032352eafe8041f32c5311d9",
+    "contracts/production/MainPrizeV3.sol": "e42d4f8dcdc36e83c82868622ce93f8ccbb5bc9aea98473ea51b50328311bcf3",
+    "contracts/production/CosmicSignatureArtAuction.sol": "db62638370f13e0fc2a739d9014c1fa9eb3e3c1b606a9d0580e1bc1f411d1b99",
+    "contracts/production/interfaces/ICosmicSignatureArtAuction.sol": "58193c17f33cccfd02dc0631878297ab015b27c9a6967d3f55776fc6ceb2975f",
+    "tasks/src/rehearse-v4-art-auction-upgrade.js": "72a66f0d4f148e348492c9321e2cbd71911771ab52596291bd153112be1937b8",
+    "hardhat.art-auction-fork.config.js": "f64d24859d0f2ef395d561807674ffe38eb65e92a9c1ca8d6a357871c22a8cba",
+    "tasks/src/cosmic-signature-tasks.js": "c381d3e03fe0fbcf40a7504044275194a960b60b62aff1942c7968c97f25a2e2",
+    "tasks/tests/credential-handling.test.cjs": "444138bb71c2ff07a7af673e6e6cfc8647a24fae59fa2503a817548709e9874b",
+    "tasks/src/inspect-v4-art-auction-upgrade.js": "9cbc6a993fb08e634ee66ededb73cfc80381b85c918d64de0706ec456d2fab18"
+  },
+  "runtimes": {
+    "CosmicSignatureGameV4": {
+      "bytes": 21952,
+      "compiledTemplateKeccak256": "0x4344d6a1ffc957f8b17b2d8a76bca9edaaa448ab80610be7c18ba0bb07b5396e"
+    },
+    "CosmicSignatureArtAuction": {
+      "bytes": 4749,
+      "compiledTemplateKeccak256": "0x15df0447c65e3c939f5a8bf2f603badcfce68300445f476a4427e7e99171f36f"
+    }
+  },
+  "focusedTests": {
+    "command": "ENABLE_HARDHAT_PREPROCESSOR=false HARDHAT_MODE_CODE=1 LONG_TEST_MODE_CODE=1 npx hardhat test --grep '^CosmicSignatureGameV4'",
+    "passing": 21
+  },
+  "credentialTests": {
+    "command": "npm run test:credentials",
+    "passing": 29,
+    "coverage": "Short/FQN V4 rejection before credentials, plus secret-bearing RPC URL failures in transport, HTTP, JSON, JSON-RPC, decoding, read-only rehearsal, Hardhat initialization/provider and malformed fork configuration."
+  },
+  "forkRehearsal": {
+    "status": "passed",
+    "command": "RUN_V4_FORK_REHEARSAL=1 ART_AUCTION_RPC_URL=https://arbitrum-one.public.blastapi.io ENABLE_HARDHAT_PREPROCESSOR=false HARDHAT_MODE_CODE=1 npx hardhat --config hardhat.art-auction-fork.config.js run --no-compile --network hardhat tasks/src/rehearse-v4-art-auction-upgrade.js",
+    "blockNumber": 517222845,
+    "blockHash": "0x29d83a6a14c4e5c9ca00ecb99c5ca727f9984f7fe093437e52cb124c8fb68982",
+    "deployedV3Implementation": "0xc1b97E1b0baC86248653B18706dbC5c8898c5c06",
+    "deployedV3RuntimeVerified": true,
+    "storageValidation": "passed",
+    "scalarStatePreserved": true,
+    "originalCycle": "3",
+    "firstV4Cycle": "4",
+    "firstAuctionNftId": "123",
+    "auctionNfts": 8,
+    "upgradeGas": "79097",
+    "priorV3FinalizationGas": "4560123",
+    "v4FinalizationGas": "5954260",
+    "forwardGas": "54950",
+    "eligibilityFromSuccessfulFinalization": true,
+    "winningPaymentForwardedWithoutBid": true,
+    "nftDelivered": true,
+    "limitations": [
+      "EDR uses an Ethereum EVM. Native Arbitrum ArbSys and ArbGasInfo marker bytecode was replaced only on the local fork with the repository FakeArbSys and FakeArbGasInfo test shims. Entropy and native precompile gas are not reproduced exactly.",
+      "Gas figures exclude Arbitrum L1 data fees and are not worst-case bounds for arbitrary owner-configured counts.",
+      "The public arb1 endpoint lacked required historical storage. Blast supplied the successful pinned-state rehearsal.",
+      "Only an explicit completed JSON result establishes rehearsal success; the script fails closed on an incomplete native-runner exit."
+    ],
+    "toolingSourceSha256AtRun": {
+      "tasks/src/rehearse-v4-art-auction-upgrade.js": "1f31cffabaf29568c9c1ec122a8054d1e9e08685a976feab29b0fdf99ac6f977",
+      "hardhat.art-auction-fork.config.js": "5f60a57da6f7e5d21ed13b6a5871a091aef0498533893d5b56e1744edc145fff"
+    }
+  },
+  "quickRegression": {
+    "status": "passed",
+    "requestedCommand": "npm run hardhat-test-quick",
+    "requestedCommandResult": "Host has no /usr/bin/bash; script could not start",
+    "equivalentCommand": "LONG_TEST_MODE_CODE=1 bash ./test.bash -b",
+    "workingDirectory": "test/runners",
+    "log": "/tmp/cosmic-v4-hardhat-quick.log",
+    "exitCode": 0,
+    "totalPassingAcrossModes": 796,
+    "modes": [
+      {
+        "preprocessor": true,
+        "asserts": true,
+        "smtPreprocessing": 0,
+        "passing": 199,
+        "seconds": 41
+      },
+      {
+        "preprocessor": true,
+        "asserts": true,
+        "smtPreprocessing": 1,
+        "passing": 199,
+        "seconds": 42
+      },
+      {
+        "preprocessor": true,
+        "asserts": false,
+        "smtPreprocessing": 0,
+        "passing": 199,
+        "seconds": 42
+      },
+      {
+        "preprocessor": false,
+        "asserts": false,
+        "smtPreprocessing": 0,
+        "passing": 199,
+        "seconds": 54
+      }
+    ]
+  },
+  "crossReview": {
+    "scope": "Auction code reviewed by the V4 integration agent; V4 initialization, storage, issuance and upgrade tooling reviewed by the separate auction author.",
+    "result": "The legacy fully qualified artifact-name guard bypass was identified and fixed with a regression test. No unresolved actionable issue was identified in either cross-review.",
+    "limitations": "Not an independent external audit. Bare upgrades without initializeV4 remain unsupported and can leave finalization unavailable after participation starts."
+  },
+  "toolingReviewFix": {
+    "finding": "The legacy task originally recognized only the short V4 artifact name, permitting a fully qualified artifact-name bypass.",
+    "resolution": "Normalize the contract-name suffix after the final colon before rejecting V4; short and fully qualified names are tested with otherwise complete configuration and an empty initializer.",
+    "verification": "npm run test:credentials: 20 passing; git diff --check passed. Solidity sources remain unchanged, so prior quick/fork/runtime evidence is retained."
+  },
+  "foundryVerification": {
+    "command": "npm run test:auction:fuzz",
+    "status": "passed",
+    "compiler": "0.8.34",
+    "evm": "osaka",
+    "runner": "forge 1.7.1",
+    "fuzzSeed": "0xc05a1c",
+    "fuzzProperties": 3,
+    "runsPerProperty": 1024,
+    "statefulRuns": 128,
+    "statefulDepth": 128,
+    "statefulHandlerCalls": 16384,
+    "handlerReverts": 0,
+    "invariants": [
+      "all three liability totals reconcile with individual records",
+      "escrow remains solvent",
+      "external ETH inflows and outflows conserve cash",
+      "NFT custody follows settlement and delivery entitlements",
+      "game receives only explicit donateEth calls"
+    ],
+    "coverageLimitation": "Foundry coverage completed the tests but emitted source-map anchor warnings under both IR and non-IR builds. Its percentage report is not accepted as reliable coverage evidence. This suite supplements the Hardhat adversarial and upgrade suites, not a proof of perfect security."
+  },
+  "toolingDiagnosticsReviewFix": {
+    "finding": "Raw inspection/rehearsal errors and revert data could disclose RPC URL credentials.",
+    "resolution": "Static failure headings, controlled diagnostic codes and locally assigned rehearsal stages; exact local configuration hints only. No raw provider messages, stacks or revert data. Hardhat loads inside the guarded CLI entry point, and malformed fork URLs get a static error.",
+    "verification": "npm run test:credentials: 29 passing; syntax and diff checks passed. Solidity unchanged. Earlier full fork result remains recorded with its original tool hashes; diagnostic-only tool changes were tested separately."
+  }
+}

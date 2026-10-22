@@ -1,0 +1,34 @@
+name: V4 art auction verification
+on:
+  pull_request:
+    paths:
+      - 'contracts/**'
+      - 'test/**'
+      - 'tasks/**'
+      - 'hardhat*.js'
+      - 'foundry.toml'
+      - 'package*.json'
+      - '.github/workflows/v4-art-auction.yml'
+  push:
+    branches: ['codex/v4-art-auctions']
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run test:credentials
+      - run: npm run hardhat-test-quick
+        env:
+          TERM: xterm
+      - uses: foundry-rs/foundry-toolchain@dba66c27052e63476d886f22216e119ba7e615bf # v1
+        with:
+          version: v1.7.1
+      - run: npm run test:auction:fuzz

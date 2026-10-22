@@ -1,0 +1,23 @@
+[profile.default]
+src = "test/foundry"
+test = "test/foundry"
+out = "cache/foundry-auction-out"
+cache_path = "cache/foundry-auction-cache"
+libs = ["node_modules"]
+remappings = ["@openzeppelin/=node_modules/@openzeppelin/"]
+solc_version = "0.8.34"
+evm_version = "osaka"
+optimizer = true
+optimizer_runs = 400
+via_ir = true
+# Only test harness creation code needs a larger allowance. Production sizes are checked separately.
+code_size_limit = 100000
+
+[profile.default.fuzz]
+runs = 1024
+seed = "0xc05a1c"
+
+[profile.default.invariant]
+runs = 128
+depth = 128
+fail_on_revert = true

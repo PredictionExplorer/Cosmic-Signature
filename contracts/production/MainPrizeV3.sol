@@ -30,7 +30,7 @@ abstract contract MainPrizeV3 is
 	IMainPrizeV3 {
 	// #region `_distributePrizes`
 
-	function _distributePrizes() internal override /* virtual */ {
+	function _distributePrizes() internal override virtual {
 		// #region
 
 		// #enable_smtchecker /*

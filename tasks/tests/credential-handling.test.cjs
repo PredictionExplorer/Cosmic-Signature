@@ -117,6 +117,90 @@ function assertNoCredentials(logs_, secrets_) {
 }
 
 async function main() {
+	const rpcSecret_ = "test-only-rpc-key-sentinel";
+	const rpcUrl_ = `https://user:${rpcSecret_}@rpc.invalid/${rpcSecret_}?apiKey=${rpcSecret_}`;
+	for (const failure_ of ["transport", "http", "json", "rpc", "decode"]) {
+		await test(`V4 inspection hides endpoint credentials on ${failure_} failure`, async () => {
+			const logs_ = [];
+			const process_ = { env: { ART_AUCTION_RPC_URL: rpcUrl_ }, exitCode: undefined };
+			let calls_ = 0;
+			const inspect_ = loadModule("tasks/src/inspect-v4-art-auction-upgrade.js", {
+				"node:fs": fs, "node:path": path, ethers: require("ethers"),
+			}, { log: value_ => logs_.push(value_), error: value_ => logs_.push(value_) }, {
+				__dirname: path.join(root, "tasks/src"), process: process_, AbortSignal,
+				fetch: async () => {
+					++calls_;
+					if (failure_ === "transport") throw new Error(`Request failed for ${rpcUrl_}`);
+					if (failure_ === "http") return { ok: false, status: 401, statusText: rpcUrl_ };
+					return { ok: true, json: async () => {
+						if (failure_ === "json") throw new SyntaxError(`Invalid JSON at ${rpcUrl_}`);
+						if (failure_ === "rpc") return { error: { message: `Access denied for ${rpcUrl_}`, data: rpcSecret_ } };
+						return { result: calls_ === 1 ? { number: "0x1" } : rpcUrl_ };
+					} };
+				},
+			});
+			await inspect_.main();
+			assert.equal(process_.exitCode, 1);
+			assert(logs_.includes("V4 upgrade inspection failed."));
+			assertNoCredentials(logs_, [rpcSecret_, rpcUrl_]);
+		});
+	}
+	for (const failure_ of ["read-only inspection", "Hardhat initialization", "provider request"]) {
+		await test(`V4 rehearsal hides endpoint credentials on ${failure_} failure`, async () => {
+			const logs_ = [];
+			const process_ = { env: { ART_AUCTION_RPC_URL: rpcUrl_, RUN_V4_FORK_REHEARSAL: failure_ === "read-only inspection" ? undefined : "1" }, exitCode: undefined, on() {} };
+			const providerError_ = new Error(`Provider failed at ${rpcUrl_}`);
+			providerError_.stack = `${path.join(root, "tasks/src/rehearse-v4-art-auction-upgrade.js")}: ${rpcUrl_}`;
+			providerError_.data = { url: rpcUrl_, apiKey: rpcSecret_ };
+			const modules_ = {
+				"node:assert/strict": assert,
+				"./inspect-v4-art-auction-upgrade.js": { baseline: { observation: { blockNumber: 123 }, implementationAddress }, inspectV4Upgrade: async () => { throw providerError_; } },
+				"@openzeppelin/hardhat-upgrades/dist/utils/validations": {},
+				"@openzeppelin/upgrades-core": {},
+			};
+			Object.defineProperty(modules_, "hardhat", { get() {
+				if (failure_ === "Hardhat initialization") throw providerError_;
+				return { network: { name: "hardhat", config: { forking: { blockNumber: 123 } } }, ethers: { provider: { getCode: async () => { throw providerError_; } } } };
+			} });
+			const rehearsal_ = loadModule("tasks/src/rehearse-v4-art-auction-upgrade.js", modules_, { log: value_ => logs_.push(value_), error: value_ => logs_.push(value_) }, { process: process_ });
+			await rehearsal_.main();
+			assert.equal(process_.exitCode, 1);
+			assert(logs_.includes("V4 fork rehearsal failed."));
+			assert(logs_.some(value_ => value_.startsWith("Stage: ")));
+			assertNoCredentials(logs_, [rpcSecret_, rpcUrl_]);
+		});
+	}
+	await test("the V4 fork configuration rejects malformed endpoint URLs without reflecting secrets", () => {
+		assert.throws(() => loadModule("hardhat.art-auction-fork.config.js", {
+			"./hardhat.config.js": { networks: { hardhat: {} } },
+			"./test/data/deployed-storage-layouts/arbitrumOne-CosmicSignatureGameV3.json": {},
+		}, console, { process: { env: { RUN_V4_FORK_REHEARSAL: "1", ART_AUCTION_RPC_URL: `invalid:${rpcSecret_}` } }, URL }), error_ => {
+			assert(!error_.message.includes(rpcSecret_));
+			return error_.message === "Invalid ART_AUCTION_RPC_URL. Provide an HTTP(S) endpoint.";
+		});
+	});
+
+	for (const contractName_ of ["CosmicSignatureGameV4", "contracts/production/CosmicSignatureGameV4.sol:CosmicSignatureGameV4"]) {
+		await test(`the legacy upgrade task rejects ${contractName_} before resolving credentials or deploying`, async () => {
+			const harness_ = createHarness();
+			harness_.files.set("upgrade-v4.json", JSON.stringify({
+				deploymentConfigurationFilePath: "deploy.json",
+				reportFilePath: "upgrade-report.json",
+				newCosmicSignatureGameContractName: contractName_,
+				newInitializerMethodName: "",
+				unsafeAllowRenames: false,
+				unsafeSkipStorageCheck: false,
+			}));
+			harness_.files.set("report.json", JSON.stringify({ cosmicSignatureGameProxyAddress: ownerAddress }));
+			await assert.rejects(
+				harness_.tasks.get("upgrade-cosmic-signature-game")({ upgradeconfigfilepath: "upgrade-v4.json" }, harness_.hre),
+				/atomic initializeV4\(address\)/
+			);
+			assert.equal(harness_.parsedConfigurations.length, 1, "must reject before reading the deployment configuration or credentials");
+			assert.deepEqual(harness_.signerKeys, []);
+		});
+	}
+
 	for (const configuredKey_ of ["", configuredPrivateKey]) {
 		await test(`deployment logs only public information with ${configuredKey_ ? "fixture" : "resolved"} credentials`, async () => {
 			const harness_ = createHarness(configuredKey_);
