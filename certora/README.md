@@ -1,4 +1,9 @@
-# Certora: historical specifications and reports
+# Certora: Historical Specifications and Reports
+
+Issue. Files in this folder tree are all stale.\
+ToDo-3 Revisit them.\
+ToDo-3 Revisit relevant notes in `docs/cosmic-signature-contracts-audit-considerations.md`.\
+ToDo-3 Review Git Blame for these files and review changes over past year or two. AI agents edited them.
 
 These files do not establish formal verification of the current V3 release. The June 2025 plan, coverage tables, and success summaries below this directory belong to earlier source and specification revisions. Their differing counts are retained as historical notes, not reconciled into a current pass rate.
 
@@ -8,18 +13,11 @@ Before reviving a suite, choose its intended source revision, reconcile the conf
 
 To inspect the committed configuration inventory without starting a remote proof, run `rg --files certora -g '*.conf'` from the repository root. For current compilation and local tests, see [the compilation guide](../contracts-compiling/docs/contracts-compiling.md). SMTChecker, local tests, and coverage are separate checks; none supplies a blanket formal-verification claim.
 
-## Preserved historical notes
+## Step 1. Activate virtual environment
 
-Issue. Files in this folder tree are all stale.\
-ToDo-3 Hopefully, someone will revisit them someday.\
-ToDo-3 Review Git Blame for these files. Yuriy's AI made a few little edits in them.
-
----
-
-## Historical Step 1.   Activate virtual environment
 source .venv/bin/activate
 
-## Historical Step 2.   Run the prover
+## Step 2. Run the prover
 
 certoraRun ./BiddingMechanicsAllPass.conf
 
