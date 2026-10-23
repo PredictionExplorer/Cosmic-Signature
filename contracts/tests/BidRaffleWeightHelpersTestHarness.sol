@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity =0.8.34;
+pragma solidity =0.8.38;
 
 import { BidRaffleWeightHelpers } from "../production/libraries/BidRaffleWeightHelpers.sol";
 import { ICosmicSignatureGameStorage } from "../production/interfaces/ICosmicSignatureGameStorage.sol";

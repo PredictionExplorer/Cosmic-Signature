@@ -25,5 +25,13 @@
 		"hardhat-tracer": "~3.4.0",
 		"typescript": "^5.9.3",
 		"typescript-eslint": "^8.57.0"
+	},
+	"overrides": {
+		"@nomicfoundation/ignition-core@0.15.15": {
+			"lodash": "4.18.1"
+		},
+		"@ethersproject/providers@5.8.0": {
+			"ws": "8.21.0"
+		}
 	}
 }

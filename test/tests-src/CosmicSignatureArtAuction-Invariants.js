@@ -44,6 +44,7 @@ async function addBatch(contracts_, model_) {
 	}
 }
 
+/** @param {ReturnType<typeof createModel>} model_ */
 async function verifyModel(contracts_, model_, context_) {
 	const reads_ = await Promise.all(model_.lots.map(async lot_ => ({
 		lot: lot_, auction: await contracts_.auction.getAuction(lot_.nftId), owner: await contracts_.nft.ownerOf(lot_.nftId),

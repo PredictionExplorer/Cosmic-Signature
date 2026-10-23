@@ -5,7 +5,7 @@ out = "cache/foundry-auction-out"
 cache_path = "cache/foundry-auction-cache"
 libs = ["node_modules"]
 remappings = ["@openzeppelin/=node_modules/@openzeppelin/"]
-solc_version = "0.8.34"
+solc_version = "0.8.38"
 evm_version = "osaka"
 optimizer = true
 optimizer_runs = 400

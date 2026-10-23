@@ -24,6 +24,20 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Install the pinned native Solidity compiler
+        shell: bash
+        run: |
+          main() {
+            local compiler_path="$HOME/.solc-select/artifacts/solc-0.8.38/solc-0.8.38"
+            mkdir -p "$(dirname "$compiler_path")"
+            curl --fail --silent --show-error --location --retry 3 \
+              'https://raw.githubusercontent.com/argotorg/solc-bin/gh-pages/linux-amd64/solc-linux-amd64-v0.8.38+commit.1835d247' \
+              --output "$compiler_path"
+            echo "65c3180a336eabb6bdc4bbd49cc405aeb233976964ae6c11fba2a6c8be8f3243  $compiler_path" | sha256sum --check --strict
+            chmod 755 "$compiler_path"
+            "$compiler_path" --version
+          }
+          main
       - run: npm run test:credentials
       - run: npm run hardhat-test-quick
         env:

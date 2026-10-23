@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity =0.8.34;
+pragma solidity =0.8.38;
 
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { ISystemManagementV2, SystemManagementV2 } from "./SystemManagementV2.sol";

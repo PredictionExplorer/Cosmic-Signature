@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity =0.8.34;
+pragma solidity =0.8.38;
 
 /// @notice Comment-202605251 applies.
 interface IBidding2V3 {

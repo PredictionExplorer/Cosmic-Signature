@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity =0.8.34;
+pragma solidity =0.8.38;
 
 import { CosmicSignatureHelpers } from "../production/libraries/CosmicSignatureHelpers.sol";
 import { CosmicSignatureGameV2 } from "../production/CosmicSignatureGameV2.sol";

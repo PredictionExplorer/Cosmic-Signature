@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity =0.8.34;
+pragma solidity =0.8.38;
 
 /// @notice Shared storage types used by the Game contracts.
 /// Similarly named contracts implementing this interface contain all state variables

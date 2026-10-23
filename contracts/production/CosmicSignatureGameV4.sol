@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity =0.8.34;
+pragma solidity =0.8.38;
 
 import { SystemManagementV2 } from "./SystemManagementV2.sol";
 import { BidStatisticsV2 } from "./BidStatisticsV2.sol";

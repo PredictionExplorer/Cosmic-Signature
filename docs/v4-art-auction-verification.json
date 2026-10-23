@@ -1,5 +1,5 @@
 {
-  "scope": "V4 issuance integration and immutable art auction; local verification only, no production transaction",
+  "scope": "V4 issuance and immutable auction verification. Initial fields preserve historical Solidity 0.8.34 evidence; approvedCompilerMigration records the current undeployed 0.8.38 candidate. No production transaction.",
   "baseCommit": "37fdc5e01fee9b4a1ef59fff35726d96775b3680",
   "sourceSha256": {
     "contracts/production/CosmicSignatureGameV4.sol": "7bb635a3dfffec7dc15c010c1d56c2951deb720b26ded42b8407b0586b80f990",
@@ -141,5 +141,271 @@
     "finding": "Raw inspection/rehearsal errors and revert data could disclose RPC URL credentials.",
     "resolution": "Static failure headings, controlled diagnostic codes and locally assigned rehearsal stages; exact local configuration hints only. No raw provider messages, stacks or revert data. Hardhat loads inside the guarded CLI entry point, and malformed fork URLs get a static error.",
     "verification": "npm run test:credentials: 29 passing; syntax and diff checks passed. Solidity unchanged. Earlier full fork result remains recorded with its original tool hashes; diagnostic-only tool changes were tested separately."
+  },
+  "followUpReview": {
+    "date": "2026-10-22",
+    "productionSolidityChanged": false,
+    "resolvedFinding": {
+      "severity": "medium",
+      "finding": "The CI workflow did not provision the native compiler required by Hardhat, so a clean runner could not compile.",
+      "fix": "Install exact solc 0.8.34 Linux binary with a pinned SHA-256 before tests.",
+      "validation": "Official manifest hash and downloaded binary agree; workflow YAML and bash syntax pass. GitHub-hosted run not performed."
+    },
+    "addedRegressions": [
+      "Production runtime and initcode deployment-size limits (production mode only).",
+      "Auction NFT naming, anchoring, later V4 distribution, retrieval and once-only eligibility."
+    ],
+    "focusedV4Tests": 23,
+    "quickRegression": {
+      "exitCode": 0,
+      "log": "/tmp/cosmic-v4-review-quick.log",
+      "passingPerMode": [
+        200,
+        200,
+        200,
+        201
+      ],
+      "intentionalProductionOnlySkipsPerMode": [
+        1,
+        1,
+        1,
+        0
+      ],
+      "totalPassing": 801
+    },
+    "foundry": {
+      "exitCode": 0,
+      "fuzzCases": 3072,
+      "invariantHandlerCalls": 16384,
+      "reverts": 0,
+      "log": "/tmp/cosmic-v4-review-foundry.log"
+    },
+    "credentialTests": 29,
+    "liveReadOnlyObservation": {
+      "mode": "read-only",
+      "chainId": 42161,
+      "blockNumber": 517392803,
+      "blockHash": "0x3353395e26872c70337ebc842f5fb7b9af0fd42b52b40ff9d34b9fed02b0e891",
+      "timestamp": 1792718760,
+      "proxyAddress": "0x6a714Ae7B5b6eA520F6BCA23d2E609C4Fd5863F2",
+      "implementationAddress": "0xc1b97E1b0baC86248653B18706dbC5c8898c5c06",
+      "runtimeBytecodeKeccak256": "0x09ed86da05e3ab5d01af13903804f63551c586bdb3379b2b3d039324f8fc1eee",
+      "matchesRecordedV3": true,
+      "inactive": false,
+      "values": {
+        "owner": "0x14c82Ce4E5713E88C9462680E9c02BF4a3089871",
+        "nft": "0xbb84Be3500A63581d3F2d5AC3bdF8685AAedad25",
+        "roundNum": "3",
+        "roundActivationTime": "1792627200",
+        "lastBidderAddress": "0x1Ec14aDaf61e27AB339bc590BA4Bf2356Dd7E990",
+        "mainPrizeTime": "1794281424",
+        "mainPrizeNumCosmicSignatureNfts": "3",
+        "mainEthPrizeAmountPercentage": "20",
+        "chronoWarriorEthPrizeAmountPercentage": "15",
+        "raffleTotalEthPrizeAmountForBiddersPercentage": "5",
+        "cosmicSignatureNftStakingTotalEthRewardAmountPercentage": "5",
+        "charityEthDonationAmountPercentage": "5"
+      }
+    },
+    "compilerReview": {
+      "id": "SOL-2026-7",
+      "source": "https://raw.githubusercontent.com/argotorg/solidity/develop/docs/bugs.json",
+      "affectedCompiler": "0.8.34",
+      "fixedCompiler": "0.8.38",
+      "conditions": "Yul optimizer enabled; our via-IR build satisfies this condition.",
+      "reproducer": "https://github.com/argotorg/solidity/blob/dc81cfc2803c78a5ba0e88e5ff961b75ea700e69/test/libsolidity/semanticTests/optimizer/reassigned_reference_storage_alias.sol",
+      "localUpstreamReproducerResult": {
+        "expected": "0xbbbb",
+        "actual": "0xaaaa",
+        "viaIR": true,
+        "optimizerRuns": 400,
+        "evm": "osaka"
+      },
+      "projectImpact": "No concrete Cosmic Signature miscompilation was identified. Upstream reproduction is not an application exploit. Compiler choice and renewed release evidence remain unresolved.",
+      "isolatedFixedCompilerTrial": {
+        "compiler": "0.8.38+commit.1835d247",
+        "nativeBinarySha256": "b18ac1d1f48394c71ca9aefbf0fb94fef24c87b358f48578de5941e234e0a2a9",
+        "productionInputExactPragmaReplacements": 74,
+        "productionCompileErrors": 0,
+        "runtimeBytes": {
+          "CosmicSignatureGameV4": 21951,
+          "CosmicSignatureArtAuction": 4748
+        },
+        "upstreamReproducerResult": {
+          "expected": "0xbbbb",
+          "actual": "0xbbbb"
+        },
+        "fuzzCases": 3072,
+        "invariantHandlerCalls": 16384,
+        "syntheticStateUpgrade": {
+          "compiler": "0.8.38",
+          "mode": "isolated compiler trial; local synthetic state with recorded deployed V3 runtime",
+          "priorScalarStoragePreserved": true,
+          "newAuctionSlot": 314,
+          "registeredNfts": 8,
+          "directOutbidSelfRaiseRefundSettleForwardDeliver": "passed",
+          "upgradeGas": "79073",
+          "finalizationGas": "4350117",
+          "limitation": "Not a new complete live-state fork rehearsal or a replacement for four-mode regressions and independent review."
+        },
+        "scope": "Temporary copied inputs and artifacts only; no repository compiler migration, no baseline fixture replacement, no production transaction. Full repository migration and new live-state fork rehearsal remain to be approved and completed."
+      }
+    },
+    "sourceSha256": {
+      ".github/workflows/v4-art-auction.yml": "3485befe58d24dee6995b1978a962e712bfeb15f36e8d3ed2c42a32d153a2eeb",
+      "test/tests-src/CosmicSignatureGameV4-Upgrade.js": "f55331c1f3052f911776ee4f120578daeff2150124976a48751c304b37097d86",
+      "test/tests-src/CosmicSignatureGameV4-MainPrize.js": "369f62bdda2af4b6caaf949a528622933c89f07458b828ca2ba260ba22556651",
+      "test/tests-src/CosmicSignatureArtAuction.js": "c2bb31b4a75ff48a39a2a1492fc1313d32bd241a448f9a784df04a77141d9449"
+    },
+    "scopedEslint": "passed after dependency installation was restored; tuple annotation fixes the existing reentry-case inference"
+  },
+  "currentCandidateCompiler": "0.8.38+commit.1835d247",
+  "approvedCompilerMigration": {
+    "authorization": "User explicitly approved migrating the undeployed V4 build to Solidity 0.8.38 while leaving deployed contracts untouched.",
+    "status": "passed",
+    "date": "2026-10-22",
+    "compiler": "0.8.38+commit.1835d247",
+    "viaIR": true,
+    "optimizerRuns": 400,
+    "evmVersion": "osaka",
+    "localCompilerSha256": "b18ac1d1f48394c71ca9aefbf0fb94fef24c87b358f48578de5941e234e0a2a9",
+    "ciCompilerSha256": "65c3180a336eabb6bdc4bbd49cc405aeb233976964ae6c11fba2a6c8be8f3243",
+    "installation": "0.8.38 installed beside 0.8.34; no global active-compiler switch.",
+    "exactPragmasUpdated": 127,
+    "productionSourceUnitsCompiled": 196,
+    "deployedV3": {
+      "branch": "v3-deployment",
+      "commit": "37fdc5e01fee9b4a1ef59fff35726d96775b3680",
+      "fixtureSha256": "38c82cac599857929fec66ca9125ad46d2a2b9ab898d895d3b28a08a9dc8b204",
+      "fixtureUnchanged": true,
+      "compiler": "0.8.34+commit.80d5c536",
+      "onChainTransactions": 0
+    },
+    "buildProvenance": {
+      "standardJsonInputSha256": "98ad5b3bceb2d669920e1d46eb8a95e68d364a72e18b74a71fc40096822b176c",
+      "standardJsonHashEncoding": "SHA-256 of JSON.stringify(build.input), with its recorded key order.",
+      "trackedSoliditySourceTreeSha256": "444dde755609d63279ea22e2bd726276d00b304d218911f56b5f29c9d2be2c1b",
+      "sourceTreeHashEncoding": "SHA-256 of sorted lines: source file SHA-256, two spaces, tracked path, newline.",
+      "sourceSha256": {
+        "contracts/production/CosmicSignatureArtAuction.sol": "e00bcba4a25978d6270519b147df88a98843d14bb3d0dc8bea4f9435bb24e042",
+        "contracts/production/CosmicSignatureGameV4.sol": "694a963d60b23221bde9cfe1ddcf8fd29ea853b00d4fb3736503bf3586a98d08",
+        "contracts/production/MainPrizeV4.sol": "e0ef0fc9cd55c4e52473e0ab40b4ca598fb5470000b3039097b6a422ee305286",
+        "contracts/production/MainPrizeV3.sol": "4f2b7dc231bbbc4f65680ccb81edf2558ec8e37ce6ca16d9a5313ecc3d34f148",
+        "contracts/production/CosmicSignatureGameStorageV4.sol": "f489c0a402eb3e8e1c03151f4cc109d48bae0d24cb0c74831a1f83fae386c1a7",
+        "contracts/production/CosmicSignatureGameStorageV4Base.sol": "9d907bcae9827318f2ede33ef20c72a51ef5a4589207f06a699f1f8de64e2321",
+        "contracts/production/interfaces/ICosmicSignatureArtAuction.sol": "3cac70f996d72934b2c4094e34298e361ee13b473932697c019d938400bc2058",
+        "test/foundry/ArtAuctionFuzz.t.sol": "5119db3b41d5303fd4153cef7aeaf201e953589af1c7c98df3a6957a61d77910",
+        "hardhat.config.js": "8cad7ac7c245093342ec035979eb8c0d48baf6db741b0a2e3089e0b19302df14",
+        "foundry.toml": "da4041618447cd831a71b2364a8f127a07a07a0bdb1d6d73636ae632babf4794",
+        ".github/workflows/v4-art-auction.yml": "4da94771aa3486a8c0f3aba57a6c786fddfd81c937700386a83254fb5ce089c5",
+        "package.json": "20d0da9313ab7eca5b7dbf53f86288a5958b4f190a6d0e3413fc0d7058ba5755",
+        "package-lock.json": "19b5e97f531afd81d360456c53df5c12166ae783892f5cde448346aaedc189a6"
+      }
+    },
+    "runtimes": {
+      "CosmicSignatureGameV4": {
+        "runtimeBytes": 21951,
+        "compiledTemplateKeccak256": "0xe3f4b2eea81708a84faf3d682553a4d06a532db4dd917a1b2ef0561574842a94",
+        "abiSha256": "60d2ea10eb5e9f8298dce0eb7780c2dec1150b43e12ef7c615c22b5d992d492f"
+      },
+      "CosmicSignatureArtAuction": {
+        "runtimeBytes": 4748,
+        "compiledTemplateKeccak256": "0xe208b2fdb7481124bba3fc8e43dff0a54abf856a620b25f85bb8af5efb2a6246",
+        "abiSha256": "46458b27a871e28d9936bd48f02e53b8945ab724f4dc31812eb45f1190359117"
+      }
+    },
+    "quickRegression": {
+      "requestedCommand": "npm run hardhat-test-quick",
+      "requestedResult": "macOS has no /usr/bin/bash; wrapper cannot start",
+      "equivalentCommand": "LONG_TEST_MODE_CODE=1 TERM=xterm bash ./test.bash -b",
+      "workingDirectory": "test/runners",
+      "log": "/tmp/cosmic-v4-solc038-quick.log",
+      "exitCode": 0,
+      "passingPerMode": [
+        {
+          "passing": 200,
+          "seconds": 43
+        },
+        {
+          "passing": 200,
+          "seconds": 44
+        },
+        {
+          "passing": 200,
+          "seconds": 45
+        },
+        {
+          "passing": 201,
+          "seconds": 43
+        }
+      ],
+      "intentionalProductionOnlySkipsPerMode": [
+        1,
+        1,
+        1,
+        0
+      ],
+      "totalPassing": 801
+    },
+    "compilerRegression": {
+      "file": "test/foundry/ArtAuctionFuzz.t.sol",
+      "test": "test_ReassignedIndexMustInvalidateAliasedStorageKnowledge",
+      "vulnerableCompilerProbe": {
+        "compiler": "0.8.34",
+        "test": "ReassignedIndexMustInvalidateAliasedStorageKnowledge",
+        "expected": 29,
+        "actual": 17,
+        "regressionRejectsVulnerableCompiler": true
+      },
+      "fixedCompilerResult": "passed; aliased access returns29 and distinct access17"
+    },
+    "foundry": {
+      "command": "npm run test:auction:fuzz",
+      "exitCode": 0,
+      "tests": 5,
+      "fuzzProperties": 3,
+      "fuzzCases": 3072,
+      "invariantRuns": 128,
+      "invariantDepth": 128,
+      "invariantHandlerCalls": 16384,
+      "invariantHandlerReverts": 0,
+      "log": "/tmp/cosmic-v4-solc038-foundry.log"
+    },
+    "credentialTests": {
+      "command": "npm run test:credentials",
+      "passing": 29,
+      "exitCode": 0
+    },
+    "scopedEslint": {
+      "status": "passed",
+      "files": "Compiler/fork config, auction/V4 test helpers and suites, inspection and rehearsal tasks."
+    },
+    "forkRehearsal": {
+      "mode": "local-hardhat-fork-only",
+      "blockNumber": 517222845,
+      "blockHash": "0x29d83a6a14c4e5c9ca00ecb99c5ca727f9984f7fe093437e52cb124c8fb68982",
+      "arbitrumPrecompiles": "Repository FakeArbSys and FakeArbGasInfo test shims; native Arbitrum handlers are unavailable in EDR.",
+      "deployedV3RuntimeVerified": true,
+      "storageValidation": "passed",
+      "scalarStatePreserved": true,
+      "originalCycle": "3",
+      "firstV4Cycle": "4",
+      "auctionAddressOnFork": "0xD5279FF3CF11adc454ef5dE05ec6145adc135995",
+      "implementationAddressOnFork": "0x7830773A7A3057fD66fB86643Da642531Db987e1",
+      "upgradeGas": "79085",
+      "priorV3FinalizationGas": "4560114",
+      "v4FinalizationGas": "5971336",
+      "forwardGas": "54944",
+      "firstAuctionNftId": "123",
+      "auctionNfts": 8,
+      "eligibilityFromSuccessfulFinalization": true,
+      "winningPaymentForwardedWithoutBid": true,
+      "nftDelivered": true,
+      "limitation": "Hardhat gas is an execution measurement; Arbitrum L1 data fees and future worst-case configuration are not represented. No transaction was sent to Arbitrum.",
+      "command": "RUN_V4_FORK_REHEARSAL=1 ART_AUCTION_RPC_URL=https://arbitrum-one.public.blastapi.io ENABLE_HARDHAT_PREPROCESSOR=false HARDHAT_MODE_CODE=1 npx hardhat --config hardhat.art-auction-fork.config.js run --no-compile --network hardhat tasks/src/rehearse-v4-art-auction-upgrade.js",
+      "exitCode": 0,
+      "log": "/tmp/cosmic-v4-solc038-fork.log"
+    },
+    "remainingReleaseBoundary": "Independent security review, review of inherited toolchain advisories, then-current deployed-state rehearsal, actual operational gas limits, and separate production deployment authorization. Tests are not a proof of perfect security."
   }
 }

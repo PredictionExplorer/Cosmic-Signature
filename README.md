@@ -60,6 +60,64 @@ cd Cosmic-Signature
 npm ci
 ```
 
+### Dependency security review
+
+The October 22, 2026 review updated compatible tool dependencies and removed the
+critical Handlebars finding (`4.7.8` to `4.7.10`). It also updated the HTTP, XML,
+YAML, glob-expansion, cookie, and cryptographic utility packages where the
+existing consumer ranges permitted a patched version. Hardhat remains `2.27.2`,
+and the compiled OpenZeppelin packages remain `5.4.0`.
+
+Two exact consumer pins require narrow, same-major overrides until upstream
+releases remove those pins:
+
+| Consumer | Pinned dependency | Override | Reason |
+| --- | --- | --- | --- |
+| `@nomicfoundation/ignition-core@0.15.15` | `lodash@4.17.21` | `4.18.1` | Fix template code injection and prototype pollution; no newer compatible consumer release. |
+| `@ethersproject/providers@5.8.0` | `ws@8.18.0` | `8.21.0` | Fix memory disclosure and resource exhaustion; no newer ethers v5 provider release. |
+
+A clean installation and full dependency-tree validation were performed with
+npm `10.9.8`, without changing the system package manager. npm `11.3.0` incorrectly
+reports the deduplicated `ws@8.21.0` as invalid even though the reported required
+version is also `8.21.0`; use the verified npm version when checking this tree:
+
+```bash
+npm exec --yes --package=npm@10.9.8 -- npm ci
+npm exec --yes --package=npm@10.9.8 -- npm ls --all
+```
+
+After the dependency update, all 29 credential-handling tests passed and the
+quick suite passed all four conditional-compilation modes (200 + 200 + 200 +
+201 test executions). On macOS the `/usr/bin/bash` wrapper is unavailable, so
+the documented `LONG_TEST_MODE_CODE=1 bash test.bash -b` equivalent was used.
+Focused ESLint checks for the auction tests and V4 inspection/rehearsal tasks
+also passed; the declared `eslint-plugin-chai-friendly` is restored by `npm ci`.
+
+The full audit changed from 80 package entries (1 critical, 32 high, 28 moderate,
+19 low) to 57 (0 critical, 17 high, 19 moderate, 21 low). These are affected
+package entries, including propagated findings, not 57 independent exploits.
+The remaining findings are not suppressed and the full audit still fails.
+Every dependency is declared under `devDependencies`, so `--omit=dev` alone
+would conceal the relevant Solidity dependencies as well as tools.
+
+The remaining high-severity findings have these boundaries:
+
+| Dependency family | Actual exposure in this repository | Remediation boundary |
+| --- | --- | --- |
+| Nitro's nested OpenZeppelin `4.7.3` packages | Not present in the generated Solidity compiler input. Only Nitro's standalone `ArbSys` and `ArbGasInfo` interfaces are imported; the game's OpenZeppelin source is `5.4.0`. | Nitro and its upgrade executor pin `4.7.3`. Replacing that package or reviewing its full upgrade path is separate from updating the compiled game libraries. |
+| Hardhat's `undici` 5.x and its `@fastify/busboy` | Development RPC/download transport; a hostile endpoint/response can affect tooling. It is not deployed EVM code or served by the gallery. | No patched 5.x path. Hardhat 2 still selects this major; a tooling migration needs separate compatibility work. The upgraded OpenZeppelin tool's independent undici 6.x copy is patched. |
+| `adm-zip` 0.4.x | Hardhat's Windows compiler ZIP extraction path. This project uses a pinned native compiler; CI installs and verifies that binary directly. | Fixed versions are outside Hardhat's pre-1.0 compatible range. Do not force an untested archive-library replacement. |
+| `serialize-javascript` 6.x | Mocha's parallel-worker option serialization, using the local test configuration. Tests already execute repository code; auction participant data is not supplied to this path. | The fix requires a new major that Mocha 10 does not accept. Migrating the coverage and test tooling requires compatibility testing. |
+| `tmp` 0.0.x | Installed through solc-js SMT support and Nitro's patch tooling; not the configured native Solidity compiler execution path. | Consumers pin old pre-1.0 APIs. Updating requires a compatible consumer replacement or a separately tested migration. |
+| `braces` and its glob/watch consumers | Local repository globs and test-file discovery, not public gallery requests. | The latest upstream `braces` release is still affected; no patched compatible version exists. |
+
+The remaining low/moderate entries include inherited ethers v5 cryptographic
+utilities, Hardhat's telemetry/UUID helpers, and downstream packages that carry
+those findings. These boundaries explain the present impact; they are not a
+blanket assurance that development tooling is safe. A Hardhat 3/toolbox migration
+and replacement of the old coverage/Nitro dependency paths should be reviewed as
+a dedicated change with the complete upgrade and conditional-compilation suites.
+
 ### Compile
 
 ```bash

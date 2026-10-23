@@ -333,6 +333,7 @@ describe("CosmicSignatureArtAuction", function () {
 		await (await contracts_.auction.connect(contracts_.signers[1]).claimNft(0n, contracts_.signers[1].address)).wait();
 	});
 
+	/** @type {Array<[string, Array<bigint | string>]>} */
 	const reentryCalls_ = [
 		["registerAuctionBatch", [99n, 0n]],
 		["bid", [1n, MINIMUM_BID]],

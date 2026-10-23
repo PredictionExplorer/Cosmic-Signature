@@ -8,7 +8,7 @@ const hre = require("hardhat");
 const { readValidations } = require("@openzeppelin/hardhat-upgrades/dist/utils/validations");
 const { getUnlinkedBytecode, getVersion, getStorageLayout, getStorageUpgradeReport, withValidationDefaults } = require("@openzeppelin/upgrades-core");
 const { TIMESTAMP_9000_01_01 } = require("../../src/CosmicSignatureConstants.js");
-const { waitForTransactionReceipt } = require("../../src/Helpers.js");
+const { ENABLE_HARDHAT_PREPROCESSOR, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { deployV1CompleteRoundZeroAndUpgradeToV2 } = require("../src/V2UpgradeTestHelpers.js");
 const { deployV1CompleteRoundZeroAndUpgradeToV2AndV3 } = require("../src/V3UpgradeTestHelpers.js");
 const { activateRoundBidAndClaimMainPrize, bidWithEthAt } = require("../src/GameRoundTestHelpers.js");
@@ -24,6 +24,19 @@ async function v4Layout() {
 }
 
 describe("CosmicSignatureGameV4-Upgrade", function () {
+	it("keeps production runtime and creation bytecode within deployment limits", async function () {
+		if (ENABLE_HARDHAT_PREPROCESSOR) this.skip();
+
+		// The shared stress-test network permits oversized contracts. Check production artifacts
+		// explicitly so a future change cannot pass locally while becoming undeployable.
+		for (const contractName_ of ["CosmicSignatureGameV4", "CosmicSignatureArtAuction"]) {
+			const artifact_ = await hre.artifacts.readArtifact(contractName_);
+			expect((artifact_.deployedBytecode.length - 2) / 2, `${contractName_} runtime`).at.most(24_576);
+			const constructorBytes_ = contractName_ === "CosmicSignatureArtAuction" ? 64 : 0;
+			expect((artifact_.bytecode.length - 2) / 2 + constructorBytes_, `${contractName_} initialization code`).at.most(49_152);
+		}
+	});
+
 	it("consumes exactly slot 314 and preserves the deployed V3 layout and namespace storage", async function () {
 		const layout_ = await v4Layout();
 		const report_ = getStorageUpgradeReport(deployedV3.layout, layout_, withValidationDefaults({}));

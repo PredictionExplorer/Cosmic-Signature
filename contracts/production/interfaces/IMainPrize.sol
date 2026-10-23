@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity =0.8.34;
+pragma solidity =0.8.38;
 
 import { IMainPrize1 } from "./IMainPrize1.sol";
 import { IMainPrize2 } from "./IMainPrize2.sol";

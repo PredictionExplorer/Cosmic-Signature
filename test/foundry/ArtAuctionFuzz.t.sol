@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity =0.8.34;
+pragma solidity =0.8.38;
 
 import { CosmicSignatureArtAuction } from "../../contracts/production/CosmicSignatureArtAuction.sol";
 import { ICosmicSignatureArtAuction } from "../../contracts/production/interfaces/ICosmicSignatureArtAuction.sol";
@@ -10,6 +10,26 @@ interface AuctionFuzzVm {
 	function warp(uint256 timestamp_) external;
 	function prank(address sender_) external;
 	function expectRevert(bytes calldata revertData_) external;
+}
+
+/// @notice Guards the compiler fix for SOL-2026-7; this is a compiler probe, not auction logic.
+contract ArtAuctionCompilerRegressionTest {
+	uint256[8] private _values;
+
+	function writeThroughReassignedIndex(uint256 initialSteps_, uint256 laterSteps_) external returns (uint256) {
+		uint256 index_;
+		for (uint256 step_; step_ < initialSteps_; ++step_) ++index_;
+		uint256 savedIndex_ = index_ + 1;
+		_values[savedIndex_] = 17;
+		for (uint256 step_; step_ < laterSteps_; ++step_) ++index_;
+		_values[index_] = 29;
+		return _values[savedIndex_];
+	}
+
+	function test_ReassignedIndexMustInvalidateAliasedStorageKnowledge() public {
+		require(this.writeThroughReassignedIndex(0, 1) == 29, "Compiler returned a stale aliased value");
+		require(this.writeThroughReassignedIndex(0, 2) == 17, "Compiler confused distinct storage locations");
+	}
 }
 
 /// @notice Independent EVM fuzz runner; no forge-std dependency or production-source preprocessing.

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity =0.8.34;
+pragma solidity =0.8.38;
 
 /// @dev A controllably failing auction endpoint for the game's atomic-finalization tests.
 contract ArtAuctionRegistrationTestDouble {
