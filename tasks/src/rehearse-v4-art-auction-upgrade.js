@@ -130,19 +130,11 @@ async function rehearseV4Upgrade() {
 	const firstNft_ = batch_.args.firstNftId;
 	assert.equal(await nft_.totalSupply(), firstNft_ + 8n);
 	for (let index_ = 0n; index_ < 8n; ++index_) assert.equal(await nft_.ownerOf(firstNft_ + index_), await auction_.getAddress());
-	rehearsalStage = "exercise bidding, forwarding and NFT delivery";
-	await hre.network.provider.send("evm_setNextBlockTimestamp", [Number(batch_.args.eligibleAt)]);
-	const winningPayment_ = 10n ** 13n;
-	await (await auction_.bid(firstNft_, winningPayment_, { value: winningPayment_ })).wait();
-	await hre.network.provider.send("evm_setNextBlockTimestamp", [Number((await auction_.getAuction(firstNft_)).endAt)]);
-	await (await auction_.settle(firstNft_)).wait();
-	const beforeFunding_ = await snapshot_();
-	const reserve_ = await hre.ethers.provider.getBalance(baseline.proxyAddress);
-	const forward_ = await (await auction_.forwardProceeds(firstNft_)).wait();
-	assert.deepEqual(await snapshot_(), beforeFunding_);
-	assert.equal(await hre.ethers.provider.getBalance(baseline.proxyAddress), reserve_ + winningPayment_);
-	await (await auction_.claimNft(firstNft_, ownerAddress_)).wait();
-	assert.equal(await nft_.ownerOf(firstNft_), ownerAddress_);
+	rehearsalStage = "exercise full real-game auction lifecycle";
+	const { exerciseV4AuctionLifecycle } = require("../../test/src/ArtAuctionTestHelpers.js");
+	const lifecycle_ = await exerciseV4AuctionLifecycle(
+		game_, nft_, auction_, firstNft_, batch_.args.eligibleAt, await hre.ethers.getSigners(), snapshot_
+	);
 	console.log(JSON.stringify({
 		mode: "local-hardhat-fork-only", blockNumber: blockNumber_, blockHash: baseline.observation.blockHash,
 		arbitrumPrecompiles: "Repository FakeArbSys and FakeArbGasInfo test shims; native Arbitrum handlers are unavailable in EDR.",
@@ -150,9 +142,10 @@ async function rehearseV4Upgrade() {
 		originalCycle: sourceCycle_.toString(), firstV4Cycle: firstV4Cycle_.toString(),
 		auctionAddressOnFork: await auction_.getAddress(), implementationAddressOnFork: await implementation_.getAddress(),
 		upgradeGas: upgrade_.gasUsed.toString(), priorV3FinalizationGas: priorFinalizationGas_,
-		v4FinalizationGas: finalization_.gasUsed.toString(), forwardGas: forward_.gasUsed.toString(),
+		v4FinalizationGas: finalization_.gasUsed.toString(), forwardGas: lifecycle_.forwardGas,
 		firstAuctionNftId: firstNft_.toString(), auctionNfts: 8,
 		eligibilityFromSuccessfulFinalization: true, winningPaymentForwardedWithoutBid: true, nftDelivered: true,
+		lifecycle: lifecycle_,
 		limitation: "Hardhat gas is an execution measurement; Arbitrum L1 data fees and future worst-case configuration are not represented. No transaction was sent to Arbitrum.",
 	}, null, 2));
 	completedRehearsal = true;

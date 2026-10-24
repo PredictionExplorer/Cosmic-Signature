@@ -8,6 +8,7 @@ const { deployV1CompleteRoundZeroAndUpgradeToV2AndV3 } = require("../src/V3Upgra
 const { activateCurrentRound, getLatestBlockTimestamp, setNextBlockTimeToAtLeast, findParsedEvent } = require("../src/V2UpgradeTestHelpers.js");
 const { activateRoundBidAndClaimMainPrize, bidWithEthAt } = require("../src/GameRoundTestHelpers.js");
 const { deployV4Fixture, upgradeToV4, snapshotV3Storage } = require("../src/V4UpgradeTestHelpers.js");
+const { exerciseV4AuctionLifecycle } = require("../src/ArtAuctionTestHelpers.js");
 
 function parsedEvents(receipt_, contract_, name_) {
 	return receipt_.logs.filter(log_ => log_.address.toLowerCase() === contract_.target.toLowerCase()).map(log_ => contract_.interface.parseLog(log_)).filter(event_ => event_?.name === name_);
@@ -163,6 +164,19 @@ describe("CosmicSignatureGameV4-MainPrize", function () {
 		await waitForTransactionReceipt(auction_.connect(contracts_.signers[2]).claimNft(nftId_, contracts_.signers[2].address));
 		expect(await contracts_.cosmicSignatureNft.ownerOf(nftId_)).equal(contracts_.signers[2].address);
 		expect(await contracts_.stakingWalletCosmicSignatureNft.usedNfts(nftId_)).equal(0n);
+	});
+
+	it("completes real V4-issued sales through repeated extensions, refunds and independent delivery and reserve forwarding", async function () {
+		const contracts_ = await deployV4Fixture();
+		const game_ = contracts_.cosmicSignatureGameV4Proxy;
+		const auction_ = contracts_.cosmicSignatureArtAuction;
+		const receipt_ = await activateRoundBidAndClaimMainPrize(contracts_, game_);
+		const batch_ = findParsedEvent(receipt_, auction_, "AuctionBatchRegistered");
+		const result_ = await exerciseV4AuctionLifecycle(
+			game_, contracts_.cosmicSignatureNft, auction_, batch_.args.firstNftId, batch_.args.eligibleAt,
+			contracts_.signers, () => snapshotV3Storage(contracts_.cosmicSignatureGameProxyAddress)
+		);
+		expect(result_.remainingLiabilitiesWei).equal("0");
 	});
 
 	it("preserves the purchased NFT's naming and once-only anchoring utility through a later V4 distribution", async function () {

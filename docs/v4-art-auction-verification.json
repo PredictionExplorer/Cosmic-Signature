@@ -407,5 +407,226 @@
       "log": "/tmp/cosmic-v4-solc038-fork.log"
     },
     "remainingReleaseBoundary": "Independent security review, review of inherited toolchain advisories, then-current deployed-state rehearsal, actual operational gas limits, and separate production deployment authorization. Tests are not a proof of perfect security."
+  },
+  "completeAuctionLifecycle": {
+    "date": "2026-10-24",
+    "status": "passed",
+    "compiler": "0.8.38+commit.1835d247",
+    "productionSolidityChanged": false,
+    "scope": "Shared regression and pinned-state fork exercise actual V4-issued NFTs and actual game reserve; no receiver-double contribution accounting.",
+    "sourceSha256": {
+      "test/src/ArtAuctionTestHelpers.js": "dbdf07d072b571734f0fbf11e40bd2543351edcdd1dae939a955fb71ad4ebbc2",
+      "test/tests-src/CosmicSignatureGameV4-MainPrize.js": "511dddfc2232192eaa3daaf8ffdf519aea536f032871be7034612bba43fb4bbd",
+      "tasks/src/rehearse-v4-art-auction-upgrade.js": "26cbc4b4dbfd4e7f2aaffb04e9e374307f9ebf535d0e4381c9cdbfbdf05d9896",
+      "docs/v4-art-auction-upgrade.md": "7b0e5c4d20dc7d29e09e4bebe68671e89e1d8221cc2f5cd2fa5d5e2e8edfa0f1"
+    },
+    "focusedRegression": {
+      "command": "ENABLE_HARDHAT_PREPROCESSOR=false HARDHAT_MODE_CODE=1 LONG_TEST_MODE_CODE=1 npx hardhat test --no-compile --grep 'completes real V4-issued sales'",
+      "passing": 1,
+      "exitCode": 0,
+      "log": "/tmp/cosmic-v4-lifecycle-focused-20261024.log"
+    },
+    "forkRehearsal": {
+      "mode": "local-hardhat-fork-only",
+      "blockNumber": 517222845,
+      "blockHash": "0x29d83a6a14c4e5c9ca00ecb99c5ca727f9984f7fe093437e52cb124c8fb68982",
+      "arbitrumPrecompiles": "Repository FakeArbSys and FakeArbGasInfo test shims; native Arbitrum handlers are unavailable in EDR.",
+      "deployedV3RuntimeVerified": true,
+      "storageValidation": "passed",
+      "scalarStatePreserved": true,
+      "originalCycle": "3",
+      "firstV4Cycle": "4",
+      "auctionAddressOnFork": "0xD5279FF3CF11adc454ef5dE05ec6145adc135995",
+      "implementationAddressOnFork": "0x7830773A7A3057fD66fB86643Da642531Db987e1",
+      "upgradeGas": "79085",
+      "priorV3FinalizationGas": "4560114",
+      "v4FinalizationGas": "5971336",
+      "forwardGas": "54944",
+      "firstAuctionNftId": "123",
+      "auctionNfts": 8,
+      "eligibilityFromSuccessfulFinalization": true,
+      "winningPaymentForwardedWithoutBid": true,
+      "nftDelivered": true,
+      "lifecycle": {
+        "firstNftId": "123",
+        "secondNftId": "124",
+        "openingBidWei": "10000000000000",
+        "winningPaymentWei": "133100000000000000000",
+        "reserveIncreaseWei": "133100010000000000000",
+        "originalEnd": "1794674186",
+        "firstExtendedEnd": "1794674196",
+        "finalEnd": "1794674795",
+        "secondOpeningTime": "1795279595",
+        "secondEnd": "1795452395",
+        "forwardGas": "54944",
+        "transactions": [
+          {
+            "action": "first-bid",
+            "hash": "0x9bc80cd298a418e7a7958ccfabe11c5612b6d02443c0f9d85b913d572dd648f9",
+            "gasUsed": "120637"
+          },
+          {
+            "action": "early-outbid",
+            "hash": "0xb03b4c54dea370e27e0e68ca91d173559a958e06e774b018c71b0cf0751e1c71",
+            "gasUsed": "95855"
+          },
+          {
+            "action": "refund",
+            "hash": "0x323e619270cc409da0cbc28c2b645c7b3455e495187aa7aae9248790f6279326",
+            "gasUsed": "35034"
+          },
+          {
+            "action": "self-raise-to-100-eth",
+            "hash": "0x4633661ec6eb577302a5d122bcf230ac14717b12cb9d550a1042b76c921a4a79",
+            "gasUsed": "46930"
+          },
+          {
+            "action": "ten-minute-boundary-bid",
+            "hash": "0xaab93fb3e7aea50535719234682c3f66425d805f2b6a73b834f5a9cd11173670",
+            "gasUsed": "95879"
+          },
+          {
+            "action": "late-self-raise",
+            "hash": "0x8de3265b61245ac63825b36957e39b916bf3030a3be3bc4e0122eb38ce5b5b3c",
+            "gasUsed": "49810"
+          },
+          {
+            "action": "repeated-late-outbid",
+            "hash": "0x3426b40455e3d6938ff5195440c92326b6f802edae5a355891531bd56c2dc72f",
+            "gasUsed": "81659"
+          },
+          {
+            "action": "permissionless-settle",
+            "hash": "0xa3e3c673922b8e8b946cb653d470aa630e8a51581989c9287323013b73063a32",
+            "gasUsed": "60583"
+          },
+          {
+            "action": "deliver-before-forwarding",
+            "hash": "0x997f840c9aed0a1573e2b49a67d34c058cfa1a505d9f2df7f4b41978251aebe7",
+            "gasUsed": "106872"
+          },
+          {
+            "action": "refund",
+            "hash": "0xe5e20c6876d59a9bcc6a4d39ef285935b13f5827ed149075072fd962295da673",
+            "gasUsed": "38992"
+          },
+          {
+            "action": "refund",
+            "hash": "0xa0ef52da10afa177b39dc9700ee4417921c7c18fe6fb99c7c0543ce126f4457c",
+            "gasUsed": "35034"
+          },
+          {
+            "action": "later-first-bid",
+            "hash": "0xa8e89897d5af74f9fb77af4f393a5a219a870485ed1f7276a368cda19683d2f6",
+            "gasUsed": "120637"
+          },
+          {
+            "action": "forward-proceeds",
+            "hash": "0xf99218817f2a9a87a22a9c752cd8ae7f5aeb8e84e51850bf96a760c982d27286",
+            "gasUsed": "54944"
+          },
+          {
+            "action": "later-permissionless-settle",
+            "hash": "0x8b443e7e461223d0dafe27da9b3736c7fa672aae1f7669c69c10f997a56bfbb1",
+            "gasUsed": "60583"
+          },
+          {
+            "action": "forward-proceeds",
+            "hash": "0xd000ebdd1107c9c598cb6c7009fb52fea045d394f2ba503d942a59ce790440d1",
+            "gasUsed": "54944"
+          },
+          {
+            "action": "deliver-after-forwarding",
+            "hash": "0x64dff1f3069ec267841f49e70c30acc0ffef9bc1495e4e94a6d38a82016d1281",
+            "gasUsed": "107172"
+          }
+        ],
+        "sameBidderDeltaFunding": true,
+        "exactlyTenMinuteBoundaryUnchanged": true,
+        "repeatedLateBidsRestoreTenMinutes": true,
+        "refundsPaidBeforeAndAfterSettlement": true,
+        "bothDeliveryAndForwardingOrders": true,
+        "rejectedNftDeliveryRetryable": true,
+        "revertedNftDeliveryTransactions": 1,
+        "gameStoragePreserved": true,
+        "gameBidEventsFromForwarding": 0,
+        "remainingLiabilitiesWei": "0",
+        "unbidLotsStillInCustody": 6
+      },
+      "limitation": "Hardhat gas is an execution measurement; Arbitrum L1 data fees and future worst-case configuration are not represented. No transaction was sent to Arbitrum.",
+      "command": "RUN_V4_FORK_REHEARSAL=1 ART_AUCTION_RPC_URL=https://arbitrum-one.public.blastapi.io ENABLE_HARDHAT_PREPROCESSOR=false HARDHAT_MODE_CODE=1 npx hardhat --config hardhat.art-auction-fork.config.js run --no-compile --network hardhat tasks/src/rehearse-v4-art-auction-upgrade.js",
+      "exitCode": 0,
+      "log": "/tmp/cosmic-v4-lifecycle-fork-20261024.log"
+    },
+    "quickRegression": {
+      "requestedCommand": "npm run hardhat-test-quick",
+      "requestedResult": "macOS has no /usr/bin/bash; wrapper exited 126 before running tests.",
+      "equivalentCommand": "LONG_TEST_MODE_CODE=1 TERM=xterm bash ./test.bash -b",
+      "workingDirectory": "test/runners",
+      "log": "/tmp/cosmic-v4-lifecycle-final-quick-20261024.log",
+      "exitCode": 0,
+      "passingPerMode": [
+        {
+          "passing": 201,
+          "seconds": 43
+        },
+        {
+          "passing": 201,
+          "seconds": 43
+        },
+        {
+          "passing": 201,
+          "seconds": 45
+        },
+        {
+          "passing": 202,
+          "seconds": 42
+        }
+      ],
+      "intentionalProductionOnlySkipsPerMode": [
+        1,
+        1,
+        1,
+        0
+      ],
+      "totalPassing": 805
+    },
+    "foundry": {
+      "command": "npm run test:auction:fuzz",
+      "runner": "forge 1.7.1",
+      "compiler": "0.8.38",
+      "exitCode": 0,
+      "tests": 5,
+      "fuzzProperties": 3,
+      "runsPerProperty": 1024,
+      "fuzzCases": 3072,
+      "invariantRuns": 128,
+      "invariantDepth": 128,
+      "invariantHandlerCalls": 16384,
+      "invariantHandlerReverts": 0,
+      "log": "/tmp/cosmic-v4-lifecycle-foundry-20261024.log"
+    },
+    "credentialTests": {
+      "command": "npm run test:credentials",
+      "passing": 29,
+      "exitCode": 0,
+      "log": "/tmp/cosmic-v4-lifecycle-credentials-20261024.log"
+    },
+    "scopedEslint": "passed for the three modified executable/test files; script syntax and diff whitespace checks passed.",
+    "deployedV3": {
+      "branch": "v3-deployment",
+      "commit": "37fdc5e01fee9b4a1ef59fff35726d96775b3680",
+      "fixtureSha256": "38c82cac599857929fec66ca9125ad46d2a2b9ab898d895d3b28a08a9dc8b204",
+      "fixtureUnchanged": true,
+      "publicChainTransactions": 0
+    },
+    "limitations": [
+      "The fork pins the previously recorded block, not then-current public state.",
+      "Arbitrum precompiles use disclosed local shims; native behavior and L1 gas fees are not reproduced.",
+      "Scalar snapshots do not enumerate every nested mapping entry; explicit recipient, supply, accounting and event checks supplement them.",
+      "Foundry handler call counts include deliberate no-ops when workflow preconditions are not met.",
+      "The separate browser rehearsal uses a fresh local full-game deployment, not this pinned-state fork.",
+      "No deployment, public transaction or independent external security audit is implied."
+    ]
   }
 }
