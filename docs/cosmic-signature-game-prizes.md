@@ -47,8 +47,7 @@ The late-bid premium increases payment only. It does not increase raffle weight,
 
 Each `BidInfo.raffleCumulativeWeight`, available through `getBidInfoAt`, is the sum of that bid's weight and all preceding bid weights in the round. A raffle draw selects a random weight unit and binary-searches these cumulative values. A bidder's total weight is the sum of their bids' weights.
 
-Selections are with replacement: a bid or address can receive multiple prize allocations.
-todo-ai-5 What replacement the above is talking about? It's takling about multiple independent raffle draws, right? Can you phrase it less ambiguosly? Or does this document already mention multiple independent raffle draws?
+Each raffle draw leaves all entries eligible for later draws, so the same bid or address can win more than once.
 
 #### Variables
 

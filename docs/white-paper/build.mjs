@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const directory = dirname(fileURLToPath(import.meta.url));
@@ -44,11 +44,20 @@ function main() {
 \let\originaltableofcontents\tableofcontents
 \renewcommand{\tableofcontents}{\originaltableofcontents\clearpage}
 `);
-    // The canonical Markdown uses repository-relative documentation links.
-    // The PDF resolves those two companion guides to the target release branch.
+    // Resolve repository-relative links against the checked-out branch or detached commit.
+    const repositoryRoot = resolve(directory, '../..');
+    let sourceRef = execFileSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'],
+      {cwd: directory, encoding: 'utf8'}).trim();
+    if (sourceRef === 'HEAD') {
+      sourceRef = execFileSync('git', ['rev-parse', 'HEAD'],
+        {cwd: directory, encoding: 'utf8'}).trim();
+    }
     let pdfSource = source.toString('utf8').replace(
-      /^(\[(?:delta|endurance)\]: )\.\.\/(.+)$/gm,
-      '$1https://github.com/PredictionExplorer/Cosmic-Signature/blob/v3.1-2026-10-13/docs/$2',
+      /^(\[([^\]]+)\]: )(\.\.\/.+)$/gm,
+      (_whole, prefix, label, target) => {
+        const repositoryPath = relative(repositoryRoot, resolve(directory, target)).replaceAll('\\', '/');
+        return `${prefix}https://github.com/PredictionExplorer/Cosmic-Signature/${label === 'source' ? 'tree' : 'blob'}/${sourceRef}/${repositoryPath}`;
+      },
     );
     // Reserve room for these short reference tables instead of leaving a few
     // rows on another page. Content remains identical to the Markdown source.

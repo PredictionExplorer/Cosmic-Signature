@@ -50,19 +50,19 @@ The same blockchains are supported.
 
 #### When Testing
 
-- `CosmicSignatureGameV2` requires that `CosmicSignatureGame` was deployed first and at least 1 bidding round has already completed. So, when testing things, before upgrading, you must place a bid and claim the main prize.
+- `CosmicSignatureGameV2` requires that `CosmicSignatureGame` was deployed first and at least 1 bidding round has already completed (Comment-202607079). So, when testing things, before upgrading, you must place a bid and claim the main prize.
 
 #### V2-to-V3 Release Checks
 
-- Yuriy's comment. Taras'es AI agent has added this section. I normally try to keep things simple and not too verbose, but I stopped short of editing this one. Parts of it duplicate other instructions elewhere in this doc.
+- Yuriy's comment. Taras'es AI agent has added this section. I normally try to keep things simple and not too verbose, but I mostly preserved this one. Parts of it duplicate other instructions elewhere in this doc.
 
 - Pin the V3 source commit and the deployed V2 proxy, implementation, chain ID, and observation block. Local V2 source has been refactored since deployment; comparing only two current source files is insufficient.
 
-- Keep `newInitializerMethodName` set to `reinitialize`. The task passes it as `upgradeProxy`'s `call`, so the upgrade and initialization occur atomically. `reinitialize` is external without `onlyOwner`; omitting that atomic call leaves its one-time invocation available to another caller.
+- Keep `newInitializerMethodName` set to `reinitialize`. The task passes it as `upgradeProxy`'s `call`, so the upgrade and initialization occur atomically. `reinitialize` is external without `onlyOwner`; omitting that atomic call leaves its one-time invocation available to another caller (Comment-202606128).
 
 - The committed V3 configurations set both `unsafeAllowRenames` and `unsafeSkipStorageCheck` to `false`. Retain storage validation. The historical V1-to-V2 exception described below is not an instruction to bypass validation for V3.
 
-- Review the assignments in `CosmicSignatureGameV3.reinitialize`: it overwrites the CST beginning-price floor, the reward multiplier, and five ETH allocation percentages as well as initializing the six new V3 storage values. Other existing configuration is carried forward; current source defaults do not describe every live value.
+- Review the values changed by `CosmicSignatureGameV3.reinitialize` (Comment-202610175); other existing configuration is carried forward.
 
 - Run `npm run hardhat-test-quick` from the repository root. In particular, review the `CosmicSignatureGameV3-DeployedV2StorageLayout`, `CosmicSignatureGameV3-StorageLayout`, and `CosmicSignatureGame-All-Versions-Upgrade` suites. The first uses a committed deployed-V2 layout, not a live fork; the second upgrades local fixtures. No mainnet-fork rehearsal is configured by these scripts.
 

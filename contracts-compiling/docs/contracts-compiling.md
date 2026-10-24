@@ -54,8 +54,8 @@ Other environment variables are listed further.
 
    Following are optional environment variables that affect the compilation:\
    `ENABLE_HARDHAT_PREPROCESSOR = true` enables a preprocessor for conditional compilation. \
-   `ENABLE_ASSERTS` (ignored and assumed to be `false` when `ENABLE_HARDHAT_PREPROCESSOR` is not `true`).\
-   `ENABLE_SMTCHECKER` (ignored and assumed to be zero when `ENABLE_HARDHAT_PREPROCESSOR` is not `true`).\
+   `ENABLE_ASSERTS` (according to Comment-202408155, ignored and assumed to be `false` when `ENABLE_HARDHAT_PREPROCESSOR` is not `true`).\
+   `ENABLE_SMTCHECKER` (according to Comment-202410099, ignored and assumed to be zero when `ENABLE_HARDHAT_PREPROCESSOR` is not `true`).\
    They are documented in comments in `src/Helpers.js`.\
    The variables (or lack thereof) affect the compiler output folders. Relevant logic is located near Comment-202503272 and Comment-202503302.
 
@@ -68,5 +68,3 @@ Other environment variables are listed further.
 - Contract artifacts, including ABIs, are written under `artifacts/` in configuration-dependent subfolders (Comment-202503272).
 
 - The Solidity compiler is configured in `hardhat.config.js`, in the `hardhatUserConfig.solidity` object.
-
-- todo-ai-5 I deleted the note that quoted Hardhat configuration without providing any hints that someone to edit it there is supposed to also updatwe this doc. I made other edits in this and other files for the same reason. Besides, no human is going to read walls of text like that. So if you aren't gonna read it, why ask your AI agent to write it???

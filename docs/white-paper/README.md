@@ -3,11 +3,10 @@
 [Read white paper 1.3](cosmic-signature-white-paper-v1.3.md) or
 [download its PDF](cosmic-signature-white-paper-v1.3.pdf).
 
-The English Markdown is the canonical source. It explains proposed contract V3,
-records the current proxy's V1 and V2 deployment history, compares V2 with V3,
-and lists the substantive corrections to the previous English paper 1.0.
-Its contract revision and deployment status are explicit: V2 is still active in
-the fixed-block snapshot. A paper version is not a contract deployment.
+The English Markdown is the canonical source. It describes V3 in this branch,
+compares it with V2, and lists the substantive corrections to the previous English paper 1.0.
+V3 has been deployed from `v3-deployment`; see the paper's Section 10.3.
+The October 17 snapshot records the preceding V2 deployment.
 
 The previous papers and translations remain unchanged in the frontend
 repository. This directory does not synchronize or publish website content.
@@ -44,7 +43,8 @@ node /path/to/Cosmic-Signature/docs/white-paper/build.mjs --check
 ```
 
 The build derives its title, author, date, sections, tables, and content from
-the Markdown. It records the source, build-script, and PDF SHA-256 digests in
+the Markdown. Repository links follow the checked-out branch, or commit when detached.
+It records the source, build-script, and PDF SHA-256 digests in
 `artifact-manifest.json`. The check verifies those digests; it does not certify
 contract accuracy or visual layout. Re-render and inspect the PDF after content
 changes, and commit the source, PDF, and manifest together. Tool versions are

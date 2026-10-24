@@ -46,7 +46,7 @@ methods {
 }
 
 definition FIRST_ROUND_INITIAL_ETH_BID_PRICE() returns uint256 = 10000000000000;
-definition RANDOMWALK_NFT_BID_PRICE_DIVISOR() returns uint256 = 2;
+definition RANDOM_WALK_NFT_BID_PRICE_DIVISOR() returns uint256 = 2;
 
 // ===== ANYONECAN RULES =====
 
@@ -1747,7 +1747,7 @@ rule randomWalkNftDiscountCorrect {
     // Calculate discounted price
     uint256 discountedPrice = getEthPlusRandomWalkNftBidPrice(e, baseEthPrice);
     
-    // The discount divisor is 2 (RANDOMWALK_NFT_BID_PRICE_DIVISOR)
+    // The discount divisor is 2 (RANDOM_WALK_NFT_BID_PRICE_DIVISOR)
     // Formula: (ethBidPrice + 1) / 2
     mathint expectedPrice = (baseEthPrice + 1) / 2;
     

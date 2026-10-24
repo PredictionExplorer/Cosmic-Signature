@@ -101,7 +101,7 @@ const biddingActions = [
 // #region Claim action
 
 /** Collects lowercase owners of currently staked RW NFTs (raffle staker eligibility). */
-function currentRandomWalkStakerOwners(ledger_) {
+function currentRandomWalkNftStakerOwners(ledger_) {
 	const owners_ = new Set();
 	for (const action_ of ledger_.rwStaking.stakeActions.values()) {
 		owners_.add(action_.ownerAddress);
@@ -117,7 +117,7 @@ Core claim execution + full verification, shared by the random claim action and 
 */
 async function executeClaim(ctx_, claimer_, ts_) {
 	const { engine, model, ledger } = ctx_;
-	const rwStakerOwners_ = currentRandomWalkStakerOwners(ledger);
+	const rwStakerOwners_ = currentRandomWalkNftStakerOwners(ledger);
 	const gameEthBalanceBefore_ = ledger.expectedEth(ctx_.game.address);
 	const numStakedCs_ = ledger.csStaking.numStakedNfts;
 	const numStakedRw_ = ledger.rwStaking.numStakedNfts;
@@ -313,7 +313,7 @@ async function runClaimRace(ctx_) {
 	}
 	// At/after `mainPrizeTime` so the last bidder is allowed to claim.
 	let ts_ = engine.clampTs((model.mainPrizeTime > engine.lastTs) ? model.mainPrizeTime : (engine.lastTs + 1n));
-	const rwStakerOwners_ = currentRandomWalkStakerOwners(ledger);
+	const rwStakerOwners_ = currentRandomWalkNftStakerOwners(ledger);
 	const gameEthBalanceBefore_ = ledger.expectedEth(ctx_.game.address);
 	const numStakedCs_ = ledger.csStaking.numStakedNfts;
 	const numStakedRw_ = ledger.rwStaking.numStakedNfts;
@@ -676,5 +676,5 @@ module.exports = {
 	forceCompleteRound,
 	ensureCsStakingApproval,
 	ensureRwStakingApproval,
-	currentRandomWalkStakerOwners,
+	currentRandomWalkNftStakerOwners,
 };

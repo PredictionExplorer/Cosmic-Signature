@@ -236,7 +236,7 @@
       "V3 linear reward including zero and negative offset",
       "Verified deployed V2 square-root reward",
       "CST decline, zero floor and ceiling-divided duration",
-      "Random Walk ceiling division"
+      "Random Walk NFT ceiling division"
     ],
     "historyChecks": {
       "proxyDeployment": {

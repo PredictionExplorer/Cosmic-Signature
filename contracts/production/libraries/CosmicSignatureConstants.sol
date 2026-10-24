@@ -72,7 +72,7 @@ library CosmicSignatureConstants {
 	/// [Comment-202412036]
 	/// An ETH + Random Walk NFT bid gets a 50% discount on the bid price.
 	/// [/Comment-202412036]
-	uint256 internal constant RANDOMWALK_NFT_BID_PRICE_DIVISOR = 2;
+	uint256 internal constant RANDOM_WALK_NFT_BID_PRICE_DIVISOR = 2;
 
 	/// @notice Default `ethBidRefundAmountInGasToSwallowMaxLimit`.
 	/// [Comment-202502052]
@@ -225,7 +225,7 @@ library CosmicSignatureConstants {
 	uint256 internal constant DEFAULT_NUM_RAFFLE_COSMIC_SIGNATURE_NFTS_FOR_BIDDERS = 10;
 
 	/// @notice Default `numRaffleCosmicSignatureNftsForRandomWalkNftStakers`.
-	uint256 internal constant DEFAULT_NUM_RAFFLE_COSMIC_SIGNATURE_NFTS_FOR_RANDOMWALK_NFT_STAKERS = 10;
+	uint256 internal constant DEFAULT_NUM_RAFFLE_COSMIC_SIGNATURE_NFTS_FOR_RANDOM_WALK_NFT_STAKERS = 10;
 
 	/// @notice In V2-, default `cosmicSignatureNftStakingTotalEthRewardAmountPercentage`.
 	/// See also: `DEFAULT_COSMIC_SIGNATURE_NFT_STAKING_TOTAL_ETH_REWARD_AMOUNT_PERCENTAGE_V3`.

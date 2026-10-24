@@ -6,9 +6,9 @@ There is commented code that deploys and registers a new `PrizesWallet`. The rel
 
 `PrizesWallet` is not upgraded through the Game's UUPS proxy. This procedure deploys a separate contract and changes `CosmicSignatureGameStorageV2Base.prizesWallet` in the Game proxy contract.
 
-The old `PrizesWallet` will remain live afterwards. Its state will not be migraded to its newly deployed version. Prize winners will still be able to withdraw their prizes from the old contract.
+The old `PrizesWallet` will remain live afterwards. Its state will not be migrated to its newly deployed version. Prize winners will still be able to withdraw their prizes from the old contract.
 
-That said, ideally, all prizes should be withdrawn before the upgrade, because playing bots could read `PrizesWallet` to withdraw from address from the Game contract.
+That said, **ideally, all prizes should be withdrawn before the upgrade**, because playing bots may obtain the wallet address from the Game contract and overlook the old wallet.
 
 #### How to Upgrade `PrizesWallet`
 

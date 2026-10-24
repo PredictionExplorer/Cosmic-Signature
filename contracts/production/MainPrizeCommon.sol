@@ -70,9 +70,7 @@ abstract contract MainPrizeCommon is
 			// and still push the deadline when anybody is permitted to claim the main prize to a point in the future
 			// before which the next CST bid net price will become zero or negative. This flaw makes it possible for a bidder
 			// to keep a bidding round going indefinitely.
-			// The V2+ logic mitigates this issue; it's possible to keep a round going only for a limited duration.
-			// That said, in either Game version, attempting anything like that makes little sense for the last bidder,
-			// so this possibility is only theoretical. It's unlikely that someone will ever attempt this.
+			// The V2+ logic mitigates this issue.
 			// [/Comment-202606175]
 			uint256 mainPrizeTimeIncrement_ = getMainPrizeTimeIncrement();
 			uint256 mainPrizeCorrectedTime_ = Math.max(mainPrizeTime, block.timestamp);

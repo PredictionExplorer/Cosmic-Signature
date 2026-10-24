@@ -22,7 +22,6 @@ interface ICosmicSignatureNft is IERC721Enumerable, IAddressValidator {
 		string name;
 
 		/// @notice The seed generated randomly for the NFT. The contract does not check for duplicate seeds.
-		/// todo-ai-5 I rephrased the above a little. It's unnecessary to specify here how exactly the seed is generated.
 		/// @dev One might prefer this parameter to be a byte-array or `bytes32`, but for now it's simpler to treat it as a number,
 		/// even though `bytes32` would probably not be any less efficient. It would make sense to change this parameter type
 		/// if we need more than 32 bytes.

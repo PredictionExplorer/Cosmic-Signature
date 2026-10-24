@@ -12,13 +12,12 @@ linkcolor: blue
 urlcolor: blue
 ---
 
-**White paper 1.3 | Canonical English edition | Proposed contract V3**
+**White paper 1.3 | Canonical English edition | Contract V3**
 
-The main description below specifies the proposed V3 implementation at commit
-[`9d1a6447`][source] on branch
-`v3.1-2026-10-13`. V2 remains deployed in the chain snapshot used here. Publication
-of this paper does not activate V3. The deployment history and version comparisons
-are in Sections 10 and 11; Appendix A identifies the deployed contracts.
+This paper describes the [V3 contracts in this branch][source].
+V3 has been deployed from the `v3-deployment` branch.
+The deployment history and version comparisons are in Sections 10 and 11;
+Appendix A preserves the pre-upgrade V2 snapshot.
 
 # Abstract
 
@@ -30,20 +29,18 @@ distributes configured portions of the ETH reserve, creates Cosmic Signature
 NFTs with seeds recorded on-chain, and schedules the next cycle. The remaining
 reserve carries forward; growth from one cycle to the next is not guaranteed.
 
-V3 changes how participation is recognized. Participation CST accrues linearly
+Participation CST accrues linearly
 with elapsed time and is created for the previous participant when the next
 Gesture arrives. Participant selections use the ETH base cost at each Gesture
 as a weight. A late-cycle premium increases the cost of acting close to the
-deadline without increasing that Gesture's selection weight. V3 also changes
-the ETH allocation split, expands the main NFT allocation, and replaces the CST
-window's duration adjustment with an adjustable decline rate.
+deadline without increasing that Gesture's selection weight. The CST window
+uses an adjustable price decline rate.
 
 The contracts determine timing, ownership, allocation, and seed provenance.
 Artwork is computed off-chain by an open-source three-body simulation and
 renderer. Reproduction depends on the generator version and its inputs as well
 as the seed. The protocol remains upgradeable and owner-configurable within the
-constraints described below; neither governance transfer nor removal of owner
-powers happens automatically in V3.
+constraints described below.
 
 # 1 Design and terminology
 
@@ -119,15 +116,23 @@ A cycle becomes available at `roundActivationTime`. Its first Gesture must use
 ETH, optionally with the Random Walk NFT reduction. That first Gesture starts
 the countdown and the CST Calibration Window. A CST Gesture cannot open a cycle.
 
+<!-- Comment-202508094 applies to the fixed price; Comment-202605294 and Comment-202607079 apply to V3. -->
+
 Except for the original cycle's fixed opening base cost of 0.0001 ETH, an ETH
-Calibration Window determines the opening base cost. It starts at a stored
-ceiling and decreases to a floor. At default parameters the ceiling is twice
+Calibration Window determines the opening base cost. V3 does not support that
+original-cycle exception; it assumes the original cycle has completed before
+the upgrade.
+
+The window starts at a stored ceiling and decreases to a floor.
+At default parameters the ceiling is twice
 the preceding cycle's opening **undiscounted base cost**, and the floor is
 `floor(ceiling / 200) + 1 wei`. The next ceiling does not include a swallowed
 overpayment or the Random Walk NFT reduction.
 
 The descent uses the following integer interpolation, where `C` is the ceiling,
 `F` the floor, `u` elapsed seconds since activation, and `T` the window duration:
+
+<!-- Comment-202508103 applies to the floor. -->
 
 ```text
 opening base cost = C                              when u <= 0
@@ -148,8 +153,9 @@ that operation changes both the floor divisor and window duration divisor.
 The opening Gesture sets the deadline to the current timestamp plus
 `floor(I / initialDurationUntilMainPrizeDivisor)`, approximately one day at
 initial settings. Every subsequent Gesture adds `floor(I / 1,000,000)` seconds
-to the **stored deadline**. It does not reset the deadline to an interval after
-the latest transaction.
+to the stored deadline.
+
+<!-- Comment-202606059 applies to the increment update; Comment-202606175 applies to deadline extension. -->
 
 The increment began at one hour. On finalization it becomes
 `I + floor(I / mainPrizeTimeIncrementIncreaseDivisor)`. The default divisor is
@@ -160,14 +166,12 @@ An expired countdown does not close participation. Until finalization succeeds,
 another Gesture can become the Final Gesture and extend the stored deadline.
 If the deadline was far enough in the past, it can remain expired after that
 extension. A participant can then make a Gesture and finalize in the same
-transaction through a contract. This behavior is present in V2 and retained in
-V3.
+transaction through a contract.
 
 ## 3.3 Finalization
 
 The Final Gesture participant can finalize once the deadline has arrived. Other
-addresses can finalize after an additional timeout, currently 48 hours in the
-V2 snapshot and retained by V3 initialization. The successful caller becomes
+addresses can finalize after an additional configurable timeout. The successful caller becomes
 the cycle beneficiary and receives the Signature Allocation. When that caller
 differs from the Final Gesture participant, the endurance and Chrono-Warrior
 calculations still use the participation history.
@@ -178,13 +182,14 @@ explicit transaction; merely reaching a timestamp does not execute it. Failed
 finalization reverts the transaction's state changes and transfers.
 
 The next activation is scheduled from the finalization timestamp using
-`delayDurationBeforeRoundActivation`. Its Solidity default is 30 minutes, but
-the checked V2 deployment uses **seven days**. V3 initialization preserves that
-live setting. The owner can change this delay separately.
+`delayDurationBeforeRoundActivation`. Its Solidity default is 30 minutes.
+The owner can change this delay separately.
 
 # 4 Gesture costs and participation
 
 ## 4.1 ETH Gestures
+
+<!-- Comment-202501061 applies. -->
 
 Every ETH Gesture, including the opening Gesture, sets the next ETH base cost to
 `base + floor(base / ethBidPriceIncreaseDivisor) + 1 wei`. The default divisor
@@ -209,6 +214,8 @@ Let `B` be the current window's beginning cost, `a` its beginning timestamp,
 `m` the decline rate in CST smallest units per second, and `t` the current time.
 The V3 base cost is:
 
+<!-- Formula near Comment-202611052 in BiddingV3._getNextCstBidPriceBaseAdvanced. -->
+
 ```text
 CST base cost = max(0, B - (t - a) * m)
 ```
@@ -219,6 +226,8 @@ CST cost; the transaction reverts if the amount due exceeds it. Protocol-directe
 burning does not require an ERC-20 spending approval to the protocol.
 
 The decline rate changes on Gestures. With change divisor `d` (default 100):
+
+<!-- Comment-202606059 applies. -->
 
 ```text
 ETH candidate rate = m + floor(m / d)
@@ -232,6 +241,8 @@ the updated rate applies to the entire elapsed interval `t - a`, so an accepted
 increase can immediately lower the CST base cost. A CST Gesture adopts its
 updated rate (which integer rounding can leave
 unchanged) and restarts the window at:
+
+<!-- Comment-202611053 applies to the rate guard and restart floor. -->
 
 ```text
 new B = max(2 * premium-free CST base cost,
@@ -249,13 +260,11 @@ its carried-over beginning cost was established at an earlier rate.
 The beginning cost created by the first CST Gesture in a cycle is carried into
 the next cycle's first CST window. The decline rate also carries between cycles.
 If a cycle has no CST Gesture, its carried beginning cost stays unchanged.
-V3 initialization preserves V2's existing carried beginning cost of 200 CST;
-it does not immediately replace that first-window cost with 1 CST.
+The carried beginning cost is also preserved when upgrading to V3.
 
 At sufficient elapsed time the base cost reaches zero. A zero-cost CST Gesture
 remains valid, and a zero base also produces zero late premium. Gas and other
-transaction requirements still apply. Participation is not subject to a
-one-Gesture-per-second restriction.
+transaction requirements still apply.
 
 ## 4.3 The late-cycle premium
 
@@ -265,11 +274,13 @@ CST Gestures after the opening Gesture.
 
 The window length is `L = floor(I / D)`, where `D` is
 `roundLateBidDurationDivisor`, initialized to 3,000,000. At the original
-one-hour increment this is 20 minutes; with the checked live increment it is
+one-hour increment this is 20 minutes; with the October 17 snapshot's increment it is
 1,236 seconds. The window grows as the increment grows.
 
 For positive base cost `p`, elapsed time `e` within that window is clamped between
 zero and `L`. The exact implementation uses these integer operations:
+
+<!-- Comment-202607119 applies. -->
 
 ```text
 e       = clamp(L - (deadline - now), 0, L)
@@ -334,6 +345,8 @@ creation cannot substitute for the balance needed to pay that cost.
 
 For elapsed seconds `s`, multiplier `R`, and increment `I` in microseconds:
 
+<!-- Formula near Comment-202607167 in BiddingV3.getBidCstRewardAmountAdvanced. -->
+
 ```text
 Participation CST, in smallest units = floor(s * R / I)
 ```
@@ -349,23 +362,22 @@ original one-hour increment, this corresponds to 1 CST per elapsed minute.
 | 1 day | 1,440 |
 
 These are examples at the original increment, not a fixed rate for all cycles.
-The checked deployment's larger increment would give approximately 0.971 CST
+The October 17 snapshot's larger increment would give approximately 0.971 CST
 per minute after V3 initialization. Increasing the increment reduces the rate
 unless the multiplier is separately adjusted.
 
 The opening Gesture creates no Participation CST. Finalization does not settle
 an additional Participation CST amount for the Final Gesture participant, so
-elapsed time alone does not produce a claimable balance. The existing minimum
-Participation CST argument now constrains the amount created for the previous
-participant, not an amount promised to the sender; V3 skips that check on the
-opening ETH Gesture.
+elapsed time alone does not produce a claimable balance. The minimum
+Participation CST argument constrains the amount created for the previous
+participant; the opening ETH Gesture skips that check.
 
 ## 5.2 Fixed allocations and burns
 
 At default settings, finalization creates 1,000 CST for each recognition or
 NFT-selection allocation and 3,000 CST for the Outreach Reserve. The main
-allocation receives 1,000 CST **in total**, even though V3 gives it three NFTs.
-A typical cycle therefore still creates 27,000 CST in fixed allocations, plus
+allocation receives 1,000 CST **in total** and three NFTs.
+A typical cycle creates 27,000 CST in fixed allocations, plus
 Participation CST created during the cycle. Section 6 explains omitted tracks.
 
 The token starts with zero supply. There is no protocol schedule that fixes its
@@ -428,7 +440,7 @@ NFTs are anchored at finalization, subtract ten NFTs and 10,000 CST. Multiple
 allocations can go to the same address. NFT and CST counts are counts of
 allocations, not necessarily distinct recipients.
 
-The table uses the V3 main NFT count and the retained standard allocation
+The table uses the V3 main NFT count and the standard allocation
 settings shown in Appendix B. Those configurable counts and amounts can change.
 
 NFTs and CST are created directly for recipients during finalization. The main
@@ -575,7 +587,7 @@ stage over a shortlist of up to 24 candidates, with up to three retry batches.
 
 The selected orbit is rendered through seed-dependent layers and camera
 parameters. Color is sampled from a continuous perceptual palette, including
-hue dispersion and variation; it is not fixed at 120-degree spacing. The main
+hue dispersion and variation. The main
 spectral edition uses 64 wavelength bins from 380 to 700 nanometers, with AgX
 tonemapping and configured finishing effects such as halation, prism, spikes,
 and stardust.
@@ -679,9 +691,7 @@ logic when the current authorization conditions permit it. Constraints in
 today's implementation are not a guarantee that an authorized future
 implementation preserves them.
 
-The previous paper described an intention to remove the deploying address's
-privileges after development. V3 contains no automatic sunset, scheduled
-renunciation, or compulsory Council transfer. Transferring ownership to the
+Ownership changes require explicit owner transactions. Transferring ownership to the
 Council preserves the relevant powers under collective control; renouncing an
 ownership role disables that role's owner-only operations. They are different
 outcomes and must be handled for each contract separately. Any future change
@@ -710,7 +720,7 @@ timeout was one day.
 
 The [V2 upgrade][v2-tx] executed on **June 21, 2026 at 19:38:53 UTC**, in block
 475913365. June 22 is the V2 implementation's source-verification date, not the
-upgrade date. V2 remains active at the October 17 snapshot.
+upgrade date. V2 was active at the October 17 snapshot.
 
 Its principal changes were:
 
@@ -769,9 +779,13 @@ The verified V1 and V2 sources also show integration and storage changes:
 These implementation changes did not replace the companion contracts or
 change the Endurance Champion and Chrono-Warrior selection rules.
 
-## 10.3 What V3 changes from deployed V2
+## 10.3 What V3 changes from V2
 
-| Mechanism | Deployed V2 | Proposed V3 |
+V3 has been deployed from the `v3-deployment` branch. Its
+[recorded implementation][v3-deployment] is
+`0xc1b97E1b0baC86248653B18706dbC5c8898c5c06`.
+
+| Mechanism | V2 | V3 |
 | --- | --- | --- |
 | Participation CST formula | Square root of scaled elapsed time | Linear scaled elapsed time |
 | Participation CST recipient | Current participant | Previous participant |
@@ -814,6 +828,11 @@ change to a retained companion contract's source does not update that deployed
 contract by itself.
 
 ## 10.4 Initializing V3 and handling historical assets
+
+<!-- Comment-202607079 applies to upgrades. -->
+
+V1 provides `initialize` for an initial deployment. V3 provides only
+`reinitialize` for an already initialized V2 proxy, not fresh-deployment support.
 
 The owner upgrades the existing proxy with `upgradeToAndCall`, passing
 `reinitialize()` in the same transaction. The old implementation's authorization
@@ -858,7 +877,7 @@ original repository as historical editions.
 ## 11.2 What changed in edition 1.3
 
 Edition **1.3** is the canonical English paper in the Solidity repository.
-The suffix aligns with the proposed contract V3; paper and contract version
+The suffix aligns with contract V3; paper and contract version
 numbers are separate. This revision follows the retained 1.0 edition and does
 not assert intervening published editions numbered 1.1 or 1.2.
 
@@ -881,7 +900,7 @@ cost at default settings, with the exact integer formula in Section 4.3.
 Likewise, the new main NFT count does not justify multiplying the main CST
 allocation or increasing typical fixed CST from 27,000 to 29,000.
 
-Future editions should record the contract commit they describe, whether it has
+Future editions should identify the contract source they describe, whether it has
 been deployed, and both protocol changes and corrections to the paper. A future
 translation should identify the English edition from which it was translated.
 
@@ -889,8 +908,8 @@ translation should identify the English edition from which it was translated.
 
 The following addresses and configuration observations refer to **Arbitrum One,
 chain 42161, block 515784460**, timestamp **October 17, 2026, 21:25:00 UTC**.
-The proxy points to V2 at that block. A future V3 implementation address is not
-assigned by this paper.
+The proxy pointed to V2 at that block. The later V3 deployment is recorded in
+Section 10.3.
 
 | Component | Address |
 | --- | --- |
@@ -901,7 +920,7 @@ assigned by this paper.
 | Random Walk NFT | `0x895a6F444BE4ba9d124F61DF736605792B35D66b` |
 | Allocations Wallet | `0xE1b619e9B39ea4109D2F429Ea5eAA307759b0011` |
 | Cosmic Signature Anchoring | `0x6308A405B4FF1eA890870Efe2a6D036750B81F7C` |
-| Random Walk Anchoring | `0x5EB3396092841E6c5b0b51141699F6711E830529` |
+| Random Walk NFT Anchoring | `0x5EB3396092841E6c5b0b51141699F6711E830529` |
 | Public Goods Vault | `0x96bB0ADB414d5350f435E52f94946B6C7A0760a9` |
 | Outreach Reserve | `0xa3802c799f5e3D3D3562A9B513a41C6aAF92e25e` |
 | Cosmic Council | `0xF3D52E1c681949be7E624778dB13DaD7F8c729db` |
@@ -943,17 +962,16 @@ assumed to reproduce every historical deployment.
 | Fixed CST per recognition allocation | 1,000 CST, retained |
 | Outreach CST per cycle | 3,000 CST, retained |
 | Participant ETH / NFT selections | 3 / 10, retained |
-| Anchored Random Walk selections | 10 when eligible records exist, retained |
+| Anchored Random Walk NFT selections | 10 when eligible records exist, retained |
 | Gesture message limit | 280 bytes, retained |
 
 Values retained from V2 can differ from initial launch constants. Mutable
 settings should be read from the intended deployment before preparing a
-transaction. The obsolete stored CST duration and its change divisor remain
-in storage for compatibility but no longer govern V3 pricing.
+transaction.
 
 # References
 
-1. [Reviewed V3 contract source][source], including [pricing][bidding],
+1. [V3 contract source in this branch][source], including [pricing][bidding],
    [finalization][main-prize], [initialization][initializer], and
    [constants][constants].
 2. [Verified V2 deployment record and sources][verified-v2].
@@ -972,14 +990,15 @@ This paper is dedicated to the public domain under the repository's CC0 1.0
 license. Its technical descriptions do not promise asset prices, liquidity,
 future value, or a risk-free outcome from participation.
 
-[source]: https://github.com/PredictionExplorer/Cosmic-Signature/tree/9d1a644744e0ee588ef5af1947f6decdf8bdb3f3/contracts/production
-[bidding]: https://github.com/PredictionExplorer/Cosmic-Signature/blob/9d1a644744e0ee588ef5af1947f6decdf8bdb3f3/contracts/production/BiddingV3.sol
-[main-prize]: https://github.com/PredictionExplorer/Cosmic-Signature/blob/9d1a644744e0ee588ef5af1947f6decdf8bdb3f3/contracts/production/MainPrizeV3.sol
-[initializer]: https://github.com/PredictionExplorer/Cosmic-Signature/blob/9d1a644744e0ee588ef5af1947f6decdf8bdb3f3/contracts/production/CosmicSignatureGameV3.sol
-[constants]: https://github.com/PredictionExplorer/Cosmic-Signature/blob/9d1a644744e0ee588ef5af1947f6decdf8bdb3f3/contracts/production/libraries/CosmicSignatureConstants.sol
+[source]: ../../contracts/production
+[bidding]: ../../contracts/production/BiddingV3.sol
+[main-prize]: ../../contracts/production/MainPrizeV3.sol
+[initializer]: ../../contracts/production/CosmicSignatureGameV3.sol
+[constants]: ../../contracts/production/libraries/CosmicSignatureConstants.sol
 [verified-v2]: https://sourcify.dev/server/v2/contract/42161/0x50eB3d05d2C463949DE9238D419385594f7AdB97?fields=sources,metadata,compilation,deployment
 [v1-tx]: https://arbiscan.io/tx/0xb9db34c4f095e2c207e5048fdff5d539b4dcb4f56dc455f2c74dc2d8e056532f
 [v2-tx]: https://arbiscan.io/tx/0xd084284f4a44452eb94f4fd2614dfdc6bbde57856d8c53265bb5c440415e5eb9
+[v3-deployment]: https://github.com/PredictionExplorer/Cosmic-Signature/blob/d7b7b310c236bacf265988f6e8f3ba7ba537fd03/tasks/output/upgrade-cosmic-signature-game-report-arbitrumOne-CosmicSignatureGameV3.json
 [delta]: ../v3-vs-v2-changes.md
 [endurance]: ../endurance-chrono-README.md
 [generator]: https://github.com/PredictionExplorer/CS-Image-Generation/tree/59b324d035252c7db503743441d04d0355b81f3b

@@ -11,7 +11,7 @@ This document provides an overview and links to detailed docs. To avoid stale co
 
 ## Documentation
 
-- Canonical English white paper 1.3: [source and PDF](docs/white-paper/README.md). It explains the proposed V3 design, the chain-backed V1/V2 history, and changes from the previous paper. The old papers and translations remain in the frontend repository.
+- Canonical English white paper 1.3: [source and PDF](docs/white-paper/README.md). It explains the V3 design, deployment history, and changes from the previous paper. The old papers and translations remain in the frontend repository.
 - Documentation review and code coverage inventory: [docs/documentation-review-v3.md](docs/documentation-review-v3.md).
 - Endurance Champion and Chrono-Warrior: [docs/endurance-chrono-README.md](docs/endurance-chrono-README.md).
 - Prizes: [docs/cosmic-signature-game-prizes.md](docs/cosmic-signature-game-prizes.md).

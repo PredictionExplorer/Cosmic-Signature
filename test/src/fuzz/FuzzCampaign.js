@@ -31,7 +31,7 @@ const {
 	donationActions,
 	stakingActions,
 } = require("./actions/CoreActions.js");
-const { randomWalkActions, tokenActions, prizesWalletActions, walletActions } = require("./actions/SecondaryActions.js");
+const { randomWalkNftActions, tokenActions, prizesWalletActions, walletActions } = require("./actions/SecondaryActions.js");
 const { adminActions, daoActions } = require("./actions/AdminActions.js");
 const { extraTokenActions, extraPrizesWalletActions } = require("./actions/ExtraActions.js");
 const { negativeProbes } = require("./actions/NegativeProbes.js");
@@ -558,7 +558,7 @@ class FuzzCampaign {
 			...claimActions,
 			...donationActions,
 			...stakingActions,
-			...randomWalkActions,
+			...randomWalkNftActions,
 			...tokenActions,
 			...prizesWalletActions,
 			...walletActions,

@@ -2,11 +2,11 @@
 
 #### Introduction
 
-This document records the protocol, ABI, storage, and operational changes from the deployed Arbitrum One V2 Game to the proposed V3 implementation. The source baseline is pinned below; deployment observations and historical test reports are distinguished from behavior established by the code.
+This document records the protocol, ABI, storage, and operational changes from the previously deployed Arbitrum One V2 Game to V3 in this branch. V3 has been deployed from `v3-deployment`; see the [deployment record](white-paper/cosmic-signature-white-paper-v1.3.md#103-what-v3-changes-from-v2). The historical V2 baseline and deployment observations used for this comparison are pinned below.
 
-- "Live V2" is the verified `CosmicSignatureGameV2` implementation. Its 48 project source files match `main` commit `3f52eaaf2258ec30f61fad07bb07cb2e3b4ca8a6` and `v2` commit `a73aed1d5146efd600711aa4faaf4b1ae9681d49`. The proxy was deployed on April 24, 2026 and upgraded to V2 on June 21, 2026. References to `main` below mean this pinned baseline, not a future branch head.
-- "V3" is `CosmicSignatureGameV3` from `v3.1-2026-10-13`, reviewed at commit `9d1a644744e0ee588ef5af1947f6decdf8bdb3f3`. This branch also changes the V1 and V2 sources, which are called "new V1" and "new V2" below.
-- The [deployment snapshot](white-paper/deployment-snapshot.json) records the verified deployment addresses, upgrade transactions, and block used for chain observations. Values can change before deployment; re-read them during the upgrade procedure.
+- "Live V2" below means the verified `CosmicSignatureGameV2` implementation used before V3. Its 48 project source files match `main` commit `3f52eaaf2258ec30f61fad07bb07cb2e3b4ca8a6` and `v2` commit `a73aed1d5146efd600711aa4faaf4b1ae9681d49`. The proxy was deployed on April 24, 2026 and upgraded to V2 on June 21, 2026. References to `main` below mean this pinned baseline, not a future branch head.
+- "V3" is `CosmicSignatureGameV3` in this branch. This branch also changes the V1 and V2 sources, which are called "new V1" and "new V2" below.
+- The [deployment snapshot](white-paper/deployment-snapshot.json) records the verified deployment addresses, upgrade transactions, and block used for pre-V3 chain observations. It is not the current configuration.
 
 It is written for auditors, for frontend and backend developers, and for the upgrade operator.
 
@@ -34,8 +34,8 @@ Each change is attributed to the lowest version whose source shows it. A change 
 
 ##### Procedure
 
-- V3 is deployed by a UUPS `upgradeToAndCall(newImplementation, reinitialize())` on the existing proxy. The task config `tasks/config/upgrade-cosmic-signature-game-config-arbitrumOne-CosmicSignatureGameV3.json` passes `newInitializerMethodName = "reinitialize"`.
-- The live V2 `_authorizeUpgrade` requires `onlyOwner` and `_onlyRoundIsInactive`. So the upgrade happens during an inactive round, before its first bid, and no round mixes V2 and V3 bids. The earlier 2026-10-12 review recorded round 3 activation at Unix time 1792627200 (2026-10-22 00:00 UTC); re-read `roundActivationTime()` before upgrading. The upgrade and any `setPrizesWallet` call must land while the round is inactive. If it has activated but nobody has bid yet, the owner can postpone activation; otherwise, wait for the next round.
+- The task deploys the V3 implementation separately, then updates the existing proxy and initializes V3 in one UUPS `upgradeToAndCall(newImplementation, reinitialize())` transaction. The task config `tasks/config/upgrade-cosmic-signature-game-config-arbitrumOne-CosmicSignatureGameV3.json` passes `newInitializerMethodName = "reinitialize"` (Comment-202606128).
+- The live V2 `_authorizeUpgrade` requires `onlyOwner` and `_onlyRoundIsInactive`. So the upgrade happens during an inactive round, before its first bid, and no round mixes V2 and V3 bids. Read `roundActivationTime()` before upgrading. The upgrade and any `setPrizesWallet` call must land while the round is inactive. If it has activated but nobody has bid yet, the owner can postpone activation; otherwise, wait for the next round.
 - `reinitialize()` is guarded only by OpenZeppelin `reinitializer(3)`. It has no `onlyOwner` (Comment-202606128), and its other modifiers only assert. It must run atomically as the upgrade call payload. A second call reverts with `InvalidInitialization`.
 - `reinitialize()` emits only `Initialized(3)` (plus the proxy's `Upgraded`). By design, clients must read the parameter getters on `Initialized` rather than expect individual `*Changed` events (Comment-202610175).
 - The procedure is in `tasks/docs/Cosmic-Signature-Game-Contract-Upgrade-And-Re-Registration.md`.
@@ -240,19 +240,19 @@ All items in this section are `V3` unless labeled otherwise. The section describ
 
 ##### CST Bidding and the CST Dutch Auction
 
-- **Decline multiplier model** (`BiddingV3._getNextCstBidPriceBaseAdvanced`):
+- **Decline multiplier model** (`BiddingV3._getNextCstBidPriceBaseAdvanced`, near Comment-202611052):
   - `base = max(0, beginningPrice - (now + offset - cstDutchAuctionBeginningTimeStamp) * cstBidPriceDeclineMultiplier)`.
   - `beginningPrice` is `nextRoundFirstCstDutchAuctionBeginningBidPrice` until the round's first CST bid, then `cstDutchAuctionBeginningBidPrice`.
   - The price to pay is `base + premium`.
   - Live V2 used `beginningPrice * remaining / cstDutchAuctionDuration` instead.
-- **Multiplier updates.** An ETH bid proposes `candidate = m + m / div` and adopts it only if `candidate * CST_DUTCH_AUCTION_DURATION_MIN_LIMIT <= beginningPrice`; otherwise, `m` stays unchanged. A CST bid sets `m -= m / (div + 1)`.
+- **Multiplier updates.** An ETH bid proposes `candidate = m + m / div` and adopts it only if `candidate * CST_DUTCH_AUCTION_DURATION_MIN_LIMIT <= beginningPrice`; otherwise, `m` stays unchanged. A CST bid sets `m -= m / (div + 1)` (Comment-202606059; Comment-202611053).
   - `div = cstBidPriceDeclineMultiplierChangeDivisor` defaults to 100, so an allowed adjustment changes `m` by about 1%. Live V2 adjusted `cstDutchAuctionDuration` with divisor 250 instead.
   - `m` is never reset between rounds. `BidPlaced` field 8 always reports the resulting value, including when it stays unchanged; automatic adjustments emit no `*Changed` event.
   - Because the base price is `max(0, B - elapsed * m)`, an adopted increase can instantly lower it, until it reaches zero. There is no reduction when the guard rejects the increase, when elapsed time is zero, or when the base price is already zero. The CST auction timestamp is not restarted by an ETH bid after the round's first bid.
 - **Beginning price after a CST bid** is `max(2 * base, cstDutchAuctionBeginningBidPriceMinLimit, m * CST_DUTCH_AUCTION_DURATION_MIN_LIMIT)`, using the newly reduced `m`. Live V2 used `2 * paidPrice`, which had no premium to exclude. The first CST bid of a round also stores this value in `nextRoundFirstCstDutchAuctionBeginningBidPrice`. The configurable minimum drops from 200 CST to 1 CST.
   - `CST_DUTCH_AUCTION_DURATION_MIN_LIMIT` is a fixed 3 minutes. This additional floor and the conditional ETH-bid adjustment mitigate rapid free-bid bursts without prohibiting zero-price bids after sufficient waiting (Comment-202611053).
   - The guard constrains the auction's total duration from its beginning price, not the time remaining when an ETH bid arrives. It does not restart a three-minute waiting period on every bid. The first CST auction of a later round uses the saved `nextRoundFirstCstDutchAuctionBeginningBidPrice`, which can have been set at a lower decline rate and can therefore imply a shorter duration. Changing the configurable minimum also does not rewrite this saved value.
-- **First V3 round, using the rehearsal state.** `nextRoundFirstCstDutchAuctionBeginningBidPrice` retains 200 CST because initialization does not reset it. Its first CST auction therefore starts at 200 CST when the round's first ETH bid is placed. That bid has already raised `m` to 16,833,333,333,333,333 (`_tryIncreaseCstBidPriceDeclineMultiplier` runs before `_bidCommon` starts the auction), so the price reaches 0 after about 11,882 s (3.3 hours), or sooner if further ETH bids increase the rate. The value 12000 that `getCstDutchAuctionDurations()` reports before that bid uses the initial multiplier. Re-read the inherited beginning price before deployment rather than assuming it will still be 200 CST.
+- **First V3 round, using the rehearsal state.** `nextRoundFirstCstDutchAuctionBeginningBidPrice` retains 200 CST because initialization does not reset it. Its first CST auction therefore starts at 200 CST when the round's first ETH bid is placed. That bid has already raised `m` to 16,833,333,333,333,333 (`_tryIncreaseCstBidPriceDeclineMultiplier` runs before `_bidCommon` starts the auction), so the price reaches 0 after about 11,882 s (3.3 hours), or sooner if further ETH bids increase the rate. The value 12000 that `getCstDutchAuctionDurations()` reports before that bid uses the initial multiplier. These are historical rehearsal values, not current price quotes.
 - **Zero price.** The base price can reach 0, and a CST bid at price 0 is valid. It still mints the bid CST reward to the previous bidder. If the reward is nonzero, the zero burn is executed as a zero mint to the bidder (Comment-202606074, unchanged).
   - This is accepted by design: competing bidders are expected to bid before the price approaches zero. Near `mainPrizeTime`, premium growth is expected to outweigh the base-price decline. These are market assumptions, not contract guarantees; a zero base price still has zero premium and receives the usual raffle weight.
 - **`getCstDutchAuctionDurations()`** now returns `(ceil(beginningPrice / cstBidPriceDeclineMultiplier), now - cstDutchAuctionBeginningTimeStamp)`. The first value is the number of seconds from the auction start until the base price reaches 0. It can change on a bid when `m` or the beginning price changes, or on main prize claim, when `lastCstBidderAddress` is reset. It panics with a division by zero if `cstBidPriceDeclineMultiplier == 0`. The elapsed value is meaningless before the round's first bid (Comment-202501022).
@@ -261,7 +261,7 @@ All items in this section are `V3` unless labeled otherwise. The section describ
 
 ##### Bid CST Reward
 
-- **Formula.** `reward = elapsed * bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds` if `elapsed > 0`, and 0 otherwise. `elapsed = now + offset - biddersInfo[roundNum][lastBidderAddress].lastBidTimeStamp`.
+- **Formula.** `reward = elapsed * bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds` if `elapsed > 0`, and 0 otherwise. `elapsed = now + offset - biddersInfo[roundNum][lastBidderAddress].lastBidTimeStamp`. See Comment-202607167 in `BiddingV3.getBidCstRewardAmountAdvanced`.
   - With the default multiplier of 6e25, the reward is exactly 1 CST per minute at the initial 1-hour increment, and about 0.97 CST per minute at the rehearsal's increment. This is a reward-rate formula, not a guarantee of a constant or declining total CST supply; issuance and burns also depend on participation and other rewards.
   - Live V2 used `sqrt(elapsed * multiplier / increment)`. For the first bid, it measured `elapsed` from `roundActivationTime`.
   - `bidCstRewardAmountMultiplier` remains the core reward parameter. Its slot, getter, setter, and event are unchanged, but its unit is now linear.
@@ -463,9 +463,10 @@ Checklist conclusions:
 
 ##### Contracts That Are Not Redeployed
 
-The Game upgrade does not redeploy `CosmicSignatureToken`, `CosmicSignatureNft`, `RandomWalkNFT`, `StakingWalletCosmicSignatureNft`, `StakingWalletRandomWalkNft`, `CharityWallet`, `MarketingWallet`, or `CosmicSignatureDao`. They keep their deployed bytecode. Compared with the pinned `main` source, their direct source changes are comments only except for the DAO alias below; a shared helper also affects recompilation:
+The Game upgrade does not redeploy `CosmicSignatureToken`, `CosmicSignatureNft`, `RandomWalkNFT`, `StakingWalletCosmicSignatureNft`, `StakingWalletRandomWalkNft`, `CharityWallet`, `MarketingWallet`, or `CosmicSignatureDao`. They keep their deployed bytecode. Compared with the pinned `main` source, their direct source changes are comments only except for the DAO alias and NFT return-variable refactoring below; a shared helper also affects recompilation:
 
 - `CosmicSignatureDao` now references a new alias constant, `DAO_DEFAULT_PROPOSAL_THRESHOLD` (defined as `DEFAULT_BID_CST_REWARD_AMOUNT`, 100 CST). The configured value is unchanged.
+- `CosmicSignatureNft.mintMany` now uses a named return variable, `firstNftId_`. Its behavior, selector, and encoded return value are unchanged; the ABI output gains that name.
 - `CryptographyHelpers` is now marked `memory-safe`, which can change optimizer output when contracts such as `CosmicSignatureNft` and `StakingWalletRandomWalkNft` are recompiled. It does not alter their existing deployed instances.
 
 The call signatures V3 uses for these contracts are unchanged. This is an interface-compatibility statement, not a claim that recompiling every local source reproduces each deployed contract. In particular, `RandomWalkNFT` is a pre-existing third-party deployment whose verified source uses an older OpenZeppelin version than the local compatibility copy. Use each deployment's own verified ABI and source for its historical behavior. The retained contracts keep their string-carrying errors. `StakingWalletCosmicSignatureNft` still emits the `FundTransferFailed` event (`0x154fb6c6...215a`) when its charity transfer fails, and `CharityWallet` and `StakingWalletCosmicSignatureNft` still revert with the `FundTransferFailed(string,address,uint256)` error.

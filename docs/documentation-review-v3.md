@@ -2,9 +2,13 @@
 
 ## Scope and provenance
 
-This review reconciles the repository documentation and the canonical English
+This records the original review of the repository documentation and canonical English
 white paper 1.3 with contract revision
 `9d1a644744e0ee588ef5af1947f6decdf8bdb3f3` on `v3.1-2026-10-13`.
+V3 has since been deployed from `v3-deployment`; see the
+[deployment record in the paper](white-paper/cosmic-signature-white-paper-v1.3.md#103-what-v3-changes-from-v2).
+The validation results below describe the original review, not later edits.
+
 All 118 repository-owned Solidity files were read, including interfaces,
 libraries, test helpers, prototypes, comments, and conditional compilation
 branches. The per-file checklist below records the complete original inventory.
@@ -74,9 +78,9 @@ inheritance is described in the technical change register and source.
 
 The English paper is version 1.3 and authoritative in this repository. It explains
 the design before the V1/V2/V3 chronology, includes a V2-to-V3 comparison and a
-separate 1.0-to-1.3 editorial history, and records the proposed deployment status.
+separate 1.0-to-1.3 editorial history, and originally described V3 before deployment.
 The old papers are retained in the frontend, rather than silently relabeled or
-removed. No new implementation or wallet address is presented as deployed.
+removed. The later V3 deployment is now noted separately from the historical snapshot.
 
 ## Validation
 
@@ -118,13 +122,13 @@ simulation. No live transactions were sent. The earlier attempt to fork the
 older documentation snapshot could not retrieve complete historical account
 state from public RPCs; the successful rehearsal used a later identified block.
 The fixed-block getters, code hashes and sources in the documentation snapshot
-were independently checked. Rehearse again with the final operator configuration
-and suitable RPC infrastructure before deployment.
+were independently checked. The review recommended another rehearsal with the
+final operator configuration before deployment.
 
 ## Pre-merge formula and history review
 
 A second review of PR #204 checked the paper against the actual verified V1/V2
-sources and the proposed V3 implementation, rather than treating the existing
+sources and the then-proposed V3 implementation, rather than treating the existing
 change register as evidence. Fresh transaction receipts and block timestamps
 confirmed the April 24 proxy deployment and June 21 V2 upgrade. The prior paper
 1.0 history was rechecked against its pinned frontend source.
@@ -343,6 +347,6 @@ Diagram review inspected the XML labels and relationships to establish V1 scope;
 - The deployed-V2 storage-layout regression and local V3 carried-state test were read fully. Other regression files were inspected for the relevant initialization, replacement, and test-profile behavior; their complete contents were not all audited by the documentation reviewer.
 - The 22 committed Certora `.spec` files received declaration/inventory and configuration-compatibility inspection. They were not exhaustively reviewed as proofs and were not executed. Their stale compiler targets and interfaces are explicitly documented.
 - Generator claims use the pinned renderer revision and targeted source/CI evidence. The renderer and backend repositories were not modified; this does not establish that all hosted assets have been regenerated.
-- No live upgrade transaction was performed. The local Arbitrum fork rehearsal used simulated precompiles for finalization, as described in Validation above. Local execution and deployment-state reads are recorded separately from source-read coverage.
+- No live upgrade transaction was performed during this documentation review. The local Arbitrum fork rehearsal used simulated precompiles for finalization, as described in Validation above. Local execution and deployment-state reads are recorded separately from source-read coverage.
 
 Source inventories used to prepare this checklist: the core, peripheral, finalization, and operational-documentation review records. No file is marked complete solely because a search matched its name.

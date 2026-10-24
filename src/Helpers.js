@@ -40,10 +40,9 @@ const { asUint256 } = require("./BigIntMathHelpers.js");
 /**
 [Comment-202510221]
 Supported values:
-   @ 1 to run tests under the `${workspaceFolder}/test` subfolder deterministically and at the maximum speed.
+   @ 1 to run Hardhat tests deterministically and at the maximum speed.
      This is the value to set in most cases, especially if no blockchain calls will be made.
-   @ 2 to simulate a live blockchain, which is designed for tests
-     under the `${workspaceFolder}/live-blockchain-testing` subfolder.
+   @ 2 to support a blockchain mining a block every given time interval.
 [/Comment-202510221]
 @type {number}
 */
@@ -69,7 +68,7 @@ switch (HARDHAT_MODE_CODE) {
 // #endregion
 // #region
 
-// Disable Hardhat Preprocessor by not setting or setting to `false` this environment variable
+// Disable Hardhat Preprocessor by not setting or setting to "false" this environment variable
 // when running any Hardhat task against a mainnet.
 // It's to eliminate the risk of Hardhat Preprocessor bugs breaking things.
 // If you forget to, we will throw an error near Comment-202408261.

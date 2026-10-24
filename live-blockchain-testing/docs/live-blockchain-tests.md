@@ -30,7 +30,7 @@ All scripts assume that they are executed from the folder they are located in. S
   ` export HARDHAT_VAR_accountPrivateKeySeed=0x_THE_GENERATED_UINT256_HERE`\
   or\
   ` npx hardhat vars set accountPrivateKeySeed 0x_THE_GENERATED_UINT256_HERE`\
-  (Be sure to begin the command with a space char. It prevents the command saving to the command history.)\
+  (Begin the command with a space; ensure that doing so keeps a command out of command history.)\
   This will be used to generate private keys of a few accounts.\
   See Comment-202508313 for more info.
 
@@ -66,7 +66,7 @@ All scripts assume that they are executed from the folder they are located in. S
 
 - In `${workspaceFolder}/tasks/docs/Cosmic-Signature-Contracts-Deployment-And-Registration.md` see a note about the `.openzeppelin` subfolder. Make sure your test deployments do not get mixed up with your production ones within the same file under the subfolder.
 
-- Near Comment-202610239, Hardhat Preprocesor together with asserts and SMTChecker are enabled for this test. As a result, if you attempt to run this test on a mainnet, it would fail to start due to an error thrown near Comment-202408261. So, to run this test on a mainnet, temporarily modify the code by either: (1) near Comment-202610239, comment out the setting of the `ENABLE_HARDHAT_PREPROCESSOR` environment variable; or (2) near Comment-202408261, comment out the error throwing.
+- Near Comment-202610239, Hardhat Preprocessor together with asserts and SMTChecker preprocessing are enabled for this test. As a result, if you attempt to run this test on a mainnet, it would fail to start due to an error thrown near Comment-202408261. So, to run this test on a mainnet, temporarily modify the code by either: (1) near Comment-202610239, comment out the setting of the `ENABLE_HARDHAT_PREPROCESSOR` environment variable; or (2) near Comment-202408261, comment out the error throwing.
 
 #### Afterwards
 

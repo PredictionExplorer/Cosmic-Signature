@@ -43,9 +43,6 @@ interface IEthDonations {
 	/// which would result in the same outcome as a donation, except a respective event won't be emitted.
 	/// [/Comment-202610044]
 	/// See also: `donateEthWithInfo`, `IBidding.receive`, `IBidding1V2.receive`, `ICosmicSignatureGame.fallback`, `ICosmicSignatureGameV2.fallback`.
-	/// todo-ai-5 Above and maybe in a few other similar places, I have restored the listings of the `fallback` methods.
-	/// todo-ai-5 I am aware that thay are commented out, but I want to mention them. Explain this in the commit message.
-	/// todo-ai-5 Their commented existense indicates that I did not simply forget to add them, but rather chose not to.
 	function donateEth() external payable;
 
 	/// @notice This method is similar to `donateEth`.

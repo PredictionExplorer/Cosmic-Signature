@@ -176,9 +176,6 @@ function getV3CstBidPriceDeclineMultiplierAfterEthBid(beginningPrice_, multiplie
 	return (increasedMultiplier_ * CST_DUTCH_AUCTION_DURATION_MIN_LIMIT <= beginningPrice_) ? increasedMultiplier_ : multiplier_;
 }
 
-// DEL: Moved both exponential adjustment helpers to src/BigIntMathHelpers.js for use by all versions and models.
-// DEL: The reduction now uses the equivalent subtraction formula from Comment-202606059.
-
 module.exports = {
 	DEFAULT_PAID_ETH_PRIZE_AMOUNT_PERCENTAGE_V3,
 	deployV1CompleteRoundZeroAndUpgradeToV2AndV3,

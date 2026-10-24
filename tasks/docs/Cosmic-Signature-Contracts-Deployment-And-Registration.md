@@ -44,7 +44,7 @@ cd scripts
 #### Create Hardhat Configuration Variables
 
 Save some arguments to Hardhat Configuration Variables. If you are dealing with a local blockchain, skip this section.\
-Be sure to begin each command with a space char. It prevents the command saving to the command history.
+(Begin each command with a space; ensure that doing so keeps a command out of command history.)
 
 - ` export HARDHAT_VAR_deployerPrivateKey_<network-name>=0x_YOUR_DEPLOYER_PRIVATE_KEY_HERE`\
   or\

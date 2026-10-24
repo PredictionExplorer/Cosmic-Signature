@@ -399,7 +399,7 @@ function assertCoverageFloors(statsMap_, profile_) {
 		"mintRandomWalkNft",
 		"transferCst", "cstBurn", "cstDelegateSelf", "cstPermit", "cstDelegateBySig", "cstBurnFrom",
 		"transferCosmicSignatureNft", "safeTransferCosmicSignatureNft", "transferRandomWalkNft",
-		"setCosmicSignatureNftName", "setRandomWalkTokenName",
+		"setCosmicSignatureNftName", "setRandomWalkNftName",
 		"charityWalletSendAll", "marketingWalletPayReward",
 		"adminMutateParameters", "daoGovernanceCycle",
 		"adversarialReentrancyOnBidRefund", "adversarialMaliciousTokenDonation",

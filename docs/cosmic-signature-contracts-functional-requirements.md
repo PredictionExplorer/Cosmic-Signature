@@ -126,7 +126,7 @@ When another bid is placed, V1 calculaates `mainPrizeTime` as `max(mainPrizeTime
 
 - In V3+, a CST bid reduces the CST price decline multiplier; an ETH bid increases it only if the minimum-duration guard permits, as described in a separate section.
 
-- Each bid changes the next bid price of the same bid type, as described in a separate section. In V2+, a typical ETH also reduces the current CST bid price a little, as mentioned in Comment-202608312.
+- Each bid changes the next bid price of the same bid type, as described in a separate section. In V2+, a typical ETH bid also reduces the current CST bid price a little, as mentioned in Comment-202608312.
 
 - Each bid advances `mainPrizeTime`, as described in a separate section.
 
@@ -182,7 +182,7 @@ NFTs from both our NFT contracts can be staked. Stakers receive designated prize
 
 An NFT may be staked only once. Once unstaked, the same NFT may not be staked again.
 
-Only the original staker can unstake. Cosmic Signature NFT staking rewards accrue as the sum of each deposit divided by the number of NFTs staked at that deposit. Unstaking transfers the NFT back and pays accrued ETH atomically. Random Walk NFT staking has no ETH payout; its selections are with replacement and weighted by the number of NFTs held in the staking pool. The one-time Random Walk bid discount and the one-time staking permission are tracked independently.
+Only the original staker can unstake. Cosmic Signature NFT staking rewards accrue as the sum of each deposit divided by the number of NFTs staked at that deposit. Unstaking transfers the NFT back and pays accrued ETH atomically. Random Walk NFT staking has no ETH payout; each staked NFT remains eligible for every raffle draw, so a staker can win repeatedly and has more chances with more NFTs. The one-time Random Walk NFT bid discount and the one-time staking permission are tracked independently.
 
 ### Asset Types and Their Flows
 
