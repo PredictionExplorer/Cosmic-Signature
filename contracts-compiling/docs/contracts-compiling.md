@@ -33,24 +33,28 @@ But instead of executing loose commands in the terminal, prefer executing script
 
 #### Environment Variables
 
-We recommend that prior to initializing Hardhat the `HARDHAT_MODE_CODE` environment variable was set. Our scripts already do it, so you rarely need to. See Comment-202510221 for details.
+We recommend setting the `HARDHAT_MODE_CODE` environment variable before initializing Hardhat. Our scripts do it, so you rarely need to do it explicitly. See Comment-202510221 for details.
 
 Other environment variables are listed further.
 
 #### Compilation Commands
 
-1. **Production compilation**.
+1. **Compile all builds**.
 
    ```bash
    cd contracts-compiling/runners
    ./compile.bash
    ```
 
-   Or execute `./compile-force.bash` for a full rebuild.
+   `compile.bash` incrementally compiles the build configurations used by the Hardhat test runner script (Comment-202503282).
 
-   `clean.bash` clears the project's configured build variants and Hardhat's global cache, so it is a broader cleanup than a force-compile.
+   `./compile-force.bash` compiles the build configurations with `--force`.
 
-2. **Compilation with parameters**.
+   `clean.bash` deletes all compiled files and clears Hardhat's global cache, so it is a broader cleanup than a force-compile.
+
+2. **Compile a single build**.
+
+   Set the desired environment variables below and run `npx hardhat compile` from the project root. Add `--force` to force recompilation.
 
    Following are optional environment variables that affect the compilation:\
    `ENABLE_HARDHAT_PREPROCESSOR = true` enables a preprocessor for conditional compilation. \
@@ -65,6 +69,6 @@ Other environment variables are listed further.
 
 #### Notes
 
-- Contract artifacts, including ABIs, are written under `artifacts/` in configuration-dependent subfolders (Comment-202503272).
+- Contract artifacts, including ABIs, are written under `artifacts/`; compiler caches are under `cache/`. Both use build configuration-dependent subfolders (Comment-202503272).
 
 - The Solidity compiler is configured in `hardhat.config.js`, in the `hardhatUserConfig.solidity` object.

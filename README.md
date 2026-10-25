@@ -62,11 +62,13 @@ npm ci
 
 ### Compile
 
+To compile the build selected by your environment variables:
+
 ```bash
 npx hardhat compile
 ```
 
-See also: [contracts-compiling/](contracts-compiling/)
+To compile all four builds, run `./compile.bash` from `contracts-compiling/runners/`, or `./compile-force.bash` to force recompilation. See [the compilation guide](contracts-compiling/docs/contracts-compiling.md).
 
 ### Run Tests
 
