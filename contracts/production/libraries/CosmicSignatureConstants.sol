@@ -128,7 +128,7 @@ library CosmicSignatureConstants {
 	/// Comment-202605199 relates.
 	/// Comment-202412033 relates.
 	/// [/Comment-202611052]
-	/// I feel that it's unnecessary to make this configurable.
+	/// I feel that it's unnecessary to make this configurable or scale this with `mainPrizeTimeIncrementInMicroSeconds`.
 	uint256 internal constant CST_DUTCH_AUCTION_DURATION_MIN_LIMIT = 3 minutes;
 
 	/// @notice Comment-202411066 relates.
