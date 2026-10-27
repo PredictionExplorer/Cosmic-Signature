@@ -32,6 +32,24 @@ function minBigInt(a_, b_) {
 }
 
 /**
+Comment-202606059 applies.
+@param {bigint} value_
+@param {bigint} divisor_
+*/
+function tryIncreaseValueExponentially(value_, divisor_) {
+	return value_ + value_ / divisor_;
+}
+
+/**
+Comment-202606059 applies.
+@param {bigint} value_
+@param {bigint} divisor_
+*/
+function tryReduceValueExponentially(value_, divisor_) {
+	return value_ - value_ / (divisor_ + 1n);
+}
+
+/**
 Floor integer square root, matching OpenZeppelin `Math.sqrt` exactly.
 @param {bigint} value_
 @returns {bigint}
@@ -94,6 +112,8 @@ module.exports = {
 	MAX_INT256,
 	maxBigInt,
 	minBigInt,
+	tryIncreaseValueExponentially,
+	tryReduceValueExponentially,
 	sqrtFloor,
 	uint256ToInt256,
 	int256ToUint256,

@@ -8,7 +8,12 @@ The following blockchains are supported: Hardhat Network (a local blockchain), A
 
 All scripts assume that they are executed from the folder they are located in. So you must `cd` to the script's folder and execute the script like `./my-script.bash`.
 
-Start with testing on Hardhat Network. You can start it by executing `${workspaceFolder}/scripts/hardhat-node.bash`.
+Start with testing on Hardhat Network. You can start it by executing:
+
+```bash
+cd scripts
+./hardhat-node.bash
+```
 
 #### Before You Make Any Changes in the Project
 
@@ -17,7 +22,7 @@ Start with testing on Hardhat Network. You can start it by executing `${workspac
 #### Create API Keys
 
 - If you are dealing with a testnet or mainnet, you need an EtherScan API key. It will work for all blockchains, including ArbiScan.\
-At some point, they switched to V2 of their API, so old API keys aren't necessarily going to work. So you might need to get a new one.
+  At some point, they switched to V2 of their API, so old API keys aren't necessarily going to work. So you might need to get a new one.
 
 #### Create Blockchain Accounts
 
@@ -30,19 +35,24 @@ At some point, they switched to V2 of their API, so old API keys aren't necessar
 #### Edit Configuration Files
 
 - `../config/deploy-cosmic-signature-contracts-config-<network-name>.json`\
-These files are in the Git repo, so don't include any secrets in them.\
-For a local blockchain, it's OK to set `deployerPrivateKey` to a well known account private key. For a testnet or mainnet, leave it empty, so that it was taken from a Hardhat configuration variable.\
-Set `randomWalkNftAddress` to where the contract has been deployed. If you leave it empty or zero, it will be deployed, which is typically the right thing to do on a local blockchain.\
-Set `charityAddress` to your charity address. Or leave it empty or zero and later set it by making a call to `CharityWallet`.\
-You probably don't need to change any other arguments.
+  These files are in the Git repo, so don't include any secrets in them.\
+  For a local blockchain, it's OK to set `deployerPrivateKey` to a well known account private key. For a testnet or mainnet, leave it empty, so that it was taken from a Hardhat configuration variable.\
+  Set `randomWalkNftAddress` to where the contract has been deployed. If you leave it empty or zero, it will be deployed, which is typically the right thing to do on a local blockchain.\
+  Set `charityAddress` to your charity address. Or leave it empty or zero and later set it by making a call to `CharityWallet`.\
+  You probably don't need to change any other arguments.
 
 #### Create Hardhat Configuration Variables
 
-Save some arguments to Hardhat Configuration Variables. If you are dealing with a local blockchain, skip this section.
+Save some arguments to Hardhat Configuration Variables. If you are dealing with a local blockchain, skip this section.\
+(Begin each command with a space; ensure that doing so keeps a command out of command history.)
 
-- `npx hardhat vars set deployerPrivateKey_<network-name> 0x_YOUR_DEPLOYER_PRIVATE_KEY_HERE`
+- ` export HARDHAT_VAR_deployerPrivateKey_<network-name>=0x_YOUR_DEPLOYER_PRIVATE_KEY_HERE`\
+  or\
+  ` npx hardhat vars set deployerPrivateKey_<network-name> 0x_YOUR_DEPLOYER_PRIVATE_KEY_HERE`
 
-- `npx hardhat vars set etherScanApiKey_<network-name> YOUR_ETHERSCAN_API_KEY_HERE`
+- ` export HARDHAT_VAR_etherScanApiKey_<network-name>=YOUR_ETHERSCAN_API_KEY_HERE`\
+  or\
+  ` npx hardhat vars set etherScanApiKey_<network-name> YOUR_ETHERSCAN_API_KEY_HERE`
 
 #### Run Scripts
 
@@ -55,6 +65,10 @@ Save some arguments to Hardhat Configuration Variables. If you are dealing with 
 - Only if you are dealing with a mainnet or a testnet, execute `../runners/run-register-cosmic-signature-contracts-<network-name>.bash`. It will verify and register the source code of the deployed Cosmic Signature contracts on ArbiScan.
 
 - Only if you are dealing with a mainnet or a testnet, on ArbiScan, examine the deployed contract addresses. Make sure the evidence of the registration is there, especially that of the game contract proxy and implementation.
+
+#### Notes
+
+- Near Comment-202610237, the deployment task logs the resolved configuration to stdout, including the deployer private key. Therefore, keep the terminal output private.
 
 #### Caveats
 
@@ -72,7 +86,7 @@ Save some arguments to Hardhat Configuration Variables. If you are dealing with 
 
 - Switch back to the `main` branch.
 
-- Consider deleting secrets.
+- Consider deleting secrets if you persisted them.
 
 	- `npx hardhat vars delete deployerPrivateKey_<network-name>`
 

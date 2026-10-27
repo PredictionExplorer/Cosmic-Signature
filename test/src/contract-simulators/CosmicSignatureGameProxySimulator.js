@@ -17,7 +17,7 @@ const {
 	ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER,
 	DEFAULT_ETH_DUTCH_AUCTION_ENDING_BID_PRICE_DIVISOR,
 	DEFAULT_ETH_BID_PRICE_INCREASE_DIVISOR,
-	RANDOMWALK_NFT_BID_PRICE_DIVISOR,
+	RANDOM_WALK_NFT_BID_PRICE_DIVISOR,
 	DEFAULT_ETH_BID_REFUND_AMOUNT_IN_GAS_TO_SWALLOW_MAX_LIMIT,
 	DEFAULT_CST_DUTCH_AUCTION_DURATION_DIVISOR,
 	CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER,
@@ -29,7 +29,7 @@ const {
 	DEFAULT_RAFFLE_TOTAL_ETH_PRIZE_AMOUNT_FOR_BIDDERS_PERCENTAGE,
 	DEFAULT_NUM_RAFFLE_ETH_PRIZES_FOR_BIDDERS,
 	DEFAULT_NUM_RAFFLE_COSMIC_SIGNATURE_NFTS_FOR_BIDDERS,
-	DEFAULT_NUM_RAFFLE_COSMIC_SIGNATURE_NFTS_FOR_RANDOMWALK_NFT_STAKERS,
+	DEFAULT_NUM_RAFFLE_COSMIC_SIGNATURE_NFTS_FOR_RANDOM_WALK_NFT_STAKERS,
 	DEFAULT_COSMIC_SIGNATURE_NFT_STAKING_TOTAL_ETH_REWARD_AMOUNT_PERCENTAGE,
 	DEFAULT_INITIAL_DURATION_UNTIL_MAIN_PRIZE_DIVISOR,
 	DEFAULT_MAIN_PRIZE_TIME_INCREMENT_INCREASE_DIVISOR,
@@ -38,7 +38,7 @@ const {
 	DEFAULT_MARKETING_WALLET_CST_CONTRIBUTION_AMOUNT,
 	DEFAULT_CHARITY_ETH_DONATION_AMOUNT_PERCENTAGE,
 } = require("../../../src/CosmicSignatureConstants.js");
-const { uint256ToInt256 } = require("../../../src/BigIntMathHelpers.js");
+const { tryIncreaseValueExponentially, uint256ToInt256 } = require("../../../src/BigIntMathHelpers.js");
 const { generateRandomUInt256FromSeedWrapper } = require("../../../src/Helpers.js");
 const { assertAddressIsValid, assertEvent, generateRandomUInt256Seed } = require("../../../src/ContractTestingHelpers.js");
 
@@ -121,7 +121,7 @@ async function createCosmicSignatureGameProxySimulator(
 		raffleTotalEthPrizeAmountForBiddersPercentage: DEFAULT_RAFFLE_TOTAL_ETH_PRIZE_AMOUNT_FOR_BIDDERS_PERCENTAGE,
 		numRaffleEthPrizesForBidders: DEFAULT_NUM_RAFFLE_ETH_PRIZES_FOR_BIDDERS,
 		numRaffleCosmicSignatureNftsForBidders: DEFAULT_NUM_RAFFLE_COSMIC_SIGNATURE_NFTS_FOR_BIDDERS,
-		numRaffleCosmicSignatureNftsForRandomWalkNftStakers: DEFAULT_NUM_RAFFLE_COSMIC_SIGNATURE_NFTS_FOR_RANDOMWALK_NFT_STAKERS,
+		numRaffleCosmicSignatureNftsForRandomWalkNftStakers: DEFAULT_NUM_RAFFLE_COSMIC_SIGNATURE_NFTS_FOR_RANDOM_WALK_NFT_STAKERS,
 		cosmicSignatureNftStakingTotalEthRewardAmountPercentage: DEFAULT_COSMIC_SIGNATURE_NFT_STAKING_TOTAL_ETH_REWARD_AMOUNT_PERCENTAGE,
 		initialDurationUntilMainPrizeDivisor: DEFAULT_INITIAL_DURATION_UNTIL_MAIN_PRIZE_DIVISOR,
 		mainPrizeTime: 0n,
@@ -590,7 +590,7 @@ async function createCosmicSignatureGameProxySimulator(
 			} else {
 				// console.info("%s", "202505126");
 			}
-			this.nextEthBidPrice = ethBidPrice_ + ethBidPrice_ / this.ethBidPriceIncreaseDivisor + 1n;
+			this.nextEthBidPrice = tryIncreaseValueExponentially(ethBidPrice_, this.ethBidPriceIncreaseDivisor) + 1n;
 
 			// [Comment-202505086/]
 			this.cosmicSignatureTokenSimulator.mint(bidderAddress_, this.bidCstRewardAmount, contracts_, transactionReceipt_, eventIndexWrapper_);
@@ -668,8 +668,8 @@ async function createCosmicSignatureGameProxySimulator(
 
 		getEthPlusRandomWalkNftBidPrice: function(ethBidPrice_) {
 			const ethPlusRandomWalkNftBidPrice_ =
-				(ethBidPrice_ + (RANDOMWALK_NFT_BID_PRICE_DIVISOR - 1n)) /
-				RANDOMWALK_NFT_BID_PRICE_DIVISOR;
+				(ethBidPrice_ + (RANDOM_WALK_NFT_BID_PRICE_DIVISOR - 1n)) /
+				RANDOM_WALK_NFT_BID_PRICE_DIVISOR;
 			return ethPlusRandomWalkNftBidPrice_;
 		},
 
@@ -1293,7 +1293,7 @@ async function createCosmicSignatureGameProxySimulator(
 			this.chronoWarriorAddress = hre.ethers.ZeroAddress;
 			this.chronoWarriorDuration = (-1n);
 			++ this.roundNum;
-			this.setMainPrizeTimeIncrementInMicroSeconds(this.mainPrizeTimeIncrementInMicroSeconds + this.mainPrizeTimeIncrementInMicroSeconds / this.mainPrizeTimeIncrementIncreaseDivisor, contracts_, transactionReceipt_, eventIndexWrapper_);
+			this.setMainPrizeTimeIncrementInMicroSeconds(tryIncreaseValueExponentially(this.mainPrizeTimeIncrementInMicroSeconds, this.mainPrizeTimeIncrementIncreaseDivisor), contracts_, transactionReceipt_, eventIndexWrapper_);
 			this.setRoundActivationTime(BigInt(transactionBlock_.timestamp) + this.delayDurationBeforeRoundActivation, contracts_, transactionReceipt_, eventIndexWrapper_);
 		},
 

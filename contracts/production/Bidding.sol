@@ -451,6 +451,7 @@ abstract contract Bidding is
 
 						uint256 ethDutchAuctionDuration_ = _getEthDutchAuctionDuration();
 						if (uint256(ethDutchAuctionElapsedDuration_) < ethDutchAuctionDuration_) {
+							// Comment-202508191 relates.
 							uint256 ethDutchAuctionBidPriceDifference_ = nextEthBidPrice_ - ethDutchAuctionEndingBidPrice_;
 							nextEthBidPrice_ -= ethDutchAuctionBidPriceDifference_ * uint256(ethDutchAuctionElapsedDuration_) / ethDutchAuctionDuration_;
 						} else {
@@ -475,11 +476,11 @@ abstract contract Bidding is
 		// #enable_smtchecker */
 		{
 			uint256 ethPlusRandomWalkNftBidPrice_ =
-				(ethBidPrice_ + (CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR - 1)) /
-				CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR;
+				(ethBidPrice_ + (CosmicSignatureConstants.RANDOM_WALK_NFT_BID_PRICE_DIVISOR - 1)) /
+				CosmicSignatureConstants.RANDOM_WALK_NFT_BID_PRICE_DIVISOR;
 			// #enable_asserts assert(
 			// #enable_asserts 	( ! ( ethBidPrice_ > 0 &&
-			// #enable_asserts 	      ethBidPrice_ <= type(uint256).max - (CosmicSignatureConstants.RANDOMWALK_NFT_BID_PRICE_DIVISOR - 1)
+			// #enable_asserts 	      ethBidPrice_ <= type(uint256).max - (CosmicSignatureConstants.RANDOM_WALK_NFT_BID_PRICE_DIVISOR - 1)
 			// #enable_asserts 	    )
 			// #enable_asserts 	) ||
 			// #enable_asserts 	ethPlusRandomWalkNftBidPrice_ > 0 &&

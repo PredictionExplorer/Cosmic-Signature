@@ -1,5 +1,7 @@
 # Cosmic-Signature Formal Verification Plan **v3 – June 2025**
 
+> **Historical record, not V3 contract verification.** Here "v3" is the June 2025 plan's revision, not `CosmicSignatureGameV3`. All counts, pass rates, security findings, deadlines, and completion claims below describe or propose earlier work; they have not been re-established for the current source. Several snapshots contradict one another and are preserved rather than treated as a current report. The current configurations still select `solc8.29` and V1 targets, and some named files no longer exist. See [the current status](README.md) before using any claim or command. A specification is not evidence that its property holds without a reproducible run against the intended code and documented assumptions.
+
 > **Objective**  Achieve complete, reproducible formal verification of every production Solidity contract (31) with zero bugs, invariants fully proven, and continuous CI.
 >
 > **Audience**  Human reviewers **and** LLM agents. Structure tables + headings for simple `grep` / vector retrieval.
@@ -291,4 +293,4 @@ certora/
 - Comprehensive coverage of all core safety properties
 - Only minor compilation issue remains in simplified TokensAndNFTs spec
 
-The Cosmic Signature contracts have been thoroughly verified with excellent results! 
+The Cosmic Signature contracts have been thoroughly verified with excellent results!

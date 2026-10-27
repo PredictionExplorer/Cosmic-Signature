@@ -1,0 +1,262 @@
+{
+  "targetContractCommit": "9d1a644744e0ee588ef5af1947f6decdf8bdb3f3",
+  "scope": "English documentation and comment-only Solidity corrections; no live transactions",
+  "productionCompilation": {
+    "compiler": "0.8.34",
+    "evmTarget": "osaka",
+    "initialCompilationFiles": 186,
+    "finalChangedDependencyCompilationFiles": 21,
+    "passed": true
+  },
+  "quickTests": {
+    "runner": "cd test/runners && LONG_TEST_MODE_CODE=1 bash test.bash -b",
+    "variants": [
+      {
+        "preprocessor": true,
+        "asserts": true,
+        "smtCheckerMode": 0,
+        "passing": 149
+      },
+      {
+        "preprocessor": true,
+        "asserts": true,
+        "smtCheckerMode": 1,
+        "passing": 149
+      },
+      {
+        "preprocessor": true,
+        "asserts": false,
+        "smtCheckerMode": 0,
+        "passing": 149
+      },
+      {
+        "preprocessor": false,
+        "asserts": false,
+        "smtCheckerMode": 0,
+        "passing": 149
+      }
+    ],
+    "note": "Initial run had three OpenZeppelin manifest-lock errors; full retry passed all four variants. SMTChecker mode1 preprocesses alternatives; it does not prove properties."
+  },
+  "sourcePreservation": {
+    "passed": true,
+    "modifiedSolidityFiles": 13,
+    "variantComparisons": 91,
+    "method": "Lexical tokenization preserves quoted strings and maximal operators; discards comments/whitespace. Preprocessing reproduces createSolidityLinePreProcessingRegExp/preProcessSolidityLine from hardhat.config.js. ENABLE_SMTCHECKER 1 and 2 share the same source transform; both checked. Directives are also compared byte-for-byte as full lines. Numbered identifiers/references are compared in order; complete todo lines compared byte-for-byte.",
+    "files": [
+      {
+        "file": "contracts/production/BiddingV2.sol",
+        "baseline_source_sha256": "1d0eb9101d988491d328678f7b7e14846a101795f95413b815be2730cef33978",
+        "current_source_sha256": "bf9ff12ebab41f41e1187f8ff83a970f77393529c95e766f22be500cb77d468d",
+        "directive_lines_identical": true,
+        "numbered_tags_and_references_identical": true,
+        "todo_lines_identical": true
+      },
+      {
+        "file": "contracts/production/CosmicSignatureGameStorageV3Base.sol",
+        "baseline_source_sha256": "fe6dd015ced8b2f7c4729ac108005eef453e0196c5ef5f7e5d16f50393c5f80d",
+        "current_source_sha256": "9c539d0eef7097df7e2852df33ee265b49028a339e9e3f686251eeb5d75d45a6",
+        "directive_lines_identical": true,
+        "numbered_tags_and_references_identical": true,
+        "todo_lines_identical": true
+      },
+      {
+        "file": "contracts/production/MainPrizeCommon.sol",
+        "baseline_source_sha256": "f7890e29916a4fe93b53059b0073714b71542d3afaa405cdd98a9192733c46a9",
+        "current_source_sha256": "9a7746def801e452d4be7786202e2576969402eff085146dc03fdb28bb7290c2",
+        "directive_lines_identical": true,
+        "numbered_tags_and_references_identical": true,
+        "todo_lines_identical": true
+      },
+      {
+        "file": "contracts/production/StakingWalletCosmicSignatureNft.sol",
+        "baseline_source_sha256": "95efb8ce7334ca4cfcf541a660c6f5a190d9ec72b43dfd65b93076250fd037d7",
+        "current_source_sha256": "0965e4ec202d7a55c4f78daab577d263b133471ffd481e2a2fb9cffa2a2d192c",
+        "directive_lines_identical": true,
+        "numbered_tags_and_references_identical": true,
+        "todo_lines_identical": true
+      },
+      {
+        "file": "contracts/production/interfaces/IBidding.sol",
+        "baseline_source_sha256": "5b8696e7f20a55bd02db2152d9f38dbce5f1ef28b4a1ab1371ed13e98fe955ca",
+        "current_source_sha256": "147c8e7d052ec029f97b13bafdaec300f87f506dcb3023a4861892b3604cec05",
+        "directive_lines_identical": true,
+        "numbered_tags_and_references_identical": true,
+        "todo_lines_identical": true
+      },
+      {
+        "file": "contracts/production/interfaces/IBidding1V2.sol",
+        "baseline_source_sha256": "ca21bd1a9d0977ce219e7cf29ea0331dee72afbf9ae304b6f8b45f6175d82941",
+        "current_source_sha256": "7d7633524039a9e3b2be9331d9f5630bc91437b86432d5bdd7637ef5ca6bb86a",
+        "directive_lines_identical": true,
+        "numbered_tags_and_references_identical": true,
+        "todo_lines_identical": true
+      },
+      {
+        "file": "contracts/production/interfaces/ICosmicSignatureGameV2.sol",
+        "baseline_source_sha256": "ffa80d04d624d74553d0e025c9b00ca2d5bc38b86fe9bf42c3e58502b2a2b827",
+        "current_source_sha256": "e947fcd2a4dc6dd24e704a587a2915648d4f6dda7d682a88bbec300b2900e0bd",
+        "directive_lines_identical": true,
+        "numbered_tags_and_references_identical": true,
+        "todo_lines_identical": true
+      },
+      {
+        "file": "contracts/production/interfaces/ICosmicSignatureNft.sol",
+        "baseline_source_sha256": "9d266dbe6bc42dcf5d00713fda851d9ef2a07d476ed4fe1d3c56e8750e510900",
+        "current_source_sha256": "2d0295ea5bf832b3328cb5bdfc722808d33a78577ec87b1beb0533570785fb91",
+        "directive_lines_identical": true,
+        "numbered_tags_and_references_identical": true,
+        "todo_lines_identical": true
+      },
+      {
+        "file": "contracts/production/interfaces/IEthDonations.sol",
+        "baseline_source_sha256": "e9fede0a95c92f8f8bac1dda5dd9ccb83d731f1add7daa9cf3c8b73ab93b235f",
+        "current_source_sha256": "72e7d81060a21e893ca68f6ac348c853b97b76b9e5714c16e4a93bdc304b8d66",
+        "directive_lines_identical": true,
+        "numbered_tags_and_references_identical": true,
+        "todo_lines_identical": true
+      },
+      {
+        "file": "contracts/production/interfaces/IPrizesWallet.sol",
+        "baseline_source_sha256": "63e754a767e04ef5320d114275dd7ad7e9d4a14027f25481657fe25d72aeff2d",
+        "current_source_sha256": "0fb6288adf322945f3057cffd1fbf80b1aec59ca94d87c8645c73cb054144b08",
+        "directive_lines_identical": true,
+        "numbered_tags_and_references_identical": true,
+        "todo_lines_identical": true
+      },
+      {
+        "file": "contracts/production/interfaces/IStakingWalletCosmicSignatureNft.sol",
+        "baseline_source_sha256": "cb2fa63a601082c62162fccc2183257013752abf8d8d7db3612ae02228cd2630",
+        "current_source_sha256": "85e05a8b70f7198712955f721b60108bac2bda62533fdda5426dd81179e17378",
+        "directive_lines_identical": true,
+        "numbered_tags_and_references_identical": true,
+        "todo_lines_identical": true
+      },
+      {
+        "file": "contracts/production/libraries/CosmicSignatureErrors.sol",
+        "baseline_source_sha256": "c68a6bc8fa05f649ef0512bddc9282585c71f20572f98267b3dce7d8e33dff11",
+        "current_source_sha256": "51c810ca86ae2e97594162f38024f7c0a86a97b57d0093b7bfb04e3ca2a422e2",
+        "directive_lines_identical": true,
+        "numbered_tags_and_references_identical": true,
+        "todo_lines_identical": true
+      },
+      {
+        "file": "contracts/production/libraries/CosmicSignatureHelpers.sol",
+        "baseline_source_sha256": "31091e1f59f8e9ea204f5a0be6953af8d3589ee39d2a80500b230c0cd5eebb89",
+        "current_source_sha256": "b5394c12ec8987ce12f632b59bc4fab71ae57cf5cc2c45e7d09a03d4fa388c56",
+        "directive_lines_identical": true,
+        "numbered_tags_and_references_identical": true,
+        "todo_lines_identical": true
+      }
+    ]
+  },
+  "localForkRehearsal": {
+    "kind": "Local Hardhat EVM fork rehearsal; no live transactions",
+    "sourceBlock": 515793372,
+    "sourceBlockHash": "0x7ed8343352357627347de956ed8de069482b95f2ce7f2414c2aa60e0e7b2fb0f",
+    "proxy": "0x6a714Ae7B5b6eA520F6BCA23d2E609C4Fd5863F2",
+    "retainedBefore": {
+      "prizesWallet": "0xE1b619e9B39ea4109D2F429Ea5eAA307759b0011",
+      "token": "0xAD91843e6A58Ba560F577E676986AFb1dba6FBA0",
+      "nft": "0xbb84Be3500A63581d3F2d5AC3bdF8685AAedad25",
+      "mainPrizeTimeIncrementInMicroSeconds": "3709083600",
+      "timeoutDurationToClaimMainPrize": "172800",
+      "delayDurationBeforeRoundActivation": "604800",
+      "nextRoundFirstCstDutchAuctionBeginningBidPrice": "200000000000000000000",
+      "cstDutchAuctionDuration": "30198",
+      "cstDutchAuctionDurationChangeDivisor": "250"
+    },
+    "retainedAfter": {
+      "prizesWallet": "0xE1b619e9B39ea4109D2F429Ea5eAA307759b0011",
+      "token": "0xAD91843e6A58Ba560F577E676986AFb1dba6FBA0",
+      "nft": "0xbb84Be3500A63581d3F2d5AC3bdF8685AAedad25",
+      "mainPrizeTimeIncrementInMicroSeconds": "3709083600",
+      "timeoutDurationToClaimMainPrize": "172800",
+      "delayDurationBeforeRoundActivation": "604800",
+      "nextRoundFirstCstDutchAuctionBeginningBidPrice": "200000000000000000000",
+      "cstDutchAuctionDuration": "30198",
+      "cstDutchAuctionDurationChangeDivisor": "250"
+    },
+    "v3Values": {
+      "mainEthPrizeAmountPercentage": "20",
+      "chronoWarriorEthPrizeAmountPercentage": "15",
+      "raffleTotalEthPrizeAmountForBiddersPercentage": "5",
+      "cosmicSignatureNftStakingTotalEthRewardAmountPercentage": "5",
+      "charityEthDonationAmountPercentage": "5",
+      "mainPrizeNumCosmicSignatureNfts": "3",
+      "bidCstRewardAmountMultiplier": "60000000000000000000000000",
+      "cstBidPriceDeclineMultiplier": "16666666666666667",
+      "cstDutchAuctionBeginningBidPriceMinLimit": "1000000000000000000"
+    },
+    "firstGestureParticipationCst": "0",
+    "secondGestureCstToPreviousParticipant": "970590147927644445",
+    "mainNftCount": "3",
+    "mainCstAllocation": "1000000000000000000000",
+    "completedRound": "3",
+    "oldWallet": "0xE1b619e9B39ea4109D2F429Ea5eAA307759b0011",
+    "simulatedNewWallet": "0x099c29624E05506582655417344A17FB71c9d138",
+    "newWalletTimeout": "3024000",
+    "oldWalletEthRetrievedAfterReplacement": "665205288837211410",
+    "precompileTestDoubles": [
+      "FakeArbSys",
+      "FakeArbGasInfo"
+    ],
+    "note": "Atomic upgrade and first/subsequent ETH gestures used forked state. Finalization, explicit wallet replacement between cycles and retrieval from old wallet passed with repository precompile test doubles. Hardhat Osaka EVM; not a full Nitro/sequencer simulation."
+  },
+  "publication": {
+    "englishPdfPages": 21,
+    "renderedAllPages": true,
+    "marginViolations": 0,
+    "relativeLinksChecked": true,
+    "sourcePdfDigestCheckPassed": true
+  },
+  "preMergeFormulaAndHistoryReview": {
+    "reviewedPrHead": "d1e2a38ee7b81e784570207e556ed69b60c5abc0",
+    "passed": true,
+    "checks": 136,
+    "method": "Local Hardhat view calls with explicitly seeded test storage. V3 compiled runtime and actual verified V2 deployed runtime, compared with independently evaluated paper equations. This does not simulate real upgrade transactions.",
+    "premiumExamples": [
+      {
+        "incrementMicroseconds": "3600000000",
+        "windowSeconds": "1200",
+        "baseWei": "1000000000000000000",
+        "totalCostWei": "5000050302627095474"
+      },
+      {
+        "incrementMicroseconds": "3709083600",
+        "windowSeconds": "1236",
+        "baseWei": "1000000000000000000",
+        "totalCostWei": "4993485445647992173"
+      }
+    ],
+    "groups": [
+      "ETH opening, before/at/after window endpoints",
+      "Initial countdown and seconds conversion",
+      "Late premium, integer rounding and overtime",
+      "V3 linear reward including zero and negative offset",
+      "Verified deployed V2 square-root reward",
+      "CST decline, zero floor and ceiling-divided duration",
+      "Random Walk NFT ceiling division"
+    ],
+    "historyChecks": {
+      "proxyDeployment": {
+        "block": 455767589,
+        "dateUTC": "2026-04-24T06:42:34Z"
+      },
+      "v2Upgrade": {
+        "block": 475913365,
+        "dateUTC": "2026-06-21T19:38:53Z"
+      },
+      "method": "Fresh public RPC transaction receipts and block timestamps; verified V1/V2 source bodies and target V3 initializer; pinned frontend paper 1.0 source."
+    },
+    "documentationCorrections": [
+      "Use ordered Upgraded event boundaries, not whole-block ABI switches; distinguish end-of-block state reads from post-initialization state.",
+      "Reconcile the report scope statement with its completed local fork rehearsal and simulated precompiles.",
+      "Explicit opening-Gesture ETH next-price and guarded CST-rate updates; later ETH rate changes apply without restarting the window.",
+      "Label the premium table as an approximation and give exact compiled-contract endpoint examples.",
+      "Distinguish shifts/XOR seed mixing, Keccak-256 NFT derivation and the renderer SHA3-256 stream."
+    ],
+    "solidityChangedDuringSecondReview": false,
+    "englishPdfPages": 21
+  }
+}

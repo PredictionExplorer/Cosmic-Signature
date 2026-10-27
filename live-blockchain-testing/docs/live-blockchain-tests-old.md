@@ -1,6 +1,6 @@
 #### About This Document
 
-This stuff is old and, for the most part, no longer relevant. Although the general idea remains mostly the same.
+This doc is old and, for the most part, no longer relevant. Although the general idea remains mostly the same.
 The rewritten version of this document is named `live-blockchain-tests.md`.
 
 **Nick wrote:**

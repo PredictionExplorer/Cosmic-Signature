@@ -107,8 +107,7 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 	// #endregion
 	// #region `mintMany`
 
-	function mintMany(uint256 roundNum_, address[] calldata nftOwnerAddresses_, uint256 randomNumberSeed_) external override _onlyGame returns (uint256) {
-		uint256 firstNftId_;
+	function mintMany(uint256 roundNum_, address[] calldata nftOwnerAddresses_, uint256 randomNumberSeed_) external override _onlyGame returns (uint256 firstNftId_) {
 		if (nftOwnerAddresses_.length > 0) {
 			firstNftId_ = _mint(roundNum_, nftOwnerAddresses_[0], randomNumberSeed_);
 			for ( uint256 index_ = 1; index_ < nftOwnerAddresses_.length; ++ index_ ) {
@@ -116,7 +115,6 @@ contract CosmicSignatureNft is Ownable, ERC721Enumerable, AddressValidator, ICos
 				_mint(roundNum_, nftOwnerAddresses_[index_], randomNumberSeed_);
 			}
 		}
-		return firstNftId_;
 	}
 
 	// #endregion

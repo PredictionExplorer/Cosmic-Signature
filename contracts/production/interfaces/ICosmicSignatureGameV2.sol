@@ -11,6 +11,9 @@ interface ICosmicSignatureGameV2 {
 	// fallback() external payable;
 
 	/// @notice Makes additional initializations after an upgrade.
-	/// This method is called on the proxy contract right after deployment of the new implementation contract.
+	/// The upgrade task deploys the new implementation contract separately, then calls `upgradeToAndCall` on the proxy
+	/// to update its implementation address and call this method in one transaction.
+	/// According to Comment-202606128, this method implementation has no owner check of its own,
+	/// so it must be called atomically with the proxy upgrade.
 	function reinitialize() external;
 }

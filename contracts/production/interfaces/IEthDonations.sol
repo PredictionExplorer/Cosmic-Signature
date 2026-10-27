@@ -48,9 +48,9 @@ interface IEthDonations {
 	/// @notice This method is similar to `donateEth`.
 	/// Comments there apply.
 	/// In addition, it allows the caller to provide additional information.
-	/// @param data_ Additional info in JSON format.
+	/// @param data_ Additional information. It could be JSON. The contract does not validate it.
 	/// It's OK if it's empty.
-	/// We do not limit this string length, but the frontend will truncate a too long message.
+	/// The contract imposes no string-length limit.
 	function donateEthWithInfo(string calldata data_) external payable;
 
 	/// @return `ethDonationWithInfoRecords.length`.

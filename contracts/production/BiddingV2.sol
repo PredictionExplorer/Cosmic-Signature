@@ -287,8 +287,9 @@ abstract contract BiddingV2 is
 			uint256 bidCstRewardAmount_ = 0;
 			if (elapsedDuration_ > int256(0)) {
 				// [Comment-202607167]
-				// The numerator is expected to have tendency to be proportional to the denominator.
-				// As a result, this formula is neither inflationary nor deflationary for CST.
+				// If elapsed duration grows in proportion to `mainPrizeTimeIncrementInMicroSeconds`,
+				// the reward for that interval is unchanged. The purpose of this logic
+				// is to attempt to be neither inflationary nor deflationary for CST, but it does not guarantee a constant CST supply.
 				// [/Comment-202607167]
 				uint256 radicand_ = uint256(elapsedDuration_) * bidCstRewardAmountMultiplier / mainPrizeTimeIncrementInMicroSeconds;
 

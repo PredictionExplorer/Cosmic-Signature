@@ -89,7 +89,8 @@ interface IStakingWalletCosmicSignatureNft is IStakingWalletNftBase {
 	/// @param charityAddress_ Charity address.
 	/// It may be zero. If it's zero the method will do nothing.
 	/// Comment-202507296 applies.
-	/// @return `true` on success; `false` on error.
+	/// @return `true` when no transfer is requested or the transfer succeeds; `false` when the transfer fails.
+	/// Authorization failures and a nonempty staking pool revert instead.
 	/// @dev
 	/// [Comment-202503043]
 	/// Why the balance can remain a nonzero after all payouts have been made?

@@ -9,6 +9,7 @@ const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
 const { DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER, SECONDS_PER_HOUR } = require("../../src/CosmicSignatureConstants.js");
+const { tryReduceValueExponentially } = require("../../src/BigIntMathHelpers.js");
 const { generateRandomUInt256, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { activateCurrentRound, findParsedEvent, getLatestBlockTimestamp, blockTimestampOfReceipt } = require("../src/V2UpgradeTestHelpers.js");
 const {
@@ -17,7 +18,6 @@ const {
 	findTimeStampWithAffordableCstBidPrice,
 	getV3BidCstRewardAmount,
 	getV3CstBidPriceDeclineMultiplierAfterEthBid,
-	tryReduceValueExponentially,
 } = require("../src/V3UpgradeTestHelpers.js");
 const { getPriceAndBidWithEthAt, getPriceAndBidWithCstAt, findParsedEvents } = require("../src/BidCstRewardTestHelpers.js");
 const { configureRewardAndDeployHostileBidder, hostileBidWithEthAt } = require("../src/AdversarialTestHelpers.js");

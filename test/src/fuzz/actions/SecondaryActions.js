@@ -8,13 +8,13 @@ const c = require("../../../../src/CosmicSignatureConstants.js");
 // #endregion
 // #region Random Walk NFT economy
 
-const randomWalkActions = [
+const randomWalkNftActions = [
 	{
 		name: "mintRandomWalkNft",
 		weight: 8,
 		run: async (ctx_, actor_) => {
 			const { engine, ledger, contracts } = ctx_;
-			const mintPrice_ = ledger.randomWalkNft.price * c.RANDOMWALK_NFT_PRICE_INCREASE_NUMERATOR / c.RANDOMWALK_NFT_PRICE_INCREASE_DENOMINATOR;
+			const mintPrice_ = ledger.randomWalkNft.price * c.RANDOM_WALK_NFT_PRICE_INCREASE_NUMERATOR / c.RANDOM_WALK_NFT_PRICE_INCREASE_DENOMINATOR;
 			// Sometimes overpay to exercise the (reentrancy-prone) refund branch; net cost is always `mintPrice`.
 			const value_ = engine.chancePercent(30) ? mintPrice_ + engine.randomBigIntRange(1n, 10n ** 15n) : mintPrice_;
 			if ( ! engine.canAfford(actor_.address, value_) ) {
@@ -39,7 +39,7 @@ const randomWalkActions = [
 		},
 	},
 	{
-		name: "randomWalkWithdraw",
+		name: "randomWalkNftWithdraw",
 		weight: 1,
 		isApplicable: (ctx_, actor_) => ctx_.ledger.randomWalkNft.lastMinter === actor_.addressLower,
 		run: async (ctx_, actor_) => {
@@ -47,7 +47,7 @@ const randomWalkActions = [
 			if (ledger.randomWalkNft.lastMinter !== actor_.addressLower) {
 				return "skip";
 			}
-			const withdrawalTime_ = ledger.randomWalkNft.lastMintTime + c.RANDOMWALK_NFT_WITHDRAWAL_WAIT_SECONDS;
+			const withdrawalTime_ = ledger.randomWalkNft.lastMintTime + c.RANDOM_WALK_NFT_WITHDRAWAL_WAIT_SECONDS;
 			const ts_ = engine.clampTs(withdrawalTime_ + engine.randomBigIntRange(1n, c.SECONDS_PER_HOUR));
 			const rwBalanceBefore_ = ledger.expectedEth(contracts.randomWalkNftAddress);
 			const withdrawalAmount_ = rwBalanceBefore_ / 2n;
@@ -56,8 +56,8 @@ const randomWalkActions = [
 				buildTx: (overrides_) => contracts.randomWalkNft.connect(actor_.signer).withdraw(overrides_),
 				ts: ts_,
 			});
-			const receipt_ = engine.expectOk(result_, "randomWalkWithdraw");
-			const withdrawalEvent_ = engine.singleEvent(receipt_, contracts.randomWalkNft, "WithdrawalEvent", "randomWalkWithdraw");
+			const receipt_ = engine.expectOk(result_, "randomWalkNftWithdraw");
+			const withdrawalEvent_ = engine.singleEvent(receipt_, contracts.randomWalkNft, "WithdrawalEvent", "randomWalkNftWithdraw");
 			expect(withdrawalEvent_.args.amount).to.equal(withdrawalAmount_);
 			ledger.addEth(actor_.address, withdrawalAmount_);
 			ledger.addEth(contracts.randomWalkNftAddress, -withdrawalAmount_);
@@ -252,7 +252,7 @@ const tokenActions = [
 		},
 	},
 	{
-		name: "setRandomWalkTokenName",
+		name: "setRandomWalkNftName",
 		weight: 1,
 		isApplicable: (ctx_, actor_) => ctx_.ledger.nftIdsOwnedBy("rw", actor_.address).length > 0,
 		run: async (ctx_, actor_) => {
@@ -262,12 +262,12 @@ const tokenActions = [
 				return "skip";
 			}
 			const nftId_ = BigInt(engine.pick(owned_));
-			const name_ = engine.randomMessage(Number(c.RANDOMWALK_NFT_NAME_LENGTH_MAX_LIMIT));
+			const name_ = engine.randomMessage(Number(c.RANDOM_WALK_NFT_NAME_LENGTH_MAX_LIMIT));
 			const result_ = await engine.execTx({
 				signer: actor_.signer,
 				buildTx: (overrides_) => contracts.randomWalkNft.connect(actor_.signer).setTokenName(nftId_, name_, overrides_),
 			});
-			engine.expectOk(result_, "setRandomWalkTokenName");
+			engine.expectOk(result_, "setRandomWalkNftName");
 			await ledger.verifyDirtyEth();
 			return "ok";
 		},
@@ -538,7 +538,7 @@ const walletActions = [
 // #endregion
 
 module.exports = {
-	randomWalkActions,
+	randomWalkNftActions,
 	tokenActions,
 	prizesWalletActions,
 	walletActions,

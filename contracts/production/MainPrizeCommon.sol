@@ -59,14 +59,18 @@ abstract contract MainPrizeCommon is
 		// #enable_smtchecker */
 		{
 			// [Comment-202606175]
-			// This logic ensures that `mainPrizeTime` becomes in the future, even if it's already in the past.
-			// There is also a main prize claim timeout on top of that.
-			// Issue. As a result, someone can, at least in theory, make a free or, at least, less expensive than the bidding reward CST bid
-			// before the timeout expires. The timeout is long enough to allow that. They can keep doing it forever.
-			// In V2+, this problem is mitigated by the increase of CST Dutch auction duration on each CST bid,
-			// but even then it can take like a year until it's no longer possible to place such a bid within the timeout window.
-			// Therefore, V2+ does not ensure that `mainPrizeTime` becomes in the future.
-			// Note that the V2+ logic makes it theoretically possible to place a bid and claim main prize within a single transaction.
+			// On a bid, V1 moves the `mainPrizeTime` deadline into the future even if the deadline has already passed.
+			// There is also `timeoutDurationToClaimMainPrize` on top of that.
+			// V2+ instead adds to the deadline and thereby does not ensure that it will end up in the future.
+			// V2+ also increases CST Dutch auction duration on a typical CST bid (V2 vs. V3+ use different logic for that).
+			// In all versions, zero or negative net cost CST bids are possible after enough elapsed duration.
+			// In V2+, if a bid does not move the deadline into the future,
+			// the new last bidder can bid and claim the main prize within one transaction.
+			// Issue. The problem with V1 is that a sufficiently late CST bid can cost net zero or negative
+			// and still push the deadline when anybody is permitted to claim the main prize to a point in the future
+			// before which the next CST bid net price will become zero or negative. This flaw makes it possible for a bidder
+			// to keep a bidding round going indefinitely.
+			// The V2+ logic mitigates this issue.
 			// [/Comment-202606175]
 			uint256 mainPrizeTimeIncrement_ = getMainPrizeTimeIncrement();
 			uint256 mainPrizeCorrectedTime_ = Math.max(mainPrizeTime, block.timestamp);

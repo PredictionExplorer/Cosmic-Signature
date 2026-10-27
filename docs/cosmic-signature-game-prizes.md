@@ -28,7 +28,7 @@ This document lists all prizes awarded by our game.
 
 - ETH donations made to the `CosmicSignatureGame` contract. They will be shared by all winners in the current and future bidding rounds.
 
-- Third party ERC-20 token amount and ERC-721 NFT donations that accompany bids. They will be claimable by the current bidding round main prize winner.
+- Third party ERC-20 token amount and ERC-721 NFT donations that accompany bids. They will be claimable by whoever wins the current bidding round main prize.
 
 ---
 
@@ -46,6 +46,8 @@ In V2-, every bid has equal weight in bidder raffles. In V3+, a bid's weight is 
 The late-bid premium increases payment only. It does not increase raffle weight, the next ETH price, or the CST auction beginning price carried into the next round.
 
 Each `BidInfo.raffleCumulativeWeight`, available through `getBidInfoAt`, is the sum of that bid's weight and all preceding bid weights in the round. A raffle draw selects a random weight unit and binary-searches these cumulative values. A bidder's total weight is the sum of their bids' weights.
+
+Each raffle draw leaves all entries eligible for later draws, so the same bid or address can win more than once.
 
 #### Variables
 
@@ -105,7 +107,7 @@ Each `BidInfo.raffleCumulativeWeight`, available through `getBidInfoAt`, is the 
 	- CS NFT Stakers (not guaranteed to exist)
 
 - CST
-	- All CS NFT Winners (see below)
+	- Each CS NFT Winner (see below)
 	- `MarketingWallet`
 
 - CS NFT

@@ -403,6 +403,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Comment-202411064 applies.
 	/// Comment-202412312 applies.
 	/// See also: `PrizesWallet.timeoutDurationToWithdrawPrizes`.
+	/// @dev Comment-202606175 relates.
 	uint256 public timeoutDurationToClaimMainPrize;
 
 	/// @notice
@@ -510,11 +511,11 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 
 	/// @dev
 	/// [Comment-202412142]
-	/// This reserved storage space makes this upgradeable contract more future-proof.
+	/// Reserved storage space.
 	/// This technique is described at https://docs.openzeppelin.com/upgrades-plugins/1.x/writing-upgradeable .
 	/// [/Comment-202412142]
 	/// [Comment-202412148]
-	/// Although it's probably not needed here that much because this contract is the last in the inheritance list
+	/// Although this is probably not needed here that much because this contract is the last in the inheritance list
 	/// among those containing storage variables.
 	/// In fact, `BiddingOpenBid`, does introduce a new variable, but that's just a test contract.
 	/// [/Comment-202412148]

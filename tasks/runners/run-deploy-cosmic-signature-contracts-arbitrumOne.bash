@@ -19,7 +19,7 @@
 			read '-r' '-n' '1' '-s' '-p' 'Error. Hardhat Clean failed. Press any key to finish.'
 			OutcomeCode=2
 		fi
-		echo
+		echo 1>&2
 	fi
 	if [ ${OutcomeCode} -lt 2 ]; then
 		'npx' 'hardhat' 'clean' '--global'
@@ -27,7 +27,7 @@
 			read '-r' '-n' '1' '-s' '-p' 'Error. Hardhat Clean Global failed. Press any key to finish.'
 			OutcomeCode=2
 		fi
-		echo
+		echo 1>&2
 	fi
 
 	if [ ${OutcomeCode} -lt 2 ]; then
@@ -36,6 +36,6 @@
 			read '-r' '-n' '1' '-s' '-p' 'Error. The deploy-cosmic-signature-contracts task failed. Press any key to finish.'
 			OutcomeCode=2
 		fi
-		echo
+		echo 1>&2
 	fi
 )

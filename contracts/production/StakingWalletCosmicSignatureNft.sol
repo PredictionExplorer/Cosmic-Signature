@@ -323,7 +323,8 @@ contract StakingWalletCosmicSignatureNft is ReentrancyGuardTransient, Ownable, S
 			uint256 amount_ = address(this).balance;
 
 			// [Comment-202507296]
-			// This would revert if `charityAddress_ == address(this)`.
+			// If `charityAddress_ == address(this)`, the low-level transfer fails because this contract
+			// has no payable `receive` or `fallback` function.
 			// [/Comment-202507296]
 			// Comment-202502043 applies.
 			// Comment-202609144 relates and/or applies.

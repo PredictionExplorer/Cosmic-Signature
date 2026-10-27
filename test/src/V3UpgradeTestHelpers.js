@@ -21,6 +21,7 @@ const {
 	DEFAULT_MAIN_PRIZE_NUM_COSMIC_SIGNATURE_NFTS,
 	DEFAULT_CHARITY_ETH_DONATION_AMOUNT_PERCENTAGE_V3,
 } = require("../../src/CosmicSignatureConstants.js");
+const { tryIncreaseValueExponentially } = require("../../src/BigIntMathHelpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
 const { completeRoundZero, upgradeToV2, getLatestBlockTimestamp } = require("./V2UpgradeTestHelpers.js");
 
@@ -175,16 +176,6 @@ function getV3CstBidPriceDeclineMultiplierAfterEthBid(beginningPrice_, multiplie
 	return (increasedMultiplier_ * CST_DUTCH_AUCTION_DURATION_MIN_LIMIT <= beginningPrice_) ? increasedMultiplier_ : multiplier_;
 }
 
-/** Comment-202606059 applies. */
-function tryIncreaseValueExponentially(value_, divisor_) {
-	return value_ + value_ / divisor_;
-}
-
-/** Comment-202606059 applies. */
-function tryReduceValueExponentially(value_, divisor_) {
-	return (value_ + 1n) * divisor_ / (divisor_ + 1n);
-}
-
 module.exports = {
 	DEFAULT_PAID_ETH_PRIZE_AMOUNT_PERCENTAGE_V3,
 	deployV1CompleteRoundZeroAndUpgradeToV2AndV3,
@@ -196,6 +187,4 @@ module.exports = {
 	getV3CstBidPrice,
 	getV3CstDutchAuctionDuration,
 	getV3CstBidPriceDeclineMultiplierAfterEthBid,
-	tryIncreaseValueExponentially,
-	tryReduceValueExponentially,
 };
