@@ -122,24 +122,26 @@ async function executeClaim(ctx_, claimer_, ts_) {
 	const numStakedCs_ = ledger.csStaking.numStakedNfts;
 	const numStakedRw_ = ledger.rwStaking.numStakedNfts;
 
-	const result_ = await withPrizesWalletAssertBypass(ctx_, () => engine.execTx({
-		signer: claimer_.signer,
-		buildTx: (overrides_) => ctx_.game.connect(claimer_.signer).claimMainPrize(overrides_),
-		ts: ts_,
-	}));
-	const receipt_ = engine.expectOk(result_, "claimMainPrize");
-	if (receipt_.gasUsed > engine.maxClaimGasUsed) {
-		engine.maxClaimGasUsed = receipt_.gasUsed;
-	}
+	await withPrizesWalletAssertBypass(ctx_, async () => {
+		const result_ = await engine.execTx({
+			signer: claimer_.signer,
+			buildTx: (overrides_) => ctx_.game.connect(claimer_.signer).claimMainPrize(overrides_),
+			ts: ts_,
+		});
+		const receipt_ = engine.expectOk(result_, "claimMainPrize");
+		if (receipt_.gasUsed > engine.maxClaimGasUsed) {
+			engine.maxClaimGasUsed = receipt_.gasUsed;
+		}
 
-	// The bypass setter can advance the timestamp beyond the originally planned claim time.
-	const breakdown_ = model.applyClaim(claimer_.address, result_.ts, gameEthBalanceBefore_, numStakedCs_, numStakedRw_);
+		// The bypass setter can advance the timestamp beyond the originally planned claim time.
+		const breakdown_ = model.applyClaim(claimer_.address, result_.ts, gameEthBalanceBefore_, numStakedCs_, numStakedRw_);
 
-	verifyClaimReceipt(ctx_, { claimerAddress: claimer_.address, receipt: receipt_, breakdown: breakdown_, rwStakerOwnersBefore: rwStakerOwners_ });
-	await ledger.verifyDirtyEth();
-	if (engine.profile.verbosity >= 2) {
-		console.info(`      claimed round ${breakdown_.roundNum} by ${ledger.labelOf(claimer_.address)}; new round ${model.roundNum}`);
-	}
+		verifyClaimReceipt(ctx_, { claimerAddress: claimer_.address, receipt: receipt_, breakdown: breakdown_, rwStakerOwnersBefore: rwStakerOwners_ });
+		await ledger.verifyDirtyEth();
+		if (engine.profile.verbosity >= 2) {
+			console.info(`      claimed round ${breakdown_.roundNum} by ${ledger.labelOf(claimer_.address)}; new round ${model.roundNum}`);
+		}
+	});
 	return "ok";
 }
 
@@ -218,14 +220,16 @@ async function claimWithOverflowingDelay(ctx_) {
 	const claimTs_ = engine.clampTs(ts_);
 	let outcome_;
 	if (ENABLE_SMTCHECKER > 0) {
-		const claimResult_ = await withPrizesWalletAssertBypass(ctx_, () => engine.execTx({
-			signer: claimer_.signer,
-			buildTx: (overrides_) => ctx_.game.connect(claimer_.signer).claimMainPrize(overrides_),
-			ts: claimTs_,
-		}));
-		expect(claimResult_.ok, "SMTChecker build keeps overflow checked, so this claim must revert").to.equal(false);
-		expect(claimResult_.revert.name, "overflowing V2 claim wrong SMTChecker-mode revert").to.equal("Panic(0x11)");
-		outcome_ = `revert:${claimResult_.revert.name}`;
+		outcome_ = await withPrizesWalletAssertBypass(ctx_, async () => {
+			const claimResult_ = await engine.execTx({
+				signer: claimer_.signer,
+				buildTx: (overrides_) => ctx_.game.connect(claimer_.signer).claimMainPrize(overrides_),
+				ts: claimTs_,
+			});
+			expect(claimResult_.ok, "SMTChecker build keeps overflow checked, so this claim must revert").to.equal(false);
+			expect(claimResult_.revert.name, "overflowing V2 claim wrong SMTChecker-mode revert").to.equal("Panic(0x11)");
+			return `revert:${claimResult_.revert.name}`;
+		});
 	} else {
 		outcome_ = await executeClaim(ctx_, claimer_, claimTs_);
 	}
@@ -322,21 +326,21 @@ async function runClaimRace(ctx_) {
 		{ signer: claimer_.signer, buildTx: (overrides_) => ctx_.game.connect(claimer_.signer).claimMainPrize(overrides_) },
 		{ signer: other_.signer, buildTx: (overrides_) => ctx_.game.connect(other_.signer).claimMainPrize(overrides_) },
 	];
-	const results_ = await withPrizesWalletAssertBypass(ctx_, () => {
+	await withPrizesWalletAssertBypass(ctx_, async () => {
 		// The bypass setter may have mined another block.
 		ts_ = engine.clampTs(ts_);
 
-		return engine.execBurst(ts_, items_);
-	});
-	expect(results_[0].status, "claim race: the first (last-bidder) claim must succeed").to.equal(1);
-	expect(results_[1].status, "claim race: the second simultaneous claim must revert").to.equal(0);
-	if (results_[0].receipt.gasUsed > engine.maxClaimGasUsed) {
-		engine.maxClaimGasUsed = results_[0].receipt.gasUsed;
-	}
+		const results_ = await engine.execBurst(ts_, items_);
+		expect(results_[0].status, "claim race: the first (last-bidder) claim must succeed").to.equal(1);
+		expect(results_[1].status, "claim race: the second simultaneous claim must revert").to.equal(0);
+		if (results_[0].receipt.gasUsed > engine.maxClaimGasUsed) {
+			engine.maxClaimGasUsed = results_[0].receipt.gasUsed;
+		}
 
-	const breakdown_ = model.applyClaim(claimer_.address, ts_, gameEthBalanceBefore_, numStakedCs_, numStakedRw_);
-	verifyClaimReceipt(ctx_, { claimerAddress: claimer_.address, receipt: results_[0].receipt, breakdown: breakdown_, rwStakerOwnersBefore: rwStakerOwners_ });
-	await ledger.verifyDirtyEth();
+		const breakdown_ = model.applyClaim(claimer_.address, ts_, gameEthBalanceBefore_, numStakedCs_, numStakedRw_);
+		verifyClaimReceipt(ctx_, { claimerAddress: claimer_.address, receipt: results_[0].receipt, breakdown: breakdown_, rwStakerOwnersBefore: rwStakerOwners_ });
+		await ledger.verifyDirtyEth();
+	});
 	engine._statsFor("claimRace").attempted += 1;
 	engine._statsFor("claimRace").succeeded += 1;
 	return true;
@@ -344,6 +348,7 @@ async function runClaimRace(ctx_) {
 
 /**
 Comment-202610038 applies. Bypass missing history only for a replacement wallet's first claim.
+The callback executes and validates the claim before the bypass is disabled.
 A reverted claim leaves the history empty, so the next attempt still needs the bypass.
 */
 async function withPrizesWalletAssertBypass(ctx_, claim_) {

@@ -63,15 +63,18 @@ describe("PrizesWallet-Replacement", function () {
 					expect(await newPrizesWallet_.bypassSomeAsserts()).equal(true);
 				}
 
-				const claimMainPrizeTransactionReceipt_ = await waitForTransactionReceipt(game_.connect(bidder_).claimMainPrize());
-				if (ENABLE_ASSERTS && roundNum_ === firstRoundNum_) {
-					await waitForTransactionReceipt(newPrizesWallet_.connect(contracts_.ownerSigner).setBypassSomeAsserts(false));
-					expect(await newPrizesWallet_.bypassSomeAsserts()).equal(false);
+				try {
+					const claimMainPrizeTransactionReceipt_ = await waitForTransactionReceipt(game_.connect(bidder_).claimMainPrize());
+					expect(claimMainPrizeTransactionReceipt_.status).equal(1);
+					expect(await game_.roundNum()).equal(roundNum_ + 1n);
+					expect(await newPrizesWallet_.mainPrizeBeneficiaryAddresses(roundNum_)).equal(bidder_.address);
+					expect(await newPrizesWallet_.roundTimeoutTimesToWithdrawPrizes(roundNum_)).greaterThan(0n);
+				} finally {
+					if (ENABLE_ASSERTS && roundNum_ === firstRoundNum_) {
+						await waitForTransactionReceipt(newPrizesWallet_.connect(contracts_.ownerSigner).setBypassSomeAsserts(false));
+						expect(await newPrizesWallet_.bypassSomeAsserts()).equal(false);
+					}
 				}
-				expect(claimMainPrizeTransactionReceipt_.status).equal(1);
-				expect(await game_.roundNum()).equal(roundNum_ + 1n);
-				expect(await newPrizesWallet_.mainPrizeBeneficiaryAddresses(roundNum_)).equal(bidder_.address);
-				expect(await newPrizesWallet_.roundTimeoutTimesToWithdrawPrizes(roundNum_)).greaterThan(0n);
 			}, numRounds_);
 			expect(await newPrizesWallet_.mainPrizeBeneficiaryAddresses(firstRoundNum_ - 1n)).equal(hre.ethers.ZeroAddress);
 			expect(await newPrizesWallet_.roundTimeoutTimesToWithdrawPrizes(firstRoundNum_ - 1n)).equal(0n);
@@ -143,22 +146,26 @@ describe("PrizesWallet-Replacement", function () {
 				// Comment-202610038 applies.
 				await waitForTransactionReceipt(newPrizesWallet_.connect(contracts_.ownerSigner).setBypassSomeAsserts(true));
 			}
-			await claimMainPrizeAtMainPrizeTime(game_, bidder1_);
-			if (ENABLE_ASSERTS) {
-				await waitForTransactionReceipt(newPrizesWallet_.connect(contracts_.ownerSigner).setBypassSomeAsserts(false));
+			try {
+				await claimMainPrizeAtMainPrizeTime(game_, bidder1_);
+
+				// Each wallet knows only about the rounds that ended while it was registered.
+				expect(await oldPrizesWallet_.mainPrizeBeneficiaryAddresses(oldWalletRoundNum_)).equal(bidder2_.address);
+				expect(await oldPrizesWallet_.roundTimeoutTimesToWithdrawPrizes(newWalletRoundNum_)).equal(0n);
+				expect(await newPrizesWallet_.mainPrizeBeneficiaryAddresses(newWalletRoundNum_)).equal(bidder1_.address);
+				expect(await newPrizesWallet_.roundTimeoutTimesToWithdrawPrizes(oldWalletRoundNum_)).equal(0n);
+
+				// Donated NFT indexes are per wallet; the replacement wallet starts its own sequence at zero.
+				expect(await oldPrizesWallet_.nextDonatedNftIndex()).equal(oldWalletDonatedNftIndex_ + 1n);
+				expect(await newPrizesWallet_.nextDonatedNftIndex()).equal(1n);
+				expect((await oldPrizesWallet_.donatedNfts(oldWalletDonatedNftIndex_)).nftId).equal(oldWalletDonatedNftId_);
+				expect((await newPrizesWallet_.donatedNfts(0n)).nftId).equal(newWalletDonatedNftId_);
+			} finally {
+				if (ENABLE_ASSERTS) {
+					await waitForTransactionReceipt(newPrizesWallet_.connect(contracts_.ownerSigner).setBypassSomeAsserts(false));
+					expect(await newPrizesWallet_.bypassSomeAsserts()).equal(false);
+				}
 			}
-
-			// Each wallet knows only about the rounds that ended while it was registered.
-			expect(await oldPrizesWallet_.mainPrizeBeneficiaryAddresses(oldWalletRoundNum_)).equal(bidder2_.address);
-			expect(await oldPrizesWallet_.roundTimeoutTimesToWithdrawPrizes(newWalletRoundNum_)).equal(0n);
-			expect(await newPrizesWallet_.mainPrizeBeneficiaryAddresses(newWalletRoundNum_)).equal(bidder1_.address);
-			expect(await newPrizesWallet_.roundTimeoutTimesToWithdrawPrizes(oldWalletRoundNum_)).equal(0n);
-
-			// Donated NFT indexes are per wallet; the replacement wallet starts its own sequence at zero.
-			expect(await oldPrizesWallet_.nextDonatedNftIndex()).equal(oldWalletDonatedNftIndex_ + 1n);
-			expect(await newPrizesWallet_.nextDonatedNftIndex()).equal(1n);
-			expect((await oldPrizesWallet_.donatedNfts(oldWalletDonatedNftIndex_)).nftId).equal(oldWalletDonatedNftId_);
-			expect((await newPrizesWallet_.donatedNfts(0n)).nftId).equal(newWalletDonatedNftId_);
 
 			// #endregion
 			// #region The old wallet's winners still withdraw and claim everything, before the timeout, from the old wallet.
