@@ -1,5 +1,6 @@
 {
 	"name": "Cosmic-Signature",
+	"private": true,
 	"scripts": {
 		"hardhat-test-quick": "cd test/runners && ./test-quick.bash -b",
 		"hardhat-test-medium": "cd test/runners && ./test-medium.bash -b",
