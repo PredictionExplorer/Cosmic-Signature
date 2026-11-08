@@ -4,6 +4,7 @@ const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
+const { asUint256 } = require("../../src/BigIntMathHelpers.js");
 const { generateRandomUInt32, generateRandomUInt256, generateRandomUInt256FromSeed, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
 
@@ -20,7 +21,7 @@ describe("CosmicSignatureNft", function () {
 
 		{
 			await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).bidWithEth(-1n, "", {value: 10n ** 18n,}));
-			const durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrizeRaw();
+			const durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrize();
 			await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_),]);
 			// await hre.ethers.provider.send("evm_mine");
 			await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).claimMainPrize());
@@ -87,16 +88,16 @@ describe("CosmicSignatureNft", function () {
 			expect(await newCosmicSignatureNft_.totalSupply()).equal(1n);
 		}
 
-		{
+		// Exercise seed wraparound explicitly as well as retaining random-seed coverage.
+		for (const randomNumberSeed_ of [generateRandomUInt256(), hre.ethers.MaxUint256]) {
 			const roundNum_ = BigInt(generateRandomUInt32());
 			const nftOwnerAddresses_ = [
 				contracts_.signers[2].address,
 				contracts_.signers[3].address,
 			];
-			const randomNumberSeed_ = generateRandomUInt256();
 			await expect(newCosmicSignatureNft_.connect(pickUnauthorizedCaller_()).mintMany(roundNum_, nftOwnerAddresses_, randomNumberSeed_))
 				.revertedWithCustomError(newCosmicSignatureNft_, "UnauthorizedCaller");
-			const firstNftId_ = 1n;
+			const firstNftId_ = await newCosmicSignatureNft_.totalSupply();
 			await expect(newCosmicSignatureNft_.connect(contracts_.signers[0]).mintMany(roundNum_, nftOwnerAddresses_, randomNumberSeed_))
 				.emit(newCosmicSignatureNft_, "Transfer")
 				.withArgs(hre.ethers.ZeroAddress, contracts_.signers[2].address, firstNftId_)
@@ -105,7 +106,7 @@ describe("CosmicSignatureNft", function () {
 				.and.emit(newCosmicSignatureNft_, "Transfer")
 				.withArgs(hre.ethers.ZeroAddress, contracts_.signers[3].address, firstNftId_ + 1n)
 				.and.emit(newCosmicSignatureNft_, "NftMinted")
-				.withArgs(roundNum_, contracts_.signers[3].address, generateRandomUInt256FromSeed(BigInt.asUintN(256, randomNumberSeed_ + 1n)), firstNftId_ + 1n);
+				.withArgs(roundNum_, contracts_.signers[3].address, generateRandomUInt256FromSeed(asUint256(randomNumberSeed_ + 1n)), firstNftId_ + 1n);
 		}
 	});
 
@@ -114,7 +115,7 @@ describe("CosmicSignatureNft", function () {
 	
 		{
 			await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).bidWithEth(-1n, "", {value: 10n ** 18n,}));
-			const durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrizeRaw();
+			const durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrize();
 			await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_),]);
 			// await hre.ethers.provider.send("evm_mine");
 			await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).claimMainPrize());
@@ -154,7 +155,7 @@ describe("CosmicSignatureNft", function () {
 	
 		{
 			await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).bidWithEth(-1n, "", {value: 10n ** 18n,}));
-			const durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrizeRaw();
+			const durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrize();
 			await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_),]);
 			// await hre.ethers.provider.send("evm_mine");
 			await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[0]).claimMainPrize());

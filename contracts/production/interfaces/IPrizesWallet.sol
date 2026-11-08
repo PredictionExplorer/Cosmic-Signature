@@ -12,8 +12,8 @@ import { DonatedTokenHolder } from "../DonatedTokenHolder.sol";
 /// and allows prize winners (and after a timeout anybody) to withdraw their prizes.
 ///
 /// @dev It's OK if the same NFT is donated and claimed multiple times.
-/// Nothing would be broken if an ERC-20 or ERC-721 contract acts malitiosly.
-/// For example, a malitios NFT contract can allow donating an NFT multiple times without claiming it.
+/// ERC-20 and ERC-721 calls can revert or return misleading asset data; compatibility is not guaranteed.
+/// For example, a malicious NFT contract can report repeated transfers of the same NFT without transferring custody.
 /// 
 /// It would be incorrect to derive this contract from `ERC721Holder` (which implements `IERC721Receiver'),
 /// because if someone makes it an owner of an NFT by making a direct call to the NFT contract,
@@ -147,7 +147,7 @@ interface IPrizesWallet is IAddressValidator {
 	/// @param tokenAddress The ERC-20 contract address.
 	/// @param amount Token amount.
 	/// This is the same value as the one near Comment-202507143,
-	/// but if it was initially zero it was replaced with the actual balance received from `tokenAddress`.
+	/// but if it was initially zero it was replaced with the value returned by `tokenAddress_.balanceOf`.
 	event DonatedTokenClaimed(
 		uint256 indexed roundNum,
 		address indexed beneficiaryAddress,
@@ -188,6 +188,9 @@ interface IPrizesWallet is IAddressValidator {
 	/// Only the contract owner is permitted to call this method.
 	/// @param newValue_ The new value.
 	function setTimeoutDurationToWithdrawPrizes(uint256 newValue_) external;
+
+	// #enable_asserts /// @dev Comment-202610038 applies.
+	// #enable_asserts function setBypassSomeAsserts(bool newValue_) external;
 
 	/// @notice Calling this method is equivalent to calling `registerRoundEnd` once and then `depositEth` zero or more times.
 	/// Only the `CosmicSignatureGame` contract is permitted to call this method.
@@ -238,6 +241,7 @@ interface IPrizesWallet is IAddressValidator {
 	function withdrawEth(uint256 roundNum_) external;
 
 	/// @notice Anybody is welcomed to call this method after a timeout expires to withdraw an unclaimed ETH prize.
+	/// The caller receives the ETH, not `prizeWinnerAddress_`.
 	/// @param roundNum_ Bidding round number.
 	/// @param prizeWinnerAddress_ Prize winner address.
 	/// It's OK if it's zero.

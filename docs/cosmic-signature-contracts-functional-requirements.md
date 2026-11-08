@@ -4,19 +4,21 @@
 
 This document goes a little bit beyond purely functional requirements. It's intended to provide important details to the auditor.
 
+It describes the production source in this branch, distinguishing V1, V2, and V3 behavior. Upgrading the Game proxy does not upgrade the separately deployed token, NFT, DAO, or wallet contracts. The [white paper](white-paper/cosmic-signature-white-paper-v1.3.md) records the reviewed release and deployment baseline.
+
 ### Glossary
 
-- User. An Ethereum account capable of signing transactions with a private key.
+- User. An Ethereum account interacting with the contracts, either directly or through a smart contract. Contract callers are supported where they satisfy the relevant authorization and payment requirements.
 
 ### Contracts
 
-- `CosmicSignatureGame`. This is our main Game contract. Its main part (not inherited) is responsible for upgrading the contract. It inherits OpenZeppelin's `UUPSUpgradeable`. Besides, it inherits multiple abstract contracts listed below.
+- `CosmicSignatureGame`. This is our main Game contract, V1 of it. Its main part (not inherited) is responsible for initializing and upgrading the contract. It inherits OpenZeppelin's `UUPSUpgradeable`. Besides, it inherits multiple abstract contracts listed below.
 
-- `CosmicSignatureGame is CosmicSignatureGameStorage`. This contract contains all state variables that `CosmicSignatureGame` and the contracts that it inherits access.
+- `CosmicSignatureGame is CosmicSignatureGameStorage`. This contract contains the shared Game-specific state variables. Inherited ownership, initialization, and reentrancy machinery also has its own state.
 
-- `CosmicSignatureGame is BiddingBase`. This contract contains a few simple methods.
+- `CosmicSignatureGame is BiddingCommon`. This contract contains a few simple methods.
 
-- `CosmicSignatureGame is MainPrizeBase`. This contract contains a few simple methods.
+- `CosmicSignatureGame is MainPrizeCommon`. This contract contains a few simple methods.
 
 - `CosmicSignatureGame is SystemManagement`. This contract contains `CosmicSignatureGame` configurable parameter setters to be called only by the contract owner. With some exceptions, a typical setter requires that the current bidding round wasn't active yet.
 
@@ -30,41 +32,45 @@ This document goes a little bit beyond purely functional requirements. It's inte
 
 - `CosmicSignatureGame is MainPrize`. This contract supports claiming bidding round main prize.
 
-- `CosmicSignatureToken`. The Official ERC-20 Token for the Cosmic Signature Ecosystem. Its symbol is CST. It's used by our DAO for voting power. Only the `CosmicSignatureGame` contract is permitted to mint and burn token amounts (although a token holder also has an option to burn own funds).
+- `CosmicSignatureGameV2`, `CosmicSignatureGameV3`, and other V2 and V3 abstract contracts that the new Game contracts inherit from. These are further versions of the Game contract to upgrade to.
 
-- `RandomWalkNFT`. It's an ERC-721 NFT contract that has already been deployed. Its symbol is RWLK. It can be considered a third party contract that is not a part of this project, but it plays an important role. This contract does not need to be audited.
+- `CosmicSignatureToken`. The Official ERC-20 Token for the Cosmic Signature Ecosystem. Its symbol is CST. Only the Game proxy contract is permitted to mint or invoke the Game-specific burn methods. The inherited `ERC20Burnable` also lets CST holders burn their own CST. It supports permits and timestamp-based voting checkpoints. It's used by our DAO for voting power.
 
-- `CosmicSignatureNft`. The Official ERC-721 NFT for the Cosmic Signature Ecosystem. Its symbol is COSMIC. Only the `CosmicSignatureGame` contract is permitted to mint new NFTs.
+- `RandomWalkNFT`. This is an existing external ERC-721 collection with symbol RWLK. The Game checks ownership for its one-time bid discount, and `StakingWalletRandomWalkNft` holds NFTs for its selection pool. The source code copy has been refactored to adapt for the current versions of dependencies; it is not a new deployment of the existing collection. Its mint mechanism is independent of the Game.
+
+- `CosmicSignatureNft`. The Official ERC-721 NFT for the Cosmic Signature Ecosystem. Its symbol is COSMIC. Only the Game proxy contract is permitted to mint new NFTs. Each token stores a seed and an optional name. The owner or an approved operator may set a name. The contract owner can change metadata and generation-script URIs.
 
 - `PrizesWallet`. A wallet to hold the Cosmic Signature Game prizes and donations. It supports depositing ETH, donating third party ERC-20 token amounts and ERC-721 NFTs, and allows prize winners (and after a timeout anybody) to withdraw their prizes.
 
-- `DonatedTokenHolder`. This contract acts as an account holding all third party ERC-20 token balances donated during a particular bidding round.
+- `DonatedTokenHolder`. This contract acts as an account holding all third party ERC-20 token amounts donated during a particular bidding round.
 
 - `StakingWalletRandomWalkNft`. Staking Wallet for Random Walk NFTs. Supports random picking of staked NFTs.
 
 - `StakingWalletCosmicSignatureNft`. Staking Wallet for Cosmic Signature NFTs. It holds ETH to be distributed to stakers. It tracks the cumulative amount of ETH rewards earned by each staked NFT and pays it to the staker on NFT unstake.
 
-- `MarketingWallet`. This wallet holds CST funds and facilitates their distribution to fund marketing activities. The `CosmicSignatureGame` contract mints a configurable CST amount for this wallet at the end of each bidding round. Only the appointed by the DAO treasurer is permitted to transfer funds out of this wallet.
+- `MarketingWallet`. This wallet holds CST funds and facilitates their distribution to fund marketing activities, such as rewarding people for marketing the project on social media. The `CosmicSignatureGame` contract mints a configurable CST amount to this wallet on main prize claim. Only its treasurer is permitted to use the payment methods. The treasurer initially is the deployer and can be changed by the wallet owner, which eventually will be the DAO.
 
-- `CharityWallet`. This contract holds an ETH balance to be donated to charity. The DAO decides which charity to donate the funds to. `CosmicSignatureGame` deposits a configurable percentage of its ETH to this wallet at the end of each bidding round. As noted in Comment-202409273, this contract lets anybody to periodically transfer accumulated donations to the designated charity.
+- `CharityWallet`. This contract holds an ETH balance to be donated to charity. `CosmicSignatureGame` deposits a configurable percentage of its ETH to this wallet on main prize claim. As noted in Comment-202409273, this contract lets anybody to transfer accumulated donations to the designated charity. Only the contract owner is permitted to configure charity address. Eventually, the contract ownership will be transferred to the DAO.
 
 - `CosmicSignatureDao`. This contract implements the governance mechanism for the Cosmic Signature ecosystem. `${workspaceFolder}/test/tests-src/CosmicSignatureDao.js` shows what our DAO can be used for.
 
-### Variables
+### Storage Variables
 
 - `roundActivationTime`. The current bidding round activation time. Starting at this point in time, people will be allowed to place bids.
 
 - `mainPrizeTime`. The time when the last bidder will be granted the premission to claim the main prize.
 
-- `charityAddress`. This variable exists in `CharityWallet`, where it contains the address to donate ETH to. The same named variable exists in `CosmicSignatureGameStorage`, where it actually points at our own `CharityWallet`. See Comment-202411078 for details.
+- `charityAddress`. In `CharityWallet`, this is the ultimate beneficiary. In `CosmicSignatureGameStorage` and its V2+ counterpart, it is the recipient of the Game's charity ETH allocation, which has been configured to be our own `CharityWallet`. See Comment-202411078 for details.
+
+- There are many other storage variables out there.
 
 ### Bidding Rounds
 
 Each point in time is located within a bidding round, or simply round. Each round has a sequential number, starting with zero. Round zero begins the moment the contract gets deployed. A round begins in the inactive mode. When `block.timestamp` reaches `roundActivationTime`, the round becomes active. The active mode/stage is divided into 2 substages: before and after a bid is placed.
 
-So a round has 3 stages: (1) inactive; (2) active before a bid; (3) active after a bid.
+So a round is broken down in the following stages: (1) inactive; (2.1) active before a bid; (2.2) active after a bid.
 
-Only during the inactive stage the contract owner is allowed to call most `CosmicSignatureGame` configurable parameter setters. But there are setters that are in addition allowed to be called during stage 2 and some at any time. Some other contracts also have configurable parameter setters, and those are OK to call at any time.
+Only during the inactive stage the contract owner is allowed to call most `CosmicSignatureGame` configurable parameter setters. But there are setters that are in addition allowed to be called during stage 2.1 and some at any time. Some other contracts also have configurable parameter setters, and those are OK to call at any time.
 
 Users are allowed to place bids during the active stage.
 
@@ -83,17 +89,19 @@ ETH bid is broken down into 2 subtypes: with and without a Random Walk NFT.
 
 The `CosmicSignatureGame` contract dictates bid prices. Bidders have no control over that. However it's still under their control when to bid, which affects the prices.
 
-Round zero **ETH bid price** equals a hardcoded constant. It does not change.\
-In any round, ETH bid price of the second and further bids increases exponentially as the previous bid paid price plus a configurable fraction of it. (The price does not change over time.)\
-Starting with round 1, the first bid beginning ETH bid price equals 2x of the first bid paid price in the previous round. Beginning at `roundActivationTime` and over a configurable duration, the price declines linearly from the maximum to the minimum. The minimum is a configurable fraction of the first bid paid price in the previous round. If bid price reaches its minimum and nobody bid yet it will stay at its minimum indefinitely (but the `halveEthDutchAuctionEndingBidPrice` method gives the contract owner an option to lower it further). That's a Dutch auction.
+Round zero's first **ETH bid price** equals a hardcoded constant. It does not change over time.\
+In any round, the base ETH bid price of the second and further ETH bids increases exponentially as the previous ETH bid's undiscounted base price plus a configurable fraction of it (the logic must ensure that even a small value will increase). This base price does not change over time.\
+Starting with round 1, the first bid beginning ETH bid price equals 2x of the first ETH bid's undiscounted base price in the previous round. Beginning at `roundActivationTime` and over a configurable duration, the price declines linearly from the maximum to the minimum. The minimum is the beginning price divided by a configurable divisor (the logic must ensure that the price is nonzero, as discussed in Comment-202503162). If bid price reaches its minimum and nobody bid yet it will stay at its minimum indefinitely (but the `halveEthDutchAuctionEndingBidPrice` method gives the contract owner an option to lower it further). That's a Dutch auction.
 
-If an ETH bid is accompanied by a Random Walk NFT, the bid price becomes a half of its normal value.
+If an ETH bid is accompanied by a Random Walk NFT, its required payment is `ceil(normalPrice / 2)`, including the late premium in V3. Rounding up preserves a nonzero price, as discussed in Comment-202503162.
 
 Every **CST bid price** is formed using a Dutch auction. The first CST Dutch auction in a given round begins when a user places the first ETH bid.\
-The beginning CST bid price of round zero equals a configurable beginning minimum. Then over a configurable duration it declines lineraly down to zero. As soon as someone places a bid, the new beginning price is calculated as 2x of the paid price, but no lower than the same configurable beginning minimum. After each CST bid the Dutch auction repeats.\
-The beginning CST bid price of the first bid in a nonzero round equals beginning price of the second bid in the previous round.
+The first beginning CST bid price of round zero equals a configurable beginning minimum. The first beginning CST bid price in a nonzero round equals the second beginning CST bid price in the previous round, or remains unchanged if that round had no CST bid. When someone places a CST bid, the new beginning price is calculated as 2x of the base price without any late-bid premium, but no lower than the configured minimum, and, in V3, the duration-based floor below. After each CST bid, the Dutch auction repeats.\
+The base CST bid price declines linearly and can reach zero. In V2-, CST Dutch auction duration over which the price declines down to zero is configurable, and in V2 it's automatically reduced on each ETH and increased on each CST bid to encourage a mix of ETH and CST bids. In V3+, the price declines a configurable amount per second, which is similarly changed on bids, but in the opposite directions. After a CST bid, the new beginning price is also forced to be at least the new decline rate times `CST_DUTCH_AUCTION_DURATION_MIN_LIMIT` (3 minutes), mitigating potentially possible bursts of free CST bids. An ETH bid increases the decline rate only if the resulting total auction duration, measured from its start, would remain at least that minimum. See Comment-202611053 for details.
 
-Again, a Dutch auction is used for: (1) the first ETH bid price in a nonzero round; (2) each CST bid price, but with at least a floor beginning price. Round zero first ETH bid price is a constant. Any round non-first ETH bid price increases exponentially.
+In V3+, bids near or after `mainPrizeTime` pay a polynomial premium. The premium multiplies the base price, so a zero base CST price remains zero.
+
+Again, a Dutch auction is used for: (1) the first ETH bid price in a nonzero round; (2) each CST bid's base price. Round zero first ETH bid price is a constant. Any round non-first ETH bid's base price increases exponentially from the previous ETH bid's undiscounted base price. Late-bid premiums and swallowed ETH overpayments do not increase these price anchors.
 
 ### Bid Monetary Effects
 
@@ -101,7 +109,7 @@ Again, a Dutch auction is used for: (1) the first ETH bid price in a nonzero rou
 
 - When placing a CST bid, the current CST bid price gets burned from the bidder's CST balance.
 
-- When someone places a bid of any type, a configurable CST amount is minted for the bidder. In V1, the amount is fixed; in V2+, the amount is proportional to the square root since the previous bid or, in case there were no bids in the current bidding round yet, the round activation time.
+- When someone places a bid of any type, a configurable bid CST reward gets minted if nonzero. In V1, the amount is fixed. In V2, the amount is proportional to the square root of the duration elapsed since the previous bid in the current bidding round, or since round activation for the first bid. In V3+, the amount is linearly proportional to the duration since the previous bid; the first bid mints no reward. In V2-, the reward is minted to the bidder placing the bid, while in V3+, to the bidder who placed the previous bid in the current bidding round. See `${workspaceFolder}/docs/cosmic-signature-game-prizes.md` for details.
 
 ### `mainPrizeTime` Update Logic
 
@@ -114,9 +122,13 @@ When another bid is placed, V1 calculaates `mainPrizeTime` as `max(mainPrizeTime
 
 - The first bid in a round is required to be ETH.
 
-- Each bid changes `mainPrizeTime`, as described in a separate section.
+- In V2, each bid changes CST Dutch auction duration, as described in a separate section.
 
-- Each bid changes bid price, as described in a separate section.
+- In V3+, a CST bid reduces the CST price decline multiplier; an ETH bid increases it only if the minimum-duration guard permits, as described in a separate section.
+
+- Each bid changes the next bid price of the same bid type, as described in a separate section. In V2+, a typical ETH bid also reduces the current CST bid price a little, as mentioned in Comment-202608312.
+
+- Each bid advances `mainPrizeTime`, as described in a separate section.
 
 - A given Random Walk NFT may be used for bidding only once.
 
@@ -134,25 +146,27 @@ There are designated storage variables to store the current Endurance Champion a
 
 ### Prizes
 
-Most prizes are awarded to multiple winners at the end of each round. Some winners get picked randomly and others deterministically. The way the Game is configured, distributes only a half of its ETH balance to winners.
+Most prizes are awarded at the end of each round. Some recipients are selected randomly and others deterministically. The Game is configured to distribute only a half of its ETH balance, with the remainder retained for later rounds.
 
-All prizes are listed in "./cosmic-signature-game-prizes.md".
+All prizes are listed in `${workspaceFolder}/docs/cosmic-signature-game-prizes.md`.
 
 ### Prize Transfer Reversals
 
-One of the prizes is a charitable donation ETH to be transferred to `CosmicSignatureGameStorage.charityAddress`. (It's not really a prize to be awarded to someone, but we can consider it a prize.) If the transfer reverts we will not revert the main prize claim. In fact, one might argue that this feature is unnecessary because the ETH transfer goes to our own `CharityWallet`, which cannot, realistically, revert. But we have no plans to refactor this. See Comment-202411078, Comment-202411077 for details.
+One allocation is an ETH transfer to `CosmicSignatureGameStorage.charityAddress`, normally `CharityWallet`. A failed transfer is recorded without reverting the main prize claim, leaving that ETH in the Game. See Comment-202411078, Comment-202411077 for details. This exception does not cover every external call. A failed direct payment to the main prize claimant or a failed token mint reverts bidding round finalization. A division-by-zero panic from the Cosmic Signature staking deposit, normally caused by an empty staking pool, is caught; other staking failures propagate. Secondary winners receive escrow credits in `PrizesWallet` rather than an immediate ETH callback.
 
 ### Withdrawing Prizes
 
-- The main ETH prize is transfered directly to main prize winner claiming main prize. There is nothing to withdraw in this case.
+- The main ETH prize is transfered directly to main prize winner. There is nothing to withdraw in this case.
 
 - Other (secondary) ETH prizes are transferred to `PrizesWallet`. Even main prize winner can get their secondary ETH prizes this way.
+
+- COSMIC staking ETH rewards are transferred to `StakingWalletCosmicSignatureNft`. The funds will stay there indefinitely until the user unstakes their NFT.
 
 - Donated third party ERC-20 token amounts and ERC-721 NFTs are transferred to `PrizesWallet`. They are claimable by main prize winner.
 
 - CST and COSMIC prizes are minted to the winner addresses by making calls to respective token contracts. There is nothing to withdraw in this case.
 
-- Winners are required to withdraw/claim their prizes held in `PrizesWallet`. They are given a configurable timeout window after the round end to do so before anybody is allowed to withdraw/claim unclaimed prizes.
+- Winners retrieve their escrowed prizes through `PrizesWallet`. When the round ends, the wallet records an absolute deadline using its configured timeout duration. At or after that deadline, anyone may retrieve an unretrieved balance or asset for themselves.
 
 ### Random Number Generation
 
@@ -160,28 +174,30 @@ Some prize winners are picked randomly. We have done our best to generate high q
 
 ### Exponential Duration Increase
 
-At the end of each round, the following configurable durations automatically increase exponentially by a configurable fraction: ETH Dutch auction duration; initial duration until main prize (used to calculate `mainPrizeTime` on the first bid in a round); `mainPrizeTime` increment (by how much `mainPrizeTime` gets extended on each subsequent bid in a round). In V1, CST Dutch auction duration is increased as well; in V2+, it's reduced on each ETH bid and increase on each CST bid by a separate configurable fraction.
+At the end of each round, the following configurable durations automatically increase exponentially by a configurable fraction: ETH Dutch auction duration; initial duration until main prize (used to calculate `mainPrizeTime` on the first bid in a round); `mainPrizeTime` increment (by how much `mainPrizeTime` gets extended on each subsequent bid in a round); in V3+, the duration before `mainPrizeTime` during which a premium is added to the bid price. In V1, CST Dutch auction duration is increased as well; in V2, it's reduced on each ETH bid and increased on each CST bid by a separate configurable fraction.
 
 ### Cosmic Signature and Random Walk NFT Staking
 
-NFTs from both our NFT contracts can be staked. Stakers receive designated prizes/rewards, as specified in "./cosmic-signature-game-prizes.md".
+NFTs from both our NFT contracts can be staked. Stakers receive designated prizes/rewards, as specified in `${workspaceFolder}/docs/cosmic-signature-game-prizes.md`.
 
 An NFT may be staked only once. Once unstaked, the same NFT may not be staked again.
+
+Only the original staker can unstake. Cosmic Signature NFT staking rewards accrue as the sum of each deposit divided by the number of NFTs staked at that deposit. Unstaking transfers the NFT back and pays accrued ETH atomically. Random Walk NFT staking has no ETH payout; each staked NFT remains eligible for every raffle draw, so a staker can win repeatedly and has more chances with more NFTs. The one-time Random Walk NFT bid discount and the one-time staking permission are tracked independently.
 
 ### Asset Types and Their Flows
 
 #### ETH
 
 - At any time, a user can donate ETH to the Game contract.\
-A user also can force-send ETH to the Game contract by `selfdestruct`ing a contract, which would result in the same outcome as a donation, except a respective event won't be emitted.
+According to Comment-202610044, a user also can force-send ETH to the Game contract by `selfdestruct`ing a contract, which would result in the same outcome as a donation, except a respective event won't be emitted.
 
 - While a round is active, a user can place an ETH bid. The current ETH bid price, or a half of it if an RWLK was provided, is transferred to the Game contract.
 
-- At the end of each round, a half of the Game contract ETH balance is awarded to various beneficiaries: main prize winner gets paid directly to their address; COSMIC staking awards are transferred to `StakingWalletCosmicSignatureNft`; ETH to be donated to charity is transferred to `CharityWallet`; other winners' ETH prizes, including any secondary prizes won by main prize winner, are transferred to `PrizesWallet`.
+- At the end of each round, the configured percentages of the Game's ETH balance are distributed: the main prize claimant is paid directly; COSMIC staking allocations go to `StakingWalletCosmicSignatureNft`; the charity allocation goes to the configured charity address, typically `CharityWallet`; secondary ETH allocations go to `PrizesWallet`. Defaults total 50%, subject to skipped-transfer cases described above.
 
 - At any time, a user can withdraw their ETH prizes from `PrizesWallet`. After a timeout, anybody is allowed to withdraw unclaimed assets from there.
 
-- At any time, a user can transfer ETH from `CharityWallet` to the charity.
+- Anyone can call `CharityWallet.send` to forward ETH to its configured nonzero beneficiary.
 
 - At any time, a staker can unstake their COSMIC and get their staking ETH rewards.
 
@@ -189,9 +205,9 @@ A user also can force-send ETH to the Game contract by `selfdestruct`ing a contr
 
 - While a round is active, a user can place a CST bid. The current CST bid price gets burned.
 
-- When a user places a bid of any type, they get rewarded with a configurable amount of CST.
+- When a user places a bid of any type, a configurable CST reward goes to that bidder in V2-, or to the previous bidder in V3+. See Bid Monetary Effects above.
 
-- At the end of a round, various amounts of CST are minted for various beneficiaries, including `MarketingWallet`.
+- At the end of a round, various amounts of CST are minted to various beneficiaries, including `MarketingWallet`.
 
 - The treasurer uses CST in `MarketingWallet` to fund marketing activities, such as rewarding people for marketing the project on social media.
 
@@ -199,7 +215,7 @@ A user also can force-send ETH to the Game contract by `selfdestruct`ing a contr
 
 #### Random Walk NFT (Symbol = "RWLK")
 
-- While a round is active, an RWLK can be provided with an ETH bid, which halves ETH price the bidder is required to pay. An RWLK is allowed to be used for bidding only once.
+- While a round is active, an RWLK can be provided with an ETH bid, which halves the required ETH price. An RWLK is allowed to be used for bidding only once.
 
 - At any time, an RWLK can be staked. An RWLK is allowed to be staked only once.
 
@@ -207,7 +223,7 @@ A user also can force-send ETH to the Game contract by `selfdestruct`ing a contr
 
 #### Cosmic Signature NFT (Symbol = "COSMIC")
 
-- At the end of a round, a number of COSMICs are minted for various beneficiaries.
+- At the end of a round, a number of COSMICs are minted to various beneficiaries.
 
 - At any time, a COSMIC can be staked. A COSMIC is allowed to be staked only once.
 
@@ -215,28 +231,33 @@ A user also can force-send ETH to the Game contract by `selfdestruct`ing a contr
 
 #### Third party ERC-20 token amount and ERC-721 NFT
 
-- When a bidding round is active, one or the other asset can be provided/donated together with a bid of any type. The donated asset is transferred to `PrizesWallet`.
+- When a bidding round is active, one or the other asset can accompany a bid of any type. The donated asset goes to `PrizesWallet`.
 
-- At any time, a particular round main prize winner can claim the ERC-20s and ERC-721s donated during the round and held in `PrizesWallet`. After a timeout, anybody is allowed to withdraw unclaimed assets from there.
+- After bidding round finalization, the round's main prize winner can retrieve the round's donated ERC-20s and ERC-721s through `PrizesWallet`. Once the recorded timeout expires, anybody can retrieve remaining assets for themselves.
 
 ### Actions Logic
+
+The following lists summarize required conditions and successful effects; they are not necessarily an execution-order trace.
 
 #### A user places an ETH bid.
 
 - Parameters:
 	- Random Walk NFT ID (optional).
-	- Message (optional).
-	- V2+: CST reward min limit.
+	- Message (maye be empty).
+	- V2+: Bid CST reward min limit (may be zero).
 
 - If the provided message is too long: revert.
 
 - If the current bidding round is inactive: revert.
 
-- V2+: If the provided CST reward min limit is greater than the current CST reward: revert.
+- V2+: If the provided bid CST reward min limit is greater than the current bid CST reward: revert.\
+  But in V3+ don't check this if there were no bids in the current round yet.
 
-- Calculate the current ETH bid price.
+- Calculate the current ETH bid price, including any V3+ late-bid premium.
 
 - Calculate the price the user is required to pay. It will be (1) the same as above or (2) a half of it if the user provided an RW NFT.
+
+- V3+: Use the undiscounted ETH bid price without the premium for price updates and raffle weights (Comment-202609098).
 
 - If `msg.value` is less than required: revert.
 
@@ -244,46 +265,56 @@ A user also can force-send ETH to the Game contract by `selfdestruct`ing a contr
 
 	- if the NFT already was used for bidding or the caller is not the NFT owner: revert.
 
-- Mint a CST reward for the user.
+	- Register that the provided NFT was used for bidding.
+
+- V2-: Mint a bid CST reward to the current bidder.\
+  V3+: If this is not the first bid in the current bidding round: mint a bid CST reward to the previous bidder.
 
 - If this is not the first bid in the current bidding round: update Endurance Champion and Chrono-Warrior.
 
 - Update `mainPrizeTime`.
 
-- V2+: reduce CST Dutch auction duration.
+- V2: reduce CST Dutch auction duration.
 
-- If the user sent us more ETH than required: transfer the excess back to them. But don't do it if the refund amount is less than or equal than what it would cost to transfer it.
+- V3+: increase CST bid price decline per second only if the resulting auction duration would remain at least `CST_DUTCH_AUCTION_DURATION_MIN_LIMIT` (Comment-202611053).
+
+- If the user sent more ETH than required, refund the excess only if it exceeds what it would cost to transfer it. Excess at or below that cost remains in the Game.
 
 #### A user places a CST bid.
 
 - Parameters:
 	- Max CST price the user is willing to pay.
-	- Message (optional).
-	- V2+: CST reward min limit.
+	- Message (maye be empty).
+	- V2+: Bid CST reward min limit (maye be zero).
 
 - If the provided message is too long: revert.
 
 - If no bid placed in the current bidding round yet: revert. (An ETH bid shall happen first. So provided it happened, we know that the current bidding round is active, therefore it's unnecessary to check that.)
 
-- V2+: If the provided CST reward min limit is greater than the current CST reward: revert.
+- V2+: If the provided bid CST reward min limit is greater than the current bid CST reward: revert.
 
-- Calculate the current CST bid price.
+- Calculate the current CST bid base price.
+
+- V3+: If a bid was already placed within the current round and the current time is inside the late window or after `mainPrizeTime`, add the applicable premium to the base price.
 
 - If the provided max price the user is willing to pay or the user's CST balance is less than required: revert.
 
 - Burn the current CST bid price from the user's CST balance.
 
-- Mint a CST reward for the user.
+- V2-: Mint a bid CST reward to the current bidder.\
+  V3+: If this is not the first bid in the current bidding round: mint a bid CST reward to the previous bidder.
 
-- Update Endurance Champion and Chrono-Warrior. (We have already checked that this is not the first bid in the current bidding round, so it's unnecessary to check that again.)
+- On a successful non-first bid, update Endurance Champion and Chrono-Warrior.
 
 - Update `mainPrizeTime`.
 
-- V2+: increase CST Dutch auction duration.
+- V2: increase CST Dutch auction duration.
+
+- V3+: reduce CST bid price decline per second.
 
 #### A user claims the current bidding round main prize.
 
-- If the caller is the last bidder:
+- If the caller is the same as the last bidder:
 
 	- Note that at this point we know that someone has already placed a bid in the current round. So it's unnecessary to check that.
 
@@ -299,7 +330,7 @@ A user also can force-send ETH to the Game contract by `selfdestruct`ing a contr
 
 - Update Endurance Champion and Chrono-Warrior.
 
-- Distribute prizes. All prizes distributed on main prize claim, or, in other words, at the end of a round, are listed in "./cosmic-signature-game-prizes.md".
+- Distribute prizes. All prizes distributed on main prize claim, or, in other words, at the end of a round, are listed in `${workspaceFolder}/docs/cosmic-signature-game-prizes.md`.
 
 - Update contract state to begin the next round, which includes:
 

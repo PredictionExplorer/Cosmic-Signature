@@ -8,6 +8,7 @@
 const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
+const { asUint256 } = require("../../../src/BigIntMathHelpers.js");
 const { generateRandomUInt256FromSeedWrapper, generateRandomUInt256FromSeed } = require("../../../src/Helpers.js");
 const { assertAddressIsValid, assertEvent } = require("../../../src/ContractTestingHelpers.js");
 
@@ -139,7 +140,7 @@ const { assertAddressIsValid, assertEvent } = require("../../../src/ContractTest
 			if (nftOwnerAddresses_.length > 0) {
 				firstNftId_ = this.mint(roundNum_, nftOwnerAddresses_[0], randomNumberSeed_, contracts_, transactionReceipt_, eventIndexWrapper_);
 				for ( let index_ = 1; index_ < nftOwnerAddresses_.length; ++ index_ ) {
-					randomNumberSeed_ = BigInt.asUintN(256, randomNumberSeed_ + 1n);
+					randomNumberSeed_ = asUint256(randomNumberSeed_ + 1n);
 					this.mint(roundNum_, nftOwnerAddresses_[index_], randomNumberSeed_, contracts_, transactionReceipt_, eventIndexWrapper_);
 				}
 			}

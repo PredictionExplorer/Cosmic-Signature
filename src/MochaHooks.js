@@ -8,7 +8,7 @@ const helpersModule = require("./Helpers.js");
 // 	console.info("%s", `${Date.now()} ${x_}`);
 // }
 
-async function beforeAll() {
+function beforeAll() {
 	// console.info("%s", "202508203");
 	expect(hre.network.name).equal("hardhat");
 	expect(helpersModule.HARDHAT_MODE_CODE).equal(1);
@@ -18,6 +18,7 @@ async function beforeAll() {
 	{
 		{
 			const feeData_ = new hre.ethers.FeeData(null, 10n ** (9n + 1n), 0n);
+			// eslint-disable-next-line @typescript-eslint/require-await -- Preserve the provider method's Promise-returning API.
 			hre.ethers.provider.getFeeData = async () => (/*test1("1"),*/ feeData_);
 		}
 		{
@@ -26,6 +27,7 @@ async function beforeAll() {
 		
 			chaiAssert.isNumber(gasLimit_);
 			const bigGasLimit_ = BigInt(gasLimit_);
+			// eslint-disable-next-line @typescript-eslint/require-await -- Preserve the provider method's Promise-returning API.
 			hre.ethers.provider.estimateGas = async () => (/*test1("2"),*/ bigGasLimit_);
 		}
 	}

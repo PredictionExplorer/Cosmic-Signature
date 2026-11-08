@@ -8,12 +8,21 @@ The following blockchains are supported: Hardhat Network (a local blockchain), A
 
 All scripts assume that they are executed from the folder they are located in. So you must `cd` to the script's folder and execute the script like `./my-script.bash`.
 
-Start with testing on Hardhat Network. You can start it by executing `${workspaceFolder}/scripts/hardhat-node.bash`.
+Start with testing on Hardhat Network. You can start it by executing:
+
+```bash
+cd scripts
+./hardhat-node.bash
+```
+
+#### Before You Make Any Changes in the Project
+
+- Create a new Git branch and remember what commit you created it from. You can save the commit hash to a file.
 
 #### Create API Keys
 
- - If you are dealing with a testnet or mainnet, you need an EtherScan API key. It will work for all blockchains, including ArbiScan.\
- At some point, they switched to V2 of their API, so old API keys aren't necessarily going to work. So you might need to get a new one.
+- If you are dealing with a testnet or mainnet, you need an EtherScan API key. It will work for all blockchains, including ArbiScan.\
+  At some point, they switched to V2 of their API, so old API keys aren't necessarily going to work. So you might need to get a new one.
 
 #### Create Blockchain Accounts
 
@@ -26,29 +35,40 @@ Start with testing on Hardhat Network. You can start it by executing `${workspac
 #### Edit Configuration Files
 
 - `../config/deploy-cosmic-signature-contracts-config-<network-name>.json`\
-These files are in the Git repo, so don't include any secrets in them.\
-For a local blockchain, it's OK to set `deployerPrivateKey` to a well known account private key. For a testnet or mainnet, leave it empty, so that it was taken from a Hardhat configuration variable.\
-Set `randomWalkNftAddress` to where the contract has been deployed. If you leave it empty or zero, it will be deployed, which is typically the right thing to do on a local blockchain.\
-Set `charityAddress` to your charity address. Or leave it empty or zero and later set it by making a call to `CharityWallet`.\
-You probably don't need to change any other arguments.
+  These files are in the Git repo, so don't include any secrets in them.\
+  For a local blockchain, it's OK to set `deployerPrivateKey` to a well known account private key. For a testnet or mainnet, leave it empty, so that it was taken from a Hardhat configuration variable.\
+  Set `randomWalkNftAddress` to where the contract has been deployed. If you leave it empty or zero, it will be deployed, which is typically the right thing to do on a local blockchain.\
+  Set `charityAddress` to your charity address. Or leave it empty or zero and later set it by making a call to `CharityWallet`.\
+  You probably don't need to change any other arguments.
 
 #### Create Hardhat Configuration Variables
 
-Save some arguments to Hardhat Configuration Variables. If you are dealing with a local blockchain, skip this section.
+Save some arguments to Hardhat Configuration Variables. If you are dealing with a local blockchain, skip this section.\
+(Begin each command with a space; ensure that doing so keeps a command out of command history.)
 
-- `npx hardhat vars set deployerPrivateKey_<network-name> 0x_YOUR_DEPLOYER_PRIVATE_KEY_HERE`
+- ` export HARDHAT_VAR_deployerPrivateKey_<network-name>=0x_YOUR_DEPLOYER_PRIVATE_KEY_HERE`\
+  or\
+  ` npx hardhat vars set deployerPrivateKey_<network-name> 0x_YOUR_DEPLOYER_PRIVATE_KEY_HERE`
 
-- `npx hardhat vars set etherScanApiKey_<network-name> YOUR_ETHERSCAN_API_KEY_HERE`
+- ` export HARDHAT_VAR_etherScanApiKey_<network-name>=YOUR_ETHERSCAN_API_KEY_HERE`\
+  or\
+  ` npx hardhat vars set etherScanApiKey_<network-name> YOUR_ETHERSCAN_API_KEY_HERE`
 
 #### Run Scripts
 
 - Execute `../runners/run-deploy-cosmic-signature-contracts-<network-name>.bash`. It will deploy all Cosmic Signature contracts.
 
-- Observe the newly created `../output/deploy-cosmic-signature-contracts-report-<network-name>.json` file. It contains addresses of all deployed contracts. Copy it outside the Git repo, but leave the original in-place, so that other scripts could use it. Note that the `../output` folder is included in `.gitignore` near Comment-202606197.
+- Observe the newly created `../output/deploy-cosmic-signature-contracts-report-<network-name>.json` file. It contains addresses of all deployed contracts. Other scripts are going to use it.
 
-- Only if you are dealing with a mainnet or a testnet, execute `../runners/run-register-cosmic-signature-contracts-<network-name>.bash`. It will verify and register the source code of the previously deployed Cosmic Signature contracts on ArbiScan.
+- After you deploy to a mainnet or a testnet, you will notice the `.openzeppelin` subfolder under the folder in which you ran the deployment scripts. OpenZeppelin Hardhat Upgrades stores important tracking info in there. I deployed on Arbitrum Sepolia, deleted the folder, and then tried to upgrade. It failed. But when I deployed and upgraded on `hardhat_on_localhost`, everything worked without creating the folder. It's said to be possible to force an upgrade without the folder, but I haven't tried it.
+
+- Only if you are dealing with a mainnet or a testnet, execute `../runners/run-register-cosmic-signature-contracts-<network-name>.bash`. It will verify and register the source code of the deployed Cosmic Signature contracts on ArbiScan.
 
 - Only if you are dealing with a mainnet or a testnet, on ArbiScan, examine the deployed contract addresses. Make sure the evidence of the registration is there, especially that of the game contract proxy and implementation.
+
+#### Notes
+
+- Near Comment-202610237, the deployment task logs the resolved configuration to stdout, including the deployer private key. Therefore, keep the terminal output private.
 
 #### Caveats
 
@@ -56,16 +76,17 @@ Save some arguments to Hardhat Configuration Variables. If you are dealing with 
 
 - If a proxy and/or implementation contract registration failed with the "already verifified" error, sometimes it also fails to link the proxy with the implementation. If you observe such an error, link them manually on ArbiScan.
 
-- After you deploy to a mainnet or a testnet, you will notice the `.openzeppelin` subfolder under the folder in which you ran the deployment scripts. OpenZeppelin Hardhat Upgrades stores important tracking info in there. The folder contains no secrets (make sure it's the case). I deployed on Arbitrum Sepolia, deleted the folder, and then tried to upgrade. It failed. But when I deployed and upgraded on `hardhat_on_localhost`, everything worked without creating the folder. It's said to be possible to force an upgrade without the folder, but I haven't tried it.\
-So after you deploy to a testnet, it's safe to delete the folder when you no longer need it. After you deploy to a mainnet, move the folder to a location outside the Git repo. Although it's also OK to commit the folder to the Git repo.
-
 #### Afterwards
 
-- As mentioned above, copy the deployment report file to a location outside the Git repo.
+- Make sure Git branch changes contain no secrets.
 
-- As mentioned above, move the `.openzeppelin` subfolder to a location outside the Git repo. Or only make a copy of it and commit it.
+- Commit and push the exact deployment sources and configuration, the `../output/` reports, and the `../runners/.openzeppelin/` manifest. Keep deployment-specific changes on this branch so the deployed build can be reproduced.
 
-- Consider deleting secrets.
+- Consider copying some of your changes back to the `main` branch.
+
+- Switch back to the `main` branch.
+
+- Consider deleting secrets if you persisted them.
 
 	- `npx hardhat vars delete deployerPrivateKey_<network-name>`
 

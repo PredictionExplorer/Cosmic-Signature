@@ -6,12 +6,14 @@
 // #region
 
 // [Comment-202409255]
-// Because "hardhat.config.js" imports us, an attempt to import "hardhat" here would throw an error.
+// Because `hardhat.config.js` imports us, an attempt to import "hardhat" here would throw an error.
 // So we must do things differently here.
-// Issue. A better option could be to add the `hre` parameter to functions that need it.
+// Issue. A better design could be to add the `hre` parameter to functions that need it.
 // [/Comment-202409255]
 // const hre = require("hardhat");
 const { HardhatContext } = require("hardhat/internal/context");
+
+const { asUint256 } = require("./BigIntMathHelpers.js");
 
 // #endregion
 // #region
@@ -38,10 +40,9 @@ const { HardhatContext } = require("hardhat/internal/context");
 /**
 [Comment-202510221]
 Supported values:
-   @ 1 to run tests under the "${workspaceFolder}/test" subfolder deterministically and at the maximum speed.
+   @ 1 to run Hardhat tests deterministically and at the maximum speed.
      This is the value to set in most cases, especially if no blockchain calls will be made.
-   @ 2 to simulate a live blockchain, which is designed for tests
-     under the "${workspaceFolder}/live-blockchain-testing" subfolder.
+   @ 2 to support a blockchain mining a block every given time interval.
 [/Comment-202510221]
 @type {number}
 */
@@ -152,7 +153,7 @@ function generateRandomUInt256() {
 
 /** Comment-202504065 applies. */
 function generateRandomUInt256FromSeedWrapper(seedWrapper_) {
-	const newSeed_ = BigInt.asUintN(256, seedWrapper_.value + 1n);
+	const newSeed_ = asUint256(seedWrapper_.value + 1n);
 	seedWrapper_.value = newSeed_;
 	const randomNumber_ = generateRandomUInt256FromSeed(newSeed_);
 	return randomNumber_;
@@ -398,7 +399,7 @@ async function safeErc1967GetChangedImplementationAddress(proxyAddress_, oldImpl
 				return newImplementationAddress_;
 			}
 		}
-		console.warn("%s", "Warning. We have to wait for the contract upgrade transaction to be mined.");
+		console.warn("%s", "Warning. Waiting for the contract upgrade transaction to be executed.");
 		await sleepForMilliSeconds(2000);
 	}
 }

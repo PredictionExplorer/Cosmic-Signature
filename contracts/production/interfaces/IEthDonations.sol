@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity =0.8.34;
 
-import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
-
 /// @notice Processes ETH donations made to `CosmicSignatureGame`.
 /// ETH donations serve the following purposes:
 ///    1. Allow the project founders to seed the Game with some money.
 ///    2. Allow people to advertise things.
-interface IEthDonations is ICosmicSignatureGameStorage {
+interface IEthDonations {
 	/// @notice Emitted when someone donates ETH.
 	/// @param roundNum The current bidding round number.
 	/// @param donorAddress Donor address.
@@ -30,6 +28,7 @@ interface IEthDonations is ICosmicSignatureGameStorage {
 	/// Alternatively, one might want to add the `data` parameter
 	/// and eliminate `ethDonationWithInfoRecords` and `EthDonationWithInfoRecord`.
 	/// But Nick prefers the current design.
+	/// Comment-202411098 relates and/or applies.
 	/// [/Comment-202503111]
 	event EthDonatedWithInfo(uint256 indexed roundNum, address indexed donorAddress, uint256 amount, uint256 indexed ethDonationWithInfoRecordIndex);
 
@@ -39,15 +38,19 @@ interface IEthDonations is ICosmicSignatureGameStorage {
 	/// The logic running on the blockchain doesn't enforce a minimum donation.
 	/// The enforcement is done at higher levels in the stack.
 	/// [/Comment-202503113]
-	/// See also: `donateEthWithInfo`, `IBidding.receive`.
+	/// [Comment-202610044]
+	/// Note that a user can force-send ETH to us by `selfdestruct`ing a contract,
+	/// which would result in the same outcome as a donation, except a respective event won't be emitted.
+	/// [/Comment-202610044]
+	/// See also: `donateEthWithInfo`, `IBidding.receive`, `IBidding1V2.receive`, `ICosmicSignatureGame.fallback`, `ICosmicSignatureGameV2.fallback`.
 	function donateEth() external payable;
 
 	/// @notice This method is similar to `donateEth`.
 	/// Comments there apply.
 	/// In addition, it allows the caller to provide additional information.
-	/// @param data_ Additional info in JSON format.
+	/// @param data_ Additional information. It could be JSON. The contract does not validate it.
 	/// It's OK if it's empty.
-	/// We do not limit this string length, but the frontend will truncate a too long message.
+	/// The contract imposes no string-length limit.
 	function donateEthWithInfo(string calldata data_) external payable;
 
 	/// @return `ethDonationWithInfoRecords.length`.

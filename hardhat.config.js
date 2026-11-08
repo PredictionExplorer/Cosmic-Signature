@@ -14,50 +14,43 @@ const helpersModule = require("./src/Helpers.js");
 // #region
 
 // [Comment-202503272]
-// The use of different folders prevents a recompile of some Solidity sources
+// The use of different folders prevents a rebuild of some Solidity sources
 // when using a different combination of environment variables.
 // [/Comment-202503272]
 // [Comment-202503302]
 // A similar folder name exists in multiple places.
 // [/Comment-202503302]
-const solidityCompilationCacheSubFolderName = helpersModule.ENABLE_HARDHAT_PREPROCESSOR ? ("debug-" + helpersModule.ENABLE_ASSERTS.toString() + "-" + (helpersModule.ENABLE_SMTCHECKER > 0).toString()) : "production";
+const solidityCompilationCacheSubFolderName =
+	helpersModule.ENABLE_HARDHAT_PREPROCESSOR ?
+	`debug-${helpersModule.ENABLE_ASSERTS}-${helpersModule.ENABLE_SMTCHECKER > 0}` :
+	"production";
 
 // #endregion
 // #region
 
 // [Comment-202409011]
-// Issue. Hardhat would automatically install solc-js, but solc-js terminates with an error when SMTChecker is enabled.
-// It could be a solc-js bug.
-// So we must tell Hardhat to use the binary solc of the given version.
-// Remember to manually install it.
-// One option is to install the solc package globally:
-//    sudo add-apt-repository ppa:ethereum/ethereum
-//    sudo apt install solc
-// Update: From Solidity 0.8.31 ChangeLog: Ubuntu PPA Packages: Discontinue the PPA as a binary distribution channel.
-// Another, arguably better option is to use the "solc-select" tool.
+// Issue. Hardhat would automatically install `solc-js`, but `solc-js` terminates with an error when SMTChecker is enabled.
+// It could be a `solc-js` bug.
+// todo-3 Check if they have now fixed it.
+// So you must install the binary `solc` of a particular version and we must tell Hardhat to use it.
+//
+// To install `solc`, use the `solc-select` tool.
 // It's documented at https://github.com/crytic/solc-select .
-// After you install it, to switch to a particular solc version, use this command:
-//    solc-select use 0.8.34 --always-install
+// Install it:
+//    `pip3 install solc-select`
+// Install and switch to a particular `solc` version:
+//    `solc-select use 0.8.34 --always-install`
 // It's OK if afterwards you switch to a different version. As long as the given version remains installed, we will find and use it.
 //
-// Update 1. It turns out that just like solc-js, solc installed with solc-select also fails when SMTChecker is enabled.
-// So you must install solc globally.
-// You can still use solc installed with solc-select when you don't need SMTChecker.
+// To run `solc` with SMTChecker enabled, you might have to install the `z3` package.
+//    `sudo apt install z3`
 //
-// Update 2. On the cosmic2 server, even the globally installed solc didn't work.
-// Installing the z3 package fixed that:
-//    sudo apt install z3
-// Now even solc installed with solc-select works. So it's actually unnecessary to install solc globally.
-// todo-3 Test if solc-js works too.
-//
-// Note that Hardhat will not necessarily validate solc of what version it's executing,
+// Note that Hardhat will not necessarily validate `solc` of what version it's executing,
 // so it's your responsibility to correctly configure all the relevant parameters that reference this comment.
-// Note that if your system is configured to install updates automatically and you installed the solc package globally,
-// the package can be updated at any moment, so you might want to disable quiet automatic updates.
 // [/Comment-202409011]
 
 // Comment-202409011 applies.
-// todo-1 Periodically check out known Solidity compiler bugs at https://www.soliditylang.org/blog/category/security-alerts/ .
+// todo-1 Periodically check out known Solidity compiler bugs at https://docs.soliditylang.org/en/latest/bugs.html .
 // [ToDo-202409098-2]
 // When changing this, remember to revisit the configuration near Comment-202411136, Comment-202408026, Comment-202408025.
 // [/ToDo-202409098-2]
@@ -67,34 +60,25 @@ const solidityVersion = "0.8.34";
 // [Comment-202411136]
 // Hardhat docs says that this is used as extra information in the build-info files, but other than that is not important.
 // To find out this value, execute:
-//    solc --version
-// Make sure you are executing the executable pointed at by `solidityCompilerPath`.
+//    `solc --version`
+// Make sure you are executing the executable pointed at by the `solidityCompilerPath` variable.
 // We log it near Comment-202411143.
 //
-// 2025-08 Update.
-// The binary solc long version looks like 0.8.XX+commit.12abcdef.Linux.g++ .
+// Note that the binary `solc` long version looks like "0.8.XX+commit.1234abcd.Linux.g++".
 // Problem is that's too long for EtherScan. It dislikes the ".Linux.g++" suffix.
 // The supported versions listed at https://etherscan.io/solcversions contain no suffixes.
-// solc-js is said to report its version without the suffix.
+// `solc-js` is said to report its version without the suffix.
 // So we must do the same here.
 // [/Comment-202411136]
 const solidityCompilerLongVersion = solidityVersion + "+commit.80d5c536";
 
 // Comment-202409011 applies.
 // Comment-202411136 relates.
-let solidityCompilerPath;
-const solidityCompilerPathGlobal = "/usr/bin/solc";
-// if (helpersModule.ENABLE_SMTCHECKER < 2) {
-	solidityCompilerPath = `${process.env.HOME}/.solc-select/artifacts/solc-${solidityVersion}/solc-${solidityVersion}`;
-	if ( ! nodeFsModule.statSync(solidityCompilerPath, {throwIfNoEntry: false,})?.isFile() ) {
-		solidityCompilerPath = `${process.env.HOME}/.local/bin/solc`;
-		if ( ! nodeFsModule.statSync(solidityCompilerPath, {throwIfNoEntry: false,})?.isFile() ) {
-			solidityCompilerPath = solidityCompilerPathGlobal;
-		}
-	}
-// } else {
-// 	solidityCompilerPath = solidityCompilerPathGlobal;
-// }
+let solidityCompilerPath = `${process.env.HOME}/.solc-select/artifacts/solc-${solidityVersion}/solc-${solidityVersion}`;
+if ( ! nodeFsModule.statSync(solidityCompilerPath, {throwIfNoEntry: false,})?.isFile() ) {
+	// Issue. This is unlikely to exist.
+	solidityCompilerPath = `${process.env.HOME}/.local/bin/solc`;
+}
 
 // #endregion
 // #region
@@ -118,14 +102,14 @@ if (helpersModule.ENABLE_HARDHAT_PREPROCESSOR) {
 // [Comment-202411143/]
 // Comment-202409011 relates.
 // Comment-202411136 relates.
-console.warn("%s", `Warning. Make sure "${solidityCompilerPath}" version is "${solidityCompilerLongVersion}". Hardhat will not necessarily validate that.`);
+console.warn("%s", `Warning. Make sure \`${solidityCompilerPath}\` version is \`${solidityCompilerLongVersion}\`. Hardhat will not necessarily validate that.`);
 
 // #endregion
 // #region
 
 // const nodeOsModule = require("node:os");
 
-// This imports a bunch of other packages. Don't import them here.
+// This imports a bunch of Hardhat packages. Don't import them here.
 require("@nomicfoundation/hardhat-toolbox");
 
 const { subtask } = require("hardhat/config");
@@ -135,21 +119,21 @@ if (helpersModule.ENABLE_HARDHAT_PREPROCESSOR) {
 
 // // [Comment-202510064]
 // // I feel that we don't need this.
-// // ABIs of all contracts are anyway created under the "artifacts" folder on compile.
-// // I have deleted the following from the "package.json" file:
-// // "hardhat-abi-exporter": "=2.11.0",
+// // ABIs of all contracts are anyway created under the `artifacts` folder on compile.
+// // I have deleted the following from the `package.json` file:
+// // `"hardhat-abi-exporter": "~2.11.0"`,
 // // [/Comment-202510064]
 // require("hardhat-abi-exporter");
 
 // // Issue. After I upgraded to Hardhat 2.26.1, this import started to cause all Solidity files recompile
-// // on each Hardhat Test task run. So I have commented it out and deleted the following line from "package.json":
-// // "hardhat-docgen": "=1.3.0",
+// // on each Hardhat Test task run. So I have commented it out and deleted the following line from `package.json`:
+// // `"hardhat-docgen": "~1.3.0"`,
 // require("hardhat-docgen");
 
 require("@nomiclabs/hardhat-solhint");
 require("hardhat-tracer");
 
-// // It appears that it's unnecessary to include this into "package.json" or import this.
+// // It appears that it's unnecessary to include this into `package.json` or import this.
 // require("@nomiclabs/hardhat-etherscan");
 
 const { TASK_COMPILE_SOLIDITY_GET_SOLC_BUILD, } = require("hardhat/builtin-tasks/task-names");
@@ -195,7 +179,8 @@ function populateNetworkIsMainNetOnce(hre) {
 
 subtask(
 	TASK_COMPILE_SOLIDITY_GET_SOLC_BUILD,
-	async (args, _hre, _runSuper) => {
+	// eslint-disable-next-line @typescript-eslint/require-await -- Hardhat actions must return a Promise.
+	async (args/*, hre, runSuper*/) => {
 		if (args.solcVersion == solidityVersion) {
 			return {
 				compilerPath: solidityCompilerPath,
@@ -208,8 +193,7 @@ subtask(
 		}
 	
 		// This point is supposed to be unreachable.
-		
-		throw new Error(`Hardhat is trying to use a wrong Solidity compiler version: "${args.solcVersion}".`);
+		throw new Error(`Hardhat is trying to use a wrong Solidity compiler version: \`${args.solcVersion}\`.`);
 
 		// // Calling the default implementation.
 		// return runSuper();
@@ -245,7 +229,6 @@ function preProcessSolidityLine(hre, line) {
 		// [Comment-202408261/]
 		throw new Error("The network appears to be a mainnet, but you forgot to disable Hardhat Preprocessor.");
 	}
-
 	line = line.replace(solidityLinePreProcessingRegExp, "$1");
 	return line;
 }
@@ -261,6 +244,7 @@ const hardhatUserConfig = {
 		// Comment-202503272 relates.
 		cache: "./cache/" + solidityCompilationCacheSubFolderName,
 		artifacts: "./artifacts/" + solidityCompilationCacheSubFolderName,
+
 		tests: "./test/tests-src",
 	},
 
@@ -270,19 +254,19 @@ const hardhatUserConfig = {
 	solidity: {
 		version: solidityVersion,
 		settings: {
-			// [Comment-202408026]
-			// By default, this is "paris".
-			// See https://v2.hardhat.org/hardhat-runner/docs/config#default-evm-version
-			// But we want this to be the latest Arbitrum-compatible.
-			// [/Comment-202408026]
-			evmVersion: "osaka",
-
 			// [Comment-202408025]
 			// See https://v2.hardhat.org/hardhat-runner/docs/reference/solidity-support
 			// [/Comment-202408025]
 			// Is this going to become `true` by default in a future Solidity version?
 			// As of the 0.8.34, this is `false` by default.
 			viaIR: true,
+
+			// [Comment-202408026]
+			// By default, this is "paris".
+			// See https://v2.hardhat.org/hardhat-runner/docs/config#default-evm-version
+			// But we want this to be the latest Arbitrum-compatible.
+			// [/Comment-202408026]
+			evmVersion: "osaka",
 
 			// Comment-202408025 applies.
 			optimizer: {
@@ -297,14 +281,29 @@ const hardhatUserConfig = {
 				// 	yulDetails: {
 				// 		// Hardhat docs at https://v2.hardhat.org/hardhat-runner/docs/reference/solidity-support says that
 				// 		// this setting makes Hardhat "work as well as possible".
-				// 		// Issue. But it appears to increase contract binary size and, possibly, gas use.
-				// 		// So we probably don't need this.
+				// 		// Issue. But it appears to increase contract bytecode size and, possibly, gas use.
+				// 		// So we not necessarily need this.
 				// 		// Although it could make sense to enable this if Hardhat Preprocessor is enabled.
 				// 		optimizerSteps: "u",
 				// 	},
 				// },
 			},
 
+			metadata: {
+				// // [Comment-202610032]
+				// // This reduces contract bytecode size a little.
+				// // This does not make it impossible to verify contracts on EtherScan or ArbiScan.
+				// // But this does make it impossible to verify contracts on Sourcify.
+				// // Taras actually wants to register the contracts on Sourcify, so I have commented this out.
+				// // Comment-202509112 relates.
+				// // [/Comment-202610032]
+				// appendCBOR: false,
+
+				// // When `appendCBOR` is `false`, this does not affect contract bytecode size.
+				// bytecodeHash: "none",
+			},
+
+			// // This appears to be a legacy setting.
 			// // The latest Hardhat 2.x ignores this.
 			// outputSelection: {
 			// 	"*": {
@@ -322,7 +321,7 @@ const hardhatUserConfig = {
 	// #endregion
 	// #region
 
-	// "hardhat-preprocessor" package configuration.
+	// The `hardhat-preprocessor` package configuration.
 	preprocess: {
 		eachLine:
 			(hre) => (
@@ -349,7 +348,7 @@ const hardhatUserConfig = {
 					// // Comment-202408173 relates.
 					// files: "???",
 
-					transform: (line) => { return preProcessSolidityLine(hre, line); },
+					transform: (line) => (preProcessSolidityLine(hre, line)),
 				}
 			),
 	},
@@ -368,7 +367,7 @@ const hardhatUserConfig = {
 	// 	clear: true,
 	// 	flat: true,
 	//
-	// 	// Issue. This list is incomplete.
+	// 	// todo-9 This list is incomplete.
 	// 	only: [
 	// 		"CosmicSignatureToken",
 	// 		"RandomWalkNFT",
@@ -457,9 +456,8 @@ const hardhatUserConfig = {
 			// So to increase the chance of deterministic behavior when the current system time is approaching the beginning of a second,
 			// we must wait until the next second and then subtract 1 (or more) from the value we are to pass to "evm_increaseTime".
 			//
-			// Note that a constant `initialDate` parameter only makes the behavior more deterministic,
-			// but it does not change the behavior. It only changes the initial timestamp. System time passage
-			// still drives timestamp increses.
+			// Note that a constant `initialDate` parameter does not change the behavior. It only changes the initial block time.
+			// System time passage still drives block time increses.
 			// [/Comment-202501193]
 			mining: {
 				// By default, this is `true`.
@@ -526,7 +524,8 @@ const hardhatUserConfig = {
 	// #region //
 
 	// // [Comment-202509112]
-	// // We probably can get by without this.
+	// // It appears that we can get by without this.
+	// // Comment-202610032 relates.
 	// // [/Comment-202509112]
 	// sourcify: {
 	// 	enabled: true,
@@ -564,6 +563,7 @@ if (helpersModule.ENABLE_SMTCHECKER >= 2) {
 		// Therefore we must force-compile them.
 		// [/Comment-202409012]
 		// See https://docs.soliditylang.org/en/latest/smtchecker.html#verified-contracts
+		// todo-3 This list is incomplete.
 		// [/Comment-202409013]
 		contracts: {
 			// "contracts/production/CosmicSignatureToken.sol": ["CosmicSignatureToken"],

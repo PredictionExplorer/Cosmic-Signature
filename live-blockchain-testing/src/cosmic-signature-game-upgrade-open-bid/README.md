@@ -1,7 +1,8 @@
 ### Note
 
 This document is old, although it's still to some degree correct.
-Here is a modern substitute: "${workspaceFolder}/tasks/docs/Cosmic-Signature-Game-Contract-Upgrade-And-Re-Registration.md".
+
+`CosmicSignatureGameOpenBid` is a V1-based test prototype. Its sibling JavaScript scripts are entirely commented out, so the historical demo commands below do not perform the described operations. Use the active Hardhat upgrade tests for prototype testing and the [current upgrade guide](../../../tasks/docs/Cosmic-Signature-Game-Contract-Upgrade-And-Re-Registration.md) for the production upgrade.
 
 ### "BiddingOpenBid.sol" and "CosmicSignatureGameOpenBid.sol" as an example of `CosmicSignatureGame` upgrade
 

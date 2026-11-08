@@ -16,7 +16,7 @@ describe("MarketingWallet", function () {
 	});
 
 	it("Changing the treasurer", async function () {
-		const contracts_ = await loadFixtureDeployContractsForTesting(2n);
+		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
 		let randomNumber32_ = generateRandomUInt32();
 		const unauthorizedOwnerSigner_ = ((randomNumber32_ & 1) == 0) ? contracts_.treasurerSigner : contracts_.signers[11];
@@ -36,7 +36,7 @@ describe("MarketingWallet", function () {
 
 		{
 			await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[10]).bidWithEth(-1n, "", {value: 10n ** 18n,}));
-			const durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrizeRaw();
+			const durationUntilMainPrize_ = await contracts_.cosmicSignatureGameProxy.getDurationUntilMainPrize();
 			await hre.ethers.provider.send("evm_increaseTime", [Number(durationUntilMainPrize_),]);
 			// await hre.ethers.provider.send("evm_mine");
 			await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[10]).claimMainPrize());

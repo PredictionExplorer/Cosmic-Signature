@@ -8,6 +8,7 @@
 const { expect } = require("chai");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
+const { asUint256 } = require("../../../src/BigIntMathHelpers.js");
 const { generateRandomUInt256FromSeedWrapper, generateRandomUInt256FromSeed } = require("../../../src/Helpers.js");
 const { assertEvent } = require("../../../src/ContractTestingHelpers.js");
 
@@ -86,7 +87,7 @@ const { assertEvent } = require("../../../src/ContractTestingHelpers.js");
 				if (numStakedNftsCopy_ != 0n) {
 					luckyStakerAddresses_ = new Array(Number(numStakerAddresses_));
 					for (let luckyStakerIndex_ = Number(numStakerAddresses_); ( -- luckyStakerIndex_ ) >= 0; ) {
-						randomNumberSeed_ = BigInt.asUintN(256, randomNumberSeed_ + 1n);
+						randomNumberSeed_ = asUint256(randomNumberSeed_ + 1n);
 						const randomNumber_ = generateRandomUInt256FromSeed(randomNumberSeed_);
 						const luckyStakeActionIndex_ = randomNumber_ % numStakedNftsCopy_ + 1n;
 						const luckyStakerAddress_ = this.stakeActions[Number(luckyStakeActionIndex_)].nftOwnerAddress;

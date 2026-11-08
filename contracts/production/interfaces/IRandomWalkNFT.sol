@@ -1,6 +1,9 @@
-// todo-1 +++ Make sure license is the same in all files, except in "*RandomWalkNFT.sol".
-// todo-1 +++ SPDX-License-Identifier(?!: CC0-1\.0$)
+// [Comment-202609302]
+// Only `RandomWalkNFT` specifies this license. All othe contracts in this project specify `CC0-1.0`.
+// Searching for possibly wrong licences: \bSPDX-License-Identifier(?!: CC0-1\.0$)
+// [/Comment-202609302]
 // SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.26;
 
 import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";

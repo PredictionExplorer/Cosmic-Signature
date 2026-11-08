@@ -6,84 +6,97 @@ pragma solidity =0.8.34;
 // #endregion
 // #region
 
-import { CosmicSignatureGameStorageV2 } from "./CosmicSignatureGameStorageV2.sol";
+import { CosmicSignatureGameStorageV2Base } from "./CosmicSignatureGameStorageV2Base.sol";
 import { IBidStatistics } from "./interfaces/IBidStatistics.sol";
 
 // #endregion
 // #region
 
-abstract contract BidStatisticsV2 is CosmicSignatureGameStorageV2, IBidStatistics {
-	// #region `getTotalNumBids`
+abstract contract BidStatisticsV2 is
+	CosmicSignatureGameStorageV2Base,
+	IBidStatistics {
+	// #region // `getTotalNumBids`
 
-	function getTotalNumBids(uint256 roundNum_) external view override returns (uint256) {
-		BidderAddresses storage bidderAddressesReference_ = bidderAddresses[roundNum_];
-		uint256 totalNumBids_ = bidderAddressesReference_.numItems;
-		return totalNumBids_;
+	// function getTotalNumBids(uint256 roundNum_) external view override returns (uint256) {
+	// 	RoundStats storage roundStatsReference_ = roundStats[roundNum_];
+	// 	uint256 totalNumBids_ = roundStatsReference_.numBids;
+	// 	return totalNumBids_;
+	// }
+
+	// #endregion
+	// #region `getBidInfoAt`
+
+	function getBidInfoAt(uint256 roundNum_, uint256 bidIndex_) external view override returns (BidInfo memory) {
+		return roundStats[roundNum_].bidsInfo[bidIndex_];
 	}
 
 	// #endregion
-	// #region `getBidderAddressAt`
+	// #region // `getBidderTotalSpentAmounts`
 
-	function getBidderAddressAt(uint256 roundNum_, uint256 bidIndex_) external view override returns (address) {
-		address bidderAddress_ = bidderAddresses[roundNum_].items[bidIndex_];
-		return bidderAddress_;
-	}
-
-	// #endregion
-	// #region `getBidderTotalSpentAmounts`
-
-	function getBidderTotalSpentAmounts(uint256 roundNum_, address bidderAddress_) external view override returns (uint256, uint256) {
-		BidderInfo storage bidderInfoReference_ = biddersInfo[roundNum_][bidderAddress_];
-		return (bidderInfoReference_.totalSpentEthAmount, bidderInfoReference_.totalSpentCstAmount);
-	}
+	// function getBidderTotalSpentAmounts(uint256 roundNum_, address bidderAddress_) external view override returns (uint256, uint256) {
+	// 	BidderInfo storage bidderInfoReference_ = biddersInfo[roundNum_][bidderAddress_];
+	// 	return (bidderInfoReference_.totalSpentEthAmount, bidderInfoReference_.totalSpentCstAmount);
+	// }
 
 	// #endregion
 	// #region `_updateChampionsIfNeeded`
 
 	/// @notice Comment-202605245 applies.
 	function _updateChampionsIfNeeded() internal {
-		// if (lastBidderAddress == address(0)) return;
-		// #enable_asserts assert(lastBidderAddress != address(0));
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			// if (lastBidderAddress == address(0)) return;
+			// #enable_asserts assert(lastBidderAddress != address(0));
 
-		uint256 lastBidTimeStampCopy_ = biddersInfo[roundNum][lastBidderAddress].lastBidTimeStamp;
-		uint256 lastBidDuration_ = block.timestamp - lastBidTimeStampCopy_;
-		if (enduranceChampionAddress == address(0)) {
-			enduranceChampionAddress = lastBidderAddress;
-			enduranceChampionStartTimeStamp = lastBidTimeStampCopy_;
-			enduranceChampionDuration = lastBidDuration_;
-			// #enable_asserts assert(chronoWarriorAddress == address(0));
-		} else if (lastBidDuration_ > enduranceChampionDuration) {
-			{
-				uint256 chronoEndTimeStamp_ = lastBidTimeStampCopy_ + enduranceChampionDuration;
-				_updateChronoWarriorIfNeeded(chronoEndTimeStamp_);
+			uint256 lastBidTimeStampCopy_ = biddersInfo[roundNum][lastBidderAddress].lastBidTimeStamp;
+			uint256 lastBidDuration_ = block.timestamp - lastBidTimeStampCopy_;
+			if (enduranceChampionAddress == address(0)) {
+				enduranceChampionAddress = lastBidderAddress;
+				enduranceChampionStartTimeStamp = lastBidTimeStampCopy_;
+				enduranceChampionDuration = lastBidDuration_;
+				// #enable_asserts assert(chronoWarriorAddress == address(0));
+			} else if (lastBidDuration_ > enduranceChampionDuration) {
+				{
+					uint256 chronoEndTimeStamp_ = lastBidTimeStampCopy_ + enduranceChampionDuration;
+					_updateChronoWarriorIfNeeded(chronoEndTimeStamp_);
+				}
+				prevEnduranceChampionDuration = enduranceChampionDuration;
+				enduranceChampionAddress = lastBidderAddress;
+				enduranceChampionStartTimeStamp = lastBidTimeStampCopy_;
+				enduranceChampionDuration = lastBidDuration_;
 			}
-			prevEnduranceChampionDuration = enduranceChampionDuration;
-			enduranceChampionAddress = lastBidderAddress;
-			enduranceChampionStartTimeStamp = lastBidTimeStampCopy_;
-			enduranceChampionDuration = lastBidDuration_;
-		}
 
-		// #enable_asserts assert(enduranceChampionAddress != address(0));
+			// #enable_asserts assert(enduranceChampionAddress != address(0));
+		}
 	}
 
 	// #endregion
 	// #region `_updateChronoWarriorIfNeeded`
 
 	/// @notice Comment-202605246 applies.
-	function _updateChronoWarriorIfNeeded(uint256 chronoEndTimeStamp_) internal {
+	/// @return updated_ Whether the Chrono-Warrior record was replaced.
+	function _updateChronoWarriorIfNeeded(uint256 chronoEndTimeStamp_) internal returns (bool updated_) {
 		// #enable_asserts assert(enduranceChampionAddress != address(0));
 		// #enable_asserts assert(int256(chronoWarriorDuration) >= -1);
 		// #enable_asserts assert((chronoWarriorAddress == address(0)) == (int256(chronoWarriorDuration) < int256(0)));
 
-		uint256 chronoStartTimeStamp_ = enduranceChampionStartTimeStamp + prevEnduranceChampionDuration;
-		uint256 chronoDuration_ = chronoEndTimeStamp_ - chronoStartTimeStamp_;
-		if (int256(chronoDuration_) > int256(chronoWarriorDuration)) {
-			chronoWarriorAddress = enduranceChampionAddress;
-			chronoWarriorDuration = chronoDuration_;
-		}
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
+			uint256 chronoStartTimeStamp_ = enduranceChampionStartTimeStamp + prevEnduranceChampionDuration;
+			uint256 chronoDuration_ = chronoEndTimeStamp_ - chronoStartTimeStamp_;
+			if (int256(chronoDuration_) > int256(chronoWarriorDuration)) {
+				chronoWarriorAddress = enduranceChampionAddress;
+				chronoWarriorDuration = chronoDuration_;
+				updated_ = true;
+			}
 
-		// #enable_asserts assert(chronoWarriorAddress != address(0));
-		// #enable_asserts assert(int256(chronoWarriorDuration) >= int256(0));
+			// #enable_asserts assert(chronoWarriorAddress != address(0));
+			// #enable_asserts assert(int256(chronoWarriorDuration) >= int256(0));
+		}
 	}
 
 	// #endregion
@@ -98,39 +111,69 @@ abstract contract BidStatisticsV2 is CosmicSignatureGameStorageV2, IBidStatistic
 		) {
 		// #region
 
-		if (lastBidderAddress != address(0)) {
+		// #enable_smtchecker /*
+		unchecked
+		// #enable_smtchecker */
+		{
 			// #region
 
-			// Comment-202605244 applies.
-			enduranceChampionAddress_ = enduranceChampionAddress;
-			uint256 enduranceChampionStartTimeStamp_ = enduranceChampionStartTimeStamp;
-			enduranceChampionDuration_ = enduranceChampionDuration;
-			uint256 prevEnduranceChampionDuration_ = prevEnduranceChampionDuration;
-			chronoWarriorAddress_ = chronoWarriorAddress;
-			chronoWarriorDuration_ = chronoWarriorDuration;
-
-			// #endregion
-			// #region
-
-			uint256 lastBidTimeStampCopy_ = biddersInfo[roundNum][lastBidderAddress].lastBidTimeStamp;
-			uint256 lastBidDuration_ = block.timestamp - lastBidTimeStampCopy_;
-
-			// #endregion
-			// #region
-
-			if (enduranceChampionAddress_ == address(0)) {
+			if (lastBidderAddress != address(0)) {
 				// #region
 
-				enduranceChampionAddress_ = lastBidderAddress;
-				enduranceChampionStartTimeStamp_ = lastBidTimeStampCopy_;
-				enduranceChampionDuration_ = lastBidDuration_;
+				// Comment-202605244 applies.
+				enduranceChampionAddress_ = enduranceChampionAddress;
+				uint256 enduranceChampionStartTimeStamp_ = enduranceChampionStartTimeStamp;
+				enduranceChampionDuration_ = enduranceChampionDuration;
+				uint256 prevEnduranceChampionDuration_ = prevEnduranceChampionDuration;
+				chronoWarriorAddress_ = chronoWarriorAddress;
+				chronoWarriorDuration_ = chronoWarriorDuration;
 
 				// #endregion
-			} else if (lastBidDuration_ > enduranceChampionDuration_) {
+				// #region
+
+				uint256 lastBidTimeStampCopy_ = biddersInfo[roundNum][lastBidderAddress].lastBidTimeStamp;
+				uint256 lastBidDuration_ = block.timestamp - lastBidTimeStampCopy_;
+
+				// #endregion
+				// #region
+
+				if (enduranceChampionAddress_ == address(0)) {
+					// #region
+
+					enduranceChampionAddress_ = lastBidderAddress;
+					enduranceChampionStartTimeStamp_ = lastBidTimeStampCopy_;
+					enduranceChampionDuration_ = lastBidDuration_;
+
+					// #endregion
+				} else if (lastBidDuration_ > enduranceChampionDuration_) {
+					// #region
+
+					{
+						uint256 chronoEndTimeStamp_ = lastBidTimeStampCopy_ + enduranceChampionDuration_;
+						uint256 chronoStartTimeStamp_ = enduranceChampionStartTimeStamp_ + prevEnduranceChampionDuration_;
+						uint256 chronoDuration_ = chronoEndTimeStamp_ - chronoStartTimeStamp_;
+						if (int256(chronoDuration_) > int256(chronoWarriorDuration_)) {
+							chronoWarriorAddress_ = enduranceChampionAddress_;
+							chronoWarriorDuration_ = chronoDuration_;
+						}
+					}
+
+					// #endregion
+					// #region
+
+					prevEnduranceChampionDuration_ = enduranceChampionDuration_;
+					enduranceChampionAddress_ = lastBidderAddress;
+					enduranceChampionStartTimeStamp_ = lastBidTimeStampCopy_;
+					enduranceChampionDuration_ = lastBidDuration_;
+
+					// #endregion
+				}
+
+				// #endregion
 				// #region
 
 				{
-					uint256 chronoEndTimeStamp_ = lastBidTimeStampCopy_ + enduranceChampionDuration_;
+					uint256 chronoEndTimeStamp_ = block.timestamp;
 					uint256 chronoStartTimeStamp_ = enduranceChampionStartTimeStamp_ + prevEnduranceChampionDuration_;
 					uint256 chronoDuration_ = chronoEndTimeStamp_ - chronoStartTimeStamp_;
 					if (int256(chronoDuration_) > int256(chronoWarriorDuration_)) {
@@ -140,33 +183,26 @@ abstract contract BidStatisticsV2 is CosmicSignatureGameStorageV2, IBidStatistic
 				}
 
 				// #endregion
-				// #region
-
-				prevEnduranceChampionDuration_ = enduranceChampionDuration_;
-				enduranceChampionAddress_ = lastBidderAddress;
-				enduranceChampionStartTimeStamp_ = lastBidTimeStampCopy_;
-				enduranceChampionDuration_ = lastBidDuration_;
-
-				// #endregion
-			}
-
-			// #endregion
-			// #region
-
-			{
-				uint256 chronoEndTimeStamp_ = block.timestamp;
-				uint256 chronoStartTimeStamp_ = enduranceChampionStartTimeStamp_ + prevEnduranceChampionDuration_;
-				uint256 chronoDuration_ = chronoEndTimeStamp_ - chronoStartTimeStamp_;
-				if (int256(chronoDuration_) > int256(chronoWarriorDuration_)) {
-					chronoWarriorAddress_ = enduranceChampionAddress_;
-					chronoWarriorDuration_ = chronoDuration_;
-				}
 			}
 
 			// #endregion
 		}
-
+		
 		// #endregion
+	}
+
+	// #endregion
+	// #region `_updateRoundStatsOnMainPrizeClaim`
+
+	/// @dev
+	/// [Comment-202607178]
+	/// Issue. This is really needed only for V3+, but it's convenient to place this here,
+	/// so that `MainPrizeV2Base.claimMainPrize` could call this.
+	/// In V2, this is a no-op.
+	/// [/Comment-202607178]
+	function _updateRoundStatsOnMainPrizeClaim(bool /* isSameBid_ */) internal virtual {
+		// #enable_asserts assert(enduranceChampionDuration > 0);
+		// #enable_asserts assert(int256(chronoWarriorDuration) > int256(0));
 	}
 
 	// #endregion

@@ -7,97 +7,56 @@ pragma solidity =0.8.34;
 // #region
 
 // // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
-import { ReentrancyGuardTransientUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
-import { OwnableUpgradeableWithReservedStorageGaps } from "./OwnableUpgradeableWithReservedStorageGaps.sol";
-import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
-import { AddressValidator } from "./AddressValidator.sol";
-import { CosmicSignatureGameStorageV2 } from "./CosmicSignatureGameStorageV2.sol";
-import { BiddingBaseV2 } from "./BiddingBaseV2.sol";
-import { MainPrizeBaseV2 } from "./MainPrizeBaseV2.sol";
-import { SystemManagementV2 } from "./SystemManagementV2.sol";
-import { EthDonationsV2 } from "./EthDonationsV2.sol";
-import { NftDonationsV2 } from "./NftDonationsV2.sol";
-import { BidStatisticsV2 } from "./BidStatisticsV2.sol";
+import { CosmicSignatureGameV2Base } from "./CosmicSignatureGameV2Base.sol";
+import { BiddingV2Base } from "./BiddingV2Base.sol";
 import { BiddingV2 } from "./BiddingV2.sol";
-import { SecondaryPrizesV2 } from "./SecondaryPrizesV2.sol";
 import { MainPrizeV2 } from "./MainPrizeV2.sol";
-import { ICosmicSignatureGameV2 } from "./interfaces/ICosmicSignatureGameV2.sol";
+import { CosmicSignatureGameStorageV2 } from "./CosmicSignatureGameStorageV2.sol";
 
 // #endregion
 // #region
 
 /// @custom:oz-upgrades-unsafe-allow missing-initializer
 contract CosmicSignatureGameV2 is
-	ReentrancyGuardTransientUpgradeable,
-	OwnableUpgradeableWithReservedStorageGaps,
-	UUPSUpgradeable,
-	AddressValidator,
-	CosmicSignatureGameStorageV2,
-	BiddingBaseV2,
-	MainPrizeBaseV2,
-	SystemManagementV2,
-	EthDonationsV2,
-	NftDonationsV2,
-	BidStatisticsV2,
+	CosmicSignatureGameV2Base,
 	BiddingV2,
-	SecondaryPrizesV2,
 	MainPrizeV2,
-	ICosmicSignatureGameV2 {
-	// #region `constructor`
+	CosmicSignatureGameStorageV2 {
+	// #region Data.
 
-	/// @notice Constructor.
-	/// Comment-202503121 applies.
-	/// @custom:oz-upgrades-unsafe-allow constructor
-	constructor() {
-		// // #enable_asserts // #disable_smtchecker console.log("CosmicSignatureGameV2.constructor");
-		_disableInitializers();
-	}
+	uint256 private constant _CONTRACT_VERSION_NUMBER = 2;
 
 	// #endregion
-	// #region // `fallback`
-
-	// fallback() external payable override {
-	// 	revert ("Method does not exist.");
-	// }
-
-	// #endregion
-	// #region `initializeV2`
+	// #region `reinitialize`
 
 	/// @dev
 	/// [Comment-202606128]
 	/// `onlyOwner` is unnecessary because the pevious version's `_authorizeUpgrade` has just checked it
 	/// within the same transaction.
 	/// [/Comment-202606128]
+	/// [Comment-202607079]
 	/// In V2+, near Comment-202605294, `_onlyNonFirstRound` only asserts a condition.
 	/// One might want to fully validate that condition here, but it's really unnecessary,
 	/// because it's guaranteed to be `true` in the production.
+	/// [/Comment-202607079]
 	/// Comment-202606084 relates and/or applies.
-	function initializeV2() external override /*onlyOwner*/ _onlyNonFirstRound() _onlyIfPrevVersionWasInitialized() reinitializer(uint64(2)) {
-		// // #enable_asserts // #disable_smtchecker console.log("CosmicSignatureGameV2.initializeV2");
+	function reinitialize() external override /*virtual*/ /*onlyOwner*/ _onlyNonFirstRound() _onlyIfPrevVersionWasInitialized() reinitializer(uint64(_CONTRACT_VERSION_NUMBER)) {
+		// // #enable_asserts // #disable_smtchecker console.log("CosmicSignatureGameV2.reinitialize");
 
+		// Comment-202610175 applies.
 		cstDutchAuctionDuration = CosmicSignatureConstants.INITIAL_CST_DUTCH_AUCTION_DURATION;
 		cstDutchAuctionDurationChangeDivisor = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR;
-		bidCstRewardAmountMultiplier = CosmicSignatureConstants.DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER;
+		bidCstRewardAmountMultiplier = CosmicSignatureConstants.DEFAULT_BID_CST_REWARD_AMOUNT_RADICAND_MULTIPLIER;
 		timeoutDurationToClaimMainPrize = CosmicSignatureConstants.DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2;
-	}
-
-	// #endregion
-	// #region `_onlyIfPrevVersionWasInitialized`
-
-	/// @dev Comment-202606084 relates.
-	modifier _onlyIfPrevVersionWasInitialized() {
-		_checkIfPrevVersionWasInitialized();
-		_;
 	}
 
 	// #endregion
 	// #region `_checkIfPrevVersionWasInitialized`
 
-	function _checkIfPrevVersionWasInitialized() private view {
+	function _checkIfPrevVersionWasInitialized() internal override /*virtual*/ view {
 		// Comment-202605294 applies.
-		// But after V2 this will not necessarily be guaranteed.
-		// #enable_asserts bool isSuccess_ = _getInitializedVersion() == uint64(1);
+		// #enable_asserts bool isSuccess_ = _getInitializedVersion() == uint64(_CONTRACT_VERSION_NUMBER - 1);
 		// #enable_asserts assert(isSuccess_);
 
 		// if ( ! isSuccess_ ) {
@@ -106,13 +65,14 @@ contract CosmicSignatureGameV2 is
 	}
 
 	// #endregion
-	// #region `_authorizeUpgrade`
+	// #region Overrides Required By Solidity
 
-	/// @dev Comment-202412188 applies.
-	/// Comment-202606128 relates.
-	function _authorizeUpgrade(address newImplementationAddress_) internal view override onlyOwner _onlyRoundIsInactive {
-		// _providedAddressIsNonZero(newImplementationAddress_) {
-		// // #enable_asserts // #disable_smtchecker console.log("CosmicSignatureGameV2._authorizeUpgrade");
+	function getNextCstBidPriceAdvanced(int256 currentTimeOffset_) public view override (BiddingV2Base, BiddingV2) /* virtual */ returns (uint256) {
+		return super.getNextCstBidPriceAdvanced(currentTimeOffset_);
+	}
+
+	function getBidCstRewardAmountAdvanced(int256 currentTimeOffset_) public view override (BiddingV2Base, BiddingV2) /* virtual */ returns (uint256) {
+		return super.getBidCstRewardAmountAdvanced(currentTimeOffset_);
 	}
 
 	// #endregion

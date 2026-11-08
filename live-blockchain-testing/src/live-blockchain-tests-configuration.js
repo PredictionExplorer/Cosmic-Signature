@@ -37,7 +37,6 @@ const configuration =
 					// Comment-202509242 relates.
 					"SelfDestructibleCosmicSignatureGame",
 
-					// "SpecialCosmicSignatureGame",
 					// "CosmicSignatureGame",
 
 				// If this is empty or zero, we will deploy a new Random Walk NFT contract.
@@ -90,7 +89,7 @@ const configuration =
 				prizesWallet: {
 					// [Comment-202509305]
 					// If this is negative we will not set respective parameter.
-					// Warning. A too short timeout can potentially result in hackers stealing your asserts.
+					// Warning. A too short timeout can let other callers claim your assets before the test does.
 					// So consider configuring a bigger or better negative value here.
 					// The test will anyway not be delayed by this.
 					// [/Comment-202509305]
@@ -104,10 +103,10 @@ const configuration =
 					ethDutchAuctionDuration: 18n,
 					// cstDutchAuctionDurationDivisor: ???,
 
-					// In V2+, given Comment-202606101 and Comment-202606059 that it references,
+					// In V2, given Comment-202606101 and Comment-202606059,
 					// this must be no lesser than `cstDutchAuctionDurationChangeDivisor`.
 					// A smaller value will not change automatically.
-					// That said, this is currently used only for V1, so there is no problem.
+					// That said, this test is used only for V1, so there is no problem.
 					cstDutchAuctionDuration: 15n,
 
 					// initialDurationUntilMainPrizeDivisor: ???,

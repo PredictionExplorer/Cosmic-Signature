@@ -1,0 +1,10 @@
+// SPDX-License-Identifier: CC0-1.0
+pragma solidity =0.8.34;
+
+interface IBiddingCommon {
+	/// @return The number of seconds until the current bidding round activates, or a non-positive value if it's already active.
+	function getDurationUntilRoundActivation() external view returns (int256);
+
+	/// @return The number of seconds since the current bidding round activated, or a negative value if it's not yet active.
+	function getDurationElapsedSinceRoundActivation() external view returns (int256);
+}

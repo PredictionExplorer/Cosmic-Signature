@@ -1,0 +1,649 @@
+{
+  "description": "Fixed-block read-only evidence for English white paper 1.3. Numeric quantities are decimal strings in raw contract units; no transactions were sent.",
+  "chainId": 42161,
+  "blockNumber": "515784460",
+  "blockHash": "0x5060766814147936ac92496afe2cb67b7a6d56bc4358746cb405615117bb44fe",
+  "timestamp": "1792272300",
+  "dateUTC": "2026-10-17T21:25:00.000Z",
+  "targetCommit": "9d1a644744e0ee588ef5af1947f6decdf8bdb3f3",
+  "deployedV2SourceCommit": "3f52eaaf2258ec30f61fad07bb07cb2e3b4ca8a6",
+  "deployedV2EquivalentBranchCommit": "a73aed1d5146efd600711aa4faaf4b1ae9681d49",
+  "implementationSlot": "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc",
+  "implementationWord": "0x00000000000000000000000050eb3d05d2c463949de9238d419385594f7adb97",
+  "game": {
+    "roundNum": "3",
+    "roundActivationTime": "1792627200",
+    "mainPrizeTime": "1791195275",
+    "mainEthPrizeAmountPercentage": "25",
+    "chronoWarriorEthPrizeAmountPercentage": "8",
+    "raffleTotalEthPrizeAmountForBiddersPercentage": "4",
+    "cosmicSignatureNftStakingTotalEthRewardAmountPercentage": "6",
+    "charityEthDonationAmountPercentage": "7",
+    "cstDutchAuctionDuration": "30198",
+    "cstDutchAuctionDurationChangeDivisor": "250",
+    "cstDutchAuctionBeginningBidPriceMinLimit": "200000000000000000000",
+    "nextRoundFirstCstDutchAuctionBeginningBidPrice": "200000000000000000000",
+    "mainPrizeTimeIncrementInMicroSeconds": "3709083600",
+    "mainPrizeTimeIncrementIncreaseDivisor": "100",
+    "initialDurationUntilMainPrizeDivisor": "41667",
+    "ethDutchAuctionDurationDivisor": "20833",
+    "ethDutchAuctionEndingBidPriceDivisor": "200",
+    "ethBidPriceIncreaseDivisor": "100",
+    "bidCstRewardAmountMultiplier": "10800000000000000000000000000000000000000000000",
+    "cstPrizeAmount": "1000000000000000000000",
+    "marketingWalletCstContributionAmount": "3000000000000000000000",
+    "timeoutDurationToClaimMainPrize": "172800",
+    "delayDurationBeforeRoundActivation": "604800",
+    "numRaffleEthPrizesForBidders": "3",
+    "numRaffleCosmicSignatureNftsForBidders": "10",
+    "numRaffleCosmicSignatureNftsForRandomWalkNftStakers": "10",
+    "bidMessageLengthMaxLimit": "280",
+    "owner": "0x14c82Ce4E5713E88C9462680E9c02BF4a3089871",
+    "token": "0xAD91843e6A58Ba560F577E676986AFb1dba6FBA0",
+    "nft": "0xbb84Be3500A63581d3F2d5AC3bdF8685AAedad25",
+    "randomWalkNft": "0x895a6F444BE4ba9d124F61DF736605792B35D66b",
+    "prizesWallet": "0xE1b619e9B39ea4109D2F429Ea5eAA307759b0011",
+    "stakingWalletCosmicSignatureNft": "0x6308A405B4FF1eA890870Efe2a6D036750B81F7C",
+    "stakingWalletRandomWalkNft": "0x5EB3396092841E6c5b0b51141699F6711E830529",
+    "marketingWallet": "0xa3802c799f5e3D3D3562A9B513a41C6aAF92e25e",
+    "charityAddress": "0x96bB0ADB414d5350f435E52f94946B6C7A0760a9"
+  },
+  "periphery": {
+    "nft": {
+      "owner": "0x14c82Ce4E5713E88C9462680E9c02BF4a3089871"
+    },
+    "prizesWallet": {
+      "owner": "0x14c82Ce4E5713E88C9462680E9c02BF4a3089871",
+      "timeoutDurationToWithdrawPrizes": "3024000"
+    },
+    "marketingWallet": {
+      "owner": "0x14c82Ce4E5713E88C9462680E9c02BF4a3089871",
+      "treasurerAddress": "0x14c82Ce4E5713E88C9462680E9c02BF4a3089871"
+    },
+    "charityAddress": {
+      "owner": "0x14c82Ce4E5713E88C9462680E9c02BF4a3089871",
+      "beneficiary": "0xdddd576bAF106bAAe54bDE40BCac602bB4a7cf79"
+    },
+    "cosmicCouncil": {
+      "votingDelay": "172800",
+      "votingPeriod": "1209600",
+      "proposalThreshold": "100000000000000000000",
+      "quorumNumerator": "3"
+    }
+  },
+  "history": [
+    {
+      "transactionHash": "0xb9db34c4f095e2c207e5048fdff5d539b4dcb4f56dc455f2c74dc2d8e056532f",
+      "blockNumber": "455767589",
+      "blockHash": "0x5136ef6c519a172f680aff210dc4002a6db350c4536706d5e0948ec011e769b1",
+      "timestamp": "1777012954",
+      "dateUTC": "2026-04-24T06:42:34.000Z",
+      "implementation": "0x7739148013777c485AD9f3d971e1005Eca686661"
+    },
+    {
+      "transactionHash": "0xd084284f4a44452eb94f4fd2614dfdc6bbde57856d8c53265bb5c440415e5eb9",
+      "blockNumber": "475913365",
+      "blockHash": "0x4eeb469e25e9e8bb02b6b32c7df62e8c38cb58e831ee98866da260494c221746",
+      "timestamp": "1782070733",
+      "dateUTC": "2026-06-21T19:38:53.000Z",
+      "implementation": "0x50eB3d05d2C463949DE9238D419385594f7AdB97"
+    }
+  ],
+  "verified": {
+    "proxy": {
+      "address": "0x6a714Ae7B5b6eA520F6BCA23d2E609C4Fd5863F2",
+      "creationMatch": "exact_match",
+      "runtimeMatch": "exact_match",
+      "verifiedAt": "2026-04-24T06:42:38Z",
+      "compilation": {
+        "language": "Solidity",
+        "compiler": "solc",
+        "compilerVersion": "0.8.29+commit.ab55807c",
+        "compilerSettings": {
+          "metadata": {
+            "bytecodeHash": "ipfs"
+          },
+          "libraries": {},
+          "optimizer": {
+            "runs": 200,
+            "enabled": true
+          },
+          "evmVersion": "paris",
+          "remappings": []
+        },
+        "name": "ERC1967Proxy",
+        "fullyQualifiedName": "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
+      },
+      "deployment": {
+        "transactionHash": "0xb9db34c4f095e2c207e5048fdff5d539b4dcb4f56dc455f2c74dc2d8e056532f",
+        "blockNumber": "455767589",
+        "transactionIndex": "1",
+        "deployer": "0x14c82Ce4E5713E88C9462680E9c02BF4a3089871"
+      },
+      "runtimeBytecodeKeccak256": "0x864cc9ad53b338b82da1f7cab85ab0b3d5c8861acb422b6fec63cf36234f36a6",
+      "sourceUrl": "https://sourcify.dev/server/v2/contract/42161/0x6a714Ae7B5b6eA520F6BCA23d2E609C4Fd5863F2?fields=sources,metadata,compilation,deployment,runtimeBytecode,abi",
+      "projectSourcesMatchingBaseline": [],
+      "projectSourcesDifferingFromBaseline": []
+    },
+    "implementation": {
+      "address": "0x50eb3d05d2c463949de9238d419385594f7adb97",
+      "creationMatch": "exact_match",
+      "runtimeMatch": "exact_match",
+      "verifiedAt": "2026-06-22T09:26:38Z",
+      "compilation": {
+        "language": "Solidity",
+        "compiler": "solc",
+        "compilerVersion": "0.8.34+commit.80d5c536",
+        "compilerSettings": {
+          "viaIR": true,
+          "optimizer": {
+            "runs": 400,
+            "enabled": true
+          },
+          "evmVersion": "osaka"
+        },
+        "name": "CosmicSignatureGameV2",
+        "fullyQualifiedName": "contracts/production/CosmicSignatureGameV2.sol:CosmicSignatureGameV2"
+      },
+      "deployment": {
+        "transactionHash": "0xe5344188b4e76856fe9103e583fcf554b010de1b4d50ca292926d1cbd3ed4733",
+        "blockNumber": "475913340",
+        "transactionIndex": "5",
+        "deployer": "0x14c82Ce4E5713E88C9462680E9c02BF4a3089871"
+      },
+      "runtimeBytecodeKeccak256": "0x959e357be1ecba7274be0dfa6fde72cf646557a673f2cb89590bcb07b22ca396",
+      "sourceUrl": "https://sourcify.dev/server/v2/contract/42161/0x50eb3d05d2c463949de9238d419385594f7adb97?fields=sources,metadata,compilation,deployment,runtimeBytecode,abi",
+      "projectSourcesMatchingBaseline": [
+        "contracts/production/AddressValidator.sol",
+        "contracts/production/BiddingBaseV2.sol",
+        "contracts/production/BiddingV2.sol",
+        "contracts/production/BidStatisticsV2.sol",
+        "contracts/production/CosmicSignatureGameStorageV2.sol",
+        "contracts/production/CosmicSignatureGameV2.sol",
+        "contracts/production/CosmicSignatureNft.sol",
+        "contracts/production/CosmicSignatureToken.sol",
+        "contracts/production/DonatedTokenHolder.sol",
+        "contracts/production/EthDonationsV2.sol",
+        "contracts/production/interfaces/IAddressValidator.sol",
+        "contracts/production/interfaces/IBiddingBaseV2.sol",
+        "contracts/production/interfaces/IBiddingV2.sol",
+        "contracts/production/interfaces/IBidStatistics.sol",
+        "contracts/production/interfaces/ICosmicSignatureGameStorage.sol",
+        "contracts/production/interfaces/ICosmicSignatureGameV2.sol",
+        "contracts/production/interfaces/ICosmicSignatureNft.sol",
+        "contracts/production/interfaces/ICosmicSignatureToken.sol",
+        "contracts/production/interfaces/IDonatedTokenHolder.sol",
+        "contracts/production/interfaces/IEthDonations.sol",
+        "contracts/production/interfaces/IMainPrizeBaseV2.sol",
+        "contracts/production/interfaces/IMainPrizeV2.sol",
+        "contracts/production/interfaces/INftDonations.sol",
+        "contracts/production/interfaces/IPrizesWallet.sol",
+        "contracts/production/interfaces/IRandomWalkNFT.sol",
+        "contracts/production/interfaces/ISecondaryPrizes.sol",
+        "contracts/production/interfaces/IStakingWalletCosmicSignatureNft.sol",
+        "contracts/production/interfaces/IStakingWalletNftBase.sol",
+        "contracts/production/interfaces/IStakingWalletRandomWalkNft.sol",
+        "contracts/production/interfaces/ISystemEventsV2.sol",
+        "contracts/production/interfaces/ISystemManagementV2.sol",
+        "contracts/production/libraries/ArbitrumHelpers.sol",
+        "contracts/production/libraries/CosmicSignatureConstants.sol",
+        "contracts/production/libraries/CosmicSignatureErrors.sol",
+        "contracts/production/libraries/CosmicSignatureEvents.sol",
+        "contracts/production/libraries/CryptographyHelpers.sol",
+        "contracts/production/libraries/RandomNumberHelpers.sol",
+        "contracts/production/MainPrizeBaseV2.sol",
+        "contracts/production/MainPrizeV2.sol",
+        "contracts/production/NftDonationsV2.sol",
+        "contracts/production/OwnableUpgradeableWithReservedStorageGaps.sol",
+        "contracts/production/PrizesWallet.sol",
+        "contracts/production/RandomWalkNFT.sol",
+        "contracts/production/SecondaryPrizesV2.sol",
+        "contracts/production/StakingWalletCosmicSignatureNft.sol",
+        "contracts/production/StakingWalletNftBase.sol",
+        "contracts/production/StakingWalletRandomWalkNft.sol",
+        "contracts/production/SystemManagementV2.sol"
+      ],
+      "projectSourcesDifferingFromBaseline": []
+    },
+    "v1Implementation": {
+      "address": "0x7739148013777c485AD9f3d971e1005Eca686661",
+      "creationMatch": "exact_match",
+      "runtimeMatch": "exact_match",
+      "verifiedAt": "2026-04-24T06:47:45Z",
+      "compilation": {
+        "language": "Solidity",
+        "compiler": "solc",
+        "compilerVersion": "0.8.34+commit.80d5c536",
+        "compilerSettings": {
+          "viaIR": true,
+          "optimizer": {
+            "runs": 400,
+            "enabled": true
+          },
+          "evmVersion": "osaka"
+        },
+        "name": "CosmicSignatureGame",
+        "fullyQualifiedName": "contracts/production/CosmicSignatureGame.sol:CosmicSignatureGame"
+      },
+      "deployment": {
+        "transactionHash": "0xb2144b5d2534ecd5abdd86a680d5a5d7bb19bcd8067e7ddbfd4ed125f75ae3a5",
+        "blockNumber": "455767564",
+        "transactionIndex": "9",
+        "deployer": "0x14c82Ce4E5713E88C9462680E9c02BF4a3089871"
+      },
+      "runtimeBytecodeKeccak256": "0x68a15f93036a4fe180f1fc71c3f8a3ad9f530f9ee68e8d2f961ad83719445e2c",
+      "sourceUrl": "https://sourcify.dev/server/v2/contract/42161/0x7739148013777c485AD9f3d971e1005Eca686661?fields=sources,metadata,compilation,deployment,runtimeBytecode,abi",
+      "projectSourcesMatchingBaseline": [
+        "contracts/production/interfaces/IRandomWalkNFT.sol",
+        "contracts/production/RandomWalkNFT.sol"
+      ],
+      "projectSourcesDifferingFromBaseline": [
+        "contracts/production/AddressValidator.sol",
+        "contracts/production/Bidding.sol",
+        "contracts/production/BiddingBase.sol",
+        "contracts/production/BidStatistics.sol",
+        "contracts/production/CosmicSignatureGame.sol",
+        "contracts/production/CosmicSignatureGameStorage.sol",
+        "contracts/production/CosmicSignatureNft.sol",
+        "contracts/production/CosmicSignatureToken.sol",
+        "contracts/production/DonatedTokenHolder.sol",
+        "contracts/production/EthDonations.sol",
+        "contracts/production/interfaces/IAddressValidator.sol",
+        "contracts/production/interfaces/IBidding.sol",
+        "contracts/production/interfaces/IBiddingBase.sol",
+        "contracts/production/interfaces/IBidStatistics.sol",
+        "contracts/production/interfaces/ICosmicSignatureGame.sol",
+        "contracts/production/interfaces/ICosmicSignatureGameStorage.sol",
+        "contracts/production/interfaces/ICosmicSignatureNft.sol",
+        "contracts/production/interfaces/ICosmicSignatureToken.sol",
+        "contracts/production/interfaces/IDonatedTokenHolder.sol",
+        "contracts/production/interfaces/IEthDonations.sol",
+        "contracts/production/interfaces/IMainPrize.sol",
+        "contracts/production/interfaces/IMainPrizeBase.sol",
+        "contracts/production/interfaces/INftDonations.sol",
+        "contracts/production/interfaces/IPrizesWallet.sol",
+        "contracts/production/interfaces/ISecondaryPrizes.sol",
+        "contracts/production/interfaces/IStakingWalletCosmicSignatureNft.sol",
+        "contracts/production/interfaces/IStakingWalletNftBase.sol",
+        "contracts/production/interfaces/IStakingWalletRandomWalkNft.sol",
+        "contracts/production/interfaces/ISystemEvents.sol",
+        "contracts/production/interfaces/ISystemManagement.sol",
+        "contracts/production/libraries/ArbitrumHelpers.sol",
+        "contracts/production/libraries/CosmicSignatureConstants.sol",
+        "contracts/production/libraries/CosmicSignatureErrors.sol",
+        "contracts/production/libraries/CosmicSignatureEvents.sol",
+        "contracts/production/libraries/CryptographyHelpers.sol",
+        "contracts/production/libraries/RandomNumberHelpers.sol",
+        "contracts/production/MainPrize.sol",
+        "contracts/production/MainPrizeBase.sol",
+        "contracts/production/NftDonations.sol",
+        "contracts/production/OwnableUpgradeableWithReservedStorageGaps.sol",
+        "contracts/production/PrizesWallet.sol",
+        "contracts/production/SecondaryPrizes.sol",
+        "contracts/production/StakingWalletCosmicSignatureNft.sol",
+        "contracts/production/StakingWalletNftBase.sol",
+        "contracts/production/StakingWalletRandomWalkNft.sol",
+        "contracts/production/SystemManagement.sol"
+      ]
+    },
+    "token": {
+      "address": "0xAD91843e6A58Ba560F577E676986AFb1dba6FBA0",
+      "creationMatch": "exact_match",
+      "runtimeMatch": "exact_match",
+      "verifiedAt": "2026-04-24T07:26:36Z",
+      "compilation": {
+        "language": "Solidity",
+        "compiler": "solc",
+        "compilerVersion": "0.8.34+commit.80d5c536",
+        "compilerSettings": {
+          "viaIR": true,
+          "optimizer": {
+            "runs": 400,
+            "enabled": true
+          },
+          "evmVersion": "osaka"
+        },
+        "name": "CosmicSignatureToken",
+        "fullyQualifiedName": "contracts/production/CosmicSignatureToken.sol:CosmicSignatureToken"
+      },
+      "deployment": {
+        "transactionHash": "0x0d666c20601911d09393f2595257645a770196bc823b82b3e85946caa0fb12a7",
+        "blockNumber": "455767598",
+        "transactionIndex": "1",
+        "deployer": "0x14c82Ce4E5713E88C9462680E9c02BF4a3089871"
+      },
+      "runtimeBytecodeKeccak256": "0x444f572b0d8ad2c38eb453aeaa9b97f995a87c472e45b45b9669149effd29983",
+      "sourceUrl": "https://sourcify.dev/server/v2/contract/42161/0xAD91843e6A58Ba560F577E676986AFb1dba6FBA0?fields=sources,metadata,compilation,deployment,runtimeBytecode,abi",
+      "projectSourcesMatchingBaseline": [],
+      "projectSourcesDifferingFromBaseline": [
+        "contracts/production/AddressValidator.sol",
+        "contracts/production/CosmicSignatureToken.sol",
+        "contracts/production/interfaces/IAddressValidator.sol",
+        "contracts/production/interfaces/ICosmicSignatureToken.sol",
+        "contracts/production/libraries/CosmicSignatureErrors.sol"
+      ]
+    },
+    "nft": {
+      "address": "0xbb84Be3500A63581d3F2d5AC3bdF8685AAedad25",
+      "creationMatch": "exact_match",
+      "runtimeMatch": "exact_match",
+      "verifiedAt": "2026-04-24T07:26:47Z",
+      "compilation": {
+        "language": "Solidity",
+        "compiler": "solc",
+        "compilerVersion": "0.8.34+commit.80d5c536",
+        "compilerSettings": {
+          "viaIR": true,
+          "optimizer": {
+            "runs": 400,
+            "enabled": true
+          },
+          "evmVersion": "osaka"
+        },
+        "name": "CosmicSignatureNft",
+        "fullyQualifiedName": "contracts/production/CosmicSignatureNft.sol:CosmicSignatureNft"
+      },
+      "deployment": {
+        "transactionHash": "0x962d27f3965eee2caa58cd943e45ab563fbdda9b031b23de8f198586845d88b3",
+        "blockNumber": "455767604",
+        "transactionIndex": "4",
+        "deployer": "0x14c82Ce4E5713E88C9462680E9c02BF4a3089871"
+      },
+      "runtimeBytecodeKeccak256": "0x1f416c82f4f297accb6b83380733b7efcb330a4e06c08c65bcb1447b5aea10c9",
+      "sourceUrl": "https://sourcify.dev/server/v2/contract/42161/0xbb84Be3500A63581d3F2d5AC3bdF8685AAedad25?fields=sources,metadata,compilation,deployment,runtimeBytecode,abi",
+      "projectSourcesMatchingBaseline": [],
+      "projectSourcesDifferingFromBaseline": [
+        "contracts/production/AddressValidator.sol",
+        "contracts/production/CosmicSignatureNft.sol",
+        "contracts/production/interfaces/IAddressValidator.sol",
+        "contracts/production/interfaces/ICosmicSignatureNft.sol",
+        "contracts/production/libraries/ArbitrumHelpers.sol",
+        "contracts/production/libraries/CosmicSignatureConstants.sol",
+        "contracts/production/libraries/CosmicSignatureErrors.sol",
+        "contracts/production/libraries/CosmicSignatureEvents.sol",
+        "contracts/production/libraries/CryptographyHelpers.sol",
+        "contracts/production/libraries/RandomNumberHelpers.sol"
+      ]
+    },
+    "randomWalkNft": {
+      "address": "0x895a6F444BE4ba9d124F61DF736605792B35D66b",
+      "creationMatch": "exact_match",
+      "runtimeMatch": "exact_match",
+      "verifiedAt": "2024-08-08T11:18:40Z",
+      "compilation": {
+        "language": "Solidity",
+        "compiler": "solc",
+        "compilerVersion": "0.8.9+commit.e5eed63a",
+        "compilerSettings": {
+          "metadata": {
+            "bytecodeHash": "ipfs"
+          },
+          "libraries": {},
+          "optimizer": {
+            "runs": 20000,
+            "enabled": true
+          },
+          "evmVersion": "london",
+          "remappings": []
+        },
+        "name": "RandomWalkNFT",
+        "fullyQualifiedName": "contracts/randomWalkNFT.sol:RandomWalkNFT"
+      },
+      "deployment": {
+        "transactionHash": "0x4d412b140c37a3dccc96cc30e93491d7e40628c57841be259f5aa34c036a305f",
+        "blockNumber": "2910155",
+        "transactionIndex": "0",
+        "deployer": "0xad65de4D008311Bb97e8b2376b4172ea55f4d8Ae"
+      },
+      "runtimeBytecodeKeccak256": "0xc6f5b00b0ac1f4dffb426a42928a9189c70bf4c618fce238f07e2897075fe9b9",
+      "sourceUrl": "https://sourcify.dev/server/v2/contract/42161/0x895a6F444BE4ba9d124F61DF736605792B35D66b?fields=sources,metadata,compilation,deployment,runtimeBytecode,abi",
+      "projectSourcesMatchingBaseline": [],
+      "projectSourcesDifferingFromBaseline": []
+    },
+    "prizesWallet": {
+      "address": "0xE1b619e9B39ea4109D2F429Ea5eAA307759b0011",
+      "creationMatch": "exact_match",
+      "runtimeMatch": "exact_match",
+      "verifiedAt": "2026-04-24T06:46:57Z",
+      "compilation": {
+        "language": "Solidity",
+        "compiler": "solc",
+        "compilerVersion": "0.8.34+commit.80d5c536",
+        "compilerSettings": {
+          "viaIR": true,
+          "optimizer": {
+            "runs": 400,
+            "enabled": true
+          },
+          "evmVersion": "osaka"
+        },
+        "name": "PrizesWallet",
+        "fullyQualifiedName": "contracts/production/PrizesWallet.sol:PrizesWallet"
+      },
+      "deployment": {
+        "transactionHash": "0x3787fb02ae231679e6e90d17d2d75685514bc64360df14d220a1074e48f06ea5",
+        "blockNumber": "455767610",
+        "transactionIndex": "3",
+        "deployer": "0x14c82Ce4E5713E88C9462680E9c02BF4a3089871"
+      },
+      "runtimeBytecodeKeccak256": "0x098b2a40d2f724e4a3f98c425c65b9bfa35261f6ded6a7917f3fa27ef4a52f93",
+      "sourceUrl": "https://sourcify.dev/server/v2/contract/42161/0xE1b619e9B39ea4109D2F429Ea5eAA307759b0011?fields=sources,metadata,compilation,deployment,runtimeBytecode,abi",
+      "projectSourcesMatchingBaseline": [],
+      "projectSourcesDifferingFromBaseline": [
+        "contracts/production/AddressValidator.sol",
+        "contracts/production/DonatedTokenHolder.sol",
+        "contracts/production/interfaces/IAddressValidator.sol",
+        "contracts/production/interfaces/IDonatedTokenHolder.sol",
+        "contracts/production/interfaces/IPrizesWallet.sol",
+        "contracts/production/libraries/CosmicSignatureConstants.sol",
+        "contracts/production/libraries/CosmicSignatureErrors.sol",
+        "contracts/production/PrizesWallet.sol"
+      ]
+    },
+    "stakingWalletCosmicSignatureNft": {
+      "address": "0x6308A405B4FF1eA890870Efe2a6D036750B81F7C",
+      "creationMatch": "exact_match",
+      "runtimeMatch": "exact_match",
+      "verifiedAt": "2026-04-24T06:47:28Z",
+      "compilation": {
+        "language": "Solidity",
+        "compiler": "solc",
+        "compilerVersion": "0.8.34+commit.80d5c536",
+        "compilerSettings": {
+          "viaIR": true,
+          "optimizer": {
+            "runs": 400,
+            "enabled": true
+          },
+          "evmVersion": "osaka"
+        },
+        "name": "StakingWalletCosmicSignatureNft",
+        "fullyQualifiedName": "contracts/production/StakingWalletCosmicSignatureNft.sol:StakingWalletCosmicSignatureNft"
+      },
+      "deployment": {
+        "transactionHash": "0x6fd5e47e4a3c26db2cf84f2982417cca16a859e03129264818ca85bcefb822ef",
+        "blockNumber": "455767622",
+        "transactionIndex": "2",
+        "deployer": "0x14c82Ce4E5713E88C9462680E9c02BF4a3089871"
+      },
+      "runtimeBytecodeKeccak256": "0x8914a2bccd4d1f0b8554879f42b6fe99a81537a1126958e40eeb36d0c9b36425",
+      "sourceUrl": "https://sourcify.dev/server/v2/contract/42161/0x6308A405B4FF1eA890870Efe2a6D036750B81F7C?fields=sources,metadata,compilation,deployment,runtimeBytecode,abi",
+      "projectSourcesMatchingBaseline": [],
+      "projectSourcesDifferingFromBaseline": [
+        "contracts/production/AddressValidator.sol",
+        "contracts/production/CosmicSignatureNft.sol",
+        "contracts/production/interfaces/IAddressValidator.sol",
+        "contracts/production/interfaces/ICosmicSignatureNft.sol",
+        "contracts/production/interfaces/IStakingWalletCosmicSignatureNft.sol",
+        "contracts/production/interfaces/IStakingWalletNftBase.sol",
+        "contracts/production/libraries/ArbitrumHelpers.sol",
+        "contracts/production/libraries/CosmicSignatureConstants.sol",
+        "contracts/production/libraries/CosmicSignatureErrors.sol",
+        "contracts/production/libraries/CosmicSignatureEvents.sol",
+        "contracts/production/libraries/CryptographyHelpers.sol",
+        "contracts/production/libraries/RandomNumberHelpers.sol",
+        "contracts/production/StakingWalletCosmicSignatureNft.sol",
+        "contracts/production/StakingWalletNftBase.sol"
+      ]
+    },
+    "stakingWalletRandomWalkNft": {
+      "address": "0x5EB3396092841E6c5b0b51141699F6711E830529",
+      "creationMatch": "exact_match",
+      "runtimeMatch": "exact_match",
+      "verifiedAt": "2026-04-24T06:47:10Z",
+      "compilation": {
+        "language": "Solidity",
+        "compiler": "solc",
+        "compilerVersion": "0.8.34+commit.80d5c536",
+        "compilerSettings": {
+          "viaIR": true,
+          "optimizer": {
+            "runs": 400,
+            "enabled": true
+          },
+          "evmVersion": "osaka"
+        },
+        "name": "StakingWalletRandomWalkNft",
+        "fullyQualifiedName": "contracts/production/StakingWalletRandomWalkNft.sol:StakingWalletRandomWalkNft"
+      },
+      "deployment": {
+        "transactionHash": "0xdded7447b3475a2dbc3c5bf4565fbd9aed7d5936bf9a448baabe70ead46433cc",
+        "blockNumber": "455767616",
+        "transactionIndex": "1",
+        "deployer": "0x14c82Ce4E5713E88C9462680E9c02BF4a3089871"
+      },
+      "runtimeBytecodeKeccak256": "0x2069412d0d3391ea9c8701cdd129344f97dbf9a5048b092eb0610b742a64d757",
+      "sourceUrl": "https://sourcify.dev/server/v2/contract/42161/0x5EB3396092841E6c5b0b51141699F6711E830529?fields=sources,metadata,compilation,deployment,runtimeBytecode,abi",
+      "projectSourcesMatchingBaseline": [
+        "contracts/production/interfaces/IRandomWalkNFT.sol",
+        "contracts/production/RandomWalkNFT.sol"
+      ],
+      "projectSourcesDifferingFromBaseline": [
+        "contracts/production/AddressValidator.sol",
+        "contracts/production/interfaces/IAddressValidator.sol",
+        "contracts/production/interfaces/IStakingWalletNftBase.sol",
+        "contracts/production/interfaces/IStakingWalletRandomWalkNft.sol",
+        "contracts/production/libraries/ArbitrumHelpers.sol",
+        "contracts/production/libraries/CosmicSignatureErrors.sol",
+        "contracts/production/libraries/CosmicSignatureEvents.sol",
+        "contracts/production/libraries/CryptographyHelpers.sol",
+        "contracts/production/libraries/RandomNumberHelpers.sol",
+        "contracts/production/StakingWalletNftBase.sol",
+        "contracts/production/StakingWalletRandomWalkNft.sol"
+      ]
+    },
+    "marketingWallet": {
+      "address": "0xa3802c799f5e3D3D3562A9B513a41C6aAF92e25e",
+      "creationMatch": "exact_match",
+      "runtimeMatch": "exact_match",
+      "verifiedAt": "2026-04-24T06:47:39Z",
+      "compilation": {
+        "language": "Solidity",
+        "compiler": "solc",
+        "compilerVersion": "0.8.34+commit.80d5c536",
+        "compilerSettings": {
+          "viaIR": true,
+          "optimizer": {
+            "runs": 400,
+            "enabled": true
+          },
+          "evmVersion": "osaka"
+        },
+        "name": "MarketingWallet",
+        "fullyQualifiedName": "contracts/production/MarketingWallet.sol:MarketingWallet"
+      },
+      "deployment": {
+        "transactionHash": "0x371bd9b3887ac1464802374bcb6b0334da2f693a42b1e4ff0c54ef7616dca6a8",
+        "blockNumber": "455767628",
+        "transactionIndex": "2",
+        "deployer": "0x14c82Ce4E5713E88C9462680E9c02BF4a3089871"
+      },
+      "runtimeBytecodeKeccak256": "0x0540a032a9474fafa0779407d4c7a5c63062e53ac2ed6c43f8371d85e8e4e631",
+      "sourceUrl": "https://sourcify.dev/server/v2/contract/42161/0xa3802c799f5e3D3D3562A9B513a41C6aAF92e25e?fields=sources,metadata,compilation,deployment,runtimeBytecode,abi",
+      "projectSourcesMatchingBaseline": [],
+      "projectSourcesDifferingFromBaseline": [
+        "contracts/production/AddressValidator.sol",
+        "contracts/production/CosmicSignatureToken.sol",
+        "contracts/production/interfaces/IAddressValidator.sol",
+        "contracts/production/interfaces/ICosmicSignatureToken.sol",
+        "contracts/production/interfaces/IMarketingWallet.sol",
+        "contracts/production/libraries/CosmicSignatureErrors.sol",
+        "contracts/production/MarketingWallet.sol"
+      ]
+    },
+    "charityAddress": {
+      "address": "0x96bB0ADB414d5350f435E52f94946B6C7A0760a9",
+      "creationMatch": "exact_match",
+      "runtimeMatch": "exact_match",
+      "verifiedAt": "2026-04-24T06:47:40Z",
+      "compilation": {
+        "language": "Solidity",
+        "compiler": "solc",
+        "compilerVersion": "0.8.34+commit.80d5c536",
+        "compilerSettings": {
+          "viaIR": true,
+          "optimizer": {
+            "runs": 400,
+            "enabled": true
+          },
+          "evmVersion": "osaka"
+        },
+        "name": "CharityWallet",
+        "fullyQualifiedName": "contracts/production/CharityWallet.sol:CharityWallet"
+      },
+      "deployment": {
+        "transactionHash": "0xcf7c60b268d0e4aa1633eaab8e98d31777d3891117b36589c049e0b204fd3880",
+        "blockNumber": "455767634",
+        "transactionIndex": "2",
+        "deployer": "0x14c82Ce4E5713E88C9462680E9c02BF4a3089871"
+      },
+      "runtimeBytecodeKeccak256": "0x03f75f1f52df458fe6dbcaded7eec79d3ba6fea3ee7af4040d12062bdd5497ef",
+      "sourceUrl": "https://sourcify.dev/server/v2/contract/42161/0x96bB0ADB414d5350f435E52f94946B6C7A0760a9?fields=sources,metadata,compilation,deployment,runtimeBytecode,abi",
+      "projectSourcesMatchingBaseline": [],
+      "projectSourcesDifferingFromBaseline": [
+        "contracts/production/CharityWallet.sol",
+        "contracts/production/interfaces/ICharityWallet.sol",
+        "contracts/production/libraries/CosmicSignatureErrors.sol",
+        "contracts/production/libraries/CosmicSignatureEvents.sol"
+      ]
+    },
+    "cosmicCouncil": {
+      "address": "0xF3D52E1c681949be7E624778dB13DaD7F8c729db",
+      "creationMatch": "exact_match",
+      "runtimeMatch": "exact_match",
+      "verifiedAt": "2026-04-24T06:48:20Z",
+      "compilation": {
+        "language": "Solidity",
+        "compiler": "solc",
+        "compilerVersion": "0.8.34+commit.80d5c536",
+        "compilerSettings": {
+          "viaIR": true,
+          "optimizer": {
+            "runs": 400,
+            "enabled": true
+          },
+          "evmVersion": "osaka"
+        },
+        "name": "CosmicSignatureDao",
+        "fullyQualifiedName": "contracts/production/CosmicSignatureDao.sol:CosmicSignatureDao"
+      },
+      "deployment": {
+        "transactionHash": "0x15ad91bfb67c60af028ea567e2115b44eb3596450fc4abd82b9e9198a64c5367",
+        "blockNumber": "455767650",
+        "transactionIndex": "2",
+        "deployer": "0x14c82Ce4E5713E88C9462680E9c02BF4a3089871"
+      },
+      "runtimeBytecodeKeccak256": "0x7f53b2d740ec4db29d1c5620208cbd0bf3b3f348c1caa0222654c0a4806410c0",
+      "sourceUrl": "https://sourcify.dev/server/v2/contract/42161/0xF3D52E1c681949be7E624778dB13DaD7F8c729db?fields=sources,metadata,compilation,deployment,runtimeBytecode,abi",
+      "projectSourcesMatchingBaseline": [],
+      "projectSourcesDifferingFromBaseline": [
+        "contracts/production/AddressValidator.sol",
+        "contracts/production/CosmicSignatureDao.sol",
+        "contracts/production/interfaces/IAddressValidator.sol",
+        "contracts/production/interfaces/ICosmicSignatureDao.sol",
+        "contracts/production/libraries/CosmicSignatureConstants.sol",
+        "contracts/production/libraries/CosmicSignatureErrors.sol"
+      ]
+    }
+  }
+}

@@ -10,7 +10,9 @@ import { IDonatedTokenHolder } from "./interfaces/IDonatedTokenHolder.sol";
 contract DonatedTokenHolder is /*ReentrancyGuardTransient,*/ IDonatedTokenHolder {
 	address private immutable _deployerAddress = msg.sender;
 
-	/// @notice Comment-202507146 applies.
+	/// @notice Constructor.
+	/// Comment-202507146 applies.
+	/// @param tokenAddress_ Comment-202502248 applies.
 	constructor(IERC20 tokenAddress_) {
 		_authorizeDeployerAsMyTokenSpender(tokenAddress_);
 	}

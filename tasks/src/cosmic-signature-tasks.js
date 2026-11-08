@@ -9,7 +9,7 @@ const { vars, task } = require("hardhat/config");
 const { waitForTransactionReceipt, safeErc1967GetChangedImplementationAddress } = require("../../src/Helpers.js");
 
 // Comment-202409255 relates.
-const { deployContractsAdvanced } = require("../../src/ContractDeploymentHelpers.js");
+const { deployContractsAdvanced, /*setRoundActivationTimeIfNeeded,*/ } = require("../../src/ContractDeploymentHelpers.js");
 
 task("deploy-cosmic-signature-contracts", "Deploys Cosmic Signature contracts to a blockchain", async (args, hre) => {
 	console.info("%s", `${nodeOsModule.EOL}deploy-cosmic-signature-contracts task is running.${nodeOsModule.EOL}`);
@@ -17,13 +17,17 @@ task("deploy-cosmic-signature-contracts", "Deploys Cosmic Signature contracts to
 	const deployConfigJsonString = await nodeFsModule.promises.readFile(deployConfigFilePath, "utf8");
 	const deployConfigObject = JSON.parse(deployConfigJsonString);
 	if (deployConfigObject.deployerPrivateKey.length <= 0) {
+		// [Comment-202610253/]
 		deployConfigObject.deployerPrivateKey = vars.get(`deployerPrivateKey_${hre.network.name}`);
 	}
 	{
 		console.info("%s", "Using configuration:");
 		// const deployerPrivateKey = deployConfigObject.deployerPrivateKey;
 		// deployConfigObject.deployerPrivateKey = "******";
+
+		// [Comment-202610237/]
 		console.info("%o", deployConfigObject);
+
 		console.info();
 		// deployConfigObject.deployerPrivateKey = deployerPrivateKey;
 	}
@@ -241,7 +245,7 @@ task("upgrade-cosmic-signature-game", "Upgrades the CosmicSignatureGame contract
 	// 	const cosmicSignatureGameFactory =
 	// 		await hre.ethers.getContractFactory(deployConfigObject.cosmicSignatureGameContractName, deployerSigner);
 	// 	const cosmicSignatureGameProxy = cosmicSignatureGameFactory.attach(deployCosmicSignatureContractsReportObject.cosmicSignatureGameProxyAddress);
-	// 	await setRoundActivationTimeIfNeeded(cosmicSignatureGameProxy, 10n);
+	// 	await setRoundActivationTimeIfNeeded(cosmicSignatureGameProxy, 60n);
 	// }
 
 	const newCosmicSignatureGameFactory =
@@ -286,6 +290,33 @@ task("upgrade-cosmic-signature-game", "Upgrades the CosmicSignatureGame contract
 		throw errorObject;
 	}
 	console.info("%s", `Done. Report saved to "${upgradeConfigObject.reportFilePath}".${nodeOsModule.EOL}`);
+
+	// // [Comment-202607153]
+	// // Pairing the new game contract with a fresh `PrizesWallet`.
+	// // The round must still be inactive for `setPrizesWallet` to succeed.
+	// // When testing an assert-enabled `PrizesWallet`, Comment-202610038 applies: bypass the round-sequence asserts
+	// // for its first main prize claim, then re-enable them for subsequent rounds.
+	// // Comment-202607156 relates.
+	// // [/Comment-202607153]
+	// {
+	// 	console.info("%s", `${nodeOsModule.EOL}Deploying a new PrizesWallet.`);
+	// 	const prizesWalletFactory = await hre.ethers.getContractFactory("PrizesWallet", deployerSigner);
+	// 	const newPrizesWallet = await prizesWalletFactory.deploy(deployCosmicSignatureContractsReportObject.cosmicSignatureGameProxyAddress);
+	// 	await newPrizesWallet.waitForDeployment();
+	// 	const newPrizesWalletAddress = await newPrizesWallet.getAddress();
+	// 	console.info(/*"%s",*/ "New PrizesWallet address:", newPrizesWalletAddress);
+	// 
+	// 	console.info("%s", "Pointing the game proxy contract at the new PrizesWallet.");
+	// 	const newCosmicSignatureGameProxy =
+	// 		newCosmicSignatureGameFactory.attach(deployCosmicSignatureContractsReportObject.cosmicSignatureGameProxyAddress);
+	// 	await waitForTransactionReceipt(newCosmicSignatureGameProxy.setPrizesWallet(newPrizesWalletAddress));
+	// 
+	// 	console.info("%s", "Done.");
+	// 	console.info(
+	// 		"%s",
+	// 		`${nodeOsModule.EOL}Reminder. Update the PrizesWallet address in "${deployConfigObject.reportFilePath}" and any its copies, as well as on the web site.`
+	// 	);
+	// }
 })
 	.addParam("upgradeconfigfilepath", "Upgrade configuration file (JSON) path");
 
@@ -302,6 +333,25 @@ task("register-upgraded-cosmic-signature-game", "Verifies and registers a newly 
 		address: upgradeCosmicSignatureGameReportObject.newCosmicSignatureGameImplementationAddress,
 		// constructorArguments: [],
 	});
+
+	// // [Comment-202607156]
+	// // Registering the new `PrizesWallet` deployed near Comment-202607153.
+	// // *** Before running this, edit the hardcoded addresses.
+	// // [/Comment-202607156]
+	// {
+	// 	// *** Remember to provide this value.
+	// 	const cosmicSignatureGameProxyAddress = "0x0000000000000000000000000000000000000000";
+	// 
+	// 	// *** Remember to provide this value.
+	// 	// Take it from the upgrade-cosmic-signature-game task console output.
+	// 	const newPrizesWalletAddress = "0x0000000000000000000000000000000000000000";
+	// 
+	// 	console.info("%s", `${nodeOsModule.EOL}Registering PrizesWallet.`);
+	// 	await hre.run("verify:verify", {
+	// 		address: newPrizesWalletAddress,
+	// 		constructorArguments: [cosmicSignatureGameProxyAddress,],
+	// 	});
+	// }
 
 	console.info("%s", `${nodeOsModule.EOL}Done.`);
 })

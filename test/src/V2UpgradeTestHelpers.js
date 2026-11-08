@@ -2,35 +2,16 @@
 
 const { expect } = require("chai");
 const hre = require("hardhat");
+const { INITIAL_CST_DUTCH_AUCTION_DURATION, DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR, DEFAULT_BID_CST_REWARD_AMOUNT_RADICAND_MULTIPLIER, DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2 } = require("../../src/CosmicSignatureConstants.js");
 const { getBlockTimeStampByBlockNumber, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { setRoundActivationTimeIfNeeded } = require("../../src/ContractDeploymentHelpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
 
-const INITIAL_CST_DUTCH_AUCTION_DURATION = 12n * 60n * 60n;
-const DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR = 250n;
-const DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER = 10800000000000000000000000000000000000000000000n;
-const DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2 = 2n * 24n * 60n * 60n;
-const TIMESTAMP_9000_01_01 = 221845392000n;
-
-async function setNextBlockTimeToAtLeast(timestamp_) {
-	const latest_ = await getLatestBlockTimestamp();
-	const adjustedTimestamp_ = (timestamp_ > latest_) ? timestamp_ : (latest_ + 1n);
-	await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(adjustedTimestamp_)]);
-	return adjustedTimestamp_;
-}
-
-async function mineAtOrAfter(timestamp_) {
-	await setNextBlockTimeToAtLeast(timestamp_);
-	await hre.ethers.provider.send("evm_mine");
-}
-
-async function getLatestBlockTimestamp() {
-	return await getBlockTimeStampByBlockNumber("latest");
-}
-
-async function blockTimestampOfReceipt(receipt_) {
-	const block_ = await receipt_.getBlock();
-	return BigInt(block_.timestamp);
+async function deployV1CompleteRoundZeroAndUpgradeToV2() {
+	const contracts_ = { ...await loadFixtureDeployContractsForTesting(2n) };
+	await completeRoundZero(contracts_);
+	await upgradeToV2(contracts_);
+	return contracts_;
 }
 
 async function completeRoundZero(contracts_, bidderIndex_ = 1) {
@@ -48,13 +29,7 @@ async function completeRoundZero(contracts_, bidderIndex_ = 1) {
 	return { bidder_, receipt_, mainPrizeTime_ };
 }
 
-async function deployV1CompleteRoundZeroAndUpgradeToV2(roundActivationTime_ = 2n) {
-	const contracts_ = await loadFixtureDeployContractsForTesting(roundActivationTime_);
-	await completeRoundZero(contracts_);
-	await upgradeToV2(contracts_);
-	return contracts_;
-}
-
+// `contracts_` must be a mutable, test-local copy, not the frozen fixture object.
 async function upgradeToV2(contracts_, upgradeOptions_ = {}) {
 	const cosmicSignatureGameV2Factory_ =
 		await hre.ethers.getContractFactory("CosmicSignatureGameV2", contracts_.ownerSigner);
@@ -66,7 +41,7 @@ async function upgradeToV2(contracts_, upgradeOptions_ = {}) {
 			cosmicSignatureGameV2Factory_,
 			{
 				kind: "uups",
-				call: "initializeV2",
+				call: "reinitialize",
 				...upgradeOptions_,
 			}
 		);
@@ -92,7 +67,7 @@ async function activateCurrentRound(game_, ownerSigner_) {
 async function assertDefaultV2Initialization(game_) {
 	expect(await game_.cstDutchAuctionDuration()).equal(INITIAL_CST_DUTCH_AUCTION_DURATION);
 	expect(await game_.cstDutchAuctionDurationChangeDivisor()).equal(DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR);
-	expect(await game_.bidCstRewardAmountMultiplier()).equal(DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER);
+	expect(await game_.bidCstRewardAmountMultiplier()).equal(DEFAULT_BID_CST_REWARD_AMOUNT_RADICAND_MULTIPLIER);
 	expect(await game_.timeoutDurationToClaimMainPrize()).equal(DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2);
 }
 
@@ -121,21 +96,37 @@ async function expectUnknownSelector(contract_, selector_) {
 	).revertedWithoutReason();
 }
 
+async function mineAtOrAfter(timestamp_) {
+	await setNextBlockTimeToAtLeast(timestamp_);
+	await hre.ethers.provider.send("evm_mine");
+}
+
+async function setNextBlockTimeToAtLeast(timestamp_) {
+	const latest_ = await getLatestBlockTimestamp();
+	const adjustedTimestamp_ = (timestamp_ > latest_) ? timestamp_ : (latest_ + 1n);
+	await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(adjustedTimestamp_)]);
+	return adjustedTimestamp_;
+}
+
+async function getLatestBlockTimestamp() {
+	return await getBlockTimeStampByBlockNumber("latest");
+}
+
+async function blockTimestampOfReceipt(receipt_) {
+	const block_ = await receipt_.getBlock();
+	return BigInt(block_.timestamp);
+}
+
 module.exports = {
-	INITIAL_CST_DUTCH_AUCTION_DURATION,
-	DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR,
-	DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER,
-	DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2,
-	TIMESTAMP_9000_01_01,
-	setNextBlockTimeToAtLeast,
-	mineAtOrAfter,
-	getLatestBlockTimestamp,
-	blockTimestampOfReceipt,
-	completeRoundZero,
 	deployV1CompleteRoundZeroAndUpgradeToV2,
+	completeRoundZero,
 	upgradeToV2,
 	activateCurrentRound,
 	assertDefaultV2Initialization,
 	findParsedEvent,
 	expectUnknownSelector,
+	mineAtOrAfter,
+	setNextBlockTimeToAtLeast,
+	getLatestBlockTimestamp,
+	blockTimestampOfReceipt,
 };

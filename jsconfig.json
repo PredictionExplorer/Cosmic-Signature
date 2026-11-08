@@ -40,7 +40,8 @@
 
 		// Comment-202409224 applies.
 		// [Comment-202409225]
-		// This conflicts with `exactOptionalPropertyTypes`, so I have commented it out.
+		// Disabling `strictNullChecks` is incompatible with enabling `exactOptionalPropertyTypes`,
+		// so I have commented the latter out.
 		// [/Comment-202409225]
 		"strictNullChecks": false,
 

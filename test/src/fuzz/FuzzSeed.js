@@ -1,5 +1,7 @@
 "use strict";
 
+const { asUint256 } = require("../../../src/BigIntMathHelpers.js");
+
 /**
 Parses a `FUZZ_SEED` environment value into a uint256 bigint, or returns `undefined`
 to signal that a fresh random seed should be generated.
@@ -13,7 +15,7 @@ function parseFuzzSeedFromEnvironment(raw_) {
 		return undefined;
 	}
 	const normalized_ = (raw_.startsWith("0x") || raw_.startsWith("0X")) ? raw_ : `0x${raw_}`;
-	return BigInt.asUintN(256, BigInt(normalized_));
+	return asUint256(BigInt(normalized_));
 }
 
 module.exports = {

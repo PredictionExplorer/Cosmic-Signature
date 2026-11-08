@@ -9,19 +9,19 @@ import { ICosmicSignatureNft, CosmicSignatureNft } from "./CosmicSignatureNft.so
 import { IPrizesWallet, PrizesWallet } from "./PrizesWallet.sol";
 import { IStakingWalletRandomWalkNft, StakingWalletRandomWalkNft } from "./StakingWalletRandomWalkNft.sol";
 import { IStakingWalletCosmicSignatureNft, StakingWalletCosmicSignatureNft } from "./StakingWalletCosmicSignatureNft.sol";
-import { CosmicSignatureGameStorageV2 } from "./CosmicSignatureGameStorageV2.sol";
-import { BiddingBaseV2 } from "./BiddingBaseV2.sol";
-import { MainPrizeBaseV2 } from "./MainPrizeBaseV2.sol";
+import { CosmicSignatureGameStorageV2Base } from "./CosmicSignatureGameStorageV2Base.sol";
+import { BiddingCommonV2 } from "./BiddingCommonV2.sol";
+import { MainPrizeCommonV2 } from "./MainPrizeCommonV2.sol";
 import { ISystemManagementV2 } from "./interfaces/ISystemManagementV2.sol";
 
 abstract contract SystemManagementV2 is
 	OwnableUpgradeableWithReservedStorageGaps,
 	AddressValidator,
-	CosmicSignatureGameStorageV2,
-	BiddingBaseV2,
-	MainPrizeBaseV2,
+	CosmicSignatureGameStorageV2Base,
+	BiddingCommonV2,
+	MainPrizeCommonV2,
 	ISystemManagementV2 {
-	function setDelayDurationBeforeRoundActivation(uint256 newValue_) external override onlyOwner /*_onlyRoundIsInactive*/ {
+	function setDelayDurationBeforeRoundActivation(uint256 newValue_) external override onlyOwner /*_onlyRoundIsInactive*/ /*_onlyBeforeBidPlacedInRound*/ {
 		delayDurationBeforeRoundActivation = newValue_;
 		emit DelayDurationBeforeRoundActivationChanged(newValue_);
 	}
@@ -48,12 +48,12 @@ abstract contract SystemManagementV2 is
 		emit EthBidRefundAmountInGasToSwallowMaxLimitChanged(newValue_);
 	}
 
-	function setCstDutchAuctionDuration(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
+	function setCstDutchAuctionDuration(uint256 newValue_) external override virtual onlyOwner _onlyRoundIsInactive {
 		cstDutchAuctionDuration = newValue_;
 		emit CstDutchAuctionDurationChanged(newValue_);
 	}
 
-	function setCstDutchAuctionDurationChangeDivisor(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
+	function setCstDutchAuctionDurationChangeDivisor(uint256 newValue_) external override virtual onlyOwner _onlyRoundIsInactive {
 		cstDutchAuctionDurationChangeDivisor = newValue_;
 		emit CstDutchAuctionDurationChangeDivisorChanged(newValue_);
 	}

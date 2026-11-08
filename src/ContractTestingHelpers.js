@@ -8,6 +8,7 @@
 const { assert: chaiAssert, expect } = require("chai");
 const hre = require("hardhat");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
+const { asUint256 } = require("./BigIntMathHelpers.js");
 const { parseIntegerEnvironmentVariable, sleepForMilliSeconds, waitForTransactionReceipt } = require("./Helpers.js");
 const { MyNonceManager } = require("./MyNonceManager.js");
 const { mochaHooks } = require("./MochaHooks.js");
@@ -92,7 +93,7 @@ async function loadFixtureDeployContractsForTesting(roundActivationTime) {
 	// 	// Making the timings of immediate calls to the blockchain more deterministic.
 	// 	// Since we call this here, a typical test doesn't need to call this
 	// 	// immediately after `loadFixtureDeployContractsForTesting` returns,
-	// 	// and a quick test doesn't need to call this at all.
+	// 	// and a test that completes quickly doesn't need to call this at all.
 	// 	// But most tests don't need this, so let's not do this.
 	// 	await makeNextBlockTimeDeterministic();
 	// }
@@ -112,7 +113,11 @@ This function is to be used for unit tests.
 It's OK to pass this function to `loadFixture`.
 */
 async function deployContractsForTesting() {
-	return deployContractsForTestingAdvanced("CosmicSignatureGame");
+	const contracts = await deployContractsForTestingAdvanced("CosmicSignatureGame");
+
+	// Freezing the fixture object.
+	// A caller that needs to add or replace properties must first make a shallow copy.
+	return Object.freeze(contracts);
 }
 
 // #endregion
@@ -125,7 +130,7 @@ This function is to be used for unit tests.
 async function deployContractsForTestingAdvanced(
 	cosmicSignatureGameContractName
 ) {
-	await hackPrepareHardhatCoverageOnceIfNeeded();
+	hackPrepareHardhatCoverageOnceIfNeeded();
 	await storeContractDeployedByteCodeAtAddress("FakeArbSys", "0x0000000000000000000000000000000000000064");
 	await storeContractDeployedByteCodeAtAddress("FakeArbGasInfo", "0x000000000000000000000000000000000000006C");
 	const deployerSigner = new MyNonceManager(new hre.ethers.Wallet("0xa482f69f1d7e46439c6be45fd58d1281f8fd60bd10b34e91898864e22abf4ee0", hre.ethers.provider));
@@ -146,21 +151,28 @@ async function deployContractsForTestingAdvanced(
 	await waitForTransactionReceipt(signer19.sendTransaction({to: deployerSigner.address, value: ethAmount,}));
 	await waitForTransactionReceipt(signer18.sendTransaction({to: ownerSigner.address, value: ethAmount,}));
 	await waitForTransactionReceipt(signer17.sendTransaction({to: treasurerSigner.address, value: ethAmount,}));
+
+	// `Object.assign` includes the additional properties in the inferred object type.
 	const contracts =
-		await deployContractsAdvanced(
-			deployerSigner,
-			cosmicSignatureGameContractName,
-			"",
-			charitySigner.address,
-			false,
-			-1_000_000_000n
+		Object.assign(
+			await deployContractsAdvanced(
+				deployerSigner,
+				cosmicSignatureGameContractName,
+				"",
+				charitySigner.address,
+				false,
+				-1_000_000_000n
+			),
+			{
+				signerAddressToIndexMapping,
+				signers,
+				treasurerSigner,
+				charitySigner,
+				ownerSigner,
+				deployerSigner,
+			}
 		);
-	contracts.signerAddressToIndexMapping = signerAddressToIndexMapping;
-	contracts.signers = signers;
-	contracts.treasurerSigner = treasurerSigner;
-	contracts.charitySigner = charitySigner;
-	contracts.ownerSigner = ownerSigner;
-	contracts.deployerSigner = deployerSigner;
+
 	// await waitForTransactionReceipt(contracts.cosmicSignatureToken.transferOwnership(ownerSigner.address));
 	await waitForTransactionReceipt(contracts.randomWalkNft.transferOwnership(ownerSigner.address));
 	await waitForTransactionReceipt(contracts.cosmicSignatureNft.transferOwnership(ownerSigner.address));
@@ -189,7 +201,7 @@ Comment-202505294 relates.
 Comment-202509185 relates.
 [/Comment-202508265]
 */
-async function hackPrepareHardhatCoverageOnceIfNeeded() {
+function hackPrepareHardhatCoverageOnceIfNeeded() {
 	// Comment-202508267 applies.
 	const gas = 30_000_000;
 
@@ -209,7 +221,7 @@ async function hackPrepareHardhatCoverageOnceIfNeeded() {
 	hre.network.config.gas = gas;
 
 	// This will execute some assertions.
-	await mochaHooks.beforeAll();
+	mochaHooks.beforeAll();
 }
 
 // #endregion
@@ -323,6 +335,7 @@ function assertEvent(event, contract, eventName, eventArgs) {
 // #region `makeNextBlockTimeDeterministic`
 
 /**
+todo-1 +++ Review all calls to this, especially in tests refactored by the AI.
 This function does what issue 3 in Comment-202501193 recommends.
 A simple way to use this function is to subtract its return value
 from the value to be passed to the "evm_increaseTime" JSON RPC method.
@@ -388,7 +401,7 @@ Comment-202506284 applies.
 		const l1PricingUnitsSinceUpdate = BigInt(latestBlock.number * 307);
 		randomNumberSeed ^= l1PricingUnitsSinceUpdate << (64n * 3n);
 	}
-	expect(randomNumberSeed).equal(BigInt.asUintN(256, randomNumberSeed));
+	expect(randomNumberSeed).equal(asUint256(randomNumberSeed));
 	return randomNumberSeed;
 }
 

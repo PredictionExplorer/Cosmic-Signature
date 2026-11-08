@@ -9,6 +9,7 @@ import { IAddressValidator } from "./IAddressValidator.sol";
 /// @author The Cosmic Signature Development Team.
 /// @notice This contract includes minting, burning, permit, and voting capabilities.
 /// @dev Comment-202511039 applies.
+/// Comment-202607163 relates and/or applies.
 /// [Comment-202412033]
 /// The total supply of this token is quite limited, and therefore it's guaranteed to remain
 /// many orders of magnitude below the point of overflow.
@@ -29,6 +30,7 @@ interface ICosmicSignatureToken is IERC20, IERC20Permit, IAddressValidator {
 
 		/// @notice A positive value is to mint; a negative value is to burn.
 		/// It's OK if this is zero.
+		/// @dev Comment-202606074 relates and/or applies.
 		int256 value;
 	}
 

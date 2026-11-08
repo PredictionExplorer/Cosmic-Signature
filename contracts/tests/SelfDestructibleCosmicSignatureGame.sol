@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity =0.8.34;
 
-// // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
 import { CosmicSignatureHelpers } from "../production/libraries/CosmicSignatureHelpers.sol";
 import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 
@@ -10,11 +9,17 @@ import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";
 /// This contract is used for testing on a live blockchain.
 /// [/Comment-202606031]
 /// [Comment-202508065]
-/// It will return all the assets back to the `owner()` and self-destruct.
-/// Correction: as per Comment-202509241, this contract is no longer self-destructible.
+/// It transfers the Game's ETH balance back to `owner()`.
+/// As per Comment-202509241, this contract is no longer self-destructible.
 /// [/Comment-202508065]
 contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
-	/// @dev Comment-202606037 applies.
+	/// @dev
+	/// [Comment-202606037]
+	/// Issue. This is a hack. The existence of this method silences the upgradeable contract validating logic
+	/// invoked by OpenZeppelin's `deployProxy` method that would otherwise complain about
+	/// missing initializer and/or missing initializer call.
+	/// Despite validating this method, `deployProxy` will then call `initialize`.
+	/// [/Comment-202606037]
 	function dummyInitialize() external initializer() {
 		revert ("This method is not intended to be called.");
 		this.initialize(address(0));
@@ -22,13 +27,13 @@ contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
 
 	/// @notice Comment-202508065 applies.
 	/// // @custom:oz-upgrades-unsafe-allow selfdestruct
-	function finalizeTesting() external onlyOwner {
+	function finalizeTesting() external onlyOwner() {
 		// [Comment-202606032]
 		// I haven't copied most of this commented code to `SelfDestructibleCosmicSignatureGameV2`.
 		// [/Comment-202606032]
 
 		// // Cosmic Signature NFTs.
-		// // todo-9 This logic doesn't appear to make sense because we mint CS NFTs for bidders, not for the game itself, right?
+		// // todo-9 This logic doesn't appear to make sense because we mint CS NFTs to bidders, not to the Game itself, right?
 		// for (uint256 nftId_ = nft.totalSupply(); nftId_ > 0; ) {
 		// 	-- nftId_;
 		// 	address nftOwnerAddress_ = nft.ownerOf(nftId_);
@@ -42,7 +47,7 @@ contract SelfDestructibleCosmicSignatureGame is CosmicSignatureGame {
 		// todo-9 We don't need to return any Random Walk NFTs, right?
 		// todo-9 This contract can't own them, right?
 
-		// // todo-9 This logic doesn't appear to make sense because we mint CSTs for bidders, not for the game itself, right?
+		// // todo-9 This logic doesn't appear to make sense because we mint CSTs to bidders, not to the Game itself, right?
 		// {
 		// 	uint256 myCstBalanceAmount_ = token.balanceOf(address(this));
 		// 	if (myCstBalanceAmount_ > 0) {
