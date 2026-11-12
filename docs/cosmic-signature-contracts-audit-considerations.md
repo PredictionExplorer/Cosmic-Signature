@@ -3,7 +3,7 @@
 #### Files and Docs to Review
 
 We recommend reviewing all files seen in this project, including, but not limited to:\
-`./numbered-comments.md`,\
+`./numbered-annotations.md`,\
 `${workspaceFolder}/README.md`,\
 `./cosmic-signature-contracts-class-diagram-and-calls.svg`,\
 `./cosmic-signature-contracts-functional-requirements.md`,\

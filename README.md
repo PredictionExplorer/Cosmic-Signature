@@ -17,7 +17,7 @@ This document provides an overview and links to detailed docs. To avoid stale co
 - Prizes: [docs/cosmic-signature-game-prizes.md](docs/cosmic-signature-game-prizes.md).
 - Historical V1 class diagram and calls: [docs/cosmic-signature-contracts-class-diagram-and-calls.svg](docs/cosmic-signature-contracts-class-diagram-and-calls.svg). This partial historical diagram does not show current V3 inheritance or per-round token holders; use the V3 change register and current source for those relationships.
 - Contracts and their functional requirements: [docs/cosmic-signature-contracts-functional-requirements.md](docs/cosmic-signature-contracts-functional-requirements.md).
-- Numbered comments, such as `Comment-202501022`, used throughout the codebase: [docs/numbered-comments.md](docs/numbered-comments.md).
+- Numbered comments, such as `Comment-202501022`, used throughout the codebase: [docs/numbered-annotations.md](docs/numbered-annotations.md).
 - Testing the DAO with the Tally app: [docs/testing-cosmic-signature-dao-with-the-tally-app.md](docs/testing-cosmic-signature-dao-with-the-tally-app.md).
 - Audit considerations: [docs/cosmic-signature-contracts-audit-considerations.md](docs/cosmic-signature-contracts-audit-considerations.md).
 - Default parameter values: `contracts/production/libraries/CosmicSignatureConstants.sol`. Some of them are calculated in [contract-configuration-params-calculation/](contract-configuration-params-calculation/).

@@ -310,7 +310,7 @@ These files were read fully to distinguish test scaffolding and prototype behavi
 | Yes | `docs/cosmic-signature-contracts-functional-requirements.md` | Current protocol/peripheral documentation reviewed and corrected against code. |
 | Yes | `docs/cosmic-signature-game-prizes.md` | Current protocol/peripheral documentation reviewed and corrected against code. |
 | Yes | `docs/endurance-chrono-README.md` | Current protocol documentation reviewed and corrected against code and deployed-version evidence. |
-| Yes | `docs/numbered-comments.md` | Reviewed and retained; repository instructions, not a protocol behavior claim. |
+| Yes | `docs/numbered-annotations.md` | Reviewed and retained; repository instructions, not a protocol behavior claim. |
 | Yes | `docs/testing-cosmic-signature-dao-with-the-tally-app.md` | Current protocol/peripheral documentation reviewed and corrected against code. |
 | Yes | `docs/v3-vs-v2-changes.md` | Current protocol documentation reviewed and corrected against code and deployed-version evidence. |
 | Yes | `live-blockchain-testing/docs/live-blockchain-tests-old.md` | Historical documentation reviewed; archive status and present limitations made explicit. |
