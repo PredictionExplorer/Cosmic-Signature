@@ -336,7 +336,7 @@ Diagram review inspected the XML labels and relationships to establish V1 scope;
 | Yes | `live-blockchain-testing/src/cosmic-signature-game-upgrade-open-bid/run-test.txt` | Reviewed; execution/scope instructions corrected or marked historical; existing todos retained. |
 | Yes | `making-project-backup-copy/rar-args.txt` | Reviewed and retained; historical/tooling note, not a current V3 behavior specification. |
 | Yes | `package.json-notes.txt` | Reviewed and retained; historical/tooling note, not a current V3 behavior specification. |
-| Yes | `project-state/last-generated-id-number.txt` | Read for numbered-item rules; no ID allocated or file changed. |
+| Yes | `project-state/last-generated-id-number.txt` | Read for numbered-annotation rules; no ID allocated or file changed. |
 | Yes | `scripts/prettier-run.sh.we-better-do-not-run-this-script.txt` | Reviewed and retained; historical/tooling note, not a current V3 behavior specification. |
 | Yes | `smtchecker/compile-1-manual.txt` | Reviewed; execution/scope instructions corrected or marked historical; existing todos retained. |
 | Yes | `solhint/check-1-manual.txt` | Reviewed; execution/scope instructions corrected or marked historical; existing todos retained. |
