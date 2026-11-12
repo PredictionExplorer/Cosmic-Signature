@@ -2,9 +2,11 @@
 
 #### Introduction
 
+We use specially marked comments in the code. This document lists their types and explains their purpose.
+
 We collectively refer to **numbered comments** and **numbered todos**, whether **human** or **AI**, as **numbered annotations**. There are also **non-numbered todos**, which are **non-numbered annotations**.
 
-There are non-numbered comments as well; most comments are like that. However they don't require any special tags or keywords to mark them, so they need no explanation.
+There are non-numbered comments as well, meaning regular comments. They don't require any special tags or keywords to mark them. They are not "annotations".
 
 #### Numbered Comments
 
