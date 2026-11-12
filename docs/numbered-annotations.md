@@ -6,7 +6,7 @@ We use specially marked comments in the code. This document lists their types an
 
 We collectively refer to **numbered comments** and **numbered todos**, whether **human** or **AI**, as **numbered annotations**. There are also **non-numbered todos**, which are **non-numbered annotations**.
 
-There are non-numbered comments as well, meaning regular comments. They don't require any special tags or keywords to mark them. They are not "annotations".
+Ordinary comments without numbered-comment tags or todo markers are not annotations.
 
 #### Numbered Comments
 
@@ -115,8 +115,8 @@ The `ToDo` forms above are **human todos**. For **AI todos**, replace `ToDo` wit
 
 #### ID Namespace
 
-An ID is a 9-digit numeric value in the format `YYYYMMDDN`, where `YYYYMMDD` is a date and `N` is a sequence digit from `1` through `9` (which would be called sequence number if it contained multiple digits).\
-For example, if the date is September 15, 2025, and the sequence digit is 7, the ID will be 202509157.
+An ID is a 9-digit numeric value in the format `YYYYMMDDN`, where `YYYYMMDD` is a date and `N` is a sequence number from `1` through `9`.\
+For example, if the date is September 15, 2025, and the sequence number is 7, the ID will be 202509157.
 
 Generate a new ID for each new numbered annotation or for any other purpose that requires one. All generated IDs share one project-wide namespace, regardless of purpose. Each ID is assigned to exactly one logical item or purpose. All uses associated with that same item or purpose intentionally reuse the same ID. For a numbered annotation, the ID is also assigned to exactly one tag family: `Comment`, `ToDo`, or `ToDo-AI`.
 
@@ -126,15 +126,15 @@ Use the following logic to generate a new ID. If any of these steps fails, reque
 
 - Begin.
 
-  - Load the previously saved ID from the workspace-root file `project-state/last-generated-id-number.txt` and parse it to extract the date and the sequence digit.
+  - Load the previously saved ID from the workspace-root file `project-state/last-generated-id-number.txt` and parse it to extract the date and the sequence number.
 
-  - If the extracted date is less than the current local date, replace the former with the latter and reset the sequence digit to 1.
+  - If the loaded date is earlier than the current local date, use the current local date and reset the sequence number to 1.
 
-  - Else if the sequence digit is less than 9, increment it.
+  - Else if the sequence number is less than 9, increment it.
 
-  - Else, increment the date by 1 day and reset the sequence digit to 1.
+  - Else, increment the date by 1 day and reset the sequence number to 1.
 
-  - Generate a new ID from the date and sequence digit.
+  - Generate a new ID from the date and sequence number.
   
   - Save the ID to the same file before using it.
 
@@ -152,7 +152,7 @@ Use the following logic to generate a new ID. If any of these steps fails, reque
 
 - If the projected change would delete a numbered annotation's defining occurrence or only its defining tag or tags while leaving any references, include deletion of all those references in the planned change set, but first ask for permission.
 
-- If the projected change would delete all references to a numbered annotation while its defining occurrence would otherwise remain, ask for permission to delete its defining tag or tags too, retaining any text between paired tags.
+- If the projected change would delete all references to a numbered annotation while its defining occurrence would otherwise remain, ask for permission to convert the numbered annotation to its non-numbered form by deleting its defining tag or tags, retaining any text between paired tags. When converting a numbered todo to a non-numbered todo, preserve its priority and whether it is a human or AI todo.
 
 - When planning to delete one or more files:
   - For each numbered annotation whose defining occurrence is in a file to be deleted, if one or more references in files to be retained use the exact `applies` form, ask for permission to swap the defining occurrence with one such reference. For purposes of the projected state, swapping means that the selected retained location becomes the defining occurrence and the old defining location becomes an `applies` reference. If multiple eligible references exist, ask me which one to use.
