@@ -12,7 +12,7 @@
 
 ## Git Repo
 
-- An explicit request to create or retain a repository file/folder or add an ignore rule for one counts as approval. Otherwise, ask how to proceed with a newly created untracked entry.
+- An explicit request to create or retain a repository file/folder or add an ignore rule for one counts as approval. Otherwise, ask before deciding that a newly created untracked entry should become tracked repository content, or before adding an ignore rule.
 - When adding a file or a folder to `.gitignore`, use such a syntax that would match only the file system entry of that particular type (file or folder).
 
 ## Configuration
