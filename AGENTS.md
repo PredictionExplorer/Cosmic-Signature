@@ -8,11 +8,11 @@
 ## Workspace
 
 - This is a Hardhat 2.x + Ethers 6.x + Mocha project. Some paths are customized in `hardhat.config.js`.
-- The `cache/` and `artifacts/` folders contain generated, configuration-dependent Hardhat outputs. They are usually not primary sources, but inspect them when relevant. Treat generated files as derived output rather than files to edit manually.
+- Folders such as `cache/`, `artifacts/`, `coverage/` contain generated outputs. They are usually not primary sources, but inspect them when relevant. Treat generated files as derived output rather than files to edit manually.
 
 ## Git Repo
 
-- An explicit request to create or retain a repository file/folder counts as approval. Otherwise, ask before deciding that a newly created untracked entry should become tracked repository content or before adding an ignore rule for it.
+- An explicit request to create or retain a repository file/folder or add an ignore rule for one counts as approval. Otherwise, ask how to proceed with a newly created untracked entry.
 - When adding a file or a folder to `.gitignore`, use such a syntax that would match only the file system entry of that particular type (file or folder).
 
 ## Configuration
@@ -25,7 +25,7 @@
 - Do not autonomously introduce a material tradeoff involving correctness, security, compatibility, or trust assumptions. Identify the available options and their implications, and let me choose among them.
 - Do not assume that an input is valid or non-malicious unless that assumption follows from an enforced invariant or I approve it.
 - With my approval, a simpler solution that can be improved later may be preferred over a more complex ideal solution, provided it satisfies the approved correctness and security requirements.
-- An "issue" is a concrete, understood, and currently accepted concern or undesirable aspect of an implementation or design. Examples include non-ideal behavior, inconsistencies, inefficiencies, code smells, maintainability problems, fragility, coupling, omissions, assumptions, workarounds, latent risks, reliance on behavior that future changes could invalidate, and other imperfections.
+- An **issue** is a concrete, understood, and currently accepted concern or undesirable aspect of an implementation or design. Examples include non-ideal behavior, inconsistencies, inefficiencies, code smells, maintainability problems, fragility, coupling, omissions, assumptions, workarounds, latent risks, reliance on behavior that future changes could invalidate, and other imperfections.
 - Unlike a todo, an issue records something we do not currently plan to change. It is accepted because the current solution is adequate, improving it is not presently worth the added complexity, cost, or risk, or a change elsewhere -- including in an external dependency -- must happen first.
 - A non-obvious issue shall be documented with an issue-comment like this:
 
@@ -86,7 +86,7 @@ assert(x > y);
 // DEL: and why you did it.)
 ```
 
-  For example, when you move code or text to a different location while also deleting parts of it, write a `DEL:`-comment at the old location about what you deleted. You can link the locations with a numbered comment. (It's OK to waste an ID in a `DEL:`-comment.)
+  For example, when you move code or text to a different location while also refactoring or deleting parts of it, write a `DEL:`-comment at the old location about what you've done. You can link the locations with a numbered comment. (It's OK to waste an ID in a `DEL:`-comment.)
 - Maintain commented-out code when practical. When refactoring active code, update analogous commented-out code too. If commented-out code is already stale or cannot be updated without broader work, add a `ToDo-9` describing what must be done after it is uncommented.
 - Some conditionally compiled alternatives are mutually exclusive. Keep each reachable compilation variant correct; mutually exclusive alternatives do not need to be valid simultaneously in one compilation.
 - When an explanatory comment or todo occupies one or more separate lines and is associated with code, place it before the relevant lines of code. Separate surrounding text at the same indentation level by inserting an empty line before the comment and after the last relevant line of code, as applicable and when the surrounding structure permits it. For purposes of this rule, treat a code block enclosed in curly braces in TypeScript, or an analogous block construct in another programming language, as a single code unit at its indentation level, regardless of empty lines within the block. If a comment is not associated with subsequent code, treat it as followed by zero lines of code. When deleting a comment, delete any empty lines that are no longer needed, but preserve empty lines still required by the surrounding structure or other comments.
@@ -99,4 +99,4 @@ assert(x > y);
 ## Uncategorized
 
 - Prefer using only ASCII chars. For example, instead of `—`, use `--`. But if the surrounding text intentionally uses non-ASCII chars, keep using them consistently.
-- To reduce model usage, prefer not to poll running commands for progress when you can wait for them to complete.
+- To reduce model usage, prefer not to poll running commands, such as Hardhat tests, for progress when you can wait for them to complete.

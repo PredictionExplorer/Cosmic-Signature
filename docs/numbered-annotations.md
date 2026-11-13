@@ -87,6 +87,8 @@ We use the following priorities:
 - `4`: rarely used for a not-any-time-soon todo, such as doing something about a timestamp overflow in 100 years.
 - `9`: a todo in (1) commented code; (2) legacy docs that are no longer correct. These todos are to be done if we decide to uncomment the code or revive the docs.
 
+#### Non-Numbered ToDos
+
 We use the same priorities for **non-numbered todos** as well, for example:
 
 ```ts
