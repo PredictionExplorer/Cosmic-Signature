@@ -1,3 +1,7 @@
+# # The correct way to Git-ignore a file:
+# /file.txt
+# !/file.txt/
+
 # Non-npm lock files (project standardizes on npm via .npmrc + package-lock.json).
 # yarn.lock
 # .yarn/cache/
@@ -57,16 +61,20 @@
 
 # Comment-202409124 applies.
 /solhint/check-1-output.txt
+!/solhint/check-1-output.txt/
 
 # Comment-202409112 applies.
 /slither/slither-1-output.md
+!/slither/slither-1-output.md/
 
 # Comment-202409014 applies.
 /smtchecker/compile-1-output/
 
 # Comment-202505307 applies.
 /eslint/eslint-1-report.txt
+!/eslint/eslint-1-report.txt/
 /eslint/eslint-1-report.bak.txt
+!/eslint/eslint-1-report.bak.txt/
 
 # /tasks/output/
 /live-blockchain-testing/output/
@@ -106,3 +114,4 @@
 # .AppleDouble
 # .LSOverride
 .DS_Store
+!.DS_Store/
