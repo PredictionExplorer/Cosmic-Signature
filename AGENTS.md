@@ -25,18 +25,6 @@
 - Do not autonomously introduce a material tradeoff involving correctness, security, compatibility, or trust assumptions. Identify the available options and their implications, and let me choose among them.
 - Do not assume that an input is valid or non-malicious unless that assumption follows from an enforced invariant or I approve it.
 - With my approval, a simpler solution that can be improved later may be preferred over a more complex ideal solution, provided it satisfies the approved correctness and security requirements.
-- An **issue** is a concrete, understood, and currently accepted concern or undesirable aspect of an implementation or design. Examples include non-ideal behavior, inconsistencies, inefficiencies, code smells, maintainability problems, fragility, coupling, omissions, assumptions, workarounds, latent risks, reliance on behavior that future changes could invalidate, and other imperfections.
-- Unlike a todo, an issue records something we do not currently plan to change. It is accepted because the current solution is adequate, improving it is not presently worth the added complexity, cost, or risk, or a change elsewhere -- including in an external dependency -- must happen first.
-- A non-obvious issue shall be documented with an issue-comment like this:
-
-```solidity
-// Issue. (Briefly explain what is undesirable and its implications.
-// As relevant, mention assumptions, dependencies, workarounds, omissions, or why the issue
-// is currently accepted rather than made a todo.)
-```
-
-- If an issue has concrete, foreseeable trigger conditions that would require revisiting it, detail those conditions in a `ToDo-3` after the issue-comment.
-- Obvious or frequent issues do not require an issue-comment. Add an ordinary comment only when it provides useful non-obvious context. For example, it is unnecessary to state near every unchecked arithmetic operation that it is assumed not to overflow. Such a comment or issue-comment can be appropriate when the absence of overflow is non-obvious because the operands may be large.
 
 ## Naming Conventions
 
@@ -66,7 +54,7 @@ console.log(x, y);
 assert(x > y);
 ```
 
-- Before proposing improvements to existing Solidity code, review `docs/contract-improvement-ideas-not-to-propose-in-existing-code.md`. Do not propose the listed Solidity improvement ideas for existing code unless explicitly requested. You may propose them for new code, but do not implement them without approval in the prompt or an approved plan. This restriction does not prohibit reporting concrete defects or risks discovered during a requested code review.
+- Before proposing improvements to existing Solidity code, review `docs/contract-improvement-ideas-not-to-propose-in-existing-code.md`. Do not propose the listed improvement ideas for existing code unless explicitly requested. You may propose them for new code, but do not implement them without approval in the prompt or an approved plan. This restriction does not prohibit reporting concrete defects or risks discovered during a requested code review.
 
 ## Scripts
 
@@ -90,6 +78,21 @@ assert(x > y);
 - Maintain commented-out code when practical. When refactoring active code, update analogous commented-out code too. If commented-out code is already stale or cannot be updated without broader work, add a `ToDo-9` describing what must be done after it is uncommented.
 - Some conditionally compiled alternatives are mutually exclusive. Keep each reachable compilation variant correct; mutually exclusive alternatives do not need to be valid simultaneously in one compilation.
 - When an explanatory comment or todo occupies one or more separate lines and is associated with code, place it before the relevant lines of code. Separate surrounding text at the same indentation level by inserting an empty line before the comment and after the last relevant line of code, as applicable and when the surrounding structure permits it. For purposes of this rule, treat a code block enclosed in curly braces in TypeScript, or an analogous block construct in another programming language, as a single code unit at its indentation level, regardless of empty lines within the block. If a comment is not associated with subsequent code, treat it as followed by zero lines of code. When deleting a comment, delete any empty lines that are no longer needed, but preserve empty lines still required by the surrounding structure or other comments.
+
+## Issue-Comments
+
+- An **issue** is a concrete, understood, and currently accepted concern or undesirable aspect of an implementation or design. Examples include non-ideal behavior, inconsistencies, inefficiencies, code smells, maintainability problems, fragility, coupling, omissions, assumptions, workarounds, latent risks, reliance on behavior that future changes could invalidate, and other imperfections.
+- Unlike a todo, an issue records something we do not currently plan to change. It is accepted because the current solution is adequate, improving it is not presently worth the added complexity, cost, or risk, or a change elsewhere -- including in an external dependency -- must happen first.
+- A non-obvious issue shall be documented with an issue-comment like this:
+
+```solidity
+// Issue. (Briefly explain what is undesirable and its implications.
+// As relevant, mention assumptions, dependencies, workarounds, omissions, or why the issue
+// is currently accepted rather than made a todo.)
+```
+
+- If an issue has concrete, foreseeable trigger conditions that would require revisiting it, detail those conditions in a `ToDo-3` after the issue-comment.
+- Obvious or frequent issues do not require an issue-comment. Add an ordinary comment only when it provides useful non-obvious context. For example, it is unnecessary to state near every unchecked arithmetic operation that it is assumed not to overflow. Such a comment or issue-comment can be appropriate when the absence of overflow is non-obvious because the operands may be large.
 
 ## Running Hardhat Tests
 
