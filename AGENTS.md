@@ -35,24 +35,24 @@
 
 - Understand how conditional compilation works in `.sol` files. This is configured in `hardhat.config.js`. The `hardhat-preprocessor` NPM package is used. Conditionally compiled lines of code appear commented, but the `preProcessSolidityLine` function can uncomment the passed line on the fly during compile. For example:
 
-```solidity
-// #enable_asserts // #disable_smtchecker console.log(x, y);
-// #enable_asserts assert(x > y);
-```
+  ```solidity
+  // #enable_asserts // #disable_smtchecker console.log(x, y);
+  // #enable_asserts assert(x > y);
+  ```
 
-can be compiled as:
+  can be compiled as:
 
-```solidity
-// #disable_smtchecker console.log(x, y);
-assert(x > y);
-```
+  ```solidity
+  // #disable_smtchecker console.log(x, y);
+  assert(x > y);
+  ```
 
-or as:
+  or as:
 
-```solidity
-console.log(x, y);
-assert(x > y);
-```
+  ```solidity
+  console.log(x, y);
+  assert(x > y);
+  ```
 
 - Before proposing improvements to existing Solidity code, review `docs/contract-improvement-ideas-not-to-propose-in-existing-code.md`. Do not propose the listed improvement ideas for existing code unless explicitly requested. You may propose them for new code, but do not implement them without approval in the prompt or an approved plan. This restriction does not prohibit reporting concrete defects or risks discovered during a requested code review.
 
@@ -69,10 +69,10 @@ assert(x > y);
 - Explain non-obvious intricacies in comments. For example, explain dependencies of logic in different parts of the codebase.
 - That said, when performing a refactoring or editing, it can be helpful for me if you explain non-obvious intricacies related to the refactoring in detail in verbose temporary to-be-deleted comments. Format them as follows:
 
-```solidity
-// DEL: (Provide details about what you did
-// DEL: and why you did it.)
-```
+  ```solidity
+  // DEL: (Provide details about what you did
+  // DEL: and why you did it.)
+  ```
 
   For example, when you move code or text to a different location while also refactoring or deleting parts of it, write a `DEL:`-comment at the old location about what you've done. You can link the locations with a numbered comment. (It's OK to waste an ID in a `DEL:`-comment.)
 - Maintain commented-out code when practical. When refactoring active code, update analogous commented-out code too. If commented-out code is already stale or cannot be updated without broader work, add a `ToDo-9` describing what must be done after it is uncommented.
@@ -85,11 +85,11 @@ assert(x > y);
 - Unlike a todo, an issue records something we do not currently plan to change. It is accepted because the current solution is adequate, improving it is not presently worth the added complexity, cost, or risk, or a change elsewhere -- including in an external dependency -- must happen first.
 - A non-obvious issue shall be documented with an issue-comment like this:
 
-```solidity
-// Issue. (Briefly explain what is undesirable and its implications.
-// As relevant, mention assumptions, dependencies, workarounds, omissions, or why the issue
-// is currently accepted rather than made a todo.)
-```
+  ```solidity
+  // Issue. (Briefly explain what is undesirable and its implications.
+  // As relevant, mention assumptions, dependencies, workarounds, omissions, or why the issue
+  // is currently accepted rather than made a todo.)
+  ```
 
 - If an issue has concrete, foreseeable trigger conditions that would require revisiting it, detail those conditions in a `ToDo-3` after the issue-comment.
 - Obvious or frequent issues do not require an issue-comment. Add an ordinary comment only when it provides useful non-obvious context. For example, it is unnecessary to state near every unchecked arithmetic operation that it is assumed not to overflow. Such a comment or issue-comment can be appropriate when the absence of overflow is non-obvious because the operands may be large.

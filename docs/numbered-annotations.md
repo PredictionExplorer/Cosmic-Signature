@@ -166,20 +166,20 @@ Use the following logic to generate a new ID. If any of these steps fails, reque
 
 - Most annotations are located in source code files, but some can be located in files of other types, such as `.md` or `.txt`. In file formats that support comments, use the appropriate comment syntax. For example:
 
-```md
-<!--
-[ToDo-AI-202608225-2]
-Do this and that.
-[/ToDo-AI-202608225-2]
--->
+  ```md
+  <!--
+  [ToDo-AI-202608225-2]
+  Do this and that.
+  [/ToDo-AI-202608225-2]
+  -->
 
-<!-- ToDo-AI-202608225-2 applies. -->
+  <!-- ToDo-AI-202608225-2 applies. -->
 
-<!-- ToDo-AI-202608225-2 relates. -->
+  <!-- ToDo-AI-202608225-2 relates. -->
 
-<!-- ToDo-AI-202608225-2 relates and/or applies. -->
+  <!-- ToDo-AI-202608225-2 relates and/or applies. -->
 
-<!-- ToDo-AI-3 Do this and that. -->
-```
+  <!-- ToDo-AI-3 Do this and that. -->
+  ```
 
 - In a file like an `.md` document, it's also OK to write an annotation in text, not as a comment.
