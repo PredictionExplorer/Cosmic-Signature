@@ -1,3 +1,7 @@
 {
 	"editor.insertSpaces": false,
+	"search.exclude": {
+		"/cache/": true,
+		"/artifacts/": true,
+	},
 }
