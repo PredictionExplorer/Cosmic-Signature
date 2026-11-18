@@ -1,0 +1,46 @@
+# Contract archives
+
+Hardhat tests will use archived builds to replay the deployment and upgrade sequence on a local network. This lets the V4 development branch keep the current Solidity sources while archive branches preserve the old contracts and their tests.
+
+## Archive branches and deployment order
+
+The first eight digits of each branch name are the date of its base commit (`YYYYMMDD`). Each archive has a unique date. Tests process the archives in ascending date order.
+
+| Game version | Archive branch | Base commit | Game implementation on Arbitrum One |
+| --- | --- | --- | --- |
+| V1 | `20260505-v1-archive` | `3f166f4fab71` | `0x7739148013777c485AD9f3d971e1005Eca686661` |
+| V2 | `20260625-CosmicSignatureGameV2-archive` | `3f52eaaf2258` | `0x50eB3d05d2C463949DE9238D419385594f7AdB97` |
+| V3 | Planned from `20261109_v4` | To be selected | `0xc1b97E1b0baC86248653B18706dbC5c8898c5c06` |
+
+A typical test starts by deploying all production and external contracts from the V1 archive. This includes `RandomWalkNFT`, an external contract that will move to `contracts/external/`.
+
+Each subsequent archive branch names the contract or contracts to deploy or upgrade at that step. For example, the V2 archive supplies `CosmicSignatureGameV2` for the upgrade of the existing game proxy. Tests keep using the previously deployed instances of every other contract, even if their source changed on the V2 branch. The planned sequence continues through archived V3 to V4 from the development branch. Some existing tests may still select other contracts from a later build.
+
+## Selecting the archive commits
+
+We downloaded the verified game implementation sources from ArbiScan into `temp/verified-source/{v1,v2,v3}/`. The `@arbitrum` and `@openzeppelin` sources were identical across all three downloads and have remained unchanged in the project since before V1 deployment.
+
+For V1 and V2, we compared every downloaded file under `contracts/production/`, including subfolders, with the Git blob at the same path in each commit. All 48 files for each version had to match byte for byte. Several commits matched. For each archive branch we chose the newest match on the first-parent history of `main`, listed above.
+
+Keep archive sources as deployed, apart from any necessary renames. The goal is to reproduce the deployed bytecode. The V1 and V2 source comparisons are complete. Bytecode verification still requires building with the deployment compiler and settings and comparing the result with the on-chain implementation.
+
+## Archived-artifact prototype
+
+Commit `551489cd` on `prototype-archived-artifacts-upgrades` demonstrates the approach in `test/tests-src/CosmicSignatureGame-All-Versions-ArchivedArtifacts.js`. For this experiment, the same snapshot of `main` supplied both V1 and V2. V3 came from the active development branch.
+
+We compiled all four configurations and copied their outputs into `archives/v2/`. For each of `production`, `debug-false-false`, `debug-true-false`, and `debug-true-true`, we kept the following files.
+
+- `artifacts/<configuration>/` in full, including contract artifacts, debug files, and compiler build info.
+- `cache/<configuration>/validations.json`, which contains OpenZeppelin's upgrade validation data for that build.
+
+See [Compiling Cosmic Signature Contracts](../contracts-compiling/docs/contracts-compiling.md) for the build flags and folder naming (Comment-202503272).
+
+The prototype test exercised one proxy through three versions.
+
+1. Its fixture installed the archived `FakeArbSys` and `FakeArbGasInfo` bytecode at the local Arbitrum precompile addresses, deployed the V1 suite with `deployContractsAdvanced`, and froze the fixture result. It checked that `getTotalNumBids(0)` returned zero, then completed round zero with one bid.
+2. It upgraded the proxy to archived V2 with `initializeV2`. The proxy address stayed the same, the implementation changed, and `getTotalNumBids` reported one bid in round zero and zero in round one.
+3. It upgraded the same proxy to current-build V3 with `reinitialize`. It verified the new implementation, round number, historical bid count, and bidder address. It checked that V3's ABI omitted `getTotalNumBids`, then called the getter through the V2 ABI and observed the on-chain revert.
+
+The test helper selected the archive configuration matching the active Hardhat artifacts path. It temporarily switched the Hardhat runtime environment's artifact manager and its artifact and cache paths, awaited the entire deployment or upgrade, and restored them in `finally`. Calls sharing that environment must run sequentially.
+
+On first use, the helper created one Hardhat `Artifacts` instance and copied the selected `validations.json` to a private temporary cache. OpenZeppelin could lock or update that copy. The suite reused both resources and removed the temporary cache in its `after` hook. The regular UUPS `deployProxy` and `upgradeProxy` calls performed validation throughout. For the final upgrade, OpenZeppelin compared the archived V2 storage layout recorded in its network manifest with the current V3 layout.
