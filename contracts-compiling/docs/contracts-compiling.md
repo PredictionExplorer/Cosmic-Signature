@@ -50,7 +50,9 @@ Other environment variables are listed further.
 
    `./compile-force.bash` compiles the build configurations with `--force`.
 
-   `clean.bash` deletes all compiled files and clears Hardhat's global cache, so it is a broader cleanup than a force-compile.
+   `clean.bash` deletes all compiled files.
+
+   `clean-global.bash` clears Hardhat's global cache.
 
 2. **Compile a single build**.
 
