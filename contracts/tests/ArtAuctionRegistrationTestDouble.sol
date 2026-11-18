@@ -18,7 +18,7 @@ contract ArtAuctionRegistrationTestDouble {
 		rejectRegistration = rejectRegistration_;
 	}
 
-	function registerAuctionBatch(uint256, uint256) external {
+	function registerAuctionBatch(uint256, uint256, uint256) external {
 		require(msg.sender == game);
 		if (rejectRegistration) revert RegistrationRejected();
 		++registrations;

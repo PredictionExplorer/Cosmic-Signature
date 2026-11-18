@@ -65,6 +65,7 @@ async function rehearseV4Upgrade() {
 	const nftAddress_ = await gameV3_.nft();
 	const nft_ = await hre.ethers.getContractAt("CosmicSignatureNft", nftAddress_);
 	const sourceCycle_ = await gameV3_.roundNum();
+	const holderAddress_ = await gameV3_.lastBidderAddress();
 	let priorFinalizationGas_ = null;
 	let latest_ = await hre.ethers.provider.getBlock("latest");
 	if (BigInt(latest_.timestamp) >= await gameV3_.roundActivationTime()) {
@@ -94,6 +95,9 @@ async function rehearseV4Upgrade() {
 	const auctionFactory_ = await hre.ethers.getContractFactory("CosmicSignatureArtAuction", owner_);
 	const auction_ = await auctionFactory_.deploy(baseline.proxyAddress, nftAddress_);
 	await auction_.waitForDeployment();
+	rehearsalStage = "deploy successor with the existing outcome source on the local fork";
+	const { deployForkMarket, exerciseFirstGrant, exerciseSecondGrant } = require("./rehearse-v4-chaos-zero.js");
+	const chaosZero_ = await deployForkMarket(hre, gameV3_, owner_);
 	const v4Factory_ = await hre.ethers.getContractFactory("CosmicSignatureGameV4", owner_);
 	const validations_ = await readValidations(hre);
 	const layout_ = getStorageLayout(validations_, getVersion(getUnlinkedBytecode(validations_, v4Factory_.bytecode), v4Factory_.bytecode));
@@ -104,32 +108,58 @@ async function rehearseV4Upgrade() {
 	const before_ = await snapshot_();
 	const supplyBeforeUpgrade_ = await nft_.totalSupply();
 	rehearsalStage = "upgrade local proxy and verify preserved state";
-	const upgrade_ = await (await gameV3_.connect(owner_).upgradeToAndCall(implementation_, v4Factory_.interface.encodeFunctionData("initializeV4", [await auction_.getAddress()]))).wait();
+	const upgrade_ = await (await gameV3_.connect(owner_).upgradeToAndCall(implementation_, v4Factory_.interface.encodeFunctionData("initializeV4", [await auction_.getAddress(), chaosZero_.market.target]))).wait();
 	const game_ = v4Factory_.attach(baseline.proxyAddress);
 	assert.deepEqual(await snapshot_(), before_);
 	assert.equal(await game_.owner(), ownerAddress_);
 	assert.equal(await nft_.totalSupply(), supplyBeforeUpgrade_);
 	assert.equal(await game_.artAuction(), await auction_.getAddress());
 	assert.equal(await auction_.registeredRounds(sourceCycle_), false);
+	rehearsalStage = "verify initial grant, independent settlement and all eight funded positions";
+	await exerciseFirstGrant(hre, game_, chaosZero_, holderAddress_, firstV4Cycle_);
 	rehearsalStage = "finalize first V4 cycle and verify auction batch";
-	latest_ = await hre.ethers.provider.getBlock("latest");
-	const bidTime_ = BigInt(latest_.timestamp) + 4n;
-	await (await game_.setRoundActivationTime(bidTime_)).wait();
-	latest_ = await hre.ethers.provider.getBlock("latest");
-	const bidPrice_ = await game_.getNextEthBidPriceAdvanced(bidTime_ - BigInt(latest_.timestamp));
-	await hre.network.provider.send("evm_setNextBlockTimestamp", [Number(bidTime_)]);
-	await (await game_.bidWithEth(-1n, "V4 local fork rehearsal", 0n, { value: bidPrice_ })).wait();
-	await hre.network.provider.send("evm_setNextBlockTimestamp", [Number(await game_.mainPrizeTime())]);
-	const finalization_ = await (await game_.claimMainPrize()).wait();
+	async function finalizeV4Cycle_() {
+		const now_ = await hre.ethers.provider.getBlock("latest");
+		const bidTime_ = BigInt(now_.timestamp) + 4n;
+		await (await game_.setRoundActivationTime(bidTime_)).wait();
+		const scheduled_ = await hre.ethers.provider.getBlock("latest");
+		const bidPrice_ = await game_.getNextEthBidPriceAdvanced(bidTime_ - BigInt(scheduled_.timestamp));
+		await hre.network.provider.send("evm_setNextBlockTimestamp", [Number(bidTime_)]);
+		await (await game_.bidWithEth(-1n, "V4 local fork rehearsal", 0n, { value: bidPrice_ })).wait();
+		await hre.network.provider.send("evm_setNextBlockTimestamp", [Number(await game_.mainPrizeTime())]);
+		return (await game_.claimMainPrize()).wait();
+	}
+	function registeredBatch_(receipt_) {
+		return receipt_.logs.filter(log_ => log_.address === auction_.target)
+			.map(log_ => auction_.interface.parseLog(log_)).find(event_ => event_?.name === "AuctionBatchRegistered");
+	}
+	const finalization_ = await finalizeV4Cycle_();
 	const finalizationTime_ = BigInt((await finalization_.getBlock()).timestamp);
-	const batch_ = finalization_.logs.filter(log_ => log_.address === auction_.target).map(log_ => auction_.interface.parseLog(log_)).find(event_ => event_?.name === "AuctionBatchRegistered");
+	const batch_ = registeredBatch_(finalization_);
 	assert(batch_);
 	assert.equal(batch_.args.roundNum, firstV4Cycle_);
 	assert.equal(batch_.args.count, 8n);
+	const openingBid_ = hre.ethers.parseEther("0.001");
+	assert.equal(await game_.artAuctionOpeningBid(), openingBid_);
+	assert.equal(batch_.args.openingBid, openingBid_);
 	assert.equal(batch_.args.eligibleAt, finalizationTime_ + 604800n);
 	const firstNft_ = batch_.args.firstNftId;
 	assert.equal(await nft_.totalSupply(), firstNft_ + 8n);
 	for (let index_ = 0n; index_ < 8n; ++index_) assert.equal(await nft_.ownerOf(firstNft_ + index_), await auction_.getAddress());
+	rehearsalStage = "verify rollover liquidity, escrow and redemption with deployed CST";
+	const chaosZeroResult_ = await exerciseSecondGrant(game_, chaosZero_, await hre.ethers.getSigner(holderAddress_), firstV4Cycle_);
+	rehearsalStage = "verify changed opening price on next batch and original lots";
+	const nextOpeningBid_ = hre.ethers.parseEther("0.002");
+	await (await game_.setArtAuctionOpeningBid(nextOpeningBid_)).wait();
+	const nextBatch_ = registeredBatch_(await finalizeV4Cycle_());
+	assert.equal(nextBatch_.args.roundNum, firstV4Cycle_ + 1n);
+	assert.equal(nextBatch_.args.openingBid, nextOpeningBid_);
+	assert.equal(await auction_.openingBidByRound(firstV4Cycle_), openingBid_);
+	assert.equal(await auction_.openingBidByRound(firstV4Cycle_ + 1n), nextOpeningBid_);
+	for (let index_ = 0n; index_ < 8n; ++index_) {
+		assert.equal(await auction_.minimumNextBid(firstNft_ + index_), openingBid_);
+		assert.equal(await auction_.minimumNextBid(nextBatch_.args.firstNftId + index_), nextOpeningBid_);
+	}
 	rehearsalStage = "exercise full real-game auction lifecycle";
 	const { exerciseV4AuctionLifecycle } = require("../../test/src/ArtAuctionTestHelpers.js");
 	const lifecycle_ = await exerciseV4AuctionLifecycle(
@@ -145,7 +175,8 @@ async function rehearseV4Upgrade() {
 		v4FinalizationGas: finalization_.gasUsed.toString(), forwardGas: lifecycle_.forwardGas,
 		firstAuctionNftId: firstNft_.toString(), auctionNfts: 8,
 		eligibilityFromSuccessfulFinalization: true, winningPaymentForwardedWithoutBid: true, nftDelivered: true,
-		lifecycle: lifecycle_,
+		lifecycle: lifecycle_, chaosZero: chaosZeroResult_,
+		openingPrices: { firstBatchWei: openingBid_.toString(), secondBatchWei: nextOpeningBid_.toString(), checkedLots: 16 },
 		limitation: "Hardhat gas is an execution measurement; Arbitrum L1 data fees and future worst-case configuration are not represented. No transaction was sent to Arbitrum.",
 	}, null, 2));
 	completedRehearsal = true;
@@ -159,6 +190,9 @@ async function main() {
 		console.error(`Stage: ${rehearsalStage}.`);
 		// Only exact, locally authored configuration hints may be printed. Provider
 		// messages, stack traces and revert data can contain a secret-bearing RPC URL.
+		// Print only a local assertion/call site, never provider diagnostics or RPC URLs.
+		const line_ = error_?.stack?.match(/\/(rehearse-v4-(?:chaos-zero|art-auction-upgrade)\.js:\d+:\d+)\)?(?:\n|$)/);
+		if (line_) console.error(`Rehearsal check: ${line_[1]}.`);
 		if (safeConfigurationDetails.has(error_?.message)) console.error(error_.message);
 		process.exitCode = 1;
 	}

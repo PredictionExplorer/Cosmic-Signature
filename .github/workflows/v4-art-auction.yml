@@ -10,7 +10,7 @@ on:
       - 'package*.json'
       - '.github/workflows/v4-art-auction.yml'
   push:
-    branches: ['codex/v4-art-auctions']
+    branches: ['V4', 'codex/v4-art-auctions']
 permissions:
   contents: read
 jobs:

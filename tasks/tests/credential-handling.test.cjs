@@ -128,15 +128,15 @@ async function main() {
 				"node:fs": fs, "node:path": path, ethers: require("ethers"),
 			}, { log: value_ => logs_.push(value_), error: value_ => logs_.push(value_) }, {
 				__dirname: path.join(root, "tasks/src"), process: process_, AbortSignal,
-				fetch: async () => {
+				fetch: () => {
 					++calls_;
-					if (failure_ === "transport") throw new Error(`Request failed for ${rpcUrl_}`);
-					if (failure_ === "http") return { ok: false, status: 401, statusText: rpcUrl_ };
-					return { ok: true, json: async () => {
-						if (failure_ === "json") throw new SyntaxError(`Invalid JSON at ${rpcUrl_}`);
-						if (failure_ === "rpc") return { error: { message: `Access denied for ${rpcUrl_}`, data: rpcSecret_ } };
-						return { result: calls_ === 1 ? { number: "0x1" } : rpcUrl_ };
-					} };
+					if (failure_ === "transport") return Promise.reject(new Error(`Request failed for ${rpcUrl_}`));
+					if (failure_ === "http") return Promise.resolve({ ok: false, status: 401, statusText: rpcUrl_ });
+					return Promise.resolve({ ok: true, json: () => {
+						if (failure_ === "json") return Promise.reject(new SyntaxError(`Invalid JSON at ${rpcUrl_}`));
+						if (failure_ === "rpc") return Promise.resolve({ error: { message: `Access denied for ${rpcUrl_}`, data: rpcSecret_ } });
+						return Promise.resolve({ result: calls_ === 1 ? { number: "0x1" } : rpcUrl_ });
+					} });
 				},
 			});
 			await inspect_.main();
@@ -154,13 +154,13 @@ async function main() {
 			providerError_.data = { url: rpcUrl_, apiKey: rpcSecret_ };
 			const modules_ = {
 				"node:assert/strict": assert,
-				"./inspect-v4-art-auction-upgrade.js": { baseline: { observation: { blockNumber: 123 }, implementationAddress }, inspectV4Upgrade: async () => { throw providerError_; } },
+				"./inspect-v4-art-auction-upgrade.js": { baseline: { observation: { blockNumber: 123 }, implementationAddress }, inspectV4Upgrade: () => Promise.reject(providerError_) },
 				"@openzeppelin/hardhat-upgrades/dist/utils/validations": {},
 				"@openzeppelin/upgrades-core": {},
 			};
 			Object.defineProperty(modules_, "hardhat", { get() {
 				if (failure_ === "Hardhat initialization") throw providerError_;
-				return { network: { name: "hardhat", config: { forking: { blockNumber: 123 } } }, ethers: { provider: { getCode: async () => { throw providerError_; } } } };
+				return { network: { name: "hardhat", config: { forking: { blockNumber: 123 } } }, ethers: { provider: { getCode: () => Promise.reject(providerError_) } } };
 			} });
 			const rehearsal_ = loadModule("tasks/src/rehearse-v4-art-auction-upgrade.js", modules_, { log: value_ => logs_.push(value_), error: value_ => logs_.push(value_) }, { process: process_ });
 			await rehearsal_.main();
@@ -194,7 +194,7 @@ async function main() {
 			harness_.files.set("report.json", JSON.stringify({ cosmicSignatureGameProxyAddress: ownerAddress }));
 			await assert.rejects(
 				harness_.tasks.get("upgrade-cosmic-signature-game")({ upgradeconfigfilepath: "upgrade-v4.json" }, harness_.hre),
-				/atomic initializeV4\(address\)/
+				/auction and ChaosZero market addresses in an atomic initializeV4\(address,address\)/
 			);
 			assert.equal(harness_.parsedConfigurations.length, 1, "must reject before reading the deployment configuration or credentials");
 			assert.deepEqual(harness_.signerKeys, []);

@@ -29,15 +29,17 @@ function createModel(seed_) {
 
 function minimumBid(lot_) {
 	// Arithmetic differs from Solidity's quotient-plus-remainder implementation.
-	return lot_.amount === 0n ? MINIMUM_BID : (lot_.amount * 11n + 9n) / 10n;
+	return lot_.amount === 0n ? lot_.openingBid : (lot_.amount * 11n + 9n) / 10n;
 }
 
 async function addBatch(contracts_, model_) {
 	const roundNum_ = BigInt(model_.lots.length / 8);
+	const openingBid_ = MINIMUM_BID + BigInt(model_.random(5000));
+	await (await contracts_.game.setArtAuctionOpeningBid(openingBid_)).wait();
 	const batch_ = await registerBatch(contracts_, roundNum_);
 	for (let index_ = 0n; index_ < 8n; ++index_) {
 		model_.lots.push({
-			nftId: batch_.firstNftId + index_, roundNum: roundNum_, eligibleAt: batch_.eligibleAt,
+			nftId: batch_.firstNftId + index_, openingBid: openingBid_, roundNum: roundNum_, eligibleAt: batch_.eligibleAt,
 			endAt: 0n, bidder: hre.ethers.ZeroAddress, amount: 0n, settled: false,
 			delivered: false, forwarded: false, recipient: contracts_.auctionAddress,
 		});

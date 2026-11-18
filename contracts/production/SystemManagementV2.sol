@@ -138,7 +138,7 @@ abstract contract SystemManagementV2 is
 		emit MainEthPrizeAmountPercentageChanged(newValue_);
 	}
 
-	function setCosmicSignatureToken(ICosmicSignatureToken newValue_) external override
+	function setCosmicSignatureToken(ICosmicSignatureToken newValue_) public virtual override
 		onlyOwner
 		_onlyRoundIsInactive
 		_providedAddressIsNonZero(address(newValue_)) {

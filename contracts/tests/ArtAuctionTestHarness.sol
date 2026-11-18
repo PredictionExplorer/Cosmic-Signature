@@ -37,6 +37,12 @@ abstract contract ArtAuctionTestCallback {
 
 /// @notice Test-only game: explicit donations and accidental receive calls have distinct counters.
 contract ArtAuctionTestGame is ArtAuctionTestCallback {
+	uint256 public artAuctionOpeningBid = 0.001 ether;
+
+	function setArtAuctionOpeningBid(uint256 newValue_) external {
+		artAuctionOpeningBid = newValue_;
+	}
+
 	address public nft;
 	uint256 public donationCount;
 	uint256 public totalDonations;
@@ -68,7 +74,7 @@ contract ArtAuctionTestGame is ArtAuctionTestCallback {
 		address[] memory recipients_ = new address[](8);
 		for (uint256 index_ = 0; index_ < recipients_.length; ++index_) recipients_[index_] = auction_;
 		firstNftId_ = ICosmicSignatureNft(nft).mintMany(roundNum_, recipients_, seed_);
-		ICosmicSignatureArtAuction(auction_).registerAuctionBatch(roundNum_, firstNftId_);
+		ICosmicSignatureArtAuction(auction_).registerAuctionBatch(roundNum_, firstNftId_, artAuctionOpeningBid);
 	}
 
 	function mintTo(address recipient_, uint256 count_, uint256 roundNum_) external returns (uint256) {
@@ -78,7 +84,7 @@ contract ArtAuctionTestGame is ArtAuctionTestCallback {
 	}
 
 	function registerExisting(address auction_, uint256 roundNum_, uint256 firstNftId_) external {
-		ICosmicSignatureArtAuction(auction_).registerAuctionBatch(roundNum_, firstNftId_);
+		ICosmicSignatureArtAuction(auction_).registerAuctionBatch(roundNum_, firstNftId_, artAuctionOpeningBid);
 	}
 }
 

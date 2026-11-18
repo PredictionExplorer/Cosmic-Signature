@@ -13,7 +13,7 @@ const { deployV1CompleteRoundZeroAndUpgradeToV2 } = require("../src/V2UpgradeTes
 const { deployV1CompleteRoundZeroAndUpgradeToV2AndV3 } = require("../src/V3UpgradeTestHelpers.js");
 const { activateRoundBidAndClaimMainPrize, bidWithEthAt } = require("../src/GameRoundTestHelpers.js");
 const { activateCurrentRound, getLatestBlockTimestamp } = require("../src/V2UpgradeTestHelpers.js");
-const { deployArtAuction, upgradeToV4, snapshotV3Storage } = require("../src/V4UpgradeTestHelpers.js");
+const { deployArtAuction, deployChaosZeroMarket, upgradeToV4, snapshotV3Storage } = require("../src/V4UpgradeTestHelpers.js");
 
 const deployedV3 = JSON.parse(fs.readFileSync(path.join(__dirname, "../data/deployed-storage-layouts/arbitrumOne-CosmicSignatureGameV3.json"), "utf8"));
 
@@ -37,7 +37,7 @@ describe("CosmicSignatureGameV4-Upgrade", function () {
 		}
 	});
 
-	it("consumes exactly slot 314 and preserves the deployed V3 layout and namespace storage", async function () {
+	it("consumes five reserved slots and preserves the deployed V3 layout and namespace storage", async function () {
 		const layout_ = await v4Layout();
 		const report_ = getStorageUpgradeReport(deployedV3.layout, layout_, withValidationDefaults({}));
 		expect(report_.ok, report_.explain()).equal(true);
@@ -48,9 +48,12 @@ describe("CosmicSignatureGameV4-Upgrade", function () {
 			expect(layout_.types[current_.type].label).equal(deployedV3.layout.types[original_.type].label);
 		}
 		expect(layout_.storage.find(item_ => item_.label === "artAuction")).include({ slot: "314", offset: 0 });
+		for (const [label_, slot_] of [["chaosZeroMarket", "315"], ["chaosZeroFunding", "316"], ["_totalChaosZeroFunding", "317"], ["artAuctionOpeningBid", "318"]]) {
+			expect(layout_.storage.find(item_ => item_.label === label_)).include({ slot: slot_, offset: 0 });
+		}
 		const oldGap_ = deployedV3.layout.storage.at(-1);
 		const newGap_ = layout_.storage.at(-1);
-		expect(newGap_).include({ label: "__gap_persistent", slot: "315" });
+		expect(newGap_).include({ label: "__gap_persistent", slot: "319" });
 		const gapEnd_ = (layout__, gap__) => BigInt(gap__.slot) + BigInt(layout__.types[gap__.type].numberOfBytes) / 32n;
 		expect(gapEnd_(layout_, newGap_)).equal(gapEnd_(deployedV3.layout, oldGap_));
 		expect(Object.keys(layout_.namespaces ?? {}).sort()).deep.equal(Object.keys(deployedV3.layout.namespaces ?? {}).sort());
@@ -83,12 +86,24 @@ describe("CosmicSignatureGameV4-Upgrade", function () {
 		expect(await game_.ethDonationWithInfoRecords(0n)).deep.equal(contribution_);
 		expect(await hre.ethers.provider.getBalance(contracts_.cosmicSignatureGameProxyAddress)).equal(balance_);
 		expect(await contracts_.cosmicSignatureNft.totalSupply()).equal(nftSupply_);
-		expect(await contracts_.cosmicSignatureToken.totalSupply()).equal(cstSupply_);
+		const market_ = contracts_.chaosZeroMarket;
+		const cycle_ = await game_.roundNum();
+		const grant_ = hre.ethers.parseEther("8000");
+		expect(await game_.CHAOS_ZERO_CST_PER_CYCLE()).equal(grant_);
+		expect(await game_.chaosZeroMarket()).equal(market_.target);
+		expect(await contracts_.cosmicSignatureToken.totalSupply()).equal(cstSupply_ + grant_);
+		expect(await contracts_.cosmicSignatureToken.balanceOf(market_)).equal(grant_);
+		expect(await game_.chaosZeroFunding(market_, cycle_)).deep.equal([grant_, grant_]);
+		expect(await game_.chaosZeroFunding(market_, cycle_ - 1n)).deep.equal([0n, 0n]);
+		expect(await game_.chaosZeroFunding(auction_, cycle_)).deep.equal([0n, 0n]);
 		expect(await contracts_.cosmicSignatureNft.ownerOf(0n)).equal(tokenOwner_);
 		expect(await game_.artAuction()).equal(await auction_.getAddress());
+		await expect(game_.connect(contracts_.ownerSigner).setCosmicSignatureToken(auction_)).revertedWithCustomError(game_, "ChaosZeroCollateralIsFixed");
+		await expect(game_.connect(contracts_.ownerSigner).setCosmicSignatureToken(contracts_.cosmicSignatureToken))
+			.to.emit(game_, "CosmicSignatureTokenAddressChanged").withArgs(contracts_.cosmicSignatureToken.target);
 		expect(await auction_.registeredRounds(0n)).equal(false);
 		expect(await auction_.registeredRounds(1n)).equal(false);
-		await expect(game_.initializeV4(auction_)).revertedWithCustomError(game_, "InvalidInitialization");
+		await expect(game_.initializeV4(auction_, market_)).revertedWithCustomError(game_, "InvalidInitialization");
 		await expect(game_.reinitialize()).revertedWithCustomError(game_, "V4InitializationRequired");
 	});
 
@@ -99,25 +114,45 @@ describe("CosmicSignatureGameV4-Upgrade", function () {
 		const implementation_ = await factory_.deploy();
 		await implementation_.waitForDeployment();
 		const before_ = contracts_.cosmicSignatureGameV3Proxy;
-		const init_ = factory_.interface.encodeFunctionData("initializeV4", [await auction_.getAddress()]);
+		const market_ = await deployChaosZeroMarket(contracts_);
+		const init_ = factory_.interface.encodeFunctionData("initializeV4", [auction_.target, market_.target]);
 		await expect(before_.connect(contracts_.signers[2]).upgradeToAndCall(implementation_, init_))
 			.revertedWithCustomError(before_, "OwnableUnauthorizedAccount");
 		for (const invalidAddress_ of [hre.ethers.ZeroAddress, contracts_.signers[2].address]) {
-			await expect(before_.connect(contracts_.ownerSigner).upgradeToAndCall(implementation_, factory_.interface.encodeFunctionData("initializeV4", [invalidAddress_])))
+			await expect(before_.connect(contracts_.ownerSigner).upgradeToAndCall(implementation_, factory_.interface.encodeFunctionData("initializeV4", [invalidAddress_, market_.target])))
 				.revertedWithCustomError(implementation_, "InvalidArtAuction");
 		}
 		const doubleFactory_ = await hre.ethers.getContractFactory("ArtAuctionRegistrationTestDouble", contracts_.ownerSigner);
 		for (const [gameAddress_, nftAddress_] of [[contracts_.signers[2].address, contracts_.cosmicSignatureNftAddress], [contracts_.cosmicSignatureGameProxyAddress, contracts_.signers[2].address]]) {
 			const double_ = await doubleFactory_.deploy(gameAddress_, nftAddress_);
 			await double_.waitForDeployment();
-			await expect(before_.connect(contracts_.ownerSigner).upgradeToAndCall(implementation_, factory_.interface.encodeFunctionData("initializeV4", [await double_.getAddress()])))
+			await expect(before_.connect(contracts_.ownerSigner).upgradeToAndCall(implementation_, factory_.interface.encodeFunctionData("initializeV4", [await double_.getAddress(), market_.target])))
 				.revertedWithCustomError(implementation_, "InvalidArtAuction");
 		}
+		const bindings_ = await hre.ethers.getContractFactory("ChaosZeroBindingTestDouble", contracts_.ownerSigner);
+		const other_ = contracts_.signers[2].address;
+		const proxy_ = before_.target;
+		const token_ = contracts_.cosmicSignatureToken.target;
+		const badSourceGame_ = await bindings_.deploy(other_, token_, hre.ethers.ZeroAddress);
+		const badSourceCst_ = await bindings_.deploy(proxy_, other_, hre.ethers.ZeroAddress);
+		const validSource_ = await market_.source();
+		const badMarkets_ = [hre.ethers.ZeroAddress, other_];
+		for (const args_ of [[other_, token_, validSource_], [proxy_, other_, validSource_], [proxy_, token_, other_], [proxy_, token_, badSourceGame_], [proxy_, token_, badSourceCst_]]) {
+			const badMarket_ = await bindings_.deploy(...args_);
+			badMarkets_.push(badMarket_.target);
+		}
+		const supply_ = await contracts_.cosmicSignatureToken.totalSupply();
+		for (const badMarket_ of badMarkets_) {
+			const initBadMarket_ = factory_.interface.encodeFunctionData("initializeV4", [auction_.target, badMarket_]);
+			await expect(before_.connect(contracts_.ownerSigner).upgradeToAndCall(implementation_, initBadMarket_))
+				.revertedWithCustomError(implementation_, "InvalidChaosZeroMarket");
+		}
+		expect(await contracts_.cosmicSignatureToken.totalSupply()).equal(supply_);
 		await activateCurrentRound(before_, contracts_.ownerSigner);
 		await bidWithEthAt(before_, contracts_.signers[1], await getLatestBlockTimestamp() + 1n);
 		await expect(before_.connect(contracts_.ownerSigner).upgradeToAndCall(implementation_, init_))
 			.revertedWithCustomError(before_, "RoundIsActive");
-		await expect(implementation_.initializeV4(auction_)).revertedWithCustomError(implementation_, "OwnableUnauthorizedAccount");
+		await expect(implementation_.initializeV4(auction_, market_)).revertedWithCustomError(implementation_, "OwnableUnauthorizedAccount");
 
 		const v2Contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2();
 		const v2Auction_ = await deployArtAuction(v2Contracts_);
@@ -128,9 +163,10 @@ describe("CosmicSignatureGameV4-Upgrade", function () {
 		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3();
 		const auction_ = await deployArtAuction(contracts_);
 		const game_ = await upgradeToV4(contracts_, auction_, { call: undefined });
-		await expect(game_.connect(contracts_.signers[2]).initializeV4(auction_)).revertedWithCustomError(game_, "OwnableUnauthorizedAccount");
+		const market_ = contracts_.chaosZeroMarket;
+		await expect(game_.connect(contracts_.signers[2]).initializeV4(auction_, market_)).revertedWithCustomError(game_, "OwnableUnauthorizedAccount");
 		expect(await game_.artAuction()).equal(hre.ethers.ZeroAddress);
-		await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).initializeV4(auction_));
+		await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).initializeV4(auction_, market_));
 		expect(await game_.artAuction()).equal(await auction_.getAddress());
 	});
 
@@ -154,10 +190,11 @@ describe("CosmicSignatureGameV4-Upgrade", function () {
 		await waitForTransactionReceipt(contracts_.cosmicSignatureGameV3Proxy.connect(contracts_.ownerSigner).upgradeToAndCall(deployedV3.implementationAddress, "0x"));
 		const slots_ = await snapshotV3Storage(contracts_.cosmicSignatureGameProxyAddress);
 		const auction_ = await deployArtAuction(contracts_);
+		const market_ = await deployChaosZeroMarket(contracts_);
 		const factory_ = await hre.ethers.getContractFactory("CosmicSignatureGameV4", contracts_.ownerSigner);
 		const implementation_ = await factory_.deploy();
 		await implementation_.waitForDeployment();
-		await waitForTransactionReceipt(contracts_.cosmicSignatureGameV3Proxy.connect(contracts_.ownerSigner).upgradeToAndCall(implementation_, factory_.interface.encodeFunctionData("initializeV4", [await auction_.getAddress()])));
+		await waitForTransactionReceipt(contracts_.cosmicSignatureGameV3Proxy.connect(contracts_.ownerSigner).upgradeToAndCall(implementation_, factory_.interface.encodeFunctionData("initializeV4", [auction_.target, market_.target])));
 		const game_ = factory_.attach(contracts_.cosmicSignatureGameProxyAddress);
 		expect(await snapshotV3Storage(contracts_.cosmicSignatureGameProxyAddress)).deep.equal(slots_);
 		expect(await game_.artAuction()).equal(await auction_.getAddress());

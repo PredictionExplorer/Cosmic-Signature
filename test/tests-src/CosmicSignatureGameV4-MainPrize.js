@@ -41,7 +41,7 @@ function announcedRecipients(receipt_, game_) {
 
 describe("CosmicSignatureGameV4-MainPrize", function () {
 	for (const withCst_ of [false, true]) for (const withRandomWalk_ of [false, true]) for (const mainCount_ of [1n, 3n, 5n]) {
-		it(`adds eight auction NFTs without changing recipient accounting or CST (CST=${withCst_}, RWLK=${withRandomWalk_}, main=${mainCount_})`, async function () {
+		it(`adds eight auction NFTs and funds ChaosZero separately from existing recipients (CST=${withCst_}, RWLK=${withRandomWalk_}, main=${mainCount_})`, async function () {
 			const contracts_ = await deployV4Fixture();
 			const game_ = contracts_.cosmicSignatureGameV4Proxy;
 			const auction_ = contracts_.cosmicSignatureArtAuction;
@@ -62,7 +62,7 @@ describe("CosmicSignatureGameV4-MainPrize", function () {
 			const timestamp_ = BigInt((await receipt_.getBlock()).timestamp);
 			const firstAuctionNft_ = firstExistingNft_ + normalCount_;
 			expect(await contracts_.cosmicSignatureNft.totalSupply()).equal(firstAuctionNft_ + 8n);
-			expect(await contracts_.cosmicSignatureToken.totalSupply() - cstBefore_).equal(expectedCst_);
+			expect(await contracts_.cosmicSignatureToken.totalSupply() - cstBefore_).equal(expectedCst_ + await game_.CHAOS_ZERO_CST_PER_CYCLE());
 			expect(await contracts_.cosmicSignatureToken.balanceOf(auction_)).equal(0n);
 			const recipients_ = announcedRecipients(receipt_, game_);
 			expect(BigInt(recipients_.size)).equal(normalCount_);
@@ -118,10 +118,12 @@ describe("CosmicSignatureGameV4-MainPrize", function () {
 		expect(await Promise.all([contracts_.cosmicSignatureGameProxyAddress, contracts_.prizesWalletAddress, contracts_.charityWalletAddress, contracts_.stakingWalletCosmicSignatureNftAddress].map(address_ => hre.ethers.provider.getBalance(address_)))).deep.equal(balances_);
 		expect(await contracts_.cosmicSignatureNft.totalSupply()).equal(nftSupply_);
 		expect(await contracts_.cosmicSignatureToken.totalSupply()).equal(cstSupply_);
+		expect(await game_.chaosZeroFunding(contracts_.chaosZeroMarket, await game_.roundNum() + 1n)).deep.equal([0n, 0n]);
 		expect(await failing_.registrations()).equal(0n);
 		await waitForTransactionReceipt(failing_.setRejectRegistration(false));
 		await waitForTransactionReceipt(game_.connect(contracts_.signers[1]).claimMainPrize());
 		expect(await failing_.registrations()).equal(1n);
+		expect((await game_.chaosZeroFunding(contracts_.chaosZeroMarket, await game_.roundNum())).cumulativeAmount).equal(2n * await game_.CHAOS_ZERO_CST_PER_CYCLE());
 	});
 
 	it("continues subsequent cycles while earlier lots remain unbid and permits duplicate-free sequential batches", async function () {
@@ -132,11 +134,60 @@ describe("CosmicSignatureGameV4-MainPrize", function () {
 		for (let cycle_ = 1n; cycle_ <= 4n; ++cycle_) {
 			const receipt_ = await activateRoundBidAndClaimMainPrize(contracts_, game_);
 			const batch_ = findParsedEvent(receipt_, auction_, "AuctionBatchRegistered");
+			const market_ = contracts_.chaosZeroMarket;
+			const grant_ = hre.ethers.parseEther("8000");
+			const cumulative_ = grant_ * (cycle_ + 1n);
+			const funded_ = parsedEvents(receipt_, game_, "ChaosZeroCycleFunded");
+			expect(funded_).lengthOf(1);
+			expect([...funded_[0].args]).deep.equal([market_.target, cycle_ + 1n, grant_, cumulative_]);
+			expect(await game_.chaosZeroFunding(market_, cycle_ + 1n)).deep.equal([grant_, cumulative_]);
+			expect(await game_.chaosZeroFunding(market_, cycle_)).deep.equal([grant_, cumulative_ - grant_]);
+			expect(await contracts_.cosmicSignatureToken.balanceOf(market_)).equal(cumulative_);
+			const transfers_ = parsedEvents(receipt_, contracts_.cosmicSignatureToken, "Transfer");
+			expect(transfers_.filter(event_ => event_.args.to === game_.target).map(event_ => [...event_.args])).deep.equal([[hre.ethers.ZeroAddress, game_.target, grant_]]);
+			expect(transfers_.filter(event_ => event_.args.to === market_.target).map(event_ => [...event_.args])).deep.equal([[game_.target, market_.target, grant_]]);
 			expect(batch_.args.roundNum).equal(cycle_);
 			expect(batch_.args.firstNftId).greaterThan(previousLast_);
 			previousLast_ = batch_.args.firstNftId + 7n;
 			expect((await auction_.getAuction(batch_.args.firstNftId)).endAt).equal(0n);
 		}
+	});
+
+	it("only the inactive game's owner can set the opening price for future batches", async function () {
+		const contracts_ = await deployV4Fixture();
+		const game_ = contracts_.cosmicSignatureGameV4Proxy.connect(contracts_.ownerSigner);
+		const auction_ = contracts_.cosmicSignatureArtAuction;
+		const opening_ = hre.ethers.parseEther("0.001");
+		const updated_ = hre.ethers.parseEther("0.002");
+		expect(await game_.artAuctionOpeningBid()).equal(opening_);
+		await expect(game_.connect(contracts_.signers[1]).setArtAuctionOpeningBid(updated_))
+			.revertedWithCustomError(game_, "OwnableUnauthorizedAccount");
+		await expect(game_.setArtAuctionOpeningBid(0n)).revertedWithCustomError(game_, "InvalidArtAuctionOpeningBid");
+		const first_ = findParsedEvent(await activateRoundBidAndClaimMainPrize(contracts_, game_), auction_, "AuctionBatchRegistered");
+		expect(first_.args.openingBid).equal(opening_);
+		expect(await auction_.openingBidByRound(first_.args.roundNum)).equal(opening_);
+		await expect(game_.setArtAuctionOpeningBid(updated_)).emit(game_, "ArtAuctionOpeningBidChanged").withArgs(updated_);
+		expect(await game_.artAuctionOpeningBid()).equal(updated_);
+
+		await activateCurrentRound(game_, contracts_.ownerSigner);
+		const bidder_ = contracts_.signers[1];
+		await bidWithEthAt(game_, bidder_, await getLatestBlockTimestamp() + 1n);
+		await expect(game_.setArtAuctionOpeningBid(opening_)).revertedWithCustomError(game_, "RoundIsActive");
+		await setNextBlockTimeToAtLeast(await game_.mainPrizeTime());
+		const second_ = findParsedEvent(await waitForTransactionReceipt(game_.connect(bidder_).claimMainPrize()), auction_, "AuctionBatchRegistered");
+		expect(second_.args.openingBid).equal(updated_);
+		expect(await auction_.openingBidByRound(second_.args.roundNum)).equal(updated_);
+		for (let offset_ = 0n; offset_ < 8n; ++offset_) {
+			expect(await auction_.minimumNextBid(first_.args.firstNftId + offset_)).equal(opening_);
+			expect(await auction_.minimumNextBid(second_.args.firstNftId + offset_)).equal(updated_);
+		}
+		await setNextBlockTimeToAtLeast(second_.args.eligibleAt);
+		await expect(auction_.connect(bidder_).bid(second_.args.firstNftId, opening_, { value: opening_ }))
+			.revertedWithCustomError(auction_, "BidTooLow").withArgs(updated_, opening_);
+		await waitForTransactionReceipt(auction_.connect(bidder_).bid(first_.args.firstNftId, opening_, { value: opening_ }));
+		await waitForTransactionReceipt(auction_.connect(bidder_).bid(second_.args.firstNftId, updated_, { value: updated_ }));
+		expect(await auction_.openingBidByRound(first_.args.roundNum)).equal(opening_);
+		expect(await auction_.openingBidByRound(second_.args.roundNum)).equal(updated_);
 	});
 
 	it("forwards only a settled winning payment through donateEth without changing game participation", async function () {
@@ -147,7 +198,7 @@ describe("CosmicSignatureGameV4-MainPrize", function () {
 		const batch_ = findParsedEvent(receipt_, auction_, "AuctionBatchRegistered");
 		const nftId_ = batch_.args.firstNftId;
 		await setNextBlockTimeToAtLeast(batch_.args.eligibleAt);
-		const price_ = 10n ** 13n;
+		const price_ = 10n ** 15n;
 		await waitForTransactionReceipt(auction_.connect(contracts_.signers[2]).bid(nftId_, price_, { value: price_ }));
 		await setNextBlockTimeToAtLeast((await auction_.getAuction(nftId_)).endAt);
 		await waitForTransactionReceipt(auction_.connect(contracts_.signers[3]).settle(nftId_));
@@ -190,7 +241,7 @@ describe("CosmicSignatureGameV4-MainPrize", function () {
 		const batch_ = findParsedEvent(sourceReceipt_, auction_, "AuctionBatchRegistered");
 		const nftId_ = batch_.args.firstNftId;
 		await setNextBlockTimeToAtLeast(batch_.args.eligibleAt);
-		const price_ = 10n ** 13n;
+		const price_ = 10n ** 15n;
 		await waitForTransactionReceipt(auction_.connect(collector_).bid(nftId_, price_, { value: price_ }));
 		await setNextBlockTimeToAtLeast((await auction_.getAuction(nftId_)).endAt);
 		await waitForTransactionReceipt(auction_.settle(nftId_));

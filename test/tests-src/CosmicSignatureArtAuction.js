@@ -23,7 +23,7 @@ describe("CosmicSignatureArtAuction", function () {
 		expect(await contracts_.auction.game()).equal(gameAddress_);
 		expect(await contracts_.auction.nft()).equal(nftAddress_);
 		expect(await contracts_.auction.NFTS_PER_BATCH()).equal(8n);
-		expect(await contracts_.auction.MINIMUM_BID()).equal(MINIMUM_BID);
+		expect(await contracts_.auction.openingBidByRound(0n)).equal(0n);
 		expect(await contracts_.auction.ELIGIBILITY_DELAY()).equal(ELIGIBILITY_DELAY);
 		expect(await contracts_.auction.AUCTION_DURATION()).equal(AUCTION_DURATION);
 		expect(await contracts_.auction.MINIMUM_INCREASE_DIVISOR()).equal(10n);
@@ -56,7 +56,7 @@ describe("CosmicSignatureArtAuction", function () {
 
 	it("authenticates registration, rejects duplicates/ranges, and rolls back atomic minting on failure", async function () {
 		const contracts_ = await loadFixture(registeredFixture);
-		await expect(contracts_.auction.connect(contracts_.signers[1]).registerAuctionBatch(1n, 0n))
+		await expect(contracts_.auction.connect(contracts_.signers[1]).registerAuctionBatch(1n, 0n, MINIMUM_BID))
 			.revertedWithCustomError(contracts_.auction, "OnlyGame").withArgs(contracts_.signers[1].address);
 		await expect(contracts_.game.registerExisting(contracts_.auctionAddress, 0n, 0n))
 			.revertedWithCustomError(contracts_.auction, "RoundAlreadyRegistered");
@@ -71,6 +71,16 @@ describe("CosmicSignatureArtAuction", function () {
 		expect(await contracts_.nft.totalSupply()).equal(8n);
 		expect(await contracts_.auction.registeredBatchCount()).equal(1n);
 		await expect(contracts_.auction.getAuction(8n)).revertedWithCustomError(contracts_.auction, "UnknownAuction");
+	});
+
+	it("rejects a zero opening price and rolls back batch custody and registration", async function () {
+		const contracts_ = await loadFixture(productionFixture);
+		await (await contracts_.game.setArtAuctionOpeningBid(0n)).wait();
+		await expect(contracts_.game.mintAndRegister(contracts_.auctionAddress, 0n, 123n))
+			.revertedWithCustomError(contracts_.auction, "InvalidArtAuctionOpeningBid");
+		expect(await contracts_.nft.totalSupply()).equal(0n);
+		expect(await contracts_.auction.registeredRounds(0n)).equal(false);
+		expect(await contracts_.auction.registeredBatchCount()).equal(0n);
 	});
 
 	it("rejects missing/partially held custody without leaving partial registration", async function () {
@@ -335,7 +345,7 @@ describe("CosmicSignatureArtAuction", function () {
 
 	/** @type {Array<[string, Array<bigint | string>]>} */
 	const reentryCalls_ = [
-		["registerAuctionBatch", [99n, 0n]],
+		["registerAuctionBatch", [99n, 0n, MINIMUM_BID]],
 		["bid", [1n, MINIMUM_BID]],
 		["settle", [0n]],
 		["claimNft", [0n, "recipient"]],

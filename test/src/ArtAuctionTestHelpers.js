@@ -4,7 +4,7 @@ const { expect } = require("chai");
 const hre = require("hardhat");
 const { time } = require("@nomicfoundation/hardhat-network-helpers");
 
-const MINIMUM_BID = 10n ** 13n;
+const MINIMUM_BID = 10n ** 15n;
 const ELIGIBILITY_DELAY = 7n * 24n * 60n * 60n;
 const AUCTION_DURATION = 48n * 60n * 60n;
 const EXTENSION_DURATION = 600n;

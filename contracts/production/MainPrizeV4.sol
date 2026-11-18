@@ -33,7 +33,7 @@ abstract contract MainPrizeV4 is CosmicSignatureGameStorageV4Base, MainPrizeV3, 
 
 		// Issue. Registration adds an external dependency to finalization. Failure intentionally
 		// reverts all allocations and minting, so no auction inventory can exist without fixed terms.
-		artAuction.registerAuctionBatch(roundNum, firstNftId_);
+		artAuction.registerAuctionBatch(roundNum, firstNftId_, artAuctionOpeningBid);
 		emit ArtAuctionNftsMinted(roundNum, address(artAuction), firstNftId_, _ART_AUCTION_NFTS_PER_ROUND);
 	}
 }

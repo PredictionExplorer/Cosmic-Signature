@@ -1,5 +1,5 @@
 {
-  "scope": "V4 issuance and immutable auction verification. Initial fields preserve historical Solidity 0.8.34 evidence; approvedCompilerMigration records the current undeployed 0.8.38 candidate. No production transaction.",
+  "scope": "V4 implementation verification. Earlier sections retain the artwork-only and original Chaos Zero candidate results. axiomAuctionOpeningPrice records the combined game and market rehearsal with the per-batch opening price. No public-chain transactions were broadcast.",
   "baseCommit": "37fdc5e01fee9b4a1ef59fff35726d96775b3680",
   "sourceSha256": {
     "contracts/production/CosmicSignatureGameV4.sol": "7bb635a3dfffec7dc15c010c1d56c2951deb720b26ded42b8407b0586b80f990",
@@ -628,5 +628,180 @@
       "The separate browser rehearsal uses a fresh local full-game deployment, not this pinned-state fork.",
       "No deployment, public transaction or independent external security audit is implied."
     ]
+  },
+  "chaosZeroFunding": {
+    "testedDate": "2026-11-17",
+    "builds": {
+      "game": {
+        "creationBytecodeSha256": "c2996a6baebb4c7bb039e7b5bc4eedd1434cc705004ca66e71bd78c05b171d81",
+        "runtimeBytes": 23404
+      },
+      "market": {
+        "creationBytecodeSha256": "0df32cc79d00e082c7b20d07e54f01e637bc305437ccdfd60de841369e790c20",
+        "runtimeBytes": 20839
+      },
+      "marketViews": {
+        "creationBytecodeSha256": "09054a1b139f2e9852e67bc23b41da7f1bbbffb4e43c1cf7197385df9638072d",
+        "runtimeBytes": 8063
+      }
+    },
+    "sourceSha256": {
+      "contracts/production/CosmicSignatureGameV4.sol": "9c3f3c28fff68457ae6ec2c903b8c3d911d2a2dc2b31ca9fdb8621905d36b08a",
+      "contracts/production/CosmicSignatureGameStorageV4Base.sol": "daa5747ec94dbbc3ae10d11b76c56d40d65c10850e8e4342c027ae8732d57d85",
+      "contracts/production/CosmicSignatureGameStorageV4.sol": "520082e1d6d9af1b65f35b52c292f469a0de9b624e427019f126a40380f5deba",
+      "contracts/production/MainPrizeV2Base.sol": "60a971f5fea777badb49f6492599161823037c501d0ffbedea74ecec031d37cd",
+      "contracts/production/SystemManagementV2.sol": "1e84c2818b3d15fd7f84a9e67d517256763729dceba3444536e00553c2e2729f",
+      "contracts/production/interfaces/IChaosZeroMarket.sol": "fbc52c9cf939b599c6774fa5ca07396cdf9fb575bbbe5271d667b9a94d43c58a",
+      "tasks/src/rehearse-v4-chaos-zero.js": "752cee2b2c2af47bfd33b88560ae69e701b66eb0843694a9b7f5ff223894715e",
+      "tasks/src/rehearse-v4-art-auction-upgrade.js": "812dff22a2ed85cd05566061e78861e2682635318f8d3c059b1d3959488953c4",
+      "../ChaosZero/src/GameFundedOutcomeMarket.sol": "e014513fcd7bbc437db2a0f537f302b8308ee5b49398bfc2d1c24aac88dbac4a",
+      "../ChaosZero/src/GameFundedMarketViews.sol": "7c71f5277094c840af12cc8a260e8ca0671ba1729cb2a98a897cff1eaf579939"
+    },
+    "fork": {
+      "mode": "local-hardhat-fork-only",
+      "blockNumber": 517222845,
+      "blockHash": "0x29d83a6a14c4e5c9ca00ecb99c5ca727f9984f7fe093437e52cb124c8fb68982",
+      "deployedV3RuntimeVerified": true,
+      "storageValidation": "passed",
+      "scalarStatePreserved": true,
+      "originalCycle": "3",
+      "firstV4Cycle": "4",
+      "upgradeGas": "262629",
+      "v4FinalizationGas": "6004539",
+      "chaosZero": {
+        "source": "0x099c29624E05506582655417344A17FB71c9d138",
+        "legacyMarket": "0x2BC4759A2b44e1197EAdc4E035Eb8c52299658d2",
+        "firstCycle": "4",
+        "nextCycle": "5",
+        "issuedCst": 16000,
+        "paidPositionsCst": 8,
+        "excludedTransferCst": 1
+      },
+      "arbitrumPrecompiles": "Repository FakeArbSys and FakeArbGasInfo test shims; native Arbitrum handlers are unavailable in EDR.",
+      "limitation": "Hardhat gas is an execution measurement; Arbitrum L1 data fees and future worst-case configuration are not represented. No transaction was sent to Arbitrum."
+    },
+    "checks": [
+      "Eight 1,000 CST opening allocations visible before synchronization",
+      "Unsolicited CST excluded from the market and helper previews",
+      "All eight paired positions created against actual CST",
+      "Original eight-question market settled through the existing outcome source",
+      "Second grant, exact prior surplus and all eight late redemptions reconciled",
+      "Existing auction lifecycle completed after the upgrade"
+    ],
+    "regression": {
+      "hardhatQuick": {
+        "assertions": 201,
+        "assertionsAndSmtPreprocessing": 201,
+        "preprocessingOnly": 201,
+        "production": 202,
+        "instrumentedModeSizeChecksSkipped": 3,
+        "failures": 0
+      },
+      "credentialTests": 29,
+      "successorForgeIncludingV3ArchiveFork": 276,
+      "successorHeavyFuzzCases": 50000,
+      "successorStatefulActions": 131072,
+      "unexpectedStatefulReverts": 0,
+      "chaosZeroFrontendTests": 1397,
+      "chaosZeroChromiumScenarios": 4
+    }
+  },
+  "axiomAuctionOpeningPrice": {
+    "testedDate": "2026-11-17",
+    "sources": {
+      "contracts/production/CosmicSignatureArtAuction.sol": "be3bb3236ab83b62b1890ba4b105ba0a09320540cc850ad8ec89632b86838a37",
+      "contracts/production/interfaces/ICosmicSignatureArtAuction.sol": "3e76bda6522acd943635dc5045b3b809869c7f86d8717745defcfce7242309ea",
+      "contracts/production/CosmicSignatureGameV4.sol": "3304ece5a07b75b2563a3b98bd6afbae8dc64cf45e4005a68bf6f50d9de5406b",
+      "contracts/production/MainPrizeV4.sol": "caaa79f6712d2ebfd48fc025cb8904cbe67727b7e8e02eb401d8d4f36858f2a3",
+      "contracts/production/CosmicSignatureGameStorageV4.sol": "7a215feb4fe335094eb8746948e785cd894354ee2926286b1b7f7f59eee236e0",
+      "contracts/production/CosmicSignatureGameStorageV4Base.sol": "0e756d3b50f6069f62654053fb763276b4c73e41fc2ebc9bbf44cad1de7e9c7c",
+      "test/foundry/ArtAuctionFuzz.t.sol": "79bdc5690465dd23c0691585dfcdbb1320c97d30819c665ee228f89c63a68500",
+      "tasks/src/rehearse-v4-art-auction-upgrade.js": "55a4c4d8f72b576ec08028afdc468f9a2e4f82d3795726f589c33c7f5902a6e6"
+    },
+    "builds": {
+      "CosmicSignatureGameV4": {
+        "creationBytecodeSha256": "95bc67b489222d642a3390d3a53cee7ff78d407a83f9bc2324ecd033921dff18",
+        "runtimeBytes": 23640
+      },
+      "CosmicSignatureArtAuction": {
+        "creationBytecodeSha256": "bd8287580a26b617b32021cd05ba88d4c4dedff58ac692d7bba178439e91b42b",
+        "runtimeBytes": 4817
+      }
+    },
+    "fork": {
+      "mode": "local-hardhat-fork-only",
+      "blockNumber": 517222845,
+      "blockHash": "0x29d83a6a14c4e5c9ca00ecb99c5ca727f9984f7fe093437e52cb124c8fb68982",
+      "deployedV3RuntimeVerified": true,
+      "storageValidation": "passed",
+      "scalarStatePreserved": true,
+      "originalCycle": "3",
+      "firstV4Cycle": "4",
+      "upgradeGas": "285828",
+      "v4FinalizationGas": "6059754",
+      "firstAuctionNftId": "123",
+      "openingPrices": {
+        "firstBatchWei": "1000000000000000",
+        "secondBatchWei": "2000000000000000",
+        "checkedLots": 16
+      },
+      "chaosZero": {
+        "source": "0x099c29624E05506582655417344A17FB71c9d138",
+        "legacyMarket": "0x2BC4759A2b44e1197EAdc4E035Eb8c52299658d2",
+        "firstCycle": "4",
+        "nextCycle": "5",
+        "issuedCst": 16000,
+        "paidPositionsCst": 8,
+        "excludedTransferCst": 1
+      },
+      "arbitrumPrecompiles": "Repository FakeArbSys and FakeArbGasInfo test shims; native Arbitrum handlers are unavailable in EDR.",
+      "limitation": "Hardhat gas is an execution measurement; Arbitrum L1 data fees and future worst-case configuration are not represented. No transaction was sent to Arbitrum."
+    },
+    "lifecycle": {
+      "firstNftId": "123",
+      "secondNftId": "124",
+      "openingBidWei": "1000000000000000",
+      "winningPaymentWei": "133100000000000000000",
+      "reserveIncreaseWei": "133101000000000000000",
+      "originalEnd": "1794674198",
+      "firstExtendedEnd": "1794674208",
+      "finalEnd": "1794674807",
+      "secondOpeningTime": "1795279607",
+      "secondEnd": "1795452407",
+      "forwardGas": "55054",
+      "sameBidderDeltaFunding": true,
+      "exactlyTenMinuteBoundaryUnchanged": true,
+      "repeatedLateBidsRestoreTenMinutes": true,
+      "refundsPaidBeforeAndAfterSettlement": true,
+      "bothDeliveryAndForwardingOrders": true,
+      "rejectedNftDeliveryRetryable": true,
+      "revertedNftDeliveryTransactions": 1,
+      "gameStoragePreserved": true,
+      "gameBidEventsFromForwarding": 0,
+      "remainingLiabilitiesWei": "0",
+      "unbidLotsStillInCustody": 6
+    },
+    "fuzz": {
+      "casesPerProperty": 50000,
+      "properties": 4,
+      "statefulRuns": 512,
+      "statefulDepth": 256,
+      "statefulHandlerCalls": 131072,
+      "unexpectedReverts": 0,
+      "seed": "0xc05a1c",
+      "command": "FOUNDRY_FUZZ_RUNS=50000 FOUNDRY_INVARIANT_RUNS=512 FOUNDRY_INVARIANT_DEPTH=256 npm run test:auction:fuzz"
+    },
+    "regression": {
+      "hardhatQuick": {
+        "assertions": 203,
+        "assertionsAndSmtPreprocessing": 203,
+        "preprocessingOnly": 203,
+        "production": 204,
+        "instrumentedModeSizeChecksSkipped": 3,
+        "failures": 0
+      },
+      "quickRunnerNote": "The shell wrapper requires /usr/bin/bash. On this macOS host the same four Hardhat modes ran with the standard Mocha hooks and worker-isolated temporary directories.",
+      "credentials": 29
+    }
   }
 }

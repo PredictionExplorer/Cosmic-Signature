@@ -238,7 +238,7 @@ task("upgrade-cosmic-signature-game", "Upgrades the CosmicSignatureGame contract
 	const newGameContractName = upgradeConfigObject.newCosmicSignatureGameContractName;
 	// Hardhat accepts both a short contract name and a source-file-qualified name.
 	if (typeof newGameContractName === "string" && newGameContractName.split(":").at(-1) === "CosmicSignatureGameV4") {
-		throw new Error("V4 requires an explicit auction address and atomic initializeV4(address). Use the V4 upgrade procedure; this legacy no-argument task cannot deploy it.");
+		throw new Error("Use the V4 upgrade procedure to supply the auction and ChaosZero market addresses in an atomic initializeV4(address,address) call.");
 	}
 	if (nodeFsModule.existsSync(upgradeConfigObject.reportFilePath)) {
 		throw new Error(`"${upgradeConfigObject.reportFilePath}" already exists.`);

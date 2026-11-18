@@ -1,6 +1,6 @@
 # V4 artwork issuance and immutable auctions
 
-V4 keeps the existing NFT collection and V3 participation/allocation rules. Each successful V4 cycle finalization creates a separate batch of exactly eight additional Cosmic Signature NFTs for the immutable art auction. It creates no extra CST. The same transaction registers the eight NFTs with fixed auction terms, including eligibility seven days after that transaction's timestamp. Registration failure reverts finalization, including all existing allocations and NFT/CST minting.
+V4 keeps the existing NFT collection and V3 participation/allocation rules. Each successful V4 cycle finalization creates a separate batch of exactly eight additional Cosmic Signature NFTs for the immutable art auction. The artwork batch has no paired CST. A separate V4 cycle grant transfers 8,000 CST to Chaos Zero. The same transaction registers the eight NFTs with fixed auction terms, including eligibility seven days after that transaction's timestamp. Registration failure reverts finalization, including all existing allocations and NFT/CST minting.
 
 This branch implements and tests the change. The current undeployed candidate uses Solidity 0.8.38, as explicitly approved during the follow-up review. The deployed V3 fixture and branch remain pinned to their original 0.8.34 build. No production deployment or upgrade transaction is authorized.
 
@@ -8,25 +8,42 @@ This branch implements and tests the change. The current undeployed candidate us
 
 `MainPrizeV3._distributePrizes` is made `virtual`, with no change to its implementation. `MainPrizeV4` calls that existing implementation first, then makes one separate `nft.mintMany` call with eight auction-owned recipients. Existing recipient arrays, token ordering, counts, seed derivation, CST distribution and allocation events remain intact. The additional seed stream is domain-separated from the existing allocation stream.
 
-Immediately after the extra mint, the game calls `ICosmicSignatureArtAuction.registerAuctionBatch(roundNum, firstNftId)`. There is no renderer call, no bidder callback, and no settling of previous auctions in finalization. The game does not catch a registration failure. The immutable auction verifies its caller and the latest eight NFT IDs in its custody, records the timestamp itself, and fixes the waiting lots' terms. Future cycles do not wait for earlier works to sell.
+Immediately after the extra mint, the game calls `ICosmicSignatureArtAuction.registerAuctionBatch(roundNum, firstNftId, artAuctionOpeningBid)`. There is no renderer call, no bidder callback, and no settling of previous auctions in finalization. The game does not catch a registration failure. The immutable auction verifies its caller and the latest eight NFT IDs in its custody, records the timestamp itself, and fixes the waiting lots' terms. Future cycles do not wait for earlier works to sell.
 
 `artAuction()` identifies the deployment used for future batches. There is no pointer setter in V4. A later game upgrade may select a different auction deployment for subsequent batches; already registered lots, NFT custody, refunds and proceeds obligations remain in their original immutable auction. The game and NFT contracts retain their existing upgrade and metadata trust boundaries.
 
+## Axiom Zero auction terms
+
+The V4 initializer sets the opening bid to 0.001 ETH. During an inactive cycle, the existing game owner can call `setArtAuctionOpeningBid(priceInWei)` with a positive price. The game emits `ArtAuctionOpeningBidChanged` on initialization and updates. At each cycle close the auction stores the current price once for the whole eight-work batch. `AuctionBatchRegistered` includes this opening price, and `openingBidByRound(cycle)` provides the permanent value for that batch. A future configuration change cannot reprice a preview, an unbid lot or a live lot.
+
+Axiom Zero reads `getAuction(tokenId)` and `minimumNextBid(tokenId)` before each transaction. Each individual lot becomes eligible seven days after registration. Its first funded bid starts a 48-hour clock. A new bid must raise the high bid by at least 10%, with the increase rounded up to the next whole wei. Late bids restore ten minutes to respond. A new leader escrows the full bid amount and the current leader funds only the difference on a self-raise. An outbid wallet can retrieve its credit. Anyone can settle an ended lot or forward its full settled price to the game reserve, and the winner chooses the delivery address.
+
+The combined fork rehearsal registered cycle 4 at 0.001 ETH, set the next opening price to 0.002 ETH and registered cycle 5 at the new price. All 16 lots kept their batch price. The same rehearsal carried first-batch works through bidding, soft-close extensions, refund retrieval, NFT delivery and 133.101 ETH in total reserve payments. Reproduction details and the current source and bytecode hashes are under `axiomAuctionOpeningPrice` in [the verification record](v4-art-auction-verification.json).
+
 ## Storage and initialization
 
-V4 adds only `ICosmicSignatureArtAuction artAuction`, at slot 314, consuming the first slot of V3's final persistent gap. The new gap begins at 315 and has the same end. It does not inherit the concrete `CosmicSignatureGameV3` leaf and append storage after that gap. Existing persistent variables and OpenZeppelin namespaces keep their positions.
+V4 consumes five slots from the final V3 persistent gap. Slot 314 holds the auction, 315 the Chaos Zero market, 316 the funding record mapping by market and cycle, 317 cumulative issuance by market, and 318 the opening bid for future auction batches. The resized gap starts at 319 and ends at its original boundary. It does not inherit the concrete `CosmicSignatureGameV3` leaf and append storage after that gap. Existing persistent variables and OpenZeppelin namespaces keep their positions.
 
-The initializer is `initializeV4(address artAuction)`. It:
+The initializer is `initializeV4(address artAuction, address chaosZeroMarket)`. It:
 
 - Requires the owner and an inactive cycle.
 - Requires the previous initialized version to be exactly 3.
 - Uses OpenZeppelin `reinitializer(4)`.
 - Requires a deployed auction whose immutable `game()` is the current proxy and whose `nft()` is the game's existing NFT contract.
-- Writes only the new auction address and initializer version, and emits `ArtAuctionConfigured`.
+- Checks the market and its outcome source against this proxy and its CST. The V4 token setter prevents the collateral from diverging from the bound token.
+- Records both companions and seeds the current inactive cycle. The mint, transfer and cycle record commit together. It emits `ArtAuctionConfigured` and `ChaosZeroCycleFunded`.
 
 It does not reset any existing configured percentages, clocks, balances, NFT counts, or token/periphery addresses. The inherited no-argument `reinitialize()` deliberately reverts; it must not accidentally replay V3 parameter initialization or leave an unconfigured auction pointer.
 
-Always call `upgradeToAndCall(newImplementation, encodeCall(initializeV4, auction))` atomically. A bare upgrade is unsupported: the owner alone could initialize it during the inactive interval, but if participation starts first, the inactive-cycle guard prevents initialization and finalization fails closed. Do not create that state. The legacy `upgrade-cosmic-signature-game` task rejects `CosmicSignatureGameV4` before resolving credentials or deploying, because its no-argument initializer configuration cannot express the required operation.
+Always call `upgradeToAndCall(newImplementation, encodeCall(initializeV4, (auction, chaosZeroMarket)))` atomically. A bare upgrade is unsupported: the owner alone could initialize it during the inactive interval, but if participation starts first, the inactive-cycle guard prevents initialization and finalization fails closed. Do not create that state. The legacy `upgrade-cosmic-signature-game` task rejects `CosmicSignatureGameV4` before resolving credentials or deploying, because its no-argument initializer configuration cannot express the required operation.
+
+## Chaos Zero cycle funding
+
+Each new cycle receives exactly 8,000 newly issued CST. The game mints to the proxy and transfers CST to the selected market in the same transaction as its funding record. Initialization covers the first V4 cycle. Subsequent closes advance the cycle number before issuing the grant. A clock change or gesture cannot issue a grant. The game receives no position, fees or repayment.
+
+The successor market is constructor-deployed against the existing outcome source. It checks the game ledger and consumes the cumulative amount once, before a trade or split or on permissionless synchronization. Each of the eight questions receives 1,000 fresh CST. The market reserves old claims before carrying forward surplus, including unused grants from quiet cycles. An unrelated CST transfer never enters the pool or the grant ledger. Market settlement runs outside game finalization. The existing eight-question market and its claim vault remain at their original addresses.
+
+Prepare the successor with the Chaos Zero repository's unsigned deployment tooling. Validate the reviewed creation bytecode, the fixed source and game identities, and the vault before preparing an atomic owner transaction in an inactive interval. The game never calls the market during normal rollover.
 
 ## Actual deployed V3 baseline
 
@@ -61,9 +78,12 @@ CLI failures print static headings and controlled diagnostic categories or local
 The rehearsal script is also read-only unless explicitly enabled. It refuses every network except the in-process `hardhat` network. An enabled rehearsal forks the recorded block, verifies its hash/runtime, impersonates only local-fork accounts, completes an active V3 cycle if necessary, validates storage, deploys the auction and V4 only on the fork, upgrades atomically, verifies preserved state, finalizes a V4 cycle, and follows two V4-issued lots through opening bids, self-raises, repeated late-bid extensions, refunds, settlement, contribution and delivery:
 
 ```sh
+(cd ../ChaosZero && forge build src/GameFundedOutcomeMarket.sol)
 ENABLE_HARDHAT_PREPROCESSOR=false npx hardhat compile
 RUN_V4_FORK_REHEARSAL=1 ENABLE_HARDHAT_PREPROCESSOR=false npx hardhat --config hardhat.art-auction-fork.config.js run --no-compile --network hardhat tasks/src/rehearse-v4-art-auction-upgrade.js
 ```
+
+The rehearsal loads the production Foundry artifact from the sibling `ChaosZero` checkout (or `CHAOS_ZERO_ROOT`). It tests the real CST transfer, all eight market positions, previous-market settlement, and the second grant, in addition to the artwork lifecycle.
 
 The dedicated configuration creates the fork before provider initialization, avoiding EDR versions' unsupported storage overrides during `hardhat_reset`. It mines one empty local block before executing contract calls, pins local Osaka semantics, and uses its 16,777,216 transaction gas cap instead of the ordinary stress tests' deliberately huge gas limit. The public RPC may rate-limit or lack historical data; an archive-capable endpoint is required.
 

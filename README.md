@@ -100,6 +100,8 @@ The remaining findings are not suppressed and the full audit still fails.
 Every dependency is declared under `devDependencies`, so `--omit=dev` alone
 would conceal the relevant Solidity dependencies as well as tools.
 
+The V4 branch check on November 18, 2026 updated the compatible HTTP redirect library to 1.16.3. The full audit at that check listed 64 affected package entries (23 high, 19 moderate, 22 low). The production-only npm audit reported zero, as all packages are development dependencies. The production compiler input uses the top-level OpenZeppelin 5.4.0 sources and only the two Nitro precompile interfaces. The nested OpenZeppelin 4.7.3 sources flagged by npm are absent from that input.
+
 The remaining high-severity findings have these boundaries:
 
 | Dependency family | Actual exposure in this repository | Remediation boundary |
@@ -154,6 +156,7 @@ bash scripts/hardhat-node.bash
 ## Deployment and Upgrades
 
 - Deployment: [tasks/docs/Cosmic-Signature-Contracts-Deployment-And-Registration.md](tasks/docs/Cosmic-Signature-Contracts-Deployment-And-Registration.md).
+- The [V4 upgrade and local fork rehearsal](docs/v4-art-auction-upgrade.md) covers artwork registration and the game-funded Chaos Zero market.
 - Game contract upgrade: [tasks/docs/Cosmic-Signature-Game-Contract-Upgrade-And-Re-Registration.md](tasks/docs/Cosmic-Signature-Game-Contract-Upgrade-And-Re-Registration.md).
 - `PrizesWallet` replacement: [tasks/docs/Prizes-Wallet-Contract-Upgrade-And-Re-Registration.md](tasks/docs/Prizes-Wallet-Contract-Upgrade-And-Re-Registration.md).
 

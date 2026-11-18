@@ -51,7 +51,7 @@ contract ArtAuctionFuzzTest {
 	}
 
 	function testFuzz_RoundingAndExactSelfRaise(uint128 bidInput_) public {
-		uint256 firstBid_ = uint256(bidInput_) + _auction.MINIMUM_BID();
+		uint256 firstBid_ = uint256(bidInput_) + _auction.openingBidByRound(0);
 		_VM.deal(_ALICE, firstBid_ * 3);
 		_VM.prank(_ALICE);
 		_auction.bid{value: firstBid_}(0, firstBid_);
@@ -65,8 +65,30 @@ contract ArtAuctionFuzzTest {
 		require(_auction.totalLiabilities() == nextBid_, "Incorrect liability");
 	}
 
+	function testFuzz_OpeningPriceIsFrozenForEveryLot(uint128 firstInput_, uint128 secondInput_) public {
+		uint256 firstPrice_ = uint256(firstInput_) + 1;
+		uint256 secondPrice_ = uint256(secondInput_) + 1;
+		_game.setArtAuctionOpeningBid(firstPrice_);
+		uint256 firstId_ = _game.mintAndRegister(address(_auction), 1, 42);
+		_game.setArtAuctionOpeningBid(secondPrice_);
+		uint256 secondId_ = _game.mintAndRegister(address(_auction), 2, 43);
+		require(_auction.openingBidByRound(1) == firstPrice_, "First batch repriced");
+		require(_auction.openingBidByRound(2) == secondPrice_, "Incorrect second batch price");
+		for (uint256 index_; index_ < 8; ++index_) {
+			require(_auction.minimumNextBid(firstId_ + index_) == firstPrice_, "Old lot's minimum changed");
+			require(_auction.minimumNextBid(secondId_ + index_) == secondPrice_, "New lot's minimum incorrect");
+		}
+		_VM.warp(_auction.getAuction(secondId_).eligibleAt);
+		_VM.deal(_ALICE, firstPrice_ + secondPrice_);
+		_VM.prank(_ALICE);
+		_auction.bid{value: firstPrice_}(firstId_, firstPrice_);
+		_VM.prank(_ALICE);
+		_auction.bid{value: secondPrice_}(secondId_, secondPrice_);
+		require(_auction.totalBidEscrow() == firstPrice_ + secondPrice_, "Incorrect bid escrow");
+	}
+
 	function testFuzz_LateBidClock(uint32 arrivalInput_) public {
-		uint256 firstBid_ = _auction.MINIMUM_BID();
+		uint256 firstBid_ = _auction.openingBidByRound(0);
 		_VM.deal(_ALICE, 1 ether);
 		_VM.deal(_BOB, 1 ether);
 		_VM.prank(_ALICE);
@@ -83,7 +105,7 @@ contract ArtAuctionFuzzTest {
 	}
 
 	function testFuzz_UnderfundedBidAlwaysRollsBack(uint128 priceInput_, uint128 deficitInput_) public {
-		uint256 price_ = uint256(priceInput_) + _auction.MINIMUM_BID();
+		uint256 price_ = uint256(priceInput_) + _auction.openingBidByRound(0);
 		uint256 deficit_ = uint256(deficitInput_) % price_ + 1;
 		uint256 sent_ = price_ - deficit_;
 		_VM.deal(_ALICE, price_);

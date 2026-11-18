@@ -13,7 +13,6 @@ contract CosmicSignatureArtAuction is ReentrancyGuardTransient, ICosmicSignature
 	uint256 public constant NFTS_PER_BATCH = 8;
 	uint256 public constant ELIGIBILITY_DELAY = 7 days;
 	uint256 public constant AUCTION_DURATION = 48 hours;
-	uint256 public constant MINIMUM_BID = 0.00001 ether;
 	uint256 public constant MINIMUM_INCREASE_DIVISOR = 10;
 	uint256 public constant EXTENSION_DURATION = 10 minutes;
 
@@ -22,7 +21,7 @@ contract CosmicSignatureArtAuction is ReentrancyGuardTransient, ICosmicSignature
 
 	mapping(uint256 => Auction) private _auctions;
 	uint256[] private _firstNftIds;
-	mapping(uint256 => bool) public override registeredRounds;
+	mapping(uint256 => uint256) public override openingBidByRound;
 	mapping(address => uint256) public override refundCredits;
 	uint256 public override totalBidEscrow;
 	uint256 public override totalRefundCredits;
@@ -38,15 +37,16 @@ contract CosmicSignatureArtAuction is ReentrancyGuardTransient, ICosmicSignature
 	}
 
 	/// @inheritdoc ICosmicSignatureArtAuction
-	function registerAuctionBatch(uint256 roundNum_, uint256 firstNftId_) external override nonReentrant {
+	function registerAuctionBatch(uint256 roundNum_, uint256 firstNftId_, uint256 openingBid_) external override nonReentrant {
 		if (msg.sender != game) revert OnlyGame(msg.sender);
-		if (registeredRounds[roundNum_]) revert RoundAlreadyRegistered(roundNum_);
+		if (openingBid_ == 0) revert InvalidArtAuctionOpeningBid();
+		if (registeredRounds(roundNum_)) revert RoundAlreadyRegistered(roundNum_);
 		uint256 totalSupply_ = CosmicSignatureNft(nft).totalSupply();
 		if (totalSupply_ < NFTS_PER_BATCH || firstNftId_ != totalSupply_ - NFTS_PER_BATCH) {
 			revert InvalidBatchRange(firstNftId_, totalSupply_);
 		}
 		uint256 eligibleAt_ = block.timestamp + ELIGIBILITY_DELAY;
-		registeredRounds[roundNum_] = true;
+		openingBidByRound[roundNum_] = openingBid_;
 		for (uint256 index_ = 0; index_ < NFTS_PER_BATCH; ++index_) {
 			uint256 nftId_ = firstNftId_ + index_;
 			Auction storage auction_ = _auctions[nftId_];
@@ -58,7 +58,12 @@ contract CosmicSignatureArtAuction is ReentrancyGuardTransient, ICosmicSignature
 			auction_.registered = true;
 		}
 		_firstNftIds.push(firstNftId_);
-		emit AuctionBatchRegistered(roundNum_, firstNftId_, NFTS_PER_BATCH, eligibleAt_);
+		emit AuctionBatchRegistered(roundNum_, firstNftId_, NFTS_PER_BATCH, eligibleAt_, openingBid_);
+	}
+
+	/// @inheritdoc ICosmicSignatureArtAuction
+	function registeredRounds(uint256 roundNum_) public view override returns (bool) {
+		return openingBidByRound[roundNum_] != 0;
 	}
 
 	function registeredBatchCount() external view override returns (uint256) {
@@ -75,8 +80,9 @@ contract CosmicSignatureArtAuction is ReentrancyGuardTransient, ICosmicSignature
 
 	/// @dev This quotes the next price only. Eligibility and whether bidding has ended are separate facts.
 	function minimumNextBid(uint256 nftId_) public view override returns (uint256) {
-		uint256 highestBid_ = _getAuction(nftId_).highestBid;
-		if (highestBid_ == 0) return MINIMUM_BID;
+		Auction storage auction_ = _getAuction(nftId_);
+		uint256 highestBid_ = auction_.highestBid;
+		if (highestBid_ == 0) return openingBidByRound[auction_.roundNum];
 		uint256 increase_ = highestBid_ / MINIMUM_INCREASE_DIVISOR;
 		if (highestBid_ % MINIMUM_INCREASE_DIVISOR != 0) ++increase_;
 		return highestBid_ + increase_;

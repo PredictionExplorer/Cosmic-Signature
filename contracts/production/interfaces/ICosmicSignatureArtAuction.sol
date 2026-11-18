@@ -18,6 +18,7 @@ interface ICosmicSignatureArtAuction {
 	error InvalidContractAddress(address account);
 	error CollectionGameMismatch(address expectedGame, address actualGame);
 	error OnlyGame(address caller);
+	error InvalidArtAuctionOpeningBid();
 	error RoundAlreadyRegistered(uint256 roundNum);
 	error InvalidBatchRange(uint256 firstNftId, uint256 totalSupply);
 	error NftAlreadyRegistered(uint256 nftId);
@@ -39,7 +40,7 @@ interface ICosmicSignatureArtAuction {
 	error RefundTransferFailed(address recipient, uint256 amount);
 	error NoSurplus();
 
-	event AuctionBatchRegistered(uint256 indexed roundNum, uint256 indexed firstNftId, uint256 count, uint256 eligibleAt);
+	event AuctionBatchRegistered(uint256 indexed roundNum, uint256 indexed firstNftId, uint256 count, uint256 eligibleAt, uint256 openingBid);
 	event AuctionBidPlaced(uint256 indexed nftId, uint256 indexed roundNum, address indexed bidder, uint256 amount, uint256 ethPaid, uint256 endAt);
 	event AuctionRefundCredited(address indexed bidder, uint256 indexed nftId, uint256 amount);
 	event AuctionRefundWithdrawn(address indexed bidder, address indexed recipient, uint256 amount);
@@ -58,11 +59,13 @@ interface ICosmicSignatureArtAuction {
 	function totalRefundCredits() external view returns (uint256);
 	function totalPendingProceeds() external view returns (uint256);
 	function registeredRounds(uint256 roundNum_) external view returns (bool);
+	/// @notice Immutable opening price of all eight lots in this batch, or zero before registration.
+	function openingBidByRound(uint256 roundNum_) external view returns (uint256);
 	function registeredBatchCount() external view returns (uint256);
 	function firstNftIdByBatchIndex(uint256 batchIndex_) external view returns (uint256);
 
 	/// @notice Registers the latest eight freshly minted tokens. The game must mint and register atomically.
-	function registerAuctionBatch(uint256 roundNum_, uint256 firstNftId_) external;
+	function registerAuctionBatch(uint256 roundNum_, uint256 firstNftId_, uint256 openingBid_) external;
 
 	/// @notice Places a direct offer at the total specified price, not an automatic maximum bid.
 	/// @dev The current leader funds only the increase. Every other bidder funds the entire new bid.

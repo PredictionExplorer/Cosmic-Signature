@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity =0.8.38;
 
+import { ISystemManagementV2 } from "./interfaces/ISystemManagementV2.sol";
 import { SystemManagementV2 } from "./SystemManagementV2.sol";
 import { BidStatisticsV2 } from "./BidStatisticsV2.sol";
 import { BiddingV2Base } from "./BiddingV2Base.sol";
@@ -14,6 +15,10 @@ import { MainPrizeV4 } from "./MainPrizeV4.sol";
 import { CosmicSignatureGameStorageV4 } from "./CosmicSignatureGameStorageV4.sol";
 import { ICosmicSignatureArtAuction } from "./interfaces/ICosmicSignatureArtAuction.sol";
 
+import { IChaosZeroBinding, IChaosZeroMarket } from "./interfaces/IChaosZeroMarket.sol";
+import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
+import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
 /// @custom:oz-upgrades-unsafe-allow missing-initializer
 contract CosmicSignatureGameV4 is
 	CosmicSignatureGameV2Base,
@@ -24,12 +29,12 @@ contract CosmicSignatureGameV4 is
 	MainPrizeV4,
 	CosmicSignatureGameStorageV4 {
 
-	/// @notice The legacy no-argument upgrade initializer cannot configure an auction.
+	/// @notice The legacy no-argument upgrade initializer cannot configure the V4 contracts.
 	function reinitialize() external pure override {
 		revert V4InitializationRequired();
 	}
 
-	function initializeV4(ICosmicSignatureArtAuction artAuction_) external override
+	function initializeV4(ICosmicSignatureArtAuction artAuction_, IChaosZeroMarket chaosZeroMarket_) external override
 		onlyOwner _onlyRoundIsInactive _onlyIfPrevVersionWasInitialized reinitializer(4) {
 		address artAuctionAddress_ = address(artAuction_);
 		if (
@@ -39,14 +44,63 @@ contract CosmicSignatureGameV4 is
 		) {
 			revert InvalidArtAuction(artAuctionAddress_);
 		}
+		if (
+			address(chaosZeroMarket_).code.length == 0 ||
+			chaosZeroMarket_.game() != address(this) ||
+			chaosZeroMarket_.cst() != address(token)
+		) {
+			revert InvalidChaosZeroMarket(address(chaosZeroMarket_));
+		}
+		IChaosZeroBinding source_ = chaosZeroMarket_.source();
+		if (address(source_).code.length == 0 || source_.game() != address(this) || source_.cst() != address(token)) {
+			revert InvalidChaosZeroMarket(address(chaosZeroMarket_));
+		}
 		artAuction = artAuction_;
+		_setArtAuctionOpeningBid(0.001 ether);
+		chaosZeroMarket = chaosZeroMarket_;
 		emit ArtAuctionConfigured(artAuctionAddress_);
+		_fundChaosZeroCycle();
+	}
+
+	function setArtAuctionOpeningBid(uint256 openingBid_) external override onlyOwner _onlyRoundIsInactive {
+		_setArtAuctionOpeningBid(openingBid_);
+	}
+
+	function _setArtAuctionOpeningBid(uint256 openingBid_) private {
+		if (openingBid_ == 0) revert ICosmicSignatureArtAuction.InvalidArtAuctionOpeningBid();
+		artAuctionOpeningBid = openingBid_;
+		emit ArtAuctionOpeningBidChanged(openingBid_);
 	}
 
 	function _checkIfPrevVersionWasInitialized() internal view override {
 		if (_getInitializedVersion() != 3) {
 			revert InvalidInitialization();
 		}
+	}
+
+	/// @dev During V4 both the market and its historical outcome source are bound to the initialized CST.
+	function setCosmicSignatureToken(ICosmicSignatureToken newValue_) public override (SystemManagementV2, ISystemManagementV2) onlyOwner _onlyRoundIsInactive {
+		if (address(newValue_) != address(token)) {
+			revert ChaosZeroCollateralIsFixed(address(token));
+		}
+		emit CosmicSignatureTokenAddressChanged(newValue_);
+	}
+
+	function _prepareNextRound() internal override {
+		super._prepareNextRound();
+		_fundChaosZeroCycle();
+	}
+
+	/// @dev Only initialization or an actual cycle increment reaches this function. CST transfers
+	/// have no receiver callback, so market availability cannot block the game from advancing.
+	function _fundChaosZeroCycle() private {
+		address market_ = address(chaosZeroMarket);
+		uint256 cumulativeAmount_ = _totalChaosZeroFunding[market_] + CHAOS_ZERO_CST_PER_CYCLE;
+		_totalChaosZeroFunding[market_] = cumulativeAmount_;
+		chaosZeroFunding[market_][roundNum] = ChaosZeroCycleFunding(CHAOS_ZERO_CST_PER_CYCLE, cumulativeAmount_);
+		token.mint(address(this), CHAOS_ZERO_CST_PER_CYCLE);
+		SafeERC20.safeTransfer(IERC20(address(token)), market_, CHAOS_ZERO_CST_PER_CYCLE);
+		emit ChaosZeroCycleFunded(market_, roundNum, CHAOS_ZERO_CST_PER_CYCLE, cumulativeAmount_);
 	}
 
 	function setCstDutchAuctionDuration(uint256 newValue_) public override (SystemManagementV2, SystemManagementV3) {

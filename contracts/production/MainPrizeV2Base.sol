@@ -98,7 +98,7 @@ abstract contract MainPrizeV2Base is
 	// #endregion
 	// #region `_prepareNextRound`
 
-	function _prepareNextRound() private {
+	function _prepareNextRound() internal virtual {
 		// Comment-202606235 relates and/or applies.
 		// #enable_smtchecker /*
 		unchecked
