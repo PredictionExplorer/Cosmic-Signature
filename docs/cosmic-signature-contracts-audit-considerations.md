@@ -26,7 +26,7 @@ The same in the Solidity coverage mode `npm run hardhat-coverage`.
 
 Hardhat test and Solidity coverage scripts are located in the `${workspaceFolder}/test/runners` folder. For Solidity coverage notes, see Comment-202505289.
 
-We have achieved 100% Solidity coverage, except the `BiddingCommon._onlyRoundIsActive` modifier, as well as its counterpart in later versions, because they are not called. `RandomWalkNFT` is not 100% covered either because it's essentially a third party contract from another project.
+We have achieved 100% Solidity coverage of production sources, except the `BiddingCommon._onlyRoundIsActive` modifier, as well as its counterpart in later versions, because they are not called. `RandomWalkNFT` is not 100% covered either because it's essentially a third party contract from another project.
 
 `BiddingCommonV2._onlyNonFirstRound` and `CosmicSignatureGameV2Base._onlyIfPrevVersionWasInitialized`, as well as its counterpart in later versions, do nothing when asserts are disabled. Despite of them being called and covered, we have observed that for some reason they are flagged as not fully covered.
 
