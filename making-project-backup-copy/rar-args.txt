@@ -1,5 +1,6 @@
 -r
 -x.git/*
+-xarchives/*
 -xartifacts/*
 -xcache/*
 -xeslint/eslint-1-report.bak.txt
