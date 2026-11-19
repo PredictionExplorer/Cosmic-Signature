@@ -62,7 +62,7 @@ contract CosmicSignatureGameV2 is
 	// }
 
 	// #endregion
-	// #region `initializeV2`
+	// #region `reinitialize`
 
 	/// @dev
 	/// [Comment-202606128]
@@ -73,8 +73,8 @@ contract CosmicSignatureGameV2 is
 	/// One might want to fully validate that condition here, but it's really unnecessary,
 	/// because it's guaranteed to be `true` in the production.
 	/// Comment-202606084 relates and/or applies.
-	function initializeV2() external override /*onlyOwner*/ _onlyNonFirstRound() _onlyIfPrevVersionWasInitialized() reinitializer(uint64(2)) {
-		// // #enable_asserts // #disable_smtchecker console.log("CosmicSignatureGameV2.initializeV2");
+	function reinitialize() external override /*onlyOwner*/ _onlyNonFirstRound() _onlyIfPrevVersionWasInitialized() reinitializer(uint64(2)) {
+		// // #enable_asserts // #disable_smtchecker console.log("CosmicSignatureGameV2.reinitialize");
 
 		cstDutchAuctionDuration = CosmicSignatureConstants.INITIAL_CST_DUTCH_AUCTION_DURATION;
 		cstDutchAuctionDurationChangeDivisor = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR;

@@ -14,7 +14,7 @@ const {
 } = require("../src/V2UpgradeTestHelpers.js");
 
 describe("CosmicSignatureGameV2-GuardsAndMisconfig", function () {
-	it("documents that roundNum > 0 is assert-only in initializeV2", async function () {
+	it("documents that roundNum > 0 is assert-only in reinitialize", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 		expect(await contracts_.cosmicSignatureGameProxy.roundNum()).equal(0n);
 		const factory_ = await hre.ethers.getContractFactory("CosmicSignatureGameV2", contracts_.ownerSigner);
@@ -24,7 +24,7 @@ describe("CosmicSignatureGameV2-GuardsAndMisconfig", function () {
 				hre.upgrades.upgradeProxy(
 					contracts_.cosmicSignatureGameProxy,
 					factory_,
-					{ kind: "uups", call: "initializeV2" }
+					{ kind: "uups", call: "reinitialize" }
 				)
 			).revertedWithPanic(0x1);
 		} else {
@@ -39,7 +39,7 @@ describe("CosmicSignatureGameV2-GuardsAndMisconfig", function () {
 		const game_ = contracts_.cosmicSignatureGameV2Proxy;
 
 		expect(await game_.getDurationUntilRoundActivation()).greaterThan(0n);
-		expect(await game_.getDurationUntilMainPrize()).equal(0n);
+		expect(await game_.getDurationUntilMainPrizeClamped()).equal(0n);
 		await expect(game_.connect(contracts_.signers[2]).bidWithEth(-1n, "inactive", 0n, { value: 10n ** 18n }))
 			.revertedWithCustomError(game_, "RoundIsInactive");
 
@@ -59,7 +59,7 @@ describe("CosmicSignatureGameV2-GuardsAndMisconfig", function () {
 		await waitForTransactionReceipt(game_.connect(bidder_).bidWithEth(-1n, "first eth", 0n, { value: ethPrice_ }));
 		await expect(game_.connect(contracts_.ownerSigner).halveEthDutchAuctionEndingBidPrice())
 			.revertedWithCustomError(game_, "BidHasBeenPlacedInCurrentRound");
-		expect(await game_.getDurationUntilMainPrize()).greaterThan(0n);
+		expect(await game_.getDurationUntilMainPrizeClamped()).greaterThan(0n);
 	});
 
 	it("documents zero CST duration owner misconfiguration", async function () {

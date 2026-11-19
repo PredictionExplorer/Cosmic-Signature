@@ -31,5 +31,5 @@ interface ICosmicSignatureGameOpenBid is
 	// fallback() external payable;
 
 	/// @notice Comment-202606018 applies.
-	function initializeV2() external;
+	function reinitialize() external;
 }

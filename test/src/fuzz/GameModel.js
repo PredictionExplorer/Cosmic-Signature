@@ -630,7 +630,7 @@ class GameModel {
 		return { newDurationDivisor: newDurationDivisor_, newEndingBidPriceDivisor: newEndingBidPriceDivisor_ };
 	}
 
-	/** Applies `initializeV2` state changes (run as the upgrade call). */
+	/** Applies `reinitialize` state changes (run as the upgrade call). */
 	applyUpgradeToV2() {
 		this.version = 2;
 		this.cstDutchAuctionDuration = c.INITIAL_CST_DUTCH_AUCTION_DURATION;

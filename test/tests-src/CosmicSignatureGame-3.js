@@ -30,7 +30,7 @@ describe("CosmicSignatureGame-3", function () {
 				cosmicSignatureGameOpenBidFactory_,
 				{
 					kind: "uups",
-					call: "initializeV2",
+					call: "reinitialize",
 				}
 			);
 		// await cosmicSignatureGameOpenBidProxy_.waitForDeployment();
@@ -39,9 +39,9 @@ describe("CosmicSignatureGame-3", function () {
 		expect(cosmicSignatureGameOpenBidImplementationAddress_).not.equal(contracts_.cosmicSignatureGameImplementationAddress);
 		const cosmicSignatureGameOpenBidImplementation_ = cosmicSignatureGameOpenBidFactory_.attach(cosmicSignatureGameOpenBidImplementationAddress_);
 		// await expect(cosmicSignatureGameOpenBidProxy_.connect(contracts_.ownerSigner).initialize(contracts_.ownerSigner.address)).revertedWithCustomError(cosmicSignatureGameOpenBidProxy_, "InvalidInitialization");
-		await expect(cosmicSignatureGameOpenBidProxy_.connect(contracts_.ownerSigner).initializeV2()).revertedWithCustomError(cosmicSignatureGameOpenBidProxy_, "InvalidInitialization");
+		await expect(cosmicSignatureGameOpenBidProxy_.connect(contracts_.ownerSigner).reinitialize()).revertedWithCustomError(cosmicSignatureGameOpenBidProxy_, "InvalidInitialization");
 		// await expect(cosmicSignatureGameOpenBidImplementation_.connect(contracts_.ownerSigner).initialize(contracts_.ownerSigner.address)).revertedWithCustomError(cosmicSignatureGameOpenBidImplementation_, "InvalidInitialization");
-		await expect(cosmicSignatureGameOpenBidImplementation_.connect(contracts_.ownerSigner).initializeV2()).revertedWithCustomError(cosmicSignatureGameOpenBidImplementation_, "InvalidInitialization");
+		await expect(cosmicSignatureGameOpenBidImplementation_.connect(contracts_.ownerSigner).reinitialize()).revertedWithCustomError(cosmicSignatureGameOpenBidImplementation_, "InvalidInitialization");
 		expect(await cosmicSignatureGameOpenBidProxy_.timesEthBidPrice()).equal(3n);
 		await waitForTransactionReceipt(cosmicSignatureGameOpenBidProxy_.connect(contracts_.ownerSigner).setTimesEthBidPrice(10n));
 		expect(await cosmicSignatureGameOpenBidProxy_.timesEthBidPrice()).equal(10n);
@@ -66,7 +66,7 @@ describe("CosmicSignatureGame-3", function () {
 				cosmicSignatureGameV2Factory_,
 				{
 					kind: "uups",
-					call: "initializeV2",
+					call: "reinitialize",
 				}
 			);
 		// await cosmicSignatureGameV2Proxy_.waitForDeployment();
@@ -77,7 +77,7 @@ describe("CosmicSignatureGame-3", function () {
 		// await expect(cosmicSignatureGameV2Proxy_.connect(contracts_.ownerSigner).initialize(contracts_.ownerSigner.address)).revertedWithCustomError(cosmicSignatureGameV2Proxy_, "InvalidInitialization");
 		{
 			/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
-			const transactionResponsePromise_ = cosmicSignatureGameV2Proxy_.connect(contracts_.ownerSigner).initializeV2();
+			const transactionResponsePromise_ = cosmicSignatureGameV2Proxy_.connect(contracts_.ownerSigner).reinitialize();
 			const transactionResponsePromiseAssertion_ = expect(transactionResponsePromise_);
 			if (ENABLE_ASSERTS) {
 				// `_onlyIfPrevVersionWasInitialized`.
@@ -90,7 +90,7 @@ describe("CosmicSignatureGame-3", function () {
 		// await expect(cosmicSignatureGameV2Implementation_.connect(contracts_.ownerSigner).initialize(contracts_.ownerSigner.address)).revertedWithCustomError(cosmicSignatureGameV2Implementation_, "InvalidInitialization");
 		{
 			/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
-			const transactionResponsePromise_ = cosmicSignatureGameV2Implementation_.connect(contracts_.ownerSigner).initializeV2();
+			const transactionResponsePromise_ = cosmicSignatureGameV2Implementation_.connect(contracts_.ownerSigner).reinitialize();
 			const transactionResponsePromiseAssertion_ = expect(transactionResponsePromise_);
 			if (ENABLE_ASSERTS) {
 				// `_onlyNonFirstRound`.
@@ -121,7 +121,7 @@ describe("CosmicSignatureGame-3", function () {
 				{
 					kind: "uups",
 					unsafeSkipStorageCheck: true,
-					call: "initializeV2",
+					call: "reinitialize",
 				}
 			);
 
@@ -172,7 +172,7 @@ describe("CosmicSignatureGame-3", function () {
 						newCosmicSignatureGameFactory_,
 						{
 							kind: "uups",
-							call: "initializeV2",
+							call: "reinitialize",
 						}
 					);
 				try {
@@ -195,7 +195,7 @@ describe("CosmicSignatureGame-3", function () {
 					contracts_.charityWalletFactory.connect(contracts_.ownerSigner),
 					{
 						kind: "uups",
-						// call: "initializeV2",
+						// call: "reinitialize",
 					}
 				);
 			try {
@@ -218,7 +218,7 @@ describe("CosmicSignatureGame-3", function () {
 						newCosmicSignatureGameFactory_.connect(contracts_.signers[5]),
 						{
 							kind: "uups",
-							call: "initializeV2",
+							call: "reinitialize",
 						}
 					);
 				// await transactionResponsePromise_;
@@ -238,7 +238,7 @@ describe("CosmicSignatureGame-3", function () {
 						newCosmicSignatureGameFactory_,
 						{
 							kind: "uups",
-							call: "initializeV2",
+							call: "reinitialize",
 						}
 					);
 				// await transactionResponsePromise_;

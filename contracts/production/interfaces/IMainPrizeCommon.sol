@@ -9,19 +9,19 @@ interface IMainPrizeCommon is ICosmicSignatureGameStorage, ISystemEvents {
 
 	/// @notice
 	/// [Comment-202605239]
-	/// This is a "friendly" version of `getDurationUntilMainPrizeRaw` that can't return a negative value.
-	/// Comments near `getDurationUntilMainPrizeRaw` apply.
+	/// This is a "friendly" version of `getDurationUntilMainPrize` that can't return a negative value.
+	/// Comments near `getDurationUntilMainPrize` apply.
 	/// [/Comment-202605239]
-	function getDurationUntilMainPrize() external view returns (uint256);
+	function getDurationUntilMainPrizeClamped() external view returns (uint256);
 
-	/// @notice See also: `getDurationUntilMainPrize`.
+	/// @notice See also: `getDurationUntilMainPrizeClamped`.
 	/// @return
 	/// [Comment-202605241]
 	/// The number of seconds until the last bidder will be permitted to claim the main prize,
 	/// or a non-positive value if that time has already come.
 	/// [/Comment-202605241]
 	/// Comment-202501022 applies.
-	function getDurationUntilMainPrizeRaw() external view returns (int256);
+	function getDurationUntilMainPrize() external view returns (int256);
 
 	function getMainPrizeTimeIncrement() external view returns (uint256);
 }

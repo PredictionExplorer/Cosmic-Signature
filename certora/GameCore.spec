@@ -5,7 +5,7 @@ methods {
     function bidMessageLengthMaxLimit() external returns (uint256);
     function bidWithCst(uint256 cstPriceMaxLimit, string message) external;
     function bidWithEth(int256 randomWalkNftId, string message) external;
-    function bidderAddresses(uint256 roundNum) external returns (uint256);
+    function roundStats(uint256 roundNum) external returns (uint256);
     function charityAddress() external returns (address);
     function claimMainPrize() external;
     function cstDutchAuctionBeginningBidPrice() external returns (uint256);

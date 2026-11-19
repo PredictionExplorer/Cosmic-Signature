@@ -38,5 +38,5 @@ interface ICosmicSignatureGameV2 is
 	/// Makes additional initializations after an upgrade.
 	/// This method is called on the proxy contract right after deployment of the new implementation contract.
 	/// [/Comment-202606018]
-	function initializeV2() external;
+	function reinitialize() external;
 }

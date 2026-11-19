@@ -66,7 +66,7 @@ async function upgradeToV2(contracts_, upgradeOptions_ = {}) {
 			cosmicSignatureGameV2Factory_,
 			{
 				kind: "uups",
-				call: "initializeV2",
+				call: "reinitialize",
 				...upgradeOptions_,
 			}
 		);

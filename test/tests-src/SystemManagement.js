@@ -33,7 +33,7 @@ describe("SystemManagement", function () {
 						cosmicSignatureGameV2Factory_,
 						{
 							kind: "uups",
-							call: "initializeV2",
+							call: "reinitialize",
 						}
 					);
 				// await cosmicSignatureGameV2Proxy_.waitForDeployment();
@@ -427,7 +427,7 @@ describe("SystemManagement", function () {
 					cosmicSignatureGameV2Factory_,
 					{
 						kind: "uups",
-						call: "initializeV2",
+						call: "reinitialize",
 					}
 				);
 			// await cosmicSignatureGameV2Proxy_.waitForDeployment();
@@ -507,7 +507,7 @@ describe("SystemManagement", function () {
 					cosmicSignatureGameV2Factory_,
 					{
 						kind: "uups",
-						call: "initializeV2",
+						call: "reinitialize",
 					}
 				);
 			// await cosmicSignatureGameV2Proxy_.waitForDeployment();

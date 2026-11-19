@@ -44,8 +44,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// [/Comment-202605182]
 	/// @dev
 	/// [Comment-202502044]
-	/// Issue. This is the same as the last `bidderAddresses` item. So it could make sense to eliminate this variable.
-	/// But let's leave it alone.
+	/// Issue. This equals the last address in `roundStats[roundNum].bidderAddresses`.
+	/// So it could make sense to eliminate this variable. But let's leave it alone.
 	/// [/Comment-202502044]
 	address public lastBidderAddress;
 
@@ -63,7 +63,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Comment-202502045 relates.
 	/// [/Comment-202411098]
 	/// Comment-202502044 relates.
-	mapping(uint256 roundNum => BidderAddresses) public bidderAddresses;
+	/// @custom:oz-renamed-from bidderAddresses
+	mapping(uint256 roundNum => BidderAddresses) public roundStats;
 
 	/// @dev Comment-202411098 applies.
 	mapping(uint256 roundNum => mapping(address bidderAddress => BidderInfo)) public biddersInfo;

@@ -54,7 +54,7 @@ abstract contract MainPrizeV2 is
 				revert CosmicSignatureErrors.NoBidsPlacedInCurrentRound("There have been no bids in the current bidding round yet.");
 			}
 
-			int256 durationUntilOperationIsPermitted_ = getDurationUntilMainPrizeRaw() + int256(timeoutDurationToClaimMainPrize);
+			int256 durationUntilOperationIsPermitted_ = getDurationUntilMainPrize() + int256(timeoutDurationToClaimMainPrize);
 			if ( ! (durationUntilOperationIsPermitted_ <= int256(0)) ) {
 				revert
 					CosmicSignatureErrors.MainPrizeClaimDenied(
@@ -94,7 +94,7 @@ abstract contract MainPrizeV2 is
 		// Comment-202605312 applies.
 		randomNumberSeedWrapper_.value = RandomNumberHelpers.generateRandomNumberSeed();
 
-		BidderAddresses storage bidderAddressesReference_ = bidderAddresses[roundNum];
+		BidderAddresses storage roundStatsReference_ = roundStats[roundNum];
 		uint256 timeoutTimeToWithdrawSecondaryPrizes_;
 
 		// Comment-202501161 applies.
@@ -165,7 +165,7 @@ abstract contract MainPrizeV2 is
 						-- ethDepositIndex_;
 						IPrizesWallet.EthDeposit memory ethDepositReference_ = ethDeposits_[ethDepositIndex_];
 						uint256 randomNumber_ = RandomNumberHelpers.generateRandomNumber(randomNumberSeedWrapper_);
-						address raffleWinnerAddress_ = bidderAddressesReference_.items[randomNumber_ % bidderAddressesReference_.numItems];
+						address raffleWinnerAddress_ = roundStatsReference_.bidderAddresses[randomNumber_ % roundStatsReference_.numBids];
 						// #enable_asserts assert(raffleWinnerAddress_ != address(0));
 						ethDepositReference_.prizeWinnerAddress = raffleWinnerAddress_;
 						ethDepositReference_.amount = raffleEthPrizeAmountForBidder_;
@@ -309,7 +309,7 @@ abstract contract MainPrizeV2 is
 				// #enable_asserts assert(numRaffleCosmicSignatureNftsForBidders > 0);
 				for (uint256 raffleWinnerIndex_ = numRaffleCosmicSignatureNftsForBidders; ; ) {
 					uint256 randomNumber_ = RandomNumberHelpers.generateRandomNumber(randomNumberSeedWrapper_);
-					address raffleWinnerAddress_ = bidderAddressesReference_.items[randomNumber_ % bidderAddressesReference_.numItems];
+					address raffleWinnerAddress_ = roundStatsReference_.bidderAddresses[randomNumber_ % roundStatsReference_.numBids];
 					// #enable_asserts assert(raffleWinnerAddress_ != address(0));
 					-- cosmicSignatureTokenMintSpecIndex_;
 					ICosmicSignatureToken.MintSpec memory cosmicSignatureTokenMintSpec_ = cosmicSignatureTokenMintSpecs_[cosmicSignatureTokenMintSpecIndex_];

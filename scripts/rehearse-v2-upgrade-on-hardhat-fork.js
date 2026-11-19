@@ -110,11 +110,11 @@ async function main() {
 	}
 
 	const upgradeInterface_ = new hre.ethers.Interface(["function upgradeToAndCall(address newImplementation, bytes data) payable"]);
-	const initializeV2CallData_ = cosmicSignatureGameV2Factory_.interface.encodeFunctionData("initializeV2", []);
+	const reinitializeCallData_ = cosmicSignatureGameV2Factory_.interface.encodeFunctionData("reinitialize", []);
 	await waitForTransactionReceipt(
 		ownerSigner_.sendTransaction({
 			to: GAME_PROXY_ADDRESS,
-			data: upgradeInterface_.encodeFunctionData("upgradeToAndCall", [gameV2ImplementationAddress_, initializeV2CallData_]),
+			data: upgradeInterface_.encodeFunctionData("upgradeToAndCall", [gameV2ImplementationAddress_, reinitializeCallData_]),
 			gasLimit: 30_000_000n,
 		})
 	);
@@ -168,8 +168,8 @@ async function main() {
 	if (slotDurationAfter_ != (await gameV2_.cstDutchAuctionDuration())) throw new Error("slot 277 != cstDutchAuctionDuration() getter.");
 	if (slotRewardAfter_ != (await gameV2_.bidCstRewardAmountMultiplier())) throw new Error("slot 283 != bidCstRewardAmountMultiplier() getter.");
 	if (slotChangeDivisorAfter_ != (await gameV2_.cstDutchAuctionDurationChangeDivisor())) throw new Error("slot 307 != cstDutchAuctionDurationChangeDivisor() getter.");
-	if (slotDurationAfter_ != 43200n) throw new Error("slot 277 did not become 43200 after initializeV2.");
-	if (slotChangeDivisorAfter_ != 250n) throw new Error("slot 307 did not become 250 after initializeV2.");
+	if (slotDurationAfter_ != 43200n) throw new Error("slot 277 did not become 43200 after reinitialize.");
+	if (slotChangeDivisorAfter_ != 250n) throw new Error("slot 307 did not become 250 after reinitialize.");
 	console.info("raw-slot/getter reconciliation OK");
 
 	// Full V2 round on the migrated real state: ETH bids, a CST bid, then claim.

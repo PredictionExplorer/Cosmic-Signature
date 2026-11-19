@@ -620,11 +620,11 @@ abstract contract BiddingV2 is
 		}
 		// lastBidType = bidType_;
 		lastBidderAddress = _msgSender();
-		BidderAddresses storage bidderAddressesReference_ = bidderAddresses[roundNum];
-		uint256 totalNumBids_ = bidderAddressesReference_.numItems;
-		bidderAddressesReference_.items[totalNumBids_] = _msgSender();
+		BidderAddresses storage roundStatsReference_ = roundStats[roundNum];
+		uint256 totalNumBids_ = roundStatsReference_.numBids;
+		roundStatsReference_.bidderAddresses[totalNumBids_] = _msgSender();
 		++ totalNumBids_;
-		bidderAddressesReference_.numItems = totalNumBids_;
+		roundStatsReference_.numBids = totalNumBids_;
 		biddersInfo[roundNum][_msgSender()].lastBidTimeStamp = block.timestamp;
 	}
 

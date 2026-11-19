@@ -62,7 +62,7 @@ contract CosmicSignatureGameOpenBid is
 	// }
 
 	// #endregion
-	// #region `initializeV2`
+	// #region `reinitialize`
 
 	/// @dev Comment-202606128 applies.
 	/// [Comment-202606084]
@@ -74,8 +74,8 @@ contract CosmicSignatureGameOpenBid is
 	/// But if you decide to use this code pattern, it will be up to the contract owner performing the upgrade to not break things.
 	/// Comment-202606126 relates.
 	/// [/Comment-202606084]
-	function initializeV2() external override /*onlyOwner*/ reinitializer(uint64(uint256(_getInitializedVersion()) + 1)) {
-		// // #enable_asserts // #disable_smtchecker console.log("CosmicSignatureGameOpenBid.initializeV2");
+	function reinitialize() external override /*onlyOwner*/ reinitializer(uint64(uint256(_getInitializedVersion()) + 1)) {
+		// // #enable_asserts // #disable_smtchecker console.log("CosmicSignatureGameOpenBid.reinitialize");
 
 		// Normally, `reinitializer` prevents a redundant initialization, but we disabled that validation near Comment-202606084.
 		if ( ! (timesEthBidPrice == 0) ) {
