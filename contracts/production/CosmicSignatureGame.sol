@@ -89,7 +89,7 @@ contract CosmicSignatureGame is
 		// // lastBidType = todo-9 Should we assert that this equals `ETH`?
 		// lastBidderAddress =
 		// lastCstBidderAddress =
-		// bidderAddresses =
+		// roundStats =
 		// biddersInfo =
 		// enduranceChampionAddress =
 		// enduranceChampionStartTimeStamp =
@@ -113,7 +113,7 @@ contract CosmicSignatureGame is
 		cstDutchAuctionBeginningBidPriceMinLimit = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT;
 		// usedRandomWalkNfts =
 		bidMessageLengthMaxLimit = CosmicSignatureConstants.DEFAULT_BID_MESSAGE_LENGTH_MAX_LIMIT;
-		cstRewardAmountForBidding = CosmicSignatureConstants.DEFAULT_BID_CST_REWARD_AMOUNT;
+		bidCstRewardAmount = CosmicSignatureConstants.DEFAULT_BID_CST_REWARD_AMOUNT;
 		cstPrizeAmount = CosmicSignatureConstants.DEFAULT_CST_PRIZE_AMOUNT;
 		chronoWarriorEthPrizeAmountPercentage = CosmicSignatureConstants.DEFAULT_CHRONO_WARRIOR_ETH_PRIZE_AMOUNT_PERCENTAGE;
 		raffleTotalEthPrizeAmountForBiddersPercentage = CosmicSignatureConstants.DEFAULT_RAFFLE_TOTAL_ETH_PRIZE_AMOUNT_FOR_BIDDERS_PERCENTAGE;

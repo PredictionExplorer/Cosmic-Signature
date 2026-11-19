@@ -313,7 +313,7 @@ abstract contract Bidding is
 		nextEthBidPrice = ethBidPrice_ + ethBidPrice_ / ethBidPriceIncreaseDivisor + 1;
 
 		// Comment-202501125 applies.
-		token.mint(_msgSender(), cstRewardAmountForBidding);
+		token.mint(_msgSender(), bidCstRewardAmount);
 
 		_bidCommon(/*bidType_,*/ message_);
 		emit BidPlaced(
@@ -530,7 +530,7 @@ abstract contract Bidding is
 			mintAndBurnSpecs_[0].account = _msgSender();
 			mintAndBurnSpecs_[0].value = ( - int256(paidCstPrice_) );
 			mintAndBurnSpecs_[1].account = _msgSender();
-			mintAndBurnSpecs_[1].value = int256(cstRewardAmountForBidding);
+			mintAndBurnSpecs_[1].value = int256(bidCstRewardAmount);
 			token.mintAndBurnMany(mintAndBurnSpecs_);
 		}
 
@@ -683,11 +683,11 @@ abstract contract Bidding is
 		}
 		// lastBidType = bidType_;
 		lastBidderAddress = _msgSender();
-		BidderAddresses storage bidderAddressesReference_ = bidderAddresses[roundNum];
-		uint256 totalNumBids_ = bidderAddressesReference_.numItems;
-		bidderAddressesReference_.items[totalNumBids_] = _msgSender();
+		BidderAddresses storage roundStatsReference_ = roundStats[roundNum];
+		uint256 totalNumBids_ = roundStatsReference_.numBids;
+		roundStatsReference_.bidderAddresses[totalNumBids_] = _msgSender();
 		++ totalNumBids_;
-		bidderAddressesReference_.numItems = totalNumBids_;
+		roundStatsReference_.numBids = totalNumBids_;
 		biddersInfo[roundNum][_msgSender()].lastBidTimeStamp = block.timestamp;
 	}
 

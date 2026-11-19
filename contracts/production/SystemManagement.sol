@@ -63,9 +63,9 @@ abstract contract SystemManagement is
 		emit BidMessageLengthMaxLimitChanged(newValue_);
 	}
 
-	function setCstRewardAmountForBidding(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
-		cstRewardAmountForBidding = newValue_;
-		emit CstRewardAmountForBiddingChanged(newValue_);
+	function setBidCstRewardAmount(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {
+		bidCstRewardAmount = newValue_;
+		emit BidCstRewardAmountChanged(newValue_);
 	}
 
 	function setCstPrizeAmount(uint256 newValue_) external override onlyOwner _onlyRoundIsInactive {

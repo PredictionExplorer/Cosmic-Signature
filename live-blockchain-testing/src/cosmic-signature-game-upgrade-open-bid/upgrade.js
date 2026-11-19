@@ -28,7 +28,7 @@
 // 			cosmicSignatureGameOpenBidFactory,
 // 			{
 // 				kind: "uups",
-// 				call: "initialize2",
+// 				call: "reinitialize",
 // 			}
 // 		);
 // 	// await cosmicSignatureGameOpenBidProxy.waitForDeployment();

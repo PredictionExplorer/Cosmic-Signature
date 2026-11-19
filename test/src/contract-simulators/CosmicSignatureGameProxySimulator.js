@@ -147,9 +147,9 @@ async function createCosmicSignatureGameProxySimulator(
 		},
 
 		// #endregion
-		// #region `getDurationUntilMainPrizeRaw`
+		// #region `getDurationUntilMainPrize`
 
-		getDurationUntilMainPrizeRaw: function(latestBlock_) {
+		getDurationUntilMainPrize: function(latestBlock_) {
 			return this.mainPrizeTime - BigInt(latestBlock_.timestamp);
 		},
 
@@ -880,7 +880,7 @@ async function createCosmicSignatureGameProxySimulator(
 					return false;
 				}
 				const durationUntilOperationIsPermitted_ =
-					this.getDurationUntilMainPrizeRaw(transactionBlock_) + this.timeoutDurationToClaimMainPrize;
+					this.getDurationUntilMainPrize(transactionBlock_) + this.timeoutDurationToClaimMainPrize;
 				if ( ! (durationUntilOperationIsPermitted_ <= 0n) ) {
 					// console.info("%s", "202504254");
 					await expect(transactionResponsePromise_)
@@ -1358,7 +1358,7 @@ async function assertCosmicSignatureGameProxySimulator(cosmicSignatureGameProxyS
 	expect(await contracts_.cosmicSignatureGameProxy.cstDutchAuctionBeginningBidPriceMinLimit()).equal(cosmicSignatureGameProxySimulator_.cstDutchAuctionBeginningBidPriceMinLimit);
 	await assertCosmicSignatureGameProxySimulatorRandomRandomWalkNftIfPossible(cosmicSignatureGameProxySimulator_, contracts_, randomNumberSeedWrapper_);
 	expect(await contracts_.cosmicSignatureGameProxy.bidMessageLengthMaxLimit()).equal(cosmicSignatureGameProxySimulator_.bidMessageLengthMaxLimit);
-	expect(await contracts_.cosmicSignatureGameProxy.cstRewardAmountForBidding()).equal(cosmicSignatureGameProxySimulator_.bidCstRewardAmount);
+	expect(await contracts_.cosmicSignatureGameProxy.bidCstRewardAmount()).equal(cosmicSignatureGameProxySimulator_.bidCstRewardAmount);
 	expect(await contracts_.cosmicSignatureGameProxy.cstPrizeAmount()).equal(cosmicSignatureGameProxySimulator_.cstPrizeAmount);
 	expect(await contracts_.cosmicSignatureGameProxy.chronoWarriorEthPrizeAmountPercentage()).equal(cosmicSignatureGameProxySimulator_.chronoWarriorEthPrizeAmountPercentage);
 	expect(await contracts_.cosmicSignatureGameProxy.raffleTotalEthPrizeAmountForBiddersPercentage()).equal(cosmicSignatureGameProxySimulator_.raffleTotalEthPrizeAmountForBiddersPercentage);

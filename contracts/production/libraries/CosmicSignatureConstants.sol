@@ -94,7 +94,7 @@ library CosmicSignatureConstants {
 	/// Comment-202409143 applies.
 	uint256 internal constant DEFAULT_BID_MESSAGE_LENGTH_MAX_LIMIT = 280;
 
-	/// @notice Default `cstRewardAmountForBidding` and `CosmicSignatureDao.proposalThreshold()`.
+	/// @notice Default `bidCstRewardAmount` and `CosmicSignatureDao.proposalThreshold()`.
 	uint256 internal constant DEFAULT_BID_CST_REWARD_AMOUNT = 100 ether;
 
 	// #endregion

@@ -701,7 +701,7 @@ async function assertEnduranceChampionStartTimestampVsBidderInfo(gameProxy_) {
 }
 
 /**
- * `Bidding._bidCommon` appends each bidder to `items[numItems-1]` after increment; `lastBidderAddress` is that sender.
+ * After `Bidding._bidCommon` increments `numBids`, `roundStats[roundNum].bidderAddresses[numBids - 1]` holds `lastBidderAddress`.
  * @param {import("hardhat").ethers.Contract} gameProxy_
  */
 async function assertLastBidderMatchesBidLogTail(gameProxy_) {
@@ -715,7 +715,7 @@ async function assertLastBidderMatchesBidLogTail(gameProxy_) {
 	const tailBidder_ = await gameProxy_.getBidderAddressAt(round_, n_ - 1n);
 	expect(
 		tailBidder_,
-		"lastBidderAddress must match tail of bidderAddresses[roundNum] (getBidderAddressAt(round, n-1))"
+		"lastBidderAddress must match tail of roundStats[roundNum].bidderAddresses (getBidderAddressAt(round, n-1))"
 	).to.equal(last_);
 }
 

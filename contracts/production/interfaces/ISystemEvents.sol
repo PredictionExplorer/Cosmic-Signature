@@ -50,9 +50,9 @@ interface ISystemEvents {
 	/// @param newValue The new value.
 	event BidMessageLengthMaxLimitChanged(uint256 newValue);
 
-	/// @notice Emitted when `cstRewardAmountForBidding` is changed.
+	/// @notice Emitted when `bidCstRewardAmount` is changed.
 	/// @param newValue The new value.
-	event CstRewardAmountForBiddingChanged(uint256 newValue);
+	event BidCstRewardAmountChanged(uint256 newValue);
 
 	/// @notice Emitted when `cstPrizeAmount` is changed.
 	/// @param newValue The new value.

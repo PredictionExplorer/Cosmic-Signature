@@ -43,8 +43,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// @notice The address of the account that placed the last bid.
 	/// @dev
 	/// [Comment-202502044]
-	/// Issue. This is the same as the last `bidderAddresses` item. So it could make sense to eliminate this variable.
-	/// But let's leave it alone.
+	/// Issue. This equals the last address in `roundStats[roundNum].bidderAddresses`.
+	/// So it could make sense to eliminate this variable. But let's leave it alone.
 	/// [/Comment-202502044]
 	address public lastBidderAddress;
 
@@ -59,7 +59,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Comment-202502045 relates.
 	/// [/Comment-202411098]
 	/// Comment-202502044 relates.
-	mapping(uint256 roundNum => BidderAddresses) public bidderAddresses;
+	/// @custom:oz-renamed-from bidderAddresses
+	mapping(uint256 roundNum => BidderAddresses) public roundStats;
 
 	/// @dev Comment-202411098 applies.
 	mapping(uint256 roundNum => mapping(address bidderAddress => BidderInfo)) public biddersInfo;
@@ -241,7 +242,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// @notice We mint this CST amount as a bidder reward for each bid.
 	/// We do it even for a CST bid.
 	/// Comment-202411064 applies.
-	uint256 public cstRewardAmountForBidding;
+	/// @custom:oz-renamed-from cstRewardAmountForBidding
+	uint256 public bidCstRewardAmount;
 
 	// #endregion
 	// #region Secondary Prizes

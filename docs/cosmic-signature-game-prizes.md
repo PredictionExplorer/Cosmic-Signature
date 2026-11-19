@@ -60,7 +60,7 @@ The rest of this document lists prizes from groups 1 and 2.
 |  | CST | 1 | `cstPrizeAmount` |  |
 |  | Cosmic Signature NFT | 1 | 1 |  |
 |  |  |  |  |  |
-| Bidders | CST | 1 per bid | `cstRewardAmountForBidding` | On each bid, the bidder gets CST. |
+| Bidders | CST | 1 per bid | `bidCstRewardAmount` | On each bid, the bidder gets CST. |
 |  |  |  |  |  |
 | Bidders Picked Via ETH Prize Raffle | ETH | `numRaffleEthPrizesForBidders` | `gameEthBalance * raffleTotalEthPrizeAmountForBiddersPercentage / 100 / numRaffleEthPrizesForBidders` | Bids are picked randomly. |
 |  |  |  |  |  |
