@@ -13,8 +13,8 @@ import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { AddressValidator } from "./AddressValidator.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
-import { BiddingBase } from "./BiddingBase.sol";
-import { MainPrizeBase } from "./MainPrizeBase.sol";
+import { BiddingCommon } from "./BiddingCommon.sol";
+import { MainPrizeCommon } from "./MainPrizeCommon.sol";
 import { SystemManagement } from "./SystemManagement.sol";
 import { EthDonations } from "./EthDonations.sol";
 import { NftDonations } from "./NftDonations.sol";
@@ -33,8 +33,8 @@ contract CosmicSignatureGame is
 	UUPSUpgradeable,
 	AddressValidator,
 	CosmicSignatureGameStorage,
-	BiddingBase,
-	MainPrizeBase,
+	BiddingCommon,
+	MainPrizeCommon,
 	SystemManagement,
 	EthDonations,
 	NftDonations,

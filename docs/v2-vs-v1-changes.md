@@ -4,12 +4,14 @@
 
 This document compares `CosmicSignatureGameV2` (the new contracts on the `v2` branch) against the refactored V1 `CosmicSignatureGame` on the same branch. The baseline for "V1" here is the refactored V1 described in `v1-refactorings.md` (notably, it already uses the name `bidCstRewardAmount` instead of the deployed name `cstRewardAmountForBidding`).
 
+Source file and symbol names below follow this archive. On the original `v2` branch, the bidding and main prize contracts and interfaces listed as `*CommonV2` used the suffix `BaseV2`, the CST bid parameter `cstPriceMaxLimit_` was named `priceMaxLimit_`, and `DEFAULT_BID_CST_REWARD_AMOUNT_RADICAND_MULTIPLIER` was named `DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER`.
+
 V2 is implemented as a parallel inheritance hierarchy. New sources (all under `contracts/production/`):
 
-- `CosmicSignatureGameV2.sol`, `CosmicSignatureGameStorageV2.sol`, `BiddingBaseV2.sol`, `BiddingV2.sol`, `BidStatisticsV2.sol`, `MainPrizeBaseV2.sol`, `MainPrizeV2.sol`, `SystemManagementV2.sol`, `EthDonationsV2.sol`, `NftDonationsV2.sol`, `SecondaryPrizesV2.sol`
-- Interfaces: `ICosmicSignatureGameV2.sol`, `IBiddingV2.sol`, `IBiddingBaseV2.sol`, `IMainPrizeV2.sol`, `IMainPrizeBaseV2.sol`, `ISystemManagementV2.sol`, `ISystemEventsV2.sol`
+- `CosmicSignatureGameV2.sol`, `CosmicSignatureGameStorageV2.sol`, `BiddingCommonV2.sol`, `BiddingV2.sol`, `BidStatisticsV2.sol`, `MainPrizeCommonV2.sol`, `MainPrizeV2.sol`, `SystemManagementV2.sol`, `EthDonationsV2.sol`, `NftDonationsV2.sol`, `SecondaryPrizesV2.sol`
+- Interfaces: `ICosmicSignatureGameV2.sol`, `IBiddingV2.sol`, `IBiddingCommonV2.sol`, `IMainPrizeV2.sol`, `IMainPrizeCommonV2.sol`, `ISystemManagementV2.sol`, `ISystemEventsV2.sol`
 
-The following V2 sources were verified to be functionally identical to their refactored V1 counterparts (only inheritance bases, comments, and dead code differ): `BidStatisticsV2`, `SecondaryPrizesV2`, `EthDonationsV2`, `NftDonationsV2`, `MainPrizeV2` (the entire `claimMainPrize` prize-distribution flow, validations, revert reasons, and events are unchanged; the one exception is the `_prepareNextRound` overflow hardening described in change 7 below), and most of `BiddingBaseV2` and `SystemManagementV2`. Everything that differs is listed below.
+The following V2 sources were verified to be functionally identical to their refactored V1 counterparts (only inheritance bases, comments, and dead code differ): `BidStatisticsV2`, `SecondaryPrizesV2`, `EthDonationsV2`, `NftDonationsV2`, `MainPrizeV2` (the entire `claimMainPrize` prize-distribution flow, validations, revert reasons, and events are unchanged; the one exception is the `_prepareNextRound` overflow hardening described in change 7 below), and most of `BiddingCommonV2` and `SystemManagementV2`. Everything that differs is listed below.
 
 V2 is deployed by **upgrading the existing proxy** (UUPS `upgradeToAndCall`), so "ABI changes" below describe what changes for callers of the proxy `0x6a714Ae7B5b6eA520F6BCA23d2E609C4Fd5863F2` once it is upgraded. See `v2-upgrade-procedure.md` for the procedure, `v2-upgrade-audit.md` for the safety audit, and `v2-upgrade-recommended-tests.md` for additional validation work recommended before the mainnet upgrade.
 
@@ -24,7 +26,7 @@ All six bid entry points have new signatures (new selectors; the old selectors n
 | `bidWithEth(int256 randomWalkNftId_, string message_)` | `bidWithEth(int256 randomWalkNftId_, string message_, uint256 bidCstRewardAmountMinLimit_)` |
 | `bidWithEthAndDonateToken(int256, string, IERC20, uint256)` | `bidWithEthAndDonateToken(int256, string, uint256 bidCstRewardAmountMinLimit_, IERC20, uint256)` |
 | `bidWithEthAndDonateNft(int256, string, IERC721, uint256)` | `bidWithEthAndDonateNft(int256, string, uint256 bidCstRewardAmountMinLimit_, IERC721, uint256)` |
-| `bidWithCst(uint256 priceMaxLimit_, string message_)` | `bidWithCst(uint256 priceMaxLimit_, string message_, uint256 bidCstRewardAmountMinLimit_)` |
+| `bidWithCst(uint256 cstPriceMaxLimit_, string message_)` | `bidWithCst(uint256 cstPriceMaxLimit_, string message_, uint256 bidCstRewardAmountMinLimit_)` |
 | `bidWithCstAndDonateToken(uint256, string, IERC20, uint256)` | `bidWithCstAndDonateToken(uint256, string, uint256 bidCstRewardAmountMinLimit_, IERC20, uint256)` |
 | `bidWithCstAndDonateNft(uint256, string, IERC721, uint256)` | `bidWithCstAndDonateNft(uint256, string, uint256 bidCstRewardAmountMinLimit_, IERC721, uint256)` |
 
@@ -141,7 +143,7 @@ Consequently, a transaction that violates several conditions at once now reverts
 
 ### 4. `mainPrizeTime` extension no longer clamps to `block.timestamp`
 
-`MainPrizeBaseV2._extendMainPrizeTime` (runs on every bid except the first of a round):
+`MainPrizeCommonV2._extendMainPrizeTime` (runs on every bid except the first of a round):
 
 ```solidity
 // Refactored V1:
@@ -159,7 +161,7 @@ In V1, a bid placed after `mainPrizeTime` has already passed pushes the deadline
 V2 can only run on a proxy where at least one bidding round has completed, and its code drops the round-0 special cases:
 
 - `BiddingV2.getNextEthBidPriceAdvanced` no longer has the `ethDutchAuctionBeginningBidPrice == 0 → FIRST_ROUND_INITIAL_ETH_BID_PRICE` fallback. (`FIRST_ROUND_INITIAL_ETH_BID_PRICE` is unused by V2.) If V2 were ever active with `ethDutchAuctionBeginningBidPrice == 0`, the ETH bid price would be 0 and bidding would misbehave — this is why upgrading before round 0 completes is forbidden (see `v2-upgrade-procedure.md`).
-- `BiddingBaseV2._checkNonFirstRound` is a production no-op (assert-only, Comment-202605294). In V1, `halveEthDutchAuctionEndingBidPrice` reverts with `CosmicSignatureErrors.FirstRound` during round 0; in V2 that revert can no longer occur (the condition is impossible post-upgrade, so this is a theoretical difference only).
+- `BiddingCommonV2._checkNonFirstRound` is a production no-op (assert-only, Comment-202605294). In V1, `halveEthDutchAuctionEndingBidPrice` reverts with `CosmicSignatureErrors.FirstRound` during round 0; in V2 that revert can no longer occur (the condition is impossible post-upgrade, so this is a theoretical difference only).
 - `initializeV2` carries the (assert-only) `_onlyNonFirstRound` modifier plus `_onlyIfPrevVersionWasInitialized`, documenting these assumptions.
 
 ### 6. Main prize claim timeout default doubled
@@ -205,7 +207,7 @@ These changes live in sources used by both games (or by neither), and the eviden
 
 - `production/CosmicSignatureGameStorage.sol` (V1 source): `__gap_persistent` shrunk from `uint256[1 << 255]` to `uint256[1 << 30]`. Motivation per `tasks/docs/Cosmic-Signature-Game-Contract-Upgrade-And-Re-Registration.md`: OpenZeppelin's upgrade validation crashed with an overflow on the huge gap. No V1 ABI/behavior impact.
 - `production/libraries/CosmicSignatureErrors.sol`: new error `BidCstRewardAmountMinLimitNotReached` (only thrown by V2 code).
-- `production/libraries/CosmicSignatureConstants.sol`: new constants `INITIAL_CST_DUTCH_AUCTION_DURATION` (12 hours), `DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR` (250), `DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER` (1.08e46), `DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2` (2 days). All are consumed by `CosmicSignatureGameV2.initializeV2` / referenced by V2 docs.
+- `production/libraries/CosmicSignatureConstants.sol`: new constants `INITIAL_CST_DUTCH_AUCTION_DURATION` (12 hours), `DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR` (250), `DEFAULT_BID_CST_REWARD_AMOUNT_RADICAND_MULTIPLIER` (1.08e46), `DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2` (2 days). All are consumed by `CosmicSignatureGameV2.initializeV2` / referenced by V2 docs.
 - `upgrade-prototype/CosmicSignatureGameOpenBid.sol` and `interfaces/ICosmicSignatureGameOpenBid.sol` (test-only): `initialize2()` renamed to `initializeV2()` and reimplemented as `reinitializer(_getInitializedVersion() + 1)` with an explicit `timesEthBidPrice == 0` re-initialization guard (Comment-202606084 documents why that pattern is test-only and why production hardcodes version 2). This aligns the upgrade-rehearsal prototype with the V2 upgrade flow and allows test sequences like V1 → V2 → OpenBid.
 - `tests/BidderContract.sol`, `tests/MaliciousActorBase.sol` (and the related `tests/MaliciousBidder.sol` comment): gained `contractVersionNumber` / `setContractVersionNumber` and V2 call paths invoking the new V2 bid signatures. Test-only.
 - New test contracts `tests/SelfDestructibleCosmicSignatureGameV2.sol` and `tests/SpecialCosmicSignatureGameV2.sol` (V2 counterparts of the V1 test games, using the `@custom:oz-upgrades-unsafe-allow missing-initializer` annotation).

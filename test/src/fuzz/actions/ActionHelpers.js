@@ -35,8 +35,8 @@ function planBidTs(ctx_) {
 	const ethAuctionDuration_ = model.getEthDutchAuctionDuration();
 	const span_ = (ethAuctionDuration_ > 0n) ? ethAuctionDuration_ : 600n;
 	let offset_;
-	if (engine.profile.overflowMode) {
-		// Overflow-targeting mode: always bid the first bid right at activation (no Dutch decay), so the
+	if (engine.profile.earlyBidMode) {
+		// Early bid mode: always bid the first bid right at activation (no Dutch decay), so the
 		// beginning price ratchets up ~2x each round and the ETH price climbs into the high / `unchecked`
 		// uint256-wraparound regime that the default spreading deliberately avoids. The model mirrors the
 		// wraparound exactly via `u256(...)`; finite actor budgets bound how far it actually climbs.
@@ -296,7 +296,7 @@ async function executeEthBid(ctx_, actor_, options_) {
 
 	{
 		const chainLastBidTs_ = (await ctx_.game.contract.biddersInfo(roundNumBefore_, actor_.address)).lastBidTimeStamp;
-		const modelLastBidTs_ = model.getBidderInfo(roundNumBefore_, actor_.address).lastBidTimeStamp;
+		const modelLastBidTs_ = model.biddersInfo(roundNumBefore_, actor_.address).lastBidTimeStamp;
 		expect(chainLastBidTs_, `ETH bid (${options_.flavor}): lastBidTimeStamp drift`).to.equal(modelLastBidTs_);
 	}
 
@@ -345,31 +345,31 @@ async function executeCstBid(ctx_, actor_, options_) {
 	if (ledger.cstBalanceOf(actor_.address) < price_) {
 		return "skip";
 	}
-	let priceMaxLimit_;
+	let cstPriceMaxLimit_;
 	switch (options_.maxLimitMode ?? "padded") {
-		case "max": priceMaxLimit_ = MAX_UINT256; break;
-		case "exact": priceMaxLimit_ = price_; break;
-		default: priceMaxLimit_ = price_ + engine.randomBigIntRange(0n, price_ + 1n); break;
+		case "max": cstPriceMaxLimit_ = MAX_UINT256; break;
+		case "exact": cstPriceMaxLimit_ = price_; break;
+		default: cstPriceMaxLimit_ = price_ + engine.randomBigIntRange(0n, price_ + 1n); break;
 	}
 	const message_ = engine.randomMessage(Math.min(Number(model.bidMessageLengthMaxLimit), 120));
-	const expectedCstReward_ = model.getBidCstRewardAmount(ts_);
-	const minReward_ = (model.version === 2 && engine.chancePercent(30)) ? expectedCstReward_ : 0n;
+	const expectedBidCstReward_ = model.getBidCstRewardAmount(ts_);
+	const minReward_ = (model.version === 2 && engine.chancePercent(30)) ? expectedBidCstReward_ : 0n;
 
 	const gameContract_ = ctx_.game.connect(actor_.signer).contract;
 	const buildTx_ = (overrides_) => {
 		switch (options_.flavor) {
 			case "plain":
-				return ctx_.game.connect(actor_.signer).bidWithCst(priceMaxLimit_, message_, minReward_, overrides_);
+				return ctx_.game.connect(actor_.signer).bidWithCst(cstPriceMaxLimit_, message_, minReward_, overrides_);
 			case "donateToken":
 				return ctx_.game.connect(actor_.signer).bidWithCstAndDonateToken(
-					priceMaxLimit_, message_, minReward_, contracts.fuzzTestMockErc20Address, donationTokenAmount_, overrides_);
+					cstPriceMaxLimit_, message_, minReward_, contracts.fuzzTestMockErc20Address, donationTokenAmount_, overrides_);
 			case "donateNft": {
 				const sig_ = (model.version === 2) ?
 					"bidWithCstAndDonateNft(uint256,string,uint256,address,uint256)" :
 					"bidWithCstAndDonateNft(uint256,string,address,uint256)";
 				const args_ = (model.version === 2) ?
-					[priceMaxLimit_, message_, minReward_, contracts.fuzzTestMockErc721Address, donationNftId_] :
-					[priceMaxLimit_, message_, contracts.fuzzTestMockErc721Address, donationNftId_];
+					[cstPriceMaxLimit_, message_, minReward_, contracts.fuzzTestMockErc721Address, donationNftId_] :
+					[cstPriceMaxLimit_, message_, contracts.fuzzTestMockErc721Address, donationNftId_];
 				return gameContract_.getFunction(sig_)(...args_, overrides_);
 			}
 			default:
@@ -384,8 +384,8 @@ async function executeCstBid(ctx_, actor_, options_) {
 	const receipt_ = engine.expectOk(result_, `CST bid (${options_.flavor})`);
 
 	const expectations_ = model.applyCstBid(actor_.address, ts_);
-	expect(expectations_.paidPrice, "CST bid: planned price changed").to.equal(price_);
-	expect(expectations_.bidCstRewardAmount).to.equal(expectedCstReward_);
+	expect(expectations_.paidCstPrice, "CST bid: planned price changed").to.equal(price_);
+	expect(expectations_.bidCstRewardAmount).to.equal(expectedBidCstReward_);
 
 	const bidPlaced_ = engine.singleEvent(receipt_, ctx_.game.contract, "BidPlaced", "CST bid");
 	expect(bidPlaced_.args.roundNum).to.equal(roundNumBefore_);
@@ -404,7 +404,7 @@ async function executeCstBid(ctx_, actor_, options_) {
 
 	{
 		const chainLastBidTs_ = (await ctx_.game.contract.biddersInfo(roundNumBefore_, actor_.address)).lastBidTimeStamp;
-		const modelLastBidTs_ = model.getBidderInfo(roundNumBefore_, actor_.address).lastBidTimeStamp;
+		const modelLastBidTs_ = model.biddersInfo(roundNumBefore_, actor_.address).lastBidTimeStamp;
 		expect(chainLastBidTs_, `CST bid (${options_.flavor}): lastBidTimeStamp drift`).to.equal(modelLastBidTs_);
 	}
 

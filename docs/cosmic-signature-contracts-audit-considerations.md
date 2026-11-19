@@ -20,9 +20,9 @@ Test and Solidity coverage scripts are located in the `${workspaceFolder}/test/r
 
 Some tests test exact timings of actions. They can fail, more likely if the system is under stress.
 
-Solidity coverage measures the contracts in `${workspaceFolder}/contracts/production`. We have achieved 100% coverage except for the `BiddingBase._onlyRoundIsActive` and `BiddingBaseV2._onlyRoundIsActive` modifiers, because they are not called.
+Solidity coverage measures the contracts in `${workspaceFolder}/contracts/production`. We have achieved 100% coverage except for the `BiddingCommon._onlyRoundIsActive` and `BiddingCommonV2._onlyRoundIsActive` modifiers, because they are not called.
 
-`BiddingBaseV2._onlyNonFirstRound` and `CosmicSignatureGameV2._onlyIfPrevVersionWasInitialized` do nothing when asserts are disabled. Despite of them being called and covered, we have observed that for some reason they are flagged as not fully covered.
+`BiddingCommonV2._onlyNonFirstRound` and `CosmicSignatureGameV2._onlyIfPrevVersionWasInitialized` do nothing when asserts are disabled. Despite of them being called and covered, we have observed that for some reason they are flagged as not fully covered.
 
 Because some tests are driven by random numbers, occasionally you can observe some code locations not covered or a signer running out of gas.
 

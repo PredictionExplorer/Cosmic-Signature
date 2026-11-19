@@ -14,9 +14,9 @@ This document goes a little bit beyond purely functional requirements. It's inte
 
 - `CosmicSignatureGame is CosmicSignatureGameStorage`. This contract contains all state variables that `CosmicSignatureGame` and the contracts that it inherits access.
 
-- `CosmicSignatureGame is BiddingBase`. This contract contains a few simple methods.
+- `CosmicSignatureGame is BiddingCommon`. This contract contains a few simple methods.
 
-- `CosmicSignatureGame is MainPrizeBase`. This contract contains a few simple methods.
+- `CosmicSignatureGame is MainPrizeCommon`. This contract contains a few simple methods.
 
 - `CosmicSignatureGame is SystemManagement`. This contract contains `CosmicSignatureGame` configurable parameter setters to be called only by the contract owner. With some exceptions, a typical setter requires that the current bidding round wasn't active yet.
 

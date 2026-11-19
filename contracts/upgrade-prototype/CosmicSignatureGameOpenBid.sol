@@ -12,8 +12,8 @@ import { OwnableUpgradeableWithReservedStorageGaps } from "../production/Ownable
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { AddressValidator } from "../production/AddressValidator.sol";
 import { CosmicSignatureGameStorage } from "../production/CosmicSignatureGameStorage.sol";
-import { BiddingBase } from "../production/BiddingBase.sol";
-import { MainPrizeBase } from "../production/MainPrizeBase.sol";
+import { BiddingCommon } from "../production/BiddingCommon.sol";
+import { MainPrizeCommon } from "../production/MainPrizeCommon.sol";
 import { SystemManagement } from "../production/SystemManagement.sol";
 import { EthDonations } from "../production/EthDonations.sol";
 import { NftDonations } from "../production/NftDonations.sol";
@@ -34,8 +34,8 @@ contract CosmicSignatureGameOpenBid is
 	UUPSUpgradeable,
 	AddressValidator,
 	CosmicSignatureGameStorage,
-	BiddingBase,
-	MainPrizeBase,
+	BiddingCommon,
+	MainPrizeCommon,
 	SystemManagement,
 	EthDonations,
 	NftDonations,

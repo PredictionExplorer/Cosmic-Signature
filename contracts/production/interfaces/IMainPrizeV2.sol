@@ -2,16 +2,16 @@
 pragma solidity =0.8.34;
 
 import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
-import { IBiddingBaseV2 } from "./IBiddingBaseV2.sol";
-import { IMainPrizeBaseV2 } from "./IMainPrizeBaseV2.sol";
+import { IBiddingCommonV2 } from "./IBiddingCommonV2.sol";
+import { IMainPrizeCommonV2 } from "./IMainPrizeCommonV2.sol";
 import { IBidStatistics } from "./IBidStatistics.sol";
 import { ISecondaryPrizes } from "./ISecondaryPrizes.sol";
 
 /// @notice Comment-202605305 applies.
 interface IMainPrizeV2 is
 	ICosmicSignatureGameStorage,
-	IBiddingBaseV2,
-	IMainPrizeBaseV2,
+	IBiddingCommonV2,
+	IMainPrizeCommonV2,
 	IBidStatistics,
 	ISecondaryPrizes {
 	/// @notice Comment-202605298 applies.

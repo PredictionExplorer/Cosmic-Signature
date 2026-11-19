@@ -3,7 +3,7 @@
 
 methods {
     function bidMessageLengthMaxLimit() external returns (uint256);
-    function bidWithCst(uint256 priceMaxLimit, string message) external;
+    function bidWithCst(uint256 cstPriceMaxLimit, string message) external;
     function bidWithEth(int256 randomWalkNftId, string message) external;
     function bidderAddresses(uint256 roundNum) external returns (uint256);
     function charityAddress() external returns (address);
@@ -604,8 +604,8 @@ rule cstBidDoesNotChangeContractBalance {
     // This helps avoid vacuity by ensuring the bid can actually succeed
     
     // Place a CST bid
-    uint256 priceMaxLimit = 1000000000000000000000; // High enough to not be limiting
-    bidWithCst(e, priceMaxLimit, "cst bid balance test");
+    uint256 cstPriceMaxLimit = 1000000000000000000000; // High enough to not be limiting
+    bidWithCst(e, cstPriceMaxLimit, "cst bid balance test");
     
     // Verify that the last bidder changed (proving the bid succeeded)
     address lastBidderAfter = lastBidderAddress(e);
@@ -663,8 +663,8 @@ rule cstBidPriceUpdateFormula {
     uint256 beginningPriceBefore = cstDutchAuctionBeginningBidPrice(e);
     
     // Place a CST bid
-    uint256 priceMaxLimit = 1000000000000000000000; // High enough to not be limiting
-    bidWithCst(e, priceMaxLimit, "test cst bid");
+    uint256 cstPriceMaxLimit = 1000000000000000000000; // High enough to not be limiting
+    bidWithCst(e, cstPriceMaxLimit, "test cst bid");
     
     // Get the new beginning bid price after the bid
     uint256 beginningPriceAfter = cstDutchAuctionBeginningBidPrice(e);
@@ -675,22 +675,22 @@ rule cstBidPriceUpdateFormula {
     
     // Verify the price was updated correctly
     assert beginningPriceAfter == expectedPrice,
-           "CST beginning bid price should be max(paidPrice * 2, minLimit)";
+           "CST beginning bid price should be max(paidCstPrice * 2, minLimit)";
 }
 
 rule cstBidRespectsMaxLimit {
     env e;
-    uint256 priceMaxLimit;
+    uint256 cstPriceMaxLimit;
     
     require lastBidderAddress(e) != 0; // Not first bid
     require lastCstBidderAddress(e) != 0; // CST bidding has started
     
     uint256 currentCstPrice = getNextCstBidPrice(e, 0);
     require currentCstPrice > 0;
-    require priceMaxLimit < currentCstPrice; // Max limit is below current price
+    require cstPriceMaxLimit < currentCstPrice; // Max limit is below current price
     
     // Try to bid with insufficient max limit
-    bidWithCst@withrevert(e, priceMaxLimit, "low limit");
+    bidWithCst@withrevert(e, cstPriceMaxLimit, "low limit");
     
     assert lastReverted,
            "CST bid should fail when price max limit is below current price";
@@ -1223,9 +1223,9 @@ rule firstBidMustBeEthNotCst {
     require e.msg.value == 0;
     
     // Try to bid with CST as the first bid
-    uint256 priceMaxLimit = 1000000; // High limit to ensure it's not the limiting factor
+    uint256 cstPriceMaxLimit = 1000000; // High limit to ensure it's not the limiting factor
     
-    bidWithCst@withrevert(e, priceMaxLimit, "first bid with CST");
+    bidWithCst@withrevert(e, cstPriceMaxLimit, "first bid with CST");
     
     assert lastReverted,
            "First bid in a round must be ETH, CST bid should revert";

@@ -15,8 +15,8 @@ import { RandomNumberHelpers } from "./libraries/RandomNumberHelpers.sol";
 import { ICosmicSignatureToken } from "./interfaces/ICosmicSignatureToken.sol";
 import { IPrizesWallet } from "./interfaces/IPrizesWallet.sol";
 import { CosmicSignatureGameStorageV2 } from "./CosmicSignatureGameStorageV2.sol";
-import { BiddingBaseV2 } from "./BiddingBaseV2.sol";
-import { MainPrizeBaseV2 } from "./MainPrizeBaseV2.sol";
+import { BiddingCommonV2 } from "./BiddingCommonV2.sol";
+import { MainPrizeCommonV2 } from "./MainPrizeCommonV2.sol";
 import { BidStatisticsV2 } from "./BidStatisticsV2.sol";
 import { SecondaryPrizesV2 } from "./SecondaryPrizesV2.sol";
 import { IMainPrizeV2 } from "./interfaces/IMainPrizeV2.sol";
@@ -28,8 +28,8 @@ abstract contract MainPrizeV2 is
 	ReentrancyGuardTransientUpgradeable,
 	OwnableUpgradeableWithReservedStorageGaps,
 	CosmicSignatureGameStorageV2,
-	BiddingBaseV2,
-	MainPrizeBaseV2,
+	BiddingCommonV2,
+	MainPrizeCommonV2,
 	BidStatisticsV2,
 	SecondaryPrizesV2,
 	IMainPrizeV2 {

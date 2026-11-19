@@ -3,8 +3,8 @@ pragma solidity =0.8.34;
 
 import { IAddressValidator } from "./IAddressValidator.sol";
 import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
-import { IBiddingBaseV2 } from "./IBiddingBaseV2.sol";
-import { IMainPrizeBaseV2 } from "./IMainPrizeBaseV2.sol";
+import { IBiddingCommonV2 } from "./IBiddingCommonV2.sol";
+import { IMainPrizeCommonV2 } from "./IMainPrizeCommonV2.sol";
 import { ISystemManagementV2 } from "./ISystemManagementV2.sol";
 import { IEthDonations } from "./IEthDonations.sol";
 import { INftDonations } from "./INftDonations.sol";
@@ -20,8 +20,8 @@ import { IMainPrizeV2 } from "./IMainPrizeV2.sol";
 interface ICosmicSignatureGameV2 is
 	IAddressValidator,
 	ICosmicSignatureGameStorage,
-	IBiddingBaseV2,
-	IMainPrizeBaseV2,
+	IBiddingCommonV2,
+	IMainPrizeCommonV2,
 	ISystemManagementV2,
 	IEthDonations,
 	INftDonations,

@@ -4,12 +4,12 @@ pragma solidity =0.8.34;
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
-import { IBiddingBaseV2 } from "./IBiddingBaseV2.sol";
-import { IMainPrizeBaseV2 } from "./IMainPrizeBaseV2.sol";
+import { IBiddingCommonV2 } from "./IBiddingCommonV2.sol";
+import { IMainPrizeCommonV2 } from "./IMainPrizeCommonV2.sol";
 import { IBidStatistics } from "./IBidStatistics.sol";
 
 /// @notice Comment-202605251 applies.
-interface IBiddingV2 is ICosmicSignatureGameStorage, IBiddingBaseV2, IMainPrizeBaseV2, IBidStatistics {
+interface IBiddingV2 is ICosmicSignatureGameStorage, IBiddingCommonV2, IMainPrizeCommonV2, IBidStatistics {
 	/// @notice Comment-202605275 applies.
 	/// @param roundNum The current bidding round number.
 	/// @param blockTimeStamp The current block timestamp.
@@ -112,7 +112,7 @@ interface IBiddingV2 is ICosmicSignatureGameStorage, IBiddingBaseV2, IMainPrizeB
 	/// Comment-202503168 applies.
 	/// Comment-202503151 applies.
 	function bidWithCstAndDonateToken(
-		uint256 priceMaxLimit_,
+		uint256 cstPriceMaxLimit_,
 		string memory message_,
 		uint256 bidCstRewardAmountMinLimit_,
 		IERC20 tokenAddress_,
@@ -123,7 +123,7 @@ interface IBiddingV2 is ICosmicSignatureGameStorage, IBiddingBaseV2, IMainPrizeB
 	/// Comment-202503168 applies.
 	/// Comment-202503153 applies.
 	function bidWithCstAndDonateNft(
-		uint256 priceMaxLimit_,
+		uint256 cstPriceMaxLimit_,
 		string memory message_,
 		uint256 bidCstRewardAmountMinLimit_,
 		IERC721 nftAddress_,
@@ -132,11 +132,11 @@ interface IBiddingV2 is ICosmicSignatureGameStorage, IBiddingBaseV2, IMainPrizeB
 
 	/// @notice Comment-202605266 applies.
 	/// Comment-202503168 relates.
-	/// @param priceMaxLimit_ Comment-202605268 applies.
+	/// @param cstPriceMaxLimit_ Comment-202605268 applies.
 	/// Comment-202503162 relates and/or applies.
 	/// @param message_ Comment-202503155 applies.
 	/// @param bidCstRewardAmountMinLimit_ Comment-202605279 applies.
-	function bidWithCst(uint256 priceMaxLimit_, string memory message_, uint256 bidCstRewardAmountMinLimit_) external;
+	function bidWithCst(uint256 cstPriceMaxLimit_, string memory message_, uint256 bidCstRewardAmountMinLimit_) external;
 
 	/// @notice Comment-202605269 applies.
 	function getNextCstBidPrice() external view returns (uint256);

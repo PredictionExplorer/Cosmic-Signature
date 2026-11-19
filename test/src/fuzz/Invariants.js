@@ -161,7 +161,7 @@ async function runInvariants(ctx_) {
 		if (model.lastBidderAddress !== ZERO_ADDRESS && onChainNumBids_ > 0n) {
 			const tail_ = await game_.getBidderAddressAt(model.roundNum, onChainNumBids_ - 1n);
 			expect(tail_.toLowerCase(), "bid log tail == lastBidderAddress").to.equal(model.lastBidderAddress);
-			const bidderInfo_ = model.getBidderInfo(model.roundNum, model.lastBidderAddress);
+			const bidderInfo_ = model.biddersInfo(model.roundNum, model.lastBidderAddress);
 			const [ethSpent_, cstSpent_] = await game_.getBidderTotalSpentAmounts(model.roundNum, model.lastBidderAddress);
 			expect(ethSpent_, "getBidderTotalSpentAmounts ETH vs model").to.equal(bidderInfo_.totalSpentEthAmount);
 			expect(cstSpent_, "getBidderTotalSpentAmounts CST vs model").to.equal(bidderInfo_.totalSpentCstAmount);
@@ -190,11 +190,11 @@ async function runInvariants(ctx_) {
 	// `tryGetCurrentChampions` matches the model projection.
 	{
 		const champions_ = await game_.tryGetCurrentChampions();
-		const projected_ = model.tryGetCurrentChampions(ts_);
-		expect(champions_[0].toLowerCase(), "tryGetCurrentChampions endurance addr").to.equal(projected_.enduranceChampionAddress);
-		expect(champions_[1], "tryGetCurrentChampions endurance duration").to.equal(projected_.enduranceChampionDuration);
-		expect(champions_[2].toLowerCase(), "tryGetCurrentChampions chrono addr").to.equal(projected_.chronoWarriorAddress);
-		expect(champions_[3], "tryGetCurrentChampions chrono duration").to.equal(projected_.chronoWarriorDuration);
+		const currentChampions_ = model.tryGetCurrentChampions(ts_);
+		expect(champions_[0].toLowerCase(), "tryGetCurrentChampions endurance addr").to.equal(currentChampions_.enduranceChampionAddress);
+		expect(champions_[1], "tryGetCurrentChampions endurance duration").to.equal(currentChampions_.enduranceChampionDuration);
+		expect(champions_[2].toLowerCase(), "tryGetCurrentChampions chrono addr").to.equal(currentChampions_.chronoWarriorAddress);
+		expect(champions_[3], "tryGetCurrentChampions chrono duration").to.equal(currentChampions_.chronoWarriorDuration);
 	}
 
 	// Chrono sentinel rule: (addr == 0) == (duration is sentinel).

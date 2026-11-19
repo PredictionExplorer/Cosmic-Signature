@@ -8,7 +8,7 @@ const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTest
 
 const INITIAL_CST_DUTCH_AUCTION_DURATION = 12n * 60n * 60n;
 const DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR = 250n;
-const DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER = 10800000000000000000000000000000000000000000000n;
+const DEFAULT_BID_CST_REWARD_AMOUNT_RADICAND_MULTIPLIER = 10800000000000000000000000000000000000000000000n;
 const DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2 = 2n * 24n * 60n * 60n;
 const TIMESTAMP_9000_01_01 = 221845392000n;
 
@@ -92,7 +92,7 @@ async function activateCurrentRound(game_, ownerSigner_) {
 async function assertDefaultV2Initialization(game_) {
 	expect(await game_.cstDutchAuctionDuration()).equal(INITIAL_CST_DUTCH_AUCTION_DURATION);
 	expect(await game_.cstDutchAuctionDurationChangeDivisor()).equal(DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR);
-	expect(await game_.bidCstRewardAmountMultiplier()).equal(DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER);
+	expect(await game_.bidCstRewardAmountMultiplier()).equal(DEFAULT_BID_CST_REWARD_AMOUNT_RADICAND_MULTIPLIER);
 	expect(await game_.timeoutDurationToClaimMainPrize()).equal(DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2);
 }
 
@@ -124,7 +124,7 @@ async function expectUnknownSelector(contract_, selector_) {
 module.exports = {
 	INITIAL_CST_DUTCH_AUCTION_DURATION,
 	DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR,
-	DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER,
+	DEFAULT_BID_CST_REWARD_AMOUNT_RADICAND_MULTIPLIER,
 	DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2,
 	TIMESTAMP_9000_01_01,
 	setNextBlockTimeToAtLeast,

@@ -108,7 +108,7 @@ library CosmicSignatureConstants {
 	uint256 internal constant DEFAULT_BID_CST_REWARD_AMOUNT = 100 ether;
 
 	/// @notice Default `CosmicSignatureGameStorageV2.bidCstRewardAmountMultiplier`.
-	uint256 internal constant DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER = 3 * (1 ether) ** 2 * INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND;
+	uint256 internal constant DEFAULT_BID_CST_REWARD_AMOUNT_RADICAND_MULTIPLIER = 3 * (1 ether) ** 2 * INITIAL_MAIN_PRIZE_TIME_INCREMENT * MICROSECONDS_PER_SECOND;
 
 	// #endregion
 	// #region Secondary Prizes

@@ -137,14 +137,14 @@ async function performUpgradeToV2(ctx_) {
 	// 8. Double `initializeV2` must revert. In a production build the `reinitializer(2)` guard throws
 	// `InvalidInitialization`; in an assert-enabled build the `_onlyIfPrevVersionWasInitialized` assert
 	// (which checks `_getInitializedVersion() == 1`) fires first as a panic. Accept either.
-	const doubleInitResult_ = await engine.execTx({
+	const doubleReinitializeResult_ = await engine.execTx({
 		signer: contracts.ownerSigner,
 		buildTx: (overrides_) => v2Proxy_.connect(contracts.ownerSigner).initializeV2(overrides_),
 	});
-	expect(doubleInitResult_.ok, "re-initializeV2 must revert").to.equal(false);
+	expect(doubleReinitializeResult_.ok, "re-initializeV2 must revert").to.equal(false);
 	expect(
-		doubleInitResult_.revert.name === "InvalidInitialization" || doubleInitResult_.revert.kind === "panic",
-		`re-initializeV2 reverted with unexpected error: ${doubleInitResult_.revert.name}`
+		doubleReinitializeResult_.revert.name === "InvalidInitialization" || doubleReinitializeResult_.revert.kind === "panic",
+		`re-initializeV2 reverted with unexpected error: ${doubleReinitializeResult_.revert.name}`
 	).to.equal(true);
 
 	// 9. Re-bind campaign state to the V2 ABI and re-sync the model.

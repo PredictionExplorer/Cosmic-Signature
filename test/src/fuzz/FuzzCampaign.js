@@ -52,7 +52,7 @@ function buildProfile(longTestModeCode_, envOverrides_) {
 			burstPercent: 6,
 			verbosity: 1,
 			chaosPercent: 35,
-			overflowModePercent: 10,
+			earlyBidModePercent: 10,
 			upgradeAfterRoundZeroPercent: 50,
 			enforceStrongCoverage: false,
 			// Quick CI profile: a single bounded campaign (no wall-clock soak).
@@ -69,7 +69,7 @@ function buildProfile(longTestModeCode_, envOverrides_) {
 			burstPercent: 7,
 			verbosity: 1,
 			chaosPercent: 60,
-			overflowModePercent: 15,
+			earlyBidModePercent: 15,
 			upgradeAfterRoundZeroPercent: 50,
 			enforceStrongCoverage: false,
 			// A single, larger bounded campaign (override with FUZZ_MAX_SECONDS to soak).
@@ -87,7 +87,7 @@ function buildProfile(longTestModeCode_, envOverrides_) {
 			burstPercent: 8,
 			verbosity: 1,
 			chaosPercent: 70,
-			overflowModePercent: 20,
+			earlyBidModePercent: 20,
 			upgradeAfterRoundZeroPercent: 50,
 			enforceStrongCoverage: true,
 			// Default to a 20-minute soak (repeated independent bounded campaigns). Override with FUZZ_MAX_SECONDS.
@@ -134,7 +134,7 @@ function deriveCampaignProfile(profile_, seedWrapper_) {
 	return {
 		...profile_,
 		chaos: chanceFromSeed(seedWrapper_, profile_.chaosPercent ?? 0),
-		overflowMode: chanceFromSeed(seedWrapper_, profile_.overflowModePercent ?? 0),
+		earlyBidMode: chanceFromSeed(seedWrapper_, profile_.earlyBidModePercent ?? 0),
 		upgradeAfterRoundZero: chanceFromSeed(seedWrapper_, profile_.upgradeAfterRoundZeroPercent ?? 0),
 	};
 }
@@ -698,7 +698,7 @@ class FuzzCampaign {
 		console.info(
 			`  profile: actors=${this.profile.numActors} v1Rounds=${this.profile.v1Rounds} ` +
 			`v2Rounds=${this.profile.v2Rounds} chaos=${this.profile.chaos} ` +
-			`overflowMode=${this.profile.overflowMode === true} ` +
+			`earlyBidMode=${this.profile.earlyBidMode === true} ` +
 			`upgradeAfterRoundZero=${this.profile.upgradeAfterRoundZero === true}`
 		);
 		console.info(`  build flags: ${buildFlags_}`);

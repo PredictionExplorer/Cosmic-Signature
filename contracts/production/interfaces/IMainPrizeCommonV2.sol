@@ -4,7 +4,7 @@ pragma solidity =0.8.34;
 import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
 import { ISystemEventsV2 } from "./ISystemEventsV2.sol";
 
-interface IMainPrizeBaseV2 is ICosmicSignatureGameStorage, ISystemEventsV2 {
+interface IMainPrizeCommonV2 is ICosmicSignatureGameStorage, ISystemEventsV2 {
 	function getInitialDurationUntilMainPrize() external view returns (uint256);
 
 	/// @notice Comment-202605239 applies.

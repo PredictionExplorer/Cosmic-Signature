@@ -13,8 +13,8 @@ const {
 	mineAtOrAfter,
 } = require("../src/V2UpgradeTestHelpers.js");
 
-async function bidWithEthAt(game_, bidder_, timestamp_) {
-	await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(timestamp_),]);
+async function bidWithEthAt(game_, bidder_, timeStamp_) {
+	await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(timeStamp_),]);
 	await waitForTransactionReceipt(game_.connect(bidder_).bidWithEth(-1n, "", 0n, {value: 10n ** 18n,}));
 }
 

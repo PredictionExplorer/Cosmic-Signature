@@ -20,7 +20,7 @@ The fuzz engine controls every block timestamp, so all prices, rewards, duration
 transitions, and `mainPrizeTime` values are exactly predictable. This class mirrors:
 - `Bidding.sol` / `BiddingV2.sol` (`_bidWithEth`, `_bidWithCst`, `_bidCommon`, price getters)
 - `BidStatistics.sol` (`_updateChampionsIfNeeded`, `_updateChronoWarriorIfNeeded`, `tryGetCurrentChampions`)
-- `MainPrizeBase.sol` / `MainPrizeBaseV2.sol` (`_extendMainPrizeTime` clamping difference)
+- `MainPrizeCommon.sol` / `MainPrizeCommonV2.sol` (`_extendMainPrizeTime` clamping difference)
 - `MainPrize.sol` / `MainPrizeV2.sol` (`claimMainPrize` authorization + `_prepareNextRound`)
 - `SystemManagement.sol` / `SystemManagementV2.sol` (setters mutate the model config)
 
@@ -177,7 +177,7 @@ class GameModel {
 	@param {bigint} roundNum_
 	@param {string} bidderAddress_ Lowercase.
 	*/
-	getBidderInfo(roundNum_, bidderAddress_) {
+	biddersInfo(roundNum_, bidderAddress_) {
 		const round_ = this.rounds.get(roundNum_.toString());
 		const info_ = round_?.biddersInfo.get(bidderAddress_.toLowerCase());
 		return info_ ?? { totalSpentEthAmount: 0n, totalSpentCstAmount: 0n, lastBidTimeStamp: 0n };
@@ -297,7 +297,7 @@ class GameModel {
 		const lastBidTimeStamp_ =
 			(this.lastBidderAddress === ZERO_ADDRESS) ?
 			this.roundActivationTime :
-			this.getBidderInfo(this.roundNum, this.lastBidderAddress).lastBidTimeStamp;
+			this.biddersInfo(this.roundNum, this.lastBidderAddress).lastBidTimeStamp;
 		const elapsed_ = ts_ - lastBidTimeStamp_;
 		if (elapsed_ <= 0n) {
 			return 0n;
@@ -326,7 +326,7 @@ class GameModel {
 		let prevEnduranceDuration_ = this.prevEnduranceChampionDuration;
 		let chrono_ = this.chronoWarriorAddress;
 		let chronoDuration_ = this.chronoWarriorDuration;
-		const lastBidTs_ = this.getBidderInfo(this.roundNum, this.lastBidderAddress).lastBidTimeStamp;
+		const lastBidTs_ = this.biddersInfo(this.roundNum, this.lastBidderAddress).lastBidTimeStamp;
 		const lastBidDuration_ = ts_ - lastBidTs_;
 		if (endurance_ === ZERO_ADDRESS) {
 			endurance_ = this.lastBidderAddress;
@@ -368,7 +368,7 @@ class GameModel {
 
 	/** Mirrors `_updateChampionsIfNeeded` (requires `lastBidderAddress != 0`). */
 	_updateChampionsIfNeeded(ts_) {
-		const lastBidTs_ = this.getBidderInfo(this.roundNum, this.lastBidderAddress).lastBidTimeStamp;
+		const lastBidTs_ = this.biddersInfo(this.roundNum, this.lastBidderAddress).lastBidTimeStamp;
 		const lastBidDuration_ = ts_ - lastBidTs_;
 		if (this.enduranceChampionAddress === ZERO_ADDRESS) {
 			this.enduranceChampionAddress = this.lastBidderAddress;
@@ -489,15 +489,15 @@ class GameModel {
 
 	/**
 	Applies a successful CST bid (mirrors `_bidWithCst`).
-	@returns {{paidPrice: bigint, bidCstRewardAmount: bigint, newCstDutchAuctionDuration: bigint | null, mainPrizeTime: bigint}}
+	@returns {{paidCstPrice: bigint, bidCstRewardAmount: bigint, newCstDutchAuctionDuration: bigint | null, mainPrizeTime: bigint}}
 	*/
 	applyCstBid(bidderAddress_, ts_) {
-		const paidPrice_ = this.getNextCstBidPrice(ts_);
+		const paidCstPrice_ = this.getNextCstBidPrice(ts_);
 		const reward_ = this.getBidCstRewardAmount(ts_);
-		this._bidderInfoForUpdate(bidderAddress_).totalSpentCstAmount += paidPrice_;
+		this._bidderInfoForUpdate(bidderAddress_).totalSpentCstAmount += paidCstPrice_;
 		this.cstDutchAuctionBeginningTimeStamp = ts_;
 		const newBeginningBidPrice_ =
-			maxBigInt(paidPrice_ * c.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, this.cstDutchAuctionBeginningBidPriceMinLimit);
+			maxBigInt(paidCstPrice_ * c.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, this.cstDutchAuctionBeginningBidPriceMinLimit);
 		this.cstDutchAuctionBeginningBidPrice = newBeginningBidPrice_;
 		if (this.lastCstBidderAddress === ZERO_ADDRESS) {
 			this.nextRoundFirstCstDutchAuctionBeginningBidPrice = newBeginningBidPrice_;
@@ -509,7 +509,7 @@ class GameModel {
 			this.cstDutchAuctionDuration = newCstDutchAuctionDuration_;
 		}
 		this._bidCommon(bidderAddress_, ts_);
-		return { paidPrice: paidPrice_, bidCstRewardAmount: reward_, newCstDutchAuctionDuration: newCstDutchAuctionDuration_, mainPrizeTime: this.mainPrizeTime };
+		return { paidCstPrice: paidCstPrice_, bidCstRewardAmount: reward_, newCstDutchAuctionDuration: newCstDutchAuctionDuration_, mainPrizeTime: this.mainPrizeTime };
 	}
 
 	// #endregion
@@ -635,7 +635,7 @@ class GameModel {
 		this.version = 2;
 		this.cstDutchAuctionDuration = c.INITIAL_CST_DUTCH_AUCTION_DURATION;
 		this.cstDutchAuctionDurationChangeDivisor = c.DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR;
-		this.bidCstRewardAmountMultiplier = c.DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER;
+		this.bidCstRewardAmountMultiplier = c.DEFAULT_BID_CST_REWARD_AMOUNT_RADICAND_MULTIPLIER;
 		this.timeoutDurationToClaimMainPrize = c.DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2;
 		this.cstDutchAuctionDurationDivisor = 0n;
 		this.bidCstRewardAmount = 0n;

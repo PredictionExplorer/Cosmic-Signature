@@ -669,19 +669,19 @@ async function createCosmicSignatureGameProxySimulator(
 		// We don't need `bidWithCstAndDonateNft`.
 		// #region `canBidWithCst`
 
-		canBidWithCst: async function(transactionBlock_, bidderAddress_, cstPriceToPayMaxLimit_, message_, paidCstPrice_, contracts_, transactionResponsePromise_) {
+		canBidWithCst: async function(transactionBlock_, bidderAddress_, cstPriceMaxLimit_, message_, paidCstPrice_, contracts_, transactionResponsePromise_) {
 			// assertAddressIsValid(bidderAddress_);
 			expect(bidderAddress_).not.equal(hre.ethers.ZeroAddress);
-			expect(typeof cstPriceToPayMaxLimit_).equal("bigint");
-			expect(cstPriceToPayMaxLimit_).greaterThanOrEqual(0n);
+			expect(typeof cstPriceMaxLimit_).equal("bigint");
+			expect(cstPriceMaxLimit_).greaterThanOrEqual(0n);
 			expect(typeof message_).equal("string");
 			expect(typeof paidCstPrice_).equal("bigint");
 			expect(paidCstPrice_).greaterThanOrEqual(0n);
-			if ( ! (paidCstPrice_ <= cstPriceToPayMaxLimit_) ) {
+			if ( ! (paidCstPrice_ <= cstPriceMaxLimit_) ) {
 				// console.info("%s", "202504166");
 				await expect(transactionResponsePromise_)
 					.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "InsufficientReceivedBidAmount")
-					.withArgs("The current CST bid price is greater than the maximum you allowed.", paidCstPrice_, cstPriceToPayMaxLimit_);
+					.withArgs("The current CST bid price is greater than the maximum you allowed.", paidCstPrice_, cstPriceMaxLimit_);
 				return false;
 			}
 			const bidderCstBalanceBeforeTransaction_ = this.cosmicSignatureTokenSimulator.balanceOf(bidderAddress_);
