@@ -77,8 +77,8 @@ const ALL_FUZZ_ACTION_KEYS = [
 	"cstDelegateSelf",
 	"cstBurnSmall",
 	"setCosmicSignatureNftName",
-	"setRandomWalkTokenName",
-	"randomWalkWithdraw",
+	"setRandomWalkNftName",
+	"randomWalkNftWithdraw",
 	"charityWalletSend",
 	"charityWalletSendAmount",
 	"marketingWalletPayReward",
@@ -145,8 +145,8 @@ function buildFuzzConfig(skipLongTests_) {
 			cstDelegateSelf: 1,
 			cstBurnSmall: 1,
 			setCosmicSignatureNftName: 1,
-			setRandomWalkTokenName: 1,
-			randomWalkWithdraw: 1,
+			setRandomWalkNftName: 1,
+			randomWalkNftWithdraw: 1,
 			charityWalletSend: 1,
 			charityWalletSendAmount: 1,
 			marketingWalletPayReward: 1,
@@ -189,8 +189,8 @@ function buildFuzzConfig(skipLongTests_) {
 			cstDelegateSelf: 2,
 			cstBurnSmall: 1,
 			setCosmicSignatureNftName: 2,
-			setRandomWalkTokenName: 1,
-			randomWalkWithdraw: 1,
+			setRandomWalkNftName: 1,
+			randomWalkNftWithdraw: 1,
 			charityWalletSend: 1,
 			charityWalletSendAmount: 1,
 			marketingWalletPayReward: 1,
@@ -233,8 +233,8 @@ function buildFuzzConfig(skipLongTests_) {
 			cstDelegateSelf: 1,
 			cstBurnSmall: 1,
 			setCosmicSignatureNftName: 1,
-			setRandomWalkTokenName: 1,
-			randomWalkWithdraw: 1,
+			setRandomWalkNftName: 1,
+			randomWalkNftWithdraw: 1,
 			charityWalletSend: 2,
 			charityWalletSendAmount: 1,
 			marketingWalletPayReward: 2,
@@ -277,8 +277,8 @@ function buildFuzzConfig(skipLongTests_) {
 			cstDelegateSelf: 2,
 			cstBurnSmall: 1,
 			setCosmicSignatureNftName: 2,
-			setRandomWalkTokenName: 1,
-			randomWalkWithdraw: 1,
+			setRandomWalkNftName: 1,
+			randomWalkNftWithdraw: 1,
 			charityWalletSend: 1,
 			charityWalletSendAmount: 1,
 			marketingWalletPayReward: 1,
@@ -321,7 +321,7 @@ function isExpectedHardhatRevertError(error_) {
 
 /**
  * Like `fuzzTryWaitForTransactionReceipt` but accepts Hardhat's generic revert strings
- * (e.g. `randomWalkWithdraw` when the caller is not entitled), which do not always
+ * (e.g. `randomWalkNftWithdraw` when the caller is not entitled), which do not always
  * include the classic `"VM Exception ... reverted with ..."` prefix.
  * @param {Promise<import("hardhat").ethers.TransactionResponse>} transactionResponsePromise_
  */
@@ -486,13 +486,13 @@ async function assertRoundNumberMonotonic(contracts_, previousRoundNum_) {
 }
 
 /**
- * RW NFTs held by the RW staking wallet should match `numStakedNfts` (each staked token is custodied here).
+ * RW NFTs held by the RW NFT staking wallet should match `numStakedNfts` (each staked token is custodied here).
  * @param {Awaited<ReturnType<typeof loadFixtureDeployContractsForTesting>>} contracts_
  */
-async function assertRandomWalkStakingCustodyInvariant(contracts_) {
+async function assertRandomWalkNftStakingCustodyInvariant(contracts_) {
 	const numStaked_ = await contracts_.stakingWalletRandomWalkNft.numStakedNfts();
 	const balance_ = await contracts_.randomWalkNft.balanceOf(contracts_.stakingWalletRandomWalkNftAddress);
-	expect(balance_, "RandomWalk NFT balance of RW staking wallet should equal numStakedNfts").to.equal(numStaked_);
+	expect(balance_, "RW NFT staking wallet balance should equal numStakedNfts").to.equal(numStaked_);
 }
 
 /** Max `getBidderAddressAt` calls per invariant pass for champion/bidder-set checks (RPC bound). */
@@ -720,7 +720,7 @@ async function assertLastBidderMatchesBidLogTail(gameProxy_) {
 }
 
 /**
- * Cosmic Signature NFTs in custody at the CS staking wallet must match the staked counter (same idea as RW).
+ * Cosmic Signature NFTs in custody at the CS staking wallet must match the staked counter (as for the RW NFT staking wallet).
  * @param {Awaited<ReturnType<typeof loadFixtureDeployContractsForTesting>>} contracts_
  */
 async function assertCosmicSignatureStakingCustodyInvariant(contracts_) {
@@ -901,7 +901,7 @@ async function runProtocolInvariants(contracts_, participants_, baselineRound_, 
 	await assertNextBidPricesMatchAdvancedZero(game_);
 	await assertDutchAuctionViewsSanity(game_);
 	await assertStakingWalletNumStakedVsActionCounter(contracts_);
-	await assertRandomWalkStakingCustodyInvariant(contracts_);
+	await assertRandomWalkNftStakingCustodyInvariant(contracts_);
 	await assertCosmicSignatureStakingCustodyInvariant(contracts_);
 	await assertLastBidderMatchesBidLogTail(game_);
 	const round_ = await game_.roundNum();
@@ -1102,8 +1102,8 @@ describe("FuzzTest", function () {
 						continue;
 					}
 					if (forStaking_) {
-						const usedRwStake_ = await contracts_.stakingWalletRandomWalkNft.usedNfts(nftId_);
-						if (isNftSlotUnused_(usedRwStake_)) {
+						const usedRandomWalkNftStake_ = await contracts_.stakingWalletRandomWalkNft.usedNfts(nftId_);
+						if (isNftSlotUnused_(usedRandomWalkNftStake_)) {
 							return nftId_;
 						}
 					} else {
@@ -1180,8 +1180,8 @@ describe("FuzzTest", function () {
 						continue;
 					}
 					if (forStaking_) {
-						const usedRwStake_ = await contracts_.stakingWalletRandomWalkNft.usedNfts(nftId_);
-						if ( ! isNftSlotUnused_(usedRwStake_)) {
+						const usedRandomWalkNftStake_ = await contracts_.stakingWalletRandomWalkNft.usedNfts(nftId_);
+						if ( ! isNftSlotUnused_(usedRandomWalkNftStake_)) {
 							continue;
 						}
 					} else {
@@ -1968,12 +1968,12 @@ describe("FuzzTest", function () {
 						if ( ! other_) {
 							break;
 						}
-						const rwTotalSupply_ = await contracts_.randomWalkNft.totalSupply();
-						if (rwTotalSupply_ === 0n) {
+						const randomWalkNftTotalSupply_ = await contracts_.randomWalkNft.totalSupply();
+						if (randomWalkNftTotalSupply_ === 0n) {
 							break;
 						}
 						for (let attempt_ = 0; attempt_ < 8; ++ attempt_) {
-							const nftId_ = participant_.random() % rwTotalSupply_;
+							const nftId_ = participant_.random() % randomWalkNftTotalSupply_;
 							try {
 								const owner_ = await contracts_.randomWalkNft.ownerOf(nftId_);
 								if (owner_ !== participant_.address) {
@@ -2109,7 +2109,7 @@ describe("FuzzTest", function () {
 						}
 						break;
 					}
-					case "setRandomWalkTokenName": {
+					case "setRandomWalkNftName": {
 						const total_ = await contracts_.randomWalkNft.totalSupply();
 						if (total_ === 0n) {
 							break;
@@ -2132,7 +2132,7 @@ describe("FuzzTest", function () {
 						}
 						break;
 					}
-					case "randomWalkWithdraw": {
+					case "randomWalkNftWithdraw": {
 						const receipt_ = await fuzzTryWaitForTransactionReceipt(participant_.randomWalkNft.withdraw());
 						if (receipt_) {
 							return await markSuccess_(action_, participant_, receipt_);

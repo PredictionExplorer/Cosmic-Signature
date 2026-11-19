@@ -596,7 +596,7 @@ if (ENABLE_SMTCHECKER >= 2) {
 		// [/Comment-202409013]
 		contracts: {
 			// "contracts/production/CosmicSignatureToken.sol": ["CosmicSignatureToken"],
-			// "contracts/production/RandomWalkNFT.sol": ["RandomWalkNFT"],
+			// "contracts/external/RandomWalkNFT.sol": ["RandomWalkNFT"],
 			// "contracts/production/CosmicSignatureNft.sol": ["CosmicSignatureNft"],
 			// "contracts/production/DonatedTokenHolder.sol": ["DonatedTokenHolder"],
 			// "contracts/production/PrizesWallet.sol": ["PrizesWallet"],

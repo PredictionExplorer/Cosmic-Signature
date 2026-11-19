@@ -30,7 +30,7 @@ async function createCosmicSignatureGameProxySimulator(
 	const FIRST_ROUND_INITIAL_ETH_BID_PRICE = 10n ** (18n - 4n);
 	const ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER = 2n;
 	const DEFAULT_ETH_DUTCH_AUCTION_ENDING_BID_PRICE_DIVISOR = 100n * ETH_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER;
-	const RANDOMWALK_NFT_BID_PRICE_DIVISOR = 2n;
+	const RANDOM_WALK_NFT_BID_PRICE_DIVISOR = 2n;
 	const CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER = 2n;
 
 	// #endregion
@@ -79,7 +79,7 @@ async function createCosmicSignatureGameProxySimulator(
 		ethDutchAuctionEndingBidPriceDivisor: DEFAULT_ETH_DUTCH_AUCTION_ENDING_BID_PRICE_DIVISOR,
 		nextEthBidPrice: 0n,
 		ethBidPriceIncreaseDivisor: 100n,
-		RANDOMWALK_NFT_BID_PRICE_DIVISOR,
+		RANDOM_WALK_NFT_BID_PRICE_DIVISOR,
 		ethBidRefundAmountInGasToSwallowMaxLimit: 6843n,
 		cstDutchAuctionBeginningTimeStamp: 0n,
 		cstDutchAuctionDurationDivisor: (60n * 60n * 1_000_000n + (24n * 60n * 60n / 2n) / 2n) / (24n * 60n * 60n / 2n),
@@ -630,8 +630,8 @@ async function createCosmicSignatureGameProxySimulator(
 
 		getEthPlusRandomWalkNftBidPrice: function(ethBidPrice_) {
 			const ethPlusRandomWalkNftBidPrice_ =
-				(ethBidPrice_ + (this.RANDOMWALK_NFT_BID_PRICE_DIVISOR - 1n)) /
-				this.RANDOMWALK_NFT_BID_PRICE_DIVISOR;
+				(ethBidPrice_ + (this.RANDOM_WALK_NFT_BID_PRICE_DIVISOR - 1n)) /
+				this.RANDOM_WALK_NFT_BID_PRICE_DIVISOR;
 			return ethPlusRandomWalkNftBidPrice_;
 		},
 

@@ -119,7 +119,7 @@ rule noReentrancy(method f, env e, calldataarg data) {
     <https://www.certora.com/blog/securing-sushiswap-trident>
 
 ## 9 · Cosmic Signature Project-Specific Play-Book
-The **Cosmic Signature** protocol contains more than 30 on-chain modules covering auctions, tokenomics, staking, NFT minting, and DAO governance. The diversity of components means that *generic* CVL templates often miss subtle cross-contract interactions. This section distils lessons learned while reading the Solidity sources under `contracts/production/*` and curates invariants that will matter most for **our** verification campaign.
+The **Cosmic Signature** protocol contains more than 30 on-chain modules covering auctions, tokenomics, staking, NFT minting, and DAO governance. The diversity of components means that *generic* CVL templates often miss subtle cross-contract interactions. This section distils lessons learned while reading the Solidity sources under `contracts/production/` and `contracts/external/` and curates invariants that will matter most for **our** verification campaign.
 
 ### 9.1 Core Modules & High-Impact Properties
 

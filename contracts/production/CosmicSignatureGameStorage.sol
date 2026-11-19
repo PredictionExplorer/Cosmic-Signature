@@ -7,7 +7,7 @@ pragma solidity 0.8.34;
 // #region
 
 import { CosmicSignatureToken } from "./CosmicSignatureToken.sol";
-import { RandomWalkNFT } from "./RandomWalkNFT.sol";
+import { RandomWalkNFT } from "../external/RandomWalkNFT.sol";
 import { CosmicSignatureNft } from "./CosmicSignatureNft.sol";
 import { PrizesWallet } from "./PrizesWallet.sol";
 import { StakingWalletRandomWalkNft } from "./StakingWalletRandomWalkNft.sol";

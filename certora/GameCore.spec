@@ -46,7 +46,7 @@ methods {
 }
 
 definition FIRST_ROUND_INITIAL_ETH_BID_PRICE() returns uint256 = 10000000000000;
-definition RANDOMWALK_NFT_BID_PRICE_DIVISOR() returns uint256 = 2;
+definition RANDOM_WALK_NFT_BID_PRICE_DIVISOR() returns uint256 = 2;
 
 // ===== ANYONECAN RULES =====
 
@@ -1703,7 +1703,7 @@ rule rafflePrizeSumIsCorrect {
            "Raffle prize distribution should be valid and claim should succeed";
 }
 
-// ===== RANDOMWALK RULES =====
+// ===== RANDOM WALK NFT RULES =====
 
 rule randomWalkNftCannotBeReused {
     env e;
@@ -1731,7 +1731,7 @@ rule randomWalkNftCannotBeReused {
     bidWithEth@withrevert(e, nftId, "second bid with same nft");
 
     assert lastReverted,
-           "Second bid with the same RandomWalk NFT id must revert";
+           "Second bid with the same Random Walk NFT id must revert";
 }
 
 rule randomWalkNftDiscountCorrect {
@@ -1744,12 +1744,12 @@ rule randomWalkNftDiscountCorrect {
     // Calculate discounted price
     uint256 discountedPrice = getEthPlusRandomWalkNftBidPrice(e, baseEthPrice);
     
-    // The discount divisor is 2 (RANDOMWALK_NFT_BID_PRICE_DIVISOR)
+    // The discount divisor is 2 (RANDOM_WALK_NFT_BID_PRICE_DIVISOR)
     // Formula: (ethBidPrice + 1) / 2
     mathint expectedPrice = (baseEthPrice + 1) / 2;
     
     assert discountedPrice == expectedPrice,
-           "RandomWalk NFT discount calculation must match formula";
+           "Random Walk NFT discount calculation must match formula";
 }
 
 rule randomWalkNftDiscountCorrectFixed {
@@ -1767,7 +1767,7 @@ rule randomWalkNftDiscountCorrectFixed {
     mathint expectedPrice = (baseEthPrice + 1) / 2;
     
     assert discountedPrice == expectedPrice,
-           "RandomWalk NFT discount calculation must match formula (divisor=2)";
+           "Random Walk NFT discount calculation must match formula (divisor=2)";
 }
 
 // ===== RANDOMNESSDETERMINISTIC RULES =====

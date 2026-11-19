@@ -30,7 +30,7 @@
 "use strict";
 
 module.exports = {
-	skipFiles: ["tests/", "upgrade-prototype/",],
+	skipFiles: ["external/", "tests/", "upgrade-prototype/",],
 
 	// // It appears that we don't need this unless the compilation fails.
 	// configureYulOptimizer: true,

@@ -4,7 +4,7 @@ This stuff is old and, for the most part, no longer relevant. Although the gener
 The rewritten version of this document is named "live-blockchain-tests.md".
 
 **Nick wrote:**
-> Basically , the idea was to test that the integration with RandomWalk works correctly, because this can't be tested with hardhat (no productive contract available). Though you can download the original contract source from Arbitrum MainNet, and deploy it on hardhat localhost and test it, but it is still not the real test. So I wrote these scripts to test that bidding with RandomWalk NFT works. The idea was that Taras would use some of his tokens, and claim all the resources back after confirming contracts work correctly. Then we would drop the test contracts, and deploy the second time, but this time we won't run the tests, so the contracts will be available to play from round 0. Because there will be a launch and advertisement in the media, it is better to make deployment verification on the MainNet before the launch.
+> Basically , the idea was to test that the integration with RandomWalk [NFT] works correctly, because this can't be tested with hardhat (no productive contract available). Though you can download the original contract source from Arbitrum MainNet, and deploy it on hardhat localhost and test it, but it is still not the real test. So I wrote these scripts to test that bidding with RandomWalk NFT works. The idea was that Taras would use some of his tokens, and claim all the resources back after confirming contracts work correctly. Then we would drop the test contracts, and deploy the second time, but this time we won't run the tests, so the contracts will be available to play from round 0. Because there will be a launch and advertisement in the media, it is better to make deployment verification on the MainNet before the launch.
 
 **Yuriy's comment:**\
 I have rewritten this test. The new version does support the above, in spite of the fact hat I have eliminated most of the logic that returns resources to the owner. That logic used to be in the `SelfDestructibleCosmicSignatureGame.finalizeTesting` method. I have commented out most of it, including `selfdestruct`, which I replaced with a transfer of the whole ETH balance to the owner. You can get other assets, most importantly, donated Random Walk NFTs, back from bidder accounts used by the test or, if something went wrong while the test was running, from `PrizesWallet`. Besides, bidding with a Random Walk NFT would really not spoil the NFT if the game contract is not to be used in the production.
@@ -66,7 +66,7 @@ Copy the CosmicSignatureGameProxy contract address and run test scripts:
 
 	 RWALK_TOKENS=$(PRIVKEY=[private_key] COSMIC_SIGNATURE_GAME_ADDRESS=[addr] npx hardhat run scripts/mint-random-walk-nfts.js --network [network-name])
 
-	(note: this command will set RWALK_TOKENS shell variable to NFTs minted)
+	(note: the legacy scripts use `RWALK_TOKENS` for the minted Random Walk NFT IDs)
 
 ##### Display the NFTs to make sure they were minted
 

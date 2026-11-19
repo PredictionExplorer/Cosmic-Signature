@@ -150,20 +150,20 @@ rule nftTotalSupplyNeverDecreases {
     assert supplyAfter == supplyBefore;
 }
 
-// ===== RANDOMWALK NFT RULES =====
+// ===== RANDOM WALK NFT RULES =====
 
-rule randomWalkPriceNonNegative {
+rule randomWalkNftPriceNonNegative {
     uint256 price = randomWalkNft.getMintPrice();
     assert price >= 0;
 }
 
-rule randomWalkSaleTimeConsistency {
+rule randomWalkNftSaleTimeConsistency {
     uint256 saleTime = randomWalkNft.saleTime();
     // Sale time is valid (any uint256 value is acceptable)
     assert saleTime >= 0;
 }
 
-rule randomWalkTotalSupplyOnlyIncreasesOnMint {
+rule randomWalkNftTotalSupplyOnlyIncreasesOnMint {
     env e;
     
     // Ensure supply doesn't overflow

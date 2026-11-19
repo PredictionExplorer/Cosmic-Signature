@@ -54,7 +54,7 @@ The ecosystem includes staking, donations to the game, charity allocations, and 
 | **Bidding, BidStatistics, SecondaryPrizes, MainPrize** | Submodules handling bid pricing, statistics, and prize mechanics. |
 | **CosmicSignatureToken (CST)** | ERC-20 token; minted by the game for rewards and DAO voting power. |
 | **CosmicSignatureNft (COSMIC)** | ERC-721 NFT; official NFT minted as rewards. |
-| **RandomWalkNFT (RWLK)** | External ERC-721 NFT (not part of repo); used for discounted ETH bids. |
+| **RandomWalkNFT (RWLK)** | Third-party ERC-721 contract used for discounted ETH bids. Its source is in `contracts/external/`. |
 | **PrizesWallet** | Custody of secondary prizes and donations with withdrawal timeouts. |
 | **CharityWallet** | Holds ETH allocations for donation to DAO-approved charity. |
 | **MarketingWallet** | Holds CST allocations for marketing initiatives. |

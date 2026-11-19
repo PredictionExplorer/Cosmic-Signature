@@ -32,7 +32,7 @@ This document goes a little bit beyond purely functional requirements. It's inte
 
 - `CosmicSignatureToken`. The Official ERC-20 Token for the Cosmic Signature Ecosystem. Its symbol is CST. It's used by our DAO for voting power. Only the `CosmicSignatureGame` contract is permitted to mint and burn token amounts (although a token holder also has an option to burn own funds).
 
-- `RandomWalkNFT`. It's an ERC-721 NFT contract that has already been deployed. Its symbol is RWLK. It can be considered a third party contract that is not a part of this project, but it plays an important role. This contract does not need to be audited.
+- `RandomWalkNFT`. It's an ERC-721 NFT contract that has already been deployed. Its symbol is RWLK. Its source and interface are in `contracts/external/` because it is a third-party contract. This contract does not need to be audited.
 
 - `CosmicSignatureNft`. The Official ERC-721 NFT for the Cosmic Signature Ecosystem. Its symbol is COSMIC. Only the `CosmicSignatureGame` contract is permitted to mint new NFTs.
 

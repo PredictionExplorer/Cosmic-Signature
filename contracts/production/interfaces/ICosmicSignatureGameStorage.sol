@@ -27,7 +27,7 @@ interface ICosmicSignatureGameStorage {
 	//
 	// 	/// @notice Bid using Ether + a Random Walk NFT.
 	// 	/// todo-9 Rename to `EthPlusRandomWalkNft`.
-	// 	RandomWalk,
+	// 	RandomWalkNft,
 	//
 	// 	/// @notice Bid using Cosmic Signature Tokens.
 	// 	/// todo-9 Rename to `Cst`.
