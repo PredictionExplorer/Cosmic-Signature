@@ -13,8 +13,8 @@ import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils
 import { CosmicSignatureConstants } from "./libraries/CosmicSignatureConstants.sol";
 import { AddressValidator } from "./AddressValidator.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
-import { BiddingBase } from "./BiddingBase.sol";
-import { MainPrizeBase } from "./MainPrizeBase.sol";
+import { BiddingCommon } from "./BiddingCommon.sol";
+import { MainPrizeCommon } from "./MainPrizeCommon.sol";
 import { SystemManagement } from "./SystemManagement.sol";
 import { EthDonations } from "./EthDonations.sol";
 import { NftDonations } from "./NftDonations.sol";
@@ -33,8 +33,8 @@ contract CosmicSignatureGame is
 	UUPSUpgradeable,
 	AddressValidator,
 	CosmicSignatureGameStorage,
-	BiddingBase,
-	MainPrizeBase,
+	BiddingCommon,
+	MainPrizeCommon,
 	SystemManagement,
 	EthDonations,
 	NftDonations,
@@ -113,7 +113,7 @@ contract CosmicSignatureGame is
 		cstDutchAuctionBeginningBidPriceMinLimit = CosmicSignatureConstants.DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT;
 		// usedRandomWalkNfts =
 		bidMessageLengthMaxLimit = CosmicSignatureConstants.DEFAULT_BID_MESSAGE_LENGTH_MAX_LIMIT;
-		cstRewardAmountForBidding = CosmicSignatureConstants.DEFAULT_CST_REWARD_AMOUNT_FOR_BIDDING;
+		cstRewardAmountForBidding = CosmicSignatureConstants.DEFAULT_BID_CST_REWARD_AMOUNT;
 		cstPrizeAmount = CosmicSignatureConstants.DEFAULT_CST_PRIZE_AMOUNT;
 		chronoWarriorEthPrizeAmountPercentage = CosmicSignatureConstants.DEFAULT_CHRONO_WARRIOR_ETH_PRIZE_AMOUNT_PERCENTAGE;
 		raffleTotalEthPrizeAmountForBiddersPercentage = CosmicSignatureConstants.DEFAULT_RAFFLE_TOTAL_ETH_PRIZE_AMOUNT_FOR_BIDDERS_PERCENTAGE;

@@ -97,7 +97,7 @@ async function createCosmicSignatureGameProxySimulator(
 		usedRandomWalkNfts: {},
 
 		bidMessageLengthMaxLimit: 280n,
-		cstRewardAmountForBidding: 100n * 10n ** 18n,
+		bidCstRewardAmount: 100n * 10n ** 18n,
 		cstPrizeAmount: 1_000n * 10n ** 18n,
 		chronoWarriorEthPrizeAmountPercentage: 8n,
 		raffleTotalEthPrizeAmountForBiddersPercentage: 4n,
@@ -555,7 +555,7 @@ async function createCosmicSignatureGameProxySimulator(
 			this.nextEthBidPrice = ethBidPrice_ + ethBidPrice_ / this.ethBidPriceIncreaseDivisor + 1n;
 
 			// [Comment-202505086/]
-			this.cosmicSignatureTokenSimulator.mint(bidderAddress_, this.cstRewardAmountForBidding, contracts_, transactionReceipt_, eventIndexWrapper_);
+			this.cosmicSignatureTokenSimulator.mint(bidderAddress_, this.bidCstRewardAmount, contracts_, transactionReceipt_, eventIndexWrapper_);
 
 			if (this.lastBidderAddress == hre.ethers.ZeroAddress) {
 				this.cstDutchAuctionBeginningTimeStamp = BigInt(transactionBlock_.timestamp);
@@ -667,19 +667,19 @@ async function createCosmicSignatureGameProxySimulator(
 		// We don't need `bidWithCstAndDonateNft`.
 		// #region `canBidWithCst`
 
-		canBidWithCst: async function(transactionBlock_, bidderAddress_, cstPriceToPayMaxLimit_, message_, paidCstPrice_, contracts_, transactionResponsePromise_) {
+		canBidWithCst: async function(transactionBlock_, bidderAddress_, cstPriceMaxLimit_, message_, paidCstPrice_, contracts_, transactionResponsePromise_) {
 			// assertAddressIsValid(bidderAddress_);
 			expect(bidderAddress_).not.equal(hre.ethers.ZeroAddress);
-			expect(typeof cstPriceToPayMaxLimit_).equal("bigint");
-			expect(cstPriceToPayMaxLimit_).greaterThanOrEqual(0n);
+			expect(typeof cstPriceMaxLimit_).equal("bigint");
+			expect(cstPriceMaxLimit_).greaterThanOrEqual(0n);
 			expect(typeof message_).equal("string");
 			expect(typeof paidCstPrice_).equal("bigint");
 			expect(paidCstPrice_).greaterThanOrEqual(0n);
-			if ( ! (paidCstPrice_ <= cstPriceToPayMaxLimit_) ) {
+			if ( ! (paidCstPrice_ <= cstPriceMaxLimit_) ) {
 				// console.info("%s", "202504166");
 				await expect(transactionResponsePromise_)
 					.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "InsufficientReceivedBidAmount")
-					.withArgs("The current CST bid price is greater than the maximum you allowed.", paidCstPrice_, cstPriceToPayMaxLimit_);
+					.withArgs("The current CST bid price is greater than the maximum you allowed.", paidCstPrice_, cstPriceMaxLimit_);
 				return false;
 			}
 			const bidderCstBalanceBeforeTransaction_ = this.cosmicSignatureTokenSimulator.balanceOf(bidderAddress_);
@@ -731,7 +731,7 @@ async function createCosmicSignatureGameProxySimulator(
 
 			// Comment-202505086 applies.
 			this.cosmicSignatureTokenSimulator.burn(bidderAddress_, paidCstPrice_, contracts_, transactionReceipt_, eventIndexWrapper_);
-			this.cosmicSignatureTokenSimulator.mint(bidderAddress_, this.cstRewardAmountForBidding, contracts_, transactionReceipt_, eventIndexWrapper_);
+			this.cosmicSignatureTokenSimulator.mint(bidderAddress_, this.bidCstRewardAmount, contracts_, transactionReceipt_, eventIndexWrapper_);
 
 			this.biddersInfo[bidderAddress_].totalSpentCstAmount += paidCstPrice_;
 			this.cstDutchAuctionBeginningTimeStamp = BigInt(transactionBlock_.timestamp);
@@ -1358,7 +1358,7 @@ async function assertCosmicSignatureGameProxySimulator(cosmicSignatureGameProxyS
 	expect(await contracts_.cosmicSignatureGameProxy.cstDutchAuctionBeginningBidPriceMinLimit()).equal(cosmicSignatureGameProxySimulator_.cstDutchAuctionBeginningBidPriceMinLimit);
 	await assertCosmicSignatureGameProxySimulatorRandomRandomWalkNftIfPossible(cosmicSignatureGameProxySimulator_, contracts_, randomNumberSeedWrapper_);
 	expect(await contracts_.cosmicSignatureGameProxy.bidMessageLengthMaxLimit()).equal(cosmicSignatureGameProxySimulator_.bidMessageLengthMaxLimit);
-	expect(await contracts_.cosmicSignatureGameProxy.cstRewardAmountForBidding()).equal(cosmicSignatureGameProxySimulator_.cstRewardAmountForBidding);
+	expect(await contracts_.cosmicSignatureGameProxy.cstRewardAmountForBidding()).equal(cosmicSignatureGameProxySimulator_.bidCstRewardAmount);
 	expect(await contracts_.cosmicSignatureGameProxy.cstPrizeAmount()).equal(cosmicSignatureGameProxySimulator_.cstPrizeAmount);
 	expect(await contracts_.cosmicSignatureGameProxy.chronoWarriorEthPrizeAmountPercentage()).equal(cosmicSignatureGameProxySimulator_.chronoWarriorEthPrizeAmountPercentage);
 	expect(await contracts_.cosmicSignatureGameProxy.raffleTotalEthPrizeAmountForBiddersPercentage()).equal(cosmicSignatureGameProxySimulator_.raffleTotalEthPrizeAmountForBiddersPercentage);

@@ -16,8 +16,8 @@ import { CosmicSignatureConstants } from "../production/libraries/CosmicSignatur
 import { CosmicSignatureErrors } from "../production/libraries/CosmicSignatureErrors.sol";
 import { ICosmicSignatureToken } from "../production/interfaces/ICosmicSignatureToken.sol";
 import { CosmicSignatureGameStorage } from "../production/CosmicSignatureGameStorage.sol";
-import { BiddingBase } from "../production/BiddingBase.sol";
-import { MainPrizeBase } from "../production/MainPrizeBase.sol";
+import { BiddingCommon } from "../production/BiddingCommon.sol";
+import { MainPrizeCommon } from "../production/MainPrizeCommon.sol";
 import { BidStatistics } from "../production/BidStatistics.sol";
 import { IBidding } from "../production/interfaces/IBidding.sol";
 
@@ -28,8 +28,8 @@ abstract contract BiddingOpenBid is
 	ReentrancyGuardTransientUpgradeable,
 	OwnableUpgradeableWithReservedStorageGaps,
 	CosmicSignatureGameStorage,
-	BiddingBase,
-	MainPrizeBase,
+	BiddingCommon,
+	MainPrizeCommon,
 	BidStatistics,
 	IBidding {
 	// #region // Data Types
@@ -460,39 +460,39 @@ abstract contract BiddingOpenBid is
 	// #endregion
 	// #region `bidWithCstAndDonateToken`
 
-	function bidWithCstAndDonateToken(uint256 priceMaxLimit_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external override nonReentrant /*_onlyRoundIsActive*/ {
-		_bidWithCst(priceMaxLimit_, message_);
+	function bidWithCstAndDonateToken(uint256 cstPriceMaxLimit_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external override nonReentrant /*_onlyRoundIsActive*/ {
+		_bidWithCst(cstPriceMaxLimit_, message_);
 		prizesWallet.donateToken(roundNum, _msgSender(), tokenAddress_, amount_);
 	}
 
 	// #endregion
 	// #region `bidWithCstAndDonateNft`
 
-	function bidWithCstAndDonateNft(uint256 priceMaxLimit_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external override nonReentrant /*_onlyRoundIsActive*/ {
-		_bidWithCst(priceMaxLimit_, message_);
+	function bidWithCstAndDonateNft(uint256 cstPriceMaxLimit_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external override nonReentrant /*_onlyRoundIsActive*/ {
+		_bidWithCst(cstPriceMaxLimit_, message_);
 		prizesWallet.donateNft(roundNum, _msgSender(), nftAddress_, nftId_);
 	}
 
 	// #endregion
 	// #region `bidWithCst`
 
-	function bidWithCst(uint256 priceMaxLimit_, string memory message_) external override nonReentrant /*_onlyRoundIsActive*/ {
-		_bidWithCst(priceMaxLimit_, message_);
+	function bidWithCst(uint256 cstPriceMaxLimit_, string memory message_) external override nonReentrant /*_onlyRoundIsActive*/ {
+		_bidWithCst(cstPriceMaxLimit_, message_);
 	}
 
 	// #endregion
 	// #region `_bidWithCst`
 
-	function _bidWithCst(uint256 priceMaxLimit_, string memory message_) private /*nonReentrant*/ /*_onlyRoundIsActive*/ {
+	function _bidWithCst(uint256 cstPriceMaxLimit_, string memory message_) private /*nonReentrant*/ /*_onlyRoundIsActive*/ {
 		// Comment-202501045 applies.
 
 		// Comment-202503162 relates and/or applies.
-		uint256 paidPrice_ = getNextCstBidPriceAdvanced(int256(0));
+		uint256 paidCstPrice_ = getNextCstBidPriceAdvanced(int256(0));
 
 		// Comment-202412045 applies.
 		require(
-			paidPrice_ <= priceMaxLimit_,
-			CosmicSignatureErrors.InsufficientReceivedBidAmount("The current CST bid price is greater than the maximum you allowed.", paidPrice_, priceMaxLimit_)
+			paidCstPrice_ <= cstPriceMaxLimit_,
+			CosmicSignatureErrors.InsufficientReceivedBidAmount("The current CST bid price is greater than the maximum you allowed.", paidCstPrice_, cstPriceMaxLimit_)
 		);
 
 		// Comment-202412251 applies.
@@ -503,18 +503,18 @@ abstract contract BiddingOpenBid is
 		{
 			ICosmicSignatureToken.MintOrBurnSpec[] memory mintAndBurnSpecs_ = new ICosmicSignatureToken.MintOrBurnSpec[](2);
 			mintAndBurnSpecs_[0].account = _msgSender();
-			mintAndBurnSpecs_[0].value = ( - int256(paidPrice_) );
+			mintAndBurnSpecs_[0].value = ( - int256(paidCstPrice_) );
 			mintAndBurnSpecs_[1].account = _msgSender();
 			mintAndBurnSpecs_[1].value = int256(cstRewardAmountForBidding);
 			token.mintAndBurnMany(mintAndBurnSpecs_);
 		}
 
-		biddersInfo[roundNum][_msgSender()].totalSpentCstAmount += paidPrice_;
+		biddersInfo[roundNum][_msgSender()].totalSpentCstAmount += paidCstPrice_;
 		cstDutchAuctionBeginningTimeStamp = block.timestamp;
 
 		// Comment-202409163 applies.
 		uint256 newCstDutchAuctionBeginningBidPrice_ =
-			Math.max(paidPrice_ * CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, cstDutchAuctionBeginningBidPriceMinLimit);
+			Math.max(paidCstPrice_ * CosmicSignatureConstants.CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MULTIPLIER, cstDutchAuctionBeginningBidPriceMinLimit);
 		cstDutchAuctionBeginningBidPrice = newCstDutchAuctionBeginningBidPrice_;
 
 		if (lastCstBidderAddress == address(0)) {
@@ -525,7 +525,7 @@ abstract contract BiddingOpenBid is
 		}
 		lastCstBidderAddress = _msgSender();
 		_bidCommon(/*BidType.CST,*/ message_);
-		emit BidPlaced(roundNum, _msgSender(), -1, int256(paidPrice_), -1, message_, mainPrizeTime);
+		emit BidPlaced(roundNum, _msgSender(), -1, int256(paidCstPrice_), -1, message_, mainPrizeTime);
 	}
 
 	// #endregion

@@ -23,7 +23,7 @@ describe("CosmicSignatureGame-3", function () {
 
 		const cosmicSignatureGameOpenBidFactory_ =
 			await hre.ethers.getContractFactory("CosmicSignatureGameOpenBid", contracts_.ownerSigner);
-		const cosmicSignatureGame2Proxy_ =
+		const cosmicSignatureGameOpenBidProxy_ =
 			await hre.upgrades.upgradeProxy(
 				contracts_.cosmicSignatureGameProxy,
 				cosmicSignatureGameOpenBidFactory_,
@@ -32,20 +32,20 @@ describe("CosmicSignatureGame-3", function () {
 					call: "initialize2",
 				}
 			);
-		// await cosmicSignatureGame2Proxy_.waitForDeployment();
-		expect(await cosmicSignatureGame2Proxy_.getAddress()).equal(contracts_.cosmicSignatureGameProxyAddress);
-		const cosmicSignatureGame2ImplementationAddress_ = await hre.upgrades.erc1967.getImplementationAddress(contracts_.cosmicSignatureGameProxyAddress);
-		expect(cosmicSignatureGame2ImplementationAddress_).not.equal(contracts_.cosmicSignatureGameImplementationAddress);
-		const cosmicSignatureGame2Implementation_ = cosmicSignatureGameOpenBidFactory_.attach(cosmicSignatureGame2ImplementationAddress_);
-		// await expect(cosmicSignatureGame2Proxy_.connect(contracts_.ownerSigner).initialize(contracts_.ownerSigner.address)).revertedWithCustomError(cosmicSignatureGame2Proxy_, "InvalidInitialization");
-		await expect(cosmicSignatureGame2Proxy_.connect(contracts_.ownerSigner).initialize2()).revertedWithCustomError(cosmicSignatureGame2Proxy_, "InvalidInitialization");
-		// await expect(cosmicSignatureGame2Implementation_.connect(contracts_.ownerSigner).initialize(contracts_.ownerSigner.address)).revertedWithCustomError(cosmicSignatureGame2Implementation_, "InvalidInitialization");
-		await expect(cosmicSignatureGame2Implementation_.connect(contracts_.ownerSigner).initialize2()).revertedWithCustomError(cosmicSignatureGame2Implementation_, "InvalidInitialization");
-		expect(await cosmicSignatureGame2Proxy_.timesEthBidPrice()).equal(3n);
-		await waitForTransactionReceipt(cosmicSignatureGame2Proxy_.connect(contracts_.ownerSigner).setTimesEthBidPrice(10n));
-		expect(await cosmicSignatureGame2Proxy_.timesEthBidPrice()).equal(10n);
-		expect(await cosmicSignatureGame2Implementation_.owner()).equal(hre.ethers.ZeroAddress);
-		expect(await cosmicSignatureGame2Implementation_.timesEthBidPrice()).equal(0n);
+		// await cosmicSignatureGameOpenBidProxy_.waitForDeployment();
+		expect(await cosmicSignatureGameOpenBidProxy_.getAddress()).equal(contracts_.cosmicSignatureGameProxyAddress);
+		const cosmicSignatureGameOpenBidImplementationAddress_ = await hre.upgrades.erc1967.getImplementationAddress(contracts_.cosmicSignatureGameProxyAddress);
+		expect(cosmicSignatureGameOpenBidImplementationAddress_).not.equal(contracts_.cosmicSignatureGameImplementationAddress);
+		const cosmicSignatureGameOpenBidImplementation_ = cosmicSignatureGameOpenBidFactory_.attach(cosmicSignatureGameOpenBidImplementationAddress_);
+		// await expect(cosmicSignatureGameOpenBidProxy_.connect(contracts_.ownerSigner).initialize(contracts_.ownerSigner.address)).revertedWithCustomError(cosmicSignatureGameOpenBidProxy_, "InvalidInitialization");
+		await expect(cosmicSignatureGameOpenBidProxy_.connect(contracts_.ownerSigner).initialize2()).revertedWithCustomError(cosmicSignatureGameOpenBidProxy_, "InvalidInitialization");
+		// await expect(cosmicSignatureGameOpenBidImplementation_.connect(contracts_.ownerSigner).initialize(contracts_.ownerSigner.address)).revertedWithCustomError(cosmicSignatureGameOpenBidImplementation_, "InvalidInitialization");
+		await expect(cosmicSignatureGameOpenBidImplementation_.connect(contracts_.ownerSigner).initialize2()).revertedWithCustomError(cosmicSignatureGameOpenBidImplementation_, "InvalidInitialization");
+		expect(await cosmicSignatureGameOpenBidProxy_.timesEthBidPrice()).equal(3n);
+		await waitForTransactionReceipt(cosmicSignatureGameOpenBidProxy_.connect(contracts_.ownerSigner).setTimesEthBidPrice(10n));
+		expect(await cosmicSignatureGameOpenBidProxy_.timesEthBidPrice()).equal(10n);
+		expect(await cosmicSignatureGameOpenBidImplementation_.owner()).equal(hre.ethers.ZeroAddress);
+		expect(await cosmicSignatureGameOpenBidImplementation_.timesEthBidPrice()).equal(0n);
 	});
 
 	it("Unauthorized or incorrect CosmicSignatureGame upgrade attempts", async function () {

@@ -19,7 +19,7 @@ Test and Solidity coverage scripts are located in the `${workspaceFolder}/test/r
 
 Some tests test exact timings of actions. They can fail if the system is under stress.
 
-We have achieved 100% Solidity coverage of production sources, except the `BiddingBase._onlyRoundIsActive` modifier, because it's never called.
+We have achieved 100% Solidity coverage of production sources, except the `BiddingCommon._onlyRoundIsActive` modifier, because it's never called.
 
 Because some tests are driven by random numbers, occasionally you can observe some code locations not covered or a signer running out of gas.
 

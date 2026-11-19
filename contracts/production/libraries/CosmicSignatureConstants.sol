@@ -95,7 +95,7 @@ library CosmicSignatureConstants {
 	uint256 internal constant DEFAULT_BID_MESSAGE_LENGTH_MAX_LIMIT = 280;
 
 	/// @notice Default `cstRewardAmountForBidding` and `CosmicSignatureDao.proposalThreshold()`.
-	uint256 internal constant DEFAULT_CST_REWARD_AMOUNT_FOR_BIDDING = 100 ether;
+	uint256 internal constant DEFAULT_BID_CST_REWARD_AMOUNT = 100 ether;
 
 	// #endregion
 	// #region Secondary Prizes
@@ -207,7 +207,7 @@ library CosmicSignatureConstants {
 		// 3 minutes;
 		2 weeks;
 
-	// See `DEFAULT_CST_REWARD_AMOUNT_FOR_BIDDING`.
+	// See `DEFAULT_BID_CST_REWARD_AMOUNT`.
 
 	/// @notice Default `CosmicSignatureDao.quorum()`.
 	/// @dev I've reduced this from the recommended 4% -- to increase the chance that there will be a sufficient quorum.

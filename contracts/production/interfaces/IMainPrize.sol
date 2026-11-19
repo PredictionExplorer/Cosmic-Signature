@@ -2,16 +2,16 @@
 pragma solidity 0.8.34;
 
 import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
-import { IBiddingBase } from "./IBiddingBase.sol";
-import { IMainPrizeBase } from "./IMainPrizeBase.sol";
+import { IBiddingCommon } from "./IBiddingCommon.sol";
+import { IMainPrizeCommon } from "./IMainPrizeCommon.sol";
 import { IBidStatistics } from "./IBidStatistics.sol";
 import { ISecondaryPrizes } from "./ISecondaryPrizes.sol";
 
 /// @notice This contract supports claiming bidding round main prize.
 interface IMainPrize is
 	ICosmicSignatureGameStorage,
-	IBiddingBase,
-	IMainPrizeBase,
+	IBiddingCommon,
+	IMainPrizeCommon,
 	IBidStatistics,
 	ISecondaryPrizes {
 	/// @notice Emitted when main prize gets claimed.

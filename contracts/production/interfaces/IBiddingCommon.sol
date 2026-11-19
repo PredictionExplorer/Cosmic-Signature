@@ -4,7 +4,7 @@ pragma solidity 0.8.34;
 import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
 import { ISystemEvents } from "./ISystemEvents.sol";
 
-interface IBiddingBase is ICosmicSignatureGameStorage, ISystemEvents {
+interface IBiddingCommon is ICosmicSignatureGameStorage, ISystemEvents {
 	/// @return The number of seconds until the current bidding round activates,
 	/// or a non-positive value if it's already active.
 	function getDurationUntilRoundActivation() external view returns (int256);

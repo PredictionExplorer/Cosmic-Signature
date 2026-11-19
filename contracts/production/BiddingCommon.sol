@@ -3,9 +3,9 @@ pragma solidity 0.8.34;
 
 import { CosmicSignatureErrors } from "./libraries/CosmicSignatureErrors.sol";
 import { CosmicSignatureGameStorage } from "./CosmicSignatureGameStorage.sol";
-import { IBiddingBase } from "./interfaces/IBiddingBase.sol";
+import { IBiddingCommon } from "./interfaces/IBiddingCommon.sol";
 
-abstract contract BiddingBase is CosmicSignatureGameStorage, IBiddingBase {
+abstract contract BiddingCommon is CosmicSignatureGameStorage, IBiddingCommon {
 	modifier _onlyNonFirstRound() {
 		_checkNonFirstRound();
 		_;

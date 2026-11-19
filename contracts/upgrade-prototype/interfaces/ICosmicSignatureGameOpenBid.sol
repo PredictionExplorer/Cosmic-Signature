@@ -3,8 +3,8 @@ pragma solidity 0.8.34;
 
 import { IAddressValidator } from "../../production/interfaces/IAddressValidator.sol";
 import { ICosmicSignatureGameStorage } from "../../production/interfaces/ICosmicSignatureGameStorage.sol";
-import { IBiddingBase } from "../../production/interfaces/IBiddingBase.sol";
-import { IMainPrizeBase } from "../../production/interfaces/IMainPrizeBase.sol";
+import { IBiddingCommon } from "../../production/interfaces/IBiddingCommon.sol";
+import { IMainPrizeCommon } from "../../production/interfaces/IMainPrizeCommon.sol";
 import { ISystemManagement } from "../../production/interfaces/ISystemManagement.sol";
 import { IEthDonations } from "../../production/interfaces/IEthDonations.sol";
 import { INftDonations } from "../../production/interfaces/INftDonations.sol";
@@ -17,8 +17,8 @@ import { IMainPrize } from "../../production/interfaces/IMainPrize.sol";
 interface ICosmicSignatureGameOpenBid is
 	IAddressValidator,
 	ICosmicSignatureGameStorage,
-	IBiddingBase,
-	IMainPrizeBase,
+	IBiddingCommon,
+	IMainPrizeCommon,
 	ISystemManagement,
 	IEthDonations,
 	INftDonations,

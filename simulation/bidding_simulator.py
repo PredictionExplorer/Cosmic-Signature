@@ -3,7 +3,7 @@
 Cosmic Signature bidding game — wall-clock, round-duration, and NFT supply simulator.
 
 Integer math mirrors the production Solidity contracts (CosmicSignatureConstants,
-MainPrizeBase, MainPrize._prepareNextRound, Bidding._bidCommon, Bidding.getNextEthBidPriceAdvanced).
+MainPrizeCommon, MainPrize._prepareNextRound, Bidding._bidCommon, Bidding.getNextEthBidPriceAdvanced).
 
 
 Round timeline (what one round looks like in wall-clock time)

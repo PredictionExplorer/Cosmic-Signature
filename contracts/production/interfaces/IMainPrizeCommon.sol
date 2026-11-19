@@ -4,7 +4,7 @@ pragma solidity 0.8.34;
 import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
 import { ISystemEvents } from "./ISystemEvents.sol";
 
-interface IMainPrizeBase is ICosmicSignatureGameStorage, ISystemEvents {
+interface IMainPrizeCommon is ICosmicSignatureGameStorage, ISystemEvents {
 	function getInitialDurationUntilMainPrize() external view returns (uint256);
 
 	/// @notice This is a "friendly" version of `getDurationUntilMainPrizeRaw` that can't return a negative value.

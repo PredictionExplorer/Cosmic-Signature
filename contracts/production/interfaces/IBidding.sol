@@ -4,13 +4,13 @@ pragma solidity 0.8.34;
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { ICosmicSignatureGameStorage } from "./ICosmicSignatureGameStorage.sol";
-import { IBiddingBase } from "./IBiddingBase.sol";
-import { IMainPrizeBase } from "./IMainPrizeBase.sol";
+import { IBiddingCommon } from "./IBiddingCommon.sol";
+import { IMainPrizeCommon } from "./IMainPrizeCommon.sol";
 import { IBidStatistics } from "./IBidStatistics.sol";
 
 /// @notice This contract supports bid price formation, processing arriving bids,
 /// as well as donated third party ERC-20 token amounts and ERC-721 NFTs that accompany the bids.
-interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase, IBidStatistics {
+interface IBidding is ICosmicSignatureGameStorage, IBiddingCommon, IMainPrizeCommon, IBidStatistics {
 	/// @notice Emitted when the first bid is placed in a bidding round.
 	/// @param roundNum The current bidding round number.
 	/// @param blockTimeStamp The current block timestamp.
@@ -120,21 +120,21 @@ interface IBidding is ICosmicSignatureGameStorage, IBiddingBase, IMainPrizeBase,
 	/// Comments near `bidWithCst` apply.
 	/// [/Comment-202503168]
 	/// Comment-202503151 applies.
-	function bidWithCstAndDonateToken(uint256 priceMaxLimit_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external;
+	function bidWithCstAndDonateToken(uint256 cstPriceMaxLimit_, string memory message_, IERC20 tokenAddress_, uint256 amount_) external;
 
 	/// @notice Places a CST bid and donates an NFT in a single transaction.
 	/// Comment-202503168 applies.
 	/// Comment-202503153 applies.
-	function bidWithCstAndDonateNft(uint256 priceMaxLimit_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external;
+	function bidWithCstAndDonateNft(uint256 cstPriceMaxLimit_, string memory message_, IERC721 nftAddress_, uint256 nftId_) external;
 
 	/// @notice Places a bid using CST tokens.
 	/// This method would revert if no ETH bids have been placed in the current bidding round yet.
 	/// Comment-202503168 relates.
-	/// @param priceMaxLimit_ The maximum price the bidder is willing to pay.
+	/// @param cstPriceMaxLimit_ The maximum price the bidder is willing to pay.
 	/// It's OK if it's zero.
 	/// Comment-202503162 relates and/or applies.
 	/// @param message_ Comment-202503155 applies.
-	function bidWithCst(uint256 priceMaxLimit_, string memory message_) external;
+	function bidWithCst(uint256 cstPriceMaxLimit_, string memory message_) external;
 
 	/// @notice Calls `getNextCstBidPriceAdvanced` with `currentTimeOffset_ = 0`.
 	/// Comments near `getNextCstBidPriceAdvanced` apply.
