@@ -3,7 +3,8 @@
 This doc is old and, for the most part, no longer relevant. Although the general idea remains mostly the same.
 The rewritten version of this document is named `live-blockchain-tests.md`.
 
-**Nick wrote:**
+**Nick wrote:**\
+(An AI agent has improved the wording in this quote.)
 > Basically , the idea was to test that the integration with [the Random Walk NFT contract] works correctly, because this can't be tested with hardhat (no productive contract available). Though you can download the original contract source from Arbitrum MainNet, and deploy it on hardhat localhost and test it, but it is still not the real test. So I wrote these scripts to test that bidding with [a Random Walk NFT] works. The idea was that Taras would use some of his tokens, and claim all the resources back after confirming contracts work correctly. Then we would drop the test contracts, and deploy the second time, but this time we won't run the tests, so the contracts will be available to play from round 0. Because there will be a launch and advertisement in the media, it is better to make deployment verification on the MainNet before the launch.
 
 **Yuriy's comment:**\
