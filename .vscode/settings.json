@@ -1,3 +1,10 @@
 {
 	"editor.insertSpaces": false,
+	
+	// If any of these exist in `.gitignore`, VS Code would exclude them from global search by default,
+	// but I have disabled that setting.
+	"search.exclude": {
+		"/cache/": true,
+		"/artifacts/": true,
+	},
 }
