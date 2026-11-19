@@ -32,7 +32,7 @@ Commits `6c92149c` (V1) and `88f5b549` (V2) aligned public names to simplify cro
 
 In both archives, `roundStats(roundNum)` returns just the bid count. Read each address with `getBidderAddressAt`. The struct keeps the name `BidderAddresses` used by V3's OpenZeppelin storage annotation. V1 keeps `cstDutchAuctionDurationDivisor` because the stored value is a divisor. V2 stores a duration in seconds in that slot.
 
-OpenZeppelin's storage check passes from archived V2 to current V3. From archived V1 to archived V2, it still reports the change to V1's oversized `__gap_persistent` and raises `Division by zero` when formatting the report. The prototype used the smaller V1 gap from its `main` snapshot.
+Commit `3e926da0` reduced archived V1's trailing `__gap_persistent` from the deployed `2^255` slots to `2^30`. V2 uses one slot for `cstDutchAuctionDurationChangeDivisor` and keeps the rest reserved. OpenZeppelin's default storage checks pass from archived V1 to archived V2 and from archived V2 to current V3.
 
 ## Archived Artifact Prototype
 
