@@ -22,9 +22,17 @@ We downloaded the verified game implementation sources from ArbiScan into `temp/
 
 For V1 and V2, we compared every downloaded file under `contracts/production/`, including subfolders, with the Git blob at the same path in each commit. All 48 files for each version had to match byte for byte. Several commits matched. For each archive branch we chose the newest match on the first-parent history of `main`, listed above.
 
-Keep archive sources as deployed, apart from any necessary renames. The goal is to reproduce the deployed bytecode. The V1 and V2 source comparisons are complete. Bytecode verification still requires building with the deployment compiler and settings and comparing the result with the on-chain implementation.
+Use the base commits above to reproduce the deployed V1 and V2 bytecode. We matched the sources. An on-chain bytecode comparison still requires the deployment compiler and settings. The archive tips also include renames for use in tests.
 
-After selecting the base commits, we moved `RandomWalkNFT` and its interface to `contracts/external/` on both archive branches and the V4 development branch. We compiled each branch before and after the move with production Solc settings. The ABIs matched, and only compiler metadata differed in the creation and runtime bytecode. Use the base commits above when reproducing the original V1 or V2 build.
+After selecting the base commits, we moved `RandomWalkNFT` and its interface to `contracts/external/` on both archive branches and the V4 development branch. We compiled each branch before and after the move with production Solc settings. The ABIs matched, and only compiler metadata differed in the creation and runtime bytecode.
+
+Commits `4bf35d59` (V1) and `0e36ace6` (V2) aligned source and test names with the V4 development branch. Examples include `BiddingBase` becoming `BiddingCommon` and the V2 square-root reward constant becoming `DEFAULT_BID_CST_REWARD_AMOUNT_RADICAND_MULTIPLIER`. The CST bid argument is now named `cstPriceMaxLimit_` in the archive ABIs. Its type and position are unchanged.
+
+Commits `6c92149c` (V1) and `88f5b549` (V2) aligned public names to simplify cross-version tests. These renames change selectors and executable bytecode. The V2 game and the OpenBid prototypes use `reinitialize()`. Both archives use `getDurationUntilMainPrize()` for the signed result and `getDurationUntilMainPrizeClamped()` for the old unsigned result. V1's fixed reward is called `bidCstRewardAmount`, with matching setter and event names.
+
+In both archives, `roundStats(roundNum)` returns just the bid count. Read each address with `getBidderAddressAt`. The struct keeps the name `BidderAddresses` used by V3's OpenZeppelin storage annotation. V1 keeps `cstDutchAuctionDurationDivisor` because the stored value is a divisor. V2 stores a duration in seconds in that slot.
+
+OpenZeppelin's storage check passes from archived V2 to current V3. From archived V1 to archived V2, it still reports the change to V1's oversized `__gap_persistent` and raises `Division by zero` when formatting the report. The prototype used the smaller V1 gap from its `main` snapshot.
 
 ## Archived Artifact Prototype
 
