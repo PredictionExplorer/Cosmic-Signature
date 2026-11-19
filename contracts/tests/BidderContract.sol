@@ -4,7 +4,7 @@ pragma solidity =0.8.34;
 // // #enable_asserts // #disable_smtchecker import "hardhat/console.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { CosmicSignatureToken } from "../production/CosmicSignatureToken.sol";
-import { RandomWalkNFT } from "../production/RandomWalkNFT.sol";
+import { RandomWalkNFT } from "../external/RandomWalkNFT.sol";
 import { CosmicSignatureNft } from "../production/CosmicSignatureNft.sol";
 import { PrizesWallet } from "../production/PrizesWallet.sol";
 import { CosmicSignatureGame } from "../production/CosmicSignatureGame.sol";

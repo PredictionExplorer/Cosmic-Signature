@@ -333,10 +333,10 @@ const negativeProbes = [
 	},
 	{
 		name: "probe.restakeUsedNft",
-		isApplicable: (ctx_) => ctx_.ledger.csStaking.usedNfts.size > 0 || ctx_.ledger.rwStaking.usedNfts.size > 0,
+		isApplicable: (ctx_) => ctx_.ledger.csStaking.usedNfts.size > 0 || ctx_.ledger.rwNftStaking.usedNfts.size > 0,
 		run: (ctx_, actor_) => {
-			const useCs_ = ctx_.ledger.csStaking.usedNfts.size > 0 && (ctx_.ledger.rwStaking.usedNfts.size === 0 || ctx_.engine.chancePercent(50));
-			const usedSet_ = useCs_ ? ctx_.ledger.csStaking.usedNfts : ctx_.ledger.rwStaking.usedNfts;
+			const useCs_ = ctx_.ledger.csStaking.usedNfts.size > 0 && (ctx_.ledger.rwNftStaking.usedNfts.size === 0 || ctx_.engine.chancePercent(50));
+			const usedSet_ = useCs_ ? ctx_.ledger.csStaking.usedNfts : ctx_.ledger.rwNftStaking.usedNfts;
 			const staking_ = useCs_ ? ctx_.contracts.stakingWalletCosmicSignatureNft : ctx_.contracts.stakingWalletRandomWalkNft;
 			const nftId_ = BigInt([...usedSet_][0]);
 			return runProbe(ctx_, {
@@ -488,7 +488,7 @@ const negativeProbes = [
 // #region Probe target helpers
 
 function firstUsedRwNftOwnedBy(ctx_, actor_) {
-	const owned_ = ctx_.ledger.nftIdsOwnedBy("rw", actor_.address);
+	const owned_ = ctx_.ledger.nftIdsOwnedBy("rwNft", actor_.address);
 	for (const id_ of owned_) {
 		if (ctx_.model.usedRandomWalkNfts.has(id_)) {
 			return BigInt(id_);
@@ -503,9 +503,9 @@ function foreignBiddableRwNft(ctx_, actor_) {
 		if (other_.addressLower === actor_.addressLower) {
 			continue;
 		}
-		const owned_ = ctx_.ledger.nftIdsOwnedBy("rw", other_.address);
+		const owned_ = ctx_.ledger.nftIdsOwnedBy("rwNft", other_.address);
 		for (const id_ of owned_) {
-			if ( ! ctx_.model.usedRandomWalkNfts.has(id_) && ! ctx_.ledger.rwStaking.usedNfts.has(id_)) {
+			if ( ! ctx_.model.usedRandomWalkNfts.has(id_) && ! ctx_.ledger.rwNftStaking.usedNfts.has(id_)) {
 				return BigInt(id_);
 			}
 		}
@@ -516,7 +516,7 @@ function foreignBiddableRwNft(ctx_, actor_) {
 function foreignStakeActionId(ctx_, actor_) {
 	for (const [stakingName_, stakingLedger_, stakingContract_] of [
 		["cs", ctx_.ledger.csStaking, ctx_.contracts.stakingWalletCosmicSignatureNft],
-		["rw", ctx_.ledger.rwStaking, ctx_.contracts.stakingWalletRandomWalkNft],
+		["rwNft", ctx_.ledger.rwNftStaking, ctx_.contracts.stakingWalletRandomWalkNft],
 	]) {
 		for (const [actionId_, action_] of stakingLedger_.stakeActions) {
 			if (action_.ownerAddress !== actor_.addressLower) {

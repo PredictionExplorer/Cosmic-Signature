@@ -27,7 +27,7 @@ This document provides an overview and links to detailed docs. To avoid stale co
 
 ## Contracts
 
-All production contracts are in [contracts/production/](contracts/production/).
+Cosmic Signature contracts are in [contracts/production/](contracts/production/). The third-party Random Walk NFT contract and its interface are in [contracts/external/](contracts/external/).
 
 | Contract | Description |
 |----------|-------------|

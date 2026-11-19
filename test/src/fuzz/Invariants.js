@@ -64,17 +64,17 @@ async function runInvariants(ctx_) {
 	// Random Walk NFT staking custody == numStakedNfts.
 	{
 		const stakingBalance_ = await contracts.randomWalkNft.balanceOf(contracts.stakingWalletRandomWalkNftAddress);
-		expect(stakingBalance_, "RW staking custody vs numStakedNfts").to.equal(ledger.rwStaking.numStakedNfts);
+		expect(stakingBalance_, "RW NFT staking custody vs numStakedNfts").to.equal(ledger.rwNftStaking.numStakedNfts);
 		const onChainNumStaked_ = await contracts.stakingWalletRandomWalkNft.numStakedNfts();
-		expect(onChainNumStaked_, "RW numStakedNfts ledger").to.equal(ledger.rwStaking.numStakedNfts);
+		expect(onChainNumStaked_, "RW NFT numStakedNfts ledger").to.equal(ledger.rwNftStaking.numStakedNfts);
 	}
 
 	// Staking counters: numStakedNfts <= actionCounter.
 	{
 		expect(ledger.csStaking.numStakedNfts <= ledger.csStaking.actionCounter, "CS numStaked <= actionCounter").to.equal(true);
-		expect(ledger.rwStaking.numStakedNfts <= ledger.rwStaking.actionCounter, "RW numStaked <= actionCounter").to.equal(true);
+		expect(ledger.rwNftStaking.numStakedNfts <= ledger.rwNftStaking.actionCounter, "RW NFT numStaked <= actionCounter").to.equal(true);
 		expect(await contracts.stakingWalletCosmicSignatureNft.actionCounter()).to.equal(ledger.csStaking.actionCounter);
-		expect(await contracts.stakingWalletRandomWalkNft.actionCounter()).to.equal(ledger.rwStaking.actionCounter);
+		expect(await contracts.stakingWalletRandomWalkNft.actionCounter()).to.equal(ledger.rwNftStaking.actionCounter);
 		expect(await contracts.stakingWalletCosmicSignatureNft.rewardAmountPerStakedNft()).to.equal(ledger.csStaking.rewardAmountPerStakedNft);
 	}
 
@@ -384,7 +384,7 @@ function assertCoverageFloors(statsMap_, profile_) {
 	// ... and every meaningful user action the protocol supports must have actually SUCCEEDED at least
 	// once across the soak — covering bids (ETH / Random Walk NFT / CST), staking and unstaking, ETH and
 	// donation flows, prize and donated-asset withdrawals (the winner receiving donated NFTs/ERC-20s),
-	// CST/NFT transfers and signatures, RW mint/withdraw, the V1 -> V2 -> V3 upgrade chain, and
+	// CST/NFT transfers and signatures, RW NFT mint/withdraw, the V1 -> V2 -> V3 upgrade chain, and
 	// the post-V3 PrizesWallet swap.
 	const mustSucceed_ = [
 		"bidWithEth", "bidWithEthExactPrice", "bidWithEthSwallow", "bidWithEthRefund",

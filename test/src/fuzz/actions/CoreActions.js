@@ -103,7 +103,7 @@ const biddingActions = [
 /** Collects lowercase owners of currently staked RW NFTs (raffle staker eligibility). */
 function currentRandomWalkNftStakerOwners(ledger_) {
 	const owners_ = new Set();
-	for (const action_ of ledger_.rwStaking.stakeActions.values()) {
+	for (const action_ of ledger_.rwNftStaking.stakeActions.values()) {
 		owners_.add(action_.ownerAddress);
 	}
 	return owners_;
@@ -117,10 +117,10 @@ Core claim execution + full verification, shared by the random claim action and 
 */
 async function executeClaim(ctx_, claimer_, ts_) {
 	const { engine, model, ledger } = ctx_;
-	const rwStakerOwners_ = currentRandomWalkNftStakerOwners(ledger);
+	const rwNftStakerOwners_ = currentRandomWalkNftStakerOwners(ledger);
 	const gameEthBalanceBefore_ = ledger.expectedEth(ctx_.game.address);
 	const numStakedCs_ = ledger.csStaking.numStakedNfts;
-	const numStakedRw_ = ledger.rwStaking.numStakedNfts;
+	const numStakedRwNfts_ = ledger.rwNftStaking.numStakedNfts;
 
 	await withPrizesWalletAssertBypass(ctx_, async () => {
 		const result_ = await engine.execTx({
@@ -134,9 +134,9 @@ async function executeClaim(ctx_, claimer_, ts_) {
 		}
 
 		// The bypass setter can advance the timestamp beyond the originally planned claim time.
-		const breakdown_ = model.applyClaim(claimer_.address, result_.ts, gameEthBalanceBefore_, numStakedCs_, numStakedRw_);
+		const breakdown_ = model.applyClaim(claimer_.address, result_.ts, gameEthBalanceBefore_, numStakedCs_, numStakedRwNfts_);
 
-		verifyClaimReceipt(ctx_, { claimerAddress: claimer_.address, receipt: receipt_, breakdown: breakdown_, rwStakerOwnersBefore: rwStakerOwners_ });
+		verifyClaimReceipt(ctx_, { claimerAddress: claimer_.address, receipt: receipt_, breakdown: breakdown_, rwNftStakerOwnersBefore: rwNftStakerOwners_ });
 		await ledger.verifyDirtyEth();
 		if (engine.profile.verbosity >= 2) {
 			console.info(`      claimed round ${breakdown_.roundNum} by ${ledger.labelOf(claimer_.address)}; new round ${model.roundNum}`);
@@ -317,10 +317,10 @@ async function runClaimRace(ctx_) {
 	}
 	// At/after `mainPrizeTime` so the last bidder is allowed to claim.
 	let ts_ = engine.clampTs((model.mainPrizeTime > engine.lastTs) ? model.mainPrizeTime : (engine.lastTs + 1n));
-	const rwStakerOwners_ = currentRandomWalkNftStakerOwners(ledger);
+	const rwNftStakerOwners_ = currentRandomWalkNftStakerOwners(ledger);
 	const gameEthBalanceBefore_ = ledger.expectedEth(ctx_.game.address);
 	const numStakedCs_ = ledger.csStaking.numStakedNfts;
-	const numStakedRw_ = ledger.rwStaking.numStakedNfts;
+	const numStakedRwNfts_ = ledger.rwNftStaking.numStakedNfts;
 
 	const items_ = [
 		{ signer: claimer_.signer, buildTx: (overrides_) => ctx_.game.connect(claimer_.signer).claimMainPrize(overrides_) },
@@ -337,8 +337,8 @@ async function runClaimRace(ctx_) {
 			engine.maxClaimGasUsed = results_[0].receipt.gasUsed;
 		}
 
-		const breakdown_ = model.applyClaim(claimer_.address, ts_, gameEthBalanceBefore_, numStakedCs_, numStakedRw_);
-		verifyClaimReceipt(ctx_, { claimerAddress: claimer_.address, receipt: results_[0].receipt, breakdown: breakdown_, rwStakerOwnersBefore: rwStakerOwners_ });
+		const breakdown_ = model.applyClaim(claimer_.address, ts_, gameEthBalanceBefore_, numStakedCs_, numStakedRwNfts_);
+		verifyClaimReceipt(ctx_, { claimerAddress: claimer_.address, receipt: results_[0].receipt, breakdown: breakdown_, rwNftStakerOwnersBefore: rwNftStakerOwners_ });
 		await ledger.verifyDirtyEth();
 	});
 	engine._statsFor("claimRace").attempted += 1;
@@ -582,7 +582,7 @@ const stakingActions = [
 			if (nftId_ === null) {
 				return "skip";
 			}
-			await ensureRwStakingApproval(ctx_, actor_);
+			await ensureRwNftStakingApproval(ctx_, actor_);
 			const result_ = await engine.execTx({
 				signer: actor_.signer,
 				buildTx: (overrides_) => contracts.stakingWalletRandomWalkNft.connect(actor_.signer).stake(nftId_, overrides_),
@@ -597,10 +597,10 @@ const stakingActions = [
 	{
 		name: "unstakeRandomWalkNft",
 		weight: 4,
-		isApplicable: (ctx_, actor_) => ownedStakeActionIds(ctx_.ledger.rwStaking, actor_).length > 0,
+		isApplicable: (ctx_, actor_) => ownedStakeActionIds(ctx_.ledger.rwNftStaking, actor_).length > 0,
 		run: async (ctx_, actor_) => {
 			const { engine, ledger, contracts } = ctx_;
-			const ids_ = ownedStakeActionIds(ledger.rwStaking, actor_);
+			const ids_ = ownedStakeActionIds(ledger.rwNftStaking, actor_);
 			if (ids_.length === 0) {
 				return "skip";
 			}
@@ -620,13 +620,13 @@ const stakingActions = [
 		isApplicable: (ctx_, actor_) => pickStakeableRandomWalkNft(ctx_, actor_) !== null,
 		run: async (ctx_, actor_) => {
 			const { engine, ledger, contracts } = ctx_;
-			const owned_ = ledger.nftIdsOwnedBy("rw", actor_.address).filter((id_) => ! ledger.rwStaking.usedNfts.has(id_));
+			const owned_ = ledger.nftIdsOwnedBy("rwNft", actor_.address).filter((id_) => ! ledger.rwNftStaking.usedNfts.has(id_));
 			if (owned_.length === 0) {
 				return "skip";
 			}
 			const count_ = Math.min(owned_.length, engine.randomIntRange(1, 3));
 			const ids_ = owned_.slice(0, count_).map((id_) => BigInt(id_));
-			await ensureRwStakingApproval(ctx_, actor_);
+			await ensureRwNftStakingApproval(ctx_, actor_);
 			const result_ = await engine.execTx({
 				signer: actor_.signer,
 				buildTx: (overrides_) => contracts.stakingWalletRandomWalkNft.connect(actor_.signer).stakeMany(ids_, overrides_),
@@ -654,8 +654,8 @@ async function ensureCsStakingApproval(ctx_, actor_) {
 	await ledger.verifyDirtyEth();
 }
 
-async function ensureRwStakingApproval(ctx_, actor_) {
-	if (actor_.rwStakingApproved) {
+async function ensureRwNftStakingApproval(ctx_, actor_) {
+	if (actor_.rwNftStakingApproved) {
 		return;
 	}
 	const { engine, ledger, contracts } = ctx_;
@@ -664,8 +664,8 @@ async function ensureRwStakingApproval(ctx_, actor_) {
 		buildTx: (overrides_) =>
 			contracts.randomWalkNft.connect(actor_.signer).setApprovalForAll(contracts.stakingWalletRandomWalkNftAddress, true, overrides_),
 	});
-	engine.expectOk(result_, "RW staking approval");
-	actor_.rwStakingApproved = true;
+	engine.expectOk(result_, "RW NFT staking approval");
+	actor_.rwNftStakingApproved = true;
 	await ledger.verifyDirtyEth();
 }
 
@@ -680,6 +680,6 @@ module.exports = {
 	runClaimRace,
 	forceCompleteRound,
 	ensureCsStakingApproval,
-	ensureRwStakingApproval,
+	ensureRwNftStakingApproval,
 	currentRandomWalkNftStakerOwners,
 };

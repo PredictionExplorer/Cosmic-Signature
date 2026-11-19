@@ -272,7 +272,7 @@ class FuzzCampaign {
 				addressLower: signer_.address.toLowerCase(),
 				label: `actor${index_}`,
 				csStakingApproved: false,
-				rwStakingApproved: false,
+				rwNftStakingApproved: false,
 				delegated: false,
 			});
 		}
@@ -338,7 +338,7 @@ class FuzzCampaign {
 		await this.ledger.trackEth(c_.cosmicSignatureGameProxyAddress, "game");
 		await this.ledger.trackEth(c_.prizesWalletAddress, "prizesWallet");
 		await this.ledger.trackEth(c_.stakingWalletCosmicSignatureNftAddress, "csStaking");
-		await this.ledger.trackEth(c_.stakingWalletRandomWalkNftAddress, "rwStaking");
+		await this.ledger.trackEth(c_.stakingWalletRandomWalkNftAddress, "rwNftStaking");
 		await this.ledger.trackEth(c_.charityWalletAddress, "charityWallet");
 		await this.ledger.trackEth(c_.charitySignerAddress, "charitySigner");
 		await this.ledger.trackEth(c_.marketingWalletAddress, "marketingWallet");

@@ -287,14 +287,14 @@ describe("CosmicSignatureGameV2-Bidding", function () {
 			const ethPlusRandomWalkNftPrice_ = await game_.getEthPlusRandomWalkNftBidPrice(ethPrice_);
 			expectedBidCstReward_ = await game_.getBidCstRewardAmountAdvanced(1n);
 			receipt_ = await waitForTransactionReceipt(
-				game_.connect(bidder_).bidWithEth(randomWalkNftId_, "v2 rw", 0n, { value: ethPlusRandomWalkNftPrice_ })
+				game_.connect(bidder_).bidWithEth(randomWalkNftId_, "v2 RW NFT", 0n, { value: ethPlusRandomWalkNftPrice_ })
 			);
 			await assertV2BidPlaced(receipt_, game_, bidder_, BigInt(ethPlusRandomWalkNftPrice_), -1n, randomWalkNftId_, expectedBidCstReward_);
 			ethPrice_ = await game_.getNextEthBidPrice();
 			await expect(
 				game_.connect(bidder_).bidWithEth(
 					randomWalkNftId_,
-					"v2 rw reuse",
+					"v2 RW NFT reuse",
 					0n,
 					{ value: await game_.getEthPlusRandomWalkNftBidPrice(ethPrice_) }
 				)

@@ -124,7 +124,7 @@ abstract contract BiddingV3 is
 				}
 
 				usedRandomWalkNfts[uint256(randomWalkNftId_)] = 1;
-				// bidType_ = BidType.RandomWalk;
+				// bidType_ = BidType.RandomWalkNft;
 
 				// #endregion
 			}

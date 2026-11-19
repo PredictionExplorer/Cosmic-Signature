@@ -4,7 +4,7 @@ pragma solidity =0.8.34;
 import { OwnableUpgradeableWithReservedStorageGaps } from "./OwnableUpgradeableWithReservedStorageGaps.sol";
 import { AddressValidator } from "./AddressValidator.sol";
 import { ICosmicSignatureToken, CosmicSignatureToken } from "./CosmicSignatureToken.sol";
-import { IRandomWalkNFT, RandomWalkNFT } from "./RandomWalkNFT.sol";
+import { IRandomWalkNFT, RandomWalkNFT } from "../external/RandomWalkNFT.sol";
 import { ICosmicSignatureNft, CosmicSignatureNft } from "./CosmicSignatureNft.sol";
 import { IPrizesWallet, PrizesWallet } from "./PrizesWallet.sol";
 import { IStakingWalletRandomWalkNft, StakingWalletRandomWalkNft } from "./StakingWalletRandomWalkNft.sol";

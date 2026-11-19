@@ -15,7 +15,7 @@ The files under `certora/` are historical work; their reported results do not es
 
 #### Contracts to Audit
 
-- The production sources are in `${workspaceFolder}/contracts/production`. That directory includes several versions, shared contracts, libraries, and interfaces; it is not a list of contracts to redeploy for every upgrade. `RandomWalkNFT` and its interface represent an external collection integration. Test contracts and the OpenBid prototype are not production deployment targets.
+- The production sources are in `${workspaceFolder}/contracts/production`. That directory includes several versions, shared contracts, libraries, and interfaces; it is not a list of contracts to redeploy for every upgrade. The third-party `RandomWalkNFT` contract and its interface are in `contracts/external/`. Test contracts and the OpenBid prototype are not production deployment targets.
 
 - We have now deployed the contracts and then upgraded the `CosmicSignatureGame` contract a few times. If a new audit is going to be conducted, only the latest `CosmicSignatureGame` contract version is to be audited. It reuses some parts from older versions. An auditor might want to also review other contracts that the Game contract touches; they have already been audited and deployed and some of them cannot be replaced.
 
@@ -26,7 +26,7 @@ The same in the Solidity coverage mode `npm run hardhat-coverage`.
 
 Hardhat test and Solidity coverage scripts are located in the `${workspaceFolder}/test/runners` folder. For Solidity coverage notes, see Comment-202505289.
 
-We have achieved 100% Solidity coverage of production sources, except the `BiddingCommon._onlyRoundIsActive` modifier, as well as its counterpart in later versions, because they are not called. `RandomWalkNFT` is not 100% covered either because it's essentially a third party contract from another project.
+We have achieved 100% Solidity coverage of production sources, except the `BiddingCommon._onlyRoundIsActive` modifier, as well as its counterpart in later versions, because they are not called.
 
 `BiddingCommonV2._onlyNonFirstRound` and `CosmicSignatureGameV2Base._onlyIfPrevVersionWasInitialized`, as well as its counterpart in later versions, do nothing when asserts are disabled. Despite of them being called and covered, we have observed that for some reason they are flagged as not fully covered.
 

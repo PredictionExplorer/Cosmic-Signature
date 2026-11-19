@@ -1,8 +1,8 @@
-# Contract archives
+# Contract Archives
 
 Hardhat tests will use archived builds to replay the deployment and upgrade sequence on a local network. This lets the V4 development branch keep the current Solidity sources while archive branches preserve the old contracts and their tests.
 
-## Archive branches and deployment order
+## Archive Branches and Deployment Order
 
 The first eight digits of each branch name are the date of its base commit (`YYYYMMDD`). Each archive has a unique date. Tests process the archives in ascending date order.
 
@@ -12,11 +12,11 @@ The first eight digits of each branch name are the date of its base commit (`YYY
 | V2 | `20260625-CosmicSignatureGameV2-archive` | `3f52eaaf2258` | `0x50eB3d05d2C463949DE9238D419385594f7AdB97` |
 | V3 | Planned from `20261109_v4` | To be selected | `0xc1b97E1b0baC86248653B18706dbC5c8898c5c06` |
 
-A typical test starts by deploying all production and external contracts from the V1 archive. This includes `RandomWalkNFT`, an external contract that will move to `contracts/external/`.
+A typical test starts by deploying all production and external contracts from the V1 archive, including `RandomWalkNFT`.
 
 Each subsequent archive branch names the contract or contracts to deploy or upgrade at that step. For example, the V2 archive supplies `CosmicSignatureGameV2` for the upgrade of the existing game proxy. Tests keep using the previously deployed instances of every other contract, even if their source changed on the V2 branch. The planned sequence continues through archived V3 to V4 from the development branch. Some existing tests may still select other contracts from a later build.
 
-## Selecting the archive commits
+## Selecting the Archive Commits
 
 We downloaded the verified game implementation sources from ArbiScan into `temp/verified-source/{v1,v2,v3}/`. The `@arbitrum` and `@openzeppelin` sources were identical across all three downloads and have remained unchanged in the project since before V1 deployment.
 
@@ -24,7 +24,9 @@ For V1 and V2, we compared every downloaded file under `contracts/production/`, 
 
 Keep archive sources as deployed, apart from any necessary renames. The goal is to reproduce the deployed bytecode. The V1 and V2 source comparisons are complete. Bytecode verification still requires building with the deployment compiler and settings and comparing the result with the on-chain implementation.
 
-## Archived-artifact prototype
+After selecting the base commits, we moved `RandomWalkNFT` and its interface to `contracts/external/` on both archive branches and the V4 development branch. We compiled each branch before and after the move with production Solc settings. The ABIs matched, and only compiler metadata differed in the creation and runtime bytecode. Use the base commits above when reproducing the original V1 or V2 build.
+
+## Archived Artifact Prototype
 
 Commit `551489cd` on `prototype-archived-artifacts-upgrades` demonstrates the approach in `test/tests-src/CosmicSignatureGame-All-Versions-ArchivedArtifacts.js`. For this experiment, the same snapshot of `main` supplied both V1 and V2. V3 came from the active development branch.
 

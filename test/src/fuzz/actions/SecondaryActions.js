@@ -49,8 +49,8 @@ const randomWalkNftActions = [
 			}
 			const withdrawalTime_ = ledger.randomWalkNft.lastMintTime + c.RANDOM_WALK_NFT_WITHDRAWAL_WAIT_SECONDS;
 			const ts_ = engine.clampTs(withdrawalTime_ + engine.randomBigIntRange(1n, c.SECONDS_PER_HOUR));
-			const rwBalanceBefore_ = ledger.expectedEth(contracts.randomWalkNftAddress);
-			const withdrawalAmount_ = rwBalanceBefore_ / 2n;
+			const randomWalkNftEthBalanceBefore_ = ledger.expectedEth(contracts.randomWalkNftAddress);
+			const withdrawalAmount_ = randomWalkNftEthBalanceBefore_ / 2n;
 			const result_ = await engine.execTx({
 				signer: actor_.signer,
 				buildTx: (overrides_) => contracts.randomWalkNft.connect(actor_.signer).withdraw(overrides_),
@@ -211,11 +211,11 @@ const tokenActions = [
 	{
 		name: "transferRandomWalkNft",
 		weight: 1,
-		isApplicable: (ctx_, actor_) => ctx_.ledger.nftIdsOwnedBy("rw", actor_.address).length > 0 && ctx_.actors.length > 1,
+		isApplicable: (ctx_, actor_) => ctx_.ledger.nftIdsOwnedBy("rwNft", actor_.address).length > 0 && ctx_.actors.length > 1,
 		run: async (ctx_, actor_) => {
 			const { engine, ledger, contracts } = ctx_;
 			const other_ = ctx_.pickActorNot(actor_.address);
-			const owned_ = ledger.nftIdsOwnedBy("rw", actor_.address);
+			const owned_ = ledger.nftIdsOwnedBy("rwNft", actor_.address);
 			if (other_ === null || owned_.length === 0) {
 				return "skip";
 			}
@@ -254,10 +254,10 @@ const tokenActions = [
 	{
 		name: "setRandomWalkNftName",
 		weight: 1,
-		isApplicable: (ctx_, actor_) => ctx_.ledger.nftIdsOwnedBy("rw", actor_.address).length > 0,
+		isApplicable: (ctx_, actor_) => ctx_.ledger.nftIdsOwnedBy("rwNft", actor_.address).length > 0,
 		run: async (ctx_, actor_) => {
 			const { engine, ledger, contracts } = ctx_;
-			const owned_ = ledger.nftIdsOwnedBy("rw", actor_.address);
+			const owned_ = ledger.nftIdsOwnedBy("rwNft", actor_.address);
 			if (owned_.length === 0) {
 				return "skip";
 			}

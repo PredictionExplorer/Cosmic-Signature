@@ -1706,7 +1706,7 @@ rule rafflePrizeSumIsCorrect {
            "Raffle prize distribution should be valid and claim should succeed";
 }
 
-// ===== RANDOMWALK RULES =====
+// ===== RANDOM WALK NFT RULES =====
 
 rule randomWalkNftCannotBeReused {
     env e;
@@ -1734,7 +1734,7 @@ rule randomWalkNftCannotBeReused {
     bidWithEth@withrevert(e, nftId, "second bid with same nft");
 
     assert lastReverted,
-           "Second bid with the same RandomWalk NFT id must revert";
+           "Second bid with the same Random Walk NFT id must revert";
 }
 
 rule randomWalkNftDiscountCorrect {
@@ -1752,7 +1752,7 @@ rule randomWalkNftDiscountCorrect {
     mathint expectedPrice = (baseEthPrice + 1) / 2;
     
     assert discountedPrice == expectedPrice,
-           "RandomWalk NFT discount calculation must match formula";
+           "Random Walk NFT discount calculation must match formula";
 }
 
 rule randomWalkNftDiscountCorrectFixed {
@@ -1770,7 +1770,7 @@ rule randomWalkNftDiscountCorrectFixed {
     mathint expectedPrice = (baseEthPrice + 1) / 2;
     
     assert discountedPrice == expectedPrice,
-           "RandomWalk NFT discount calculation must match formula (divisor=2)";
+           "Random Walk NFT discount calculation must match formula (divisor=2)";
 }
 
 // ===== RANDOMNESSDETERMINISTIC RULES =====
