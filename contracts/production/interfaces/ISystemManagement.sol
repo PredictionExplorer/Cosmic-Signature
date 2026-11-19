@@ -3,7 +3,7 @@ pragma solidity =0.8.34;
 
 import { IAddressValidator } from "./IAddressValidator.sol";
 import { ICosmicSignatureToken } from "./ICosmicSignatureToken.sol";
-import { IRandomWalkNFT } from "./IRandomWalkNFT.sol";
+import { IRandomWalkNFT } from "../../external/interfaces/IRandomWalkNFT.sol";
 import { ICosmicSignatureNft } from "./ICosmicSignatureNft.sol";
 import { IPrizesWallet } from "./IPrizesWallet.sol";
 import { IStakingWalletRandomWalkNft } from "./IStakingWalletRandomWalkNft.sol";

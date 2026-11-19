@@ -175,7 +175,7 @@ An NFT may be staked only once. Once unstaked, the same NFT may not be staked ag
 - At any time, a user can donate ETH to the Game contract.\
 A user also can force-send ETH to the Game contract by `selfdestruct`ing a contract, which would result in the same outcome as a donation, except a respective event won't be emitted.
 
-- While a round is active, a user can place an ETH bid. The current ETH bid price, or a half of it if an RWLK was provided, is transferred to the Game contract.
+- While a round is active, a user can place an ETH bid. The current ETH bid price, or a half of it if a Random Walk NFT was provided, is transferred to the Game contract.
 
 - At the end of each round, a half of the Game contract ETH balance is awarded to various beneficiaries: main prize winner gets paid directly to their address; COSMIC staking awards are transferred to `StakingWalletCosmicSignatureNft`; ETH to be donated to charity is transferred to `CharityWallet`; other winners' ETH prizes, including any secondary prizes won by main prize winner, are transferred to `PrizesWallet`.
 
@@ -199,11 +199,11 @@ A user also can force-send ETH to the Game contract by `selfdestruct`ing a contr
 
 #### Random Walk NFT (Symbol = "RWLK")
 
-- While a round is active, an RWLK can be provided with an ETH bid, which halves ETH price the bidder is required to pay. An RWLK is allowed to be used for bidding only once.
+- While a round is active, a Random Walk NFT can be provided with an ETH bid, which halves ETH price the bidder is required to pay. A Random Walk NFT is allowed to be used for bidding only once.
 
-- At any time, an RWLK can be staked. An RWLK is allowed to be staked only once.
+- At any time, a Random Walk NFT can be staked. A Random Walk NFT is allowed to be staked only once.
 
-- At any time, a staker can unstake their RWLK.
+- At any time, a staker can unstake their Random Walk NFT.
 
 #### Cosmic Signature NFT (Symbol = "COSMIC")
 

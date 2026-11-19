@@ -182,10 +182,10 @@ Comprehensive formal verification plan for 31 Cosmic Signature contracts using C
    - Now properly validates that sum of percentages ≤ 100%
 
 2. **TokensAndNFTs_simple.spec fixes applied**:
-   - Fixed `lastReverted` usage in `randomWalkTotalSupplyOnlyIncreasesOnMint`
+   - Fixed `lastReverted` usage in `randomWalkNftTotalSupplyOnlyIncreasesOnMint`
    - Fixed `10^18` notation (changed to `1000000000000000000`)
    - Updated `gameAddressConsistency` to check equality instead of non-zero
-   - Fixed `randomWalkSaleTimeConsistency` to remove invalid max_uint256 check
+   - Fixed `randomWalkNftSaleTimeConsistency` to remove invalid max_uint256 check
    - Enhanced `cstBurnDecreasesSupply` with proper revert handling
    - Improved `nftBalanceConsistency` with conditional logic
 

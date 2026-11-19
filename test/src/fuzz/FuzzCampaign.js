@@ -24,7 +24,7 @@ const { FuzzEngine } = require("./FuzzEngine.js");
 const { runInvariants, assertCoverageFloors, hasMinimalCoverageFloors, printCoverageReport, mergeStatsInto } = require("./Invariants.js");
 const { performUpgradeToV2, upgradeAuthProbe } = require("./UpgradePhase.js");
 const { biddingActions, claimActions, donationActions, stakingActions, forceCompleteRound, runClaimRace } = require("./actions/CoreActions.js");
-const { randomWalkActions, tokenActions, prizesWalletActions, walletActions } = require("./actions/SecondaryActions.js");
+const { randomWalkNftActions, tokenActions, prizesWalletActions, walletActions } = require("./actions/SecondaryActions.js");
 const { adminActions, daoActions } = require("./actions/AdminActions.js");
 const { extraTokenActions, extraPrizesWalletActions } = require("./actions/ExtraActions.js");
 const { negativeProbes } = require("./actions/NegativeProbes.js");
@@ -230,7 +230,7 @@ class FuzzCampaign {
 				addressLower: signer_.address.toLowerCase(),
 				label: `actor${index_}`,
 				csStakingApproved: false,
-				rwStakingApproved: false,
+				rwNftStakingApproved: false,
 				delegated: false,
 			});
 		}
@@ -293,7 +293,7 @@ class FuzzCampaign {
 		await this.ledger.trackEth(c_.cosmicSignatureGameProxyAddress, "game");
 		await this.ledger.trackEth(c_.prizesWalletAddress, "prizesWallet");
 		await this.ledger.trackEth(c_.stakingWalletCosmicSignatureNftAddress, "csStaking");
-		await this.ledger.trackEth(c_.stakingWalletRandomWalkNftAddress, "rwStaking");
+		await this.ledger.trackEth(c_.stakingWalletRandomWalkNftAddress, "rwNftStaking");
 		await this.ledger.trackEth(c_.charityWalletAddress, "charityWallet");
 		await this.ledger.trackEth(c_.charitySignerAddress, "charitySigner");
 		await this.ledger.trackEth(c_.marketingWalletAddress, "marketingWallet");
@@ -513,7 +513,7 @@ class FuzzCampaign {
 			...claimActions,
 			...donationActions,
 			...stakingActions,
-			...randomWalkActions,
+			...randomWalkNftActions,
 			...tokenActions,
 			...prizesWalletActions,
 			...walletActions,

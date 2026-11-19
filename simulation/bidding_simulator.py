@@ -79,7 +79,7 @@ NFT breakdown per round (from MainPrize._distributePrizes)
     1  chrono-warrior
     1  last CST bidder              (only if >=1 CST bid occurred)
    10  raffle NFTs for bidders      (numRaffleCosmicSignatureNftsForBidders)
-   10  raffle NFTs for RW stakers   (only if RW NFT stakers exist)
+   10  raffle NFTs for RW NFT stakers (only if RW NFT stakers exist)
    --
    24  total upper bound            (configurable via --nfts-per-round)
 
@@ -320,7 +320,7 @@ def print_report(
     print(f"    breakdown: 1 winner + 1 endurance + 1 chrono")
     print(f"             + 1 last-CST-bidder (if CST bid occurred)")
     print(f"             + 10 raffle-bidders")
-    print(f"             + 10 raffle-RW-stakers (if any RW NFTs staked)")
+    print(f"             + 10 raffle NFTs for RW NFT stakers (if any RW NFTs staked)")
     print(f"  Time added per bid (round 0): {time_per_bid_seconds(INITIAL_MAIN_PRIZE_TIME_INCREMENT_MICROSECONDS)} s")
     print(f"  Time increment growth       : +1% per round (compounds)")
     print(f"  Inter-round delay           : {DEFAULT_DELAY_DURATION_BEFORE_ROUND_ACTIVATION} s")

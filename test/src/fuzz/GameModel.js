@@ -263,7 +263,7 @@ class GameModel {
 
 	/** Mirrors `getEthPlusRandomWalkNftBidPrice` (contract body is `unchecked`). */
 	getEthPlusRandomWalkNftBidPrice(ethBidPrice_) {
-		return u256(ethBidPrice_ + (c.RANDOMWALK_NFT_BID_PRICE_DIVISOR - 1n)) / c.RANDOMWALK_NFT_BID_PRICE_DIVISOR;
+		return u256(ethBidPrice_ + (c.RANDOM_WALK_NFT_BID_PRICE_DIVISOR - 1n)) / c.RANDOM_WALK_NFT_BID_PRICE_DIVISOR;
 	}
 
 	/** CST Dutch auction total duration (V1: derived; V2: stored). */

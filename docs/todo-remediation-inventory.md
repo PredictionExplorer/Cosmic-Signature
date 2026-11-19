@@ -28,7 +28,7 @@ The project priority scheme is documented in `docs/numbered-comments.md`:
 - `contracts/production/OwnableUpgradeableWithReservedStorageGaps.sol`: transient storage gap remains scalar-only until Solidity supports transient reference types.
 - `contracts/production/CosmicSignatureGameStorage.sol` and `contracts/production/CosmicSignatureGameStorageV2.sol`: same transient storage-gap limitation.
 - `contracts/production/libraries/CosmicSignatureErrors.sol`: commented staking errors are intentionally preserved.
-- `contracts/production/interfaces/IRandomWalkNFT.sol`: SPDX consistency check remains.
+- `contracts/external/interfaces/IRandomWalkNFT.sol`: SPDX consistency check remains.
 - `docs/QUICKSTART.md`: Certora compile flow should be reconciled with `contracts-compiling/docs/contracts-compiling.md`.
 - `eslint/eslint-1.bash`: operational reminder to run ESLint.
 - `hardhat.config.js`: periodic Solidity compiler security-alert review.

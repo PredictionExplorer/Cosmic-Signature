@@ -431,9 +431,9 @@ rule onlyGameCanMintCosmicNft {
     assert lastReverted;
 }
 
-// ===== RANDOMWALK RULES =====
+// ===== RANDOM WALK NFT RULES =====
 
-rule randomWalkMintingUpdatesState {
+rule randomWalkNftMintingUpdatesState {
     env e;
     
     uint256 saleTime = randomWalkNft.saleTime();
@@ -466,7 +466,7 @@ rule randomWalkMintingUpdatesState {
     assert randomWalkNft.ownerOf(nextIdBefore) == e.msg.sender;
 }
 
-rule randomWalkRequiresSufficientPayment {
+rule randomWalkNftRequiresSufficientPayment {
     env e;
     
     uint256 saleTime = randomWalkNft.saleTime();
@@ -480,7 +480,7 @@ rule randomWalkRequiresSufficientPayment {
     assert lastReverted;
 }
 
-rule randomWalkRespectsSaleTime {
+rule randomWalkNftRespectsSaleTime {
     env e;
     
     uint256 saleTime = randomWalkNft.saleTime();
@@ -491,7 +491,7 @@ rule randomWalkRespectsSaleTime {
     assert lastReverted;
 }
 
-rule randomWalkTransferPreservesSupply {
+rule randomWalkNftTransferPreservesSupply {
     env e;
     address from;
     address to;
@@ -731,9 +731,9 @@ rule nftEnumerationAfterTransfer {
     assert cosmicNft.ownerOf(tokenId) == to;
 }
 
-// ===== RANDOMWALK NFT ADVANCED RULES =====
+// ===== RANDOM WALK NFT ADVANCED RULES =====
 
-rule randomWalkPriceCalculation {
+rule randomWalkNftPriceCalculation {
     env e;
     
     // Get current mint price
@@ -751,7 +751,7 @@ rule randomWalkPriceCalculation {
     assert price >= 0; // Price can be 0 in some valid cases
 }
 
-rule randomWalkSequentialMinting {
+rule randomWalkNftSequentialMinting {
     env e1;
     env e2;
     

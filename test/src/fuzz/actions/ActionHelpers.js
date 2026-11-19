@@ -96,15 +96,15 @@ function chooseEthBidValue(ctx_, paidEthPrice_, gasPrice_, mode_) {
 /** Picks an unused (for bidding) Random Walk NFT owned by `actor_`, or null. */
 function pickBiddableRandomWalkNft(ctx_, actor_) {
 	const { model, ledger } = ctx_;
-	const owned_ = ledger.nftIdsOwnedBy("rw", actor_.address);
-	const candidates_ = owned_.filter((id_) => ! model.usedRandomWalkNfts.has(id_) && ! ledger.rwStaking.usedNfts.has(id_));
+	const owned_ = ledger.nftIdsOwnedBy("rwNft", actor_.address);
+	const candidates_ = owned_.filter((id_) => ! model.usedRandomWalkNfts.has(id_) && ! ledger.rwNftStaking.usedNfts.has(id_));
 	return (candidates_.length === 0) ? null : BigInt(ctx_.engine.pick(candidates_));
 }
 
 /** Picks a Random Walk NFT owned by `actor_` never used for staking, or null. */
 function pickStakeableRandomWalkNft(ctx_, actor_) {
-	const owned_ = ctx_.ledger.nftIdsOwnedBy("rw", actor_.address);
-	const candidates_ = owned_.filter((id_) => ! ctx_.ledger.rwStaking.usedNfts.has(id_));
+	const owned_ = ctx_.ledger.nftIdsOwnedBy("rwNft", actor_.address);
+	const candidates_ = owned_.filter((id_) => ! ctx_.ledger.rwNftStaking.usedNfts.has(id_));
 	return (candidates_.length === 0) ? null : BigInt(ctx_.engine.pick(candidates_));
 }
 
@@ -430,9 +430,9 @@ The caller must have already mutated `model` via `applyClaim` to obtain `breakdo
 @param {string} args_.claimerAddress The game-level `_msgSender()` of the claim.
 @param {import("ethers").TransactionReceipt} args_.receipt
 @param {object} args_.breakdown From `model.applyClaim`.
-@param {Set<string>} args_.rwStakerOwnersBefore Lowercase owners of staked RW NFTs before the claim.
+@param {Set<string>} args_.rwNftStakerOwnersBefore Lowercase owners of staked RW NFTs before the claim.
 */
-function verifyClaimReceipt(ctx_, { claimerAddress, receipt, breakdown, rwStakerOwnersBefore }) {
+function verifyClaimReceipt(ctx_, { claimerAddress, receipt, breakdown, rwNftStakerOwnersBefore }) {
 	const { engine, model, ledger, contracts } = ctx_;
 	const game_ = ctx_.game.contract;
 	const claimerLower_ = claimerAddress.toLowerCase();
@@ -482,7 +482,7 @@ function verifyClaimReceipt(ctx_, { claimerAddress, receipt, breakdown, rwStaker
 	for (const event_ of rafflePrizeEvents_) {
 		expect(event_.args.winnerAddress.toLowerCase(), "claim: zero-address raffle NFT winner").to.not.equal(ZERO_ADDRESS);
 		if (event_.args.winnerIsRandomWalkNftStaker) {
-			expect(rwStakerOwnersBefore.has(event_.args.winnerAddress.toLowerCase()), "claim: lucky staker not an RW staker").to.equal(true);
+			expect(rwNftStakerOwnersBefore.has(event_.args.winnerAddress.toLowerCase()), "claim: lucky staker not an RW NFT staker").to.equal(true);
 		} else {
 			expect(biddersSet_.has(event_.args.winnerAddress.toLowerCase()), "claim: raffle NFT winner not a bidder").to.equal(true);
 		}

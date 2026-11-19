@@ -6,16 +6,16 @@
 // const { getCosmicSignatureGameContract } = require("../helpers.js");
 // const { mintRandomWalkNft } = require("./helpers.js");
 
-// const numRWalkToMint = 4;
+// const numRandomWalkNftsToMint = 4;
 
-// async function mint_random_walks(testingAcct, cosmicSignatureGame) {
+// async function mint_random_walk_nfts(testingAcct, cosmicSignatureGame) {
 // 	let randomWalkNftAddress = await cosmicSignatureGame.randomWalkNft({blockTag: "pending",});
 //
 // 	// Comment-202502096 applies.
 // 	let randomWalkNft = await hre.ethers.getContractAt("RandomWalkNFT", randomWalkNftAddress);
 //
 // 	let output = "";
-// 	for (let i = 0; i < numRWalkToMint; i++) {
+// 	for (let i = 0; i < numRandomWalkNftsToMint; i++) {
 // 		if (output.length > 0) {
 // 			output = output + ",";
 // 		}
@@ -38,7 +38,7 @@
 // 	let testingAcct = new hre.ethers.Wallet(privKey, hre.ethers.provider);
 // 	let cosmicSignatureGame = await getCosmicSignatureGameContract();
 //
-// 	let token_list = await mint_random_walks(testingAcct, cosmicSignatureGame);
+// 	let token_list = await mint_random_walk_nfts(testingAcct, cosmicSignatureGame);
 // 	console.info("%s", token_list);
 // }
 

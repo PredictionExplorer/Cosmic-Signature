@@ -11,7 +11,7 @@ We recommned reviewing all files seen in this project, including, but not limite
 
 #### Contracts to Audit
 
-Only contracts in the `${workspaceFolder}/contracts/production` folder, except `RandomWalkNFT` and its interface are to be audited. Those are to be deployed. `RandomWalkNFT` has already been deployed, while contracts in other folders are used only for testing. Feel free to take a look at them as well, especially if you are going to review tests.\
+The audit covers the contracts in `${workspaceFolder}/contracts/production`. The previously deployed `RandomWalkNFT` contract and its interface are in `${workspaceFolder}/contracts/external`. The remaining contracts are used for testing. Feel free to take a look at them as well, especially if you are going to review tests.\
 Update. We have now deployed all contracts. We still have an option to upgrade the Game contract.
 
 #### Tests and Solidity Coverage
@@ -20,7 +20,7 @@ Test and Solidity coverage scripts are located in the `${workspaceFolder}/test/r
 
 Some tests test exact timings of actions. They can fail, more likely if the system is under stress.
 
-We have achieved 100% Solidity coverage, except the `BiddingBase._onlyRoundIsActive` and `BiddingBaseV2._onlyRoundIsActive` modifiers, because they are not called. `RandomWalkNFT` is not 100% covered either because it's essentially a third party contract from another project.
+Solidity coverage measures the contracts in `${workspaceFolder}/contracts/production`. We have achieved 100% coverage except for the `BiddingBase._onlyRoundIsActive` and `BiddingBaseV2._onlyRoundIsActive` modifiers, because they are not called.
 
 `BiddingBaseV2._onlyNonFirstRound` and `CosmicSignatureGameV2._onlyIfPrevVersionWasInitialized` do nothing when asserts are disabled. Despite of them being called and covered, we have observed that for some reason they are flagged as not fully covered.
 

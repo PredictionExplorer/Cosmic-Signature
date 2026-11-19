@@ -4,6 +4,7 @@
 
 Cosmic Signature is an NFT gaming project with:
 - **Solidity contracts** in `${workspaceFolder}/contracts/production/` - the game logic, tokens, NFTs, wallets.
+- **Random Walk NFT contract and interface** in `${workspaceFolder}/contracts/external/`.
 - **Certora specifications** in `${workspaceFolder}/certora/` - formal verification to prove correctness.
 
 #### Step 1. Compile Contracts
@@ -35,7 +36,8 @@ certoraRun ./BiddingMechanicsAllPass.conf
 
 ```
 Cosmic-Signature/
-├── contracts/production/   # 23 Solidity contracts
+├── contracts/external/     # Random Walk NFT contract and interface
+├── contracts/production/   # Cosmic Signature contracts
 │   ├── CosmicSignatureGame.sol     # Main game logic
 │   ├── CosmicSignatureToken.sol    # ERC20 governance token
 │   ├── CosmicSignatureNft.sol      # ERC721 NFTs

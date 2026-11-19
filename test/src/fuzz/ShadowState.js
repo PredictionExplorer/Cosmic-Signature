@@ -74,7 +74,7 @@ class ShadowState {
 			/** @type {Set<string>} */
 			usedNfts: new Set(),
 		};
-		this.rwStaking = {
+		this.rwNftStaking = {
 			numStakedNfts: 0n,
 			actionCounter: 0n,
 			/** @type {Map<string, {nftId: bigint, ownerAddress: string}>} */
@@ -119,8 +119,7 @@ class ShadowState {
 
 	/**
 	Registers deployment addresses + interfaces so `applyReceipt` can dispatch logs.
-	@param {object} addresses_ Lowercase address strings: game, token, csNft, rwNft, prizesWallet,
-	  stakingCs, stakingRw, charityWallet, marketingWallet, dao, mockErc20, mockErc721.
+	@param {object} addresses_ Lowercase addresses for game, token, prizesWallet, mockErc20, and mockErc721.
 	@param {Map<string, {name: string, iface: import("ethers").Interface}>} contractsByAddress_
 	*/
 	registerContracts(addresses_, contractsByAddress_) {
@@ -288,7 +287,7 @@ class ShadowState {
 	nftOwnersOf(kind_) {
 		switch (kind_) {
 			case "cs": return this.csNftOwners;
-			case "rw": return this.rwNftOwners;
+			case "rwNft": return this.rwNftOwners;
 			case "mock": return this.mockNftOwners;
 			default: throw new Error(`unknown NFT kind ${kind_}`);
 		}
@@ -452,21 +451,21 @@ class ShadowState {
 				if (parsed_.name === "NftStaked") {
 					const [stakeActionId_, nftId_, stakerAddress_, numStakedNfts_] = parsed_.args;
 					const nftKey_ = nftId_.toString();
-					expect(this.rwStaking.usedNfts.has(nftKey_), `RW staking: NFT ${nftKey_} staked twice`).to.equal(false);
-					this.rwStaking.usedNfts.add(nftKey_);
-					this.rwStaking.actionCounter += 1n;
-					expect(stakeActionId_).to.equal(this.rwStaking.actionCounter);
-					this.rwStaking.stakeActions.set(stakeActionId_.toString(), { nftId: nftId_, ownerAddress: stakerAddress_.toLowerCase() });
-					this.rwStaking.numStakedNfts += 1n;
-					expect(numStakedNfts_).to.equal(this.rwStaking.numStakedNfts);
+					expect(this.rwNftStaking.usedNfts.has(nftKey_), `RW NFT staking: NFT ${nftKey_} staked twice`).to.equal(false);
+					this.rwNftStaking.usedNfts.add(nftKey_);
+					this.rwNftStaking.actionCounter += 1n;
+					expect(stakeActionId_).to.equal(this.rwNftStaking.actionCounter);
+					this.rwNftStaking.stakeActions.set(stakeActionId_.toString(), { nftId: nftId_, ownerAddress: stakerAddress_.toLowerCase() });
+					this.rwNftStaking.numStakedNfts += 1n;
+					expect(numStakedNfts_).to.equal(this.rwNftStaking.numStakedNfts);
 				} else if (parsed_.name === "NftUnstaked") {
 					const [actionCounter_, stakeActionId_, , , numStakedNfts_] = parsed_.args;
-					expect(this.rwStaking.stakeActions.has(stakeActionId_.toString()), "RW staking: unstake of unknown action").to.equal(true);
-					this.rwStaking.stakeActions.delete(stakeActionId_.toString());
-					this.rwStaking.numStakedNfts -= 1n;
-					this.rwStaking.actionCounter += 1n;
-					expect(actionCounter_).to.equal(this.rwStaking.actionCounter);
-					expect(numStakedNfts_).to.equal(this.rwStaking.numStakedNfts);
+					expect(this.rwNftStaking.stakeActions.has(stakeActionId_.toString()), "RW NFT staking: unstake of unknown action").to.equal(true);
+					this.rwNftStaking.stakeActions.delete(stakeActionId_.toString());
+					this.rwNftStaking.numStakedNfts -= 1n;
+					this.rwNftStaking.actionCounter += 1n;
+					expect(actionCounter_).to.equal(this.rwNftStaking.actionCounter);
+					expect(numStakedNfts_).to.equal(this.rwNftStaking.numStakedNfts);
 				}
 				break;
 			}

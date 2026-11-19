@@ -30,11 +30,11 @@
 // 	await waitForTransactionReceipt(randomWalkNft.connect(signer0).setApprovalForAll(cosmicSignatureGame.address, true));
 //
 // 	await waitForTransactionReceipt(randomWalkNft.connect(signer0).setApprovalForAll(bidderContract.address, true));
-// 	let rwalkPrice = await randomWalkNft.getMintPrice({blockTag: "pending",});
+// 	let randomWalkNftMintPrice = await randomWalkNft.getMintPrice({blockTag: "pending",});
 //
 // 	// todo-9 We now have the `mintRandomWalkNft` function that wraps this call.
 // 	/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
-// 	let transactionResponsePromise = randomWalkNft.connect(signer0).mint({value: rwalkPrice,});
+// 	let transactionResponsePromise = randomWalkNft.connect(signer0).mint({value: randomWalkNftMintPrice,});
 //
 // 	let transactionReceipt = await waitForTransactionReceipt(transactionResponsePromise);
 // 	let topic_sig = randomWalkNft.interface.getEventTopic("MintEvent");
@@ -50,10 +50,10 @@
 // 	nextEthBidPrice = await cosmicSignatureGame.getNextEthBidPrice({blockTag: "pending",});
 // 	await waitForTransactionReceipt(bidderContract.connect(signer0).doBidWithEth({value: nextEthBidPrice,}));
 //
-// 	rwalkPrice = await randomWalkNft.getMintPrice({blockTag: "pending",});
+// 	randomWalkNftMintPrice = await randomWalkNft.getMintPrice({blockTag: "pending",});
 //
 // 	// todo-9 We now have the `mintRandomWalkNft` function that wraps this call.
-// 	transactionResponsePromise = randomWalkNft.connect(signer0).mint({value: rwalkPrice,});
+// 	transactionResponsePromise = randomWalkNft.connect(signer0).mint({value: randomWalkNftMintPrice,});
 //
 // 	transactionReceipt = await waitForTransactionReceipt(transactionResponsePromise);
 // 	topic_sig = randomWalkNft.interface.getEventTopic("MintEvent");
