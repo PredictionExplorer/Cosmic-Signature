@@ -229,7 +229,7 @@ According to Comment-202610044, a user also can force-send ETH to the Game contr
 
 - At any time, a staker can unstake their COSMIC and get their staking ETH rewards.
 
-#### Third party ERC-20 token amount and ERC-721 NFT
+#### Third Party ERC-20 Token Amount and ERC-721 NFT
 
 - When a bidding round is active, one or the other asset can accompany a bid of any type. The donated asset goes to `PrizesWallet`.
 
@@ -239,7 +239,7 @@ According to Comment-202610044, a user also can force-send ETH to the Game contr
 
 The following lists summarize required conditions and successful effects; they are not necessarily an execution-order trace.
 
-#### A user places an ETH bid.
+#### A User Places an ETH Bid.
 
 - Parameters:
 	- Random Walk NFT ID (optional).
@@ -280,7 +280,7 @@ The following lists summarize required conditions and successful effects; they a
 
 - If the user sent more ETH than required, refund the excess only if it exceeds what it would cost to transfer it. Excess at or below that cost remains in the Game.
 
-#### A user places a CST bid.
+#### A User Places a CST Bid.
 
 - Parameters:
 	- Max CST price the user is willing to pay.
@@ -312,7 +312,7 @@ The following lists summarize required conditions and successful effects; they a
 
 - V3+: reduce CST bid price decline per second.
 
-#### A user claims the current bidding round main prize.
+#### A User Claims the Current Bidding Round Main Prize.
 
 - If the caller is the same as the last bidder:
 

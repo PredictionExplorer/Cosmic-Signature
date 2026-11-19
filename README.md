@@ -34,7 +34,7 @@ Cosmic Signature production contracts are in [contracts/production/](contracts/p
 | `CosmicSignatureGame` | The Game contract: bidding, main prize claim, prize distribution, statistics, and owner-only configuration. It is an upgradeable (UUPS) proxy. Its implementation versions are `CosmicSignatureGame` (V1), `CosmicSignatureGameV2`, and `CosmicSignatureGameV3`, each composed of abstract contracts such as `Bidding*`, `BidStatistics*`, `MainPrize*`, `SecondaryPrizes*`, and `SystemManagement*`. |
 | `CosmicSignatureToken` (CST) | ERC-20 token minted by the Game. The Game can burn bid costs; holders and approved spenders also have inherited burn methods. Delegated balances provide DAO voting power. |
 | `CosmicSignatureNft` (COSMIC) | ERC-721 NFT minted by the Game as prizes. |
-| `RandomWalkNFT` (RWLK) | A previously deployed third-party ERC-721 NFT. Bidding with it halves the ETH bid price, once per NFT. |
+| `RandomWalkNFT` (RWLK) | A previously deployed ERC-721 NFT from the same team. Bidding with it halves the ETH bid price, once per NFT. |
 | `PrizesWallet` | Holds secondary ETH prizes and donated ERC-721 NFTs, records round beneficiaries and retrieval deadlines, and controls donated ERC-20 claims through per-round token holders. |
 | `DonatedTokenHolder` | Holds a round's donated ERC-20 tokens; the creating `PrizesWallet` controls transfers to authorized claimants. |
 | `StakingWalletCosmicSignatureNft` | Cosmic Signature NFT staking. Stakers share an ETH reward. |
