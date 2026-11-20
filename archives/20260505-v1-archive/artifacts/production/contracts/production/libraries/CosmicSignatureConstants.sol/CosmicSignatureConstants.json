@@ -1,0 +1,10 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "CosmicSignatureConstants",
+  "sourceName": "contracts/production/libraries/CosmicSignatureConstants.sol",
+  "abi": [],
+  "bytecode": "0x6080806040523460175760399081601c823930815050f35b5f80fdfe5f80fdfea26469706673582212206f898ca8b645094052f83a621f18586bc00c54ddd7ad3ba5a36e264797179be064736f6c63430008220033",
+  "deployedBytecode": "0x5f80fdfea26469706673582212206f898ca8b645094052f83a621f18586bc00c54ddd7ad3ba5a36e264797179be064736f6c63430008220033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

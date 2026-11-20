@@ -46,6 +46,18 @@ Commits `91d3d01a` (V1), `cd61244c` (V2), and `d9a0f10e` (development) exposed `
 
 Both archives mark their npm package private and exclude the root `cache/` and `artifacts/` folders from VS Code searches. The V1 storage comment explains why the archive uses a smaller gap than the deployed game. On the development branch, the README and V3 comparison clarify that the same team had already deployed `RandomWalkNFT`. The functional requirements also received heading capitalization edits.
 
+## Building the Archives
+
+Each snapshot lives in `archives/<archive-branch>/` on the development branch. It contains the complete `artifacts/<configuration>/` trees, including compiler build info, and only `cache/<configuration>/validations.json` from each cache. The four configurations are `production`, `debug-false-false`, `debug-true-false`, and `debug-true-true`.
+
+1. Run `npm run hardhat-clean` on the development branch. Switch to the archive branch and run `npm ci` followed by `npm run hardhat-test-quick` from the project root.
+2. Once all four builds pass, switch back to development. Git leaves the ignored root outputs in place. Copy the artifacts and validation files into the snapshot before cleaning.
+3. Switch to the archive branch and run `npm run hardhat-clean`. Return to development, run `npm ci`, and commit the snapshot.
+
+| Archive snapshot | Source commit | Quick tests passed per build |
+| --- | --- | ---: |
+| [V1](../archives/20260505-v1-archive/) | `5450e528` | 86 |
+
 ## Archived Artifact Prototype
 
 Commit `551489cd` on `prototype-archived-artifacts-upgrades` demonstrates the approach in `test/tests-src/CosmicSignatureGame-All-Versions-ArchivedArtifacts.js`. For this experiment, the same snapshot of `main` supplied both V1 and V2. V3 came from the active development branch.
