@@ -59,7 +59,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Comment-202502045 relates.
 	/// [/Comment-202411098]
 	/// Comment-202502044 relates.
-	/// todo-ai-5 This is V1, to be newly deployed, not upgraded to. So we don't need this `renamed-from`, right?
+	/// todo-ai-5 This is V1, to be newly deployed, not upgraded to. So here and in a few other places we don't need this `renamed-from`, right?
 	/// @custom:oz-renamed-from bidderAddresses
 	mapping(uint256 roundNum => BidderAddresses) public roundStats;
 
@@ -404,8 +404,8 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Although it's probably not needed here that much because this contract is the last in the inheritance list
 	/// among those containing storage variables.
 	/// [/Comment-202412148]
-	/// Deployed V1 reserved 1 << 255 slots. This archive reserves 1 << 30 so OpenZeppelin
-	/// can validate the upgrade to V2, which uses one slot from this gap.
+	/// Issue. Deployed V1 reserved `1 << 255` slots. This V1 archive reserves a much smaller quantity.
+	/// Without this fix, OpenZeppelin would crash when validating the upgrade to V2.
 	// solhint-disable-next-line var-name-mixedcase
 	uint256[1 << 30] private __gap_persistent;
 
