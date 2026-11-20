@@ -59,7 +59,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Comment-202502045 relates.
 	/// [/Comment-202411098]
 	/// Comment-202502044 relates.
-	/// todo-ai-5 This is V1, to be newly deployed, not upgraded to. So here and in a few other places we don't need this `renamed-from`, right?
+	/// OpenZeppelin requires V1 to carry V2's rename annotation even though both archives call this `roundStats`.
 	/// @custom:oz-renamed-from bidderAddresses
 	mapping(uint256 roundNum => BidderAddresses) public roundStats;
 
@@ -243,7 +243,6 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// @notice We mint this CST amount as a bidder reward for each bid.
 	/// We do it even for a CST bid.
 	/// Comment-202411064 applies.
-	/// @custom:oz-renamed-from cstRewardAmountForBidding
 	uint256 public bidCstRewardAmount;
 
 	// #endregion
