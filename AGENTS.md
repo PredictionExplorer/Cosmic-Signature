@@ -102,4 +102,4 @@
 ## Uncategorized
 
 - Prefer using only ASCII chars. For example, instead of `—`, use `--`. But if the surrounding text intentionally uses non-ASCII chars, keep using them consistently.
-- To reduce model usage, prefer not to poll running commands, such as Hardhat tests, for progress when you can wait for them to complete.
+- To reduce model usage, prefer not to poll running commands, such as Hardhat tests, for progress when you can wait for them to complete. If a command runs substantially longer than expected, for example more than twice its usual duration, check whether it is still making progress.
