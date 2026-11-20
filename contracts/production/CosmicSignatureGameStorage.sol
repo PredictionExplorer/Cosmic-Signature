@@ -63,6 +63,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Comment-202502045 relates.
 	/// [/Comment-202411098]
 	/// Comment-202502044 relates.
+	/// todo-ai-5 `bidderAddresses` does not exists in archived branches, so we don't need this `renamed-from`, right?
 	/// @custom:oz-renamed-from bidderAddresses
 	mapping(uint256 roundNum => BidderAddresses) public roundStats;
 
