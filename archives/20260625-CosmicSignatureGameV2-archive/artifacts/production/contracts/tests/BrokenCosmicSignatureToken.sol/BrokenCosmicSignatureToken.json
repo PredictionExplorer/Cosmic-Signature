@@ -1,0 +1,121 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "BrokenCosmicSignatureToken",
+  "sourceName": "contracts/tests/BrokenCosmicSignatureToken.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "counter_",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "burn",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "mint",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "account",
+              "type": "address"
+            },
+            {
+              "internalType": "int256",
+              "name": "value",
+              "type": "int256"
+            }
+          ],
+          "internalType": "struct ICosmicSignatureToken.MintOrBurnSpec[]",
+          "name": "specs_",
+          "type": "tuple[]"
+        }
+      ],
+      "name": "mintAndBurnMany",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "account",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "value",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct ICosmicSignatureToken.MintSpec[]",
+          "name": "specs_",
+          "type": "tuple[]"
+        }
+      ],
+      "name": "mintMany",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "newValue_",
+          "type": "uint256"
+        }
+      ],
+      "name": "setCounter",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x608034604d57601f61028938819003918201601f19168301916001600160401b03831184841017605157808492602094604052833981010312604d57515f5560405161022390816100668239f35b5f80fd5b634e487b7160e01b5f52604160045260245ffdfe60806040526004361015610011575f80fd5b5f3560e01c806340c10f191461011d5780638bb5d9c3146101055780639dc29fac146100f7578063b33266da146100b65763b355121414610050575f80fd5b346100b25760203660031901126100b25760043567ffffffffffffffff81116100b257610081903690600401610168565b905f5b828110156100b0575f60208260061b8401013512156100a557600101610084565b5050506100b0610199565b005b5f80fd5b346100b25760203660031901126100b25760043567ffffffffffffffff81116100b2576100e7903690600401610168565b90506100ef57005b6100b0610199565b346100b2576100b036610135565b346100b25760203660031901126100b2576004355f55005b346100b25761012b36610135565b50506100b0610199565b60409060031901126100b25760043573ffffffffffffffffffffffffffffffffffffffff811681036100b2579060243590565b9181601f840112156100b25782359167ffffffffffffffff83116100b2576020808501948460061b0101116100b257565b5f5480156101a8575f19015f55565b60405162461bcd60e51b815260206004820152601160248201527f54657374206d696e74206661696c65642e0000000000000000000000000000006044820152606490fdfea2646970667358221220fec76fa2be40cbc86a646fa5b87db39dbe34800adf3c16a19dc830e2a278e26564736f6c63430008220033",
+  "deployedBytecode": "0x60806040526004361015610011575f80fd5b5f3560e01c806340c10f191461011d5780638bb5d9c3146101055780639dc29fac146100f7578063b33266da146100b65763b355121414610050575f80fd5b346100b25760203660031901126100b25760043567ffffffffffffffff81116100b257610081903690600401610168565b905f5b828110156100b0575f60208260061b8401013512156100a557600101610084565b5050506100b0610199565b005b5f80fd5b346100b25760203660031901126100b25760043567ffffffffffffffff81116100b2576100e7903690600401610168565b90506100ef57005b6100b0610199565b346100b2576100b036610135565b346100b25760203660031901126100b2576004355f55005b346100b25761012b36610135565b50506100b0610199565b60409060031901126100b25760043573ffffffffffffffffffffffffffffffffffffffff811681036100b2579060243590565b9181601f840112156100b25782359167ffffffffffffffff83116100b2576020808501948460061b0101116100b257565b5f5480156101a8575f19015f55565b60405162461bcd60e51b815260206004820152601160248201527f54657374206d696e74206661696c65642e0000000000000000000000000000006044820152606490fdfea2646970667358221220fec76fa2be40cbc86a646fa5b87db39dbe34800adf3c16a19dc830e2a278e26564736f6c63430008220033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

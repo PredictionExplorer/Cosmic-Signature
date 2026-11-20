@@ -1,0 +1,10 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "CosmicSignatureHelpers",
+  "sourceName": "contracts/production/libraries/CosmicSignatureHelpers.sol",
+  "abi": [],
+  "bytecode": "0x6080806040523460175760399081601c823930815050f35b5f80fdfe5f80fdfea26469706673582212201eb5abe15df4e27005c8131b2935ea2562d550a4b5f3df05e9584494a630ff3a64736f6c63430008220033",
+  "deployedBytecode": "0x5f80fdfea26469706673582212201eb5abe15df4e27005c8131b2935ea2562d550a4b5f3df05e9584494a630ff3a64736f6c63430008220033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

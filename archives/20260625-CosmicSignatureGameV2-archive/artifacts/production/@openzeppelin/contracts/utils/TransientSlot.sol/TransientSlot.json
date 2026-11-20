@@ -1,0 +1,10 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "TransientSlot",
+  "sourceName": "@openzeppelin/contracts/utils/TransientSlot.sol",
+  "abi": [],
+  "bytecode": "0x6080806040523460175760399081601c823930815050f35b5f80fdfe5f80fdfea2646970667358221220a344284c51caac740055e7b6327f233cffcbda7aab06db2d1f293e7f293689d664736f6c63430008220033",
+  "deployedBytecode": "0x5f80fdfea2646970667358221220a344284c51caac740055e7b6327f233cffcbda7aab06db2d1f293e7f293689d664736f6c63430008220033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

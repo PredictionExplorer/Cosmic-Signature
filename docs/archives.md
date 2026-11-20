@@ -57,6 +57,9 @@ Each snapshot lives in `archives/<archive-branch>/` on the development branch. I
 | Archive snapshot | Source commit | Quick tests passed per build |
 | --- | --- | ---: |
 | [V1](../archives/20260505-v1-archive/) | `5450e528` | 86 |
+| [V2](../archives/20260625-CosmicSignatureGameV2-archive/) | `b6730805` | 109 |
+
+For each configuration, the copied debug files resolve to the archived build info. OpenZeppelin validated both game implementations and the V1-to-V2 storage upgrade using the archived bytecode and validation files with its default safety checks.
 
 ## Archived Artifact Prototype
 

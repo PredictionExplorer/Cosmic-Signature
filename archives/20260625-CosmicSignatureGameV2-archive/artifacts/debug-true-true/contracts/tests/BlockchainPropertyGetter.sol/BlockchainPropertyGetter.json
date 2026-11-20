@@ -1,0 +1,10 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "BlockchainPropertyGetter",
+  "sourceName": "contracts/tests/BlockchainPropertyGetter.sol",
+  "abi": [],
+  "bytecode": "0x608080604052346013576039908160188239f35b5f80fdfe5f80fdfea2646970667358221220beb556c6de2247f04f7f8915f6b16120465e2bfeeb62e1cdec96665e4579587f64736f6c63430008220033",
+  "deployedBytecode": "0x5f80fdfea2646970667358221220beb556c6de2247f04f7f8915f6b16120465e2bfeeb62e1cdec96665e4579587f64736f6c63430008220033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}
