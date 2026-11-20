@@ -34,6 +34,18 @@ In both archives, `roundStats(roundNum)` returns just the bid count. Read each a
 
 Commit `3e926da0` reduced archived V1's trailing `__gap_persistent` from the deployed `2^255` slots to `2^30`. V2 uses one slot for `cstDutchAuctionDurationChangeDivisor` and keeps the rest reserved. OpenZeppelin's default storage checks pass from archived V1 to archived V2 and from archived V2 to current V3.
 
+## Storage Rename Annotations
+
+V3's `roundStats` carries `@custom:oz-renamed-from bidderAddresses` so the deployed V2 layout can upgrade to it. OpenZeppelin Upgrades Core 1.44.2 also compares rename annotations when two layouts already use the same field name. Archived V2 and both archived copies of V1 therefore carry the same annotation on `roundStats`.
+
+V2 renames `cstDutchAuctionDurationDivisor` to `cstDutchAuctionDuration` and `bidCstRewardAmount` to `bidCstRewardAmountMultiplier`. Both changes need annotations on V2. The V1 archive is deployed with `bidCstRewardAmount` already in place, so its former `cstRewardAmountForBidding` annotation was removed.
+
+## Archive Maintenance
+
+Commits `91d3d01a` (V1), `cd61244c` (V2), and `d9a0f10e` (development) exposed `npm run hardhat-clean` for all four build configurations. Both archives also provide `npm run hardhat-test-quick` and `npm run hardhat-test-full`. Quick mode sets `SKIP_LONG_TESTS=true` in V1 and `LONG_TEST_MODE_CODE=1` in V2. The npm commands run in batch mode (`-b`), stopping on the first failure and returning a nonzero exit code without a prompt.
+
+Both archives mark their npm package private and exclude the root `cache/` and `artifacts/` folders from VS Code searches. The V1 storage comment explains why the archive uses a smaller gap than the deployed game. On the development branch, the README and V3 comparison clarify that the same team had already deployed `RandomWalkNFT`. The functional requirements also received heading capitalization edits.
+
 ## Archived Artifact Prototype
 
 Commit `551489cd` on `prototype-archived-artifacts-upgrades` demonstrates the approach in `test/tests-src/CosmicSignatureGame-All-Versions-ArchivedArtifacts.js`. For this experiment, the same snapshot of `main` supplied both V1 and V2. V3 came from the active development branch.
