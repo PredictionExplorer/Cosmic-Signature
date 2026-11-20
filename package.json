@@ -5,7 +5,8 @@
 		"hardhat-test-quick": "cd test/runners && ./test-quick.bash -b",
 		"hardhat-test-medium": "cd test/runners && ./test-medium.bash -b",
 		"hardhat-test-full": "cd test/runners && ./test.bash -b",
-		"hardhat-coverage": "cd test/runners && ./coverage.bash -b"
+		"hardhat-coverage": "cd test/runners && ./coverage.bash -b",
+		"hardhat-clean": "./contracts-compiling/runners/clean.bash -b"
 	},
 	"devDependencies": {
 		"@arbitrum/nitro-contracts": "~3.2.0",
