@@ -59,7 +59,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Comment-202502045 relates.
 	/// [/Comment-202411098]
 	/// Comment-202502044 relates.
-	/// OpenZeppelin requires V1 to carry V2's rename annotation even though both archives call this `roundStats`.
+	/// OpenZeppelin requires V1 to carry V2's rename annotation even though both snapshots name this mapping `roundStats`.
 	/// @custom:oz-renamed-from bidderAddresses
 	mapping(uint256 roundNum => BidderAddresses) public roundStats;
 
@@ -403,7 +403,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Although it's probably not needed here that much because this contract is the last in the inheritance list
 	/// among those containing storage variables.
 	/// [/Comment-202412148]
-	/// Issue. Deployed V1 reserved `1 << 255` slots. This V1 archive reserves a much smaller quantity.
+	/// Issue. Deployed V1 reserved `1 << 255` slots. The V1 snapshot reserves fewer slots.
 	/// Without this fix, OpenZeppelin would crash when validating the upgrade to V2.
 	// solhint-disable-next-line var-name-mixedcase
 	uint256[1 << 30] private __gap_persistent;
