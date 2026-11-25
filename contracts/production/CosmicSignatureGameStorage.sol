@@ -63,7 +63,7 @@ abstract contract CosmicSignatureGameStorage is ICosmicSignatureGameStorage {
 	/// Comment-202502045 relates.
 	/// [/Comment-202411098]
 	/// Comment-202502044 relates.
-	/// OpenZeppelin requires V1 to carry V2's rename annotation even though both archives call this `roundStats`.
+	/// OpenZeppelin requires V1 to carry V2's rename annotation even though both snapshots name this mapping `roundStats`.
 	/// @custom:oz-renamed-from bidderAddresses
 	mapping(uint256 roundNum => BidderAddresses) public roundStats;
 
