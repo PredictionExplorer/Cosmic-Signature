@@ -1,6 +1,6 @@
 # Codebase Snapshots
 
-Each snapshot branch preserves the Solidity sources and tests for a past deployment. The V4 development branch keeps the current Solidity sources and a copy of each snapshot branch's Hardhat build outputs. Tests use these outputs to replay the deployment and upgrade sequence on a local network.
+Each snapshot branch preserves the Solidity sources, tests, and other files for a past deployment. The current development branch keeps a copy of each snapshot branch's Hardhat build outputs. Tests use these outputs to replay the deployment and upgrade sequence on a local network.
 
 ## Snapshot Branches and Deployment Order
 
@@ -16,7 +16,7 @@ A typical test deploys the game and its production contracts from the V1 snapsho
 
 Tests deploy `RandomWalkNFT` and test-only contracts from the current Git checkout. The original Random Walk NFT contract was deployed years before V1 with older versions of Solidity and OpenZeppelin. The local contract has the same ABI, so these tests do not need a separate snapshot for it.
 
-Each subsequent snapshot names the contracts introduced at that step. Tests upgrade the same game proxy to `CosmicSignatureGameV2` from the V2 snapshot artifacts and then to `CosmicSignatureGameV3` from the current build. The original `PrizesWallet` and the other V1 contracts stay in use. A future snapshot can name both a game upgrade and a new wallet when both are deployed.
+Each subsequent snapshot name contains names of the contracts introduced at that milestone. Tests upgrade the same game proxy to `CosmicSignatureGameV2` from the V2 snapshot artifacts and then to `CosmicSignatureGameV3` from the current build. The original `PrizesWallet` and the other V1 contracts stay in use. A future snapshot name can include both a game upgrade and a new wallet when both are deployed.
 
 Tests select artifacts by **codebase snapshot index**. In `src/CodebaseSnapshotTestHelpers.js`, indices `0` and `1` select the V1 and V2 snapshot artifacts. Index `2` currently selects the V3 build from the current Git checkout. Append new snapshots in deployment order. Each release keeps its index when its build outputs are checked in, and the current Git checkout always has the next index. A release that deploys only a wallet also gets its own index.
 
