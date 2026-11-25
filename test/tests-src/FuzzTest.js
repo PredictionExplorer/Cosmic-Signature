@@ -9,9 +9,8 @@
 //   3. Continue fuzzing the V2 game (half of the campaigns for exactly 1 round; the rest for zero,
 //      2, 3, ... rounds).
 //   4. Perform the real UUPS V2 -> V3 upgrade, asserting full state-diff preservation (including the
-//      V2 parameters), V3 re-initialization, and double-initialize rejection. Half of the campaigns
-//      then deploy a fresh `PrizesWallet` and point the game at it via `setPrizesWallet`, after draining
-//      the old wallet. Assert-enabled builds bypass missing history for its first claim (Comment-202610038).
+//      V2 parameters), V3 re-initialization, and double-initialize rejection. The original V1
+//      prizes wallet retains deposits and withdrawal rights across both game upgrades.
 //   5. Continue fuzzing the V3 game for several more complete rounds.
 //
 // The campaign is model-based: a JS `GameModel` reimplements the deterministic on-chain math
@@ -69,8 +68,8 @@
 
 "use strict";
 
-const { describe, it } = require("mocha");
 const { expect } = require("chai");
+const { describe, it } = require("mocha");
 const { generateRandomUInt256 } = require("../../src/Helpers.js");
 const { LONG_TEST_MODE_CODE, loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
 const { parseFuzzSeedFromEnvironment } = require("../src/fuzz/FuzzSeed.js");
@@ -95,7 +94,6 @@ describe("FuzzTest", function () {
 		await runFuzzCampaigns(profile_, seed_);
 
 		// Snapshot restoration does not undo mutations of the fixture's cached JavaScript object.
-		// Check added fields too, so this regression does not depend on a random wallet swap.
 		expect(Object.keys(fixtureContracts_)).deep.equal(Object.keys(originalContractReferences_));
 		for (const [name_, reference_] of Object.entries(originalContractReferences_)) {
 			expect(fixtureContracts_[name_], `Fuzz changed fixture field ${name_}`).equal(reference_);

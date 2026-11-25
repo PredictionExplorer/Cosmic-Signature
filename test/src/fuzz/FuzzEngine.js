@@ -147,7 +147,7 @@ class FuzzEngine {
 		return min_ + this.randomBelow(max_ - min_ + 1n);
 	}
 
-	/** @template T @param {T[]} items_ @returns {T} */
+	/** @template ArrayItem_ @param {ArrayItem_[]} items_ @returns {ArrayItem_} */
 	pick(items_) {
 		expect(items_.length > 0, "pick: empty array").to.equal(true);
 		return items_[Number(this.randomBelow(BigInt(items_.length)))];

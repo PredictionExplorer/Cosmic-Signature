@@ -1,10 +1,10 @@
 "use strict";
 
-const { describe, it } = require("mocha");
 const { expect } = require("chai");
+const { describe, it } = require("mocha");
 const hre = require("hardhat");
+const { activateCurrentRound } = require("../src/GameV2UpgradeTestHelpers.js");
 const { testAcrossGameVersions, bidAndClaimMainPrize } = require("../src/GameRoundTestHelpers.js");
-const { activateCurrentRound } = require("../src/V2UpgradeTestHelpers.js");
 
 describe("CosmicSignatureGame-All-Versions-BiddingCommon", function () {
 	it("The getDurationUntilRoundActivation and getDurationElapsedSinceRoundActivation methods", async function () {

@@ -118,8 +118,14 @@ async function runInvariants(ctx_) {
 	for (const roundNumString_ of new Set([...model.rounds.keys(), model.roundNum.toString()])) {
 		const roundNum_ = BigInt(roundNumString_);
 		const onChainStats_ = await game_.roundStats(roundNum_);
-		for (const [field_, expectedValue_] of Object.entries(model.roundStats(roundNum_))) {
-			expect(onChainStats_[field_], `roundStats[${roundNumString_}].${field_} vs model`).to.equal(expectedValue_);
+		const expectedStats_ = model.roundStats(roundNum_);
+		if (model.version < 3) {
+			// Ethers returns the archived getter's single uint256 output directly.
+			expect(onChainStats_, `roundStats[${roundNumString_}].numBids vs model`).to.equal(expectedStats_.numBids);
+		} else {
+			for (const [field_, expectedValue_] of Object.entries(expectedStats_)) {
+				expect(onChainStats_[field_], `roundStats[${roundNumString_}].${field_} vs model`).to.equal(expectedValue_);
+			}
 		}
 	}
 
@@ -176,14 +182,12 @@ async function runInvariants(ctx_) {
 
 	// Bid statistics tail.
 	{
-		// const onChainNumBids_ = await game_.getTotalNumBids(model.roundNum);
-		// expect(onChainNumBids_, "getTotalNumBids vs model").to.equal(model.getTotalNumBids(model.roundNum));
-		const onChainNumBids_ = (await game_.roundStats(model.roundNum)).numBids;
-		expect(onChainNumBids_, "roundStats.numBids vs model").to.equal(model.roundStats(model.roundNum).numBids);
-		if (model.lastBidderAddress !== hre.ethers.ZeroAddress && onChainNumBids_ > 0n) {
-			const tailBidInfo_ = await game_.getBidInfoAt(model.roundNum, onChainNumBids_ - 1n);
-			expect(tailBidInfo_.bidderAddress.toLowerCase(), "bid log tail == lastBidderAddress")
-				.to.equal(model.lastBidderAddress);
+		const numBids_ = model.roundStats(model.roundNum).numBids;
+		if (model.lastBidderAddress !== hre.ethers.ZeroAddress && numBids_ > 0n) {
+			const tailBidderAddress_ = (model.version < 3) ?
+				await game_.getBidderAddressAt(model.roundNum, numBids_ - 1n) :
+				(await game_.getBidInfoAt(model.roundNum, numBids_ - 1n)).bidderAddress;
+			expect(tailBidderAddress_.toLowerCase(), "bid log tail == lastBidderAddress").to.equal(model.lastBidderAddress);
 			// const bidderInfo_ = model.getBidderInfo(model.roundNum, model.lastBidderAddress);
 			// const [ethSpent_, cstSpent_] = await game_.getBidderTotalSpentAmounts(model.roundNum, model.lastBidderAddress);
 			// expect(ethSpent_, "getBidderTotalSpentAmounts ETH vs model").to.equal(bidderInfo_.totalSpentEthAmount);
@@ -384,8 +388,7 @@ function assertCoverageFloors(statsMap_, profile_) {
 	// ... and every meaningful user action the protocol supports must have actually SUCCEEDED at least
 	// once across the soak — covering bids (ETH / Random Walk NFT / CST), staking and unstaking, ETH and
 	// donation flows, prize and donated-asset withdrawals (the winner receiving donated NFTs/ERC-20s),
-	// CST/NFT transfers and signatures, RW NFT mint/withdraw, the V1 -> V2 -> V3 upgrade chain, and
-	// the post-V3 PrizesWallet swap.
+	// CST/NFT transfers and signatures, RW NFT mint/withdraw, and the V1 -> V2 -> V3 upgrade chain.
 	const mustSucceed_ = [
 		"bidWithEth", "bidWithEthExactPrice", "bidWithEthSwallow", "bidWithEthRefund",
 		"bidWithEthPlusRandomWalkNft", "bidWithEthReceive", "bidWithEthAndDonateToken", "bidWithEthAndDonateNft",
@@ -404,7 +407,7 @@ function assertCoverageFloors(statsMap_, profile_) {
 		"adminMutateParameters", "daoGovernanceCycle",
 		"adversarialReentrancyOnBidRefund", "adversarialMaliciousTokenDonation",
 		"upgradeAuthProbe",
-		"upgradeToV2", "upgradeToV3", "prizesWalletSwap",
+		"upgradeGameToV2", "upgradeGameToV3",
 	];
 	const neverSucceeded_ = mustSucceed_.filter((name_) => succeeded_(name_) <= 0);
 	expect(

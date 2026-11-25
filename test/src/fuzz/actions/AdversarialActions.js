@@ -44,7 +44,7 @@ function findCsNftDonor(ctx_) {
 
 /**
 Tracks the current charity recipient and whether it accepts ETH on transfer (used by the
-claim verifier to predict `FundsTransferredToCharity` vs `EthTransferToCharityFailed`).
+claim verifier to predict the charity transfer event).
 The default recipient is the real `CharityWallet` (always accepts). The adversarial rotation
 action swaps it for a `BrokenEthReceiver` in revert mode and back, between rounds.
 */
@@ -126,7 +126,7 @@ const adversarialActions = [
 	},
 	{
 		// Reentrancy guard probe: a malicious contract overpays an ETH bid; on the refund it reenters
-		// a `nonReentrant` game method, whose guard error must propagate through the refund.
+		// a `nonReentrant` game method. V1 reports the failed refund as `FundTransferFailed`.
 		// V1 only (the `MaliciousBidder` helper uses the 2-argument bid signature).
 		name: "adversarialReentrancyOnBidRefund",
 		weight: 2,
@@ -169,11 +169,10 @@ const adversarialActions = [
 				buildTx: (overrides_) => adversaries.maliciousBidder.connect(actor_.signer).doBidWithEth(-1n, "reenter", { ...overrides_, value: value_ }),
 			});
 
-			// The refund propagates the reentrancy guard's error.
-			engine.expectRevert(result_, "ReentrancyGuardReentrantCall", "adversarialReentrancyOnBidRefund");
+			engine.expectRevert(result_, "FundTransferFailed", "adversarialReentrancyOnBidRefund");
 
 			await ledger.verifyDirtyEth();
-			return "revert:ReentrancyGuardReentrantCall";
+			return "revert:FundTransferFailed";
 		},
 	},
 	{

@@ -1,9 +1,9 @@
 "use strict";
 
-const { describe, it } = require("mocha");
-const { testAcrossGameVersions, activateRoundBidAndClaimMainPrize } = require("../src/GameRoundTestHelpers.js");
-const { waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { expect } = require("chai");
+const { describe, it } = require("mocha");
+const { waitForTransactionReceipt } = require("../../src/Helpers.js");
+const { testAcrossGameVersions, activateRoundBidAndClaimMainPrize } = require("../src/GameRoundTestHelpers.js");
 
 describe("CosmicSignatureGame-All-Versions-EthDonations", function () {
 	it("increments the ETH donation record count independently of bidding", async function () {

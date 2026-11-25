@@ -2,8 +2,8 @@
 
 // Tests V3-specific bidding behavior shared by ETH and CST bid entry points.
 
-const { describe, it } = require("mocha");
 const { expect } = require("chai");
+const { describe, it } = require("mocha");
 const hre = require("hardhat");
 const {
 	CST_DUTCH_AUCTION_DURATION_MIN_LIMIT,
@@ -20,14 +20,14 @@ const {
 	setNextBlockTimeToAtLeast,
 	getLatestBlockTimestamp,
 	blockTimestampOfReceipt,
-} = require("../src/V2UpgradeTestHelpers.js");
+} = require("../src/GameV2UpgradeTestHelpers.js");
 const {
-	deployV1CompleteRoundZeroAndUpgradeToV2AndV3,
+	deployGameV1CompleteRoundZeroAndUpgradeToV2AndV3,
 	addRoundLateBidPricePremiumAmountIfNeeded,
 	getV3CstBidPrice,
 	getV3CstDutchAuctionDuration,
 	getV3CstBidPriceDeclineMultiplierAfterEthBid,
-} = require("../src/V3UpgradeTestHelpers.js");
+} = require("../src/GameV3UpgradeTestHelpers.js");
 const { configureRewardAndDeployHostileBidder } = require("../src/AdversarialTestHelpers.js");
 const { testAcrossGameVersions, finishGameRound, bidWithEthAt } = require("../src/GameRoundTestHelpers.js");
 
@@ -384,7 +384,7 @@ describe("CosmicSignatureGameV3-Bidding", function () {
 	});
 
 	it("preserves CST auction parameters across unrelated actions and claims while selecting the next round's beginning price", async function () {
-		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3();
+		const contracts_ = await deployGameV1CompleteRoundZeroAndUpgradeToV2AndV3();
 		const game_ = contracts_.cosmicSignatureGameV3Proxy;
 		const ownerGame_ = game_.connect(contracts_.ownerSigner);
 		const bidder1_ = contracts_.signers[1];
@@ -998,7 +998,7 @@ describe("CosmicSignatureGameV3-Bidding", function () {
 	});
 
 	it("a first V3 CST bid reaches token minting before inactive-round and wrong-bid-type guards", async function () {
-		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3();
+		const contracts_ = await deployGameV1CompleteRoundZeroAndUpgradeToV2AndV3();
 		const game_ = contracts_.cosmicSignatureGameV3Proxy;
 		const token_ = contracts_.cosmicSignatureToken;
 		const bidder_ = contracts_.signers[2];

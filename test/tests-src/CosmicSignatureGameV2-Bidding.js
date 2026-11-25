@@ -1,11 +1,11 @@
 "use strict";
 
+const { expect } = require("chai");
 const { describe, it } = require("mocha");
 const hre = require("hardhat");
-const { activateCurrentRound, assertDefaultV2Initialization, findParsedEvent, mineAtOrAfter, getLatestBlockTimestamp } = require("../src/V2UpgradeTestHelpers.js");
-const { expect } = require("chai");
 const { SECONDS_PER_DAY } = require("../../src/CosmicSignatureConstants.js");
 const { waitForTransactionReceipt } = require("../../src/Helpers.js");
+const { activateCurrentRound, assertDefaultGameV2Initialization, findParsedEvent, mineAtOrAfter, getLatestBlockTimestamp } = require("../src/GameV2UpgradeTestHelpers.js");
 const { testAcrossGameVersions, finishGameRound } = require("../src/GameRoundTestHelpers.js");
 
 async function deployDonationMocks(contracts_) {
@@ -194,7 +194,7 @@ describe("CosmicSignatureGameV2-Bidding", function () {
 		let isFirstV2Round_ = true;
 		await testAcrossGameVersions(async (contracts_, game_, roundNum_) => {
 			if (isFirstV2Round_) {
-				await assertDefaultV2Initialization(game_);
+				await assertDefaultGameV2Initialization(game_);
 				isFirstV2Round_ = false;
 			}
 			await activateCurrentRound(game_, contracts_.ownerSigner);
@@ -355,7 +355,7 @@ describe("CosmicSignatureGameV2-Bidding", function () {
 
 	// // This tests Comment-202607016.
 	// it("raises the V2 next-round first CST bid price when the owner raises the CST bid price minimum", async function () {
-	// 	const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2();
+	// 	const contracts_ = await deployGameV1CompleteRoundZeroAndUpgradeToV2();
 	// 	const game_ = contracts_.cosmicSignatureGameV2Proxy;
 	// 	const newMinLimit_ = 300n * 10n ** 18n;
 	// 	await waitForTransactionReceipt(game_.connect(contracts_.ownerSigner).setCstDutchAuctionBeginningBidPriceMinLimit(newMinLimit_));

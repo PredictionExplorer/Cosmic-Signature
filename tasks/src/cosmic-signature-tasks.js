@@ -1,8 +1,8 @@
 "use strict";
 
-const nodeOsModule = require("node:os");
-const nodePathModule = require("node:path");
-const nodeFsModule = require("node:fs");
+const nodeOs = require("node:os");
+const nodePath = require("node:path");
+const nodeFs = require("node:fs");
 const { vars, task } = require("hardhat/config");
 
 // Comment-202409255 relates.
@@ -12,9 +12,9 @@ const { waitForTransactionReceipt, safeErc1967GetChangedImplementationAddress } 
 const { deployContractsAdvanced, /*setRoundActivationTimeIfNeeded,*/ } = require("../../src/ContractDeploymentHelpers.js");
 
 task("deploy-cosmic-signature-contracts", "Deploys Cosmic Signature contracts to a blockchain", async (args, hre) => {
-	console.info("%s", `${nodeOsModule.EOL}deploy-cosmic-signature-contracts task is running.${nodeOsModule.EOL}`);
+	console.info("%s", `${nodeOs.EOL}deploy-cosmic-signature-contracts task is running.${nodeOs.EOL}`);
 	const deployConfigFilePath = args.deployconfigfilepath;
-	const deployConfigJsonString = await nodeFsModule.promises.readFile(deployConfigFilePath, "utf8");
+	const deployConfigJsonString = await nodeFs.promises.readFile(deployConfigFilePath, "utf8");
 	const deployConfigObject = JSON.parse(deployConfigJsonString);
 	if (deployConfigObject.deployerPrivateKey.length <= 0) {
 		// [Comment-202610253/]
@@ -31,14 +31,14 @@ task("deploy-cosmic-signature-contracts", "Deploys Cosmic Signature contracts to
 		console.info();
 		// deployConfigObject.deployerPrivateKey = deployerPrivateKey;
 	}
-	if (nodeFsModule.existsSync(deployConfigObject.reportFilePath)) {
+	if (nodeFs.existsSync(deployConfigObject.reportFilePath)) {
 		throw new Error(`"${deployConfigObject.reportFilePath}" already exists.`);
 	}
 	const deployerSigner = new hre.ethers.Wallet(deployConfigObject.deployerPrivateKey, hre.ethers.provider);
 
 	await hre.run("compile");
 
-	console.info("%s", `${nodeOsModule.EOL}Deploying contracts.`);
+	console.info("%s", `${nodeOs.EOL}Deploying contracts.`);
 	const contracts =
 		await deployContractsAdvanced(
 			deployerSigner,
@@ -49,7 +49,7 @@ task("deploy-cosmic-signature-contracts", "Deploys Cosmic Signature contracts to
 			BigInt(deployConfigObject.roundActivationTime)
 		);
 
-	console.info(/*"%s",*/ `${nodeOsModule.EOL}CosmicSignatureToken address:`, contracts.cosmicSignatureTokenAddress);
+	console.info(/*"%s",*/ `${nodeOs.EOL}CosmicSignatureToken address:`, contracts.cosmicSignatureTokenAddress);
 	console.info(/*"%s",*/ "RandomWalkNFT address:", contracts.randomWalkNftAddress);
 	console.info(/*"%s",*/ "CosmicSignatureNft address:", contracts.cosmicSignatureNftAddress);
 	console.info(/*"%s",*/ "PrizesWallet address:", contracts.prizesWalletAddress);
@@ -62,7 +62,7 @@ task("deploy-cosmic-signature-contracts", "Deploys Cosmic Signature contracts to
 	console.info(/*"%s",*/ `${deployConfigObject.cosmicSignatureGameContractName} proxy address:`, contracts.cosmicSignatureGameProxyAddress);
 	console.info(
 		"%s",
-		`${nodeOsModule.EOL}INSERT INTO cg_contracts VALUES('` +
+		`${nodeOs.EOL}INSERT INTO cg_contracts VALUES('` +
 		contracts.cosmicSignatureGameProxyAddress +
 		"','" +
 		contracts.cosmicSignatureNftAddress +
@@ -85,7 +85,7 @@ task("deploy-cosmic-signature-contracts", "Deploys Cosmic Signature contracts to
 		"','" +
 		contracts.cosmicSignatureGameImplementationAddress +
 		"')" +
-		nodeOsModule.EOL
+		nodeOs.EOL
 	);
 	const reportObject = {
 		cosmicSignatureTokenAddress: contracts.cosmicSignatureTokenAddress,
@@ -102,90 +102,90 @@ task("deploy-cosmic-signature-contracts", "Deploys Cosmic Signature contracts to
 	};
 	const reportJsonString = JSON.stringify(reportObject, null, 3);
 	try {
-		await nodeFsModule.promises.mkdir(nodePathModule.dirname(deployConfigObject.reportFilePath), {recursive: true,});
-		await nodeFsModule.promises.writeFile(deployConfigObject.reportFilePath, reportJsonString);
+		await nodeFs.promises.mkdir(nodePath.dirname(deployConfigObject.reportFilePath), {recursive: true,});
+		await nodeFs.promises.writeFile(deployConfigObject.reportFilePath, reportJsonString);
 	} catch (errorObject) {
 		console.info("%s", "Report:");
 		console.info("%s", reportJsonString);
 		console.error();
 		throw errorObject;
 	}
-	console.info("%s", `Report saved to "${deployConfigObject.reportFilePath}".${nodeOsModule.EOL}`);
+	console.info("%s", `Report saved to "${deployConfigObject.reportFilePath}".${nodeOs.EOL}`);
 
 	if (deployConfigObject.donateEthToCosmicSignatureGame) {
 		const ethDonationAmountInEthAsString = deployConfigObject.ethDonationToCosmicSignatureGameAmountInEth.toFixed(18);
 		const ethDonationAmountInWei = hre.ethers.parseEther(ethDonationAmountInEthAsString);
 		await waitForTransactionReceipt(contracts.cosmicSignatureGameProxy.donateEth({value: ethDonationAmountInWei,}));
-		console.info("%s", `Donated ${ethDonationAmountInEthAsString} ETH to the ${deployConfigObject.cosmicSignatureGameContractName} proxy contract.${nodeOsModule.EOL}`);
+		console.info("%s", `Donated ${ethDonationAmountInEthAsString} ETH to the ${deployConfigObject.cosmicSignatureGameContractName} proxy contract.${nodeOs.EOL}`);
 	}
 
-	console.info("%s", `deploy-cosmic-signature-contracts task is done.${nodeOsModule.EOL}`);
+	console.info("%s", `deploy-cosmic-signature-contracts task is done.${nodeOs.EOL}`);
 })
 	.addParam("deployconfigfilepath", "Deployment configuration file (JSON) path");
 
 task("register-cosmic-signature-contracts", "Verifies and registers deployed Cosmic Signature contracts", async (args, hre) => {
 	const deployConfigFilePath = args.deployconfigfilepath;
-	const deployConfigJsonString = await nodeFsModule.promises.readFile(deployConfigFilePath, "utf8");
+	const deployConfigJsonString = await nodeFs.promises.readFile(deployConfigFilePath, "utf8");
 	const deployConfigObject = JSON.parse(deployConfigJsonString);
-	const deployCosmicSignatureContractsReportJsonString = await nodeFsModule.promises.readFile(deployConfigObject.reportFilePath, "utf8");
+	const deployCosmicSignatureContractsReportJsonString = await nodeFs.promises.readFile(deployConfigObject.reportFilePath, "utf8");
 	const deployCosmicSignatureContractsReportObject = JSON.parse(deployCosmicSignatureContractsReportJsonString);
 	hre.config.etherscan.apiKey = vars.get(`etherScanApiKey_${hre.network.name}`);
 
-	console.info("%s", `${nodeOsModule.EOL}Registering CosmicSignatureToken.`);
+	console.info("%s", `${nodeOs.EOL}Registering CosmicSignatureToken.`);
 	await hre.run("verify:verify", {
 		address: deployCosmicSignatureContractsReportObject.cosmicSignatureTokenAddress,
 		constructorArguments: [deployCosmicSignatureContractsReportObject.cosmicSignatureGameProxyAddress,],
 	});
 
-	// console.info("%s", `${nodeOsModule.EOL}Registering RandomWalkNFT.`);
+	// console.info("%s", `${nodeOs.EOL}Registering RandomWalkNFT.`);
 	// await hre.run("verify:verify", {
 	// 	address: deployCosmicSignatureContractsReportObject.randomWalkNftAddress,
 	// 	constructorArguments: [???],
 	// });
 
-	console.info("%s", `${nodeOsModule.EOL}Registering CosmicSignatureNft.`);
+	console.info("%s", `${nodeOs.EOL}Registering CosmicSignatureNft.`);
 	await hre.run("verify:verify", {
 		address: deployCosmicSignatureContractsReportObject.cosmicSignatureNftAddress,
 		constructorArguments: [deployCosmicSignatureContractsReportObject.cosmicSignatureGameProxyAddress,],
 	});
 
-	console.info("%s", `${nodeOsModule.EOL}Registering PrizesWallet.`);
+	console.info("%s", `${nodeOs.EOL}Registering PrizesWallet.`);
 	await hre.run("verify:verify", {
 		address: deployCosmicSignatureContractsReportObject.prizesWalletAddress,
 		constructorArguments: [deployCosmicSignatureContractsReportObject.cosmicSignatureGameProxyAddress,],
 	});
 
-	console.info("%s", `${nodeOsModule.EOL}Registering StakingWalletRandomWalkNft.`);
+	console.info("%s", `${nodeOs.EOL}Registering StakingWalletRandomWalkNft.`);
 	await hre.run("verify:verify", {
 		address: deployCosmicSignatureContractsReportObject.stakingWalletRandomWalkNftAddress,
 		constructorArguments: [deployCosmicSignatureContractsReportObject.randomWalkNftAddress,],
 	});
 
-	console.info("%s", `${nodeOsModule.EOL}Registering StakingWalletCosmicSignatureNft.`);
+	console.info("%s", `${nodeOs.EOL}Registering StakingWalletCosmicSignatureNft.`);
 	await hre.run("verify:verify", {
 		address: deployCosmicSignatureContractsReportObject.stakingWalletCosmicSignatureNftAddress,
 		constructorArguments: [deployCosmicSignatureContractsReportObject.cosmicSignatureNftAddress, deployCosmicSignatureContractsReportObject.cosmicSignatureGameProxyAddress,],
 	});
 
-	console.info("%s", `${nodeOsModule.EOL}Registering MarketingWallet.`);
+	console.info("%s", `${nodeOs.EOL}Registering MarketingWallet.`);
 	await hre.run("verify:verify", {
 		address: deployCosmicSignatureContractsReportObject.marketingWalletAddress,
 		constructorArguments: [deployCosmicSignatureContractsReportObject.cosmicSignatureTokenAddress,],
 	});
 
-	console.info("%s", `${nodeOsModule.EOL}Registering CharityWallet.`);
+	console.info("%s", `${nodeOs.EOL}Registering CharityWallet.`);
 	await hre.run("verify:verify", {
 		address: deployCosmicSignatureContractsReportObject.charityWalletAddress,
 		// constructorArguments: [],
 	});
 
-	console.info("%s", `${nodeOsModule.EOL}Registering CosmicSignatureDao.`);
+	console.info("%s", `${nodeOs.EOL}Registering CosmicSignatureDao.`);
 	await hre.run("verify:verify", {
 		address: deployCosmicSignatureContractsReportObject.cosmicSignatureDaoAddress,
 		constructorArguments: [deployCosmicSignatureContractsReportObject.cosmicSignatureTokenAddress,],
 	});
 
-	// console.info("%s", `${nodeOsModule.EOL}Registering ${deployConfigObject.cosmicSignatureGameContractName} implementation.`);
+	// console.info("%s", `${nodeOs.EOL}Registering ${deployConfigObject.cosmicSignatureGameContractName} implementation.`);
 	// await hre.run("verify:verify", {
 	// 	address: deployCosmicSignatureContractsReportObject.cosmicSignatureGameImplementationAddress,
 	// 	// constructorArguments: [],
@@ -193,7 +193,7 @@ task("register-cosmic-signature-contracts", "Verifies and registers deployed Cos
 
 	// Performing the more likely to fail registration the last.
 	// Issue. But would it be better to perform it first?
-	console.info("%s", `${nodeOsModule.EOL}Registering ${deployConfigObject.cosmicSignatureGameContractName} proxy and implementation.`);
+	console.info("%s", `${nodeOs.EOL}Registering ${deployConfigObject.cosmicSignatureGameContractName} proxy and implementation.`);
 	try {
 		await hre.run("verify:verify", {
 			address: deployCosmicSignatureContractsReportObject.cosmicSignatureGameProxyAddress,
@@ -216,24 +216,24 @@ task("register-cosmic-signature-contracts", "Verifies and registers deployed Cos
 		}
 	}
 
-	console.info("%s", `${nodeOsModule.EOL}Done.`);
+	console.info("%s", `${nodeOs.EOL}Done.`);
 })
 	.addParam("deployconfigfilepath", "Deployment configuration file (JSON) path");
 
 task("upgrade-cosmic-signature-game", "Upgrades the CosmicSignatureGame contract to a new version", async (args, hre) => {
 	console.info();
 	const upgradeConfigFilePath = args.upgradeconfigfilepath;
-	const upgradeConfigJsonString = await nodeFsModule.promises.readFile(upgradeConfigFilePath, "utf8");
+	const upgradeConfigJsonString = await nodeFs.promises.readFile(upgradeConfigFilePath, "utf8");
 	const upgradeConfigObject = JSON.parse(upgradeConfigJsonString);
-	if (nodeFsModule.existsSync(upgradeConfigObject.reportFilePath)) {
+	if (nodeFs.existsSync(upgradeConfigObject.reportFilePath)) {
 		throw new Error(`"${upgradeConfigObject.reportFilePath}" already exists.`);
 	}
-	const deployConfigJsonString = await nodeFsModule.promises.readFile(upgradeConfigObject.deploymentConfigurationFilePath, "utf8");
+	const deployConfigJsonString = await nodeFs.promises.readFile(upgradeConfigObject.deploymentConfigurationFilePath, "utf8");
 	const deployConfigObject = JSON.parse(deployConfigJsonString);
 	if (deployConfigObject.deployerPrivateKey.length <= 0) {
 		deployConfigObject.deployerPrivateKey = vars.get(`deployerPrivateKey_${hre.network.name}`);
 	}
-	const deployCosmicSignatureContractsReportJsonString = await nodeFsModule.promises.readFile(deployConfigObject.reportFilePath, "utf8");
+	const deployCosmicSignatureContractsReportJsonString = await nodeFs.promises.readFile(deployConfigObject.reportFilePath, "utf8");
 	const deployCosmicSignatureContractsReportObject = JSON.parse(deployCosmicSignatureContractsReportJsonString);
 	const deployerSigner = new hre.ethers.Wallet(deployConfigObject.deployerPrivateKey, hre.ethers.provider);
 
@@ -281,15 +281,15 @@ task("upgrade-cosmic-signature-game", "Upgrades the CosmicSignatureGame contract
 	console.info();
 	const reportJsonString = JSON.stringify(reportObject, null, 3);
 	try {
-		await nodeFsModule.promises.mkdir(nodePathModule.dirname(upgradeConfigObject.reportFilePath), {recursive: true,});
-		await nodeFsModule.promises.writeFile(upgradeConfigObject.reportFilePath, reportJsonString);
+		await nodeFs.promises.mkdir(nodePath.dirname(upgradeConfigObject.reportFilePath), {recursive: true,});
+		await nodeFs.promises.writeFile(upgradeConfigObject.reportFilePath, reportJsonString);
 	} catch (errorObject) {
 		console.info("%s", "Report:");
 		console.info("%s", reportJsonString);
 		console.error();
 		throw errorObject;
 	}
-	console.info("%s", `Done. Report saved to "${upgradeConfigObject.reportFilePath}".${nodeOsModule.EOL}`);
+	console.info("%s", `Done. Report saved to "${upgradeConfigObject.reportFilePath}".${nodeOs.EOL}`);
 
 	// // [Comment-202607153]
 	// // Pairing the new game contract with a fresh `PrizesWallet`.
@@ -299,7 +299,7 @@ task("upgrade-cosmic-signature-game", "Upgrades the CosmicSignatureGame contract
 	// // Comment-202607156 relates.
 	// // [/Comment-202607153]
 	// {
-	// 	console.info("%s", `${nodeOsModule.EOL}Deploying a new PrizesWallet.`);
+	// 	console.info("%s", `${nodeOs.EOL}Deploying a new PrizesWallet.`);
 	// 	const prizesWalletFactory = await hre.ethers.getContractFactory("PrizesWallet", deployerSigner);
 	// 	const newPrizesWallet = await prizesWalletFactory.deploy(deployCosmicSignatureContractsReportObject.cosmicSignatureGameProxyAddress);
 	// 	await newPrizesWallet.waitForDeployment();
@@ -314,7 +314,7 @@ task("upgrade-cosmic-signature-game", "Upgrades the CosmicSignatureGame contract
 	// 	console.info("%s", "Done.");
 	// 	console.info(
 	// 		"%s",
-	// 		`${nodeOsModule.EOL}Reminder. Update the PrizesWallet address in "${deployConfigObject.reportFilePath}" and any its copies, as well as on the web site.`
+	// 		`${nodeOs.EOL}Reminder. Update the PrizesWallet address in "${deployConfigObject.reportFilePath}" and any its copies, as well as on the web site.`
 	// 	);
 	// }
 })
@@ -322,13 +322,13 @@ task("upgrade-cosmic-signature-game", "Upgrades the CosmicSignatureGame contract
 
 task("register-upgraded-cosmic-signature-game", "Verifies and registers a newly upgraded CosmicSignatureGame contract", async (args, hre) => {
 	const upgradeConfigFilePath = args.upgradeconfigfilepath;
-	const upgradeConfigJsonString = await nodeFsModule.promises.readFile(upgradeConfigFilePath, "utf8");
+	const upgradeConfigJsonString = await nodeFs.promises.readFile(upgradeConfigFilePath, "utf8");
 	const upgradeConfigObject = JSON.parse(upgradeConfigJsonString);
-	const upgradeCosmicSignatureGameReportJsonString = await nodeFsModule.promises.readFile(upgradeConfigObject.reportFilePath, "utf8");
+	const upgradeCosmicSignatureGameReportJsonString = await nodeFs.promises.readFile(upgradeConfigObject.reportFilePath, "utf8");
 	const upgradeCosmicSignatureGameReportObject = JSON.parse(upgradeCosmicSignatureGameReportJsonString);
 	hre.config.etherscan.apiKey = vars.get(`etherScanApiKey_${hre.network.name}`);
 
-	console.info("%s", `${nodeOsModule.EOL}Registering ${upgradeConfigObject.newCosmicSignatureGameContractName} implementation.`);
+	console.info("%s", `${nodeOs.EOL}Registering ${upgradeConfigObject.newCosmicSignatureGameContractName} implementation.`);
 	await hre.run("verify:verify", {
 		address: upgradeCosmicSignatureGameReportObject.newCosmicSignatureGameImplementationAddress,
 		// constructorArguments: [],
@@ -346,13 +346,13 @@ task("register-upgraded-cosmic-signature-game", "Verifies and registers a newly 
 	// 	// Take it from the upgrade-cosmic-signature-game task console output.
 	// 	const newPrizesWalletAddress = "0x0000000000000000000000000000000000000000";
 	// 
-	// 	console.info("%s", `${nodeOsModule.EOL}Registering PrizesWallet.`);
+	// 	console.info("%s", `${nodeOs.EOL}Registering PrizesWallet.`);
 	// 	await hre.run("verify:verify", {
 	// 		address: newPrizesWalletAddress,
 	// 		constructorArguments: [cosmicSignatureGameProxyAddress,],
 	// 	});
 	// }
 
-	console.info("%s", `${nodeOsModule.EOL}Done.`);
+	console.info("%s", `${nodeOs.EOL}Done.`);
 })
 	.addParam("upgradeconfigfilepath", "Upgrade configuration file (JSON) path");

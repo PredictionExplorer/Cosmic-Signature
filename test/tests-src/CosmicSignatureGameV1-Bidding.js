@@ -1,16 +1,15 @@
 "use strict";
 
-const { describe, it } = require("mocha");
 const { expect } = require("chai");
+const { describe, it } = require("mocha");
 const hre = require("hardhat");
-const { testGameRounds, finishGameRound } = require("../src/GameRoundTestHelpers.js");
-const { activateCurrentRound } = require("../src/V2UpgradeTestHelpers.js");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { SECONDS_PER_HOUR, SECONDS_PER_DAY } = require("../../src/CosmicSignatureConstants.js");
 const { generateRandomUInt32, generateRandomUInt256, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { setRoundActivationTimeIfNeeded } = require("../../src/ContractDeploymentHelpers.js");
 const { LONG_TEST_MODE_CODE, loadFixtureDeployContractsForTesting, makeNextBlockTimeDeterministic } = require("../../src/ContractTestingHelpers.js");
-// const { activateCurrentRound, deployV1CompleteRoundZeroAndUpgradeToV2 } = require("../src/V2UpgradeTestHelpers.js");
+const { activateCurrentRound } = require("../src/GameV2UpgradeTestHelpers.js");
+const { testGameRounds, finishGameRound } = require("../src/GameRoundTestHelpers.js");
 
 // let latestTimeStamp = 0;
 // let latestBlock = undefined;
@@ -141,7 +140,7 @@ describe("CosmicSignatureGameV1-Bidding", function () {
 
 				await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner).halveEthDutchAuctionEndingBidPrice())
 					.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "InvalidOperationInCurrentState")
-					.withArgs(/* "Too early." */);
+					.withArgs("Too early.");
 
 				// #endregion
 				// #region
@@ -175,7 +174,7 @@ describe("CosmicSignatureGameV1-Bidding", function () {
 						// [/Comment-202508158]
 						await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner).halveEthDutchAuctionEndingBidPrice())
 							.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "InvalidOperationInCurrentState")
-							.withArgs(/* "Too early." */);
+							.withArgs("Too early.");
 
 						// latestBlock_ = await hre.ethers.provider.getBlock("latest");
 						// console.info("%s", `202508162 ${latestBlock_.timestamp}`);
@@ -582,7 +581,7 @@ describe("CosmicSignatureGameV1-Bidding", function () {
 	// 	}
 	// 	
 	// 	{
-	// 		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2();
+	// 		const contracts_ = await deployGameV1CompleteRoundZeroAndUpgradeToV2();
 	// 		const game_ = contracts_.cosmicSignatureGameV2Proxy;
 	// 		await activateCurrentRound(game_, contracts_.ownerSigner);
 	// 		await assertZeroGasPriceRefundIsSwallowed_(contracts_, game_, 2n);

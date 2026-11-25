@@ -1,13 +1,14 @@
 "use strict";
 
-const { describe, it } = require("mocha");
 const { expect } = require("chai");
+const { describe, it } = require("mocha");
 const hre = require("hardhat");
+const { COSMIC_SIGNATURE_GAME_V3_SNAPSHOT_INDEX, withCodebaseSnapshotArtifacts } = require("../../src/ArchiveTestingHelpers.js");
 const { TIMESTAMP_9000_01_01, SECONDS_PER_HOUR, SECONDS_PER_DAY } = require("../../src/CosmicSignatureConstants.js");
 const { waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
-const { completeRoundZero, upgradeToV2 } = require("../src/V2UpgradeTestHelpers.js");
-const { upgradeToV3, assertDefaultV3Initialization } = require("../src/V3UpgradeTestHelpers.js");
+const { completeRoundZero, upgradeGameToV2 } = require("../src/GameV2UpgradeTestHelpers.js");
+const { upgradeGameToV3, assertDefaultGameV3Initialization } = require("../src/GameV3UpgradeTestHelpers.js");
 
 async function snapshotCarriedState(game_) {
 	return {
@@ -27,7 +28,7 @@ async function snapshotCarriedState(game_) {
 		// V3 stops using `cstDutchAuctionDuration` and `cstDutchAuctionDurationChangeDivisor`,
 		// but does not re-initialize them, so their getters keep returning the stale V2 values.
 		// (`bidCstRewardAmountMultiplier` is NOT here: the V3 `reinitialize` re-initializes it,
-		// which `assertDefaultV3Initialization` verifies.)
+		// which `assertDefaultGameV3Initialization` verifies.)
 		cstDutchAuctionDuration: await game_.cstDutchAuctionDuration(),
 		cstDutchAuctionDurationChangeDivisor: await game_.cstDutchAuctionDurationChangeDivisor(),
 
@@ -69,7 +70,7 @@ describe("CosmicSignatureGameV3-StorageLayout", function () {
 	it("preserves carried V1/V2 state and applies only the documented overwrites", async function () {
 		const contracts_ = { ...await loadFixtureDeployContractsForTesting(2n) };
 		await completeRoundZero(contracts_);
-		await upgradeToV2(contracts_);
+		await upgradeGameToV2(contracts_);
 		const gameV2_ = contracts_.cosmicSignatureGameV2Proxy.connect(contracts_.ownerSigner);
 
 		// Freeze the round so all the owner configuration calls below and the upgrade stay authorized.
@@ -94,19 +95,17 @@ describe("CosmicSignatureGameV3-StorageLayout", function () {
 		expect(await gameV2_.chronoWarriorEthPrizeAmountPercentage()).equal(13n);
 
 		const carriedState_ = await snapshotCarriedState(gameV2_);
-		const completedRoundStats_ = await gameV2_.roundStats(0n);
-		const completedRoundBidInfo_ = await gameV2_.getBidInfoAt(0n, 0n);
-		expect(completedRoundStats_.numBids).equal(1n);
-		expect(Array.from(completedRoundStats_).slice(1)).deep.equal(Array(8).fill(0n));
+		const completedRoundNumBids_ = await gameV2_.roundStats(0n);
+		const firstBidderAddress_ = await gameV2_.getBidderAddressAt(0n, 0n);
+		expect(completedRoundNumBids_).equal(1n);
+		expect(firstBidderAddress_).equal(contracts_.signers[1].address);
 
 		// The V3 `reinitialize` overwrites these values and the five prize percentages configured above.
 		expect(await gameV2_.bidCstRewardAmountMultiplier()).equal(123_456_789n);
 		expect(await gameV2_.cstDutchAuctionBeginningBidPriceMinLimit()).not.equal(10n ** 18n);
 
 		// The 6 new V3 slots are taken from the gap region, so on V2 their getters must not even exist.
-		// Champion durations now belong to `roundStats`, which is available in all versions.
-		const cosmicSignatureGameV3Factory_ =
-			await hre.ethers.getContractFactory("CosmicSignatureGameV3", contracts_.ownerSigner);
+		// V3 also extends the existing roundStats getter with eight statistics.
 		for (const newGetterName_ of [
 			"cstBidPriceDeclineMultiplier()",
 			"cstBidPriceDeclineMultiplierChangeDivisor()",
@@ -124,23 +123,29 @@ describe("CosmicSignatureGameV3-StorageLayout", function () {
 		}
 
 		// OpenZeppelin storage layout validation of the V2 -> V3 upgrade, with no unsafe flags.
-		await hre.upgrades.validateUpgrade(
-			contracts_.cosmicSignatureGameProxy,
-			cosmicSignatureGameV3Factory_,
-			
-			// `validateUpgrade` accepts validation options only; the initializer call is exercised by `upgradeToV3` below.
-			{ kind: "uups" }
+		await withCodebaseSnapshotArtifacts(
+			COSMIC_SIGNATURE_GAME_V3_SNAPSHOT_INDEX,
+			async () => {
+				const cosmicSignatureGameV3Factory_ =
+					await hre.ethers.getContractFactory("CosmicSignatureGameV3", contracts_.ownerSigner);
+				await hre.upgrades.validateUpgrade(
+					contracts_.cosmicSignatureGameProxy,
+					cosmicSignatureGameV3Factory_,
+					// `validateUpgrade` accepts validation options only; the initializer call is exercised by `upgradeGameToV3` below.
+					{ kind: "uups" }
+				);
+			}
 		);
 
-		await upgradeToV3(contracts_);
+		await upgradeGameToV3(contracts_);
 		const gameV3_ = contracts_.cosmicSignatureGameV3Proxy;
 
 		await assertCarriedStateUnchanged(gameV3_, carriedState_);
-		await assertDefaultV3Initialization(gameV3_);
-		expect(await gameV3_.roundStats(0n)).deep.equal(completedRoundStats_);
-		expect(await gameV3_.getBidInfoAt(0n, 0n)).deep.equal(completedRoundBidInfo_);
+		await assertDefaultGameV3Initialization(gameV3_);
+		expect(await gameV3_.roundStats(0n)).deep.equal([completedRoundNumBids_, ...Array(8).fill(0n)]);
+		expect(await gameV3_.getBidInfoAt(0n, 0n)).deep.equal([firstBidderAddress_, 0n]);
 
-		// V3 removes no selectors; a couple of representative V2 methods must still exist and work.
+		// These V2 pricing methods remain available after the upgrade.
 		{
 			// Comment-202610021 applies: ignore the indeterminate return value.
 			await gameV3_.getBidCstRewardAmount();

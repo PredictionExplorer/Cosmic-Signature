@@ -13,6 +13,7 @@ const { parseIntegerEnvironmentVariable, sleepForMilliSeconds, waitForTransactio
 const { MyNonceManager } = require("./MyNonceManager.js");
 const { mochaHooks } = require("./MochaHooks.js");
 const { deployContractsAdvanced, setRoundActivationTimeIfNeeded } = require("./ContractDeploymentHelpers.js");
+const { INITIAL_DEPLOYMENT_SNAPSHOT_INDEX, withCodebaseSnapshotArtifacts } = require("./ArchiveTestingHelpers.js");
 
 // #endregion
 // #region
@@ -161,7 +162,17 @@ async function deployContractsForTestingAdvanced(
 				"",
 				charitySigner.address,
 				false,
-				-1_000_000_000n
+				-1_000_000_000n,
+				(name, action) => {
+					// `RandomWalkNFT` and any test-only game implementation come from the current Git checkout.
+					// todo-1 Think again if this is correct.
+					// todo-1 Think if `PrizesWalletV2` will need similar logic. Not necessarily, because it will be deployed separately, not as an upgrade.
+					if (name === "RandomWalkNFT" || (name !== "CosmicSignatureGame" && name === cosmicSignatureGameContractName)) {
+						return action();
+					}
+
+					return withCodebaseSnapshotArtifacts(INITIAL_DEPLOYMENT_SNAPSHOT_INDEX, action);
+				}
 			),
 			{
 				signerAddressToIndexMapping,

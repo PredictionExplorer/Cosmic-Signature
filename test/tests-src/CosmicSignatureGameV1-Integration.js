@@ -5,8 +5,8 @@
 // #endregion
 // #region
 
-const { describe, it } = require("mocha");
 const { expect } = require("chai");
+const { describe, it } = require("mocha");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { generateRandomUInt256, generateRandomUInt256FromSeedWrapper, uint256ToPaddedHexString, waitForTransactionReceipt } = require("../../src/Helpers.js");
@@ -162,8 +162,7 @@ describe("CosmicSignatureGameV1-Integration", function () {
 
 				const fairRandomNumber1_ = fairRandomNumberGenerator1_.getNext();
 				let signerIndex_ = -1;
-				// if (fairRandomNumber1_ == 6 && cosmicSignatureGameProxySimulator_.getTotalNumBids() > 0n) {
-				if (fairRandomNumber1_ == 6 && cosmicSignatureGameProxySimulator_.getRoundStats().numBids > 0n) {
+				if (fairRandomNumber1_ == 6 && cosmicSignatureGameProxySimulator_.getTotalNumBids() > 0n) {
 					randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 					if ((randomNumber_ & 0xFn) != 0n) {
 						signerIndex_ = contracts_.signerAddressToIndexMapping[cosmicSignatureGameProxySimulator_.lastBidderAddress];
@@ -291,16 +290,14 @@ describe("CosmicSignatureGameV1-Integration", function () {
 					// Increasing block time increase as the number of bids in the current bidding round increases.
 					// Doing so ensures that block time will eventually reach main prize time.
 					let timeIncrementMaxLimit_ =
-						// (cosmicSignatureGameProxySimulator_.mainPrizeTimeIncrementInMicroSeconds + (20n * 60n) * cosmicSignatureGameProxySimulator_.getTotalNumBids()) / 2_000_000n;
-						(cosmicSignatureGameProxySimulator_.mainPrizeTimeIncrementInMicroSeconds + (20n * 60n) * cosmicSignatureGameProxySimulator_.getRoundStats().numBids) / 2_000_000n;
+						(cosmicSignatureGameProxySimulator_.mainPrizeTimeIncrementInMicroSeconds + (20n * 60n) * cosmicSignatureGameProxySimulator_.getTotalNumBids()) / 2_000_000n;
 
 					// This logic increases the chance that:
 					// 1. The first bidder or a non-last bidder claims main prize.
 					// 2. The logic near Comment-202505117 causes ETH bid price to eventually become very small, down to 1 Wei.
 					//    Comment-202503162 relates.
 					{
-						// const totalNumBidsCopy_ = cosmicSignatureGameProxySimulator_.getTotalNumBids();
-						const totalNumBidsCopy_ = cosmicSignatureGameProxySimulator_.getRoundStats().numBids;
+						const totalNumBidsCopy_ = cosmicSignatureGameProxySimulator_.getTotalNumBids();
 						randomNumber_ = generateRandomUInt256FromSeedWrapper(randomNumberSeedWrapper_);
 						if ((randomNumber_ & ((totalNumBidsCopy_ == 1n || (fairRandomNumber1_ == 6 && totalNumBidsCopy_ > 0n && signer_.address != cosmicSignatureGameProxySimulator_.lastBidderAddress)) ? 0x7n : 0x1Fn)) == 0n) {
 							timeIncrementMaxLimit_ <<= 10n;
@@ -600,8 +597,7 @@ describe("CosmicSignatureGameV1-Integration", function () {
 						if (transactionShouldHaveSucceeded_) {
 							// console.info("%s", `202505113 ${signerIndex_}`);
 							// console.info("%s", `202505142 ${cosmicSignatureGameProxySimulator_.getTotalNumBids()}`);
-							// totalNumBids_ += Number(cosmicSignatureGameProxySimulator_.getTotalNumBids());
-							totalNumBids_ += Number(cosmicSignatureGameProxySimulator_.getRoundStats().numBids);
+							totalNumBids_ += Number(cosmicSignatureGameProxySimulator_.getTotalNumBids());
 							// const timeStamp3_ = performance.now();
 							await cosmicSignatureGameProxySimulator_.claimMainPrize(
 								blockBeforeTransaction_,

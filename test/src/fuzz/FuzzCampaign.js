@@ -16,13 +16,14 @@ const {
 	parseIntegerEnvironmentVariable,
 	uint256ToPaddedHexString,
 } = require("../../../src/Helpers.js");
+const { COSMIC_SIGNATURE_GAME_V2_SNAPSHOT_INDEX, COSMIC_SIGNATURE_GAME_V3_SNAPSHOT_INDEX, withCodebaseSnapshotArtifacts } = require("../../../src/ArchiveTestingHelpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../../src/ContractTestingHelpers.js");
 const { GameModel } = require("./GameModel.js");
 const { ShadowState } = require("./ShadowState.js");
 const { GameAbiAdapter } = require("./GameAbiAdapter.js");
 const { FuzzEngine } = require("./FuzzEngine.js");
 const { runInvariants, hasMinimalCoverageFloors, assertCoverageFloors, printCoverageReport, mergeStatsInto } = require("./Invariants.js");
-const { performUpgradeToV2, performUpgradeToV3, performPrizesWalletSwap, upgradeAuthProbe } = require("./UpgradePhase.js");
+const { performGameUpgradeToV2, performGameUpgradeToV3, upgradeAuthProbe } = require("./UpgradePhase.js");
 const {
 	biddingActions,
 	forceCompleteRound,
@@ -70,7 +71,6 @@ function buildProfile(longTestModeCode_, envOverrides_) {
 			earlyBidModePercent: 10,
 			upgradeAfterRoundZeroPercent: 50,
 			upgradeToV3AfterOneMoreRoundPercent: 50,
-			swapPrizesWalletAfterV3UpgradePercent: 50,
 			enforceStrongCoverage: false,
 			// Quick CI profile: a single bounded campaign (no wall-clock soak).
 			maxSeconds: undefined,
@@ -90,7 +90,6 @@ function buildProfile(longTestModeCode_, envOverrides_) {
 			earlyBidModePercent: 15,
 			upgradeAfterRoundZeroPercent: 50,
 			upgradeToV3AfterOneMoreRoundPercent: 50,
-			swapPrizesWalletAfterV3UpgradePercent: 50,
 			enforceStrongCoverage: false,
 			// A single, larger bounded campaign (override with FUZZ_MAX_SECONDS to soak).
 			maxSeconds: 0,
@@ -111,7 +110,6 @@ function buildProfile(longTestModeCode_, envOverrides_) {
 			earlyBidModePercent: 20,
 			upgradeAfterRoundZeroPercent: 50,
 			upgradeToV3AfterOneMoreRoundPercent: 50,
-			swapPrizesWalletAfterV3UpgradePercent: 50,
 			enforceStrongCoverage: true,
 			// Default to a 20-minute soak (repeated independent bounded campaigns). Override with FUZZ_MAX_SECONDS.
 			maxSeconds: 1200,
@@ -150,8 +148,7 @@ function chanceFromSeed(seedWrapper_, percent_) {
 
 /**
 Derives per-campaign fuzz modes from the campaign seed so ordinary runs probabilistically cover
-chaos, overflow-targeting, production-style round-zero upgrade timing, the V2 -> V3 upgrade timing,
-and the post-V3 PrizesWallet swap, without extra env toggles.
+chaos, overflow-targeting, and both upgrade timings without extra environment variables.
 @param {object} profile_
 @param {{ value: bigint }} seedWrapper_
 */
@@ -175,7 +172,6 @@ function deriveCampaignProfile(profile_, seedWrapper_) {
 		earlyBidMode: chanceFromSeed(seedWrapper_, profile_.earlyBidModePercent ?? 0),
 		upgradeAfterRoundZero: chanceFromSeed(seedWrapper_, profile_.upgradeAfterRoundZeroPercent ?? 0),
 		v2RoundsBeforeV3Upgrade: v2RoundsBeforeV3Upgrade_,
-		swapPrizesWalletAfterV3Upgrade: chanceFromSeed(seedWrapper_, profile_.swapPrizesWalletAfterV3UpgradePercent ?? 0),
 	};
 }
 
@@ -196,7 +192,7 @@ class FuzzCampaign {
 		const profile_ = this.profile;
 
 		// The fixture restores chain state but returns its cached JavaScript object unchanged.
-		// Keep replacement contract references and fuzz-only fields local to this campaign.
+		// Keep upgraded game references and fuzz-only fields local to this campaign.
 		const contracts_ = { ...await loadFixtureDeployContractsForTesting(-1_000_000_000n) };
 
 		this.contracts = contracts_;
@@ -303,9 +299,17 @@ class FuzzCampaign {
 		register_(c_.fuzzTestMockErc20Address, "FuzzTestMockErc20", c_.fuzzTestMockErc20);
 		register_(c_.fuzzTestMockErc721Address, "FuzzTestMockErc721", c_.fuzzTestMockErc721);
 
-		const v2GameFactory_ = await hre.ethers.getContractFactory("CosmicSignatureGameV2", c_.ownerSigner);
+		const v2GameFactory_ =
+			await withCodebaseSnapshotArtifacts(
+				COSMIC_SIGNATURE_GAME_V2_SNAPSHOT_INDEX,
+				() => hre.ethers.getContractFactory("CosmicSignatureGameV2", c_.ownerSigner)
+			);
 		this.v2GameFactory = v2GameFactory_;
-		const v3GameFactory_ = await hre.ethers.getContractFactory("CosmicSignatureGameV3", c_.ownerSigner);
+		const v3GameFactory_ =
+			await withCodebaseSnapshotArtifacts(
+				COSMIC_SIGNATURE_GAME_V3_SNAPSHOT_INDEX,
+				() => hre.ethers.getContractFactory("CosmicSignatureGameV3", c_.ownerSigner)
+			);
 		this.v3GameFactory = v3GameFactory_;
 		this.ledger.registerContracts(
 			{
@@ -754,8 +758,7 @@ class FuzzCampaign {
 			`v2Rounds=${this.profile.v2Rounds} v3Rounds=${this.profile.v3Rounds} chaos=${this.profile.chaos} ` +
 			`earlyBidMode=${this.profile.earlyBidMode === true} ` +
 			`upgradeAfterRoundZero=${this.profile.upgradeAfterRoundZero === true} ` +
-			`v2RoundsBeforeV3Upgrade=${this.profile.v2RoundsBeforeV3Upgrade} ` +
-			`swapPrizesWalletAfterV3Upgrade=${this.profile.swapPrizesWalletAfterV3Upgrade === true}`
+			`v2RoundsBeforeV3Upgrade=${this.profile.v2RoundsBeforeV3Upgrade}`
 		);
 		console.info(`  build flags: ${buildFlags_}`);
 		console.info("=".repeat(80) + "\n");
@@ -770,7 +773,7 @@ class FuzzCampaign {
 
 		// Mid-campaign upgrade (we are in a fresh post-claim, round-inactive state).
 		console.info("\n  >>> Performing V1 -> V2 upgrade <<<\n");
-		await performUpgradeToV2(this.context);
+		await performGameUpgradeToV2(this.context);
 
 		if (this.profile.v2RoundsBeforeV3Upgrade > 0) {
 			await this._activateRound();
@@ -782,13 +785,8 @@ class FuzzCampaign {
 		// Phase 2: V2. Half of the campaigns run exactly 1 round here; the rest zero, 2, 3, ... rounds.
 		await this._runPhase("V2", this.profile.v2RoundsBeforeV3Upgrade);
 
-		// Second mid-campaign upgrade, plus (half of the time) a swap to a freshly deployed PrizesWallet.
-		// Assert-enabled builds use the bypass described in Comment-202610038.
 		console.info("\n  >>> Performing V2 -> V3 upgrade <<<\n");
-		await performUpgradeToV3(this.context);
-		if (this.profile.swapPrizesWalletAfterV3Upgrade) {
-			await performPrizesWalletSwap(this.context);
-		}
+		await performGameUpgradeToV3(this.context);
 		await this._activateRound();
 		await runInvariants(this.context);
 		console.info("  >>> Upgrade complete; continuing on V3 <<<\n");

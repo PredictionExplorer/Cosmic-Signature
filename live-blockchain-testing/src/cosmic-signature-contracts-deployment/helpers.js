@@ -1,7 +1,7 @@
 "use strict";
 
-const nodePathModule = require("node:path");
-const nodeFsModule = require("node:fs");
+const nodePath = require("node:path");
+const nodeFs = require("node:fs");
 const hre = require("hardhat");
 
 async function runDeployCosmicSignatureContracts(
@@ -29,8 +29,8 @@ async function runDeployCosmicSignatureContracts(
 		reportFilePath: deployCosmicSignatureContractsReportFilePath_,
 	};
 	const deployCosmicSignatureContractsTaskConfigurationAsJsonString_ = JSON.stringify(deployCosmicSignatureContractsTaskConfiguration_, null, 3);
-	await nodeFsModule.promises.mkdir(nodePathModule.dirname(deployCosmicSignatureContractsConfigurationFilePath_), {recursive: true,});
-	await nodeFsModule.promises.writeFile(deployCosmicSignatureContractsConfigurationFilePath_, deployCosmicSignatureContractsTaskConfigurationAsJsonString_);
+	await nodeFs.promises.mkdir(nodePath.dirname(deployCosmicSignatureContractsConfigurationFilePath_), {recursive: true,});
+	await nodeFs.promises.writeFile(deployCosmicSignatureContractsConfigurationFilePath_, deployCosmicSignatureContractsTaskConfigurationAsJsonString_);
 	const deployCosmicSignatureContractsArgs_ = {
 		deployconfigfilepath: deployCosmicSignatureContractsConfigurationFilePath_,
 	};

@@ -1,12 +1,12 @@
 "use strict";
 
-const { describe, it } = require("mocha");
 const { expect } = require("chai");
+const { describe, it } = require("mocha");
 const hre = require("hardhat");
 const { SAME_BID_EARNED_ENDURANCE_CHAMPION_AND_CHRONO_WARRIOR_TITLES, MICROSECONDS_PER_SECOND } = require("../../src/CosmicSignatureConstants.js");
 const { waitForTransactionReceipt } = require("../../src/Helpers.js");
-const { activateCurrentRound, findParsedEvent, getLatestBlockTimestamp } = require("../src/V2UpgradeTestHelpers.js");
-const { testAcrossGameVersions, bidWithEthAt } = require("../src/GameRoundTestHelpers.js");
+const { activateCurrentRound, findParsedEvent, getLatestBlockTimestamp } = require("../src/GameV2UpgradeTestHelpers.js");
+const { testAcrossGameVersions, getBidderAddressAt, bidWithEthAt } = require("../src/GameRoundTestHelpers.js");
 
 describe("CosmicSignatureGame-All-Versions-BidStatistics", function () {
 	it("keeps round history across upgrades and saves V3+ champion durations and individual-bid flags only on main prize claim", async function () {
@@ -24,8 +24,15 @@ describe("CosmicSignatureGame-All-Versions-BidStatistics", function () {
 		];
 		await testAcrossGameVersions(async (contracts_, game_, roundNum_, version_) => {
 			for (const previousRound_ of completedRounds_) {
-				expect(await game_.roundStats(previousRound_.roundNum)).deep.equal(previousRound_.stats);
-				expect(await game_.getBidInfoAt(previousRound_.roundNum, 0n)).deep.equal(previousRound_.firstBidInfo);
+				const stats_ = await game_.roundStats(previousRound_.roundNum);
+				if (version_ < 3) {
+					expect(stats_).equal(previousRound_.numBids);
+					expect(await game_.getBidderAddressAt(previousRound_.roundNum, 0n)).equal(previousRound_.firstBidderAddress);
+				} else {
+					expect(stats_).deep.equal(previousRound_.stats ?? [previousRound_.numBids, ...Array(8).fill(0n)]);
+					expect(await game_.getBidInfoAt(previousRound_.roundNum, 0n))
+						.deep.equal(previousRound_.firstBidInfo ?? [previousRound_.firstBidderAddress, 0n]);
+				}
 			}
 
 			const scenario_ = scenarios_[numRoundsByVersion_[version_] ++];
@@ -46,12 +53,16 @@ describe("CosmicSignatureGame-All-Versions-BidStatistics", function () {
 				expect(bidderInfo_.totalSpentEthAmount).equal(spentEthAmount_);
 				expect(bidderInfo_.totalSpentCstAmount).equal(0n);
 				expect(bidderInfo_.lastBidTimeStamp).equal(bidTimeStamp_);
-				expect((await game_.getBidInfoAt(roundNum_, bidIndex_)).bidderAddress).equal(bidder_.address);
+				expect(await getBidderAddressAt(game_, version_, roundNum_, bidIndex_)).equal(bidder_.address);
 				const stats_ = await game_.roundStats(roundNum_);
-				expect(stats_.numBids).equal(BigInt(bidIndex_) + 1n);
-				expect(stats_.enduranceChampionDuration).equal(0n);
-				expect(stats_.chronoWarriorDuration).equal(0n);
-				expect(stats_.flags).equal(0n);
+				if (version_ < 3) {
+					expect(stats_).equal(BigInt(bidIndex_) + 1n);
+				} else {
+					expect(stats_.numBids).equal(BigInt(bidIndex_) + 1n);
+					expect(stats_.enduranceChampionDuration).equal(0n);
+					expect(stats_.chronoWarriorDuration).equal(0n);
+					expect(stats_.flags).equal(0n);
+				}
 			}
 
 			const lastBidder_ = contracts_.signers[scenario_.bidderIndices.at(-1)];
@@ -65,17 +76,20 @@ describe("CosmicSignatureGame-All-Versions-BidStatistics", function () {
 				.equal(contracts_.signers[scenario_.chronoBidderIndex].address);
 
 			const stats_ = await game_.roundStats(roundNum_);
-			expect(stats_.numBids).equal(BigInt(scenario_.bidderIndices.length));
+			const numBids_ = BigInt(scenario_.bidderIndices.length);
+			const firstBidderAddress_ = contracts_.signers[scenario_.bidderIndices[0]].address;
 			if (version_ < 3) {
-				// V1 and V2 retain bid counts but never populate the appended V3 statistics.
-				expect(Array.from(stats_).slice(1)).deep.equal(Array(8).fill(0n));
+				expect(stats_).equal(numBids_);
+				completedRounds_.push({ roundNum: roundNum_, numBids: numBids_, firstBidderAddress: firstBidderAddress_ });
+				expect(await game_.roundStats(roundNum_ + 1n)).equal(0n);
 			} else {
+				expect(stats_.numBids).equal(numBids_);
 				expect(stats_.enduranceChampionDuration).equal(scenario_.enduranceDuration);
 				expect(stats_.chronoWarriorDuration).equal(scenario_.chronoDuration);
 				expect(stats_.flags).equal(scenario_.sameBid ? SAME_BID_EARNED_ENDURANCE_CHAMPION_AND_CHRONO_WARRIOR_TITLES : 0n);
+				completedRounds_.push({ roundNum: roundNum_, stats: stats_, firstBidInfo: await game_.getBidInfoAt(roundNum_, 0n) });
+				expect(await game_.roundStats(roundNum_ + 1n)).deep.equal(Array(9).fill(0n));
 			}
-			completedRounds_.push({ roundNum: roundNum_, stats: stats_, firstBidInfo: await game_.getBidInfoAt(roundNum_, 0n) });
-			expect(Array.from(await game_.roundStats(roundNum_ + 1n))).deep.equal(Array(9).fill(0n));
 		});
 	});
 });

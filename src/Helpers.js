@@ -110,8 +110,33 @@ function shuffleArray(array_) {
 }
 
 // #endregion
+// #region `generateRandomUInt8`
+
+function generateRandomUInt8() {
+	// Comment-202409255 applies.
+	const hre = HardhatContext.getHardhatContext().environment;
+
+	const randomBytes_ = hre.ethers.randomBytes(8 / 8);
+	const randomNumber_ = hre.ethers.toNumber(randomBytes_);
+	return randomNumber_;
+}
+
+// #endregion
+// #region `generateRandomUInt16`
+
+function generateRandomUInt16() {
+	// Comment-202409255 applies.
+	const hre = HardhatContext.getHardhatContext().environment;
+
+	const randomBytes_ = hre.ethers.randomBytes(16 / 8);
+	const randomNumber_ = hre.ethers.toNumber(randomBytes_);
+	return randomNumber_;
+}
+
+// #endregion
 // #region `generateRandomUInt32`
 
+// todo-1 In some cases, consider using `generateRandomUInt8` or `generateRandomUInt16` instead of `generateRandomUInt32`.
 function generateRandomUInt32() {
 	// Comment-202409255 applies.
 	const hre = HardhatContext.getHardhatContext().environment;
@@ -413,6 +438,8 @@ module.exports = {
 	ENABLE_ASSERTS,
 	ENABLE_SMTCHECKER,
 	shuffleArray,
+	generateRandomUInt8,
+	generateRandomUInt16,
 	generateRandomUInt32,
 	generateRandomUInt256,
 	// generateRandomUInt256Seed,

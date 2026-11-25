@@ -1,13 +1,22 @@
 "use strict";
 
-const { describe, it } = require("mocha");
-const { testAcrossGameVersions, bidWithEthAt } = require("../src/GameRoundTestHelpers.js");
-const { activateCurrentRound, mineAtOrAfter, getLatestBlockTimestamp } = require("../src/V2UpgradeTestHelpers.js");
-const hre = require("hardhat");
 const { expect } = require("chai");
-const { generateRandomUInt32, waitForTransactionReceipt } = require("../../src/Helpers.js");
+const { describe, it } = require("mocha");
+const hre = require("hardhat");
 const { anyUint } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
+const { generateRandomUInt32, waitForTransactionReceipt } = require("../../src/Helpers.js");
+const { activateCurrentRound, mineAtOrAfter, getLatestBlockTimestamp } = require("../src/GameV2UpgradeTestHelpers.js");
+const { testAcrossGameVersions, bidWithEthAt } = require("../src/GameRoundTestHelpers.js");
 const { deployHostileBidder } = require("../src/AdversarialTestHelpers.js");
+
+async function expectCharityTransferFailed(transactionExpectation_, game_, version_, charityAddress_, donationAmount_) {
+	if (version_ < 3) {
+		await transactionExpectation_.emit(game_, "FundTransferFailed")
+			.withArgs("ETH transfer to charity failed.", charityAddress_, donationAmount_);
+	} else {
+		await transactionExpectation_.emit(game_, "EthTransferToCharityFailed").withArgs(charityAddress_, donationAmount_);
+	}
+}
 
 describe("CosmicSignatureGame-All-Versions-MainPrize", function () {
 	it("allows non-last bidders to claim only after the claim timeout", async function () {
@@ -94,7 +103,7 @@ describe("CosmicSignatureGame-All-Versions-MainPrize", function () {
 
 	// Comment-202411077 relates and/or applies.
 	it("ETH receive by charity reversal", async function () {
-		await testAcrossGameVersions(async (contracts_, cosmicSignatureGameProxy_/*, roundNum_, contractVersionNumber_*/) => {
+		await testAcrossGameVersions(async (contracts_, cosmicSignatureGameProxy_, roundNum_, contractVersionNumber_) => {
 			const brokenEthReceiverFactory_ = await hre.ethers.getContractFactory("BrokenEthReceiver", contracts_.deployerSigner);
 			const brokenEthReceiver_ = await brokenEthReceiverFactory_.deploy();
 			await brokenEthReceiver_.waitForDeployment();
@@ -117,9 +126,7 @@ describe("CosmicSignatureGame-All-Versions-MainPrize", function () {
 				const transactionResponsePromise_ = cosmicSignatureGameProxy_.connect(contracts_.signers[4]).claimMainPrize();
 				const transactionResponsePromiseAssertion_ = expect(transactionResponsePromise_);
 				if (brokenEthReceiverEthDepositAcceptanceModeCode_ > 0n) {
-					await transactionResponsePromiseAssertion_
-						.emit(cosmicSignatureGameProxy_, "EthTransferToCharityFailed")
-						.withArgs(brokenEthReceiverAddress_, charityEthDonationAmount_);
+					await expectCharityTransferFailed(transactionResponsePromiseAssertion_, cosmicSignatureGameProxy_, contractVersionNumber_, brokenEthReceiverAddress_, charityEthDonationAmount_);
 				} else {
 					await transactionResponsePromiseAssertion_
 						.emit(cosmicSignatureGameProxy_, "FundsTransferredToCharity")
@@ -153,7 +160,10 @@ describe("CosmicSignatureGame-All-Versions-MainPrize", function () {
 				/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 				const transactionResponsePromise_ = bidderContract_.connect(contracts_.signers[4]).doClaimMainPrize();
 				const transactionResponsePromiseAssertion_ = expect(transactionResponsePromise_);
-				if (bidderContractEthDepositAcceptanceModeCode_ == 1n) {
+				if (contractVersionNumber_ < 3 && bidderContractEthDepositAcceptanceModeCode_ > 0n) {
+					await transactionResponsePromiseAssertion_.revertedWithCustomError(cosmicSignatureGameProxy_, "FundTransferFailed")
+						.withArgs("ETH transfer to bidding round main prize beneficiary failed.", bidderContractAddress_, mainEthPrizeAmount_);
+				} else if (bidderContractEthDepositAcceptanceModeCode_ == 1n) {
 					await transactionResponsePromiseAssertion_.revertedWith("I am not accepting deposits.");
 				} else if (bidderContractEthDepositAcceptanceModeCode_ == 2n) {
 					await transactionResponsePromiseAssertion_.revertedWithPanic(0x01);
@@ -171,7 +181,7 @@ describe("CosmicSignatureGame-All-Versions-MainPrize", function () {
 	});
 
 	it("a charity that reenters the game cannot block main-prize claiming", async function () {
-		await testAcrossGameVersions(async (contracts_, game_) => {
+		await testAcrossGameVersions(async (contracts_, game_, roundNum_, version_) => {
 			const hostileCharity_ = await deployHostileBidder(game_, contracts_.signers[10]);
 			const hostileCharityAddress_ = await hostileCharity_.getAddress();
 
@@ -184,14 +194,11 @@ describe("CosmicSignatureGame-All-Versions-MainPrize", function () {
 
 			const bidder_ = contracts_.signers[1];
 			await bidWithEthAt(game_, bidder_, (await getLatestBlockTimestamp()) + 10n);
-			const roundNum_ = await game_.roundNum();
 			const charityAmount_ = await game_.getCharityEthDonationAmount();
 			await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(await game_.mainPrizeTime()),]);
 
 			// Charity payout is best-effort: reentry makes the transfer fail, but claiming still completes.
-			await expect(game_.connect(bidder_).claimMainPrize())
-				.emit(game_, "EthTransferToCharityFailed")
-				.withArgs(hostileCharityAddress_, charityAmount_);
+			await expectCharityTransferFailed(expect(game_.connect(bidder_).claimMainPrize()), game_, version_, hostileCharityAddress_, charityAmount_);
 			expect(await game_.roundNum()).equal(roundNum_ + 1n);
 		});
 	});

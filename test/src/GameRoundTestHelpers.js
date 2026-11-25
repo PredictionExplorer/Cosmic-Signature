@@ -4,15 +4,15 @@ const { expect } = require("chai");
 const hre = require("hardhat");
 const { generateRandomUInt32, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
-const { upgradeToV2, activateCurrentRound, setNextBlockTimeToAtLeast, getLatestBlockTimestamp, blockTimestampOfReceipt } = require("./V2UpgradeTestHelpers.js");
-const { upgradeToV3 } = require("./V3UpgradeTestHelpers.js");
+const { upgradeGameToV2, activateCurrentRound, setNextBlockTimeToAtLeast, getLatestBlockTimestamp, blockTimestampOfReceipt } = require("./GameV2UpgradeTestHelpers.js");
+const { upgradeGameToV3 } = require("./GameV3UpgradeTestHelpers.js");
 
 /** Uses one proxy throughout: random 1-4 rounds before upgrades, then four rounds on the final version. */
 async function testAcrossGameVersions(testRound_, firstVersion_ = 1, lastVersion_ = 3) {
 	const contracts_ = { ...await loadFixtureDeployContractsForTesting(-1_000_000_000n) };
 	for (let version_ = 1; version_ <= lastVersion_; ++ version_) {
-		if (version_ === 2) await upgradeToV2(contracts_);
-		else if (version_ === 3) await upgradeToV3(contracts_);
+		if (version_ === 2) await upgradeGameToV2(contracts_);
+		else if (version_ === 3) await upgradeGameToV3(contracts_);
 		const game_ = (version_ === 1) ? contracts_.cosmicSignatureGameProxy : contracts_[`cosmicSignatureGameV${version_}Proxy`];
 		const numRounds_ = (version_ === lastVersion_) ? 4 : (1 + generateRandomUInt32() % 4);
 		await testGameRounds(contracts_, game_, async (contracts_, game_, roundNum_) => {
@@ -72,6 +72,12 @@ async function bidWithEthAt(game_, bidder_, timeStamp_) {
 	return receipt_;
 }
 
+/** Reads the address stored for an individual bid using the active implementation's ABI. */
+async function getBidderAddressAt(game_, version_, roundNum_, bidIndex_) {
+	if (version_ < 3) return game_.getBidderAddressAt(roundNum_, bidIndex_);
+	return (await game_.getBidInfoAt(roundNum_, bidIndex_)).bidderAddress;
+}
+
 module.exports = {
 	testAcrossGameVersions,
 	testGameRounds,
@@ -79,4 +85,5 @@ module.exports = {
 	bidAndClaimMainPrize,
 	finishGameRound,
 	bidWithEthAt,
+	getBidderAddressAt,
 };

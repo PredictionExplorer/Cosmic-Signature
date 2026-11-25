@@ -5,12 +5,13 @@ const hre = require("hardhat");
 const { INITIAL_CST_DUTCH_AUCTION_DURATION, DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR, DEFAULT_BID_CST_REWARD_AMOUNT_RADICAND_MULTIPLIER, DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2 } = require("../../src/CosmicSignatureConstants.js");
 const { getBlockTimeStampByBlockNumber, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { setRoundActivationTimeIfNeeded } = require("../../src/ContractDeploymentHelpers.js");
+const { COSMIC_SIGNATURE_GAME_V2_SNAPSHOT_INDEX, withCodebaseSnapshotArtifacts } = require("../../src/ArchiveTestingHelpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
 
-async function deployV1CompleteRoundZeroAndUpgradeToV2() {
+async function deployGameV1CompleteRoundZeroAndUpgradeToV2() {
 	const contracts_ = { ...await loadFixtureDeployContractsForTesting(2n) };
 	await completeRoundZero(contracts_);
-	await upgradeToV2(contracts_);
+	await upgradeGameToV2(contracts_);
 	return contracts_;
 }
 
@@ -30,19 +31,25 @@ async function completeRoundZero(contracts_, bidderIndex_ = 1) {
 }
 
 // `contracts_` must be a mutable, test-local copy, not the frozen fixture object.
-async function upgradeToV2(contracts_, upgradeOptions_ = {}) {
-	const cosmicSignatureGameV2Factory_ =
-		await hre.ethers.getContractFactory("CosmicSignatureGameV2", contracts_.ownerSigner);
+async function upgradeGameToV2(contracts_, upgradeOptions_ = {}) {
 	const prevImplementationAddress_ =
 		await hre.upgrades.erc1967.getImplementationAddress(contracts_.cosmicSignatureGameProxyAddress);
-	const cosmicSignatureGameV2Proxy_ =
-		await hre.upgrades.upgradeProxy(
-			contracts_.cosmicSignatureGameProxy,
-			cosmicSignatureGameV2Factory_,
-			{
-				kind: "uups",
-				call: "reinitialize",
-				...upgradeOptions_,
+	const { cosmicSignatureGameV2Factory_, cosmicSignatureGameV2Proxy_ } =
+		await withCodebaseSnapshotArtifacts(
+			COSMIC_SIGNATURE_GAME_V2_SNAPSHOT_INDEX,
+			async () => {
+				const cosmicSignatureGameV2Factory_ = await hre.ethers.getContractFactory("CosmicSignatureGameV2", contracts_.ownerSigner);
+				const cosmicSignatureGameV2Proxy_ =
+					await hre.upgrades.upgradeProxy(
+						contracts_.cosmicSignatureGameProxy,
+						cosmicSignatureGameV2Factory_,
+						{
+							kind: "uups",
+							call: "reinitialize",
+							...upgradeOptions_,
+						}
+					);
+				return { cosmicSignatureGameV2Factory_, cosmicSignatureGameV2Proxy_ };
 			}
 		);
 	const cosmicSignatureGameV2ImplementationAddress_ =
@@ -64,7 +71,7 @@ async function activateCurrentRound(game_, ownerSigner_) {
 	await setRoundActivationTimeIfNeeded(game_.connect(ownerSigner_), 2n);
 }
 
-async function assertDefaultV2Initialization(game_) {
+async function assertDefaultGameV2Initialization(game_) {
 	expect(await game_.cstDutchAuctionDuration()).equal(INITIAL_CST_DUTCH_AUCTION_DURATION);
 	expect(await game_.cstDutchAuctionDurationChangeDivisor()).equal(DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR);
 	expect(await game_.bidCstRewardAmountMultiplier()).equal(DEFAULT_BID_CST_REWARD_AMOUNT_RADICAND_MULTIPLIER);
@@ -118,11 +125,11 @@ async function blockTimestampOfReceipt(receipt_) {
 }
 
 module.exports = {
-	deployV1CompleteRoundZeroAndUpgradeToV2,
+	deployGameV1CompleteRoundZeroAndUpgradeToV2,
 	completeRoundZero,
-	upgradeToV2,
+	upgradeGameToV2,
 	activateCurrentRound,
-	assertDefaultV2Initialization,
+	assertDefaultGameV2Initialization,
 	findParsedEvent,
 	expectUnknownSelector,
 	mineAtOrAfter,

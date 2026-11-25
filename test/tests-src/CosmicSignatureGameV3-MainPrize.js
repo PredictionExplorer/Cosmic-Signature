@@ -4,8 +4,8 @@
 // receives `mainPrizeNumCosmicSignatureNfts` Cosmic Signature NFTs with sequential IDs, and the V3
 // `MainPrizeClaimed` event reports the first of them plus their count.
 
-const { describe, it } = require("mocha");
 const { expect } = require("chai");
+const { describe, it } = require("mocha");
 const hre = require("hardhat");
 const {
 	DEFAULT_CHRONO_WARRIOR_ETH_PRIZE_AMOUNT_PERCENTAGE_V3,
@@ -16,8 +16,8 @@ const {
 	DEFAULT_CHARITY_ETH_DONATION_AMOUNT_PERCENTAGE_V3,
 } = require("../../src/CosmicSignatureConstants.js");
 const { generateRandomUInt256, waitForTransactionReceipt } = require("../../src/Helpers.js");
-const { activateCurrentRound, getLatestBlockTimestamp } = require("../src/V2UpgradeTestHelpers.js");
-const { DEFAULT_PAID_ETH_PRIZE_AMOUNT_PERCENTAGE_V3, deployV1CompleteRoundZeroAndUpgradeToV2AndV3 } = require("../src/V3UpgradeTestHelpers.js");
+const { activateCurrentRound, getLatestBlockTimestamp } = require("../src/GameV2UpgradeTestHelpers.js");
+const { DEFAULT_PAID_ETH_PRIZE_AMOUNT_PERCENTAGE_V3, deployGameV1CompleteRoundZeroAndUpgradeToV2AndV3 } = require("../src/GameV3UpgradeTestHelpers.js");
 const { configureRewardAndDeployHostileBidder, hostileBidWithEthAt } = require("../src/AdversarialTestHelpers.js");
 const { testAcrossGameVersions, bidWithEthAt } = require("../src/GameRoundTestHelpers.js");
 
@@ -173,7 +173,7 @@ describe("CosmicSignatureGameV3-MainPrize", function () {
 	it("mints mainPrizeNumCosmicSignatureNfts sequential NFTs to the beneficiary, for various configured counts", async function () {
 		// #region Deployment
 
-		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3();
+		const contracts_ = await deployGameV1CompleteRoundZeroAndUpgradeToV2AndV3();
 		const game_ = contracts_.cosmicSignatureGameV3Proxy;
 		const gameForOwner_ = game_.connect(contracts_.ownerSigner);
 		expect(await game_.mainPrizeNumCosmicSignatureNfts()).equal(DEFAULT_MAIN_PRIZE_NUM_COSMIC_SIGNATURE_NFTS);
@@ -297,7 +297,7 @@ describe("CosmicSignatureGameV3-MainPrize", function () {
 	it("announces every minted Cosmic Signature NFT exactly once, with its actual owner", async function () {
 		for (const hasCstBid_ of [false, true,]) {
 			for (const hasRandomWalkNftStakers_ of [false, true,]) {
-				const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3();
+				const contracts_ = await deployGameV1CompleteRoundZeroAndUpgradeToV2AndV3();
 				const game_ = contracts_.cosmicSignatureGameV3Proxy;
 				const [bidder1_, bidder2_, bidder3_, staker1_, staker2_,] = contracts_.signers.slice(1, 6);
 				if (hasRandomWalkNftStakers_) {

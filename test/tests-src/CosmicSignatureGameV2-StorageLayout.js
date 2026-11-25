@@ -1,12 +1,13 @@
 "use strict";
 
-const { describe, it } = require("mocha");
 const { expect } = require("chai");
+const { describe, it } = require("mocha");
 const hre = require("hardhat");
 const { INITIAL_CST_DUTCH_AUCTION_DURATION, DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR, DEFAULT_BID_CST_REWARD_AMOUNT_RADICAND_MULTIPLIER, DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2, SECONDS_PER_DAY } = require("../../src/CosmicSignatureConstants.js");
 const { waitForTransactionReceipt } = require("../../src/Helpers.js");
+const { COSMIC_SIGNATURE_GAME_V2_SNAPSHOT_INDEX, withCodebaseSnapshotArtifacts } = require("../../src/ArchiveTestingHelpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
-const { completeRoundZero, upgradeToV2, expectUnknownSelector } = require("../src/V2UpgradeTestHelpers.js");
+const { completeRoundZero, upgradeGameToV2, expectUnknownSelector } = require("../src/GameV2UpgradeTestHelpers.js");
 
 async function snapshotCarriedState(game_) {
 	return {
@@ -78,16 +79,21 @@ describe("CosmicSignatureGameV2-StorageLayout", function () {
 		expect(oldCstDutchAuctionDurationDivisor_).not.equal(INITIAL_CST_DUTCH_AUCTION_DURATION);
 		expect(oldBidCstRewardAmount_).not.equal(DEFAULT_BID_CST_REWARD_AMOUNT_RADICAND_MULTIPLIER);
 
-		const cosmicSignatureGameV2Factory_ =
-			await hre.ethers.getContractFactory("CosmicSignatureGameV2", contracts_.ownerSigner);
-		await hre.upgrades.validateUpgrade(
-			contracts_.cosmicSignatureGameProxy,
-			cosmicSignatureGameV2Factory_,
-			// `validateUpgrade` accepts validation options only; the initializer call is exercised by `upgradeToV2` below.
-			{ kind: "uups" }
+		await withCodebaseSnapshotArtifacts(
+			COSMIC_SIGNATURE_GAME_V2_SNAPSHOT_INDEX,
+			async () => {
+				const cosmicSignatureGameV2Factory_ =
+					await hre.ethers.getContractFactory("CosmicSignatureGameV2", contracts_.ownerSigner);
+				await hre.upgrades.validateUpgrade(
+					contracts_.cosmicSignatureGameProxy,
+					cosmicSignatureGameV2Factory_,
+					// `validateUpgrade` accepts validation options only; the initializer call is exercised by `upgradeGameToV2` below.
+					{ kind: "uups" }
+				);
+			}
 		);
 
-		await upgradeToV2(contracts_);
+		await upgradeGameToV2(contracts_);
 		const gameV2_ = contracts_.cosmicSignatureGameV2Proxy;
 
 		await assertCarriedStateUnchanged(gameV2_, carriedState_);

@@ -1,11 +1,12 @@
 "use strict";
 
-const nodeFsModule = require("node:fs");
-const nodePathModule = require("node:path");
-const { describe, it } = require("mocha");
+const nodeFs = require("node:fs");
+const nodePath = require("node:path");
 const { expect } = require("chai");
+const { describe, it } = require("mocha");
 const hre = require("hardhat");
 const { readValidations } = require("@openzeppelin/hardhat-upgrades/dist/utils/validations");
+const { COSMIC_SIGNATURE_GAME_V3_SNAPSHOT_INDEX, withCodebaseSnapshotArtifacts } = require("../../src/ArchiveTestingHelpers.js");
 const {
 	getUnlinkedBytecode,
 	getVersion,
@@ -14,26 +15,30 @@ const {
 	withValidationDefaults,
 } = require("@openzeppelin/upgrades-core");
 
-// Other tests validate the V2 -> V3 upgrade against the V2 compiled from the current sources.
-// But the V2 sources have since been refactored, so these tests validate against what is actually deployed:
-// the V2 storage layout recorded in the OpenZeppelin manifest on the live V2 upgrade.
+// The V2 -> V3 upgrade tests use the archived V2 build. These tests also check the
+// original V2 storage layout recorded in the OpenZeppelin manifest on Arbitrum One.
 const DEPLOYED_V2_FIXTURE_PATH =
-	nodePathModule.join(__dirname, "../data/deployed-storage-layouts/arbitrumOne-CosmicSignatureGameV2.json");
+	nodePath.join(__dirname, "../data/deployed-storage-layouts/arbitrumOne-CosmicSignatureGameV2.json");
 
 // In the deployed V2 this was `mapping(uint256 => BidderAddresses) bidderAddresses`.
 const RENAMED_VARIABLE_SLOT = "259";
 
 function loadDeployedV2Layout() {
-	const fixture_ = JSON.parse(nodeFsModule.readFileSync(DEPLOYED_V2_FIXTURE_PATH, "utf8"));
+	const fixture_ = JSON.parse(nodeFs.readFileSync(DEPLOYED_V2_FIXTURE_PATH, "utf8"));
 	return fixture_.layout;
 }
 
 async function getV3Layout() {
-	const cosmicSignatureGameV3Factory_ = await hre.ethers.getContractFactory("CosmicSignatureGameV3");
-	const validations_ = await readValidations(hre);
-	const unlinkedBytecode_ = getUnlinkedBytecode(validations_, cosmicSignatureGameV3Factory_.bytecode);
-	const version_ = getVersion(unlinkedBytecode_, cosmicSignatureGameV3Factory_.bytecode);
-	return getStorageLayout(validations_, version_);
+	return withCodebaseSnapshotArtifacts(
+		COSMIC_SIGNATURE_GAME_V3_SNAPSHOT_INDEX,
+		async () => {
+			const cosmicSignatureGameV3Factory_ = await hre.ethers.getContractFactory("CosmicSignatureGameV3");
+			const validations_ = await readValidations(hre);
+			const unlinkedBytecode_ = getUnlinkedBytecode(validations_, cosmicSignatureGameV3Factory_.bytecode);
+			const version_ = getVersion(unlinkedBytecode_, cosmicSignatureGameV3Factory_.bytecode);
+			return getStorageLayout(validations_, version_);
+		}
+	);
 }
 
 function findStorageItemAtSlot(layout_, slot_) {

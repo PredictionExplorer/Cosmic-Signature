@@ -1,11 +1,11 @@
 "use strict";
 
+const { expect } = require("chai");
 const hre = require("hardhat");
 const { DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER } = require("../../src/CosmicSignatureConstants.js");
 const { waitForTransactionReceipt } = require("../../src/Helpers.js");
-const { activateCurrentRound, getLatestBlockTimestamp, blockTimestampOfReceipt } = require("./V2UpgradeTestHelpers.js");
-const { getV3BidCstRewardAmount } = require("./V3UpgradeTestHelpers.js");
-const { expect } = require("chai");
+const { activateCurrentRound, getLatestBlockTimestamp, blockTimestampOfReceipt } = require("./GameV2UpgradeTestHelpers.js");
+const { getV3BidCstRewardAmount } = require("./GameV3UpgradeTestHelpers.js");
 
 // A high reward rate, so that the hostile contract can quickly afford CST bids: ~300 CST per minute.
 const BID_CST_REWARD_AMOUNT_MULTIPLIER = 300n * DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER;

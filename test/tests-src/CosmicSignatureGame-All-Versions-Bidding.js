@@ -1,14 +1,14 @@
 "use strict";
 
-const { describe, it } = require("mocha");
-const { testAcrossGameVersions, activateRoundBidAndClaimMainPrize, bidAndClaimMainPrize, finishGameRound, bidWithEthAt } = require("../src/GameRoundTestHelpers.js");
-const { activateCurrentRound, mineAtOrAfter, getLatestBlockTimestamp } = require("../src/V2UpgradeTestHelpers.js");
-const hre = require("hardhat");
 const { expect } = require("chai");
+const { describe, it } = require("mocha");
+const hre = require("hardhat");
 const { SECONDS_PER_HOUR } = require("../../src/CosmicSignatureConstants.js");
 const { generateRandomUInt32, waitForTransactionReceipt } = require("../../src/Helpers.js");
-const { deployBrokenToken } = require("../src/AdversarialTestHelpers.js");
 const { setRoundActivationTimeIfNeeded } = require("../../src/ContractDeploymentHelpers.js");
+const { activateCurrentRound, mineAtOrAfter, getLatestBlockTimestamp } = require("../src/GameV2UpgradeTestHelpers.js");
+const { testAcrossGameVersions, activateRoundBidAndClaimMainPrize, bidAndClaimMainPrize, finishGameRound, bidWithEthAt } = require("../src/GameRoundTestHelpers.js");
+const { deployBrokenToken } = require("../src/AdversarialTestHelpers.js");
 
 describe("CosmicSignatureGame-All-Versions-Bidding", function () {
 	it("halves the ETH Dutch auction ending price after the auction has elapsed", async function () {
@@ -83,7 +83,10 @@ describe("CosmicSignatureGame-All-Versions-Bidding", function () {
 				/** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 				const transactionResponsePromise_ = bidderContract_.connect(contracts_.signers[4]).doBidWithEth({value: ethBidAmount_,});
 				const transactionResponsePromiseAssertion_ = expect(transactionResponsePromise_);
-				if (bidderContractEthDepositAcceptanceModeCode_ == 1n) {
+				if (contractVersionNumber_ < 3 && bidderContractEthDepositAcceptanceModeCode_ > 0n) {
+					await transactionResponsePromiseAssertion_.revertedWithCustomError(cosmicSignatureGameProxy_, "FundTransferFailed")
+						.withArgs("ETH refund transfer failed.", bidderContractAddress_, ethRefundAmount_);
+				} else if (bidderContractEthDepositAcceptanceModeCode_ == 1n) {
 					await transactionResponsePromiseAssertion_.revertedWith("I am not accepting deposits.");
 				} else if (bidderContractEthDepositAcceptanceModeCode_ == 2n) {
 					await transactionResponsePromiseAssertion_.revertedWithPanic(0x01);

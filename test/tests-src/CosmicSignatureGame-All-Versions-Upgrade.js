@@ -5,23 +5,29 @@
 // #endregion
 // #region
 
-const { describe, it } = require("mocha");
 const { expect } = require("chai");
+const { describe, it } = require("mocha");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { INITIAL_CST_DUTCH_AUCTION_DURATION } = require("../../src/CosmicSignatureConstants.js");
 const { ENABLE_ASSERTS, generateRandomUInt32, waitForTransactionReceipt } = require("../../src/Helpers.js");
+const {
+	INITIAL_DEPLOYMENT_SNAPSHOT_INDEX,
+	COSMIC_SIGNATURE_GAME_V2_SNAPSHOT_INDEX,
+	CURRENT_CODEBASE_SNAPSHOT_INDEX,
+	withCodebaseSnapshotArtifacts,
+} = require("../../src/ArchiveTestingHelpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
-const { upgradeToV2, assertDefaultV2Initialization } = require("../src/V2UpgradeTestHelpers.js");
-const { upgradeToV3, assertDefaultV3Initialization } = require("../src/V3UpgradeTestHelpers.js");
+const { upgradeGameToV2, assertDefaultGameV2Initialization } = require("../src/GameV2UpgradeTestHelpers.js");
+const { upgradeGameToV3, assertDefaultGameV3Initialization } = require("../src/GameV3UpgradeTestHelpers.js");
 const { testGameRounds, activateRoundBidAndClaimMainPrize } = require("../src/GameRoundTestHelpers.js");
 
 // #endregion
 // #region
 
 const gameUpgrades = [
-	{ versionNumber: 2, upgrade: upgradeToV2, assertInitialization: assertDefaultV2Initialization },
-	{ versionNumber: 3, upgrade: upgradeToV3, assertInitialization: assertDefaultV3Initialization },
+	{ versionNumber: 2, upgrade: upgradeGameToV2, assertInitialization: assertDefaultGameV2Initialization },
+	{ versionNumber: 3, upgrade: upgradeGameToV3, assertInitialization: assertDefaultGameV3Initialization },
 ];
 
 // #endregion
@@ -86,7 +92,7 @@ describe("CosmicSignatureGame-All-Versions-Upgrade", function () {
 	it("Upgrading CosmicSignatureGame ==> CosmicSignatureGameV2 ==> CosmicSignatureGameV3 ==> CosmicSignatureGameOpenBid", async function () {
 		// #region
 
-		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
+		const contracts_ = { ...await loadFixtureDeployContractsForTesting(-1_000_000_000n) };
 
 		// #endregion
 		// #region
@@ -115,22 +121,13 @@ describe("CosmicSignatureGame-All-Versions-Upgrade", function () {
 		// #endregion
 		// #region
 
-		const cosmicSignatureGameV2Factory_ =
-			await hre.ethers.getContractFactory("CosmicSignatureGameV2", contracts_.ownerSigner);
-		const cosmicSignatureGameV2Proxy_ =
-			await hre.upgrades.upgradeProxy(
-				contracts_.cosmicSignatureGameProxy,
-				cosmicSignatureGameV2Factory_,
-				{
-					kind: "uups",
-					call: "reinitialize",
-				}
-			);
+		await upgradeGameToV2(contracts_);
+		const cosmicSignatureGameV2Proxy_ = contracts_.cosmicSignatureGameV2Proxy;
 		// await cosmicSignatureGameV2Proxy_.waitForDeployment();
 		expect(await cosmicSignatureGameV2Proxy_.getAddress()).equal(contracts_.cosmicSignatureGameProxyAddress);
 		const cosmicSignatureGameV2ImplementationAddress_ = await hre.upgrades.erc1967.getImplementationAddress(contracts_.cosmicSignatureGameProxyAddress);
 		expect(cosmicSignatureGameV2ImplementationAddress_).not.equal(contracts_.cosmicSignatureGameImplementationAddress);
-		const cosmicSignatureGameV2Implementation_ = cosmicSignatureGameV2Factory_.attach(cosmicSignatureGameV2ImplementationAddress_);
+		const cosmicSignatureGameV2Implementation_ = contracts_.cosmicSignatureGameV2Factory.attach(cosmicSignatureGameV2ImplementationAddress_);
 		// await expect(cosmicSignatureGameV2Proxy_.connect(contracts_.ownerSigner).initialize(contracts_.ownerSigner.address)).revertedWithCustomError(cosmicSignatureGameV2Proxy_, "InvalidInitialization");
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner).initialize(contracts_.ownerSigner.address)).revertedWithoutReason();
 		await expectReinitializeUnavailable(cosmicSignatureGameV2Proxy_, contracts_.ownerSigner);
@@ -145,7 +142,7 @@ describe("CosmicSignatureGame-All-Versions-Upgrade", function () {
 
 		// Comment-202606139 applies.
 		const cosmicSignatureGameV2ImplementationByteCodeSize_ =
-			// cosmicSignatureGameV2Factory.bytecode.length / 2 - 1;
+			// contracts_.cosmicSignatureGameV2Factory.bytecode.length / 2 - 1;
 			(await hre.ethers.provider.getCode(cosmicSignatureGameV2ImplementationAddress_)).length / 2 - 1;
 		expect(cosmicSignatureGameV2ImplementationByteCodeSize_).greaterThanOrEqual(18 * 1024);
 		console.info(
@@ -165,22 +162,13 @@ describe("CosmicSignatureGame-All-Versions-Upgrade", function () {
 		// #endregion
 		// #region
 
-		const cosmicSignatureGameV3Factory_ =
-			await hre.ethers.getContractFactory("CosmicSignatureGameV3", contracts_.ownerSigner);
-		const cosmicSignatureGameV3Proxy_ =
-			await hre.upgrades.upgradeProxy(
-				contracts_.cosmicSignatureGameProxy,
-				cosmicSignatureGameV3Factory_,
-				{
-					kind: "uups",
-					call: "reinitialize",
-				}
-			);
+		await upgradeGameToV3(contracts_);
+		const cosmicSignatureGameV3Proxy_ = contracts_.cosmicSignatureGameV3Proxy;
 		// await cosmicSignatureGameV3Proxy_.waitForDeployment();
 		expect(await cosmicSignatureGameV3Proxy_.getAddress()).equal(contracts_.cosmicSignatureGameProxyAddress);
 		const cosmicSignatureGameV3ImplementationAddress_ = await hre.upgrades.erc1967.getImplementationAddress(contracts_.cosmicSignatureGameProxyAddress);
 		expect(cosmicSignatureGameV3ImplementationAddress_).not.equal(cosmicSignatureGameV2ImplementationAddress_);
-		const cosmicSignatureGameV3Implementation_ = cosmicSignatureGameV3Factory_.attach(cosmicSignatureGameV3ImplementationAddress_);
+		const cosmicSignatureGameV3Implementation_ = contracts_.cosmicSignatureGameV3Factory.attach(cosmicSignatureGameV3ImplementationAddress_);
 		// await expect(cosmicSignatureGameV3Proxy_.connect(contracts_.ownerSigner).initialize(contracts_.ownerSigner.address)).revertedWithCustomError(cosmicSignatureGameV3Proxy_, "InvalidInitialization");
 		await expect(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner).initialize(contracts_.ownerSigner.address)).revertedWithoutReason();
 		await expectReinitializeUnavailable(cosmicSignatureGameV3Proxy_, contracts_.ownerSigner);
@@ -196,7 +184,7 @@ describe("CosmicSignatureGame-All-Versions-Upgrade", function () {
 
 		// Comment-202606139 applies.
 		const cosmicSignatureGameV3ImplementationByteCodeSize_ =
-			// cosmicSignatureGameV3Factory.bytecode.length / 2 - 1;
+			// contracts_.cosmicSignatureGameV3Factory.bytecode.length / 2 - 1;
 			(await hre.ethers.provider.getCode(cosmicSignatureGameV3ImplementationAddress_)).length / 2 - 1;
 		expect(cosmicSignatureGameV3ImplementationByteCodeSize_).greaterThanOrEqual(20 * 1024);
 		console.info(
@@ -248,18 +236,11 @@ describe("CosmicSignatureGame-All-Versions-Upgrade", function () {
 	it("documents that roundNum > 0 is assert-only in reinitialize", async function () {
 		const contracts_ = { ...await loadFixtureDeployContractsForTesting(-1_000_000_000n) };
 		expect(await contracts_.cosmicSignatureGameProxy.roundNum()).equal(0n);
-		const factory_ = await hre.ethers.getContractFactory("CosmicSignatureGameV2", contracts_.ownerSigner);
 
 		if (ENABLE_ASSERTS) {
-			await expect(
-				hre.upgrades.upgradeProxy(
-					contracts_.cosmicSignatureGameProxy,
-					factory_,
-					{ kind: "uups", call: "reinitialize" }
-				)
-			).revertedWithPanic(0x1);
+			await expect(upgradeGameToV2(contracts_)).revertedWithPanic(0x1);
 		} else {
-			await upgradeToV2(contracts_);
+			await upgradeGameToV2(contracts_);
 			expect(await contracts_.cosmicSignatureGameV2Proxy.roundNum()).equal(0n);
 			expect(await contracts_.cosmicSignatureGameV2Proxy.getNextEthBidPrice()).equal(0n);
 		}
@@ -271,22 +252,15 @@ describe("CosmicSignatureGame-All-Versions-Upgrade", function () {
 
 		if (ENABLE_ASSERTS) {
 			// The chain already stops at the V2 upgrade (`_onlyNonFirstRound` fires); V3 is unreachable at round 0.
-			const cosmicSignatureGameV2Factory_ = await hre.ethers.getContractFactory("CosmicSignatureGameV2", contracts_.ownerSigner);
-			await expect(
-				hre.upgrades.upgradeProxy(
-					contracts_.cosmicSignatureGameProxy,
-					cosmicSignatureGameV2Factory_,
-					{ kind: "uups", call: "reinitialize" }
-				)
-			).revertedWithPanic(0x1);
+			await expect(upgradeGameToV2(contracts_)).revertedWithPanic(0x1);
 		} else {
 			// In a production build, nothing stops upgrading all the way to V3 at round 0,
 			// which leaves the game with a broken zero ETH bid price.
-			await upgradeToV2(contracts_);
-			await upgradeToV3(contracts_);
+			await upgradeGameToV2(contracts_);
+			await upgradeGameToV3(contracts_);
 			const gameV3_ = contracts_.cosmicSignatureGameV3Proxy;
 			expect(await gameV3_.roundNum()).equal(0n);
-			await assertDefaultV3Initialization(gameV3_);
+			await assertDefaultGameV3Initialization(gameV3_);
 			expect(await gameV3_.getNextEthBidPrice()).equal(0n);
 		}
 	});
@@ -330,9 +304,7 @@ describe("CosmicSignatureGame-All-Versions-Upgrade", function () {
 			}
 			const nextUpgrade_ = gameUpgrades[skippedUpgradeIndex_ + 1];
 			if (ENABLE_ASSERTS) {
-				const factory_ = await hre.ethers.getContractFactory(`CosmicSignatureGameV${nextUpgrade_.versionNumber}`, contracts_.ownerSigner);
-				await expect(hre.upgrades.upgradeProxy(contracts_.cosmicSignatureGameProxy, factory_, { kind: "uups", call: "reinitialize" }))
-					.revertedWithPanic(0x01n);
+				await expect(nextUpgrade_.upgrade(contracts_)).revertedWithPanic(0x01n);
 			} else {
 				await nextUpgrade_.upgrade(contracts_);
 				const game_ = contracts_[`cosmicSignatureGameV${nextUpgrade_.versionNumber}Proxy`];
@@ -354,25 +326,27 @@ describe("CosmicSignatureGame-All-Versions-Upgrade", function () {
 		// await hre.ethers.provider.send("evm_mine");
 		await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.signers[1]).claimMainPrize());
 
-		const cosmicSignatureGameOpenBidFactory_ =
-			await hre.ethers.getContractFactory("CosmicSignatureGameOpenBid", contracts_.ownerSigner);
-		const cosmicSignatureGameV2Factory_ =
-			await hre.ethers.getContractFactory("CosmicSignatureGameV2", contracts_.ownerSigner);
-		const newCosmicSignatureGameFactories_ = [cosmicSignatureGameOpenBidFactory_, cosmicSignatureGameV2Factory_,];
+		const upgradeTargets_ = [
+			{ name: "CosmicSignatureGameOpenBid", codebaseSnapshotIndex: CURRENT_CODEBASE_SNAPSHOT_INDEX },
+			{ name: "CosmicSignatureGameV2", codebaseSnapshotIndex: COSMIC_SIGNATURE_GAME_V2_SNAPSHOT_INDEX },
+		];
+
+		async function attemptUpgrade(target_, proxy_, signer_) {
+			return withCodebaseSnapshotArtifacts(
+				target_.codebaseSnapshotIndex,
+				async () => {
+					const factory_ = await hre.ethers.getContractFactory(target_.name, signer_);
+					return hre.upgrades.upgradeProxy(proxy_, factory_, { kind: "uups", call: "reinitialize" });
+				}
+			);
+		}
 
 		// A non-compliant proxy contract.
-		for (const newCosmicSignatureGameFactory_ of newCosmicSignatureGameFactories_) {
+		for (const target_ of upgradeTargets_) {
 			for (const contractProxyAddress_ of [contracts_.cosmicSignatureGameImplementationAddress, contracts_.charityWalletAddress, hre.ethers.ZeroAddress,]) {
 				// /** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 				const transactionResponsePromise_ =
-					hre.upgrades.upgradeProxy(
-						contractProxyAddress_,
-						newCosmicSignatureGameFactory_,
-						{
-							kind: "uups",
-							call: "reinitialize",
-						}
-					);
+					attemptUpgrade(target_, contractProxyAddress_, contracts_.ownerSigner);
 				try {
 					// await waitForTransactionReceipt(transactionResponsePromise_);
 					await transactionResponsePromise_;
@@ -388,13 +362,16 @@ describe("CosmicSignatureGame-All-Versions-Upgrade", function () {
 		{
 			// /** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 			const transactionResponsePromise_ =
-				hre.upgrades.upgradeProxy(
-					contracts_.cosmicSignatureGameProxy,
-					contracts_.charityWalletFactory.connect(contracts_.ownerSigner),
-					{
-						kind: "uups",
-						// call: "reinitialize",
-					}
+				withCodebaseSnapshotArtifacts(
+					INITIAL_DEPLOYMENT_SNAPSHOT_INDEX,
+					() => hre.upgrades.upgradeProxy(
+						contracts_.cosmicSignatureGameProxy,
+						contracts_.charityWalletFactory.connect(contracts_.ownerSigner),
+						{
+							kind: "uups",
+							// call: "reinitialize",
+						}
+					)
 				);
 			try {
 				// await waitForTransactionReceipt(transactionResponsePromise_);
@@ -407,18 +384,11 @@ describe("CosmicSignatureGame-All-Versions-Upgrade", function () {
 		}
 
 		// `onlyOwner`.
-		for (const newCosmicSignatureGameFactory_ of newCosmicSignatureGameFactories_) {
+		for (const target_ of upgradeTargets_) {
 			{
 				// /** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 				const transactionResponsePromise_ =
-					hre.upgrades.upgradeProxy(
-						contracts_.cosmicSignatureGameProxy/*.connect(contracts_.signers[5])*/,
-						newCosmicSignatureGameFactory_.connect(contracts_.signers[5]),
-						{
-							kind: "uups",
-							call: "reinitialize",
-						}
-					);
+					attemptUpgrade(target_, contracts_.cosmicSignatureGameProxy, contracts_.signers[5]);
 				// await transactionResponsePromise_;
 				await expect(transactionResponsePromise_).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "OwnableUnauthorizedAccount");
 			}
@@ -427,18 +397,11 @@ describe("CosmicSignatureGame-All-Versions-Upgrade", function () {
 		await waitForTransactionReceipt(contracts_.cosmicSignatureGameProxy.connect(contracts_.ownerSigner).setRoundActivationTime(123n));
 
 		// `_onlyRoundIsInactive`.
-		for (const newCosmicSignatureGameFactory_ of newCosmicSignatureGameFactories_) {
+		for (const target_ of upgradeTargets_) {
 			{
 				// /** @type {Promise<import("hardhat").ethers.TransactionResponse>} */
 				const transactionResponsePromise_ =
-					hre.upgrades.upgradeProxy(
-						contracts_.cosmicSignatureGameProxy,
-						newCosmicSignatureGameFactory_,
-						{
-							kind: "uups",
-							call: "reinitialize",
-						}
-					);
+					attemptUpgrade(target_, contracts_.cosmicSignatureGameProxy, contracts_.ownerSigner);
 				// await transactionResponsePromise_;
 				await expect(transactionResponsePromise_).revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "RoundIsActive");
 			}

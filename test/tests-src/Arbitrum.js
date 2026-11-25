@@ -1,11 +1,13 @@
 "use strict";
 
-const { describe, it } = require("mocha");
 const { expect } = require("chai");
+const { describe, it } = require("mocha");
 const hre = require("hardhat");
 // const { chai } = require("@nomicfoundation/hardhat-chai-matchers");
 const { generateRandomUInt256, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { LONG_TEST_MODE_CODE, loadFixtureDeployContractsForTesting, assertEvent } = require("../../src/ContractTestingHelpers.js");
+const { upgradeGameToV2 } = require("../src/GameV2UpgradeTestHelpers.js");
+const { upgradeGameToV3 } = require("../src/GameV3UpgradeTestHelpers.js");
 
 describe("Arbitrum", function () {
 	it("Calls to Arbitrum precompile contracts errors", async function () {
@@ -25,19 +27,29 @@ describe("Arbitrum", function () {
 		// 	console.info("%s", `202507114 ${successCounter_} ${failureCounter_}`);
 		// }
 
-		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
+		const contracts_ = { ...await loadFixtureDeployContractsForTesting(-1_000_000_000n) };
 		const fakeArbSys_ = await hre.ethers.getContractAt("FakeArbSys", "0x0000000000000000000000000000000000000064", contracts_.signers[1]);
 		const fakeArbGasInfo_ = await hre.ethers.getContractAt("FakeArbGasInfo", "0x000000000000000000000000000000000000006C", contracts_.signers[1]);
 
-		let cosmicSignatureGameProxy_ = contracts_.cosmicSignatureGameProxy;
-
-		for ( let contractVersionNumber_ = 1; ; ++ contractVersionNumber_ ) {
-			const arbitrumCallFailedTopicHashes_ = new Set([
-				"ArbSysArbBlockNumberCallFailed",
-				"ArbSysArbBlockHashCallFailed",
-				"ArbGasInfoGetGasBacklogCallFailed",
-				"ArbGasInfoGetL1PricingUnitsSinceUpdateCallFailed",
-			].map(eventName_ => cosmicSignatureGameProxy_.interface.getEvent(eventName_).topicHash));
+		for (let contractVersionNumber_ = 1; contractVersionNumber_ <= 3; ++ contractVersionNumber_) {
+			if (contractVersionNumber_ === 2) {
+				await upgradeGameToV2(contracts_);
+			}
+			else if (contractVersionNumber_ === 3) {
+				await upgradeGameToV3(contracts_);
+			}
+			const cosmicSignatureGameProxy_ = (contractVersionNumber_ === 1)
+				? contracts_.cosmicSignatureGameProxy
+				: contracts_[`cosmicSignatureGameV${contractVersionNumber_}Proxy`];
+			const expectedEvent_ = (eventName_, callName_) => (contractVersionNumber_ < 3)
+				? ["ArbitrumError", [`${callName_} call failed.`]]
+				: [eventName_, []];
+			const blockNumberFailure_ = expectedEvent_("ArbSysArbBlockNumberCallFailed", "ArbSys.arbBlockNumber");
+			const blockHashFailure_ = expectedEvent_("ArbSysArbBlockHashCallFailed", "ArbSys.arbBlockHash");
+			const gasBacklogFailure_ = expectedEvent_("ArbGasInfoGetGasBacklogCallFailed", "ArbGasInfo.getGasBacklog");
+			const pricingUnitsFailure_ = expectedEvent_("ArbGasInfoGetL1PricingUnitsSinceUpdateCallFailed", "ArbGasInfo.getL1PricingUnitsSinceUpdate");
+			const arbitrumCallFailedTopicHashes_ = new Set([blockNumberFailure_, blockHashFailure_, gasBacklogFailure_, pricingUnitsFailure_]
+				.map(([eventName_]) => cosmicSignatureGameProxy_.interface.getEvent(eventName_).topicHash));
 
 			for ( let counter_ = (LONG_TEST_MODE_CODE >= 3) ? 50 : 4; counter_ > 0; -- counter_ ) {
 				let fakeArbBaseModeCode_ = generateRandomUInt256();
@@ -75,8 +87,7 @@ describe("Arbitrum", function () {
 					assertEvent(
 						arbitrumCallFailedLogs_[eventIndex_],
 						cosmicSignatureGameProxy_,
-						"ArbSysArbBlockNumberCallFailed",
-						[]
+						...blockNumberFailure_
 					);
 					++ eventIndex_;
 				} else if ((fakeArbBaseModeCode_ & 0x30n) != 0n) {
@@ -84,8 +95,7 @@ describe("Arbitrum", function () {
 					assertEvent(
 						arbitrumCallFailedLogs_[eventIndex_],
 						cosmicSignatureGameProxy_,
-						"ArbSysArbBlockHashCallFailed",
-						[]
+						...blockHashFailure_
 					);
 					++ eventIndex_;
 				}
@@ -94,8 +104,7 @@ describe("Arbitrum", function () {
 					assertEvent(
 						arbitrumCallFailedLogs_[eventIndex_],
 						cosmicSignatureGameProxy_,
-						"ArbGasInfoGetGasBacklogCallFailed",
-						[]
+						...gasBacklogFailure_
 					);
 					++ eventIndex_;
 				}
@@ -104,8 +113,7 @@ describe("Arbitrum", function () {
 					assertEvent(
 						arbitrumCallFailedLogs_[eventIndex_],
 						cosmicSignatureGameProxy_,
-						"ArbGasInfoGetL1PricingUnitsSinceUpdateCallFailed",
-						[]
+						...pricingUnitsFailure_
 					);
 					++ eventIndex_;
 				}
@@ -114,23 +122,6 @@ describe("Arbitrum", function () {
 				// }
 				expect(arbitrumCallFailedLogs_.length).equal(eventIndex_);
 			}
-
-			if ( ! (contractVersionNumber_ < 3) ) {
-				break;
-			}
-
-			const newCosmicSignatureGameFactory_ =
-				await hre.ethers.getContractFactory((contractVersionNumber_ < 2) ? "CosmicSignatureGameV2" : "CosmicSignatureGameV3", contracts_.ownerSigner);
-			cosmicSignatureGameProxy_ =
-				await hre.upgrades.upgradeProxy(
-					contracts_.cosmicSignatureGameProxy,
-					newCosmicSignatureGameFactory_,
-					{
-						kind: "uups",
-						call: "reinitialize",
-					}
-				);
-			// await cosmicSignatureGameProxy_.waitForDeployment();
 		}
 	});
 });

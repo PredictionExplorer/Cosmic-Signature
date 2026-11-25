@@ -22,33 +22,40 @@ const {
 	DEFAULT_CHARITY_ETH_DONATION_AMOUNT_PERCENTAGE_V3,
 } = require("../../src/CosmicSignatureConstants.js");
 const { tryIncreaseValueExponentially } = require("../../src/BigIntMathHelpers.js");
+const { COSMIC_SIGNATURE_GAME_V3_SNAPSHOT_INDEX, withCodebaseSnapshotArtifacts } = require("../../src/ArchiveTestingHelpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
-const { completeRoundZero, upgradeToV2, getLatestBlockTimestamp } = require("./V2UpgradeTestHelpers.js");
+const { completeRoundZero, upgradeGameToV2, getLatestBlockTimestamp } = require("./GameV2UpgradeTestHelpers.js");
 
 const DEFAULT_PAID_ETH_PRIZE_AMOUNT_PERCENTAGE_V3 = 50n;
 
-async function deployV1CompleteRoundZeroAndUpgradeToV2AndV3() {
+async function deployGameV1CompleteRoundZeroAndUpgradeToV2AndV3() {
 	const contracts_ = { ...await loadFixtureDeployContractsForTesting(2n) };
 	await completeRoundZero(contracts_);
-	await upgradeToV2(contracts_);
-	await upgradeToV3(contracts_);
+	await upgradeGameToV2(contracts_);
+	await upgradeGameToV3(contracts_);
 	return contracts_;
 }
 
 // `contracts_` must be a mutable, test-local copy, not the frozen fixture object.
-async function upgradeToV3(contracts_, upgradeOptions_ = {}) {
-	const cosmicSignatureGameV3Factory_ =
-		await hre.ethers.getContractFactory("CosmicSignatureGameV3", contracts_.ownerSigner);
+async function upgradeGameToV3(contracts_, upgradeOptions_ = {}) {
 	const prevImplementationAddress_ =
 		await hre.upgrades.erc1967.getImplementationAddress(contracts_.cosmicSignatureGameProxyAddress);
-	const cosmicSignatureGameV3Proxy_ =
-		await hre.upgrades.upgradeProxy(
-			contracts_.cosmicSignatureGameProxy,
-			cosmicSignatureGameV3Factory_,
-			{
-				kind: "uups",
-				call: "reinitialize",
-				...upgradeOptions_,
+	const { cosmicSignatureGameV3Factory_, cosmicSignatureGameV3Proxy_ } =
+		await withCodebaseSnapshotArtifacts(
+			COSMIC_SIGNATURE_GAME_V3_SNAPSHOT_INDEX,
+			async () => {
+				const cosmicSignatureGameV3Factory_ = await hre.ethers.getContractFactory("CosmicSignatureGameV3", contracts_.ownerSigner);
+				const cosmicSignatureGameV3Proxy_ =
+					await hre.upgrades.upgradeProxy(
+						contracts_.cosmicSignatureGameProxy,
+						cosmicSignatureGameV3Factory_,
+						{
+							kind: "uups",
+							call: "reinitialize",
+							...upgradeOptions_,
+						}
+					);
+				return { cosmicSignatureGameV3Factory_, cosmicSignatureGameV3Proxy_ };
 			}
 		);
 	const cosmicSignatureGameV3ImplementationAddress_ =
@@ -59,7 +66,7 @@ async function upgradeToV3(contracts_, upgradeOptions_ = {}) {
 	contracts_.cosmicSignatureGameV3ImplementationAddress = cosmicSignatureGameV3ImplementationAddress_;
 }
 
-async function assertDefaultV3Initialization(game_) {
+async function assertDefaultGameV3Initialization(game_) {
 	expect(await game_.cstDutchAuctionBeginningBidPriceMinLimit()).equal(DEFAULT_CST_DUTCH_AUCTION_BEGINNING_BID_PRICE_MIN_LIMIT_V3);
 	expect(await game_.cstBidPriceDeclineMultiplier()).equal(INITIAL_CST_BID_PRICE_DECLINE_MULTIPLIER);
 	expect(await game_.cstBidPriceDeclineMultiplierChangeDivisor()).equal(DEFAULT_CST_BID_PRICE_DECLINE_MULTIPLIER_CHANGE_DIVISOR);
@@ -178,9 +185,9 @@ function getV3CstBidPriceDeclineMultiplierAfterEthBid(beginningPrice_, multiplie
 
 module.exports = {
 	DEFAULT_PAID_ETH_PRIZE_AMOUNT_PERCENTAGE_V3,
-	deployV1CompleteRoundZeroAndUpgradeToV2AndV3,
-	upgradeToV3,
-	assertDefaultV3Initialization,
+	deployGameV1CompleteRoundZeroAndUpgradeToV2AndV3,
+	upgradeGameToV3,
+	assertDefaultGameV3Initialization,
 	findTimeStampWithAffordableCstBidPrice,
 	addRoundLateBidPricePremiumAmountIfNeeded,
 	getV3BidCstRewardAmount,

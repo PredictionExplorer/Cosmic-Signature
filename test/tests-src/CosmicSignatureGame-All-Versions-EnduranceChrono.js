@@ -4,13 +4,13 @@
 
 "use strict";
 
-const { describe, it } = require("mocha");
 const { expect } = require("chai");
+const { describe, it } = require("mocha");
 const hre = require("hardhat");
 const { SAME_BID_EARNED_ENDURANCE_CHAMPION_AND_CHRONO_WARRIOR_TITLES, MICROSECONDS_PER_SECOND } = require("../../src/CosmicSignatureConstants.js");
 const { shuffleArray, waitForTransactionReceipt } = require("../../src/Helpers.js");
-const { activateCurrentRound, findParsedEvent, mineAtOrAfter, getLatestBlockTimestamp, blockTimestampOfReceipt } = require("../src/V2UpgradeTestHelpers.js");
-const { testAcrossGameVersions, finishGameRound, bidWithEthAt } = require("../src/GameRoundTestHelpers.js");
+const { activateCurrentRound, findParsedEvent, mineAtOrAfter, getLatestBlockTimestamp, blockTimestampOfReceipt } = require("../src/GameV2UpgradeTestHelpers.js");
+const { testAcrossGameVersions, getBidderAddressAt, finishGameRound, bidWithEthAt } = require("../src/GameRoundTestHelpers.js");
 
 async function checkEnduranceChampion(contracts_, game_, bidderIndices_, timeOffsets_, winnerIndex_, duration_) {
 	const startTime_ = await getLatestBlockTimestamp() + 100n;
@@ -151,8 +151,8 @@ const SCENARIOS = [
 		await bidWithEthInOneBlockAt(game_, [bob_, carol_,], timeStamp_ + 100n);
 		await expectStoredEnduranceChampion(game_, alice_.address, timeStamp_, 100n, 0n);
 		expect(await game_.chronoWarriorAddress()).equal(hre.ethers.ZeroAddress);
-		expect((await game_.getBidInfoAt(roundNum_, 1n)).bidderAddress).equal(bob_.address);
-		expect((await game_.getBidInfoAt(roundNum_, 2n)).bidderAddress).equal(carol_.address);
+		expect(await getBidderAddressAt(game_, version_, roundNum_, 1n)).equal(bob_.address);
+		expect(await getBidderAddressAt(game_, version_, roundNum_, 2n)).equal(carol_.address);
 
 		// Carol's bid lasts 200 seconds and replaces Alice's, which held the record from 0 to 100 + 100 = 200.
 		// Carol's own record starts at 100 + 100 = 200, so at 300 her Chrono-Warrior duration is 100, which is not greater than 200.
@@ -195,9 +195,10 @@ const SCENARIOS = [
 		await bidWithEthInOneBlockAt(game_, [alice_, bob_, carol_,], timeStamp_);
 		await expectStoredEnduranceChampion(game_, alice_.address, timeStamp_, 0n, 0n);
 		expect(await game_.chronoWarriorAddress()).equal(hre.ethers.ZeroAddress);
-		expect((await game_.roundStats(roundNum_)).numBids).equal(3n);
+		const stats_ = await game_.roundStats(roundNum_);
+		expect((version_ < 3) ? stats_ : stats_.numBids).equal(3n);
 		for (const [bidIndex_, bidder_] of [alice_, bob_, carol_,].entries()) {
-			expect((await game_.getBidInfoAt(roundNum_, bidIndex_)).bidderAddress).equal(bidder_.address);
+			expect(await getBidderAddressAt(game_, version_, roundNum_, bidIndex_)).equal(bidder_.address);
 		}
 
 		await claimMainPrizeAndCheckChampions(game_, carol_, roundNum_, version_, timeStamp_ + 300n, {

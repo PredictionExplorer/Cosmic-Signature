@@ -1,12 +1,12 @@
 "use strict";
 
-const { describe, it } = require("mocha");
 const { expect } = require("chai");
+const { describe, it } = require("mocha");
 const hre = require("hardhat");
 const { SECONDS_PER_HOUR } = require("../../src/CosmicSignatureConstants.js");
 const { waitForTransactionReceipt } = require("../../src/Helpers.js");
-const { activateCurrentRound, findParsedEvent, getLatestBlockTimestamp } = require("../src/V2UpgradeTestHelpers.js");
-const { findTimeStampWithAffordableCstBidPrice } = require("../src/V3UpgradeTestHelpers.js");
+const { activateCurrentRound, findParsedEvent, getLatestBlockTimestamp } = require("../src/GameV2UpgradeTestHelpers.js");
+const { findTimeStampWithAffordableCstBidPrice } = require("../src/GameV3UpgradeTestHelpers.js");
 const { verifyBidRaffleClaimDraws, readBidRaffleData } = require("../src/BidRaffleTestHelpers.js");
 const { testAcrossGameVersions, finishGameRound } = require("../src/GameRoundTestHelpers.js");
 

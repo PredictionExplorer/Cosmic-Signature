@@ -1,7 +1,7 @@
 "use strict";
 
-const { describe, it, before } = require("mocha");
 const { expect } = require("chai");
+const { describe, it, before } = require("mocha");
 const hre = require("hardhat");
 const { generateRandomUInt256, generateRandomUInt256FromSeedWrapper/*, uint256ToPaddedHexString*/ } = require("../../src/Helpers.js");
 const { findBidIndexReference, calculateCumulativeWeights } = require("../src/BidRaffleTestHelpers.js");

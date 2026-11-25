@@ -1,6 +1,6 @@
 # Contract Archives
 
-Hardhat tests will use archived builds to replay the deployment and upgrade sequence on a local network. This lets the V4 development branch keep the current Solidity sources while archive branches preserve the old contracts and their tests.
+Hardhat tests use archived builds to replay the deployment and upgrade sequence on a local network. This lets the V4 development branch keep the current Solidity sources while archive branches preserve the old contracts and their tests.
 
 ## Archive Branches and Deployment Order
 
@@ -12,9 +12,15 @@ The first eight digits of each branch name are the date of its base commit (`YYY
 | V2 | `20260625-CosmicSignatureGameV2-archive` | `3f52eaaf2258` | `0x50eB3d05d2C463949DE9238D419385594f7AdB97` |
 | V3 | Planned from `20261109_v4` | To be selected | `0xc1b97E1b0baC86248653B18706dbC5c8898c5c06` |
 
-A typical test starts by deploying all production and external contracts from the V1 archive, including `RandomWalkNFT`.
+A typical test deploys the game and its production contracts from the V1 archive. The OpenZeppelin Upgrades plugin creates the game proxy. Any third-party contract deployed alongside the game would also belong in the archive. All application contracts deployed with V1 came from `contracts/production/`.
 
-Each subsequent archive branch names the contract or contracts to deploy or upgrade at that step. For example, the V2 archive supplies `CosmicSignatureGameV2` for the upgrade of the existing game proxy. Tests keep using the previously deployed instances of every other contract, even if their source changed on the V2 branch. The planned sequence continues through archived V3 to V4 from the development branch. Some existing tests may still select other contracts from a later build.
+Tests deploy `RandomWalkNFT` and test-only contracts from the current checkout. The original Random Walk NFT contract was deployed years before V1 with older versions of Solidity and OpenZeppelin. The local contract has the same ABI, so these tests do not need a separate archive for it.
+
+Each subsequent archive names the contracts introduced at that step. Tests upgrade the same game proxy to `CosmicSignatureGameV2` from the V2 archive and then to `CosmicSignatureGameV3` from the current build. The original `PrizesWallet` and the other V1 contracts stay in use. A future archive can name both a game upgrade and a new wallet when both are deployed.
+
+Tests select artifacts by **codebase snapshot index**. In `src/ArchiveTestingHelpers.js`, indices `0` and `1` select the V1 and V2 archives. Index `2` currently selects the checkout containing V3. Append new archives in deployment order. Each release keeps its index when archived, and the current checkout always has the next index. A release that deploys only a wallet also gets its own index.
+
+`withCodebaseSnapshotArtifacts` selects the matching Hardhat build configuration for the duration of an action. Each Mocha worker creates an artifact manager and a private copy of `validations.json` on first use and caches them by snapshot index. The normal OpenZeppelin deployment and upgrade calls use those validations and the proxy's recorded implementation layout. Solidity coverage can instrument the current build only.
 
 ## Selecting the Archive Commits
 
@@ -37,6 +43,8 @@ Commit `3e926da0` reduced archived V1's trailing `__gap_persistent` from the dep
 ## Storage Rename Annotations
 
 V3's `roundStats` carries `@custom:oz-renamed-from bidderAddresses` so the deployed V2 layout can upgrade to it. OpenZeppelin Upgrades Core 1.44.2 also compares rename annotations when two layouts already use the same field name. Archived V2 and both archived copies of V1 therefore carry the same annotation on `roundStats`.
+
+The current V1 storage declaration carries the same `@custom:oz-retyped-from` annotation as the V2-based storage declaration. The OpenBid prototype inherits the former when upgrading from the archived V1 address mapping.
 
 V2 renames `cstDutchAuctionDurationDivisor` to `cstDutchAuctionDuration` and `bidCstRewardAmount` to `bidCstRewardAmountMultiplier`. Both changes need annotations on V2. The V1 archive is deployed with `bidCstRewardAmount` already in place, so its former `cstRewardAmountForBidding` annotation was removed.
 

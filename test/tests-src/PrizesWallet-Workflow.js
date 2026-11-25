@@ -5,8 +5,8 @@
 // #endregion
 // #region
 
-const { describe, it } = require("mocha");
 const { expect } = require("chai");
+const { describe, it } = require("mocha");
 const hre = require("hardhat");
 const { MAX_UINT256 } = require("../../src/BigIntMathHelpers.js");
 const { generateRandomUInt256, generateRandomUInt256FromSeedWrapper, waitForTransactionReceipt } = require("../../src/Helpers.js");
@@ -390,7 +390,7 @@ describe("PrizesWallet-Workflow", function () {
 					await expect(transactionResponsePromise_)
 						.revertedWithCustomError(newPrizesWallet_, "EthWithdrawalDenied")
 						.withArgs(
-							// "Only the ETH prize winner is permitted to withdraw the prize before a timeout expires.",
+							"Only the ETH prize winner is permitted to withdraw the prize before a timeout expires.",
 							prizeRoundNum_,
 							contracts_.signers[prizeWinnerIndex_].address,
 							contracts_.signers[strangerIndex_].address,
@@ -621,7 +621,7 @@ describe("PrizesWallet-Workflow", function () {
 								await expect(transactionResponsePromise_)
 									.revertedWithCustomError(newPrizesWallet_, "DonatedTokenClaimDenied")
 									.withArgs(
-										// "Only the bidding round main prize beneficiary is permitted to claim this ERC-20 token donation before a timeout expires.",
+										"Only the bidding round main prize beneficiary is permitted to claim this ERC-20 token donation before a timeout expires.",
 										donationRoundNum_,
 										contracts_.signers[mainPrizeBeneficiaryIndex_].address,
 										tokensAddress_[tokenIndex_],
@@ -799,7 +799,7 @@ describe("PrizesWallet-Workflow", function () {
 						// console.info("%s", "202506167");
 						await expect(transactionResponsePromise_)
 							.revertedWithCustomError(newPrizesWallet_, "InvalidDonatedNftIndex")
-							.withArgs(/* "Invalid donated NFT index.", */ contracts_.signers[mainPrizeBeneficiaryIndex_].address, BigInt(donatedNftIndex_));
+							.withArgs("Invalid donated NFT index.", contracts_.signers[mainPrizeBeneficiaryIndex_].address, BigInt(donatedNftIndex_));
 						transactionShouldHaveSucceeded_ = false;
 					}
 				}
@@ -808,7 +808,7 @@ describe("PrizesWallet-Workflow", function () {
 						// console.info("%s", "202506168");
 						await expect(transactionResponsePromise_)
 							.revertedWithCustomError(newPrizesWallet_, "DonatedNftAlreadyClaimed")
-							.withArgs(/* "Donated NFT already claimed.", */ contracts_.signers[mainPrizeBeneficiaryIndex_].address, BigInt(donatedNftIndex_));
+							.withArgs("Donated NFT already claimed.", contracts_.signers[mainPrizeBeneficiaryIndex_].address, BigInt(donatedNftIndex_));
 						transactionShouldHaveSucceeded_ = false;
 					}
 				}
@@ -830,7 +830,7 @@ describe("PrizesWallet-Workflow", function () {
 							await expect(transactionResponsePromise_)
 								.revertedWithCustomError(newPrizesWallet_, "DonatedNftClaimDenied")
 								.withArgs(
-									// "Only the bidding round main prize beneficiary is permitted to claim this NFT before a timeout expires.",
+									"Only the bidding round main prize beneficiary is permitted to claim this NFT before a timeout expires.",
 									contracts_.signers[mainPrizeBeneficiaryIndex_].address,
 									BigInt(donatedNftIndex_),
 									donationRoundTimeoutTimeToWithdrawPrizes_,

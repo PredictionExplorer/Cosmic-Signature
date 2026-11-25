@@ -49,6 +49,7 @@ const deployContracts = async function (
 @param {string} charityAddress May be empty or zero.
 @param {boolean} transferContractOwnershipToCosmicSignatureDao 
 @param {bigint} roundActivationTime See `setRoundActivationTimeIfNeeded`.
+@param {<ActionReturnValue_>(contractName: string, action: () => Promise<ActionReturnValue_>) => Promise<ActionReturnValue_>} [withArtifactsForContract] Tests select the snapshot that supplies each contract.
 */
 const deployContractsAdvanced = async function (
 	deployerSigner,
@@ -56,19 +57,28 @@ const deployContractsAdvanced = async function (
 	randomWalkNftAddress,
 	charityAddress,
 	transferContractOwnershipToCosmicSignatureDao,
-	roundActivationTime
+	roundActivationTime,
+	withArtifactsForContract = (_contractName, action) => action()
 ) {
 	// Comment-202409255 applies.
 	const hre = HardhatContext.getHardhatContext().environment;
 
-	const cosmicSignatureGameFactory = await hre.ethers.getContractFactory(cosmicSignatureGameContractName, deployerSigner);
-	const cosmicSignatureGameProxy =
-		await hre.upgrades.deployProxy(
-			cosmicSignatureGameFactory,
-			[deployerSigner.address,],
-			{
-				kind: "uups",
-				// initializer: "initialize",
+	const getContractFactory = (name) => withArtifactsForContract(name, () => hre.ethers.getContractFactory(name, deployerSigner));
+	const {cosmicSignatureGameFactory, cosmicSignatureGameProxy,} =
+		await withArtifactsForContract(
+			cosmicSignatureGameContractName,
+			async () => {
+				const cosmicSignatureGameFactory = await hre.ethers.getContractFactory(cosmicSignatureGameContractName, deployerSigner);
+				const cosmicSignatureGameProxy =
+					await hre.upgrades.deployProxy(
+						cosmicSignatureGameFactory,
+						[deployerSigner.address,],
+						{
+							kind: "uups",
+							// initializer: "initialize",
+						}
+					);
+				return { cosmicSignatureGameFactory, cosmicSignatureGameProxy };
 			}
 		);
 	await cosmicSignatureGameProxy.waitForDeployment();
@@ -77,12 +87,12 @@ const deployContractsAdvanced = async function (
 	const cosmicSignatureGameImplementationAddress = await hre.upgrades.erc1967.getImplementationAddress(cosmicSignatureGameProxyAddress);
 	const cosmicSignatureGameImplementation = cosmicSignatureGameFactory.attach(cosmicSignatureGameImplementationAddress);
 
-	const cosmicSignatureTokenFactory = await hre.ethers.getContractFactory("CosmicSignatureToken", deployerSigner);
+	const cosmicSignatureTokenFactory = await getContractFactory("CosmicSignatureToken");
 	const cosmicSignatureToken = await cosmicSignatureTokenFactory.deploy(cosmicSignatureGameProxyAddress);
 	await cosmicSignatureToken.waitForDeployment();
 	const cosmicSignatureTokenAddress = await cosmicSignatureToken.getAddress();
 
-	const randomWalkNftFactory = await hre.ethers.getContractFactory("RandomWalkNFT", deployerSigner);
+	const randomWalkNftFactory = await getContractFactory("RandomWalkNFT");
 	let randomWalkNft;
 	if (randomWalkNftAddress.length <= 0 || randomWalkNftAddress == hre.ethers.ZeroAddress) {
 		randomWalkNft = await randomWalkNftFactory.deploy();
@@ -92,33 +102,33 @@ const deployContractsAdvanced = async function (
 		randomWalkNft = randomWalkNftFactory.attach(randomWalkNftAddress);
 	}
 
-	const cosmicSignatureNftFactory = await hre.ethers.getContractFactory("CosmicSignatureNft", deployerSigner);
+	const cosmicSignatureNftFactory = await getContractFactory("CosmicSignatureNft");
 	const cosmicSignatureNft = await cosmicSignatureNftFactory.deploy(cosmicSignatureGameProxyAddress);
 	await cosmicSignatureNft.waitForDeployment();
 	const cosmicSignatureNftAddress = await cosmicSignatureNft.getAddress();
 
-	const prizesWalletFactory = await hre.ethers.getContractFactory("PrizesWallet", deployerSigner);
+	const prizesWalletFactory = await getContractFactory("PrizesWallet");
 	const prizesWallet = await prizesWalletFactory.deploy(cosmicSignatureGameProxyAddress);
 	await prizesWallet.waitForDeployment();
 	const prizesWalletAddress = await prizesWallet.getAddress();
 
-	const stakingWalletRandomWalkNftFactory = await hre.ethers.getContractFactory("StakingWalletRandomWalkNft", deployerSigner);
+	const stakingWalletRandomWalkNftFactory = await getContractFactory("StakingWalletRandomWalkNft");
 	const stakingWalletRandomWalkNft = await stakingWalletRandomWalkNftFactory.deploy(randomWalkNftAddress);
 	await stakingWalletRandomWalkNft.waitForDeployment();
 	const stakingWalletRandomWalkNftAddress = await stakingWalletRandomWalkNft.getAddress();
 
-	const stakingWalletCosmicSignatureNftFactory = await hre.ethers.getContractFactory("StakingWalletCosmicSignatureNft", deployerSigner);
+	const stakingWalletCosmicSignatureNftFactory = await getContractFactory("StakingWalletCosmicSignatureNft");
 	const stakingWalletCosmicSignatureNft =
 		await stakingWalletCosmicSignatureNftFactory.deploy(cosmicSignatureNftAddress, cosmicSignatureGameProxyAddress);
 	await stakingWalletCosmicSignatureNft.waitForDeployment();
 	const stakingWalletCosmicSignatureNftAddress = await stakingWalletCosmicSignatureNft.getAddress();
 
-	const marketingWalletFactory = await hre.ethers.getContractFactory("MarketingWallet", deployerSigner);
+	const marketingWalletFactory = await getContractFactory("MarketingWallet");
 	const marketingWallet = await marketingWalletFactory.deploy(cosmicSignatureTokenAddress);
 	await marketingWallet.waitForDeployment();
 	const marketingWalletAddress = await marketingWallet.getAddress();
 
-	const charityWalletFactory = await hre.ethers.getContractFactory("CharityWallet", deployerSigner);
+	const charityWalletFactory = await getContractFactory("CharityWallet");
 	const charityWallet = await charityWalletFactory.deploy();
 	await charityWallet.waitForDeployment();
 	const charityWalletAddress = await charityWallet.getAddress();
@@ -126,7 +136,7 @@ const deployContractsAdvanced = async function (
 		await waitForTransactionReceipt(charityWallet.setCharityAddress(charityAddress));
 	}
 
-	const cosmicSignatureDaoFactory = await hre.ethers.getContractFactory("CosmicSignatureDao", deployerSigner);
+	const cosmicSignatureDaoFactory = await getContractFactory("CosmicSignatureDao");
 	const cosmicSignatureDao = await cosmicSignatureDaoFactory.deploy(cosmicSignatureTokenAddress);
 	await cosmicSignatureDao.waitForDeployment();
 	const cosmicSignatureDaoAddress = await cosmicSignatureDao.getAddress();

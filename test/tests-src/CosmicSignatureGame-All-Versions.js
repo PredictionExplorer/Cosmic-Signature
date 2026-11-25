@@ -1,11 +1,11 @@
 "use strict";
 
-const { describe, it } = require("mocha");
 const { expect } = require("chai");
+const { describe, it } = require("mocha");
 const hre = require("hardhat");
 const { generateRandomUInt32, uint32ToPaddedHexString, waitForTransactionReceipt } = require("../../src/Helpers.js");
+// const { activateCurrentRound } = require("../src/GameV2UpgradeTestHelpers.js");
 const { testAcrossGameVersions, activateRoundBidAndClaimMainPrize } = require("../src/GameRoundTestHelpers.js");
-// const { activateCurrentRound } = require("../src/V2UpgradeTestHelpers.js");
 
 describe("CosmicSignatureGame-All-Versions", function () {
 	// Issue. I have eliminated the `fallback` method and refactored this test to confirm the behavior that is expected

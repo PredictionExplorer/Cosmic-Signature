@@ -5,29 +5,29 @@
 // per second since the last bid, and when someone places a bid, the WHOLE reward is minted to the bidder
 // being outbid (`lastBidderAddress`). Nothing is minted on the first bid in a bidding round.
 
-const { describe, it } = require("mocha");
 const { expect } = require("chai");
+const { describe, it } = require("mocha");
 const hre = require("hardhat");
 const { DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER, SECONDS_PER_HOUR } = require("../../src/CosmicSignatureConstants.js");
 const { tryReduceValueExponentially } = require("../../src/BigIntMathHelpers.js");
 const { generateRandomUInt256, waitForTransactionReceipt } = require("../../src/Helpers.js");
-const { activateCurrentRound, findParsedEvent, getLatestBlockTimestamp, blockTimestampOfReceipt } = require("../src/V2UpgradeTestHelpers.js");
+const { activateCurrentRound, findParsedEvent, getLatestBlockTimestamp, blockTimestampOfReceipt } = require("../src/GameV2UpgradeTestHelpers.js");
 const {
-	deployV1CompleteRoundZeroAndUpgradeToV2AndV3,
-	assertDefaultV3Initialization,
+	deployGameV1CompleteRoundZeroAndUpgradeToV2AndV3,
+	assertDefaultGameV3Initialization,
 	findTimeStampWithAffordableCstBidPrice,
 	getV3BidCstRewardAmount,
 	getV3CstBidPriceDeclineMultiplierAfterEthBid,
-} = require("../src/V3UpgradeTestHelpers.js");
+} = require("../src/GameV3UpgradeTestHelpers.js");
 const { getPriceAndBidWithEthAt, getPriceAndBidWithCstAt, findParsedEvents } = require("../src/BidCstRewardTestHelpers.js");
 const { configureRewardAndDeployHostileBidder, hostileBidWithEthAt } = require("../src/AdversarialTestHelpers.js");
 const { testAcrossGameVersions, finishGameRound, bidWithEthAt } = require("../src/GameRoundTestHelpers.js");
 
 describe("CosmicSignatureGameV3-BidCstReward", function () {
 	it("reinitialize sets bidCstRewardAmountMultiplier so the reward accrues at ~1 CST per minute", async function () {
-		const contracts_ = await deployV1CompleteRoundZeroAndUpgradeToV2AndV3();
+		const contracts_ = await deployGameV1CompleteRoundZeroAndUpgradeToV2AndV3();
 		const game_ = contracts_.cosmicSignatureGameV3Proxy;
-		await assertDefaultV3Initialization(game_);
+		await assertDefaultGameV3Initialization(game_);
 		expect(await game_.bidCstRewardAmountMultiplier()).equal(DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER);
 		expect(DEFAULT_BID_CST_REWARD_AMOUNT_MULTIPLIER).equal(6n * 10n ** 25n);
 

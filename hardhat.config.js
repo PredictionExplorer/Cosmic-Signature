@@ -5,7 +5,7 @@
 // #endregion
 // #region
 
-const nodeFsModule = require("node:fs");
+const nodeFs = require("node:fs");
 
 // Comment-202409255 relates.
 const helpersModule = require("./src/Helpers.js");
@@ -75,7 +75,7 @@ const solidityCompilerLongVersion = solidityVersion + "+commit.80d5c536";
 // Comment-202409011 applies.
 // Comment-202411136 relates.
 let solidityCompilerPath = `${process.env.HOME}/.solc-select/artifacts/solc-${solidityVersion}/solc-${solidityVersion}`;
-if ( ! nodeFsModule.statSync(solidityCompilerPath, {throwIfNoEntry: false,})?.isFile() ) {
+if ( ! nodeFs.statSync(solidityCompilerPath, {throwIfNoEntry: false,})?.isFile() ) {
 	// Issue. This is unlikely to exist.
 	solidityCompilerPath = `${process.env.HOME}/.local/bin/solc`;
 }
@@ -107,7 +107,7 @@ console.warn("%s", `Warning. Make sure \`${solidityCompilerPath}\` version is \`
 // #endregion
 // #region
 
-// const nodeOsModule = require("node:os");
+// const nodeOs = require("node:os");
 
 // This imports a bunch of Hardhat packages. Don't import them here.
 require("@nomicfoundation/hardhat-toolbox");
@@ -536,7 +536,7 @@ const hardhatUserConfig = {
 
 	mocha: {
 		parallel: true,
-		// jobs: nodeOsModule.availableParallelism(),
+		// jobs: nodeOs.availableParallelism(),
 		timeout: 12 * 60 * 60 * 1000,
 
 		// Comment-202508265 relates and/or applies.

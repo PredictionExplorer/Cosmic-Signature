@@ -127,29 +127,6 @@ class ShadowState {
 		this.contractsByAddress = contractsByAddress_;
 	}
 
-	/**
-	Rebinds the PrizesWallet ledger to a freshly deployed (empty) wallet after `setPrizesWallet`.
-	The caller must have fully drained the previous wallet first (every tracked ETH prize withdrawn and
-	every donated token/NFT claimed), so no obligations are forgotten here.
-	@param {string} newPrizesWalletAddress_
-	@param {import("ethers").Interface} prizesWalletInterface_
-	*/
-	swapPrizesWallet(newPrizesWalletAddress_, prizesWalletInterface_) {
-		const newAddressLower_ = newPrizesWalletAddress_.toLowerCase();
-		this.contractsByAddress.set(newAddressLower_, { name: "PrizesWallet", iface: prizesWalletInterface_ });
-		this.addresses.prizesWallet = newAddressLower_;
-		this.prizesWallet = {
-			ethBalances: new Map(),
-			mainPrizeBeneficiaries: new Map(),
-			roundTimeouts: new Map(),
-			timeoutDurationToWithdrawPrizes: 0n,
-			donatedNfts: new Map(),
-			nextDonatedNftIndex: 0n,
-			donatedMockErc20: new Map(),
-			donatedTokenHolders: new Map(),
-		};
-	}
-
 	// #endregion
 	// #region ETH ledger
 

@@ -3,7 +3,7 @@
 const { expect } = require("chai");
 const hre = require("hardhat");
 const { waitForTransactionReceipt } = require("../../src/Helpers.js");
-const { getLatestBlockTimestamp, blockTimestampOfReceipt } = require("./V2UpgradeTestHelpers.js");
+const { getLatestBlockTimestamp, blockTimestampOfReceipt } = require("./GameV2UpgradeTestHelpers.js");
 
 /** Executes an ETH bid at exactly the given block timestamp, paying the exact bid price. */
 async function getPriceAndBidWithEthAt(game_, bidderSigner_, timeStamp_, bidCstRewardAmountMinLimit_ = 0n) {

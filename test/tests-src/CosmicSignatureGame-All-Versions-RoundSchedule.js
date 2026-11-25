@@ -1,15 +1,15 @@
 "use strict";
 
-const { describe, it } = require("mocha");
 const { expect } = require("chai");
+const { describe, it } = require("mocha");
 const { SECONDS_PER_HOUR, SECONDS_PER_DAY } = require("../../src/CosmicSignatureConstants.js");
 const { MAX_UINT256, asUint256 } = require("../../src/BigIntMathHelpers.js");
 const { ENABLE_SMTCHECKER, generateRandomUInt32, waitForTransactionReceipt } = require("../../src/Helpers.js");
-const { activateCurrentRound, mineAtOrAfter, getLatestBlockTimestamp, blockTimestampOfReceipt } = require("../src/V2UpgradeTestHelpers.js");
+const { activateCurrentRound, mineAtOrAfter, getLatestBlockTimestamp, blockTimestampOfReceipt } = require("../src/GameV2UpgradeTestHelpers.js");
 const { testAcrossGameVersions, finishGameRound, bidWithEthAt } = require("../src/GameRoundTestHelpers.js");
 
 async function testOverflowingActivationDelay(delay_) {
-	await testAcrossGameVersions(async (contracts_, game_, roundNum_) => {
+	await testAcrossGameVersions(async (contracts_, game_, roundNum_, version_) => {
 		const gameForOwner_ = game_.connect(contracts_.ownerSigner);
 		const normalDelay_ = await game_.delayDurationBeforeRoundActivation();
 		const winner_ = contracts_.signers[2];
@@ -20,8 +20,8 @@ async function testOverflowingActivationDelay(delay_) {
 		await expect(game_.connect(contracts_.signers[3]).claimMainPrize())
 			.revertedWithCustomError(game_, "MainPrizeClaimDenied");
 
-		// Comment-202606235: an overflowing activation delay must not block the winner's production claim.
-		if (ENABLE_SMTCHECKER > 0) {
+		// Comment-202606235 applies beginning with the archived V2 implementation.
+		if (version_ === 1 || ENABLE_SMTCHECKER > 0) {
 			await expect(game_.connect(winner_).claimMainPrize()).revertedWithPanic(0x11);
 			expect(await game_.roundNum()).equal(roundNum_);
 			expect(await game_.lastBidderAddress()).equal(winner_.address);
@@ -68,11 +68,11 @@ describe("CosmicSignatureGame-All-Versions-RoundSchedule", function () {
 		});
 	});
 
-	it("wraps a maximum activation delay without denying the winner's claim outside SMTChecker builds", async function () {
+	it("checks a maximum activation delay in V1 and wraps it in V2+ outside SMTChecker builds", async function () {
 		await testOverflowingActivationDelay(MAX_UINT256);
 	});
 
-	it("wraps a non-maximum overflowing activation delay outside SMTChecker builds", async function () {
+	it("checks a non-maximum overflowing activation delay in V1 and wraps it in V2+ outside SMTChecker builds", async function () {
 		await testOverflowingActivationDelay(MAX_UINT256 - 1000n);
 	});
 });

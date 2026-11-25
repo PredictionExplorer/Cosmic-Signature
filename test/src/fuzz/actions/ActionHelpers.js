@@ -547,7 +547,7 @@ function verifyClaimReceipt(ctx_, { claimerAddress, receipt, breakdown, rwNftSta
 	// Charity transfer outcome depends on the current charity recipient.
 	const charityAccepts_ = ctx_.charity.accepts();
 	const charitySuccessEvents_ = engine.parsedEvents(receipt, game_, "FundsTransferredToCharity");
-	const charityFailedEvents_ = engine.parsedEvents(receipt, game_, "EthTransferToCharityFailed");
+	const charityFailedEvents_ = engine.parsedEvents(receipt, game_, (model.version < 3) ? "FundTransferFailed" : "EthTransferToCharityFailed");
 	expect(charitySuccessEvents_.length, "claim: charity success event count").to.equal(charityAccepts_ ? 1 : 0);
 	expect(charityFailedEvents_.length, "claim: charity failure event count").to.equal(charityAccepts_ ? 0 : 1);
 	const charityEventArgs_ = (charityAccepts_ ? charitySuccessEvents_ : charityFailedEvents_)[0].args;

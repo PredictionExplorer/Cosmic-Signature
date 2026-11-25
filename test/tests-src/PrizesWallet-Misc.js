@@ -5,16 +5,17 @@
 // #endregion
 // #region
 
-const { describe, it } = require("mocha");
 const { expect } = require("chai");
+const { describe, it } = require("mocha");
 const hre = require("hardhat");
-// const { anyUint } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
+const { anyUint } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { SECONDS_PER_HOUR } = require("../../src/CosmicSignatureConstants.js");
 const { MAX_UINT256 } = require("../../src/BigIntMathHelpers.js");
-const { ENABLE_ASSERTS, generateRandomUInt32, generateRandomUInt256, waitForTransactionReceipt } = require("../../src/Helpers.js");
+const { generateRandomUInt32, generateRandomUInt256, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { setRoundActivationTimeIfNeeded } = require("../../src/ContractDeploymentHelpers.js");
+const { INITIAL_DEPLOYMENT_SNAPSHOT_INDEX, withCodebaseSnapshotArtifacts } = require("../../src/ArchiveTestingHelpers.js");
 const { loadFixtureDeployContractsForTesting, assertEvent } = require("../../src/ContractTestingHelpers.js");
-const { activateCurrentRound, getLatestBlockTimestamp } = require("../src/V2UpgradeTestHelpers.js");
+const { activateCurrentRound, getLatestBlockTimestamp } = require("../src/GameV2UpgradeTestHelpers.js");
 const { deployBrokenToken } = require("../src/AdversarialTestHelpers.js");
 const { testAcrossGameVersions, bidWithEthAt } = require("../src/GameRoundTestHelpers.js");
 
@@ -37,27 +38,13 @@ describe("PrizesWallet-Misc", function () {
 	it("Contract parameter setters", async function () {
 		const contracts_ = await loadFixtureDeployContractsForTesting(-1_000_000_000n);
 
-		{
-			const newValue_ = generateRandomUInt256();
-			await expect(contracts_.prizesWallet.connect(contracts_.signers[1]).setTimeoutDurationToWithdrawPrizes(newValue_))
-				.revertedWithCustomError(contracts_.prizesWallet, "OwnableUnauthorizedAccount");
-			await expect(contracts_.prizesWallet.connect(contracts_.ownerSigner).setTimeoutDurationToWithdrawPrizes(newValue_))
-				.emit(contracts_.prizesWallet, "TimeoutDurationToWithdrawPrizesChanged")
-				.withArgs(newValue_);
-			expect(await contracts_.prizesWallet.timeoutDurationToWithdrawPrizes()).equal(newValue_);
-		}
-
-		if (ENABLE_ASSERTS) {
-			for (const newValue_ of [true, false,]) {
-				const previousValue_ = await contracts_.prizesWallet.bypassSomeAsserts();
-				await expect(contracts_.prizesWallet.connect(contracts_.signers[1]).setBypassSomeAsserts(newValue_))
-					.revertedWithCustomError(contracts_.prizesWallet, "OwnableUnauthorizedAccount")
-					.withArgs(contracts_.signers[1].address);
-				expect(await contracts_.prizesWallet.bypassSomeAsserts()).equal(previousValue_);
-				await waitForTransactionReceipt(contracts_.prizesWallet.connect(contracts_.ownerSigner).setBypassSomeAsserts(newValue_));
-				expect(await contracts_.prizesWallet.bypassSomeAsserts()).equal(newValue_);
-			}
-		}
+		const newValue_ = generateRandomUInt256();
+		await expect(contracts_.prizesWallet.connect(contracts_.signers[1]).setTimeoutDurationToWithdrawPrizes(newValue_))
+			.revertedWithCustomError(contracts_.prizesWallet, "OwnableUnauthorizedAccount");
+		await expect(contracts_.prizesWallet.connect(contracts_.ownerSigner).setTimeoutDurationToWithdrawPrizes(newValue_))
+			.emit(contracts_.prizesWallet, "TimeoutDurationToWithdrawPrizesChanged")
+			.withArgs(newValue_);
+		expect(await contracts_.prizesWallet.timeoutDurationToWithdrawPrizes()).equal(newValue_);
 	});
 
 	// #endregion
@@ -190,7 +177,11 @@ describe("PrizesWallet-Misc", function () {
 
 		{
 			const donatedTokenHolderAddress_ = await newPrizesWallet_.donatedTokens(0n);
-			const donatedTokenHolder_ = await hre.ethers.getContractAt("DonatedTokenHolder", donatedTokenHolderAddress_, contracts_.signers[6]);
+			const donatedTokenHolder_ =
+				await withCodebaseSnapshotArtifacts(
+					INITIAL_DEPLOYMENT_SNAPSHOT_INDEX,
+					() => hre.ethers.getContractAt("DonatedTokenHolder", donatedTokenHolderAddress_, contracts_.signers[6])
+				);
 			transactionResponsePromise_ = donatedTokenHolder_/*.connect(...)*/.authorizeDeployerAsMyTokenSpender(tokensAddress_[0]);
 			await expect(transactionResponsePromise_)
 				.revertedWithCustomError(donatedTokenHolder_, "UnauthorizedCaller")
@@ -337,10 +328,10 @@ describe("PrizesWallet-Misc", function () {
 						break;
 				}
 				let transactionResponsePromiseAssertion_ = expect(transactionResponsePromise_);
-				if (brokenEthReceiverEthDepositAcceptanceModeCode_ == 1n) {
-					await transactionResponsePromiseAssertion_.revertedWith("I am not accepting deposits.");
-				} else if (brokenEthReceiverEthDepositAcceptanceModeCode_ == 2n) {
-					await transactionResponsePromiseAssertion_.revertedWithPanic(0x01);
+				if (brokenEthReceiverEthDepositAcceptanceModeCode_ > 0n) {
+					await transactionResponsePromiseAssertion_
+						.revertedWithCustomError(contracts_.prizesWallet, "FundTransferFailed")
+						.withArgs("ETH withdrawal failed.", bidderContractAddress_, prizeWinnerEthBalanceAmount_);
 				} else {
 					await transactionResponsePromiseAssertion_
 						.emit(contracts_.prizesWallet, "EthWithdrawn")
@@ -682,7 +673,8 @@ describe("PrizesWallet-Misc", function () {
 						case 6: {
 							// console.info("%s", "202507094");
 							await transactionResponsePromiseAssertion_
-								.revertedWithCustomError(newPrizesWallet_, "ReentrancyGuardReentrantCall");
+								.revertedWithCustomError(newPrizesWallet_, "FundTransferFailed")
+								.withArgs("ETH withdrawal failed.", maliciousPrizeWinnerAddress_, anyUint);
 							break;
 						}
 						default: {

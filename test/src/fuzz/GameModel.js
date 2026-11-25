@@ -5,8 +5,8 @@
 // #endregion
 // #region Imports
 
-const hre = require("hardhat");
 const { expect } = require("chai");
+const hre = require("hardhat");
 const c = require("../../../src/CosmicSignatureConstants.js");
 const {
 	maxBigInt,
@@ -81,7 +81,7 @@ class GameModel {
 		this.charityAddress = "";
 		/** @type {string} */
 		this.marketingWalletAddress = "";
-		/** @type {string} The current `prizesWallet` (owner-mutable in V2+; the fuzz only swaps it after the V3 upgrade). */
+		/** @type {string} The archived V1 prizes wallet used throughout the campaign. */
 		this.prizesWalletAddress = "";
 
 		// Round / bidding state.

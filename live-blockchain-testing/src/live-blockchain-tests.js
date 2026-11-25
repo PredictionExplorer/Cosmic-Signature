@@ -5,7 +5,7 @@
 // #endregion
 // #region
 
-const nodeOsModule = require("node:os");
+const nodeOs = require("node:os");
 const { configuration } = require("./live-blockchain-tests-configuration.js");
 
 // #endregion
@@ -16,7 +16,7 @@ prepare1();
 // #endregion
 // #region
 
-const nodeFsModule = require("node:fs");
+const nodeFs = require("node:fs");
 const hre = require("hardhat");
 const { vars } = require("hardhat/config");
 const { generateRandomUInt256, generateAccountPrivateKeyFromSeed, uint256ToPaddedHexString, hackApplyGasMultiplierIfNeeded, waitForTransactionReceipt } = require("../../src/Helpers.js");
@@ -71,7 +71,7 @@ main()
 function prepare1() {
 	// // Testing.
 	// process.on("unhandledRejection", (reason_, promise_) => {
-	// 	console.error(/*"%s",*/ "Error. Unhandled rejection from:", promise_, `${nodeOsModule.EOL}Reason:`, reason_);
+	// 	console.error(/*"%s",*/ "Error. Unhandled rejection from:", promise_, `${nodeOs.EOL}Reason:`, reason_);
 	// });
 
 	validateConfiguration();
@@ -87,13 +87,13 @@ function prepare1() {
 			hardhatModeCodeAsString_ = "2";
 			process.env["HARDHAT_MODE_CODE"] = hardhatModeCodeAsString_;
 		} else {
-			console.warn("%s", `${nodeOsModule.EOL}Warning. The HARDHAT_MODE_CODE environment variable is already set to "${hardhatModeCodeAsString_}". Is it intentional?`);
+			console.warn("%s", `${nodeOs.EOL}Warning. The HARDHAT_MODE_CODE environment variable is already set to "${hardhatModeCodeAsString_}". Is it intentional?`);
 		}
 	}
 	{
 		const hardhatNetworkName_ = process.env.HARDHAT_NETWORK ?? "";
 		if (hardhatNetworkName_.length > 0) {
-			console.warn("%s", `${nodeOsModule.EOL}Warning. The HARDHAT_NETWORK environment variable is already set to "${hardhatNetworkName_}". Is it intentional?`);
+			console.warn("%s", `${nodeOs.EOL}Warning. The HARDHAT_NETWORK environment variable is already set to "${hardhatNetworkName_}". Is it intentional?`);
 		}
 		if (configuration.hardhat.networkName.length > 0) {
 			if (hardhatNetworkName_.length > 0) {
@@ -124,7 +124,7 @@ function validateConfiguration() {
 // #region `prepare2`
 
 function prepare2() {
-	console.info("%s", `${nodeOsModule.EOL}hre.network.name = ${hre.network.name}`);
+	console.info("%s", `${nodeOs.EOL}hre.network.name = ${hre.network.name}`);
 	hackApplyGasMultiplierIfNeeded();
 	createAccountSigners();
 }
@@ -139,13 +139,13 @@ function createAccountSigners() {
 		const accountPrivateKeySeedAsString_ = vars.get("accountPrivateKeySeed", "");
 		const accountPrivateKeySeed_ = (accountPrivateKeySeedAsString_.length > 0) ? BigInt(accountPrivateKeySeedAsString_) : defaultAccountPrivateKeySeed;
 		state.accountPrivateKeySeed = accountPrivateKeySeed_;
-		console.info("%s", `${nodeOsModule.EOL}accountPrivateKeySeed = ${uint256ToPaddedHexString(accountPrivateKeySeed_)}`);
+		console.info("%s", `${nodeOs.EOL}accountPrivateKeySeed = ${uint256ToPaddedHexString(accountPrivateKeySeed_)}`);
 		if (accountPrivateKeySeed_ == defaultAccountPrivateKeySeed) {
 			console.warn("%s", "Warning. That's the default hardcoded value. Your money, fake or real, may be at risk!");
 		}
 	}
 
-	console.info("%s", `${nodeOsModule.EOL}Accounts:`);
+	console.info("%s", `${nodeOs.EOL}Accounts:`);
 	Object.entries(accountPrivateKeySeedSalts).forEach(createAccountSigner);
 }
 
@@ -182,9 +182,9 @@ async function main() {
 	await finalizeTestingIfNeeded();
 	await payMarketingRewardsIfNeeded();
 	if ( ! (process.exitCode > 0) ) {
-		console.info("%s", `${nodeOsModule.EOL}Live blockchain tests completed successfully.`);
+		console.info("%s", `${nodeOs.EOL}Live blockchain tests completed successfully.`);
 	} else {
-		console.error("%s", `${nodeOsModule.EOL}Error. Live blockchain tests completed with errors.`);
+		console.error("%s", `${nodeOs.EOL}Error. Live blockchain tests completed with errors.`);
 	}
 }
 
@@ -197,7 +197,7 @@ async function runDeployCosmicSignatureContractsIfNeeded() {
 			.replaceAll("${networkName}", hre.network.name)
 			.replaceAll("${cosmicSignatureGameContractName}", configuration.cosmicSignatureContractsDeployment.cosmicSignatureGameContractName);
 	if (configuration.deployCosmicSignatureContracts) {
-		const deployCosmicSignatureContractsReportFileStats_ = nodeFsModule.statSync(deployCosmicSignatureContractsReportFilePath_, {throwIfNoEntry: false,});
+		const deployCosmicSignatureContractsReportFileStats_ = nodeFs.statSync(deployCosmicSignatureContractsReportFilePath_, {throwIfNoEntry: false,});
 		if (deployCosmicSignatureContractsReportFileStats_ === undefined) {
 			const deployCosmicSignatureContractsConfigurationFilePath_ =
 				configuration.cosmicSignatureContractsDeployment.deployCosmicSignatureContractsConfigurationFilePath
@@ -216,10 +216,10 @@ async function runDeployCosmicSignatureContractsIfNeeded() {
 				console.error();
 				throw new Error(`"${deployCosmicSignatureContractsReportFilePath_}" already exists, but it's not a file.`);
 			}
-			console.info("%s", `${nodeOsModule.EOL}"${deployCosmicSignatureContractsReportFilePath_}" already exists. Reusing the already deployed Cosmic Signature contracts. Assuming their bytecodes have not changed.${nodeOsModule.EOL}`);
+			console.info("%s", `${nodeOs.EOL}"${deployCosmicSignatureContractsReportFilePath_}" already exists. Reusing the already deployed Cosmic Signature contracts. Assuming their bytecodes have not changed.${nodeOs.EOL}`);
 		}
 	} else {
-		console.info("%s", `${nodeOsModule.EOL}We are configured to not deploy Cosmic Signature contracts.${nodeOsModule.EOL}`);
+		console.info("%s", `${nodeOs.EOL}We are configured to not deploy Cosmic Signature contracts.${nodeOs.EOL}`);
 	}
 	return deployCosmicSignatureContractsReportFilePath_;
 }
@@ -232,7 +232,7 @@ async function runDeployCosmicSignatureContractsIfNeeded() {
 */
 async function createCosmicSignatureContracts(deployCosmicSignatureContractsReportFilePath_) {
 	console.info("%s", `Loading "${deployCosmicSignatureContractsReportFilePath_}".`);
-	const deployCosmicSignatureContractsReportJsonString_ = await nodeFsModule.promises.readFile(deployCosmicSignatureContractsReportFilePath_, "utf8");
+	const deployCosmicSignatureContractsReportJsonString_ = await nodeFs.promises.readFile(deployCosmicSignatureContractsReportFilePath_, "utf8");
 	state.contracts = JSON.parse(deployCosmicSignatureContractsReportJsonString_);
 	await createContract("CosmicSignatureToken", "cosmicSignatureToken");
 	await createContract("RandomWalkNFT", "randomWalkNft");
@@ -265,10 +265,10 @@ async function validateCosmicSignatureContractStatesIfNeeded() {
 	if (configuration.validateCosmicSignatureContractStates >= 2 || configuration.validateCosmicSignatureContractStates > 0 && state.deployedCosmicSignatureContracts) {
 		// Doing nothing.
 	} else {
-		console.info("%s", `${nodeOsModule.EOL}We are configured to not validate Cosmic Signature contract states.`);
+		console.info("%s", `${nodeOs.EOL}We are configured to not validate Cosmic Signature contract states.`);
 		return;
 	}
-	console.info("%s", `${nodeOsModule.EOL}Validating Cosmic Signature contract states.`);
+	console.info("%s", `${nodeOs.EOL}Validating Cosmic Signature contract states.`);
 	await validateCosmicSignatureToken(state.contracts.cosmicSignatureToken, /*state.ownerSigner.address,*/ state.contracts.cosmicSignatureGameProxyAddress);
 
 	// It appears that there is nothing to validate in `RandomWalkNft`.
@@ -301,7 +301,7 @@ async function validateCosmicSignatureContractStatesIfNeeded() {
 
 async function fundAccountsWithEthIfNeeded() {
 	const ownerEthBalanceAmount_ = await hre.ethers.provider.getBalance(state.ownerSigner.address, "pending");
-	const message_ = `${nodeOsModule.EOL}owner ETH balance is ${hre.ethers.formatEther(ownerEthBalanceAmount_)} ETH. `;
+	const message_ = `${nodeOs.EOL}owner ETH balance is ${hre.ethers.formatEther(ownerEthBalanceAmount_)} ETH. `;
 	if ( ! configuration.fundAccountsWithEth ) {
 		console.info("%s", `${message_}We are configured to not fund any accounts with ETH.`);
 		return;
@@ -346,10 +346,10 @@ async function configureCosmicSignatureContractsIfNeeded() {
 	if (configuration.configureCosmicSignatureContracts >= 2 || configuration.configureCosmicSignatureContracts > 0 && state.deployedCosmicSignatureContracts) {
 		// Doing nothing.
 	} else {
-		console.info("%s", `${nodeOsModule.EOL}We are configured to not configure Cosmic Signature contracts.`);
+		console.info("%s", `${nodeOs.EOL}We are configured to not configure Cosmic Signature contracts.`);
 		return;
 	}
-	console.info("%s", `${nodeOsModule.EOL}Configuring Cosmic Signature contracts.`);
+	console.info("%s", `${nodeOs.EOL}Configuring Cosmic Signature contracts.`);
 	await configureCosmicSignatureToken(state.contracts.cosmicSignatureToken, state.bidder2Signer, state.contracts.prizesWalletAddress);
 	await configureRandomWalkNft(state.contracts.randomWalkNft, state.bidder2Signer, state.bidder3Signer, state.contracts.prizesWalletAddress);
 	await configurePrizesWallet(state.contracts.prizesWallet, state.ownerSigner, configuration.cosmicSignatureContracts.prizesWallet.timeoutDurationToWithdrawPrizes);
@@ -371,10 +371,10 @@ async function configureCosmicSignatureContractsIfNeeded() {
 
 async function donateEthToCosmicSignatureGameIfNeeded() {
 	if ( ! configuration.donateEthToCosmicSignatureGame ) {
-		console.info("%s", `${nodeOsModule.EOL}We are configured to not donate ETH to ${configuration.cosmicSignatureContractsDeployment.cosmicSignatureGameContractName}.`);
+		console.info("%s", `${nodeOs.EOL}We are configured to not donate ETH to ${configuration.cosmicSignatureContractsDeployment.cosmicSignatureGameContractName}.`);
 		return;
 	}
-	console.info("%s", `${nodeOsModule.EOL}Donating ETH to ${configuration.cosmicSignatureContractsDeployment.cosmicSignatureGameContractName}.`);
+	console.info("%s", `${nodeOs.EOL}Donating ETH to ${configuration.cosmicSignatureContractsDeployment.cosmicSignatureGameContractName}.`);
 	await donateEthToCosmicSignatureGame(state.contracts.cosmicSignatureGameProxy, state.bidder1Signer, state.bidder3Signer, configuration.ethDonationToCosmicSignatureGame.amountInEth);
 }
 
@@ -383,7 +383,7 @@ async function donateEthToCosmicSignatureGameIfNeeded() {
 
 async function tryPlayCosmicSignatureGameIfNeeded() {
 	// // Testing.
-	// console.info("%s", `${nodeOsModule.EOL}Test 202510024.`);
+	// console.info("%s", `${nodeOs.EOL}Test 202510024.`);
 	// await waitForTransactionReceipt(state.contracts.cosmicSignatureGameProxy.connect(state.ownerSigner).setRoundActivationTime(0n));
 	// console.info("%d", Date.now());
 	// await waitForTransactionReceipt(state.contracts.cosmicSignatureGameProxy.connect(state.ownerSigner).setRoundActivationTime(10n ** 11n));
@@ -395,10 +395,10 @@ async function tryPlayCosmicSignatureGameIfNeeded() {
 	// console.info("%s", "End Test 202510024.");
 
 	if ( ! configuration.playCosmicSignatureGame ) {
-		console.info("%s", `${nodeOsModule.EOL}We are configured to not play Cosmic Signature Game.`);
+		console.info("%s", `${nodeOs.EOL}We are configured to not play Cosmic Signature Game.`);
 		return;
 	}
-	console.info("%s", `${nodeOsModule.EOL}Playing Cosmic Signature Game.`);
+	console.info("%s", `${nodeOs.EOL}Playing Cosmic Signature Game.`);
 	try {
 		for ( let roundCounter_ = 0; roundCounter_ < configuration.cosmicSignatureGamePlaying.numRoundsToPlay; ++ roundCounter_ ) {
 			// Reducing the bidding round's first ETH bid price.
@@ -453,10 +453,10 @@ async function getRandomWalkNft(minterSigner_) {
 
 async function tryWithdrawEverythingIfNeeded() {
 	if ( ! configuration.withdrawEverything ) {
-		console.info("%s", `${nodeOsModule.EOL}We are configured to not withdraw everything.`);
+		console.info("%s", `${nodeOs.EOL}We are configured to not withdraw everything.`);
 		// return;
 	} else {
-		console.info("%s", `${nodeOsModule.EOL}Withdrawing everything.`);
+		console.info("%s", `${nodeOs.EOL}Withdrawing everything.`);
 	}
 	await tryWithdrawEverythingToAccountIfNeeded("bidder1", [], []);
 	await tryWithdrawEverythingToAccountIfNeeded("bidder2", state.donatedTokensToClaim, state.donatedNftIndexes);
@@ -512,7 +512,7 @@ async function tryWithdrawEverythingToAccountIfNeeded(accountName_, donatedToken
 
 async function finalizeTestingIfNeeded() {
 	if ( ! configuration.finalizeTesting ) {
-		console.info("%s", `${nodeOsModule.EOL}We are configured to not finalize testing.`);
+		console.info("%s", `${nodeOs.EOL}We are configured to not finalize testing.`);
 		return;
 	}
 	await finalizeTestingIfEthBalanceIsNonZero(state.contracts.cosmicSignatureGameProxy, state.contracts.cosmicSignatureGameProxyAddress, state.ownerSigner);
@@ -523,7 +523,7 @@ async function finalizeTestingIfNeeded() {
 
 async function payMarketingRewardsIfNeeded() {
 	const marketingWalletCstBalanceAmount_ = await state.contracts.cosmicSignatureToken.balanceOf(state.contracts.marketingWalletAddress, {blockTag: "pending",});
-	const message_ = `${nodeOsModule.EOL}Marketing Wallet CST balance is ${hre.ethers.formatEther(marketingWalletCstBalanceAmount_)}. `;
+	const message_ = `${nodeOs.EOL}Marketing Wallet CST balance is ${hre.ethers.formatEther(marketingWalletCstBalanceAmount_)}. `;
 	if ( ! configuration.payMarketingRewards ) {
 		console.info("%s", `${message_}We are configured to not pay marketing rewards.`);
 		return;

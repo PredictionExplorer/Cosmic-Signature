@@ -32,7 +32,7 @@ That said, **ideally, all prizes should be withdrawn before the upgrade**, becau
 
 - It could make sense for the web site to keep showing and/or using both the old and the new `PrizesWallet`s until people withdraw their assets from the old one.
 
-- Preserve the association between historical rounds and their wallet address in indexers and retrieval interfaces. The local `PrizesWallet-Replacement` test suite checks retrieval from the old wallet after the Game moves to a replacement.
+- Preserve the association between historical rounds and their wallet address in indexers and retrieval interfaces.
 
 #### Notes
 

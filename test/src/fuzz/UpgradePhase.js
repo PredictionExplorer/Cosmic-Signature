@@ -8,8 +8,8 @@
 const { expect } = require("chai");
 const hre = require("hardhat");
 const { SECONDS_PER_DAY } = require("../../../src/CosmicSignatureConstants.js");
-const { upgradeToV2, assertDefaultV2Initialization, expectUnknownSelector } = require("../V2UpgradeTestHelpers.js");
-const { upgradeToV3, assertDefaultV3Initialization } = require("../V3UpgradeTestHelpers.js");
+const { upgradeGameToV2, assertDefaultGameV2Initialization, expectUnknownSelector } = require("../GameV2UpgradeTestHelpers.js");
+const { upgradeGameToV3, assertDefaultGameV3Initialization } = require("../GameV3UpgradeTestHelpers.js");
 
 // #endregion
 // #region Snapshot
@@ -103,7 +103,7 @@ The caller must have driven the campaign to a round-inactive state with no bid p
 
 @returns {Promise<void>}
 */
-async function performUpgradeToV2(ctx_) {
+async function performGameUpgradeToV2(ctx_) {
 	const { engine, model, ledger, contracts } = ctx_;
 	const v1Game_ = ctx_.game.contract;
 	const prevImplementation_ = await hre.upgrades.erc1967.getImplementationAddress(contracts.cosmicSignatureGameProxyAddress);
@@ -125,7 +125,7 @@ async function performUpgradeToV2(ctx_) {
 	await runV1UpgradeNegativeProbes(ctx_);
 
 	// 4. The real upgrade (UUPS `upgradeToAndCall` + `reinitialize`), via the project helper.
-	await upgradeToV2(contracts);
+	await upgradeGameToV2(contracts);
 	const v2Proxy_ = contracts.cosmicSignatureGameV2Proxy;
 
 	// The upgrade plugin mined its own blocks (new implementation deploy + `upgradeToAndCall` from the owner),
@@ -144,7 +144,7 @@ async function performUpgradeToV2(ctx_) {
 	expect(await engine.provider.getBalance(contracts.cosmicSignatureGameProxyAddress), "game ETH balance changed across upgrade").to.equal(gameEthBefore_);
 
 	// 6. V2 initialization values.
-	await assertDefaultV2Initialization(v2Proxy_);
+	await assertDefaultGameV2Initialization(v2Proxy_);
 
 	// 7. Dead V1 selectors must revert as unknown.
 	await expectUnknownSelector(v2Proxy_, hre.ethers.id("cstDutchAuctionDurationDivisor()").slice(0, 10));
@@ -171,7 +171,7 @@ async function performUpgradeToV2(ctx_) {
 	ctx_.rebindGame(v2Proxy_, 2);
 	model.applyUpgradeToV2();
 
-	const stats_ = engine._statsFor("upgradeToV2");
+	const stats_ = engine._statsFor("upgradeGameToV2");
 	++ stats_.attempted;
 	++ stats_.succeeded;
 }
@@ -181,14 +181,14 @@ async function performUpgradeToV2(ctx_) {
 
 /**
 Performs the real V2 -> V3 UUPS upgrade with full state-diff assertions, then re-binds all
-campaign state to the V3 ABI and re-syncs the model. Mirrors `performUpgradeToV2`.
+campaign state to the V3 ABI and re-syncs the model. Mirrors `performGameUpgradeToV2`.
 
 The caller must have driven the campaign to a round-inactive state with no bid placed yet.
 The round is left FROZEN (activation far in the future); the caller re-activates it.
 
 @returns {Promise<void>}
 */
-async function performUpgradeToV3(ctx_) {
+async function performGameUpgradeToV3(ctx_) {
 	const { engine, model, ledger, contracts } = ctx_;
 	const v2Game_ = ctx_.game.contract;
 	const prevImplementation_ = await hre.upgrades.erc1967.getImplementationAddress(contracts.cosmicSignatureGameProxyAddress);
@@ -204,6 +204,7 @@ async function performUpgradeToV3(ctx_) {
 
 	// 2. Snapshot the carried-over state (V1 getters + the V2 parameters).
 	const before_ = await snapshotCarriedOverState(v2Game_, CARRIED_OVER_GETTERS_ACROSS_V3);
+	const roundZeroNumBids_ = await v2Game_.getTotalNumBids(0n);
 	const gameEthBefore_ = await engine.provider.getBalance(contracts.cosmicSignatureGameProxyAddress);
 
 	// 3. Upgrade negative probes (must fail) before the real upgrade.
@@ -227,7 +228,7 @@ async function performUpgradeToV3(ctx_) {
 	}
 
 	// 4. The real upgrade (UUPS `upgradeToAndCall` + `reinitialize`), via the project helper.
-	await upgradeToV3(contracts);
+	await upgradeGameToV3(contracts);
 	const v3Proxy_ = contracts.cosmicSignatureGameV3Proxy;
 
 	// The upgrade plugin mined its own blocks outside the engine; re-sync the clock and the owner's gas.
@@ -245,9 +246,11 @@ async function performUpgradeToV3(ctx_) {
 	expect(await engine.provider.getBalance(contracts.cosmicSignatureGameProxyAddress), "game ETH balance changed across the V3 upgrade").to.equal(gameEthBefore_);
 
 	// 6. V3 initialization values.
-	await assertDefaultV3Initialization(v3Proxy_);
+	await assertDefaultGameV3Initialization(v3Proxy_);
 
-	// 7. V3 removes no selectors; a representative V2 view must still work.
+	// 7. V3 exposes the historical bid count through roundStats instead of the V2 getter.
+	expect((await v3Proxy_.roundStats(0n)).numBids).to.equal(roundZeroNumBids_);
+	await expect(v2Game_.getTotalNumBids(0n)).revertedWithoutReason();
 	expect(await v3Proxy_.getBidCstRewardAmount()).to.be.greaterThanOrEqual(0n);
 
 	// 8. Double `reinitialize` must revert. In a production build the `reinitializer(3)` guard throws
@@ -267,147 +270,9 @@ async function performUpgradeToV3(ctx_) {
 	ctx_.rebindGame(v3Proxy_, 3);
 	model.applyUpgradeToV3();
 
-	const stats_ = engine._statsFor("upgradeToV3");
+	const stats_ = engine._statsFor("upgradeGameToV3");
 	++ stats_.attempted;
 	++ stats_.succeeded;
-}
-
-// #endregion
-// #region Post-V3 PrizesWallet swap
-
-/**
-Drains the current `PrizesWallet` (time-warping past every round's withdrawal timeout, so anybody
-may withdraw/claim everything), then deploys a fresh `PrizesWallet` and points the game at it via
-`setPrizesWallet`, re-wiring the harness (contracts, ledger, model, actor approvals).
-
-Must run while the round is FROZEN (right after `performUpgradeToV3`), before re-activation.
-
-In assert-enabled builds, claim actions bypass the missing previous-round assertions only for
-the first claim after replacement (Comment-202610038).
-
-@returns {Promise<boolean>} Whether the swap was performed.
-*/
-async function performPrizesWalletSwap(ctx_) {
-	const { engine, model, ledger, contracts } = ctx_;
-
-	// The richest actor drains the wallet (the ETH drains accrue to it, so it stays solvent throughout).
-	const caller_ = [...ctx_.actors]
-		.sort((a_, b_) => {
-			const wealthA_ = ledger.expectedEth(a_.address);
-			const wealthB_ = ledger.expectedEth(b_.address);
-			return (wealthB_ > wealthA_) ? 1 : (wealthB_ < wealthA_) ? -1 : 0;
-		})
-		.find((actor_) => engine.canAfford(actor_.address, 0n));
-	if (caller_ === undefined) {
-		console.info("  >>> Skipping the PrizesWallet swap (no actor can afford gas) <<<");
-		return false;
-	}
-
-	// 1. Warp past every round's withdrawal timeout, so anybody may drain everything.
-	{
-		let maxTimeout_ = 0n;
-		for (const timeout_ of ledger.prizesWallet.roundTimeouts.values()) {
-			if (timeout_ > maxTimeout_) {
-				maxTimeout_ = timeout_;
-			}
-		}
-		if (maxTimeout_ > engine.lastTs) {
-			await engine.mineAt(maxTimeout_ + 1n);
-		}
-	}
-
-	// 2. Withdraw every tracked ETH prize (the ETH goes to the caller, not the winner, after the timeout).
-	for (const [key_, amount_] of [...ledger.prizesWallet.ethBalances]) {
-		if (amount_ <= 0n) {
-			continue;
-		}
-		const [roundStr_, winner_] = key_.split("|");
-		const result_ = await engine.execTx({
-			signer: caller_.signer,
-			buildTx: (overrides_) =>
-				contracts.prizesWallet.connect(caller_.signer).getFunction("withdrawEth(uint256,address)")(BigInt(roundStr_), winner_, overrides_),
-		});
-		engine.expectOk(result_, "PrizesWallet swap: drain ETH prize");
-		ledger.addEth(caller_.address, amount_);
-		ledger.addEth(contracts.prizesWalletAddress, -amount_);
-	}
-
-	// 3. Claim every remaining donated mock ERC-20 balance (amount 0 == the full balance).
-	for (const [roundStr_, amount_] of [...ledger.prizesWallet.donatedMockErc20]) {
-		if (amount_ <= 0n) {
-			continue;
-		}
-		const result_ = await engine.execTx({
-			signer: caller_.signer,
-			buildTx: (overrides_) =>
-				contracts.prizesWallet.connect(caller_.signer).claimDonatedToken(BigInt(roundStr_), contracts.fuzzTestMockErc20Address, 0n, overrides_),
-		});
-		engine.expectOk(result_, "PrizesWallet swap: drain donated ERC-20");
-	}
-
-	// 4. Claim every unclaimed donated NFT.
-	for (const [indexStr_, record_] of [...ledger.prizesWallet.donatedNfts]) {
-		if (record_.claimed) {
-			continue;
-		}
-		const result_ = await engine.execTx({
-			signer: caller_.signer,
-			buildTx: (overrides_) => contracts.prizesWallet.connect(caller_.signer).claimDonatedNft(BigInt(indexStr_), overrides_),
-		});
-		engine.expectOk(result_, "PrizesWallet swap: drain donated NFT");
-	}
-
-	// 5. The old wallet must now be empty.
-	expect(ledger.prizesWalletEthTotal(), "PrizesWallet swap: ledger obligations remain").to.equal(0n);
-	expect(await engine.provider.getBalance(contracts.prizesWalletAddress), "PrizesWallet swap: the old wallet still holds ETH").to.equal(0n);
-	await ledger.verifyDirtyEth();
-
-	// 6. Deploy the fresh wallet bound to the game; transfer ownership from the deployer to the owner signer.
-	const newPrizesWallet_ = await contracts.prizesWalletFactory.deploy(contracts.cosmicSignatureGameProxyAddress);
-	await newPrizesWallet_.waitForDeployment();
-	const newPrizesWalletAddress_ = await newPrizesWallet_.getAddress();
-	// The deployment was mined outside the engine; re-sync the clock and the deployer's gas.
-	await engine.resyncTime();
-	await ledger.resyncEth(contracts.deployerSigner.address);
-	{
-		const result_ = await engine.execTx({
-			signer: contracts.deployerSigner,
-			buildTx: (overrides_) => newPrizesWallet_.connect(contracts.deployerSigner).transferOwnership(contracts.ownerSigner.address, overrides_),
-		});
-		engine.expectOk(result_, "PrizesWallet swap: transferOwnership");
-	}
-
-	// 7. Point the game at the fresh wallet.
-	{
-		const result_ = await engine.execTx({
-			signer: contracts.ownerSigner,
-			buildTx: (overrides_) => ctx_.game.contract.connect(contracts.ownerSigner).setPrizesWallet(newPrizesWalletAddress_, overrides_),
-		});
-		const receipt_ = engine.expectOk(result_, "PrizesWallet swap: setPrizesWallet");
-		const changed_ = engine.singleEvent(receipt_, ctx_.game.contract, "PrizesWalletAddressChanged", "PrizesWallet swap");
-		expect(changed_.args[0].toLowerCase()).to.equal(newPrizesWalletAddress_.toLowerCase());
-		expect((await ctx_.game.contract.prizesWallet()).toLowerCase()).to.equal(newPrizesWalletAddress_.toLowerCase());
-	}
-
-	// 8. Re-wire the harness: contracts, ledger (fresh sub-ledger + event routing), model, actor approvals.
-	const oldPrizesWalletAddress_ = contracts.prizesWalletAddress;
-	contracts.oldPrizesWallets = [...(contracts.oldPrizesWallets ?? []), { contract: contracts.prizesWallet, address: oldPrizesWalletAddress_ }];
-	contracts.prizesWallet = newPrizesWallet_;
-	contracts.prizesWalletAddress = newPrizesWalletAddress_;
-	ledger.swapPrizesWallet(newPrizesWalletAddress_, newPrizesWallet_.interface);
-	await ledger.trackEth(newPrizesWalletAddress_, "prizesWallet2");
-	model.prizesWalletAddress = newPrizesWalletAddress_.toLowerCase();
-	for (const actor_ of ctx_.actors) {
-		// The mock donation approvals were granted to the old wallet; they must be granted anew.
-		actor_.mockErc20Approved = false;
-		actor_.mockNftApproved = false;
-	}
-	await ledger.verifyDirtyEth();
-
-	const stats_ = engine._statsFor("prizesWalletSwap");
-	++ stats_.attempted;
-	++ stats_.succeeded;
-	return true;
 }
 
 // #endregion
@@ -457,8 +322,7 @@ module.exports = {
 	CARRIED_OVER_GETTERS,
 	CARRIED_OVER_GETTERS_ACROSS_V3,
 	snapshotCarriedOverState,
-	performUpgradeToV2,
-	performUpgradeToV3,
-	performPrizesWalletSwap,
+	performGameUpgradeToV2,
+	performGameUpgradeToV3,
 	upgradeAuthProbe,
 };

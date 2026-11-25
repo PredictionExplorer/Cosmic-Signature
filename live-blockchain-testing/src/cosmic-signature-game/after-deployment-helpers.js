@@ -1,6 +1,6 @@
 "use strict";
 
-const nodeOsModule = require("node:os");
+const nodeOs = require("node:os");
 const { expect } = require("chai");
 const { waitForTransactionReceipt } = require("../../../src/Helpers.js");
 
@@ -48,7 +48,7 @@ async function configureCosmicSignatureGame(
 	await waitForTransactionReceipt(cosmicSignatureGameProxy_.connect(ownerSigner_).setMainPrizeTimeIncrementInMicroSeconds(mainPrizeTimeIncrementInMicroSeconds_));
 	{
 		const ethDutchAuctionDurationDivisor_ = (mainPrizeTimeIncrementInMicroSeconds_ + ethDutchAuctionDuration_ / 2n) / ethDutchAuctionDuration_;
-		console.info("%s", `${nodeOsModule.EOL}ethDutchAuctionDurationDivisor = ${ethDutchAuctionDurationDivisor_}`);
+		console.info("%s", `${nodeOs.EOL}ethDutchAuctionDurationDivisor = ${ethDutchAuctionDurationDivisor_}`);
 		await waitForTransactionReceipt(cosmicSignatureGameProxy_.connect(ownerSigner_).setEthDutchAuctionDurationDivisor(ethDutchAuctionDurationDivisor_));
 	}
 	{
