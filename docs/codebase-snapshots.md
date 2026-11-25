@@ -58,6 +58,8 @@ Both snapshot branches mark their npm package private and exclude the root `cach
 
 The development branch stores the outputs from each snapshot branch in `codebase-snapshots/<snapshot-branch>/`. Each folder contains the complete `artifacts/<configuration>/` trees, including compiler build info, and only `cache/<configuration>/validations.json` from each cache. The four configurations are `production`, `debug-false-false`, `debug-true-false`, and `debug-true-true`.
 
+If you have just created a new snapshot branch out of the development one, meaning that both contain the same files, some of these steps are OK to skip.
+
 1. Run `npm run hardhat-clean` on the development branch. Switch to the snapshot branch and run `npm ci` followed by `npm run hardhat-test-quick` from the project root.
 2. Once all four builds pass, switch back to development. Git leaves the ignored root outputs in place. Copy the artifacts and validation files into `codebase-snapshots/<snapshot-branch>/` before cleaning.
 3. Switch to the snapshot branch and run `npm run hardhat-clean`. Return to development, run `npm ci`, and commit the copied outputs.
