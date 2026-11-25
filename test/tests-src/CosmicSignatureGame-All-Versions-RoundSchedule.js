@@ -20,7 +20,7 @@ async function testOverflowingActivationDelay(delay_) {
 		await expect(game_.connect(contracts_.signers[3]).claimMainPrize())
 			.revertedWithCustomError(game_, "MainPrizeClaimDenied");
 
-		// Comment-202606235 applies beginning with the archived V2 implementation.
+		// Comment-202606235 applies beginning with the V2 snapshot.
 		if (version_ === 1 || ENABLE_SMTCHECKER > 0) {
 			await expect(game_.connect(winner_).claimMainPrize()).revertedWithPanic(0x11);
 			expect(await game_.roundNum()).equal(roundNum_);

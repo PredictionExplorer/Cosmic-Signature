@@ -5,7 +5,7 @@ const { describe, it } = require("mocha");
 const hre = require("hardhat");
 const { INITIAL_CST_DUTCH_AUCTION_DURATION, DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR, DEFAULT_BID_CST_REWARD_AMOUNT_RADICAND_MULTIPLIER, DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2, SECONDS_PER_DAY } = require("../../src/CosmicSignatureConstants.js");
 const { waitForTransactionReceipt } = require("../../src/Helpers.js");
-const { COSMIC_SIGNATURE_GAME_V2_SNAPSHOT_INDEX, withCodebaseSnapshotArtifacts } = require("../../src/ArchiveTestingHelpers.js");
+const { COSMIC_SIGNATURE_GAME_V2_SNAPSHOT_INDEX, withCodebaseSnapshotArtifacts } = require("../../src/CodebaseSnapshotTestHelpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
 const { completeRoundZero, upgradeGameToV2, expectUnknownSelector } = require("../src/GameV2UpgradeTestHelpers.js");
 

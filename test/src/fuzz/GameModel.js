@@ -81,7 +81,7 @@ class GameModel {
 		this.charityAddress = "";
 		/** @type {string} */
 		this.marketingWalletAddress = "";
-		/** @type {string} The archived V1 prizes wallet used throughout the campaign. */
+		/** @type {string} The original V1 prizes wallet used throughout the campaign. */
 		this.prizesWalletAddress = "";
 
 		// Round / bidding state.

@@ -120,7 +120,7 @@ async function runInvariants(ctx_) {
 		const onChainStats_ = await game_.roundStats(roundNum_);
 		const expectedStats_ = model.roundStats(roundNum_);
 		if (model.version < 3) {
-			// Ethers returns the archived getter's single uint256 output directly.
+			// Ethers returns the V1 and V2 getters' single uint256 output directly.
 			expect(onChainStats_, `roundStats[${roundNumString_}].numBids vs model`).to.equal(expectedStats_.numBids);
 		} else {
 			for (const [field_, expectedValue_] of Object.entries(expectedStats_)) {

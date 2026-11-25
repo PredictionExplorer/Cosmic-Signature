@@ -1,6 +1,6 @@
 -r
 -x.git/*
--xarchives/*
+-xcodebase-snapshots/*
 -xartifacts/*
 -xcache/*
 -xeslint/eslint-1-report.bak.txt

@@ -16,7 +16,7 @@ const {
 	COSMIC_SIGNATURE_GAME_V2_SNAPSHOT_INDEX,
 	CURRENT_CODEBASE_SNAPSHOT_INDEX,
 	withCodebaseSnapshotArtifacts,
-} = require("../../src/ArchiveTestingHelpers.js");
+} = require("../../src/CodebaseSnapshotTestHelpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
 const { upgradeGameToV2, assertDefaultGameV2Initialization } = require("../src/GameV2UpgradeTestHelpers.js");
 const { upgradeGameToV3, assertDefaultGameV3Initialization } = require("../src/GameV3UpgradeTestHelpers.js");

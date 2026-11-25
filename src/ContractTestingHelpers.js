@@ -13,7 +13,7 @@ const { parseIntegerEnvironmentVariable, sleepForMilliSeconds, waitForTransactio
 const { MyNonceManager } = require("./MyNonceManager.js");
 const { mochaHooks } = require("./MochaHooks.js");
 const { deployContractsAdvanced, setRoundActivationTimeIfNeeded } = require("./ContractDeploymentHelpers.js");
-const { INITIAL_DEPLOYMENT_SNAPSHOT_INDEX, withCodebaseSnapshotArtifacts } = require("./ArchiveTestingHelpers.js");
+const { INITIAL_DEPLOYMENT_SNAPSHOT_INDEX, withCodebaseSnapshotArtifacts } = require("./CodebaseSnapshotTestHelpers.js");
 
 // #endregion
 // #region

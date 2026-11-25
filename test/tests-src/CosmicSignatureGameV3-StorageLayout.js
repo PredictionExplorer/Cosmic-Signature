@@ -3,7 +3,7 @@
 const { expect } = require("chai");
 const { describe, it } = require("mocha");
 const hre = require("hardhat");
-const { COSMIC_SIGNATURE_GAME_V3_SNAPSHOT_INDEX, withCodebaseSnapshotArtifacts } = require("../../src/ArchiveTestingHelpers.js");
+const { COSMIC_SIGNATURE_GAME_V3_SNAPSHOT_INDEX, withCodebaseSnapshotArtifacts } = require("../../src/CodebaseSnapshotTestHelpers.js");
 const { TIMESTAMP_9000_01_01, SECONDS_PER_HOUR, SECONDS_PER_DAY } = require("../../src/CosmicSignatureConstants.js");
 const { waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");

@@ -728,7 +728,7 @@ async function createCosmicSignatureGameProxySimulator(
 				// console.info("%s", "202504171");
 
 				// [Comment-202612071]
-				// Archived V1 checks the first bid's currency before checking round activation.
+				// The V1 snapshot checks the first bid's currency before checking round activation.
 				// [/Comment-202612071]
 				await expect(transactionResponsePromise_)
 					.revertedWithCustomError(contracts_.cosmicSignatureGameProxy, "WrongBidType")

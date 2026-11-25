@@ -6,7 +6,7 @@ const { expect } = require("chai");
 const { describe, it } = require("mocha");
 const hre = require("hardhat");
 const { readValidations } = require("@openzeppelin/hardhat-upgrades/dist/utils/validations");
-const { COSMIC_SIGNATURE_GAME_V3_SNAPSHOT_INDEX, withCodebaseSnapshotArtifacts } = require("../../src/ArchiveTestingHelpers.js");
+const { COSMIC_SIGNATURE_GAME_V3_SNAPSHOT_INDEX, withCodebaseSnapshotArtifacts } = require("../../src/CodebaseSnapshotTestHelpers.js");
 const {
 	getUnlinkedBytecode,
 	getVersion,
@@ -15,7 +15,7 @@ const {
 	withValidationDefaults,
 } = require("@openzeppelin/upgrades-core");
 
-// The V2 -> V3 upgrade tests use the archived V2 build. These tests also check the
+// The V2 -> V3 upgrade tests use the V2 snapshot build. These tests also check the
 // original V2 storage layout recorded in the OpenZeppelin manifest on Arbitrum One.
 const DEPLOYED_V2_FIXTURE_PATH =
 	nodePath.join(__dirname, "../data/deployed-storage-layouts/arbitrumOne-CosmicSignatureGameV2.json");

@@ -16,7 +16,7 @@ const {
 	parseIntegerEnvironmentVariable,
 	uint256ToPaddedHexString,
 } = require("../../../src/Helpers.js");
-const { COSMIC_SIGNATURE_GAME_V2_SNAPSHOT_INDEX, COSMIC_SIGNATURE_GAME_V3_SNAPSHOT_INDEX, withCodebaseSnapshotArtifacts } = require("../../../src/ArchiveTestingHelpers.js");
+const { COSMIC_SIGNATURE_GAME_V2_SNAPSHOT_INDEX, COSMIC_SIGNATURE_GAME_V3_SNAPSHOT_INDEX, withCodebaseSnapshotArtifacts } = require("../../../src/CodebaseSnapshotTestHelpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../../src/ContractTestingHelpers.js");
 const { GameModel } = require("./GameModel.js");
 const { ShadowState } = require("./ShadowState.js");

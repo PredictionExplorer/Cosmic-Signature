@@ -5,7 +5,7 @@ const hre = require("hardhat");
 const { INITIAL_CST_DUTCH_AUCTION_DURATION, DEFAULT_CST_DUTCH_AUCTION_DURATION_CHANGE_DIVISOR, DEFAULT_BID_CST_REWARD_AMOUNT_RADICAND_MULTIPLIER, DEFAULT_TIMEOUT_DURATION_TO_CLAIM_MAIN_PRIZE_V2 } = require("../../src/CosmicSignatureConstants.js");
 const { getBlockTimeStampByBlockNumber, waitForTransactionReceipt } = require("../../src/Helpers.js");
 const { setRoundActivationTimeIfNeeded } = require("../../src/ContractDeploymentHelpers.js");
-const { COSMIC_SIGNATURE_GAME_V2_SNAPSHOT_INDEX, withCodebaseSnapshotArtifacts } = require("../../src/ArchiveTestingHelpers.js");
+const { COSMIC_SIGNATURE_GAME_V2_SNAPSHOT_INDEX, withCodebaseSnapshotArtifacts } = require("../../src/CodebaseSnapshotTestHelpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
 
 async function deployGameV1CompleteRoundZeroAndUpgradeToV2() {

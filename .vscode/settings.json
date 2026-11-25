@@ -6,6 +6,6 @@
 	"search.exclude": {
 		"/cache/": true,
 		"/artifacts/": true,
-		"/archives/": true,
+		"/codebase-snapshots/": true,
 	},
 }

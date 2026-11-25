@@ -22,7 +22,7 @@ const {
 	DEFAULT_CHARITY_ETH_DONATION_AMOUNT_PERCENTAGE_V3,
 } = require("../../src/CosmicSignatureConstants.js");
 const { tryIncreaseValueExponentially } = require("../../src/BigIntMathHelpers.js");
-const { COSMIC_SIGNATURE_GAME_V3_SNAPSHOT_INDEX, withCodebaseSnapshotArtifacts } = require("../../src/ArchiveTestingHelpers.js");
+const { COSMIC_SIGNATURE_GAME_V3_SNAPSHOT_INDEX, withCodebaseSnapshotArtifacts } = require("../../src/CodebaseSnapshotTestHelpers.js");
 const { loadFixtureDeployContractsForTesting } = require("../../src/ContractTestingHelpers.js");
 const { completeRoundZero, upgradeGameToV2, getLatestBlockTimestamp } = require("./GameV2UpgradeTestHelpers.js");
 
