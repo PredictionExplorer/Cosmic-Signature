@@ -1,0 +1,35 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "ArbitrumHelpers",
+  "sourceName": "contracts/production/libraries/ArbitrumHelpers.sol",
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [],
+      "name": "ArbGasInfoGetGasBacklogCallFailed",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [],
+      "name": "ArbGasInfoGetL1PricingUnitsSinceUpdateCallFailed",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [],
+      "name": "ArbSysArbBlockHashCallFailed",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [],
+      "name": "ArbSysArbBlockNumberCallFailed",
+      "type": "event"
+    }
+  ],
+  "bytecode": "0x6080806040523460175760399081601c823930815050f35b5f80fdfe5f80fdfea2646970667358221220a4905ccbf1dd74aa3c04f64092923f4a00f69f4510a0b79a21f5e88c18e9c26e64736f6c63430008220033",
+  "deployedBytecode": "0x5f80fdfea2646970667358221220a4905ccbf1dd74aa3c04f64092923f4a00f69f4510a0b79a21f5e88c18e9c26e64736f6c63430008220033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

@@ -10,6 +10,7 @@ const { Artifacts } = require("hardhat/internal/artifacts");
 const snapshotBranchNames = [
 	"20260505-v1-snapshot",
 	"20260625-CosmicSignatureGameV2-snapshot",
+	"20261125-CosmicSignatureGameV3-snapshot",
 ];
 const INITIAL_DEPLOYMENT_SNAPSHOT_INDEX = 0;
 const COSMIC_SIGNATURE_GAME_V2_SNAPSHOT_INDEX = 1;

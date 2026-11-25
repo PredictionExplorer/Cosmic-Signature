@@ -1,0 +1,10 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "BidRaffleWeightHelpers",
+  "sourceName": "contracts/production/libraries/BidRaffleWeightHelpers.sol",
+  "abi": [],
+  "bytecode": "0x6080806040523460175760399081601c823930815050f35b5f80fdfe5f80fdfea26469706673582212205db57c156fbbb58ca0f0ed76b250e58e50ff432b96dfc067c31bea97d2aed0c464736f6c63430008220033",
+  "deployedBytecode": "0x5f80fdfea26469706673582212205db57c156fbbb58ca0f0ed76b250e58e50ff432b96dfc067c31bea97d2aed0c464736f6c63430008220033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

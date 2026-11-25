@@ -1,0 +1,10 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "CryptographyHelpers",
+  "sourceName": "contracts/production/libraries/CryptographyHelpers.sol",
+  "abi": [],
+  "bytecode": "0x6080806040523460175760399081601c823930815050f35b5f80fdfe5f80fdfea26469706673582212202dc324b69caf613531ef7dbf56023d8723216119908a7735ad010ab28a7b875364736f6c63430008220033",
+  "deployedBytecode": "0x5f80fdfea26469706673582212202dc324b69caf613531ef7dbf56023d8723216119908a7735ad010ab28a7b875364736f6c63430008220033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

@@ -1,0 +1,10 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "RandomNumberHelpers",
+  "sourceName": "contracts/production/libraries/RandomNumberHelpers.sol",
+  "abi": [],
+  "bytecode": "0x6080806040523460175760399081601c823930815050f35b5f80fdfe5f80fdfea2646970667358221220ac829a5e97a6171d91ab91c8001c76847e8e0843287148f7e660e15abde42e3c64736f6c63430008220033",
+  "deployedBytecode": "0x5f80fdfea2646970667358221220ac829a5e97a6171d91ab91c8001c76847e8e0843287148f7e660e15abde42e3c64736f6c63430008220033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}
