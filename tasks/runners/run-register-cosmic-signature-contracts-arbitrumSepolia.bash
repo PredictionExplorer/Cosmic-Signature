@@ -2,6 +2,8 @@
 
 # [Comment-202511024]
 # Multiple similar scripts exist.
+# Issue. The other now deleted script used to be under `../../live-blockchain-testing/`.
+# Comment-202612114 relates.
 # [/Comment-202511024]
 
 '/usr/bin/clear'

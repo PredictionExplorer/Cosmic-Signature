@@ -12,6 +12,12 @@ linkcolor: blue
 urlcolor: blue
 ---
 
+<!--
+todo-1 Update this and other nearby files for V4.
+todo-1 Rename some if needed.
+todo-1 Re-generate the PDF.
+-->
+
 **White paper 1.3 | Canonical English edition | Contract V3**
 
 This paper describes the [V3 contracts in this branch][source].
@@ -821,6 +827,9 @@ historical V2 data from V3 data even when an event signature is unchanged.
 Use the ordered `Upgraded` event on the proxy as the version boundary. A V2
 finalization can occur earlier in the same block as the V3 upgrade, so the
 block number alone is not sufficient to select the correct interpretation.
+
+<!-- todo-1 Both citations of the change register use the same link. Its target now contains only a TODO.
+     todo-1 Codex has suggested to point the link to the full register on the `20261125-CosmicSignatureGameV3-snapshot` branch. -->
 
 The [V2-to-V3 technical change register][delta] covers these interfaces,
 storage, shared-source changes, rounding details, and failure semantics. A

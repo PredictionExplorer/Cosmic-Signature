@@ -11,7 +11,7 @@ We recommend reviewing all files seen in this project, including, but not limite
 
 The `.svg` class diagram and its `.dia` source depict the original V1 inheritance and call relationships. Further versions are similar in general, however their inheritance hierarchy is more complex: some later version contracts inherit their earlier version counterparts.
 
-The files under `certora/` are historical work; their reported results do not establish verification of this release.
+The files under `certora/` are historical work; their reported results do not establish verification of this release. Note that according to Comment-202612114, I have deleted those files, while retaining them in a Git branch.
 
 #### Contracts to Audit
 

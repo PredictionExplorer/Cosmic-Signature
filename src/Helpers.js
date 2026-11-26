@@ -215,6 +215,7 @@ function calculateUInt256HashSumOf(value_) {
 // #region `generateAccountPrivateKeyFromSeed`
 
 /**
+Comment-202612109 applies.
 @param {bigint} seed_
 */
 function generateAccountPrivateKeyFromSeed(seed_) {
@@ -321,12 +322,16 @@ async function getBlockTimeStampByBlockNumber(blockNumber_) {
 
 /**
 [Comment-202509185]
-Sometimes (always?) Hardhat forgets to apply the configured `gasMultiplier`.
+Issue. Sometimes (always?) Hardhat forgets to apply the configured `gasMultiplier`.
 This hack fixes that.
 This issue is said to have been fixed in Hardhat 3.
 todo-3 Are they going to fix the issue in Hardhat 2.x? Unlikely.
 Comment-202508265 relates.
 [/Comment-202509185]
+[Comment-202612109]
+Issue. This function is never called. It used to be called in the now deleted code under `../live-blockchain-testing/`.
+Comment-202612114 relates.
+[/Comment-202612109]
 */
 function hackApplyGasMultiplierIfNeeded() {
 	// Comment-202409255 applies.

@@ -16,6 +16,8 @@ My relevant ChatGPT chat is located at https://chatgpt.com/share/e/68d2db25-db18
 
 - Temporarily hack the DAO contract configuration to make durations shorter. To do that, open `${workspaceFolder}/contracts/production/libraries/CosmicSignatureConstants.sol` and change `DAO_DEFAULT_VOTING_DELAY` and `DAO_DEFAULT_VOTING_PERIOD` to something like 1 and 3 minutes respectively.
 
+- ToDo-2 According to Comment-202612114, I have now deleted all files under `${workspaceFolder}/live-blockchain-testing`. So revisit the next bullet paragraph.
+
 - Execute live blockchain tests to deploy contracts to Arbitrum Sepolia and play the game. Before executing the script, change the live blockchain tests configuration to access Arbitrum Sepolia. See `${workspaceFolder}/live-blockchain-testing/docs/live-blockchain-tests.md` for details. As a result, bidder accounts will get some CST amounts to use for voting power.
 
 - Observe the console output. You are going to need it, so keep this terminal open and execute other scripts in a different terminal.

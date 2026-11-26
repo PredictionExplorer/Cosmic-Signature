@@ -1,5 +1,8 @@
 "use strict";
 
+// todo-1 The V3 changes document cited below now contains only a TODO.
+// todo-1 The ABI comparison is on the `20261125-CosmicSignatureGameV3-snapshot` branch.
+// todo-1 Fix the wording when it becomes possible.
 /**
 Routes game calls to the V1 or V2+ ABI. Actions call these helpers and never construct
 version-specific call data themselves, so every action works in every campaign phase.

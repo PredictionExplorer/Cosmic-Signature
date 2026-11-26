@@ -14,6 +14,9 @@ Future translations should identify the canonical English edition they follow.
 
 ## Source evidence
 
+<!-- todo-1 The documentation review and technical changes links below now open TODOs.
+     todo-1 Codex has suggested to link to the full documents on the `20261125-CosmicSignatureGameV3-snapshot` branch. -->
+
 - [Deployment snapshot](deployment-snapshot.json): raw getter values at Arbitrum
   block 515784460, deployment/upgrade transaction references, exact-match
   Sourcify records, runtime hashes, and baseline source comparisons. All numeric

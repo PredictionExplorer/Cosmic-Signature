@@ -11,6 +11,11 @@ This document provides an overview and links to detailed docs. To avoid stale co
 
 ## Documentation
 
+<!-- todo-1 The documentation review and V3 change register cited below now contain only TODOs.
+     todo-1 Their full texts, including the frontend and backend upgrade notes, are on the `20261125-CosmicSignatureGameV3-snapshot` branch.
+     todo-1 To be revisited.
+-->
+
 - Canonical English white paper 1.3: [source and PDF](docs/white-paper/README.md). It explains the V3 design, deployment history, and changes from the previous paper. The old papers and translations remain in the frontend repository.
 - Documentation review and code coverage inventory: [docs/documentation-review-v3.md](docs/documentation-review-v3.md).
 - Endurance Champion and Chrono-Warrior: [docs/endurance-chrono-README.md](docs/endurance-chrono-README.md).

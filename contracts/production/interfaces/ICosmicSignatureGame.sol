@@ -14,6 +14,8 @@ pragma solidity =0.8.34;
 /// after a successful upgrade.
 /// Note that `SelfDestructibleCosmicSignatureGame`, which is to be used only for testing, used to support a `selfdestruct`,
 /// but, according to Comment-202509241, I have now eliminated that feature.
+/// Issue. Note that I have now deleted `SelfDestructibleCosmicSignatureGame`. Comment-202509241 was in it.
+/// Comment-202612112 relates.
 /// I have also implemented a self-destructability in a non-upgradeable contract prototype
 /// at "https://github.com/PredictionExplorer/big-contract-prototype".
 /// But I have no plans to implement the self-destruction feature in the production code.
@@ -28,5 +30,7 @@ interface ICosmicSignatureGame {
 	/// @param ownerAddress_ Contract owner address.
 	/// It could make sense to eliminate this parameter and use `_msgSender()` instead, but let's leave it alone.
 	/// @dev Comment-202606037 relates.
+   /// Issue. Note that the comment is in now deleted `SelfDestructibleCosmicSignatureGame`.
+   /// Comment-202612112 relates.
 	function initialize(address ownerAddress_) external;
 }
