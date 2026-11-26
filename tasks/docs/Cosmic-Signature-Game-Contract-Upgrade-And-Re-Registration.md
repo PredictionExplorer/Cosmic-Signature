@@ -10,11 +10,11 @@ The same blockchains are supported.
 
 #### Make Copies of Old Files
 
-- Switch to the Git branch you used when deploying or upgrading to the previous version of the contract and copy `../output/` and `../runners/.openzeppelin/` to a folder outside the Git repo.
+- Switch to the previous deployment Git branch and copy `../output/` and `../runners/.openzeppelin/` to a folder outside the Git repo.
 
 - Switch back to the `main` branch (or whatever branch you will use for the upgrade).
 
-#### Before You Make Any Changes in the Project
+#### Create a Deployment Git Branch
 
 - See respective section in `Cosmic-Signature-Contracts-Deployment-And-Registration.md`.
 
@@ -25,7 +25,7 @@ The same blockchains are supported.
 
 #### Validate the Deployed and to be Deployed Contracts
 
-- Review the applicable Slither upgradeability check script and run it from `slither/`. In fact, it's a lousy tool that will likely report errors. See its manual in the same folder.
+- Review the applicable Slither upgradeability check script and run it from `../../slither/`. In fact, it's a lousy tool that will likely report errors. See its manual in the same folder.
 
 #### Create API Keys
 
@@ -41,7 +41,7 @@ The same blockchains are supported.
   Make sure `deployerPrivateKey` matches the current contract owner. But leave it empty for the testnet or mainnet.
 
 - `../config/upgrade-cosmic-signature-game-config-<network-name>-<cosmic-signature-game-contract-name>.json`\
-  It's unlikely that you need to edit it (but review the Caveats section).\
+  It's unlikely that you need to edit it.\
   The production config files and scripts contain the words `arbitrumOne` and `CosmicSignatureGameV2` (or V3+ when upgrading to respective versions) in their names.
 
 #### Create Hardhat Configuration Variables

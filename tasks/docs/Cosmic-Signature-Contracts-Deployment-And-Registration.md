@@ -8,16 +8,16 @@ The following blockchains are supported: Hardhat Network (a local blockchain), A
 
 All scripts assume that they are executed from the folder they are located in. So you must `cd` to the script's folder and execute the script like `./my-script.bash`.
 
-Start with testing on Hardhat Network. You can start it by executing:
+Start with testing on Hardhat Network. You can start it by executing from the project root folder:
 
 ```bash
 cd scripts
 ./hardhat-node.bash
 ```
 
-#### Before You Make Any Changes in the Project
+#### Create a Deployment Git Branch
 
-- Create a new Git branch and remember what commit you created it from. You can save the commit hash to a file.
+- Create a deployment Git branch. Name it similarly to a codebase snapshot branch described in `../../docs/codebase-snapshots.md`, only replace the word `snapshot` with `deployment`.
 
 #### Create API Keys
 
@@ -66,21 +66,23 @@ Save some arguments to Hardhat Configuration Variables. If you are dealing with 
 
 - Only if you are dealing with a mainnet or a testnet, on ArbiScan, examine the deployed contract addresses. Make sure the evidence of the registration is there, especially that of the game contract proxy and implementation.
 
-#### Notes
-
-- Near Comment-202610237, the deployment task logs the resolved configuration to stdout, including the deployer private key. Therefore, keep the terminal output private.
-
 #### Caveats
 
 - ArbiScan returns an "already verified" error if another contract with the same source code has already been verified/registered. Hardhat Verify ignores the error, but OpenZeppelin Hardhat Upgrades does not when registering a proxy contract. Near Comment-202509125, I have implemented logic that ignores that error.
 
 - If a proxy and/or implementation contract registration failed with the "already verifified" error, sometimes it also fails to link the proxy with the implementation. If you observe such an error, link them manually on ArbiScan.
 
+#### Notes
+
+- Problem is that no V1 deployment Git branch has been created, right? But we do have a codebase snapshot one, as described in `../../docs/codebase-snapshots.md`.
+
+- Near Comment-202610237, the deployment task logs the resolved configuration to stdout, including the deployer private key. Therefore, keep the terminal output private.
+
 #### Afterwards
 
-- Make sure Git branch changes contain no secrets.
+- Make sure the deployment Git branch changes contain no secrets.
 
-- Commit and push the exact deployment sources and configuration, the `../output/` reports, and the `../runners/.openzeppelin/` manifest. Keep deployment-specific changes on this branch so the deployed build can be reproduced.
+- Commit and push the deployment Git branch. It includes the `../output/` reports and the `../runners/.openzeppelin/` manifest.
 
 - Consider copying some of your changes back to the `main` branch.
 
