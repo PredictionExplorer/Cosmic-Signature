@@ -44,7 +44,7 @@ Save some arguments to Hardhat Configuration Variables. If you are dealing with 
 
 - Execute `../runners/run-deploy-cosmic-signature-contracts-<network-name>.bash`. It will deploy all Cosmic Signature contracts.
 
-- Observe the newly created `../output/deploy-cosmic-signature-contracts-report-<network-name>.json` file. It contains addresses of all deployed contracts. Copy it outside the Git repo, but leave the original in-place, so that other scripts could use it. Note that the `../output` folder is included in `.gitignore` near Comment-202606197.
+- Observe the newly created `../output/deploy-cosmic-signature-contracts-report-<network-name>.json` file. It contains addresses of all deployed contracts. Copy it outside the Git repo, but leave the original in-place, so that other scripts could use it. Note that the `../output` folder is included in `.gitignore` near Comment-202606197 (in fact, not any more in this codebase snapshot branch).
 
 - Only if you are dealing with a mainnet or a testnet, execute `../runners/run-register-cosmic-signature-contracts-<network-name>.bash`. It will verify and register the source code of the previously deployed Cosmic Signature contracts on ArbiScan.
 
