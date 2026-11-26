@@ -29,7 +29,9 @@ task("deploy-cosmic-signature-contracts", "Deploys Cosmic Signature contracts to
 		// const deployerPrivateKey = deployConfigObject.deployerPrivateKey;
 		// deployConfigObject.deployerPrivateKey = "******";
 
-		// [Comment-202610237/]
+		// [Comment-202610237]
+		// Issue. This logs secrets.
+		// [/Comment-202610237]
 		console.info("%o", deployConfigObject);
 
 		console.info();
