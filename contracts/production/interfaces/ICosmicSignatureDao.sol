@@ -10,6 +10,7 @@ import { IAddressValidator } from "./IAddressValidator.sol";
 /// It extends various OpenZeppelin Governor modules to create a comprehensive DAO.
 /// @dev Comment-202511039 applies.
 /// It appears that we don't need to inherit `GovernorTimelockControl`.
+/// todo-2 If we are to redeploy this contract, consider not deriving this interface from some others, at least from `IAddressValidator`.
 interface ICosmicSignatureDao is IGovernor, IAddressValidator {
 	// Empty.
 }
