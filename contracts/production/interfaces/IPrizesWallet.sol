@@ -3,7 +3,6 @@ pragma solidity =0.8.34;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import { IAddressValidator } from "./IAddressValidator.sol";
 import { DonatedTokenHolder } from "../DonatedTokenHolder.sol";
 
 /// @title A wallet to hold the Cosmic Signature Game prizes and donations.
@@ -18,7 +17,7 @@ import { DonatedTokenHolder } from "../DonatedTokenHolder.sol";
 /// It would be incorrect to derive this contract from `ERC721Holder` (which implements `IERC721Receiver'),
 /// because if someone makes it an owner of an NFT by making a direct call to the NFT contract,
 /// there would be no way to change that NFT owner again.
-interface IPrizesWallet is IAddressValidator {
+interface IPrizesWallet {
 	struct EthDeposit {
 		address prizeWinnerAddress;
 
