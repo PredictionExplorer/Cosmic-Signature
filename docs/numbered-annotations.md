@@ -154,7 +154,7 @@ Use the following logic to generate a new ID. If any of these steps fails, reque
 
 - If the projected change would delete a numbered annotation's defining occurrence or only its defining tag or tags while leaving any references, include deletion of all those references in the planned change set, but first ask for permission.
 
-- If the projected change would delete all references to a numbered annotation while its defining occurrence would otherwise remain, ask for permission to convert the numbered annotation to its non-numbered form by deleting its defining tag or tags, retaining any text between paired tags. When converting a numbered todo to a non-numbered todo, preserve its priority and whether it is a human or AI todo.
+- If the projected change would delete all references to a numbered annotation while its defining occurrence would otherwise remain, ask for permission to convert the numbered annotation to its non-numbered form by deleting its defining tag or tags, retaining any text between paired tags. When converting a numbered todo to a non-numbered todo, preserve its human-or-AI designation and priority.
 
 - When planning to delete one or more files:
   - For each numbered annotation whose defining occurrence is in a file to be deleted, if one or more references in files to be retained use the exact `applies` form, ask for permission to swap the defining occurrence with one such reference. For purposes of the projected state, swapping means that the selected retained location becomes the defining occurrence and the old defining location becomes an `applies` reference. If multiple eligible references exist, ask me which one to use.
