@@ -152,13 +152,15 @@ Use the following logic to generate a new ID. If any of these steps fails, reque
 
 - If the projected change modifies any part of a numbered annotation's tag, update every occurrence of that tag.
 
-- If the projected change would delete a numbered annotation's defining occurrence or only its defining tag or tags while leaving any references, include deletion of all those references in the planned change set, but first ask for permission.
+- When planning to delete text, source code, or one or more files, treat every numbered-annotation defining occurrence and reference within the content to be deleted as planned for deletion. Apply all applicable instructions to those deletions. Consider applicable swaps before adding consequential deletions of references.
+
+- If the projected change would delete a numbered annotation's defining occurrence while leaving any references, and the change is not a conversion to its non-numbered form:
+  - If one or more references not planned for deletion use the exact `applies` form, ask for permission to swap the defining occurrence with one such reference. If multiple eligible references exist, ask me which one to use. For purposes of the projected state, swapping means that the selected reference location becomes the defining occurrence and the old defining location becomes an `applies` reference subject to the originally planned deletion. Incorporate any approved swap into the projected state and re-evaluate all applicable instructions.
+  - If no such reference exists, ask for permission to include deletion of all remaining references in the planned change set.
+
+- If the projected change would delete only a numbered annotation's defining tag or tags while leaving any references, ask for permission to include deletion of all those references in the planned change set.
 
 - If the projected change would delete all references to a numbered annotation while its defining occurrence would otherwise remain, ask for permission to convert the numbered annotation to its non-numbered form by deleting its defining tag or tags, retaining any text between paired tags. When converting a numbered todo to a non-numbered todo, preserve its human-or-AI designation and priority.
-
-- When planning to delete one or more files:
-  - For each numbered annotation whose defining occurrence is in a file to be deleted, if one or more references in files to be retained use the exact `applies` form, ask for permission to swap the defining occurrence with one such reference. For purposes of the projected state, swapping means that the selected retained location becomes the defining occurrence and the old defining location becomes an `applies` reference. If multiple eligible references exist, ask me which one to use.
-  - After incorporating any approved swaps into the projected state, treat every numbered-annotation defining occurrence and reference in a file to be deleted as planned for deletion, and apply all other instructions to those planned deletions.
 
 #### Notes
 
